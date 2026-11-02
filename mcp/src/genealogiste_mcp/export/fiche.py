@@ -73,19 +73,23 @@ def fiche_markdown(tree: Tree, pid: str, strict: bool = False, mask_living: bool
     if issues:
         lines += ["", "## Alertes de cohérence", ""]
         lines += [f"- **{i['niveau']}** : {i['message']}" for i in issues]
-    cited = []
+    refs = []
     for f in facts:
         for g in f.get("groupes", []):
             for c in g["citations"]:
-                cited.append(c["source"])
-    if cited:
-        lines += ["", "## Sources", ""]
-        for sid in dict.fromkeys(cited):
-            s = tree.sources.get(sid)
-            if s:
-                depot = tree.depots[s.depot].nom if s.depot in tree.depots else ""
-                lines.append(f"- **{sid}** — {s.titre}" + (f", {depot}" if depot else "") + (f", cote {s.cote}" if s.cote else "")
-                             + (f" ({s.type_source})" if s.type_source != "indeterminee" else "") + (f" <{s.url}>" if s.url else ""))
+                refs.append(c["reference"])
+    if refs:
+        lines += ["", "## Sources citées", ""]
+        lines += [f"{i}. {r}" for i, r in enumerate(dict.fromkeys(refs), 1)]
+    assos = [(f, a) for f in facts for a in f.get("associations", [])]
+    if assos or p.associations:
+        lines += ["", "## Témoins, parrains et intervenants", ""]
+        lines += [f"- {EVENT_LABELS.get(f['fait'], f['fait'])} {f.get('date', '')} — {a}" for f, a in assos]
+        lines += [f"- {a.libelle()}" for a in p.associations]
+    unseen = [x for f in facts for x in f.get("actes_a_voir", [])]
+    if unseen:
+        lines += ["", "## Actes cités mais non vus", ""]
+        lines += [f"- {u}" for u in dict.fromkeys(unseen)]
     todo = [f for f in facts if f.get("prochaine_source")]
     if todo:
         lines += ["", "## Prochaines sources à consulter", ""]

@@ -1,0 +1,242 @@
+0 HEAD
+1 SOUR GeneWeb
+2 VERS 7.0.0
+2 NAME gwb2ged
+2 CORP INRIA
+3 ADDR http://www.geneweb.org
+2 DATA test.gwb
+1 DATE 02 NOV 2026
+2 TIME 18:46:49
+1 FILE retour.ged
+1 GEDC
+2 VERS 5.5.1
+2 FORM LINEAGE-LINKED
+1 CHAR UTF-8
+0 @I1@ INDI
+1 NAME Jean /MARTIN/
+1 SEX M
+1 BIRT
+2 DATE 12 MAR 1820
+2 PLAC Rochefort, Charente-Maritime, France
+2 NOTE ✅ Preuve : confirmé — 2 source(s) indépendante(s), 3 pt
+2 SOUR AD17, 2 E 299, Registres d'état civil de Rochefort, Naissances 1820, acte n° 45, vue 12/80 [source originale ; information primaire]. Archives départementales de la Charente-Maritime, 2 E 299/TD, Tables décennales de Rochefort 1813-1822, Table décennale 1813-1822, M [source dérivée ; information secondaire]. Archives départementales de la Charente-Maritime, 6 M 312, Recensement de population, Rochefort, 1851, Recensement 1851, Rochefort, f° 12 [source originale ; information secondaire ; preuve indirecte].
+1 OCCU
+2 DATE 1851
+2 NOTE tonnelier
+3 CONT 🟡 Preuve : hypothèse — 1 source(s) indépendante(s), 1 pt
+3 CONT À consulter : Listes nominatives de recensement [série M, sous-série 6 
+3 CONC M (listes nominatives quinquennales depuis 1836)]
+2 SOUR Archives départementales de la Charente-Maritime, 6 M 312, Recensement de population, Rochefort, 1851, Recensement 1851, Rochefort, f° 12 [source originale].
+1 DEAT
+2 DATE 04 JAN 1885
+2 PLAC Rochefort, Charente-Maritime, France
+2 NOTE ⛔ Preuve : non sourcé — 0 source(s) indépendante(s), 0 pt
+3 CONT Acte(s) cité(s) mais non vu(s) : AD17, 2 E 299, Registres d'état civil 
+3 CONC de Rochefort, Décès 1885, acte n° 3 ; consulté le 02/11/2026.
+3 CONT À consulter : Acte de décès de Rochefort [série E / sous-série 4 E ou E
+3 CONC -dépôt (collection du greffe) ; mairie pour la collection communale]
+2 SOUR AD17, 2 E 299, Registres d'état civil de Rochefort, Décès 1885, acte n° 3 ; consulté le 02/11/2026 [NON VU — cité d'après une autre source ; source originale].
+1 FAMC @F1@
+1 FAMS @F2@
+1 NOTE Fiche de preuve (plugin genealogiste) — réf. I1
+2 CONT ✅ Naissance 12 MAR 1820 : confirmé
+2 CONT 🟡 Profession 1851 : hypothèse
+2 CONT ⛔ Décès 4 JAN 1885 : non sourcé
+2 CONT ⛔ Filiation : non sourcé
+2 CONT 🟢 Mariage 20 JUN 1845 : probable
+2 CONT Prochaines sources :
+2 CONT - profession : Listes nominatives de recensement [série M, sous-série 6
+2 CONC  M (listes nominatives quinquennales depuis 1836)]
+2 CONT - décès : Acte de décès de Rochefort [série E / sous-série 4 E ou E-dép
+2 CONC ôt (collection du greffe) ; mairie pour la collection communale]
+2 CONT - filiation : Acte de naissance [série E / sous-série 4 E ou E-dépôt (c
+2 CONC ollection du greffe) ; mairie pour la collection communale]
+2 CONT - mariage : Acte de mariage de Rochefort [série E / sous-série 4 E ou E
+2 CONC -dépôt (collection du greffe) ; mairie pour la collection communale]
+0 @I2@ INDI
+1 NAME Marie /DUPONT/
+1 SEX F
+1 BIRT
+2 DATE ABT 1824
+2 NOTE ⛔ Preuve : non sourcé — 0 source(s) indépendante(s), 0 pt
+3 CONT À consulter : Acte de naissance [série E / sous-série 4 E ou E-dépôt (c
+3 CONC ollection du greffe) ; mairie pour la collection communale]
+1 DEAT
+2 DATE 10 FEB 1850
+2 PLAC Rochefort, Charente-Maritime, France
+2 NOTE ⛔ Preuve : non sourcé — 0 source(s) indépendante(s), 0 pt
+3 CONT À consulter : Acte de décès de Rochefort [série E / sous-série 4 E ou E
+3 CONC -dépôt (collection du greffe) ; mairie pour la collection communale]
+2 SOUR Arbre en ligne (Geneanet, utilisateur X), Arbre en ligne de X <https://gw.geneanet.org/exemple> [source composite].
+1 FAMS @F2@
+1 NOTE Fiche de preuve (plugin genealogiste) — réf. I2
+2 CONT ⛔ Naissance ABT 1824 : non sourcé
+2 CONT ⛔ Décès 10 FEB 1850 : non sourcé
+2 CONT 🟢 Mariage 20 JUN 1845 : probable
+2 CONT Prochaines sources :
+2 CONT - naissance : Acte de naissance [série E / sous-série 4 E ou E-dépôt (c
+2 CONC ollection du greffe) ; mairie pour la collection communale]
+2 CONT - décès : Acte de décès de Rochefort [série E / sous-série 4 E ou E-dép
+2 CONC ôt (collection du greffe) ; mairie pour la collection communale]
+2 CONT - mariage : Acte de mariage de Rochefort [série E / sous-série 4 E ou E
+2 CONC -dépôt (collection du greffe) ; mairie pour la collection communale]
+0 @I3@ INDI
+1 NAME Pierre /MARTIN/
+1 SEX M
+1 BIRT
+2 DATE 03 MAY 1846
+2 PLAC Rochefort, Charente-Maritime, France
+2 NOTE ⚠️ Preuve : contradictoire — 1 source(s) indépendante(s), 2 pt
+3 CONT Contradiction : dates incompatibles (3 MAY 1846 / 1848, écart 1.66 an(s
+3 CONC ))
+3 CONT À consulter : Acte de naissance de Rochefort [série E / sous-série 4 E 
+3 CONC ou E-dépôt (collection du greffe) ; mairie pour la collection communale
+3 CONC ]
+2 SOUR AD17, 2 E 299, Registres d'état civil de Rochefort, Naissances 1846, acte n° 120 [source originale ; information primaire].
+1 BAPM
+2 DATE 04 MAY 1846
+2 PLAC Rochefort, Charente-Maritime, France
+2 NOTE 🟢 Preuve : probable — 1 source(s) indépendante(s), 2 pt
+3 CONT À consulter : Acte de naissance de Rochefort [série E / sous-série 4 E 
+3 CONC ou E-dépôt (collection du greffe) ; mairie pour la collection communale
+3 CONC ]
+3 CONT Témoins et intervenants : Marraine : Anne BERNARD
+2 SOUR AD17, 2 E 299, Registres d'état civil de Rochefort, Baptêmes 1846, f° 12 ; consulté le 02/11/2026 [image numérisée ; source originale ; information primaire].
+2 ASSO @I4@
+3 TYPE INDI
+3 RELA GODP
+1 BIRT
+2 DATE 1848
+2 NOTE ⚠️ Preuve : contradictoire — 0 source(s) indépendante(s), 0 pt
+3 CONT Contradiction : dates incompatibles (3 MAY 1846 / 1848, écart 1.66 an(s
+3 CONC ))
+3 CONT À consulter : Acte de naissance [série E / sous-série 4 E ou E-dépôt (c
+3 CONC ollection du greffe) ; mairie pour la collection communale]
+2 SOUR Arbre en ligne (Geneanet, utilisateur X), Arbre en ligne de X <https://gw.geneanet.org/exemple> [source composite].
+1 FAMC @F2@
+1 ASSO @I4@
+2 TYPE INDI
+2 RELA GODF
+1 NOTE Fiche de preuve (plugin genealogiste) — réf. I3
+2 CONT ⚠️ Naissance 3 MAY 1846 : contradictoire
+2 CONT ⚠️ Naissance 1848 : contradictoire
+2 CONT 🟢 Baptême 4 MAY 1846 : probable
+2 CONT 🟢 Filiation : probable
+2 CONT Prochaines sources :
+2 CONT - naissance : Acte de naissance de Rochefort [série E / sous-série 4 E 
+2 CONC ou E-dépôt (collection du greffe) ; mairie pour la collection communale
+2 CONC ]
+2 CONT - naissance : Acte de naissance [série E / sous-série 4 E ou E-dépôt (c
+2 CONC ollection du greffe) ; mairie pour la collection communale]
+2 CONT - baptême : Acte de naissance de Rochefort [série E / sous-série 4 E ou
+2 CONC  E-dépôt (collection du greffe) ; mairie pour la collection communale]
+2 CONT - filiation : Acte de naissance [série E / sous-série 4 E ou E-dépôt (c
+2 CONC ollection du greffe) ; mairie pour la collection communale]
+0 @I4@ INDI
+1 NAME Jacques /MARTIN/
+1 SEX M
+1 BIRT
+2 DATE @#DFRENCH R@ 12 VEND 3
+2 PLAC Rochefort, Charente-Maritime, France
+2 NOTE ⛔ Preuve : non sourcé — 0 source(s) indépendante(s), 0 pt
+3 CONT À consulter : Acte de naissance de Rochefort [série E / sous-série 4 E 
+3 CONC ou E-dépôt (collection du greffe) ; mairie pour la collection communale
+3 CONC ]
+1 FAMS @F1@
+1 NOTE Fiche de preuve (plugin genealogiste) — réf. I6
+2 CONT ⛔ Naissance FRENCH_R 12 VEND 3 : non sourcé
+2 CONT Prochaines sources :
+2 CONT - naissance : Acte de naissance de Rochefort [série E / sous-série 4 E 
+2 CONC ou E-dépôt (collection du greffe) ; mairie pour la collection communale
+2 CONC ]
+0 @I5@ INDI
+1 NAME Jean /MARTIN/
+1 SEX M
+1 BIRT
+2 DATE ABT 1821
+2 PLAC Rochefort, Charente-Maritime, France
+2 NOTE ⛔ Preuve : non sourcé — 0 source(s) indépendante(s), 0 pt
+3 CONT À consulter : Acte de naissance de Rochefort [série E / sous-série 4 E 
+3 CONC ou E-dépôt (collection du greffe) ; mairie pour la collection communale
+3 CONC ]
+1 FAMC @F3@
+1 NOTE Fiche de preuve (plugin genealogiste) — réf. I4
+2 CONT ⛔ Naissance ABT 1821 : non sourcé
+2 CONT ⛔ Filiation : non sourcé
+2 CONT Prochaines sources :
+2 CONT - naissance : Acte de naissance de Rochefort [série E / sous-série 4 E 
+2 CONC ou E-dépôt (collection du greffe) ; mairie pour la collection communale
+2 CONC ]
+2 CONT - filiation : Acte de naissance [série E / sous-série 4 E ou E-dépôt (c
+2 CONC ollection du greffe) ; mairie pour la collection communale]
+0 @I6@ INDI
+1 NAME Louise /MARTIN/
+1 SEX F
+1 BIRT
+2 DATE 15 AUG 1852
+2 NOTE ⛔ Preuve : non sourcé — 0 source(s) indépendante(s), 0 pt
+3 CONT À consulter : Acte de naissance [série E / sous-série 4 E ou E-dépôt (c
+3 CONC ollection du greffe) ; mairie pour la collection communale]
+1 FAMC @F2@
+1 NOTE Fiche de preuve (plugin genealogiste) — réf. I5
+2 CONT ⛔ Naissance 15 AUG 1852 : non sourcé
+2 CONT ⛔ Filiation : non sourcé
+2 CONT Prochaines sources :
+2 CONT - naissance : Acte de naissance [série E / sous-série 4 E ou E-dépôt (c
+2 CONC ollection du greffe) ; mairie pour la collection communale]
+2 CONT - filiation : Acte de naissance [série E / sous-série 4 E ou E-dépôt (c
+2 CONC ollection du greffe) ; mairie pour la collection communale]
+0 @I7@ INDI
+1 NAME Pierre /BERNARD/
+1 SEX M
+1 BIRT
+2 DATE 1795
+2 NOTE ⛔ Preuve : non sourcé — 0 source(s) indépendante(s), 0 pt
+3 CONT À consulter : Acte de naissance [série E / sous-série 4 E ou E-dépôt (c
+3 CONC ollection du greffe) ; mairie pour la collection communale]
+1 FAMS @F3@
+1 ASSO @F2@
+2 TYPE FAM
+2 RELA witness
+1 NOTE Fiche de preuve (plugin genealogiste) — réf. I7
+2 CONT ⛔ Naissance 1795 : non sourcé
+2 CONT Prochaines sources :
+2 CONT - naissance : Acte de naissance [série E / sous-série 4 E ou E-dépôt (c
+2 CONC ollection du greffe) ; mairie pour la collection communale]
+0 @I8@ INDI
+1 NAME Vivant /MARTIN/
+1 SEX M
+1 FAMC @F4@
+1 NOTE Fiche de preuve (plugin genealogiste) — réf. I9
+0 @F1@ FAM
+1 HUSB @I4@
+1 CHIL @I1@
+1 NOTE Filiation de Jean MARTIN : ⛔ non sourcé
+0 @F2@ FAM
+1 MARR
+2 DATE 20 JUN 1845
+2 PLAC Rochefort, Charente-Maritime, France
+2 NOTE 🟢 Preuve : probable — 1 source(s) indépendante(s), 2 pt
+3 CONT À consulter : Acte de mariage de Rochefort [série E / sous-série 4 E ou
+3 CONC  E-dépôt (collection du greffe) ; mairie pour la collection communale]
+3 CONT Témoins et intervenants : Témoin, 40 ans, tonnelier, cousin de l'épouse
+3 CONC  : Louis ROY
+2 SOUR AD17, 2 E 299, Registres d'état civil de Rochefort, Mariages 1845, acte n° 30 [source originale ; information primaire].
+2 ASSO @I7@
+3 TYPE INDI
+3 RELA witness
+1 HUSB @I1@
+1 WIFE @I2@
+1 CHIL @I3@
+1 CHIL @I6@
+1 NOTE Filiation de Pierre MARTIN : 🟢 probable — AD17, 2 E 299, Registres d'ét
+2 CONC at civil de Rochefort, Naissances 1846, acte n° 120 [source originale ;
+2 CONC  information primaire].
+2 CONT Filiation de Louise MARTIN : ⛔ non sourcé
+0 @F3@ FAM
+1 HUSB @I7@
+1 CHIL @I5@
+1 NOTE Filiation de Jean MARTIN : ⛔ non sourcé
+0 @F4@ FAM
+1 CHIL @I8@
+0 TRLR

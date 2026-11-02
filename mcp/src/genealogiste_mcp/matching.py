@@ -12,8 +12,35 @@ from .normalize.places import place_similarity
 
 WEIGHTS = {
     "nom": 20, "prenoms": 20, "sexe": 5, "naissance_date": 20, "naissance_lieu": 10,
-    "deces_date": 10, "deces_lieu": 5, "pere": 5, "mere": 5,
+    "deces_date": 10, "deces_lieu": 5, "pere": 5, "mere": 5, "reseau": 10,
 }
+
+
+def _network(tree: Tree, p: Person) -> list[str]:
+    """Noms des témoins, parrains, déclarants… liés à la personne (réseau social de l'acte)."""
+    out = []
+    events = list(p.evenements) + [e for f in tree.spouses_families(p.id) for e in f.evenements]
+    for a in list(p.associations) + [a for e in events for a in e.associations]:
+        if a.personne and a.personne in tree.personnes:
+            out.append(tree.personnes[a.personne].nom_principal.complet)
+        elif a.nom:
+            out.append(a.nom)
+    return out
+
+
+def _network_overlap(a: list[str], b: list[str]) -> list[str]:
+    common = []
+    for x in a:
+        xp = x.split()
+        for y in b:
+            yp = y.split()
+            if not xp or not yp:
+                continue
+            if surname_similarity(xp[-1], yp[-1])["score"] >= 0.9 and \
+                    given_similarity(" ".join(xp[:-1]), " ".join(yp[:-1]))["score"] >= 0.85:
+                common.append(f"{x} / {y}")
+                break
+    return common
 
 
 def profile_from_person(tree: Tree, pid: str) -> dict:
@@ -37,7 +64,7 @@ def profile_from_person(tree: Tree, pid: str) -> dict:
     return {
         "id": pid, "prenoms": n.prenoms, "nom": n.nom, "sexe": p.sexe,
         "naissance": ev("BIRT", "CHR", "BAPM"), "deces": ev("DEAT", "BURI"),
-        "pere": nm(father), "mere": nm(mother),
+        "pere": nm(father), "mere": nm(mother), "reseau": _network(tree, p),
     }
 
 
@@ -98,11 +125,18 @@ def compare_profiles(a: dict, b: dict) -> dict:
             add(par, sc, f"{par} : {pa.get('prenoms', '')} {pa.get('nom', '')} / {pb.get('prenoms', '')} {pb.get('nom', '')}")
             if sc < 0.6:
                 contradictions.append(f"{par} différent(e)")
+    ra, rb = a.get("reseau") or [], b.get("reseau") or []
+    if ra and rb:
+        common = _network_overlap(ra, rb)
+        if common:  # indice positif seulement : des témoins différents ne prouvent rien
+            add("reseau", min(1.0, 0.5 + 0.25 * len(common)),
+                f"témoins/parrains communs : {'; '.join(common[:3])}")
     if not weight_used:
         return {"score": 0, "verdict": "indéterminé", "details": [], "contradictions": [],
                 "avertissement": "Aucune donnée comparable."}
     score = 100 * total / weight_used
-    coverage = weight_used / sum(WEIGHTS.values())
+    net_w = WEIGHTS["reseau"] if any(d["critere"] == "reseau" for d in details) else 0
+    coverage = (weight_used - net_w) / (sum(WEIGHTS.values()) - WEIGHTS["reseau"])
     # pénalités fortes : une contradiction franche l'emporte sur les similitudes
     if contradictions:
         score = min(score, 35 if len(contradictions) == 1 else 15)

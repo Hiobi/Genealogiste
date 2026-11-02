@@ -17,7 +17,9 @@ from .cache import Cache
 from .config import Config, load_config
 from .export import charts
 from .export.fiche import fiche_markdown, gaps, tree_gaps
+from .export.geneweb import to_geneweb
 from .export.gramps_xml import to_gramps_xml
+from .export.rapport import proof_report
 from .fr_sources import communicability, next_source_hint
 from .gedcom.mapping import read_gedcom, write_gedcom
 from .http import HttpClient
@@ -52,7 +54,7 @@ class App:
         self.store = TreeStore(self.config.data_dir)
         self.store.ensure()
         self.journal = Journal(self.config.journal_path)
-        self.proposals = Proposals(self.store, self.config.proposals_dir)
+        self.proposals = Proposals(self.store, self.config.proposals_dir, self.config.exiger_source)
         self.sctx = SourceContext(self.http, self.journal, self.config)
 
     def tree(self):
@@ -446,6 +448,59 @@ def arbre_lacunes(id: str = "") -> dict:
 
 
 @mcp.tool()
+def arbre_cercle(id: str, cercle: str = "famille") -> dict:
+    """Individu et ses proches à enquêter : cercle = personne | famille (parents, conjoints, enfants, fratrie)
+    | etendu (+ grands-parents, beaux-parents, oncles/tantes). Pour chacun : lien, vivant (exclu des
+    recherches externes), nombre d'actions urgentes (lacunes)."""
+    t = app().tree()
+    t.person(id)
+    rel: dict[str, str] = {id: "sujet"}
+
+    def add(x, lien):
+        if x and x in t.personnes and x not in rel:
+            rel[x] = lien
+
+    if cercle in ("famille", "etendu"):
+        f, m = t.father_mother(id)
+        add(f, "père")
+        add(m, "mère")
+        for fam in t.spouses_families(id):
+            add(fam.epouse if fam.epoux == id else fam.epoux, "conjoint")
+            for c in fam.enfants:
+                add(c.enfant, "enfant")
+        for fam, _ in t.parents(id):
+            for c in fam.enfants:
+                add(c.enfant, "frère/sœur")
+    if cercle == "etendu":
+        for par, side in ((t.father_mother(id)[0], "paternel"), (t.father_mother(id)[1], "maternel")):
+            if not par:
+                continue
+            gf, gm = t.father_mother(par)
+            add(gf, f"grand-père {side}")
+            add(gm, f"grand-mère {side}")
+            for fam, _ in t.parents(par):
+                for c in fam.enfants:
+                    add(c.enfant, f"oncle/tante {side}")
+        for fam in t.spouses_families(id):
+            sp = fam.epouse if fam.epoux == id else fam.epoux
+            if sp:
+                bf, bm = t.father_mother(sp)
+                add(bf, "beau-père")
+                add(bm, "belle-mère")
+    out = []
+    for pid, lien in rel.items():
+        p = t.personnes[pid]
+        living = privacy.is_living(t, p)["vivant"]
+        g = gaps(t, pid, app().config.strict_evidence) if not living else {"plan": []}
+        out.append({"id": pid, "lien": lien, "nom": "Vivant" if living else p.nom_principal.complet,
+                    "vivant": living, "actions_urgentes": sum(1 for x in g["plan"] if x["priorite"] <= 1),
+                    "premiere_action": g["plan"][0]["probleme"] if g["plan"] else None})
+    return {"sujet": t.personnes[id].label(), "cercle": cercle,
+            "a_enqueter": [x for x in out if not x["vivant"]],
+            "exclus_vivants": sum(1 for x in out if x["vivant"])}
+
+
+@mcp.tool()
 def arbre_vivant(id: str) -> dict:
     """Statut vivant/décédé présumé (RGPD) et raisonnement."""
     t = app().tree()
@@ -465,8 +520,10 @@ def arbre_proposer(operations: list[dict], titre: str, justification: str, sourc
     """Prépare une modification SANS l'écrire : renvoie le diff GEDCOM, les alertes de cohérence nouvelles et un
     jeton. Opérations : ajouter_personne, modifier_personne, supprimer_personne, ajouter_nom, ajouter_evenement,
     modifier_evenement, supprimer_evenement, ajouter_famille, lier_enfant, delier_enfant, lier_conjoint,
-    ajouter_source, modifier_source, ajouter_depot, ajouter_citation, ajouter_media, fusionner_personnes,
-    scinder_personne, definir_statut, marquer_vivant. Référencer un objet créé dans la même proposition par
+    ajouter_source, modifier_source, ajouter_depot, ajouter_citation, ajouter_media, ajouter_association,
+    supprimer_association, fusionner_personnes, scinder_personne, definir_statut, marquer_vivant.
+    Règle de métier : tout événement ou filiation exige une citation, sauf non_source=true + motif.
+    Citation : préciser 'consultation' (original | image | transcription | index | non_vu). Référencer un objet créé dans la même proposition par
     "$ref". Voir docs/operations.md."""
     try:
         return app().proposals.propose(operations, titre, justification, sources)
@@ -525,15 +582,17 @@ def arbre_importer_gedcom(chemin: str, mode: str = "ajouter") -> dict:
 
 @mcp.tool()
 def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", generations: int = 4,
-                   masquer_vivants: bool = True) -> dict:
-    """Export : gedcom7 | gedcom551 | gramps | mermaid_asc | mermaid_desc | svg_asc | svg_desc | fiche.
+                   masquer_vivants: bool = True, temoins_en_personnes: bool = False) -> dict:
+    """Export : gedcom7 | gedcom551 | geneweb | gramps | mermaid_asc | mermaid_desc | svg_asc | svg_desc | fiche.
+    geneweb : GEDCOM 5.5.1 pour ged2gwb, avec citations complètes, statut de preuve et témoins visibles dans
+    GeneWeb (temoins_en_personnes=True crée une fiche pour chaque témoin seulement nommé).
     Vivants masqués par défaut (RGPD). chemin par défaut : <données>/exports/."""
     a = app()
     t = a.tree()
     hidden: set[str] = set()
     if masquer_vivants:
         t, hidden = privacy.mask_tree(t)
-    ext = {"gedcom7": "ged", "gedcom551": "ged", "gramps": "gramps", "mermaid_asc": "mmd", "mermaid_desc": "mmd",
+    ext = {"gedcom7": "ged", "gedcom551": "ged", "geneweb": "ged", "gramps": "gramps", "mermaid_asc": "mmd", "mermaid_desc": "mmd",
            "svg_asc": "svg", "svg_desc": "svg", "fiche": "md"}
     if format not in ext:
         return {"erreur": f"format : {', '.join(ext)}"}
@@ -543,6 +602,8 @@ def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", gene
         content = write_gedcom(t, 7)
     elif format == "gedcom551":
         content = write_gedcom(t, 5)
+    elif format == "geneweb":
+        content, stats = to_geneweb(t, a.config.strict_evidence, temoins_en_personnes)
     elif format == "gramps":
         content = to_gramps_xml(t)
     elif format == "mermaid_asc":
@@ -559,8 +620,34 @@ def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", gene
         f"{id or 'arbre'}-{format}-{date.today().isoformat()}.{ext[format]}")
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(content, encoding="utf-8")
-    return {"fichier": str(out), "format": format, "octets": len(content.encode("utf-8")),
-            "vivants_masques": len(hidden), "apercu": content[:1500] if format.startswith(("mermaid", "fiche")) else None}
+    res = {"fichier": str(out), "format": format, "octets": len(content.encode("utf-8")),
+           "vivants_masques": len(hidden), "apercu": content[:1500] if format.startswith(("mermaid", "fiche")) else None}
+    if format == "geneweb":
+        res["statistiques"] = stats
+        res["import"] = f"ged2gwb {out.name} -o <base> -f   (voir docs/geneweb.md)"
+    return res
+
+
+@mcp.tool()
+def arbre_rapport_preuve(id: str, fait: str = "") -> str:
+    """Trame de rapport de preuve (proof argument) pré-remplie : question, pièces avec citations complètes,
+    recherches négatives du journal, analyse, contradictions, conclusion à rédiger, suite."""
+    a = app()
+    return proof_report(a.tree(), a.journal, id, fait, a.config.strict_evidence)
+
+
+@mcp.tool()
+def rapport_enregistrer(id: str, titre: str, contenu: str) -> dict:
+    """Enregistre un rapport de preuve rédigé dans <données>/rapports/ et le commit (accord requis)."""
+    import re as _re
+    a = app()
+    a.tree().person(id)
+    slug = _re.sub(r"[^a-z0-9]+", "-", titre.lower()).strip("-")[:60] or "rapport"
+    path = a.config.data_dir / "rapports" / f"{id}-{slug}.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(contenu, encoding="utf-8")
+    commit = a.store.commit(f"Rapport de preuve : {titre} ({id})")
+    return {"fichier": str(path), "commit": commit}
 
 
 @mcp.tool()

@@ -8,7 +8,7 @@ d'homonymes, et arbre **GEDCOM 7 versionné en Git** où rien n'est écrit sans 
 ```
 .claude-plugin/   plugin.json, marketplace.json
 .mcp.json         serveur MCP lancé par uv (stdio)
-commands/         15 commandes slash
+commands/         17 commandes slash
 skills/           methodologie-gps, sources-francaises, paleographie, droit-communicabilite
 agents/           chercheur, verificateur (indépendant), redacteur
 hooks/            lecture des sources sans approbation ; écritures soumises à confirmation
@@ -46,6 +46,7 @@ et renseigner au minimum :
 | `GENEALOGISTE_FS_USER` / `_PASSWORD` | FamilySearch via getmyancestors (facultatif, `uv sync --extra familysearch`) |
 | `GENEALOGISTE_GRAMPS_URL` / `_USER` / `_PASSWORD` | Gramps Web (facultatif) |
 | `GENEALOGISTE_STRICT` | `1` : règle stricte 3/2/1 sources sans pondération |
+| `GENEALOGISTE_EXIGER_SOURCE` | `1` (défaut) : pas de fait ni de filiation sans citation, sauf `non_source` + motif |
 | `GENEALOGISTE_OFFLINE` | `1` : cache uniquement |
 
 Les variables peuvent aussi être exportées dans l'environnement de Claude Code. `make check` affiche la
@@ -71,6 +72,7 @@ Les commandes d'un plugin sont préfixées par son nom : `/genealogiste:cherche`
 
 | Commande | Rôle |
 |---|---|
+| `enquete <id\|nom> [personne\|famille\|etendu]` | **en une commande** : recherche sur l'individu et ses proches (agents en parallèle), recoupement croisé, vérification indépendante, plan priorisé et proposition d'ajouts unique |
 | `cherche <nom> [prénom] [né vers] [lieu]` | recherche multi-sources, résultats classés par score explicite |
 | `fiche <id\|nom>` | fiche complète, statut de preuve de chaque fait, prochaines sources |
 | `verifie <id> [fait]` | fact-check par l'agent vérificateur, sans les conclusions du chercheur |
@@ -78,9 +80,10 @@ Les commandes d'un plugin sont préfixées par son nom : `/genealogiste:cherche`
 | `ascendance <id> [n]` / `descendance <id> [n]` | arbres Sosa / descendants (tableau + Mermaid, SVG) |
 | `lacunes <id\|arbre>` | faits manquants ou faibles + plan priorisé (source, cote, archives) |
 | `ajoute`, `modifie`, `fusionne` | édition avec diff et validation explicite |
-| `import <gedcom\|familysearch>`, `export <format>` | GEDCOM 5.5.1/7, Gramps XML, Mermaid, SVG, fiche Markdown |
+| `import <gedcom\|familysearch>`, `export <format>` | GeneWeb, GEDCOM 5.5.1/7, Gramps XML, Mermaid, SVG, fiche Markdown |
 | `transcris <image>` | paléographie, latin, transcription et extraction des données |
 | `recit <id>` | biographie dont chaque phrase est sourcée |
+| `preuve <id> [fait]` | rapport de preuve rédigé (question, pièces, analyse, contradictions, conclusion) |
 | `journal` | historique des recherches (y compris négatives) et des commits |
 
 ## Méthode appliquée
@@ -99,6 +102,21 @@ Les commandes d'un plugin sont préfixées par son nom : `/genealogiste:cherche`
   automatique.
 - **Journal** : chaque requête (source, paramètres, date, résultat, y compris négatif) est tracée dans
   `journal.jsonl`.
+
+### Habitudes du métier appliquées
+
+Pas de fait sans source (exception explicite et motivée) ; on ne compte que ce qu'on a vu (`consultation` :
+original, image, transcription, index, non vu) ; citation normalisée « AD17, 2 E 299, …, acte n° 45,
+vue 12/80 ; consulté le … [image numérisée ; source originale ; information primaire] » ; témoins,
+parrains, déclarants relevés (`ASSO`) et exploités contre les homonymes (méthode FAN) ; transcription
+intégrale des actes clés ; rapport de preuve pour les conclusions difficiles ; du connu vers l'inconnu.
+
+## GeneWeb 7
+
+`/genealogiste:export geneweb` produit un GEDCOM 5.5.1 pour `ged2gwb` : citations complètes en source,
+statut de preuve et prochaines sources en notes, témoins et parrains en témoins/relations GeneWeb, versions
+concurrentes documentées. Validé par import réel dans GeneWeb 7.0.0 et aller-retour `gwb2ged`.
+Détails : [docs/geneweb.md](docs/geneweb.md).
 
 ## Arbre et validation
 

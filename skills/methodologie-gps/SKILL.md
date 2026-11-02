@@ -74,7 +74,28 @@ parents. Âge au décès = information secondaire. Table décennale = dérivée 
   (`source_collee`, `journal_ajouter`), **y compris négatives**.
 - Personnes vivantes (naissance estimée < 100 ans, sans décès) : rien vers l'extérieur, masquées à l'export.
 
-## 7. Forme des réponses
+## 7. Habitudes du métier (appliquées par le plugin)
+
+- **Du connu vers l'inconnu**, une génération à la fois : jamais de saut de génération sans acte qui relie.
+- **Pas de fait sans source** : un événement ou une filiation sans citation est refusé ; l'exception est
+  explicite et motivée (`non_source` + `motif` : tradition familiale, piste d'arbre en ligne…).
+- **On ne compte que ce qu'on a vu** : préciser `consultation` pour chaque citation — `original`, `image`
+  (numérisation), `transcription`, `index` (relevé, table : traité comme dérivé), `non_vu` (cité d'après
+  une autre source : poids 0, listé dans « actes à voir »).
+- **Citation normalisée** (fiche, commits, GeneWeb) : « AD17, 2 E 299, État civil de Rochefort,
+  naissances 1820, acte n° 45, vue 12/80 ; consulté le 02/11/2026 [image numérisée ; source originale ;
+  information primaire] ». Créer le dépôt avec son **sigle**.
+- **Réseau de l'acte (méthode FAN : famille, associés, voisins)** : relever systématiquement témoins,
+  parrains, marraines, déclarants, officiants avec âge, profession, domicile et lien déclaré
+  (`associations`). Ils départagent les homonymes (critère « réseau » du score) et ouvrent des pistes.
+- **Transcrire intégralement** les actes clés (champ `texte` de la citation) et conserver l'image
+  (`media_enregistrer`).
+- **Rapport de preuve** pour toute conclusion difficile (filiation indirecte, contradiction, fusion) :
+  `arbre_rapport_preuve` → rédaction → `rapport_enregistrer`.
+- **Une conclusion par fait** à la publication : la version la mieux prouvée est mise en avant, les autres
+  restent documentées (export GeneWeb).
+
+## 8. Forme des réponses
 
 Français, concis. Pour chaque fait : valeur — statut (icône) — sources (titre, cote/URL) — raisonnement
 en une ou deux phrases — prochaine source si non confirmé. Distinguer clairement **faits sourcés**,

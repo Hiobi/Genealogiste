@@ -6,7 +6,8 @@ from genealogiste_mcp import server
 def test_propose_does_not_write(app_famille):
     before = app_famille.store.text()
     p = server.arbre_proposer(
-        [{"op": "ajouter_evenement", "cible": "I4", "evenement": {"type": "DEAT", "date": "vers 1880"}}],
+        [{"op": "ajouter_evenement", "cible": "I4", "evenement": {"type": "DEAT", "date": "vers 1880",
+                                                                  "non_source": True, "motif": "tradition familiale"}}],
         "Décès de Jean MARTIN (I4)", "Indice tiré d'un recensement.")
     assert "jeton" in p and "+1 DEAT" in p["diff"] and "ABT 1880" in p["diff"]
     assert app_famille.store.text() == before
@@ -21,7 +22,7 @@ def test_apply_commits_with_justification(app_famille):
     r = server.arbre_appliquer(p["jeton"])
     assert r["commit"]
     log = server.arbre_historique(1)[0]["message"]
-    assert "Justification : Acte lu" in log and "S1 : Registres d'état civil de Rochefort, cote 2 E 299" in log
+    assert "Justification : Acte lu" in log and "2 E 299, Registres d'état civil de Rochefort" in log
     death = next(f for f in server.arbre_statut_preuve("I1") if f["fait"] == "DEAT")
     assert death["statut"] == "probable"
 
@@ -44,7 +45,7 @@ def test_refs_and_validation(app_famille):
         {"op": "ajouter_personne", "ref": "x", "noms": [{"prenoms": "Anne", "nom": "MARTIN"}], "sexe": "F",
          "evenements": [{"type": "BIRT", "date": "12 vendémiaire an III",
                          "citations": [{"source": "$s", "page": "f° 3"}]}]},
-        {"op": "lier_enfant", "famille": "F2", "enfant": "$x"},
+        {"op": "lier_enfant", "famille": "F2", "enfant": "$x", "citations": [{"source": "$s", "page": "f° 3"}]},
     ], "Ajout d'Anne", "Recensement 1856.")
     assert p["references_creees"] == {"s": "S5", "x": "I10"}
     assert "FRENCH_R 12 VEND 3" in p["diff"]
@@ -52,7 +53,8 @@ def test_refs_and_validation(app_famille):
                                   "evenement": {"type": "BIRT", "citations": [{"source": "S99"}]}}], "t", "j")
     assert "source inconnue" in bad["erreur"]
     bad = server.arbre_proposer([{"op": "ajouter_evenement", "cible": "I1",
-                                  "evenement": {"type": "BIRT", "date": "un jour"}}], "t", "j")
+                                  "evenement": {"type": "BIRT", "date": "un jour",
+                                                "citations": [{"source": "S1"}]}}], "t", "j")
     assert "Date non reconnue" in bad["erreur"]
 
 
@@ -113,7 +115,8 @@ def test_import_gedcom_add_mode(app_famille, fixtures):
 
 def test_new_coherence_alerts_reported(app_famille):
     p = server.arbre_proposer([{"op": "ajouter_evenement", "cible": "I4",
-                                "evenement": {"type": "DEAT", "date": "1800"}}], "t", "j")
+                                "evenement": {"type": "DEAT", "date": "1800",
+                                              "citations": [{"source": "S1", "page": "x"}]}}], "t", "j")
     assert any(a["code"] == "deces_avant_naissance" for a in p["nouvelles_alertes_coherence"])
 
 

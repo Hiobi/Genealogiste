@@ -10,8 +10,13 @@ import copy
 from datetime import date
 
 from ..models import (
+    CONSULTATIONS,
     EVENT_LABELS,
+    ROLE_FR,
+    ROLE_LABELS,
+    ROLES,
     Assertion,
+    Association,
     ChildLink,
     Citation,
     Event,
@@ -34,8 +39,9 @@ class OpError(ValueError):
 
 
 class Ctx:
-    def __init__(self, tree: Tree):
+    def __init__(self, tree: Tree, exiger_source: bool = True):
         self.tree = tree
+        self.exiger_source = exiger_source
         self.refs: dict[str, str] = {}
         self.summary: list[str] = []
         self.sources_cited: set[str] = set()
@@ -71,6 +77,8 @@ def _citation(ctx: Ctx, d: dict) -> Citation:
                        ("preuve", ("directe", "indirecte", "negative"))):
         if k in d and d[k] not in allowed:
             raise OpError(f"Citation : {k} doit valoir {', '.join(allowed)}")
+    if d.get("consultation", "") not in CONSULTATIONS + ("",):
+        raise OpError(f"Citation : consultation doit valoir {', '.join(CONSULTATIONS)}")
     d.setdefault("date_consultation", date.today().isoformat())
     ctx.sources_cited.add(d["source"])
     return Citation.from_dict(d)
@@ -84,15 +92,59 @@ def _place(v) -> Place | None:
     return Place.from_dict(v)
 
 
+def _unsourced(ctx: Ctx, d: dict, what: str) -> str:
+    """Règle de métier : pas de fait sans source, sauf choix explicite et motivé (« non_source »)."""
+    flag, motif = d.pop("non_source", False), d.pop("motif", "")
+    if d.get("citations"):
+        return ""
+    if not ctx.exiger_source:
+        return ""
+    if not flag:
+        raise OpError(f"{what} sans citation : ajouter la source, ou passer non_source=true avec un motif "
+                      "(ex. « tradition familiale », « piste Geneanet à vérifier »).")
+    if not motif:
+        raise OpError(f"{what} non sourcé : motif obligatoire")
+    ctx.warnings.append(f"{what} enregistré sans source ({motif})")
+    return f"Non sourcé : {motif}"
+
+
+def _association(ctx: Ctx, d: dict) -> Association:
+    d = dict(d)
+    role = str(d.get("role", "WITN"))
+    key = role.lower().replace("é", "e").replace("è", "e")
+    if key in ROLE_FR:
+        code, label = ROLE_FR[key]
+        d["role"] = code
+        d.setdefault("detail", label)
+    elif role.upper() in ROLES:
+        d["role"] = role.upper()
+    else:
+        raise OpError(f"Rôle inconnu {role!r} : {', '.join(ROLE_FR)} ou {', '.join(ROLES)}")
+    d["personne"] = ctx.r(d.get("personne"))
+    if d["personne"] and d["personne"] not in ctx.tree.personnes:
+        raise OpError(f"Association : personne inconnue {d['personne']}")
+    if not d["personne"] and not d.get("nom"):
+        raise OpError("Association : 'personne' (id) ou 'nom' (tel qu'écrit dans l'acte) requis")
+    d["citations"] = [_citation(ctx, c) for c in d.get("citations", [])]
+    try:
+        return Association(**d)
+    except TypeError as exc:
+        raise OpError(f"Association invalide : {exc}") from exc
+
+
 def _event(ctx: Ctx, d: dict) -> Event:
     d = dict(d)
     t = d.get("type", "").upper()
     if t not in EVENT_LABELS:
         raise OpError(f"Type d'événement inconnu : {t!r}")
     d["type"] = t
+    mention = _unsourced(ctx, d, f"Événement {t}")
+    if mention:
+        d["note"] = (d.get("note", "") + "\n" + mention).strip()
     d["date"] = _date(d.get("date", ""))
     d["lieu"] = _place(d.get("lieu"))
     d["citations"] = [_citation(ctx, c) for c in d.get("citations", [])]
+    d["associations"] = [_association(ctx, a) for a in d.get("associations", [])]
     if "statut_manuel" in d and d["statut_manuel"]:
         d["statut_manuel"] = Assertion.from_dict(d["statut_manuel"])
     d.pop("uid", None)
@@ -170,6 +222,9 @@ def op_supprimer_personne(ctx: Ctx, o: dict) -> None:
         if fam.epouse == pid:
             fam.epouse = ""
         fam.enfants = [c for c in fam.enfants if c.enfant != pid]
+    for a in _all_associations(ctx.tree):
+        if a.personne == pid:
+            a.personne, a.nom = "", a.nom or p.nom_principal.complet
     del ctx.tree.personnes[pid]
     ctx.summary.append(f"Suppression de {p.label()}")
 
@@ -238,6 +293,10 @@ def op_lier_enfant(ctx: Ctx, o: dict) -> None:
     child = ctx.tree.person(cid)
     if fam.child(cid):
         raise OpError(f"{cid} est déjà enfant de {fam.id}")
+    o = dict(o)
+    mention = _unsourced(ctx, o, f"Filiation {cid}/{fam.id}")
+    if mention:
+        child.notes.append(f"Filiation avec {fam.id} — {mention}")
     link = ChildLink(enfant=cid, filiation=o.get("filiation", ""),
                      citations=[_citation(ctx, c) for c in o.get("citations", [])])
     fam.enfants.append(link)
@@ -304,7 +363,8 @@ def op_modifier_source(ctx: Ctx, o: dict) -> None:
 
 def op_ajouter_depot(ctx: Ctx, o: dict) -> None:
     rid = ctx.tree.next_id("depots")
-    ctx.tree.depots[rid] = Repository(id=rid, nom=o.get("nom", ""), adresse=o.get("adresse", ""), url=o.get("url", ""))
+    ctx.tree.depots[rid] = Repository(id=rid, nom=o.get("nom", ""), sigle=o.get("sigle", ""),
+                                      adresse=o.get("adresse", ""), url=o.get("url", ""))
     if o.get("ref"):
         ctx.refs[o["ref"]] = rid
     ctx.summary.append(f"Dépôt {rid} : {o.get('nom', '')}")
@@ -354,6 +414,46 @@ def op_ajouter_media(ctx: Ctx, o: dict) -> None:
     ctx.summary.append(f"Média {mid} : {m.titre or m.fichier}")
 
 
+def _all_associations(tree: Tree):
+    for p in tree.personnes.values():
+        yield from p.associations
+        for e in p.evenements:
+            yield from e.associations
+    for f in tree.familles.values():
+        for e in f.evenements:
+            yield from e.associations
+
+
+def op_ajouter_association(ctx: Ctx, o: dict) -> None:
+    """Témoin, parrain, déclarant… sur un événement (« evenement »: uid) ou une personne (« personne »: id)."""
+    a = _association(ctx, o["association"])
+    if o.get("evenement"):
+        owner, e = _find_event(ctx, ctx.r(o["evenement"]))
+        e.associations.append(a)
+        where = f"{owner.id} {EVENT_LABELS[e.type]} {e.date}"
+    elif o.get("personne"):
+        p = ctx.tree.person(ctx.r(o["personne"]))
+        p.associations.append(a)
+        where = p.label()
+    else:
+        raise OpError("ajouter_association : 'evenement' (uid) ou 'personne' (id) requis")
+    who = ctx.tree.personnes[a.personne].label() if a.personne else a.nom
+    ctx.summary.append(f"{a.detail or ROLE_LABELS.get(a.role, a.role)} : {who} — {where}")
+
+
+def op_supprimer_association(ctx: Ctx, o: dict) -> None:
+    idx = int(o.get("index", 0))
+    if o.get("evenement"):
+        _, e = _find_event(ctx, ctx.r(o["evenement"]))
+        lst = e.associations
+    else:
+        lst = ctx.tree.person(ctx.r(o["personne"])).associations
+    if not 0 <= idx < len(lst):
+        raise OpError("supprimer_association : index invalide")
+    a = lst.pop(idx)
+    ctx.summary.append(f"Association retirée : {a.libelle()}")
+
+
 def _same_event(a: Event, b: Event) -> bool:
     return a.type == b.type and a.date == b.date and (a.lieu.nom if a.lieu else "") == (b.lieu.nom if b.lieu else "")
 
@@ -377,9 +477,14 @@ def op_fusionner_personnes(ctx: Ctx, o: dict) -> None:
         twin = next((k for k in keep.evenements if _same_event(k, e)), None)
         if twin:
             twin.citations += [c for c in e.citations if c not in twin.citations]
+            twin.associations += [a for a in e.associations if a not in twin.associations]
         else:
             keep.evenements.append(e)
     keep.citations += gone.citations
+    keep.associations += gone.associations
+    for a in _all_associations(ctx.tree):
+        if a.personne == gone_id:
+            a.personne = keep_id
     keep.notes += gone.notes + [f"Fusion de {gone.label()} : {o['justification']}"]
     keep.medias += [m for m in gone.medias if m not in keep.medias]
     if keep.sexe == "U":
@@ -520,18 +625,26 @@ def op_remplacer_arbre(ctx: Ctx, o: dict) -> None:
         for c in cits:
             c.source = mapping.get(c.source, c.source)
 
+    def remap_assos(assos):
+        for a in assos:
+            a.personne = mapping.get(a.personne, a.personne)
+            remap_cits(a.citations)
+
     for k in new.personnes:
         p = ctx.tree.personnes[mapping[k]]
         remap_cits(p.citations)
+        remap_assos(p.associations)
         for n in p.noms:
             remap_cits(n.citations)
         for e in p.evenements:
             remap_cits(e.citations)
+            remap_assos(e.associations)
     for k in new.familles:
         f = ctx.tree.familles[mapping[k]]
         remap_cits(f.citations)
         for e in f.evenements:
             remap_cits(e.citations)
+            remap_assos(e.associations)
         for c in f.enfants:
             remap_cits(c.citations)
     ctx.summary.append(f"Import : {len(new.personnes)} personnes ajoutées (renumérotées) — "
@@ -541,9 +654,9 @@ def op_remplacer_arbre(ctx: Ctx, o: dict) -> None:
 OPS = {name[3:]: fn for name, fn in globals().items() if name.startswith("op_")}
 
 
-def apply_ops(tree: Tree, ops: list[dict]) -> Ctx:
+def apply_ops(tree: Tree, ops: list[dict], exiger_source: bool = True) -> Ctx:
     """Applique les opérations sur une COPIE de l'arbre ; lève OpError si l'une échoue."""
-    ctx = Ctx(copy.deepcopy(tree))
+    ctx = Ctx(copy.deepcopy(tree), exiger_source)
     for i, o in enumerate(ops, 1):
         name = o.get("op")
         if name not in OPS:

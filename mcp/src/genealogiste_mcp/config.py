@@ -39,6 +39,7 @@ class Config:
     fs_user: str = ""
     fs_password: str = ""
     strict_evidence: bool = False
+    exiger_source: bool = True  # règle de métier : pas de fait sans source sauf motif explicite
     cog_mvt_url: str = "https://www.insee.fr/fr/statistiques/fichier/7766585/v_mvt_commune_2024.csv"
     cog_communes_url: str = "https://www.insee.fr/fr/statistiques/fichier/7766585/v_commune_depuis_1943.csv"
     http_timeout: float = 30.0
@@ -91,6 +92,7 @@ def load_config() -> Config:
         fs_user=env("GENEALOGISTE_FS_USER", ""),
         fs_password=env("GENEALOGISTE_FS_PASSWORD", ""),
         strict_evidence=env("GENEALOGISTE_STRICT", "0") in ("1", "true", "oui"),
+        exiger_source=env("GENEALOGISTE_EXIGER_SOURCE", "1") not in ("0", "false", "non"),
         offline=env("GENEALOGISTE_OFFLINE", "0") in ("1", "true", "oui"),
     )
     if env("GENEALOGISTE_USER_AGENT"):

@@ -12,6 +12,7 @@ Mode strict (GENEALOGISTE_STRICT=1) : chaque groupe vaut 1 ; confirmé = 3 group
 
 from __future__ import annotations
 
+from .citations import format_citation
 from .models import UNIQUE_EVENTS, Citation, Event, Tree
 from .normalize.dates import compare, parse_date
 from .normalize.places import place_similarity
@@ -27,10 +28,17 @@ def _norm_page(p: str) -> str:
 
 
 def citation_weight(c: Citation, tree: Tree, strict: bool = False) -> float:
+    """Poids d'une citation. Règle de métier : on ne compte que ce qu'on a vu.
+
+    - acte « non vu » (cité d'après une autre source) : 0, c'est une piste ;
+    - acte vu seulement par un index/relevé/transcription : traité comme une source dérivée (1 au plus).
+    """
     src = tree.sources.get(c.source)
     stype = c.type_source if c.type_source != "indeterminee" else (src.type_source if src else "indeterminee")
-    if stype == "composite" or c.preuve == "negative":
+    if c.consultation == "non_vu" or stype == "composite" or c.preuve == "negative":
         return 0.0
+    if c.consultation in ("index", "transcription") and stype == "originale":
+        stype = "derivee"
     if strict:
         return 1.0
     if stype == "originale" and c.information == "primaire" and c.preuve == "directe":
@@ -70,7 +78,8 @@ def assess_citations(citations: list[Citation], tree: Tree, strict: bool = False
             "citations": [
                 {"source": c.source, "titre": tree.sources[c.source].titre if c.source in tree.sources else "?",
                  "page": c.page, "type_source": c.type_source, "information": c.information,
-                 "preuve": c.preuve, "qualite": c.qualite}
+                 "preuve": c.preuve, "qualite": c.qualite, "vu": c.consultation or "non précisé",
+                 "reference": format_citation(tree, c)}
                 for c in cits
             ],
         })
@@ -80,8 +89,14 @@ def assess_citations(citations: list[Citation], tree: Tree, strict: bool = False
         statut = ("confirme" if points >= 3 and indep >= 2 else "probable" if points >= 2
                   else "hypothese" if points >= 1 else "non_source")
     pistes = [d for d in details if d["poids"] == 0]
-    return {"statut": statut, "points": points, "sources_independantes": indep, "groupes": details,
-            "pistes_non_probantes": len(pistes)}
+    out = {"statut": statut, "points": points, "sources_independantes": indep, "groupes": details,
+           "pistes_non_probantes": len(pistes)}
+    unseen = [c for c in citations if c.consultation == "non_vu"]
+    if unseen:
+        out["actes_a_voir"] = [format_citation(tree, c, False) for c in unseen]
+    if citations and not any(c.consultation for c in citations):
+        out["avertissement"] = "Préciser pour chaque citation ce qui a été vu (original, image, index, non vu)."
+    return out
 
 
 def events_conflict(a: Event, b: Event) -> list[str]:
@@ -145,6 +160,8 @@ def assess_person(tree: Tree, pid: str, strict: bool = False) -> list[dict]:
         r = assess_event(e, tree, conflicts, strict)
         fact = {"fait": e.type, "uid": e.uid, "date": e.date, "lieu": e.lieu.nom if e.lieu else "",
                 "valeur": e.valeur, **r}
+        if e.associations:
+            fact["associations"] = [a.libelle() for a in e.associations]
         if r["statut"] not in ("confirme", "refute"):
             fact["prochaine_source"] = next_source_hint(e.type, e.date, e.lieu.nom if e.lieu else "")
         facts.append(fact)
@@ -164,6 +181,8 @@ def assess_person(tree: Tree, pid: str, strict: bool = False) -> list[dict]:
             r = assess_event(e, tree, fconf, strict)
             fact = {"fait": e.type, "famille": fam.id, "uid": e.uid, "date": e.date,
                     "lieu": e.lieu.nom if e.lieu else "", **r}
+            if e.associations:
+                fact["associations"] = [a.libelle() for a in e.associations]
             if r["statut"] not in ("confirme", "refute"):
                 fact["prochaine_source"] = next_source_hint(e.type, e.date, e.lieu.nom if e.lieu else "")
             facts.append(fact)

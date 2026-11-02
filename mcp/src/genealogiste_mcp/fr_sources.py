@@ -47,6 +47,9 @@ def next_source_hint(fact: str, when: str = "", where: str = "") -> list[dict]:
         out.append(d)
 
     civil = y is None or y >= 1792
+    if fact in ("CHR", "BAPM") and (y is None or y >= 1792):
+        add(f"Registre de catholicité (baptême){lieu}", "archives diocésaines ou paroisse (registres après 1792)",
+            "acte religieux : parrain, marraine, date du baptême (distinct de l'état civil)")
     if fact in ("BIRT", "CHR", "BAPM", "FILIATION"):
         if civil:
             add(f"Acte de naissance{lieu}", SERIES["etat_civil"],

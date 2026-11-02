@@ -28,6 +28,22 @@ EVENT_LABELS = {**INDI_EVENTS, **FAM_EVENTS}
 UNIQUE_EVENTS = {"BIRT", "DEAT", "BURI", "CREM", "CHR", "BAPM"}
 
 SOURCE_TYPES = ("originale", "derivee", "composite")
+# Ce qui a réellement été consulté : on ne cite pas un acte qu'on n'a pas vu
+CONSULTATIONS = ("original", "image", "transcription", "index", "non_vu")
+# Rôles GEDCOM 7 (ROLE) ; le détail français va dans « detail » (PHRASE)
+ROLES = ("WITN", "GODP", "CLERGY", "OFFICIATOR", "FATH", "MOTH", "PARENT", "HUSB", "WIFE", "SPOU", "CHIL",
+         "FRIEND", "NGHBR", "MULTIPLE", "OTHER")
+ROLE_FR = {
+    "temoin": ("WITN", "Témoin"), "parrain": ("GODP", "Parrain"), "marraine": ("GODP", "Marraine"),
+    "declarant": ("OTHER", "Déclarant"), "officier": ("OFFICIATOR", "Officier d'état civil"),
+    "maire": ("OFFICIATOR", "Maire"), "pretre": ("CLERGY", "Prêtre"), "cure": ("CLERGY", "Curé"),
+    "vicaire": ("CLERGY", "Vicaire"), "notaire": ("OFFICIATOR", "Notaire"), "voisin": ("NGHBR", "Voisin"),
+    "ami": ("FRIEND", "Ami"), "mentionne": ("OTHER", "Mentionné"), "present": ("OTHER", "Présent"),
+}
+ROLE_LABELS = {"WITN": "Témoin", "GODP": "Parrain/marraine", "CLERGY": "Ecclésiastique",
+               "OFFICIATOR": "Officiant", "FATH": "Père", "MOTH": "Mère", "PARENT": "Parent", "HUSB": "Époux",
+               "WIFE": "Épouse", "SPOU": "Conjoint", "CHIL": "Enfant", "FRIEND": "Ami", "NGHBR": "Voisin",
+               "MULTIPLE": "Plusieurs", "OTHER": "Autre"}
 INFO_TYPES = ("primaire", "secondaire", "indeterminee")
 EVIDENCE_TYPES = ("directe", "indirecte", "negative")
 STATUTS = ("confirme", "probable", "hypothese", "contradictoire", "refute", "non_source")
@@ -72,6 +88,23 @@ class Citation(_Base):
     preuve: str = "directe"  # directe | indirecte | negative
     date_consultation: str = ""
     note: str = ""
+    consultation: str = ""  # original | image | transcription | index | non_vu ("" = non précisé)
+    extra: list = field(default_factory=list)
+
+
+@dataclass
+class Association(_Base):
+    """Témoin, parrain/marraine, déclarant, officier… cité dans un acte (GEDCOM ASSO)."""
+    personne: str = ""  # xref d'une personne de l'arbre, ou "" si seulement nommée dans l'acte
+    nom: str = ""  # nom tel qu'écrit dans l'acte (obligatoire si personne vide)
+    role: str = "WITN"  # rôle GEDCOM 7 (ROLES)
+    detail: str = ""  # précision en français : « Parrain, oncle paternel, 45 ans, tonnelier »
+    citations: list[Citation] = field(default_factory=list)
+    extra: list = field(default_factory=list)
+
+    def libelle(self) -> str:
+        base = self.detail or ROLE_LABELS.get(self.role, self.role)
+        return f"{base} : {self.nom or self.personne}"
 
 
 @dataclass
@@ -88,6 +121,7 @@ class Place(_Base):
     latitude: float | None = None
     longitude: float | None = None
     paroisse: str = ""
+    extra: list = field(default_factory=list)
 
 
 @dataclass
@@ -101,8 +135,10 @@ class Event(_Base):
     cause: str = ""
     note: str = ""
     citations: list[Citation] = field(default_factory=list)
+    associations: list[Association] = field(default_factory=list)
     uid: str = field(default_factory=new_uid)
     statut_manuel: Assertion | None = None
+    extra: list = field(default_factory=list)
 
 
 @dataclass
@@ -114,6 +150,7 @@ class Name(_Base):
     citations: list[Citation] = field(default_factory=list)
     uid: str = field(default_factory=new_uid)
     statut_manuel: Assertion | None = None
+    extra: list = field(default_factory=list)
 
     @property
     def complet(self) -> str:
@@ -140,6 +177,7 @@ class Person(_Base):
     famc: list[str] = field(default_factory=list)
     fams: list[str] = field(default_factory=list)
     citations: list[Citation] = field(default_factory=list)  # citations générales
+    associations: list[Association] = field(default_factory=list)  # ASSO de niveau individu (parrains…)
     medias: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
     vivant: str = ""  # "" = déduit | "Y" | "N" (forçage manuel)
@@ -184,6 +222,7 @@ class Family(_Base):
 class Repository(_Base):
     id: str
     nom: str = ""
+    sigle: str = ""  # AD17, AN, SHD…
     adresse: str = ""
     url: str = ""
 
@@ -214,6 +253,8 @@ class Media(_Base):
 
 _NESTED = {
     ("Event", "lieu"): Place, ("Event", "citations"): Citation, ("Event", "statut_manuel"): Assertion,
+    ("Event", "associations"): Association, ("Person", "associations"): Association,
+    ("Association", "citations"): Citation,
     ("Name", "citations"): Citation, ("Name", "statut_manuel"): Assertion,
     ("ChildLink", "citations"): Citation, ("ChildLink", "statut_manuel"): Assertion,
     ("Person", "noms"): Name, ("Person", "evenements"): Event, ("Person", "citations"): Citation,

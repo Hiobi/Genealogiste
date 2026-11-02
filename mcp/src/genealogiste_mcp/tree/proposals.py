@@ -27,9 +27,10 @@ class ProposalError(RuntimeError):
 
 
 class Proposals:
-    def __init__(self, store: TreeStore, directory: Path):
+    def __init__(self, store: TreeStore, directory: Path, exiger_source: bool = True):
         self.store = store
         self.dir = Path(directory)
+        self.exiger_source = exiger_source
 
     def _path(self, token: str) -> Path:
         if not token.isalnum():
@@ -43,7 +44,7 @@ class Proposals:
         tree = self.store.load()
         before = self.store.text()
         try:
-            ctx = apply_ops(tree, operations)
+            ctx = apply_ops(tree, operations, self.exiger_source)
         except OpError as exc:
             raise ProposalError(str(exc)) from exc
         after = write_gedcom(ctx.tree)
@@ -58,8 +59,9 @@ class Proposals:
         for sid in cited:
             s = ctx.tree.sources.get(sid)
             if s:
-                src_lines.append(f"- {sid} : {s.titre}" + (f", cote {s.cote}" if s.cote else "")
-                                 + (f", {s.url}" if s.url else ""))
+                repo = ctx.tree.depots.get(s.depot) if s.depot else None
+                src_lines.append(f"- {sid} : " + ", ".join(x for x in (
+                    (repo.sigle or repo.nom) if repo else "", s.cote, s.titre, s.url) if x))
             else:
                 src_lines.append(f"- {sid}")
         token = secrets.token_hex(8)
@@ -85,6 +87,7 @@ class Proposals:
             "references_creees": ctx.refs,
             "diff": "\n".join(diff[:MAX_DIFF_LINES]) + ("\n… (diff tronqué)" if truncated else ""),
             "nouvelles_alertes_coherence": new_issues,
+            "avertissements": ctx.warnings,
             "message_de_commit": message,
             "consigne": "Présenter ce diff à l'utilisateur et n'appeler arbre_appliquer qu'après son accord explicite.",
         }
