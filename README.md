@@ -66,6 +66,13 @@ qu'un. Les hooks d'approbation s'appliquent aux deux (motif `mcp__.*genealogiste
 Gramps Web : épingler `GRAMPSWEB_VERSION` pour la production ; créer le compte administrateur au premier
 accès, puis renseigner `GENEALOGISTE_GRAMPS_*`.
 
+### Portainer
+
+Stacks → Add stack → Repository : URL `https://github.com/hiobi/sosa`, compose path
+`docker-compose.portainer.yml`, variables d'après `portainer/stack.env.example`. La stack démarre le MCP et
+Gramps Web ensemble (sans profils). Le MCP n'ayant pas d'authentification, il reste lié à `127.0.0.1` par
+défaut ; synchroniser l'interface avec les outils `gramps_pousser` / `gramps_tirer`.
+
 ## Commandes
 
 Les commandes d'un plugin sont préfixées par son nom : `/genealogiste:cherche` (ou `/cherche` sans conflit).
