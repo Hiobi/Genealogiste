@@ -1,0 +1,25 @@
+{
+  "description": "Lecture des sources sans approbation ; toute écriture (arbre, Gramps Web) ou usage d'identifiants exige l'accord explicite de l'utilisateur.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "mcp__.*genealogiste.*__(matchid_recherche|matchid_appariement_statut|wikitree_.*|gallica_.*|wikidata_.*|geo_.*|recherche_multi|liens_recherche|cotes_a_consulter|source_collee|normaliser_.*|comparer_.*|convertir_date|naissance_depuis_age|communicabilite|prochaine_source|journal_lister|journal_ajouter|arbre_(info|recherche|personne|fiche|statut_preuve|coherence|comparer|ascendance|descendance|lacunes|vivant|historique|proposer|annuler_proposition|importer_gedcom)|gramps_recherche|gramps_personne)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\",\"permissionDecisionReason\":\"genealogiste : lecture seule ou proposition sans écriture\"}}'"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__.*genealogiste.*__(arbre_appliquer|gramps_pousser|gramps_tirer|familysearch_exporter|matchid_appariement_csv)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"ask\",\"permissionDecisionReason\":\"genealogiste : écriture ou identifiants — validation explicite requise (vérifiez le diff présenté)\"}}'"
+          }
+        ]
+      }
+    ]
+  }
+}

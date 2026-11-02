@@ -1,0 +1,66 @@
+# Serveur MCP genealogiste (HTTP streamable) + Gramps Web optionnel (profil « gramps »).
+#   docker compose up -d                    -> MCP sur http://localhost:8765/mcp
+#   docker compose --profile gramps up -d   -> + Gramps Web sur http://localhost:5055
+name: genealogiste
+
+services:
+  mcp:
+    build: ./mcp
+    image: genealogiste-mcp:local
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8765:8765"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      GENEALOGISTE_DATA_DIR: /data
+      GENEALOGISTE_CACHE: /cache/cache.sqlite
+      GENEALOGISTE_GRAMPS_URL: ${GENEALOGISTE_GRAMPS_URL:-http://grampsweb:5000}
+    volumes:
+      - ./data:/data
+      - mcp_cache:/cache
+
+  grampsweb: &grampsweb
+    profiles: ["gramps"]
+    image: ghcr.io/gramps-project/grampsweb:${GRAMPSWEB_VERSION:-latest}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5055:5000"
+    environment:
+      GRAMPSWEB_TREE: "Genealogiste"
+      GRAMPSWEB_CELERY_CONFIG__broker_url: "redis://grampsweb_redis:6379/0"
+      GRAMPSWEB_CELERY_CONFIG__result_backend: "redis://grampsweb_redis:6379/0"
+      GRAMPSWEB_RATELIMIT_STORAGE_URI: "redis://grampsweb_redis:6379/1"
+    depends_on:
+      - grampsweb_redis
+    volumes:
+      - gramps_users:/app/users
+      - gramps_index:/app/indexdir
+      - gramps_thumb_cache:/app/thumbnail_cache
+      - gramps_cache:/app/cache
+      - gramps_secret:/app/secret
+      - gramps_db:/root/.gramps/grampsdb
+      - gramps_media:/app/media
+      - gramps_tmp:/tmp
+
+  grampsweb_celery:
+    <<: *grampsweb
+    ports: []
+    command: celery -A gramps_webapi.celery worker --loglevel=INFO --concurrency=2
+
+  grampsweb_redis:
+    profiles: ["gramps"]
+    image: docker.io/library/redis:7.2-alpine
+    restart: unless-stopped
+
+volumes:
+  mcp_cache:
+  gramps_users:
+  gramps_index:
+  gramps_thumb_cache:
+  gramps_cache:
+  gramps_secret:
+  gramps_db:
+  gramps_media:
+  gramps_tmp:

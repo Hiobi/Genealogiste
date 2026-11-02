@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<srw:searchRetrieveResponse xmlns:srw="http://www.loc.gov/zing/srw/">
+<srw:version>1.2</srw:version><srw:numberOfRecords>1</srw:numberOfRecords>
+<srw:records><srw:record><srw:recordSchema>oai_dc</srw:recordSchema><srw:recordData>
+<oai_dc:dc xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xmlns:dc="http://purl.org/dc/elements/1.1/">
+<dc:title>L'Écho rochelais</dc:title><dc:date>1885-01-10</dc:date><dc:type xml:lang="fre">fascicule</dc:type>
+<dc:identifier>https://gallica.bnf.fr/ark:/12148/bpt6k1234567x</dc:identifier>
+</oai_dc:dc></srw:recordData></srw:record></srw:records></srw:searchRetrieveResponse>

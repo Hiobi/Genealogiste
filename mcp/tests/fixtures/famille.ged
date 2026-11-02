@@ -1,0 +1,171 @@
+0 HEAD
+1 GEDC
+2 VERS 7.0
+1 LANG fr
+0 @I1@ INDI
+1 NAME Jean /MARTIN/
+2 GIVN Jean
+2 SURN MARTIN
+2 SOUR @S1@
+3 PAGE Acte n° 45, vue 12/80
+1 SEX M
+1 BIRT
+2 DATE 12 MAR 1820
+2 PLAC Rochefort, Charente-Maritime, France
+3 EXID 17299
+4 TYPE http://id.insee.fr/geo/commune
+2 SOUR @S1@
+3 PAGE Naissances 1820, acte n° 45, vue 12/80
+3 QUAY 3
+3 _TYPE originale
+3 _INFO primaire
+2 SOUR @S2@
+3 PAGE Table décennale 1813-1822, M
+3 _TYPE derivee
+3 _INFO secondaire
+2 SOUR @S3@
+3 PAGE Recensement 1851, Rochefort, f° 12
+3 DATA
+4 TEXT Martin Jean, 31 ans, tonnelier
+3 _TYPE originale
+3 _INFO secondaire
+3 _PREUVE indirecte
+2 UID 11111111-1111-4111-8111-111111111111
+1 OCCU tonnelier
+2 DATE 1851
+2 SOUR @S3@
+3 PAGE Recensement 1851, Rochefort, f° 12
+3 _TYPE originale
+2 UID 11111111-1111-4111-8111-111111111112
+1 DEAT
+2 DATE 4 JAN 1885
+2 PLAC Rochefort, Charente-Maritime, France
+2 AGE 64y
+2 UID 11111111-1111-4111-8111-111111111113
+1 FAMC @F2@
+1 FAMS @F1@
+1 UID aaaaaaaa-0000-4000-8000-000000000001
+0 @I2@ INDI
+1 NAME Marie /DUPONT/
+1 SEX F
+1 BIRT
+2 DATE ABT 1824
+2 UID 22222222-2222-4222-8222-222222222221
+1 DEAT
+2 DATE 10 FEB 1850
+2 PLAC Rochefort, Charente-Maritime, France
+2 SOUR @S4@
+3 PAGE Arbre en ligne de X
+3 _TYPE composite
+2 UID 22222222-2222-4222-8222-222222222222
+1 FAMS @F1@
+1 UID aaaaaaaa-0000-4000-8000-000000000002
+0 @I3@ INDI
+1 NAME Pierre /MARTIN/
+1 SEX M
+1 BIRT
+2 DATE 3 MAY 1846
+2 PLAC Rochefort, Charente-Maritime, France
+2 SOUR @S1@
+3 PAGE Naissances 1846, acte n° 120
+3 _TYPE originale
+3 _INFO primaire
+2 UID 33333333-3333-4333-8333-333333333331
+1 BIRT
+2 DATE 1848
+2 SOUR @S4@
+3 PAGE Arbre en ligne de X
+3 _TYPE composite
+2 UID 33333333-3333-4333-8333-333333333332
+1 FAMC @F1@
+1 UID aaaaaaaa-0000-4000-8000-000000000003
+0 @I4@ INDI
+1 NAME Jean /MARTIN/
+1 SEX M
+1 BIRT
+2 DATE ABT 1821
+2 PLAC Rochefort, Charente-Maritime, France
+2 UID 44444444-4444-4444-8444-444444444441
+1 FAMC @F3@
+1 UID aaaaaaaa-0000-4000-8000-000000000004
+0 @I5@ INDI
+1 NAME Louise /MARTIN/
+1 SEX F
+1 BIRT
+2 DATE 15 AUG 1852
+2 UID 55555555-5555-4555-8555-555555555551
+1 FAMC @F1@
+1 UID aaaaaaaa-0000-4000-8000-000000000005
+0 @I6@ INDI
+1 NAME Jacques /MARTIN/
+1 SEX M
+1 BIRT
+2 DATE FRENCH_R 12 VEND 3
+2 PLAC Rochefort, Charente-Maritime, France
+2 UID 66666666-6666-4666-8666-666666666661
+1 FAMS @F2@
+1 UID aaaaaaaa-0000-4000-8000-000000000006
+0 @I7@ INDI
+1 NAME Pierre /BERNARD/
+1 SEX M
+1 BIRT
+2 DATE 1795
+2 UID 77777777-7777-4777-8777-777777777771
+1 FAMS @F3@
+1 UID aaaaaaaa-0000-4000-8000-000000000007
+0 @I9@ INDI
+1 NAME Lucas /MARTIN/
+1 SEX M
+1 BIRT
+2 DATE 1990
+2 UID 99999999-9999-4999-8999-999999999991
+1 UID aaaaaaaa-0000-4000-8000-000000000009
+0 @F1@ FAM
+1 HUSB @I1@
+1 WIFE @I2@
+1 CHIL @I3@
+2 _SOUR @S1@
+3 PAGE Naissances 1846, acte n° 120
+3 _TYPE originale
+3 _INFO primaire
+1 CHIL @I5@
+1 MARR
+2 DATE 20 JUN 1845
+2 PLAC Rochefort, Charente-Maritime, France
+2 SOUR @S1@
+3 PAGE Mariages 1845, acte n° 30
+3 _TYPE originale
+3 _INFO primaire
+2 UID ffffffff-1111-4111-8111-111111111111
+1 UID bbbbbbbb-0000-4000-8000-000000000001
+0 @F2@ FAM
+1 HUSB @I6@
+1 CHIL @I1@
+1 UID bbbbbbbb-0000-4000-8000-000000000002
+0 @F3@ FAM
+1 HUSB @I7@
+1 CHIL @I4@
+1 UID bbbbbbbb-0000-4000-8000-000000000003
+0 @S1@ SOUR
+1 TITL Registres d'état civil de Rochefort
+1 REPO @R1@
+2 CALN 2 E 299
+1 _TYPE originale
+0 @S2@ SOUR
+1 TITL Tables décennales de Rochefort 1813-1822
+1 REPO @R1@
+2 CALN 2 E 299/TD
+1 _TYPE derivee
+1 _ORIG @S1@
+0 @S3@ SOUR
+1 TITL Recensement de population, Rochefort, 1851
+1 REPO @R1@
+2 CALN 6 M 312
+1 _TYPE originale
+0 @S4@ SOUR
+1 TITL Arbre en ligne (Geneanet, utilisateur X)
+1 _URL https://gw.geneanet.org/exemple
+1 _TYPE composite
+0 @R1@ REPO
+1 NAME Archives départementales de la Charente-Maritime
+0 TRLR

@@ -1,0 +1,11 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+mcp/.venv/
+data/*
+!data/README.md
+!data/.gitkeep
+*.sqlite

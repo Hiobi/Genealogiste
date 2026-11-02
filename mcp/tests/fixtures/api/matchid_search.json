@@ -1,0 +1,8 @@
+{"request":{"lastName":"Martin","firstName":"Jean"},"response":{"total":2,"size":2,"page":1,"persons":[
+{"score":0,"source":"1985","sourceLine":12,"id":"abc123","name":{"first":["Jean","Pierre"],"last":"Martin"},"sex":"M",
+ "birth":{"date":"19201212","location":{"city":["Rochefort"],"code":"17299","departmentCode":"17","country":"France"}},
+ "death":{"date":"19850104","certificateId":"12","age":64,"location":{"city":"Rochefort","code":"17299","departmentCode":"17","country":"France"}}},
+{"score":0,"source":"1990","sourceLine":99,"id":"def456","name":{"first":["Jean"],"last":"Martin"},"sex":"M",
+ "birth":{"date":"19350101","location":{"city":"Lille","code":"59350","departmentCode":"59","country":"France"}},
+ "death":{"date":"19900101","certificateId":"7","age":55,"location":{"city":"Lille","code":"59350","departmentCode":"59","country":"France"}}}
+]}}
