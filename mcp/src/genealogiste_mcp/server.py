@@ -18,7 +18,7 @@ from .config import Config, load_config
 from .export import charts
 from .export.fiche import fiche_markdown, gaps, tree_gaps
 from .export.geneweb import to_geneweb
-from .export.gramps_xml import to_gramps_xml
+from .export.gramps_xml import to_gramps_xml_stats
 from .export.rapport import proof_report
 from .fr_sources import communicability, next_source_hint
 from .gedcom.mapping import read_gedcom, write_gedcom
@@ -605,7 +605,7 @@ def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", gene
     elif format == "geneweb":
         content, stats = to_geneweb(t, a.config.strict_evidence, temoins_en_personnes)
     elif format == "gramps":
-        content = to_gramps_xml(t)
+        content, stats = to_gramps_xml_stats(t, a.config.strict_evidence)
     elif format == "mermaid_asc":
         content = charts.mermaid_ancestors(t, id, generations, hidden)
     elif format == "mermaid_desc":
@@ -625,6 +625,10 @@ def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", gene
     if format == "geneweb":
         res["statistiques"] = stats
         res["import"] = f"ged2gwb {out.name} -o <base> -f   (voir docs/geneweb.md)"
+    if format == "gramps":
+        res["statistiques"] = stats
+        res["import"] = ("Gramps Web : Paramètres > Administration > Importer (arbre vide : un second import "
+                         "duplique tout)")
     return res
 
 
