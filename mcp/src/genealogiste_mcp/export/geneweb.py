@@ -227,25 +227,30 @@ class _Builder:
         return nodes
 
     def person_note(self, pid: str, facts: list[dict]) -> str:
-        lines = ["Fiche de preuve (plugin genealogiste) — réf. " + pid]
-        for f in facts:
-            if f["fait"] in ("nom",):
-                continue
-            label = "Filiation" if f["fait"] == "filiation" else EVENT_LABELS.get(f["fait"], f["fait"]).capitalize()
-            when = f" {f['date']}" if f.get("date") else ""
-            lines.append(f"{ICON[f['statut']]} {label}{when} : {LABELS[f['statut']]}")
-        todo, seen = [], set()
-        for f in facts:
-            if f.get("prochaine_source") and f["fait"] not in seen:
-                seen.add(f["fait"])
-                todo.append(f)
-        if todo:
-            lines.append("Prochaines sources :")
-            for f in todo[:6]:
-                s = f["prochaine_source"][0]
-                label = "filiation" if f["fait"] == "filiation" else EVENT_LABELS.get(f["fait"], f["fait"])
-                lines.append(f"- {label} : {s['source']} [{s['cote_typique']}]")
-        return "\n".join(lines)
+        return proof_summary(pid, facts)
+
+
+def proof_summary(pid: str, facts: list[dict]) -> str:
+    """Fiche de preuve synthétique d'une personne (statut par fait, prochaines sources)."""
+    lines = ["Fiche de preuve (plugin genealogiste) — réf. " + pid]
+    for f in facts:
+        if f["fait"] in ("nom",):
+            continue
+        label = "Filiation" if f["fait"] == "filiation" else EVENT_LABELS.get(f["fait"], f["fait"]).capitalize()
+        when = f" {f['date']}" if f.get("date") else ""
+        lines.append(f"{ICON[f['statut']]} {label}{when} : {LABELS[f['statut']]}")
+    todo, seen = [], set()
+    for f in facts:
+        if f.get("prochaine_source") and f["fait"] not in seen:
+            seen.add(f["fait"])
+            todo.append(f)
+    if todo:
+        lines.append("Prochaines sources :")
+        for f in todo[:6]:
+            s = f["prochaine_source"][0]
+            label = "filiation" if f["fait"] == "filiation" else EVENT_LABELS.get(f["fait"], f["fait"])
+            lines.append(f"- {label} : {s['source']} [{s['cote_typique']}]")
+    return "\n".join(lines)
 
 
 def to_geneweb(tree: Tree, strict: bool = False, temoins_en_personnes: bool = False) -> tuple[str, dict]:

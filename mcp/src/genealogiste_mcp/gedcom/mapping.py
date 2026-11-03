@@ -271,7 +271,14 @@ def read_gedcom(text: str) -> tuple[Tree, dict]:
                     else:
                         p.extra.append(c.to_dict())
                 elif c.tag == "OBJE":
-                    p.medias.append(strip_xref(c.value))
+                    if strip_xref(c.value):
+                        p.medias.append(strip_xref(c.value))
+                    elif c.first("FILE"):  # OBJE « en ligne » (5.5.1) -> enregistrement média
+                        mid = tree.next_id("medias")
+                        fn = c.first("FILE")
+                        tree.medias[mid] = Media(id=mid, fichier=fn.value, format=fn.val("FORM") or c.val("FORM"),
+                                                 titre=fn.val("TITL") or c.val("TITL"))
+                        p.medias.append(mid)
                 elif c.tag == "NOTE":
                     p.notes.append(c.value)
                 elif c.tag == "SNOTE":
@@ -325,6 +332,10 @@ def read_gedcom(text: str) -> tuple[Tree, dict]:
     for fam in tree.familles.values():
         for link in fam.enfants:
             link.filiation = pedi.get((fam.id, link.enfant), "")
+    n_fam_witnesses = _family_witnesses(tree)
+    if n_fam_witnesses:
+        warnings.append(f"{n_fam_witnesses} témoin(s) d'union (ASSO vers une famille, GeneWeb) rattaché(s) à "
+                        "l'événement de la famille")
     if rd.inline:
         warnings.append(f"{len(rd.inline)} source(s) sans enregistrement (texte libre) converties en sources")
     n_assos = sum(len(p.associations) + sum(len(e.associations) for e in p.evenements)
@@ -339,6 +350,29 @@ def read_gedcom(text: str) -> tuple[Tree, dict]:
         "avertissements": warnings,
     }
     return tree, info
+
+
+def _family_witnesses(tree: Tree) -> int:
+    """GeneWeb exporte « X est témoin du mariage de F » sous X : `1 ASSO @F@ / 2 TYPE FAM / 2 RELA witness`.
+    Invalide en GEDCOM 7 (ASSO pointe une personne) : on le rattache à l'événement de la famille (mariage,
+    sinon premier événement) comme association de X. Sans événement, le nœud reste brut dans `extra`."""
+    moved = 0
+    for p in tree.personnes.values():
+        keep = []
+        for x in p.extra:
+            node = Node.from_dict(x)
+            fam = tree.familles.get(strip_xref(node.value)) if node.tag == "ASSO" else None
+            if not fam or node.val("TYPE").upper() != "FAM" or not fam.evenements:
+                keep.append(x)
+                continue
+            ev = next((e for e in fam.evenements if e.type == "MARR"), fam.evenements[0])
+            rela = node.val("RELA").strip()
+            role, detail = RELA_IN.get(rela.lower(), ("OTHER", rela))
+            if not any(a.personne == p.id and a.role == role for a in ev.associations):
+                ev.associations.append(Association(personne=p.id, role=role, detail=node.val("NOTE") or detail))
+            moved += 1  # doublon d'un ASSO déjà présent sous l'événement : simplement retiré
+        p.extra = keep
+    return moved
 
 
 # ============================================================================ écriture
@@ -508,7 +542,8 @@ def to_nodes(tree: Tree, version: int = 7) -> list[Node]:
         for c in p.citations:
             _w_citation(r, c)
         for m in p.medias:
-            r.add("OBJE", f"@{m}@")
+            if m:
+                r.add("OBJE", f"@{m}@")
         for note in notes:
             if note.startswith("@") and note.endswith("@"):
                 r.add("SNOTE" if version >= 7 else "NOTE", note)

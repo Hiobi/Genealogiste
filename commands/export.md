@@ -14,3 +14,11 @@ sources en notes, témoins et parrains en `ASSO`. Proposer `temoins_en_personnes
 voir les témoins seulement nommés comme fiches dans GeneWeb. Rappeler la commande d'import
 (`ged2gwb fichier.ged -o base -f`, voir `docs/geneweb.md`) et que la base GeneWeb est reconstruite à chaque
 export.
+
+**gramps** : Gramps XML (`.gramps`), format natif de Gramps / Gramps Web, à préférer au GEDCOM pour Gramps
+(son import GEDCOM 7 ignore les extensions `_…`, les témoins d'événement et le détail des OCCU/RESI).
+Conserve : URL et type des sources, classification et transcription des citations, témoins/parrains de
+l'arbre comme références d'événement avec leur rôle, parrains en associations, notes, statut de preuve
+(note de recherche + étiquette « Preuve : … »), coordonnées et code INSEE des lieux. Rappeler qu'un second
+import dans un arbre non vide duplique tout. Pour une instance Gramps Web privée, l'utilisateur peut demander
+`masquer_vivants=False`.
