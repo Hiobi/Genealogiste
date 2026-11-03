@@ -32,10 +32,13 @@ class Config:
     wikitree_app_id: str = ""
     matchid_token: str = ""
     user_agent: str = "genealogiste-mcp/0.1 (plugin Claude Code; usage genealogique personnel)"
-    backend: str = "gedcom"  # gedcom | grampsweb
+    backend: str = "fichier"  # fichier (GEDCOM 7 + Git, défaut) | gramps (Gramps Web = source de vérité)
     gramps_url: str = ""
     gramps_user: str = ""
     gramps_password: str = ""
+    gramps_ttl: float = 30.0  # secondes entre deux rafraîchissements en lecture (mode gramps)
+    git_mirror: bool = False  # mode gramps : miroir GEDCOM 7 versionné de l'arbre Gramps
+    git_remote: str = ""  # dépôt distant optionnel (privé !) du répertoire de données
     fs_user: str = ""
     fs_password: str = ""
     strict_evidence: bool = False
@@ -67,6 +70,23 @@ class Config:
         return self.data_dir / "exports"
 
 
+BACKENDS = {"fichier": "fichier", "file": "fichier", "gedcom": "fichier", "": "fichier",
+            "gramps": "gramps", "grampsweb": "gramps", "gramps-web": "gramps"}
+
+
+def backend_name(value: str) -> str:
+    v = (value or "").strip().lower()
+    if v not in BACKENDS:
+        raise ValueError(f"GENEALOGISTE_BACKEND={value!r} : valeurs possibles fichier | gramps")
+    return BACKENDS[v]
+
+
+def _bool(value: str | None, default: bool = False) -> bool:
+    if value is None or value == "":
+        return default
+    return value.strip().lower() in ("1", "true", "oui", "yes", "on")
+
+
 def load_config() -> Config:
     env_file = os.environ.get("GENEALOGISTE_ENV_FILE")
     if env_file:
@@ -85,10 +105,13 @@ def load_config() -> Config:
         cache_path=cache,
         wikitree_app_id=env("GENEALOGISTE_WIKITREE_APPID", ""),
         matchid_token=env("GENEALOGISTE_MATCHID_TOKEN", ""),
-        backend=env("GENEALOGISTE_BACKEND", "gedcom"),
+        backend=backend_name(env("GENEALOGISTE_BACKEND", "fichier")),
         gramps_url=env("GENEALOGISTE_GRAMPS_URL", "").rstrip("/"),
         gramps_user=env("GENEALOGISTE_GRAMPS_USER", ""),
         gramps_password=env("GENEALOGISTE_GRAMPS_PASSWORD", ""),
+        gramps_ttl=float(env("GENEALOGISTE_GRAMPS_TTL", "30") or 30),
+        git_mirror=_bool(env("GENEALOGISTE_GIT_MIRROR"), False),
+        git_remote=env("GENEALOGISTE_GIT_REMOTE", ""),
         fs_user=env("GENEALOGISTE_FS_USER", ""),
         fs_password=env("GENEALOGISTE_FS_PASSWORD", ""),
         strict_evidence=env("GENEALOGISTE_STRICT", "0") in ("1", "true", "oui"),

@@ -8,5 +8,7 @@ Journal : **$ARGUMENTS**
    wikidata, geo, cog, geneanet… ; identifiant I… ; sinon recherche texte).
 2. Afficher un tableau chronologique : date, source, opération, paramètres clés, statut
    (positif / **négatif** / erreur / manuel), nombre de résultats.
-3. Si pertinent, ajouter les derniers commits de l'arbre (`arbre_historique`) avec leur justification.
+3. Si pertinent, ajouter les dernières modifications de l'arbre (`arbre_historique` : commits en mode fichier,
+   transactions Gramps Web en mode gramps) avec leur justification. Pour en annuler une :
+   `arbre_annuler_modification(reference)`, puis `arbre_appliquer` après accord explicite.
 4. Signaler les recherches à refaire (erreurs) et les sources jamais interrogées pour la personne.

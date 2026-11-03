@@ -3,7 +3,8 @@
 Un généalogiste professionnel français dans Claude Code : recherche multi-sources (INSEE/matchID,
 WikiTree, Gallica, Wikidata, API Géo + COG historique, FamilySearch, liens Geneanet / AD / Mémoire des
 hommes), méthode du *Genealogical Proof Standard*, fact-check à sources indépendantes, détection
-d'homonymes, et arbre **GEDCOM 7 versionné en Git** où rien n'est écrit sans votre validation.
+d'homonymes, et arbre **GEDCOM 7 versionné en Git** — ou directement **Gramps Web** — où rien n'est écrit
+sans votre validation.
 
 ```
 .claude-plugin/   plugin.json, marketplace.json
@@ -13,7 +14,7 @@ skills/           methodologie-gps, sources-francaises, paleographie, droit-comm
 agents/           chercheur, verificateur (indépendant), redacteur
 hooks/            lecture des sources sans approbation ; écritures soumises à confirmation
 mcp/              serveur MCP Python (FastMCP, uv) + tests pytest
-docs/             extensions GEDCOM, opérations d'édition
+docs/             extensions GEDCOM, opérations d'édition, mode Gramps Web
 data/             point de montage Docker (contenu ignoré par Git)
 docker-compose.yml  MCP en HTTP + Gramps Web (profil optionnel)
 ```
@@ -44,7 +45,9 @@ et renseigner au minimum :
 | `GENEALOGISTE_WIKITREE_APPID` | identifiant d'application WikiTree (obligatoire pour WikiTree, libre) |
 | `GENEALOGISTE_MATCHID_TOKEN` | jeton matchID pour l'appariement CSV par lot (facultatif) |
 | `GENEALOGISTE_FS_USER` / `_PASSWORD` | FamilySearch via getmyancestors (facultatif, `uv sync --extra familysearch`) |
-| `GENEALOGISTE_GRAMPS_URL` / `_USER` / `_PASSWORD` | Gramps Web (facultatif) |
+| `GENEALOGISTE_BACKEND` | `fichier` (défaut, GEDCOM 7 + Git) ou `gramps` (Gramps Web = arbre de référence) |
+| `GENEALOGISTE_GRAMPS_URL` / `_USER` / `_PASSWORD` | Gramps Web : compte local dédié, rôle Editor |
+| `GENEALOGISTE_GIT_MIRROR` / `_GIT_REMOTE` | miroir Git de l'arbre Gramps ; dépôt distant **privé** optionnel |
 | `GENEALOGISTE_STRICT` | `1` : règle stricte 3/2/1 sources sans pondération |
 | `GENEALOGISTE_EXIGER_SOURCE` | `1` (défaut) : pas de fait ni de filiation sans citation, sauf `non_source` + motif |
 | `GENEALOGISTE_OFFLINE` | `1` : cache uniquement |
@@ -65,6 +68,14 @@ En mode Docker, désactiver le serveur stdio du plugin (`/mcp` → genealogiste 
 qu'un. Les hooks d'approbation s'appliquent aux deux (motif `mcp__.*genealogiste.*__…`).
 Gramps Web : épingler `GRAMPSWEB_VERSION` pour la production ; créer le compte administrateur au premier
 accès, puis renseigner `GENEALOGISTE_GRAMPS_*`.
+
+### Portainer
+
+Stacks → Add stack → Repository : URL `https://github.com/hiobi/sosa`, compose path
+`docker-compose.portainer.yml`, variables d'après `portainer/stack.env.example`. La stack démarre le MCP et
+Gramps Web ensemble (sans profils). Le MCP n'ayant pas d'authentification, il reste lié à `127.0.0.1` par
+défaut. Pour travailler en direct sur Gramps Web : `GENEALOGISTE_BACKEND=gramps` (voir
+[docs/gramps-web.md](docs/gramps-web.md), bascule depuis le mode fichier avec `gramps_bascule_proposer`).
 
 ## Commandes
 
@@ -136,7 +147,8 @@ skill `droit-communicabilite` et outil `communicabilite`.
 
 ```bash
 make install   # uv sync
-make test      # pytest : fixtures GEDCOM, réponses API mockées, homonymes, contradictions
+make test      # pytest : fixtures GEDCOM, réponses API mockées, faux Gramps Web, homonymes, contradictions
+make test-gramps  # intégration sur un Gramps Web jetable (Docker, données fictives)
 make lint      # ruff
 make validate  # claude plugin validate .
 ```
@@ -149,5 +161,6 @@ make validate  # claude plugin validate .
   la cote, l'utilisateur colle le résultat (`source_collee`), sans extraction automatisée (CGU).
 - L'appariement CSV matchID peut exiger un compte.
 - COG INSEE : historique des communes depuis 1943 ; avant, se reporter au dictionnaire Cassini (EHESS).
-- Backend Gramps Web : lecture, export/import GEDCOM ; l'édition fine reste dans l'arbre GEDCOM local.
+- Mode Gramps Web (v1) : pas d'envoi des médias, un seul arbre, pas de fusion native ni de lieux
+  hiérarchiques en écriture (issues #8 à #11).
 - Les cotes proposées suivent le cadre de classement réglementaire : toujours vérifier l'inventaire du service.

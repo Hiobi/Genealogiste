@@ -66,9 +66,13 @@ def test_import_real_geneweb7_export(fixtures):
     assert any(a.role == "WITN" for a in marr)
     jacques = next(p for p in tree.personnes.values() if p.nom_principal.prenoms == "Jacques")
     assert jacques.events("BIRT")[0].date == "FRENCH_R 12 VEND 3"
-    # ASSO vers une famille (renvoi GeneWeb) : conservé brut
-    assert any(x["tag"] == "ASSO" for p in tree.personnes.values() for x in p.extra)
-    assert "1 ASSO @F2@" in write_gedcom(tree)
+    # ASSO vers une famille (renvoi GeneWeb « témoin du mariage de F2 ») : rattaché au mariage de F2
+    assert not any(x["tag"] == "ASSO" for p in tree.personnes.values() for x in p.extra)
+    assert any(a.personne == "I7" and a.role == "WITN" for a in tree.familles["F2"].evenements[0].associations)
+    assert any("témoin(s) d'union" in w for w in info["avertissements"])
+    out = write_gedcom(tree)
+    assert "1 ASSO @F2@" not in out and "TYPE FAM" not in out  # GEDCOM 7 valide
+    assert "2 ASSO @I7@\n3 ROLE WITN" in out
 
 
 def test_gedcom551_asso_geneweb_style(tree):
@@ -187,3 +191,41 @@ def test_cercle(app_famille):
     assert liens["I1"] == "sujet" and liens["I6"] == "père" and liens["I2"] == "conjoint"
     assert liens["I3"] == "enfant" and liens["I5"] == "enfant"
     assert all(not x["vivant"] for x in r["a_enqueter"])
+
+
+GED551_INLINE_OBJE = """0 HEAD
+1 GEDC
+2 VERS 5.5.1
+0 @I1@ INDI
+1 NAME Prenom /EXEMPLE/
+1 OBJE
+2 FILE acte.jpg
+0 TRLR
+"""
+
+
+def test_inline_obje_becomes_media_record():
+    tree, _ = read_gedcom(GED551_INLINE_OBJE)
+    mid = tree.personnes["I1"].medias[0]
+    assert mid and tree.medias[mid].fichier == "acte.jpg"
+    out = write_gedcom(tree)
+    assert "OBJE @@" not in out and f"1 OBJE @{mid}@" in out and f"0 @{mid}@ OBJE" in out
+
+
+def test_gramps_xml_keeps_research_work(fixtures):
+    """L'export Gramps XML garde URL, type de source, témoins, notes, statut de preuve (vérifié aussi par un
+    import réel dans Gramps Web 26.11)."""
+    import xml.dom.minidom
+
+    from genealogiste_mcp.export.gramps_xml import to_gramps_xml_stats
+
+    tree, _ = read_gedcom((fixtures / "geneweb7_gwb2ged.ged").read_text(encoding="utf-8"))
+    src = tree.sources[sorted(tree.sources)[0]]
+    src.url, src.type_source = "https://archives.example/acte/1", "originale"
+    xml_text, stats = to_gramps_xml_stats(tree)
+    xml.dom.minidom.parseString(xml_text)  # XML bien formé
+    assert '<style name="link" value="https://archives.example/acte/1">' in xml_text
+    assert 'type="Type de source" value="source originale"' in xml_text
+    assert 'role="Witness"' in xml_text and "Parrain" in xml_text
+    assert 'type="Research"' in xml_text and 'name="Preuve : hypothèse"' in xml_text
+    assert stats["temoins_lies"] >= 2 and stats["sources_url"] == 1

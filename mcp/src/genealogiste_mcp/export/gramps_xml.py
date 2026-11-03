@@ -1,142 +1,235 @@
-"""Export Gramps XML (format 1.7.1, non compressé — importable par Gramps / Gramps Web)."""
+"""Export Gramps XML (format 1.7.1, non compressé — importable par Gramps / Gramps Web).
+
+Les objets viennent du module de correspondance unique (:mod:`genealogiste_mcp.gramps.mapping`), le même
+que celui du mode direct (API Gramps Web) : ce fichier ne fait que sérialiser en XML. Rien du travail de
+recherche ne s'y perd (contrairement à l'import GEDCOM de Gramps, qui ignore les extensions `_…`, les
+ASSO d'événement et les sous-structures de OCCU/RESI) : URL et type des sources, classification des
+citations, témoins et parrains, statut de preuve (notes et étiquettes « Sosa:auto »), lieux.
+"""
 
 from __future__ import annotations
 
 from datetime import date
 from xml.sax.saxutils import escape, quoteattr
 
-from ..models import Citation, Event, Tree
-from ..normalize.dates import parse_date
+from ..gramps.mapping import GrampsDb, tree_to_gramps_stats
+from ..gramps.types import tname
+from ..models import Tree
 
-TYPES = {
-    "BIRT": "Birth", "CHR": "Christening", "BAPM": "Baptism", "DEAT": "Death", "BURI": "Burial",
-    "CREM": "Cremation", "OCCU": "Occupation", "RESI": "Residence", "CENS": "Census", "EDUC": "Education",
-    "EMIG": "Emigration", "IMMI": "Immigration", "NATU": "Naturalization", "PROB": "Probate", "WILL": "Will",
-    "GRAD": "Graduation", "RETI": "Retirement", "CONF": "Confirmation", "FCOM": "First Communion",
-    "ORDN": "Ordination", "TITL": "Nobility Title", "RELI": "Religion", "NATI": "Nationality",
-    "DSCR": "Description", "PROP": "Property", "MILI": "Military Service", "MARR": "Marriage",
-    "MARB": "Marriage Banns", "MARC": "Marriage Contract", "MARL": "Marriage License",
-    "MARS": "Marriage Settlement", "DIV": "Divorce", "DIVF": "Divorce Filing", "ENGA": "Engagement",
-    "ANUL": "Annulment", "EVEN": "Custom",
-}
-CAL = {"JULIAN": "Julian", "FRENCH_R": "French Republican"}
-QUAL = {"ABT": "about", "CAL": "calculated", "EST": "estimated", "BEF": "before", "AFT": "after"}
+CFORMAT = {1: "Julian", 2: "Hebrew", 3: "French Republican", 4: "Persian", 5: "Islamic", 6: "Swedish"}
+MODS = {1: "before", 2: "after", 3: "about", 7: "from", 8: "to"}
+QUALS = {1: "estimated", 2: "calculated"}
+GENDERS = {0: "F", 1: "M", 2: "U", 3: "X"}
 
 
-def _pt(p) -> str:
-    return f"{p.year:04d}" + (f"-{p.month:02d}" if p.month else "") + (f"-{p.day:02d}" if p.day else "")
+def _h(handle: str) -> str:
+    return quoteattr("_" + handle)
 
 
-def _date_xml(value: str) -> str:
-    g = parse_date(value) if value else None
-    if not g:
-        return f"<datestr val={quoteattr(value)}/>" if value else ""
-    cal = f" cformat={quoteattr(CAL[g.start.calendar])}" if g.start.calendar in CAL else ""
-    if g.qualifier in ("BET", "FROMTO") and g.end:
-        tag = "daterange" if g.qualifier == "BET" else "datespan"
-        return f"<{tag} start={quoteattr(_pt(g.start))} stop={quoteattr(_pt(g.end))}{cal}/>"
-    typ = f" type={quoteattr(QUAL[g.qualifier])}" if g.qualifier in QUAL else ""
-    return f"<dateval val={quoteattr(_pt(g.start))}{typ}{cal}/>"
+def _val(d: int, m: int, y: int) -> str:
+    return f"{y:04d}" + (f"-{m:02d}" if m else "") + (f"-{d:02d}" if m and d else "")
 
 
-def to_gramps_xml(tree: Tree) -> str:
-    places: dict[str, str] = {}
-    events: list[tuple[str, Event]] = []
-    citations: list[tuple[str, Citation]] = []
+def date_xml(dt: dict | None) -> str:
+    if not dt:
+        return ""
+    mod, val = dt.get("modifier", 0), list(dt.get("dateval") or [0, 0, 0, False])
+    if mod == 6:
+        return f"<datestr val={quoteattr(dt.get('text', ''))}/>" if dt.get("text") else ""
+    if not any(val[:3]):
+        return ""
+    extra = ""
+    if dt.get("quality") in QUALS:
+        extra += f' quality="{QUALS[dt["quality"]]}"'
+    if dt.get("calendar") in CFORMAT:
+        extra += f' cformat="{CFORMAT[dt["calendar"]]}"'
+    if mod in (4, 5) and len(val) >= 7:
+        tag = "daterange" if mod == 4 else "datespan"
+        return f'<{tag} start="{_val(*val[:3])}" stop="{_val(*val[4:7])}"{extra}/>'
+    typ = f' type="{MODS[mod]}"' if mod in MODS else ""
+    return f'<dateval val="{_val(*val[:3])}"{typ}{extra}/>'
 
-    def cit(c: Citation) -> str:
-        h = f"_c{len(citations) + 1}"
-        citations.append((h, c))
-        return h
 
-    def ev(e: Event) -> str:
-        h = f"_e{len(events) + 1}"
-        events.append((h, e))
-        if e.lieu and e.lieu.nom and e.lieu.nom not in places:
-            places[e.lieu.nom] = f"_p{len(places) + 1}"
-        return h
+def _refs(tag: str, handles: list[str] | None) -> str:
+    return "".join(f"<{tag} hlink={_h(h)}/>" for h in handles or [])
 
-    people_xml, fam_xml = [], []
-    for pid in sorted(tree.personnes):
-        p = tree.personnes[pid]
-        lines = [f'<person handle="_{pid}" id="{pid}">', f"<gender>{p.sexe if p.sexe in 'MF' else 'U'}</gender>"]
-        for i, n in enumerate(p.noms):
-            ntype = "Birth Name" if i == 0 else "Also Known As"
-            alt = ' alt="1"' if i else ""
-            lines.append(f'<name type="{ntype}"{alt}><first>{escape(n.prenoms)}</first>'
-                         f"<surname>{escape(n.nom)}</surname>"
-                         + (f"<nick>{escape(n.surnom)}</nick>" if n.surnom else "")
-                         + "".join(f'<citationref hlink="{cit(c)}"/>' for c in n.citations) + "</name>")
-        for e in p.evenements:
-            lines.append(f'<eventref hlink="{ev(e)}" role="Primary"/>')
-        for f in p.famc:
-            lines.append(f'<childof hlink="_{f}"/>')
-        for f in p.fams:
-            lines.append(f'<parentin hlink="_{f}"/>')
-        for c in p.citations:
-            lines.append(f'<citationref hlink="{cit(c)}"/>')
-        lines.append("</person>")
-        people_xml.append("".join(lines))
-    for fid in sorted(tree.familles):
-        f = tree.familles[fid]
-        rel = "Married" if any(e.type == "MARR" for e in f.evenements) else "Unknown"
-        lines = [f'<family handle="_{fid}" id="{fid}"><rel type="{rel}"/>']
-        if f.epoux:
-            lines.append(f'<father hlink="_{f.epoux}"/>')
-        if f.epouse:
-            lines.append(f'<mother hlink="_{f.epouse}"/>')
-        for e in f.evenements:
-            lines.append(f'<eventref hlink="{ev(e)}" role="Family"/>')
-        for link in f.enfants:
-            lines.append(f'<childref hlink="_{link.enfant}">'
-                         + "".join(f'<citationref hlink="{cit(c)}"/>' for c in link.citations) + "</childref>")
-        for c in f.citations:
-            lines.append(f'<citationref hlink="{cit(c)}"/>')
-        lines.append("</family>")
-        fam_xml.append("".join(lines))
-    ev_xml = []
-    for h, e in events:
-        parts = [f'<event handle="{h}" id="E{h[2:]}"><type>{TYPES.get(e.type, "Custom")}</type>', _date_xml(e.date)]
-        if e.lieu and e.lieu.nom:
-            parts.append(f'<place hlink="{places[e.lieu.nom]}"/>')
-        desc = e.valeur or e.type_detail
-        if desc:
-            parts.append(f"<description>{escape(desc)}</description>")
-        parts += [f'<citationref hlink="{cit(c)}"/>' for c in e.citations]
-        parts.append("</event>")
-        ev_xml.append("".join(parts))
-    cit_xml = []
-    for h, c in citations:
-        conf = {0: 0, 1: 1, 2: 2, 3: 3}.get(c.qualite, 2)
-        cit_xml.append(f'<citation handle="{h}" id="C{h[2:]}">' + (f"<page>{escape(c.page)}</page>" if c.page else "")
-                       + f'<confidence>{conf}</confidence><sourceref hlink="_{c.source}"/></citation>')
-    src_xml = []
-    for sid in sorted(tree.sources):
-        s = tree.sources[sid]
-        x = f'<source handle="_{sid}" id="{sid}"><stitle>{escape(s.titre)}</stitle>'
-        if s.auteur:
-            x += f"<sauthor>{escape(s.auteur)}</sauthor>"
-        if s.publication:
-            x += f"<spubinfo>{escape(s.publication)}</spubinfo>"
-        if s.depot:
-            x += f'<reporef hlink="_{s.depot}" callno={quoteattr(s.cote)} medium="Book"/>'
-        src_xml.append(x + "</source>")
-    pl_xml = [f'<placeobj handle="{h}" id="P{h[2:]}" type="City"><pname value={quoteattr(name.split(",")[0].strip())}/>'
-              f"<ptitle>{escape(name)}</ptitle></placeobj>" for name, h in places.items()]
-    repo_xml = [f'<repository handle="_{rid}" id="{rid}"><rname>{escape(r.nom)}</rname><type>Archive</type></repository>'
-                for rid, r in sorted(tree.depots.items())]
-    out = [
-        '<?xml version="1.0" encoding="UTF-8"?>',
-        '<!DOCTYPE database PUBLIC "-//Gramps//DTD Gramps XML 1.7.1//EN" '
-        '"http://gramps-project.org/xml/1.7.1/grampsxml.dtd">',
-        '<database xmlns="http://gramps-project.org/xml/1.7.1/">',
-        f'<header><created date="{date.today().isoformat()}" version="5.2.0"/></header>',
-    ]
-    for tag, items in (("events", ev_xml), ("people", people_xml), ("families", fam_xml), ("citations", cit_xml),
-                       ("sources", src_xml), ("places", pl_xml), ("repositories", repo_xml)):
+
+def _attr(a: dict, tag: str = "attribute") -> str:
+    inner = _refs("citationref", a.get("citation_list")) + _refs("noteref", a.get("note_list"))
+    head = f"<{tag} type={quoteattr(tname(a.get('type')))} value={quoteattr(a.get('value') or '')}"
+    return head + (f">{inner}</{tag}>" if inner else "/>")
+
+
+def _text(tag: str, value: str) -> str:
+    return f"<{tag}>{escape(value)}</{tag}>" if value else ""
+
+
+def _common_tail(o: dict) -> str:
+    return _refs("tagref", o.get("tag_list"))
+
+
+def _name(n: dict, alt: bool) -> str:
+    out = [f'<name type={quoteattr(tname(n.get("type")) or "Birth Name")}' + (' alt="1"' if alt else "") + ">",
+           _text("first", n.get("first_name", "")), _text("call", n.get("call", ""))]
+    for s in n.get("surname_list") or []:
+        attrs = ""
+        if s.get("prefix"):
+            attrs += f" prefix={quoteattr(s['prefix'])}"
+        if not s.get("primary", True):
+            attrs += ' prim="0"'
+        out.append(f"<surname{attrs}>{escape(s.get('surname', ''))}</surname>")
+    out += [_text("suffix", n.get("suffix", "")), _text("title", n.get("title", "")), _text("nick", n.get("nick", "")),
+            _text("familynick", n.get("famnick", "")), date_xml(n.get("date")),
+            _refs("noteref", n.get("note_list")), _refs("citationref", n.get("citation_list")), "</name>"]
+    return "".join(out)
+
+
+def _eventref(r: dict) -> str:
+    inner = "".join(_attr(a) for a in r.get("attribute_list") or []) + _refs("noteref", r.get("note_list")) + \
+        _refs("citationref", r.get("citation_list"))
+    return f"<eventref hlink={_h(r['ref'])} role={quoteattr(tname(r.get('role')) or 'Primary')}>{inner}</eventref>"
+
+
+def _ordered_refs(p: dict) -> list[dict]:
+    """Gramps retient la première naissance/le premier décès : la version retenue passe devant."""
+    refs = list(p.get("event_ref_list") or [])
+    front = [i for i in (p.get("birth_ref_index", -1), p.get("death_ref_index", -1)) if 0 <= i < len(refs)]
+    front = list(dict.fromkeys(front))
+    return [refs[i] for i in front] + [r for i, r in enumerate(refs) if i not in front]
+
+
+def db_to_xml(db: GrampsDb) -> str:
+    out = ['<?xml version="1.0" encoding="UTF-8"?>',
+           '<!DOCTYPE database PUBLIC "-//Gramps//DTD Gramps XML 1.7.1//EN" '
+           '"http://gramps-project.org/xml/1.7.1/grampsxml.dtd">',
+           '<database xmlns="http://gramps-project.org/xml/1.7.1/">',
+           f'<header><created date="{date.today().isoformat()}" version="5.2.0"/></header>']
+
+    def section(tag: str, items: list[str]) -> None:
         if items:
             out.append(f"<{tag}>")
-            out += items
+            out.extend(items)
             out.append(f"</{tag}>")
+
+    def by_id(cls: str):
+        return sorted(db.all(cls).values(), key=lambda o: (o.get("gramps_id") or "", o["handle"]))
+
+    section("tags", [f"<tag handle={_h(t['handle'])} name={quoteattr(t.get('name', ''))} "
+                     f"color={quoteattr(t.get('color', '#000000000000'))} priority=\"{t.get('priority', 0)}\"/>"
+                     for t in sorted(db.all("Tag").values(), key=lambda t: (t.get("priority", 0), t.get("name", "")))])
+    section("events", [
+        f"<event handle={_h(e['handle'])} id={quoteattr(e.get('gramps_id') or '')}>"
+        + _text("type", tname(e.get("type"))) + date_xml(e.get("date"))
+        + (f"<place hlink={_h(e['place'])}/>" if e.get("place") else "")
+        + _text("description", e.get("description", ""))
+        + "".join(_attr(a) for a in e.get("attribute_list") or []) + _refs("noteref", e.get("note_list"))
+        + _refs("citationref", e.get("citation_list")) + _refs("objref", [m["ref"] for m in e.get("media_list") or []])
+        + _common_tail(e) + "</event>" for e in by_id("Event")])
+    people = []
+    for p in by_id("Person"):
+        x = [f"<person handle={_h(p['handle'])} id={quoteattr(p.get('gramps_id') or '')}>",
+             f"<gender>{GENDERS.get(p.get('gender', 2), 'U')}</gender>", _name(p["primary_name"], False)]
+        x += [_name(n, True) for n in p.get("alternate_names") or []]
+        x += [_eventref(r) for r in _ordered_refs(p)]
+        x += [f"<objref hlink={_h(m['ref'])}/>" for m in p.get("media_list") or []]
+        for a in p.get("address_list") or []:
+            x.append("<address>" + date_xml(a.get("date")) + _text("street", a.get("street", ""))
+                     + _text("city", a.get("city", "")) + _text("country", a.get("country", "")) + "</address>")
+        x += [_attr(a) for a in p.get("attribute_list") or []]
+        x += [f"<url href={quoteattr(u.get('path', ''))} type={quoteattr(tname(u.get('type')))}/>"
+              for u in p.get("urls") or []]
+        x += [f"<childof hlink={_h(f)}/>" for f in p.get("parent_family_list") or []]
+        x += [f"<parentin hlink={_h(f)}/>" for f in p.get("family_list") or []]
+        x += [f"<personref hlink={_h(r['ref'])} rel={quoteattr(r.get('rel', ''))}>"
+              + _refs("citationref", r.get("citation_list")) + _refs("noteref", r.get("note_list")) + "</personref>"
+              for r in p.get("person_ref_list") or []]
+        x += [_refs("noteref", p.get("note_list")), _refs("citationref", p.get("citation_list")), _common_tail(p),
+              "</person>"]
+        people.append("".join(x))
+    section("people", people)
+    fams = []
+    for f in by_id("Family"):
+        x = [f"<family handle={_h(f['handle'])} id={quoteattr(f.get('gramps_id') or '')}>"
+             f"<rel type={quoteattr(tname(f.get('type')) or 'Unknown')}/>"]
+        if f.get("father_handle"):
+            x.append(f"<father hlink={_h(f['father_handle'])}/>")
+        if f.get("mother_handle"):
+            x.append(f"<mother hlink={_h(f['mother_handle'])}/>")
+        x += [_eventref(r) for r in f.get("event_ref_list") or []]
+        for c in f.get("child_ref_list") or []:
+            rel = ""
+            for k in ("mrel", "frel"):
+                if tname(c.get(k)) not in ("Birth", ""):
+                    rel += f" {k}={quoteattr(tname(c.get(k)))}"
+            x.append(f"<childref hlink={_h(c['ref'])}{rel}>" + _refs("citationref", c.get("citation_list"))
+                     + _refs("noteref", c.get("note_list")) + "</childref>")
+        x += [_attr(a) for a in f.get("attribute_list") or []]
+        x += [_refs("noteref", f.get("note_list")), _refs("citationref", f.get("citation_list")), _common_tail(f),
+              "</family>"]
+        fams.append("".join(x))
+    section("families", fams)
+    section("citations", [
+        f"<citation handle={_h(c['handle'])} id={quoteattr(c.get('gramps_id') or '')}>" + date_xml(c.get("date"))
+        + _text("page", c.get("page", "")) + f"<confidence>{c.get('confidence', 2)}</confidence>"
+        + _refs("noteref", c.get("note_list")) + _refs("objref", [m["ref"] for m in c.get("media_list") or []])
+        + "".join(_attr(a, "srcattribute") for a in c.get("attribute_list") or [])
+        + (f"<sourceref hlink={_h(c['source_handle'])}/>" if c.get("source_handle") else "")
+        + _common_tail(c) + "</citation>" for c in by_id("Citation")])
+    section("sources", [
+        f"<source handle={_h(s['handle'])} id={quoteattr(s.get('gramps_id') or '')}>" + _text("stitle", s.get("title", ""))
+        + _text("sauthor", s.get("author", "")) + _text("spubinfo", s.get("pubinfo", ""))
+        + _text("sabbrev", s.get("abbrev", "")) + _refs("noteref", s.get("note_list"))
+        + "".join(_attr(a, "srcattribute") for a in s.get("attribute_list") or [])
+        + "".join(f"<reporef hlink={_h(r['ref'])} callno={quoteattr(r.get('call_number', ''))} "
+                  f"medium={quoteattr(tname(r.get('media_type')) or 'Book')}/>" for r in s.get("reporef_list") or [])
+        + _common_tail(s) + "</source>" for s in by_id("Source")])
+    places = []
+    for pl in by_id("Place"):
+        x = (f"<placeobj handle={_h(pl['handle'])} id={quoteattr(pl.get('gramps_id') or '')} "
+             f"type={quoteattr(tname(pl.get('place_type')) or 'Unknown')}>" + _text("ptitle", pl.get("title", ""))
+             + f"<pname value={quoteattr((pl.get('name') or {}).get('value', ''))}/>" + _text("code", pl.get("code", "")))
+        if pl.get("lat") and pl.get("long"):
+            x += f"<coord long={quoteattr(str(pl['long']))} lat={quoteattr(str(pl['lat']))}/>"
+        x += "".join(f"<placeref hlink={_h(r['ref'])}/>" for r in pl.get("placeref_list") or [])
+        x += _refs("noteref", pl.get("note_list")) + _refs("citationref", pl.get("citation_list")) + _common_tail(pl)
+        places.append(x + "</placeobj>")
+    section("places", places)
+    section("objects", [
+        f"<object handle={_h(m['handle'])} id={quoteattr(m.get('gramps_id') or '')}>"
+        f"<file src={quoteattr(m.get('path', ''))} mime={quoteattr(m.get('mime', ''))} "
+        f"description={quoteattr(m.get('desc') or m.get('path', ''))}/>"
+        + _refs("noteref", m.get("note_list")) + _refs("citationref", m.get("citation_list")) + _common_tail(m)
+        + "</object>" for m in by_id("Media")])
+    repos = []
+    for r in by_id("Repository"):
+        x = (f"<repository handle={_h(r['handle'])} id={quoteattr(r.get('gramps_id') or '')}>"
+             + _text("rname", r.get("name", "")) + _text("type", tname(r.get("type")) or "Archive"))
+        for a in r.get("address_list") or []:
+            x += "<address>" + _text("street", a.get("street", "")) + _text("city", a.get("city", "")) + "</address>"
+        x += "".join(f"<url href={quoteattr(u.get('path', ''))} type={quoteattr(tname(u.get('type')))}/>"
+                     for u in r.get("urls") or [])
+        repos.append(x + _refs("noteref", r.get("note_list")) + _common_tail(r) + "</repository>")
+    section("repositories", repos)
+    notes = []
+    for n in by_id("Note"):
+        text = (n.get("text") or {})
+        styles = "".join(
+            f"<style name={quoteattr(tname(t.get('name')))}"
+            + (f" value={quoteattr(str(t['value']))}" if t.get("value") is not None else "") + ">"
+            + "".join(f'<range start="{a}" end="{b}"/>' for a, b in t.get("ranges") or []) + "</style>"
+            for t in text.get("tags") or [])
+        notes.append(f"<note handle={_h(n['handle'])} id={quoteattr(n.get('gramps_id') or '')} "
+                     f"type={quoteattr(tname(n.get('type')) or 'General')}>"
+                     f"<text>{escape(text.get('string', ''))}</text>{styles}{_common_tail(n)}</note>")
+    section("notes", notes)
     out.append("</database>")
     return "\n".join(out) + "\n"
+
+
+def to_gramps_xml(tree: Tree, strict: bool = False) -> str:
+    return to_gramps_xml_stats(tree, strict)[0]
+
+
+def to_gramps_xml_stats(tree: Tree, strict: bool = False) -> tuple[str, dict]:
+    db, stats = tree_to_gramps_stats(tree, None, strict)
+    return db_to_xml(db), stats

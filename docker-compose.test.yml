@@ -1,0 +1,25 @@
+# Gramps Web jetable pour les tests d'intégration (make test-gramps). Données fictives uniquement,
+# aucun volume persistant : `docker compose -f docker-compose.test.yml down -v` efface tout.
+name: genealogiste-test
+
+services:
+  grampsweb:
+    image: ghcr.io/gramps-project/grampsweb:${GRAMPSWEB_VERSION:-latest}
+    ports:
+      - "127.0.0.1:${GRAMPSWEB_TEST_PORT:-5056}:5000"
+    environment:
+      GRAMPSWEB_TREE: "Sosa-tests"
+      GRAMPSWEB_SECRET_KEY: "cle-de-test-jetable-non-secrete"
+      # pas de Celery : les tâches s'exécutent dans la requête
+    tmpfs:
+      - /root/.gramps/grampsdb
+      - /app/users
+      - /app/indexdir
+      - /app/media
+      - /app/cache
+      - /app/thumbnail_cache
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/')"]
+      interval: 3s
+      timeout: 3s
+      retries: 60
