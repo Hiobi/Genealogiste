@@ -20,5 +20,5 @@ export.
 Conserve : URL et type des sources, classification et transcription des citations, témoins/parrains de
 l'arbre comme références d'événement avec leur rôle, parrains en associations, notes, statut de preuve
 (note de recherche + étiquette « Preuve : … »), coordonnées et code INSEE des lieux. Rappeler qu'un second
-import dans un arbre non vide duplique tout. Pour une instance Gramps Web privée, l'utilisateur peut demander
+import dans un arbre non vide duplique tout (pour travailler en direct sur Gramps Web : docs/gramps-web.md). Pour une instance Gramps Web privée, l'utilisateur peut demander
 `masquer_vivants=False`.

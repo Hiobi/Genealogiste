@@ -29,12 +29,13 @@ from .normalize.names import normalize_name, surname_similarity
 from .normalize.places import normalize_place
 from .sources import familysearch, gallica, geo, liens, matchid, wikidata, wikitree
 from .sources.base import SourceContext
-from .tree.proposals import ProposalError, Proposals
-from .tree.store import TreeStore
+from .tree.proposals import ProposalError, Proposals, TokenStore
+from .tree.store import TreeStore, remote_problem
 
 INSTRUCTIONS = """Assistant généalogique (méthode du Genealogical Proof Standard, sources françaises).
-Règles : ne jamais inventer (donnée sans source = « non sourcée ») ; toute écriture dans l'arbre passe par
-arbre_proposer (diff) puis arbre_appliquer UNIQUEMENT après accord explicite de l'utilisateur ; jamais de fusion
+Règles : ne jamais inventer (donnée sans source = « non sourcée ») ; toute écriture dans l'arbre (fichier GEDCOM ou
+Gramps Web selon le backend) passe par arbre_proposer (diff) puis arbre_appliquer UNIQUEMENT après accord explicite de
+l'utilisateur ; une annulation aussi (arbre_annuler_modification puis arbre_appliquer) ; jamais de fusion
 automatique ; rien sur les personnes vivantes vers l'extérieur ; chaque recherche est tracée au journal (y compris
 négative) ; toujours indiquer la prochaine source à consulter pour un fait non confirmé."""
 
@@ -45,20 +46,40 @@ RATE = {"deces.matchid.io": 1.0, "api.wikitree.com": 1.0, "gallica.bnf.fr": 1.0,
 
 
 class App:
-    def __init__(self, config: Config | None = None, transport=None, sleeper=None):
+    def __init__(self, config: Config | None = None, transport=None, sleeper=None, gramps_transport=None):
         self.config = config or load_config()
         self.cache = Cache(self.config.cache_path)
         kw = {"sleeper": sleeper} if sleeper else {}
         self.http = HttpClient(self.cache, self.config.user_agent, self.config.http_timeout, RATE,
                                offline=self.config.offline, transport=transport, **kw)
-        self.store = TreeStore(self.config.data_dir)
+        self.store = TreeStore(self.config.data_dir, self.config.git_remote)
         self.store.ensure()
         self.journal = Journal(self.config.journal_path)
         self.proposals = Proposals(self.store, self.config.proposals_dir, self.config.exiger_source)
+        self.tokens = TokenStore(self.config.proposals_dir)
         self.sctx = SourceContext(self.http, self.journal, self.config)
+        self._gramps_transport = gramps_transport
+        self._gramps_sleeper = sleeper
+        self._client = None
+        self.backend = self.proposals
+        if self.config.backend == "gramps":
+            from .gramps.backend import GitMirror, GrampsBackend
+            self.backend = GrampsBackend(self.gramps(), self.config.data_dir, self.config.proposals_dir,
+                                         self.config.exiger_source, self.config.strict_evidence,
+                                         self.config.gramps_ttl,
+                                         GitMirror(self.store) if self.config.git_mirror else None)
+
+    def gramps(self):
+        """Client Gramps Web (compte dédié, identifiants de l'environnement)."""
+        if self._client is None:
+            from .gramps.client import GrampsClient
+            kw = {"sleeper": self._gramps_sleeper} if self._gramps_sleeper else {}
+            self._client = GrampsClient(self.config.gramps_url, self.config.gramps_user, self.config.gramps_password,
+                                        transport=self._gramps_transport, user_agent=self.config.user_agent, **kw)
+        return self._client
 
     def tree(self):
-        return self.store.load()
+        return self.backend.load() if self.config.backend == "gramps" else self.store.load()
 
 
 _APP: App | None = None
@@ -337,11 +358,23 @@ def arbre_info() -> dict:
     """Statistiques de l'arbre de travail, emplacement des données, propositions en attente."""
     a = app()
     t = a.tree()
-    return {"repertoire": str(a.config.data_dir), "fichier": str(a.store.path), "personnes": len(t.personnes),
-            "familles": len(t.familles), "sources": len(t.sources), "medias": len(t.medias),
-            "vivants_presumes": len(privacy.living_ids(t)), "propositions_en_attente": a.proposals.pending(),
-            "dernier_commit": (a.store.log(1) or [{}])[0], "mode_preuve": "strict" if a.config.strict_evidence else "pondéré",
-            "backend": a.config.backend}
+    out = {"backend": a.config.backend, "repertoire": str(a.config.data_dir), "personnes": len(t.personnes),
+           "familles": len(t.familles), "sources": len(t.sources), "medias": len(t.medias),
+           "vivants_presumes": len(privacy.living_ids(t)), "propositions_en_attente": a.backend.pending(),
+           "mode_preuve": "strict" if a.config.strict_evidence else "pondéré", "avertissements": []}
+    if a.config.backend == "gramps":
+        out["gramps"] = a.backend.info()
+        out["dernier_changement"] = (a.backend.history(1) or [{}])[0]
+    else:
+        out["fichier"] = str(a.store.path)
+        out["dernier_commit"] = (a.store.log(1) or [{}])[0]
+        if a.store.frozen():
+            out["avertissements"].append("arbre.ged figé : bascule vers Gramps Web faite, passer GENEALOGISTE_BACKEND=gramps")
+    if a.config.git_remote:
+        out["depot_distant"] = a.store.last_push or "configuré"
+        out["avertissements"].append(remote_problem(a.config.git_remote) or
+                                     "Dépôt distant : il contient des personnes vivantes, il doit rester PRIVÉ.")
+    return out
 
 
 @mcp.tool()
@@ -509,8 +542,9 @@ def arbre_vivant(id: str) -> dict:
 
 @mcp.tool()
 def arbre_historique(limite: int = 20) -> list[dict]:
-    """Historique Git des modifications de l'arbre (justifications et sources)."""
-    return app().store.log(limite)
+    """Historique des modifications de l'arbre (commits Git en mode fichier, transactions Gramps Web en mode
+    gramps), avec justifications et sources. La référence sert à arbre_annuler_modification."""
+    return app().backend.history(limite)
 
 
 # ============================================================================ arbre : écriture (proposer -> valider)
@@ -526,17 +560,18 @@ def arbre_proposer(operations: list[dict], titre: str, justification: str, sourc
     Citation : préciser 'consultation' (original | image | transcription | index | non_vu). Référencer un objet créé dans la même proposition par
     "$ref". Voir docs/operations.md."""
     try:
-        return app().proposals.propose(operations, titre, justification, sources)
+        return _gramps_guard(lambda: app().backend.propose(operations, titre, justification, sources))
     except ProposalError as exc:
         return {"erreur": str(exc)}
 
 
 @mcp.tool()
 def arbre_appliquer(jeton: str) -> dict:
-    """Écrit une proposition et crée le commit Git. À n'appeler qu'après accord EXPLICITE de l'utilisateur
-    sur le diff présenté. Jeton à usage unique, refusé si l'arbre a changé."""
+    """Écrit une proposition (commit Git, ou transaction Gramps Web en mode gramps). À n'appeler qu'après accord
+    EXPLICITE de l'utilisateur sur le diff présenté. Jeton à usage unique, refusé si l'arbre a changé (conflit
+    avec une modification faite dans l'interface : recharger, reformuler, redemander l'accord)."""
     try:
-        return app().proposals.apply(jeton)
+        return _gramps_guard(lambda: app().backend.apply(jeton))
     except ProposalError as exc:
         return {"erreur": str(exc)}
 
@@ -544,7 +579,17 @@ def arbre_appliquer(jeton: str) -> dict:
 @mcp.tool()
 def arbre_annuler_proposition(jeton: str) -> dict:
     """Abandonne une proposition en attente."""
-    return {"annulee": app().proposals.cancel(jeton)}
+    return {"annulee": app().backend.cancel(jeton)}
+
+
+@mcp.tool()
+def arbre_annuler_modification(reference: str) -> dict:
+    """Prépare l'annulation d'une modification déjà écrite (référence vue dans arbre_historique : commit en mode
+    fichier, transaction en mode gramps). Renvoie un jeton : arbre_appliquer après accord explicite."""
+    try:
+        return _gramps_guard(lambda: app().backend.propose_undo(reference))
+    except ProposalError as exc:
+        return {"erreur": str(exc)}
 
 
 @mcp.tool()
@@ -567,7 +612,7 @@ def arbre_importer_gedcom(chemin: str, mode: str = "ajouter") -> dict:
         return {"erreur": "mode : ajouter | remplacer"}
     app().journal.add("import", "gedcom", {"fichier": str(p), "mode": mode}, "positif", nb_resultats=info["personnes"])
     try:
-        prop = app().proposals.propose([{"op": "remplacer_arbre", "mode": mode, "gedcom_texte": write_gedcom(tree)}],
+        prop = app().backend.propose([{"op": "remplacer_arbre", "mode": mode, "gedcom_texte": write_gedcom(tree)}],
                                        f"Import GEDCOM {p.name} ({mode})",
                                        f"Import du fichier {p.name} ({info['version_source']}, {info['personnes']} "
                                        "personnes). Données importées non vérifiées : statut à établir fait par fait.",
@@ -691,52 +736,119 @@ def cache_purger(source: str = "") -> dict:
     return {"supprimes": app().cache.purge(source or None), "restant": app().cache.stats()}
 
 
-# ============================================================================ Gramps Web (backend alternatif)
+# ============================================================================ Gramps Web
 
-def _gramps():
-    from .sources.grampsweb import GrampsWeb
-    return GrampsWeb(app().sctx)
+def _gramps_guard(fn):
+    from .gramps.client import GrampsError
+    try:
+        return fn()
+    except GrampsError as exc:
+        return {"erreur": str(exc)}
+
+
+def _profile(t, pid: str) -> dict:
+    p = t.personnes[pid]
+    living = privacy.is_living(t, p)
+    birth = next(iter(p.events("BIRT", "CHR", "BAPM")), None)
+    death = next(iter(p.events("DEAT", "BURI")), None)
+    return {"id": pid, "nom": p.nom_principal.complet, "naissance": birth.date if birth else "",
+            "deces": death.date if death else "", "vivant": living["vivant"]}
 
 
 @mcp.tool()
 def gramps_recherche(texte: str, nombre: int = 20) -> dict:
-    """Recherche de personnes dans Gramps Web (backend alternatif)."""
-    try:
-        return _gramps().search(texte, nombre)
-    except Exception as exc:  # noqa: BLE001
-        return {"erreur": str(exc)}
+    """Recherche plein texte de personnes dans Gramps Web (index du serveur)."""
+    def run():
+        hits = app().gramps().search(texte, nombre)
+        out = [{"handle": h.get("handle"), "gramps_id": (h.get("object") or {}).get("gramps_id"),
+                "type": h.get("object_type")} for h in hits if h.get("object_type") == "person"]
+        app().journal.add("grampsweb", "search", {"texte": texte}, "positif" if out else "negatif",
+                          nb_resultats=len(out))
+        return {"source": "grampsweb", "resultats": out}
+    return _gramps_guard(run)
 
 
 @mcp.tool()
 def gramps_personne(handle: str) -> dict:
-    """Profil d'une personne Gramps Web (handle)."""
-    try:
-        return _gramps().person(handle)
-    except Exception as exc:  # noqa: BLE001
-        return {"erreur": str(exc)}
+    """Personne Gramps Web (handle) lue avec la correspondance Sosa (id, noms, faits, statut de preuve)."""
+    def run():
+        from .gramps.mapping import gramps_to_tree
+        db = app().gramps().load_all() if app().config.backend != "gramps" else app().backend.snapshot(fresh=False)
+        p = db.get("Person", handle)
+        if not p:
+            return {"erreur": f"Personne Gramps inconnue : {handle}"}
+        t = gramps_to_tree(db)[0]
+        pid = p["gramps_id"]
+        data = _profile(t, pid)
+        data["faits"] = evidence.assess_person(t, pid, app().config.strict_evidence)
+        return data
+    return _gramps_guard(run)
 
 
 @mcp.tool()
 def gramps_tirer(mode: str = "remplacer") -> dict:
-    """Exporte l'arbre Gramps Web en GEDCOM et prépare son import local (proposition à valider)."""
-    try:
-        text = _gramps().export_gedcom()
-    except Exception as exc:  # noqa: BLE001
-        return {"erreur": str(exc)}
-    p = app().config.exports_dir / f"grampsweb-{date.today().isoformat()}.ged"
-    p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(text, encoding="utf-8")
-    return arbre_importer_gedcom(str(p), mode)
+    """Mode fichier : lit l'arbre Gramps Web (API, correspondance complète) et prépare son import dans l'arbre
+    local (proposition à valider). Pas de synchronisation bidirectionnelle : pour travailler en direct sur
+    Gramps Web, utiliser GENEALOGISTE_BACKEND=gramps."""
+    def run():
+        from .gramps.mapping import gramps_to_tree
+        if app().config.backend == "gramps":
+            return {"erreur": "Backend gramps actif : l'arbre Gramps Web est déjà l'arbre de travail."}
+        tree, _ = gramps_to_tree(app().gramps().load_all())
+        p = app().config.exports_dir / f"grampsweb-{date.today().isoformat()}.ged"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(write_gedcom(tree), encoding="utf-8")
+        return arbre_importer_gedcom(str(p), mode)
+    return _gramps_guard(run)
 
 
 @mcp.tool()
-def gramps_pousser() -> dict:
-    """Envoie l'arbre local (GEDCOM 5.5.1, vivants inclus : instance privée) vers Gramps Web. Écriture distante :
-    exige l'accord explicite de l'utilisateur."""
+def gramps_bascule_proposer() -> dict:
+    """Bascule du mode fichier vers Gramps Web : prépare l'envoi de tout arbre.ged (vivants inclus : instance
+    privée) dans un arbre Gramps Web VIDE, en une transaction. Renvoie un bilan et un jeton à valider."""
+    from .gramps.backend import bascule_preview
     try:
-        return _gramps().import_gedcom(write_gedcom(app().tree(), 5))
-    except Exception as exc:  # noqa: BLE001
+        return _gramps_guard(lambda: bascule_preview(app().gramps(), app().store, app().tokens,
+                                                     app().config.strict_evidence))
+    except ProposalError as exc:
         return {"erreur": str(exc)}
+
+
+@mcp.tool()
+def gramps_bascule_appliquer(jeton: str) -> dict:
+    """Exécute la bascule après accord EXPLICITE : écrit l'arbre dans Gramps Web, fige arbre.ged (dernier commit
+    « Bascule vers Gramps Web ») ; journal.jsonl reste local. Ensuite : GENEALOGISTE_BACKEND=gramps."""
+    from .gramps.backend import bascule_apply
+    try:
+        return _gramps_guard(lambda: bascule_apply(app().gramps(), app().store, app().tokens, jeton))
+    except ProposalError as exc:
+        return {"erreur": str(exc)}
+
+
+@mcp.tool()
+def gramps_recalculer_notes() -> dict:
+    """Mode gramps : prépare le recalcul des notes et étiquettes de preuve générées (Sosa:auto), par ex. après
+    des modifications faites dans l'interface. Les notes manuelles ne sont jamais touchées. Jeton à valider."""
+    if app().config.backend != "gramps":
+        return {"erreur": "Disponible en mode gramps (GENEALOGISTE_BACKEND=gramps)."}
+    try:
+        return _gramps_guard(app().backend.propose_notes)
+    except ProposalError as exc:
+        return {"erreur": str(exc)}
+
+
+@mcp.tool()
+def gramps_synchroniser() -> dict:
+    """Mode gramps : relit les modifications faites dans Gramps Web depuis la dernière lecture (incrémental) ;
+    avec le miroir Git, les commite (« Modifications externes »)."""
+    if app().config.backend != "gramps":
+        return {"erreur": "Disponible en mode gramps (GENEALOGISTE_BACKEND=gramps)."}
+
+    def run():
+        b = app().backend
+        b.snapshot(fresh=True)
+        return {"modifications": b.last_refresh, "objets": b.db.count(), "miroir_git": bool(b.mirror)}
+    return _gramps_guard(run)
 
 
 # ============================================================================ point d'entrée

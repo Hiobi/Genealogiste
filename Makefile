@@ -2,7 +2,7 @@
 MCP := mcp
 UV  := uv --directory $(MCP)
 
-.PHONY: help install test lint format check run run-http docker-build docker-up docker-gramps docker-down validate clean
+.PHONY: help install test test-gramps lint format check run run-http docker-build docker-up docker-gramps docker-down validate clean
 
 help: ## Liste des cibles
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-14s %s\n", $$1, $$2}'
@@ -12,6 +12,15 @@ install: ## Installe les dépendances du serveur MCP (uv)
 
 test: ## Lance les tests pytest (APIs mockées, aucun accès réseau)
 	$(UV) run pytest
+
+GW_TEST := docker compose -f docker-compose.test.yml
+GW_PORT ?= 5056
+
+test-gramps: ## Tests d'intégration sur un Gramps Web jetable (Docker, données fictives)
+	$(GW_TEST) up -d --wait
+	$(GW_TEST) exec -T grampsweb python3 -m gramps_webapi user add sosa-test sosa-test --role 3 || true
+	GENEALOGISTE_TEST_GRAMPS_URL=http://127.0.0.1:$(GW_PORT) $(UV) run pytest -m gramps_live tests/test_gramps_live.py; \
+	  status=$$?; $(GW_TEST) down -v; exit $$status
 
 lint: ## Vérifie le style (ruff)
 	$(UV) run ruff check src tests
