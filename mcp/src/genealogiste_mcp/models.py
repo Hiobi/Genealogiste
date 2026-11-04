@@ -90,6 +90,7 @@ class Citation(_Base):
     note: str = ""
     consultation: str = ""  # original | image | transcription | index | non_vu ("" = non précisé)
     ark: str = ""  # identifiant pérenne de l'image ou de la page (ark:/NAAN/nom/qualificatif)
+    medias: list[str] = field(default_factory=list)  # images de l'acte (xref O1…) qui fondent la citation
     extra: list = field(default_factory=list)
 
 

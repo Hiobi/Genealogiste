@@ -79,6 +79,7 @@ A_UID, A_UID_NOMS, A_STATUT, A_ASSO, A_VIVANT = "Sosa-UID", "Sosa-UID noms", "So
     "Sosa-Vivant"
 A_STATUT_NOM, A_STATUT_FIL = "Sosa-Statut nom ", "Sosa-Statut filiation "
 A_PRECISION, A_PAROISSE, A_CAUSE, A_AGE = "Précision", "Paroisse", "Cause", "Age"
+A_FICHIER = "Sosa-Fichier"  # chemin du fichier local (medias/…) ; le chemin Gramps est attribué par le serveur
 CIT_ATTRS = ("Consulté", "Type de source", "Information", "Preuve", "Date de consultation", "QUAY", "ARK")
 SRC_ATTRS = ("URL", "ARK", "Type de source", "Dérivée de")
 STATUS_TAG = "Preuve : "
@@ -247,6 +248,11 @@ def role_guess(role: str) -> tuple[str, str]:
     return "OTHER", role
 
 
+def _mime(path: str) -> str:
+    import mimetypes
+    return mimetypes.guess_type(path)[0] or ""
+
+
 def _cit_key(c: Citation) -> str:
     d = asdict(c)
     d.pop("extra", None)
@@ -357,7 +363,8 @@ class _Reader:
             preuve=_REV_PREUVES.get(_attr_value(c, "Preuve"), "directe"),
             date_consultation=_attr_value(c, "Date de consultation"), note="\n\n".join(note),
             consultation=_REV_VU.get(_attr_value(c, "Consulté"), _attr_value(c, "Consulté")),
-            ark=_attr_value(c, "ARK"))
+            ark=_attr_value(c, "ARK"),
+            medias=[x for x in (self.xid("Media", r.get("ref")) for r in c.get("media_list") or []) if x])
 
     def citations(self, handles: list[str]) -> list[Citation]:
         return [c for c in (self.citation(h) for h in handles or []) if c]
@@ -557,7 +564,8 @@ class _Reader:
         for h, m in sorted(db.all("Media").items(), key=lambda kv: self.xid("Media", kv[0])):
             mid = self.xid("Media", h)
             self.rep("Media", h)
-            t.medias[mid] = Media(id=mid, fichier=m.get("path") or "", format=m.get("mime") or "",
+            t.medias[mid] = Media(id=mid, fichier=_attr_value(m, A_FICHIER) or m.get("path") or "",
+                                  format=m.get("mime") or "",
                                   titre=m.get("desc") or "", citations=self.citations(m.get("citation_list")))
         # notes partagées non référencées (enregistrements NOTE du GEDCOM)
         referenced = {nh for cls in ORDER for o in db.all(cls).values() for nh in _note_refs(o)}
@@ -762,6 +770,9 @@ class _Writer:
                 ("Date de consultation", c.date_consultation),
                 ("QUAY", str(c.qualite) if c.qualite == 2 else ""), ("ARK", c.ark)]
         obj["attribute_list"] = [attribute(k, v, src=True) for k, v in vals if v]
+        obj["media_list"] = [{"_class": "MediaRef", "private": False, "citation_list": [], "note_list": [],
+                              "ref": self.handle("Media", mid), "attribute_list": [], "rect": None}
+                             for mid in c.medias if mid in self.t.medias]
         return obj
 
     def plain_note(self, text: str, typ: str, key: str) -> str:
@@ -1190,7 +1201,13 @@ class _Writer:
             m = t.medias[mid]
             h = self.handle("Media", mid)
             obj = self.start("Media", h, mid)
-            obj.update(path=m.fichier, mime=m.format, desc=m.titre)
+            base = self.base.get("Media", h)
+            uploaded = bool(base and base.get("checksum")) and (
+                (_attr_value(base, A_FICHIER) or base.get("path")) == m.fichier)
+            if not uploaded:  # sinon chemin, type et somme de contrôle attribués par le serveur : conservés
+                obj.update(path=m.fichier, mime=m.format or _mime(m.fichier))
+            obj["desc"] = m.titre
+            self.set_attrs(obj, lambda x: x == A_FICHIER, [attribute(A_FICHIER, m.fichier)] if m.fichier else [])
             obj["citation_list"] = _same_list(obj.get("citation_list") or [],
                                               self.citations(m.citations, obj.get("citation_list"), h))
             out.put(obj)

@@ -67,12 +67,14 @@ class FakeGrampsWeb:
         self.transactions: list[list[dict]] = []
         self.forced = False
         self.tasks: dict[str, dict] = {}
+        self.files: dict[str, bytes] = {}  # fichiers des médias, par handle
         self.router = respx.mock(assert_all_called=False)
         api = URL + "/api"
         r = self.router
         r.post(api + "/token/").mock(side_effect=self._token)
         r.post(api + "/token/refresh/").mock(side_effect=lambda req: httpx.Response(200, json={"access_token": "A2"}))
         r.post(api + "/transactions/").mock(side_effect=self._transaction)
+        r.put(url__regex=re.escape(api) + r"/media/(?P<handle>[^/?]+)/file(\?.*)?$").mock(side_effect=self._file)
         r.get(api + "/search/").mock(side_effect=self._search)
         r.get(url__regex=re.escape(api) + r"/tasks/(?P<tid>[^/?]+)(\?.*)?$").mock(side_effect=self._task)
         r.get(url__regex=re.escape(api) + r"/(?P<plural>[a-z]+)/(\?.*)?$").mock(side_effect=self._list)
@@ -138,6 +140,25 @@ class FakeGrampsWeb:
         hits = [{"object_type": "person", "handle": h, "object": simplify(p)} for h, p in self.objects["Person"].items()
                 if q in json.dumps(p["primary_name"], ensure_ascii=False).lower()]
         return httpx.Response(200, json=hits)
+
+    def _file(self, req, handle):
+        """PUT /media/{handle}/file (Gramps Web 26.11) : If-Match, somme MD5, chemin attribué par le serveur."""
+        import hashlib
+        if (r := self._auth(req)) is not None:
+            return r
+        obj = self.objects["Media"].get(handle)
+        if obj is None:
+            return httpx.Response(404, json={})
+        for etag in [e.strip().strip('"') for e in req.headers.get("If-Match", "").split(",") if e.strip()]:
+            if etag != obj.get("checksum"):
+                return httpx.Response(412, json={"error": {"code": 412, "message": "ETag mismatch."}})
+        md5 = hashlib.md5(req.content).hexdigest()
+        if md5 == obj.get("checksum"):
+            return httpx.Response(409, json={"error": {"code": 409, "message": "same checksum"}})
+        mime = req.headers.get("Content-Type", "")
+        self.files[handle] = req.content
+        obj.update(checksum=md5, path=f"{md5}.{mime.split('/')[-1]}", mime=mime, change=self.tick())
+        return httpx.Response(200, json=[])
 
     def _task(self, req, tid):
         return httpx.Response(200, json=self.tasks[tid])

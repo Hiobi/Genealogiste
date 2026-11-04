@@ -125,4 +125,16 @@ Le dépôt est local par défaut. `GENEALOGISTE_GIT_REMOTE` ajoute un push aprè
   (format des lectures, contrôle de `old`, `undo`, tâches de fond).
 - `make test-gramps` : vrai Gramps Web jetable (`docker-compose.test.yml`, sans volume), données fictives.
 
-Hors v1 (issues séparées) : envoi des médias, plusieurs arbres, fusion native, lieux hiérarchiques.
+## Médias (images d'actes)
+
+- `ajouter_media` (`fichier` relatif au répertoire des données, par exemple `medias/iiif/….jpg` produit par
+  `archive_image`) crée l'objet Media ; une citation le référence par `medias` (`media_list` de la citation
+  Gramps, `OBJE` sous la citation en GEDCOM) : l'image prouve la citation.
+- La proposition annonce les fichiers à envoyer (`transaction_gramps.fichiers_a_envoyer`, ou
+  `fichiers_absents`). Après accord, la transaction crée l'objet, puis chaque fichier est envoyé par
+  `PUT /api/media/{handle}/file` (`If-Match` = somme MD5 lue) ; le serveur attribue chemin et somme.
+- Le chemin local est gardé dans l'attribut `Sosa-Fichier` : le chemin du serveur n'est jamais réécrit.
+- `gramps_envoyer_medias` : liste des fichiers absents ou différents dans Gramps Web (médias créés avant cette
+  version, bascule), puis envoi avec `appliquer=true` après accord. La bascule envoie aussi les fichiers.
+
+Hors v1 (issues séparées) : plusieurs arbres, fusion native, lieux hiérarchiques.

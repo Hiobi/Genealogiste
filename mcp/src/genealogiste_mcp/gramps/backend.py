@@ -14,6 +14,7 @@ Même contrat qu'en mode fichier : proposition -> diff -> accord explicite -> é
 
 from __future__ import annotations
 
+import hashlib
 import json
 import time
 from datetime import UTC, datetime
@@ -34,8 +35,10 @@ from ..tree.proposals import (
 from ..tree.store import TreeStore
 from .client import ConflictError, GrampsClient, GrampsError
 from .mapping import (
+    A_FICHIER,
     SOSA_AUTO,
     GrampsDb,
+    _attr_value,
     _strip_change,
     apply_items,
     diff,
@@ -47,6 +50,37 @@ from .mapping import (
 )
 
 MAX_PREVIEW_OBJECTS = 40
+
+
+def media_pending(db: GrampsDb, data_dir: Path, handles: set[str] | None = None) -> tuple[list[dict], list[str]]:
+    """Fichiers locaux à envoyer (somme MD5 différente de celle de Gramps) et fichiers locaux absents."""
+    todo, missing = [], []
+    for h, m in sorted(db.all("Media").items()):
+        if handles is not None and h not in handles:
+            continue
+        local = _attr_value(m, A_FICHIER) or m.get("path") or ""
+        p = Path(data_dir) / local
+        if not local or not p.is_file():
+            if local and not m.get("checksum"):
+                missing.append(f"{m.get('gramps_id') or h} : {local}")
+            continue
+        md5 = hashlib.md5(p.read_bytes()).hexdigest()
+        if md5 != (m.get("checksum") or ""):
+            todo.append({"handle": h, "id": m.get("gramps_id") or h, "fichier": local, "chemin": str(p),
+                         "mime": m.get("mime") or "", "checksum": m.get("checksum") or "",
+                         "taille_octets": p.stat().st_size})
+    return todo, missing
+
+
+def media_upload(client: GrampsClient, todo: list[dict]) -> dict:
+    sent, errors = [], []
+    for t in todo:
+        try:
+            client.upload_media(t["handle"], Path(t["chemin"]).read_bytes(), t["mime"], t["checksum"])
+            sent.append(f"{t['id']} : {t['fichier']}")
+        except (GrampsError, OSError) as exc:
+            errors.append(f"{t['id']} : {exc}")
+    return {"envoyes": sent, "erreurs": errors}
 
 
 MASSIVE_OBJECTS = 50  # au-delà, pour moins de MASSIVE_OPERATIONS opérations : avertissement explicite
@@ -87,7 +121,8 @@ class GrampsBackend:
                  clock=time.monotonic, notes_auto: str = "true"):
         self.client = client
         self.tokens = TokenStore(proposals_dir)
-        self.log_path = Path(data_dir) / "gramps-transactions.jsonl"
+        self.data_dir = Path(data_dir)
+        self.log_path = self.data_dir / "gramps-transactions.jsonl"
         self.exiger_source = exiger_source
         self.strict = strict
         self.ttl = ttl
@@ -164,6 +199,12 @@ class GrampsBackend:
         if not items:
             raise ProposalError("La proposition ne modifie rien.")
         preview = self._preview(items, db)
+        medias = {i["handle"] for i in items if i["_class"] == "Media" and i["type"] != "delete"}
+        if medias:
+            todo, missing = media_pending(new, self.data_dir, medias)
+            preview["fichiers_a_envoyer"] = [f"{t['id']} : {t['fichier']} ({t['taille_octets']} octets)" for t in todo]
+            if missing:
+                preview["fichiers_absents"] = missing
         warnings = list(ctx.warnings)
         if w := self._massive(items, preview, len(operations)):
             warnings.append(w)
@@ -227,11 +268,34 @@ class GrampsBackend:
         self._check(db, record["items"])
         message = validated(record["message"], token)
         written = self._write(record["items"], message)
+        medias = {i["handle"] for i in written if i["_class"] == "Media" and i["type"] != "delete"}
+        uploaded = None
+        if medias:  # fichiers des médias de la proposition acceptée (annoncés dans fichiers_a_envoyer)
+            todo, _ = media_pending(self.db, self.data_dir, medias)
+            if todo:
+                uploaded = media_upload(self.client, todo)
+                self.snapshot(fresh=True)
         self._log({"id": token, "type": "transaction", "message": message, "resume": record["resume"],
                    "items": written})
         commit = self.mirror.sync(self.load(fresh=False), message) if self.mirror else ""
-        return {"transaction": token, "resume": record["resume"], "references_creees": record["references"],
-                "objets": summarize(written), "miroir_git": commit or None}
+        out = {"transaction": token, "resume": record["resume"], "references_creees": record["references"],
+               "objets": summarize(written), "miroir_git": commit or None}
+        if uploaded:
+            out["medias"] = uploaded
+        return out
+
+    def media_status(self) -> dict:
+        todo, missing = media_pending(self.snapshot(fresh=True), self.data_dir)
+        return {"a_envoyer": [f"{t['id']} : {t['fichier']} ({t['taille_octets']} octets)" for t in todo],
+                "absents_en_local": missing}
+
+    def media_send(self) -> dict:
+        todo, missing = media_pending(self.snapshot(fresh=True), self.data_dir)
+        if not todo:
+            return {"envoyes": [], "erreurs": [], "absents_en_local": missing, "note": "Rien à envoyer."}
+        out = media_upload(self.client, todo)
+        self.snapshot(fresh=True)
+        return {**out, "absents_en_local": missing}
 
     def propose_undo(self, reference: str) -> dict:
         entry = next((e for e in reversed(self.transactions(1000)) if e["id"] == reference
@@ -320,6 +384,9 @@ def bascule_apply(client: GrampsClient, store: TreeStore, tokens: TokenStore, to
     info = {"date": _now(), "gramps_url": client.base.removesuffix("/api"), "objets": summarize(record["items"]),
             "transaction": token}
     commit = store.freeze(info)
+    todo, _ = media_pending(client.load_all(), store.dir)
+    if todo:
+        info["medias"] = media_upload(client, todo)
     log = Path(store.dir) / "gramps-transactions.jsonl"
     with log.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps({"id": token, "type": "bascule", "date": info["date"], "message": "Bascule vers Gramps Web",
