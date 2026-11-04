@@ -33,10 +33,10 @@ def fake():
         yield f
 
 
-def make_app(tmp_path, backend="gramps", mirror=False, remote=""):
+def make_app(tmp_path, backend="gramps", mirror=False, remote="", notes_auto="true"):
     cfg = Config(data_dir=tmp_path / "donnees", cache_path=tmp_path / "cache.sqlite", backend=backend,
                  gramps_url=URL, gramps_user="sosa", gramps_password="secret", git_mirror=mirror, git_remote=remote,
-                 gramps_ttl=0)
+                 gramps_ttl=0, gramps_notes_auto=notes_auto)
     a = server.App(cfg, sleeper=lambda s: None)
     server.set_app(a)
     return a
@@ -286,3 +286,79 @@ def test_generated_note_patterns():
     assert not looks_generated("Vérifier le registre paroissial")
     assert not looks_generated("Preuve : voir le registre")  # sans icône : note manuelle
     assert not looks_generated("Lien : voir mon cousin")
+
+
+# ---------------------------------------------------------------------------- #16 : notes auto configurables
+
+def _app_with(tmp_path, fake, tree, mode):
+    seed(fake, tree)
+    return make_app(tmp_path, notes_auto=mode)
+
+
+def _death_event(fake):
+    return next(e for e in fake.objects["Event"].values() if tname(e["type"]) == "Death"
+                and any(a["value"] == "11111111-1111-4111-8111-111111111113" for a in e["attribute_list"]))
+
+
+def test_notes_auto_false_keeps_existing_and_generates_nothing(tmp_path, fake, tree):
+    import copy
+    _app_with(tmp_path, fake, tree, "false")
+    try:
+        notes_before = copy.deepcopy(fake.objects["Note"])
+        p = server.arbre_proposer(CIT_DEATH, "Décès", "Acte lu.")
+        assert set(p["transaction_gramps"]["bilan"]) <= {"Citation", "Event"}
+        server.arbre_appliquer(p["jeton"])
+        assert fake.objects["Note"] == notes_before  # notes générées existantes conservées, aucune nouvelle
+        ev = _death_event(fake)
+        assert set(ev["note_list"]) <= set(notes_before)
+        assert "désactivées" in server.gramps_recalculer_notes()["erreur"]
+    finally:
+        server.set_app(None)
+
+
+def test_notes_auto_modifies_limits_recalculation(tmp_path, fake, tree):
+    _app_with(tmp_path, fake, tree, "modifies")
+    try:
+        # notes périmées partout (comme après des modifications dans l'interface)
+        for n in fake.objects["Note"].values():
+            n["text"]["string"] += " (périmé)"
+        p = server.arbre_proposer(CIT_DEATH, "Décès", "Acte lu.")
+        notes = p["transaction_gramps"]["bilan"].get("Note", {})
+        # seulement Jean MARTIN, ses événements et ses familles : pas toute la base
+        assert 0 < notes.get("update", 0) < len(fake.objects["Note"]) // 2, notes
+        server.arbre_appliquer(p["jeton"])
+        ev = _death_event(fake)
+        assert any("probable" in fake.objects["Note"][h]["text"]["string"]
+                   and "périmé" not in fake.objects["Note"][h]["text"]["string"] for h in ev["note_list"])
+        stale = [n for n in fake.objects["Note"].values() if "périmé" in n["text"]["string"]]
+        assert stale  # les autres notes ne sont pas recalculées
+        assert "jeton" in server.gramps_recalculer_notes()  # recalcul global toujours possible
+    finally:
+        server.set_app(None)
+
+
+def test_massive_transaction_warning_and_proof_only_count(tmp_path, fake, tree):
+    from genealogiste_mcp.gramps import backend as gb
+    _app_with(tmp_path, fake, tree, "true")
+    try:
+        for n in fake.objects["Note"].values():
+            n["text"]["string"] += " (périmé)"
+        old = gb.MASSIVE_OBJECTS
+        gb.MASSIVE_OBJECTS = 5
+        try:
+            p = server.arbre_proposer(CIT_DEATH, "Décès", "Acte lu.")
+        finally:
+            gb.MASSIVE_OBJECTS = old
+        tg = p["transaction_gramps"]
+        assert tg["dont_notes_de_preuve_seules"] >= 10
+        assert any("notes de preuve" in w for w in p["avertissements"])
+    finally:
+        server.set_app(None)
+
+
+def test_notes_auto_config_values():
+    from genealogiste_mcp.config import notes_auto_mode
+    assert notes_auto_mode("") == "true" and notes_auto_mode("Modifies") == "modifies"
+    assert notes_auto_mode("non") == "false"
+    with pytest.raises(ValueError):
+        notes_auto_mode("parfois")

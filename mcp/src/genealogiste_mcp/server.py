@@ -67,7 +67,8 @@ class App:
             self.backend = GrampsBackend(self.gramps(), self.config.data_dir, self.config.proposals_dir,
                                          self.config.exiger_source, self.config.strict_evidence,
                                          self.config.gramps_ttl,
-                                         GitMirror(self.store) if self.config.git_mirror else None)
+                                         GitMirror(self.store) if self.config.git_mirror else None,
+                                         notes_auto=self.config.gramps_notes_auto)
 
     def gramps(self):
         """Client Gramps Web (compte dédié, identifiants de l'environnement)."""
@@ -809,7 +810,8 @@ def gramps_bascule_proposer() -> dict:
     from .gramps.backend import bascule_preview
     try:
         return _gramps_guard(lambda: bascule_preview(app().gramps(), app().store, app().tokens,
-                                                     app().config.strict_evidence))
+                                                     app().config.strict_evidence,
+                                                     app().config.gramps_notes_auto != "false"))
     except ProposalError as exc:
         return {"erreur": str(exc)}
 

@@ -37,6 +37,7 @@ class Config:
     gramps_user: str = ""
     gramps_password: str = ""
     gramps_ttl: float = 30.0  # secondes entre deux rafraîchissements en lecture (mode gramps)
+    gramps_notes_auto: str = "true"  # notes de preuve Sosa:auto : true (toute la base) | modifies | false
     git_mirror: bool = False  # mode gramps : miroir GEDCOM 7 versionné de l'arbre Gramps
     git_remote: str = ""  # dépôt distant optionnel (privé !) du répertoire de données
     fs_user: str = ""
@@ -81,6 +82,20 @@ def backend_name(value: str) -> str:
     return BACKENDS[v]
 
 
+NOTES_AUTO = {"true": "true", "1": "true", "oui": "true", "yes": "true", "on": "true",
+              "false": "false", "0": "false", "non": "false", "no": "false", "off": "false",
+              "modifies": "modifies", "modifiés": "modifies", "modifie": "modifies"}
+
+
+def notes_auto_mode(value: str | None) -> str:
+    v = (value or "").strip().lower()
+    if not v:
+        return "true"
+    if v not in NOTES_AUTO:
+        raise ValueError(f"GENEALOGISTE_GRAMPS_NOTES_AUTO={value!r} : valeurs possibles true | modifies | false")
+    return NOTES_AUTO[v]
+
+
 def _bool(value: str | None, default: bool = False) -> bool:
     if value is None or value == "":
         return default
@@ -110,6 +125,7 @@ def load_config() -> Config:
         gramps_user=env("GENEALOGISTE_GRAMPS_USER", ""),
         gramps_password=env("GENEALOGISTE_GRAMPS_PASSWORD", ""),
         gramps_ttl=float(env("GENEALOGISTE_GRAMPS_TTL", "30") or 30),
+        gramps_notes_auto=notes_auto_mode(env("GENEALOGISTE_GRAMPS_NOTES_AUTO")),
         git_mirror=_bool(env("GENEALOGISTE_GIT_MIRROR"), False),
         git_remote=env("GENEALOGISTE_GIT_REMOTE", ""),
         fs_user=env("GENEALOGISTE_FS_USER", ""),
