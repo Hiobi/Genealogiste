@@ -7,7 +7,7 @@ description: Connaissance des sources généalogiques françaises et de leur loc
 
 Toujours préciser : **type de source** (originale/dérivée), **service** (AD, mairie, SHD…),
 **cote typique** (cadre de classement, à vérifier dans l'inventaire), **communicabilité**, **accès en ligne**.
-Outils : `cotes_a_consulter`, `prochaine_source`, `liens_recherche`, `communicabilite`.
+Outils : `cotes_a_consulter`, `prochaine_source`, `liens_recherche`, `communicabilite`, `archives_service` (service réel : site, mise en ligne, NAAN ; docs/archives.md), `ark_resoudre`.
 
 | Source | Période | Série AD typique | Apporte | Remarques |
 |---|---|---|---|---|
