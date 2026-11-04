@@ -75,3 +75,43 @@ def test_archives_ark_without_iiif_asks_for_link(app):
     r = server.archive_image("https://archivesdepartementales.lenord.fr/ark:/33518/48150m2qjdhb/"
                              "7eb8efac-a2f7-4356-bf7a-bfe1f1ea91b7")
     assert "Copier le lien IIIF" in r["erreur"]
+
+
+# ---------------------------------------------------------------------------- sans IIIF : recadrage local
+
+def _image(path, w=3000, h=2000):
+    from PIL import Image
+    Image.new("RGB", (w, h), (200, 180, 150)).save(path, "JPEG")
+    return path
+
+
+def test_local_file_preview_and_crop(app, tmp_path):
+    src = _image(tmp_path / "vue.jpg")
+    r = server.archive_image(str(src))
+    assert r["mode"].startswith("local") and r["dimensions_demandees"] == [800, 533]
+    assert r["cout_estime_tokens"] == round(800 * 533 / 750) and r["dimensions_originales"] == [3000, 2000]
+    c = server.archive_image(str(src), region="pct:50,50,50,50", largeur=1500)
+    assert c["zone_pixels"] == [1500, 1000, 3000, 2000] and c["dimensions_demandees"] == [1500, 1000]
+    small = server.archive_image(str(src), region="0,0,600,400", largeur=1500)
+    assert small["dimensions_demandees"] == [600, 400]  # jamais agrandie
+    assert server.archive_image(str(src))["depuis_cache"] is True
+    from PIL import Image
+    assert Image.open(r["chemin_absolu"]).mode == "L"
+
+
+@respx.mock
+def test_direct_image_url_downloaded_once(app, tmp_path):
+    data = _image(tmp_path / "o.jpg").read_bytes()
+    url = "https://archives.exemple.org/images/7eb8efac.jpg"
+    route = respx.get(url).mock(return_value=httpx.Response(200, content=data))
+    r = server.archive_image(url)
+    assert r["original_telecharge"] is True and route.call_count == 1
+    server.archive_image(url, region="pct:0,0,50,50", largeur=1200)
+    assert route.call_count == 1  # originale gardée dans medias/originaux/
+
+
+@respx.mock
+def test_direct_image_blocked_suggests_manual_download(app):
+    url = "https://archives.exemple.org/images/x.jpg"
+    respx.get(url).mock(return_value=httpx.Response(403))
+    assert "Télécharger l'image depuis la visionneuse" in server.archive_image(url)["erreur"]

@@ -4,7 +4,7 @@
     {"code": "AD59", "nom": "Archives départementales du Nord", "type": "departementales", "departement": "59",
      "site": "https://archivesdepartementales.lenord.fr", "ark_naan": "33518", "en_ligne": {},
      "verifie_le": "2026-11-04",
-     "notes": "Registres d'état civil du XXe siècle : tous ne sont pas en ligne même lorsqu'ils sont communicables (cas constaté : naissances de Somain, 1926)."},
+     "notes": "Registres d'état civil du XXe siècle : tous ne sont pas en ligne même lorsqu'ils sont communicables (cas constaté : naissances de Somain, 1926). Visionneuse sans IIIF (option désactivée, constaté le 2026-11-04 sur les tables décennales de Somain) mais avec téléchargement de l'image : archive_image avec le fichier téléchargé ou l'URL directe de l'image."},
     {"code": "AD62", "nom": "Archives départementales du Pas-de-Calais", "type": "departementales", "departement": "62",
      "visionneuse": "http://archivesenligne.pasdecalais.fr/v2", "ark_naan": "64297", "en_ligne": {},
      "verifie_le": "2026-11-04",

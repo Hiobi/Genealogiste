@@ -8,7 +8,8 @@ Applique la skill `paleographie`.
 1. Obtenir l'image :
    - fichier local : le lire directement ;
    - ARK Gallica, manifeste IIIF, `info.json` ou URL d'image IIIF : `archive_image`. Pour les AD, demander le
-     lien copié avec « Copier le lien IIIF » dans la visionneuse (jamais explorer l'API d'un site). Méthode
+     lien copié avec « Copier le lien IIIF » dans la visionneuse, ou à défaut le fichier obtenu avec
+     « Télécharger » (recadrage local) ; jamais explorer l'API d'un site. Méthode
      économe : **aperçu** (`largeur` 800, `gris`) pour repérer l'acte sur la page, puis **recadrage** de
      l'acte seul (`region` `pct:x,y,l,h`, `largeur` 1500-2000) ; vérifier `cout_estime_tokens` ;
    - Gallica imprimé : essayer d'abord le texte OCR (`gallica_texte`).
