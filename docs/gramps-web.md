@@ -70,7 +70,7 @@ Module unique, utilisé par l'export Gramps XML et par le mode direct, testé al
 
 Une personne, un événement ou une note créés dans l'interface Gramps sont lus sans attribut Sosa et
 réécrits **à l'identique** tant que Sosa ne les modifie pas. Ce que Sosa ne modélise pas (adresses, URL,
-étiquettes, titres et suffixes de nom, lieux hiérarchiques, médias d'événements, notes isolées…) est
+étiquettes, titres et suffixes de nom, noms alternatifs et dates des lieux, médias d'événements, notes isolées…) est
 conservé tel quel.
 
 Non mappé : les nœuds GEDCOM non interprétés (`extra`), perdus à l'aller-retour. Normalisations : type de
