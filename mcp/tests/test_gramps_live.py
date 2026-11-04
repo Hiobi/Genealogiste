@@ -109,3 +109,16 @@ def test_media_upload_and_citation_link(client, loaded, tmp_path):
     assert any(m.fichier == "medias/acte-test.jpg" for m in t.medias.values())
     assert diff(db, tree_to_gramps(t, base=db)) == []  # rien à réécrire : chemin du serveur conservé
     assert b.media_status()["a_envoyer"] == []
+
+
+def test_places_are_hierarchical_in_real_gramps(client, loaded):
+    """#11 : commune → département → pays acceptés par l'API ; nom relu identique."""
+    from genealogiste_mcp.gramps.types import tname
+    db = client.load_all()
+    commune = next(p for p in db.all("Place").values() if p["name"]["value"] == "Rochefort")
+    dep = db.get("Place", commune["placeref_list"][0]["ref"])
+    country = db.get("Place", dep["placeref_list"][0]["ref"])
+    assert (tname(dep["place_type"]), dep["code"], tname(country["place_type"])) == ("Department", "17", "Country")
+    t, _ = gramps_to_tree(db)
+    assert any(e.lieu and e.lieu.nom == "Rochefort, Charente-Maritime, France"
+               for p in t.personnes.values() for e in p.evenements)

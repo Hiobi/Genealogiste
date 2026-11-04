@@ -58,6 +58,7 @@ from ..models import (
     Source,
     Tree,
 )
+from ..normalize.places import DEPARTEMENTS
 from .types import (
     attribute,
     blank,
@@ -246,6 +247,33 @@ def role_guess(role: str) -> tuple[str, str]:
     if "témoin" in low or "temoin" in low:
         return "WITN", role
     return "OTHER", role
+
+
+# Régions administratives actuelles (2016) : reconnues seulement si elles figurent déjà dans le nom du lieu.
+REGIONS = {"Auvergne-Rhône-Alpes", "Bourgogne-Franche-Comté", "Bretagne", "Centre-Val de Loire", "Corse", "Grand Est",
+           "Hauts-de-France", "Île-de-France", "Normandie", "Nouvelle-Aquitaine", "Occitanie", "Pays de la Loire",
+           "Provence-Alpes-Côte d'Azur", "Guadeloupe", "Martinique", "Guyane", "La Réunion", "Mayotte"}
+COUNTRIES = {"France", "Belgique", "Suisse", "Italie", "Espagne", "Allemagne", "Luxembourg", "Pays-Bas",
+             "Royaume-Uni", "Algérie", "Maroc", "Tunisie", "Canada", "États-Unis", "Pologne", "Portugal"}
+
+
+def place_levels(nom: str) -> list[str]:
+    """Niveaux d'un nom de lieu « Commune, Département, Pays » ; [] si la forme n'est pas canonique (espaces,
+    niveau vide) : le lieu reste alors à plat pour que le nom relu soit identique."""
+    parts = [x.strip() for x in (nom or "").split(",")]
+    return parts if len(parts) > 1 and all(parts) and ", ".join(parts) == nom else []
+
+
+def level_type(parts: list[str], i: int) -> str:
+    """Type Gramps d'un niveau : pays (dernier niveau connu), département français, région, sinon commune."""
+    name, last = parts[i], i == len(parts) - 1
+    if last and (name in COUNTRIES or len(parts) > 2):
+        return "Country"
+    if name in DEPARTEMENTS.values() and (parts[-1] == "France" or last):
+        return "Department"
+    if name in REGIONS and parts[-1] == "France":
+        return "Region"
+    return "City" if i == 0 else "Unknown"
 
 
 def _mime(path: str) -> str:
@@ -878,8 +906,16 @@ class _Writer:
         obj = self.out.get("Place", h) or self.start("Place", h)
         if not self.base.get("Place", h) and not self.out.get("Place", h):
             obj["gramps_id"] = f"P{h[:6]}"
-            obj["title"] = pl.nom
-            obj["name"]["value"] = pl.nom.split(",")[0].strip()
+            parts = place_levels(pl.nom)
+            if len(parts) > 1:  # hiérarchie Gramps : commune → département → … → pays (#11)
+                obj["title"] = ""
+                obj["name"]["value"] = parts[0]
+                obj["place_type"] = gtype("PlaceType", level_type(parts, 0))
+                obj["placeref_list"] = [{"_class": "PlaceRef", "ref": self.parent_place(parts[1:]),
+                                         "date": blank_date()}]
+            else:
+                obj["title"] = pl.nom
+                obj["name"]["value"] = pl.nom.split(",")[0].strip()
         # compléter sans écraser : code INSEE, coordonnées
         if pl.code_insee and not obj.get("code"):
             obj["code"] = pl.code_insee
@@ -887,6 +923,43 @@ class _Writer:
             obj["lat"], obj["long"] = str(pl.latitude), str(pl.longitude)
         self.out.put(obj)
         return h
+
+    def parent_place(self, parts: list[str]) -> str:
+        """Lieu englobant (département, pays…) : réutilisé s'il existe déjà sous ce nom complet, sinon créé."""
+        full = ", ".join(parts)
+        h = self.place_by_name.get(full)
+        if h and (self.out.get("Place", h) or self.base.get("Place", h)):
+            if not self.out.get("Place", h):
+                self.out.put(copy.deepcopy(self.base.get("Place", h)))
+            return h
+        h = h or det_handle("Place", full)
+        self.place_by_name[full] = h
+        obj = blank("Place", h, f"P{h[:6]}")
+        obj["name"]["value"] = parts[0]
+        obj["place_type"] = gtype("PlaceType", level_type(parts, 0))
+        dep = next((c for c, n in DEPARTEMENTS.items() if n == parts[0]), "")
+        if dep and len(parts) > 1 and parts[-1] == "France":
+            obj["code"] = dep
+        if len(parts) > 1:
+            obj["placeref_list"] = [{"_class": "PlaceRef", "ref": self.parent_place(parts[1:]), "date": blank_date()}]
+        self.out.put(obj)
+        return h
+
+    def structure_places(self) -> None:
+        """Lieux à plat de la base (titre « Commune, Département, Pays », sans lieu englobant) rattachés à une
+        hiérarchie ; le nom lu reste identique (aller-retour)."""
+        for h, p in sorted(self.base.all("Place").items()):
+            title = p.get("title") or ""
+            parts = place_levels(title)
+            if len(parts) < 2 or p.get("placeref_list"):
+                continue
+            obj = copy.deepcopy(self.out.get("Place", h) or p)
+            obj["title"] = ""
+            obj["name"] = dict(obj.get("name") or blank("Place", h)["name"], value=parts[0])
+            if tname(obj.get("place_type")) in ("", "Unknown", "City"):
+                obj["place_type"] = gtype("PlaceType", level_type(parts, 0))
+            obj["placeref_list"] = [{"_class": "PlaceRef", "ref": self.parent_place(parts[1:]), "date": blank_date()}]
+            self.out.put(obj)
 
     # ------------------------------------------------------------------ événements
     def event(self, e: Event, owner: str, owner_cls: str) -> str:
@@ -1223,10 +1296,16 @@ class _Writer:
 
 
 def tree_to_gramps(tree: Tree, base: GrampsDb | None = None, strict: bool = False,
-                   generated: bool = True, only: set[tuple[str, str]] | None = None) -> GrampsDb:
+                   generated: bool = True, only: set[tuple[str, str]] | None = None,
+                   structure: bool = False) -> GrampsDb:
     """Arbre Sosa -> base Gramps (par-dessus ``base`` si fournie). ``generated`` : notes Sosa:auto ; ``only`` :
-    les recalculer seulement pour ces objets (cls, clé Sosa), celles des autres sont conservées telles quelles."""
-    return _Writer(tree, base, strict, generated, only).build()
+    les recalculer seulement pour ces objets (cls, clé Sosa), celles des autres sont conservées telles quelles ;
+    ``structure`` : rattacher aussi les lieux à plat de la base à une hiérarchie."""
+    w = _Writer(tree, base, strict, generated, only)
+    out = w.build()
+    if structure:
+        w.structure_places()
+    return out
 
 
 def touched_keys(before: Tree, after: Tree) -> set[tuple[str, str]]:

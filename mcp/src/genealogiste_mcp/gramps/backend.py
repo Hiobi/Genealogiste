@@ -189,12 +189,13 @@ class GrampsBackend:
                 "ou false (aucune note générée).")
 
     def propose(self, operations: list[dict], titre: str, justification: str,
-                sources: list[str] | None = None, all_notes: bool = False) -> dict:
+                sources: list[str] | None = None, all_notes: bool = False, structure: bool = False) -> dict:
         db = self.snapshot(fresh=True)
         tree = self.load()
         ctx, token, message = prepare(tree, operations, titre, justification, sources, self.exiger_source)
         only = touched_keys(tree, ctx.tree) if self.notes_auto == "modifies" and not all_notes else None
-        new = tree_to_gramps(ctx.tree, base=db, strict=self.strict, generated=self.notes_auto != "false", only=only)
+        new = tree_to_gramps(ctx.tree, base=db, strict=self.strict, generated=self.notes_auto != "false", only=only,
+                             structure=structure)
         items = diff(db, new)
         if not items:
             raise ProposalError("La proposition ne modifie rien.")
@@ -216,6 +217,13 @@ class GrampsBackend:
             "transaction_gramps": preview, "nouvelles_alertes_coherence": new_alerts(tree, ctx.tree),
             "avertissements": warnings, "message_de_transaction": message, "consigne": CONSIGNE,
         }
+
+    def propose_places(self) -> dict:
+        """Lieux à plat (titre « Commune, Département, Pays ») rattachés à une hiérarchie Gramps (#11)."""
+        return self.propose([], "Hiérarchie des lieux (commune → département → pays)",
+                            "Lieux à plat rattachés à leurs lieux englobants, créés ou réutilisés ; les noms relus "
+                            "sont identiques et aucun événement n'est modifié.",
+                            structure=True)
 
     def propose_notes(self) -> dict:
         """Recalcul des notes de preuve Sosa:auto (après des modifications faites dans l'interface)."""
@@ -274,7 +282,7 @@ class GrampsBackend:
             todo, _ = media_pending(self.db, self.data_dir, medias)
             if todo:
                 uploaded = media_upload(self.client, todo)
-                self.snapshot(fresh=True)
+                self._reload_media(todo)
         self._log({"id": token, "type": "transaction", "message": message, "resume": record["resume"],
                    "items": written})
         commit = self.mirror.sync(self.load(fresh=False), message) if self.mirror else ""
@@ -283,6 +291,16 @@ class GrampsBackend:
         if uploaded:
             out["medias"] = uploaded
         return out
+
+    def _reload_media(self, todo: list[dict]) -> None:
+        """Relit les médias envoyés : le serveur a changé somme et chemin, parfois dans la même seconde que la
+        transaction (``change`` identique), ce que la relecture incrémentale ne verrait pas."""
+        db = self.snapshot(fresh=True)
+        for t in todo:
+            obj = self.client.get("Media", t["handle"])
+            if obj is not None:
+                db.put(obj)
+        self._tree = None
 
     def media_status(self) -> dict:
         todo, missing = media_pending(self.snapshot(fresh=True), self.data_dir)
@@ -294,7 +312,7 @@ class GrampsBackend:
         if not todo:
             return {"envoyes": [], "erreurs": [], "absents_en_local": missing, "note": "Rien à envoyer."}
         out = media_upload(self.client, todo)
-        self.snapshot(fresh=True)
+        self._reload_media(todo)
         return {**out, "absents_en_local": missing}
 
     def propose_undo(self, reference: str) -> dict:

@@ -927,6 +927,19 @@ def gramps_recalculer_notes() -> dict:
 
 
 @mcp.tool()
+def gramps_structurer_lieux() -> dict:
+    """Mode gramps : prépare le rattachement des lieux à plat (titre « Commune, Département, Pays ») à une
+    hiérarchie Gramps (commune → département → pays, lieux englobants réutilisés ou créés, code du département).
+    Noms relus identiques, événements inchangés. Jeton à valider (diff, puis accord explicite)."""
+    if app().config.backend != "gramps":
+        return {"erreur": "Disponible en mode gramps (GENEALOGISTE_BACKEND=gramps)."}
+    try:
+        return _gramps_guard(app().backend.propose_places)
+    except ProposalError as exc:
+        return {"erreur": str(exc)}
+
+
+@mcp.tool()
 def gramps_envoyer_medias(appliquer: bool = False) -> dict:
     """Mode gramps : fichiers des médias (images d'actes de <données>/medias/) absents ou différents dans Gramps
     Web (somme MD5). appliquer=False : liste seulement ; appliquer=True, après accord explicite de
