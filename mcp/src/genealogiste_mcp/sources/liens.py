@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from urllib.parse import urlencode
 
+from .. import archives
 from ..fr_sources import SERIES, next_source_hint
 from ..normalize.dates import parse_date
 from ..normalize.places import DEPARTEMENTS, normalize_place
@@ -48,10 +49,16 @@ def search_links(nom: str, prenom: str = "", ne_vers: str = "", lieu: str = "", 
         "registres matricules indexés (soldats de 14-18) des AD participantes",
         note="Recherche par nom, prénom, année et lieu de naissance.")
     if dep_code:
-        add(f"Archives départementales — {dep} ({dep_code})",
-            "https://francearchives.gouv.fr/fr/search?" + urlencode({"q": f"archives départementales {dep}"}),
-            "état civil, registres paroissiaux, matricules, recensements numérisés",
-            note="Le site des AD est accessible depuis la fiche du service sur FranceArchives.")
+        svc = archives.departemental(dep_code)
+        if svc and (svc.get("visionneuse") or svc.get("site")):
+            add(svc["nom"], svc.get("visionneuse") or svc["site"],
+                "état civil, registres paroissiaux, matricules, recensements numérisés",
+                note=" ".join(x for x in (svc.get("notes", ""), archives.staleness(svc)) if x))
+        else:
+            add(f"Archives départementales — {dep} ({dep_code})",
+                "https://francearchives.gouv.fr/fr/search?" + urlencode({"q": f"archives départementales {dep}"}),
+                "état civil, registres paroissiaux, matricules, recensements numérisés",
+                note="Le site des AD est accessible depuis la fiche du service sur FranceArchives.")
     add("Retronews (presse)", "https://www.retronews.fr/",
         "presse ancienne (complète Gallica)", True, note=f'Rechercher « "{prenom} {nom}" ».')
     if dy and dy >= 1970:
@@ -65,14 +72,20 @@ def search_links(nom: str, prenom: str = "", ne_vers: str = "", lieu: str = "", 
     }
 
 
+DOCS = {"BIRT": "naissance", "CHR": "naissance", "BAPM": "naissance", "MARR": "mariage", "DEAT": "deces",
+        "BURI": "deces", "CENS": "recensement"}
+
+
 def cote_suggestions(fait: str, date: str = "", lieu: str = "") -> dict:
     place = normalize_place(lieu) if lieu else {}
     dep_code = place.get("departement_code")
+    svc = archives.service(departement=dep_code, document=DOCS.get(fait.upper(), ""),
+                           annee=_year(date)) if dep_code in DEPARTEMENTS else None
     return {
         "fait": fait,
         "lieu": place.get("commune") or lieu,
-        "service": (f"Archives départementales — {DEPARTEMENTS[dep_code]} ({dep_code})" if dep_code in DEPARTEMENTS
-                    else "Archives départementales du lieu (département à préciser)"),
+        "service": (svc["nom"] if svc else "Archives départementales du lieu (département à préciser)"),
+        "service_archives": svc,
         "sources": next_source_hint(fait.upper(), date, lieu),
         "series": SERIES,
         "avertissement": "Cotes typiques du cadre de classement : vérifier dans l'inventaire du service.",
