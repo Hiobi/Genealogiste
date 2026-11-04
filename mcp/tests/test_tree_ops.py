@@ -19,10 +19,12 @@ def test_apply_commits_with_justification(app_famille):
           "citation": {"source": "S1", "page": "Décès 1885, acte n° 3", "type_source": "originale",
                        "information": "primaire"}}],
         "Acte de décès de Jean MARTIN", "Acte lu sur le registre des décès de Rochefort, 1885.")
+    assert "Validé" not in p["message_de_commit"]  # rien n'est validé à la proposition (#17)
     r = server.arbre_appliquer(p["jeton"])
     assert r["commit"]
     log = server.arbre_historique(1)[0]["message"]
     assert "Justification : Acte lu" in log and "2 E 299, Registres d'état civil de Rochefort" in log
+    assert f"Validé explicitement par l'utilisateur (proposition {p['jeton']})" in log
     death = next(f for f in server.arbre_statut_preuve("I1") if f["fait"] == "DEAT")
     assert death["statut"] == "probable"
 

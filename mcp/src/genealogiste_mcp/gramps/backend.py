@@ -21,7 +21,16 @@ from pathlib import Path
 
 from ..gedcom.mapping import write_gedcom
 from ..models import Tree
-from ..tree.proposals import CONSIGNE, TTL_SECONDS, ProposalError, TokenStore, new_alerts, prepare, tree_diff
+from ..tree.proposals import (
+    CONSIGNE,
+    TTL_SECONDS,
+    ProposalError,
+    TokenStore,
+    new_alerts,
+    prepare,
+    tree_diff,
+    validated,
+)
 from ..tree.store import TreeStore
 from .client import ConflictError, GrampsClient, GrampsError
 from .mapping import GrampsDb, _strip_change, apply_items, diff, gramps_to_tree, summarize, tree_to_gramps
@@ -169,19 +178,21 @@ class GrampsBackend:
         kind = record.get("type")
         if kind == "annulation":
             self._check(db, record["items"], side="new")
-            written = self._write(record["items"], record["message"], undo=True)
-            self._log({"id": token, "type": "annulation", "annule": record["annule"], "message": record["message"],
+            message = f"{record['message']}, validée explicitement par l'utilisateur (jeton {token})."
+            written = self._write(record["items"], message, undo=True)
+            self._log({"id": token, "type": "annulation", "annule": record["annule"], "message": message,
                        "items": written})
-            commit = self.mirror.sync(self.load(fresh=False), record["message"]) if self.mirror else ""
+            commit = self.mirror.sync(self.load(fresh=False), message) if self.mirror else ""
             return {"transaction": token, "annule": record["annule"], "objets": summarize(written),
                     "miroir_git": commit or None}
         if kind != "transaction":
             raise ProposalError("Jeton d'un autre type (bascule : utiliser gramps_bascule_appliquer).")
         self._check(db, record["items"])
-        written = self._write(record["items"], record["message"])
-        self._log({"id": token, "type": "transaction", "message": record["message"], "resume": record["resume"],
+        message = validated(record["message"], token)
+        written = self._write(record["items"], message)
+        self._log({"id": token, "type": "transaction", "message": message, "resume": record["resume"],
                    "items": written})
-        commit = self.mirror.sync(self.load(fresh=False), record["message"]) if self.mirror else ""
+        commit = self.mirror.sync(self.load(fresh=False), message) if self.mirror else ""
         return {"transaction": token, "resume": record["resume"], "references_creees": record["references"],
                 "objets": summarize(written), "miroir_git": commit or None}
 
@@ -194,7 +205,7 @@ class GrampsBackend:
             raise ProposalError(f"La transaction {reference} a déjà été annulée.")
         self.snapshot(fresh=True)
         title = entry["message"].splitlines()[0] if entry.get("message") else reference
-        message = f"Annulation : {title}\n\nAnnulation de la transaction {reference}, validée explicitement."
+        message = f"Annulation : {title}\n\nAnnulation de la transaction {reference}"
         token = self.tokens.create({"type": "annulation", "annule": reference, "items": entry["items"],
                                     "message": message, "resume": [f"Annulation de {reference} : {title}"]})
         return {"jeton": token, "expire_dans_minutes": TTL_SECONDS // 60, "annule": {"id": reference, "titre": title},

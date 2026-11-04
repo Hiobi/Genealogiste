@@ -84,9 +84,11 @@ def test_propose_then_apply_is_one_transaction(gapp, fake):
     assert "jeton" in p and p["transaction_gramps"]["bilan"]["Citation"]["add"] == 1
     assert "+3 PAGE Décès 1885, acte n° 3" in p["diff"]
     assert len(fake.transactions) == n  # rien d'écrit avant l'accord
+    assert "Validé" not in p["message_de_transaction"]  # #17 : pas de validation affirmée à la proposition
     r = server.arbre_appliquer(p["jeton"])
     assert "transaction" in r and len(fake.transactions) == n + 1 and not fake.forced
     assert "Justification : Acte lu" in fake.messages[-1] and "2 E 299" in fake.messages[-1]
+    assert f"Validé explicitement par l'utilisateur (proposition {p['jeton']})" in fake.messages[-1]
     death = next(f for f in server.arbre_statut_preuve("I1") if f["fait"] == "DEAT")
     assert death["statut"] == "probable"
     # statut de preuve recalculé dans Gramps : étiquette et note Sosa:auto de l'événement
@@ -131,7 +133,9 @@ def test_undo_restores_previous_state(gapp, fake):
     r = server.arbre_appliquer(server.arbre_proposer(CIT_DEATH, "Décès", "Acte lu.")["jeton"])
     u = server.arbre_annuler_modification(r["transaction"])
     assert "jeton" in u and len(fake.transactions) == 1
+    assert "validée" not in str(u).lower()  # #17 : rien n'est validé à la préparation de l'annulation
     done = server.arbre_appliquer(u["jeton"])
+    assert "validée explicitement" in fake.messages[-1]
     assert done["annule"] == r["transaction"]
     strip = lambda objs: {c: {h: {k: v for k, v in o.items() if k != "change"} for h, o in d.items()}  # noqa: E731
                           for c, d in objs.items()}

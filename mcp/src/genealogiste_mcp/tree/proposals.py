@@ -107,8 +107,12 @@ def commit_message(ctx: Ctx, titre: str, justification: str, sources: list[str] 
         f"Justification : {justification.strip()}\n\n"
         "Opérations :\n" + ("\n".join(f"- {s}" for s in ctx.summary) or "- (recalcul)") + "\n\n"
         "Sources :\n" + ("\n".join(src_lines) if src_lines else "- (aucune source citée : données non sourcées)")
-        + f"\n\nValidé explicitement par l'utilisateur (proposition {token})"
     )
+
+
+def validated(message: str, token: str) -> str:
+    """Mention de l'accord, ajoutée seulement au moment de l'écriture (jamais dans l'aperçu de la proposition)."""
+    return f"{message}\n\nValidé explicitement par l'utilisateur (proposition {token})"
 
 
 def prepare(tree, operations: list[dict], titre: str, justification: str, sources: list[str] | None,
@@ -182,7 +186,7 @@ class Proposals:
             commit = self.store.revert(record["commit"])
             return {"commit": commit, "resume": record["resume"]}
         self.store.path.write_text(record["resultat"], encoding="utf-8")
-        commit = self.store.commit(record["message"])
+        commit = self.store.commit(validated(record["message"], token))
         return {"commit": commit, "resume": record["resume"], "references_creees": record["references"]}
 
     def cancel(self, token: str) -> bool:
