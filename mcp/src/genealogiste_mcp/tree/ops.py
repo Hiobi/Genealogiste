@@ -96,6 +96,10 @@ def _citation(ctx: Ctx, d: dict) -> Citation:
             d["page"] = f"vue {a.vue}"
     if d["source"] not in ctx.tree.sources:
         raise OpError(f"Citation : source inconnue {d['source']!r} (créer la source d'abord)")
+    d["medias"] = [ctx.r(m) for m in d.get("medias") or []]
+    for m in d["medias"]:
+        if m not in ctx.tree.medias:
+            raise OpError(f"Citation : média inconnu {m!r} (ajouter_media d'abord, avec ref)")
     for k, allowed in (("type_source", ("originale", "derivee", "composite", "indeterminee")),
                        ("information", ("primaire", "secondaire", "indeterminee")),
                        ("preuve", ("directe", "indirecte", "negative"))):

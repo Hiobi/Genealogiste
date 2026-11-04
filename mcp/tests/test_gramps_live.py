@@ -78,3 +78,34 @@ def test_propose_apply_conflict_undo(client, loaded, tmp_path):
     b.apply(b.propose_undo(r["transaction"])["jeton"])
     death = next(e for e in b.load(fresh=True).personnes["I1"].evenements if e.type == "DEAT")
     assert not any(c.page == "Décès 1885, acte n° 3" for c in death.citations)
+
+
+def test_media_upload_and_citation_link(client, loaded, tmp_path):
+    """#8 : image fictive envoyée par PUT /media/{handle}/file, liée à une citation, chemin du serveur conservé."""
+    import hashlib
+    import io
+
+    from PIL import Image
+    buf = io.BytesIO()
+    Image.new("L", (120, 80), 128).save(buf, "JPEG")
+    jpeg = buf.getvalue()
+    (tmp_path / "medias").mkdir()
+    (tmp_path / "medias" / "acte-test.jpg").write_bytes(jpeg)
+    b = GrampsBackend(client, tmp_path, tmp_path / ".propositions", ttl=0)
+    ops = [{"op": "ajouter_media", "ref": "img", "fichier": "medias/acte-test.jpg", "format": "image/jpeg",
+            "titre": "Image fictive (test)"},
+           {"op": "ajouter_citation", "cible": {"type": "evenement", "uid": "11111111-1111-4111-8111-111111111113"},
+            "citation": {"source": "S1", "page": "Image test", "medias": ["$img"]}}]
+    p = b.propose(ops, "Média de test", "Image fictive (test).")
+    assert p["transaction_gramps"]["fichiers_a_envoyer"]
+    r = b.apply(p["jeton"])
+    assert r["medias"]["envoyes"] and not r["medias"]["erreurs"], r
+    db = client.load_all()
+    media = next(m for m in db.all("Media").values() if m.get("desc") == "Image fictive (test)")
+    assert media["checksum"] == hashlib.md5(jpeg).hexdigest() and media["path"] != "medias/acte-test.jpg"
+    got = client.request("GET", f"/media/{media['handle']}/file")
+    assert got.status_code == 200 and got.content == jpeg
+    t, _ = gramps_to_tree(db)
+    assert any(m.fichier == "medias/acte-test.jpg" for m in t.medias.values())
+    assert diff(db, tree_to_gramps(t, base=db)) == []  # rien à réécrire : chemin du serveur conservé
+    assert b.media_status()["a_envoyer"] == []

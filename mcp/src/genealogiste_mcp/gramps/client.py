@@ -75,10 +75,11 @@ class GrampsClient:
             self._renew()
         return {"Authorization": f"Bearer {self._access}"}
 
-    def request(self, method: str, path: str, **kw) -> httpx.Response:
+    def request(self, method: str, path: str, headers: dict | None = None, **kw) -> httpx.Response:
         for attempt in (1, 2):
             try:
-                r = self.client.request(method, f"{self.base}{path}", headers=self._headers(), **kw)
+                r = self.client.request(method, f"{self.base}{path}", headers={**self._headers(), **(headers or {})},
+                                        **kw)
             except httpx.HTTPError as exc:
                 raise GrampsError(f"Gramps Web injoignable ({type(exc).__name__})") from exc
             if r.status_code == 401 and attempt == 1:
@@ -100,6 +101,16 @@ class GrampsClient:
         if r.status_code >= 400:
             raise GrampsError(f"Gramps Web {what} : HTTP {r.status_code} {self._message(r)}", r.status_code)
         return r
+
+    def upload_media(self, handle: str, data: bytes, mime: str, checksum: str = "") -> None:
+        """Envoie le fichier d'un objet Media existant (PUT /media/{handle}/file) ; If-Match = somme actuelle."""
+        headers = {"Content-Type": mime or "application/octet-stream"}
+        if checksum:
+            headers["If-Match"] = f'"{checksum}"'
+        r = self.request("PUT", f"/media/{handle}/file", headers=headers, content=data)
+        if r.status_code == 412:
+            raise ConflictError("Conflit : le fichier du média a été modifié dans Gramps Web depuis la lecture.")
+        self._ok(r, f"envoi du fichier du média {handle}")
 
     # ------------------------------------------------------------------ lecture
     def list(self, cls: str, **params) -> list[dict]:

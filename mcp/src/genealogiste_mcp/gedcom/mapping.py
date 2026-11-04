@@ -118,6 +118,9 @@ class _Reader:
         quay = n.val("QUAY")
         known = {"PAGE", "DATA", "QUAY", "_TYPE", "_INFO", "_PREUVE", "_CONSULT", "_VU", "_ARK", "NOTE", "CONT",
                  "CONC"}
+        medias = [strip_xref(x.value) for x in n.all("OBJE") if x.value.strip().startswith("@")]
+        if medias:
+            known = known | {"OBJE"}
         extra = [c.to_dict() for c in n.children if c.tag not in known]
         if data:
             others = [c for c in data.children if c.tag != "TEXT"]
@@ -129,7 +132,7 @@ class _Reader:
             type_source=n.val("_TYPE", "indeterminee"), information=n.val("_INFO", "indeterminee"),
             preuve=n.val("_PREUVE", "directe"), date_consultation=n.val("_CONSULT"),
             note="\n".join(x.value for x in n.all("NOTE")), consultation=n.val("_VU"), ark=n.val("_ARK"),
-            extra=extra,
+            medias=medias, extra=extra,
         )
 
     def place(self, n: Node | None) -> Place | None:
@@ -410,6 +413,8 @@ def _w_citation(parent: Node, c: Citation, tag: str = "SOUR") -> None:
     n.add_if("_VU", c.consultation)
     n.add_if("_CONSULT", c.date_consultation)
     n.add_if("_ARK", c.ark)
+    for m in c.medias:
+        n.add("OBJE", f"@{m}@")
     n.add_if("NOTE", c.note)
     _extra(n, [x for x in c.extra if x.get("tag") != "DATA"])
 

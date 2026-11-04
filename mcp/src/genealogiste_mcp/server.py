@@ -927,6 +927,17 @@ def gramps_recalculer_notes() -> dict:
 
 
 @mcp.tool()
+def gramps_envoyer_medias(appliquer: bool = False) -> dict:
+    """Mode gramps : fichiers des médias (images d'actes de <données>/medias/) absents ou différents dans Gramps
+    Web (somme MD5). appliquer=False : liste seulement ; appliquer=True, après accord explicite de
+    l'utilisateur sur la liste : envoi (PUT /media/{handle}/file). Les médias d'une proposition acceptée sont
+    envoyés automatiquement avec elle (fichiers_a_envoyer)."""
+    if app().config.backend != "gramps":
+        return {"erreur": "Disponible en mode gramps (GENEALOGISTE_BACKEND=gramps)."}
+    return _gramps_guard(app().backend.media_send if appliquer else app().backend.media_status)
+
+
+@mcp.tool()
 def gramps_synchroniser() -> dict:
     """Mode gramps : relit les modifications faites dans Gramps Web depuis la dernière lecture (incrémental) ;
     avec le miroir Git, les commite (« Modifications externes »)."""
