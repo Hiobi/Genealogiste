@@ -33,10 +33,10 @@ def fake():
         yield f
 
 
-def make_app(tmp_path, backend="gramps", mirror=False, remote=""):
+def make_app(tmp_path, backend="gramps", mirror=False, remote="", notes_auto="true"):
     cfg = Config(data_dir=tmp_path / "donnees", cache_path=tmp_path / "cache.sqlite", backend=backend,
                  gramps_url=URL, gramps_user="sosa", gramps_password="secret", git_mirror=mirror, git_remote=remote,
-                 gramps_ttl=0)
+                 gramps_ttl=0, gramps_notes_auto=notes_auto)
     a = server.App(cfg, sleeper=lambda s: None)
     server.set_app(a)
     return a
@@ -84,9 +84,11 @@ def test_propose_then_apply_is_one_transaction(gapp, fake):
     assert "jeton" in p and p["transaction_gramps"]["bilan"]["Citation"]["add"] == 1
     assert "+3 PAGE Décès 1885, acte n° 3" in p["diff"]
     assert len(fake.transactions) == n  # rien d'écrit avant l'accord
+    assert "Validé" not in p["message_de_transaction"]  # #17 : pas de validation affirmée à la proposition
     r = server.arbre_appliquer(p["jeton"])
     assert "transaction" in r and len(fake.transactions) == n + 1 and not fake.forced
     assert "Justification : Acte lu" in fake.messages[-1] and "2 E 299" in fake.messages[-1]
+    assert f"Validé explicitement par l'utilisateur (proposition {p['jeton']})" in fake.messages[-1]
     death = next(f for f in server.arbre_statut_preuve("I1") if f["fait"] == "DEAT")
     assert death["statut"] == "probable"
     # statut de preuve recalculé dans Gramps : étiquette et note Sosa:auto de l'événement
@@ -131,7 +133,9 @@ def test_undo_restores_previous_state(gapp, fake):
     r = server.arbre_appliquer(server.arbre_proposer(CIT_DEATH, "Décès", "Acte lu.")["jeton"])
     u = server.arbre_annuler_modification(r["transaction"])
     assert "jeton" in u and len(fake.transactions) == 1
+    assert "validée" not in str(u).lower()  # #17 : rien n'est validé à la préparation de l'annulation
     done = server.arbre_appliquer(u["jeton"])
+    assert "validée explicitement" in fake.messages[-1]
     assert done["annule"] == r["transaction"]
     strip = lambda objs: {c: {h: {k: v for k, v in o.items() if k != "change"} for h, o in d.items()}  # noqa: E731
                           for c, d in objs.items()}
@@ -243,3 +247,118 @@ def test_backend_names():
     assert backend_name("gramps") == backend_name("grampsweb") == "gramps"
     with pytest.raises(ValueError):
         backend_name("sqlite")
+
+
+def test_untagged_proof_notes_are_adopted_not_duplicated(tmp_path, fake, tree):
+    """#15 : notes de preuve importées sans étiquette Sosa:auto (export GEDCOM/GeneWeb) reconnues et adoptées."""
+    import re
+    seed(fake, tree)
+    auto = next(h for h, t in fake.objects["Tag"].items() if t["name"] == SOSA_AUTO)
+    del fake.objects["Tag"][auto]
+    for n in fake.objects["Note"].values():
+        n["tag_list"] = [t for t in n["tag_list"] if t != auto]
+        n["type"] = {"_class": "NoteType", "value": 1, "string": ""}  # « General », comme après un import GEDCOM
+    notes_before = len(fake.objects["Note"])
+    make_app(tmp_path)
+    try:
+        p = server.arbre_proposer(CIT_DEATH, "Décès", "Acte lu.")
+        assert p["transaction_gramps"]["bilan"].get("Note", {}).get("add", 0) == 0
+        server.arbre_appliquer(p["jeton"])
+    finally:
+        server.set_app(None)
+    assert len(fake.objects["Note"]) == notes_before
+    proof = re.compile(r"^(⛔|🟡|🟢|✅|⚠️|❌) Preuve : ")
+    for ev in fake.objects["Event"].values():
+        texts = [fake.objects["Note"][h]["text"]["string"] for h in ev["note_list"]]
+        assert sum(bool(proof.match(t)) for t in texts) <= 1
+    new_auto = next(h for h, t in fake.objects["Tag"].items() if t["name"] == SOSA_AUTO)
+    assert all(new_auto in n["tag_list"] for n in fake.objects["Note"].values()
+               if proof.match(n["text"]["string"]) or n["text"]["string"].startswith("Fiche de preuve"))
+
+
+def test_generated_note_patterns():
+    from genealogiste_mcp.gramps.mapping import looks_generated
+    assert looks_generated("🟡 Preuve : hypothèse — 1 source(s)\nÀ consulter : AD")
+    assert looks_generated("⚠️ Preuve : contradictoire — 0 source(s)")
+    assert looks_generated("Filiation de Jean MARTIN : ⛔ non sourcé")
+    assert looks_generated("Fiche de preuve (plugin genealogiste) — réf. I1\n…")
+    assert looks_generated("Lien : https://exemple.org/x")
+    assert not looks_generated("Vérifier le registre paroissial")
+    assert not looks_generated("Preuve : voir le registre")  # sans icône : note manuelle
+    assert not looks_generated("Lien : voir mon cousin")
+
+
+# ---------------------------------------------------------------------------- #16 : notes auto configurables
+
+def _app_with(tmp_path, fake, tree, mode):
+    seed(fake, tree)
+    return make_app(tmp_path, notes_auto=mode)
+
+
+def _death_event(fake):
+    return next(e for e in fake.objects["Event"].values() if tname(e["type"]) == "Death"
+                and any(a["value"] == "11111111-1111-4111-8111-111111111113" for a in e["attribute_list"]))
+
+
+def test_notes_auto_false_keeps_existing_and_generates_nothing(tmp_path, fake, tree):
+    import copy
+    _app_with(tmp_path, fake, tree, "false")
+    try:
+        notes_before = copy.deepcopy(fake.objects["Note"])
+        p = server.arbre_proposer(CIT_DEATH, "Décès", "Acte lu.")
+        assert set(p["transaction_gramps"]["bilan"]) <= {"Citation", "Event"}
+        server.arbre_appliquer(p["jeton"])
+        assert fake.objects["Note"] == notes_before  # notes générées existantes conservées, aucune nouvelle
+        ev = _death_event(fake)
+        assert set(ev["note_list"]) <= set(notes_before)
+        assert "désactivées" in server.gramps_recalculer_notes()["erreur"]
+    finally:
+        server.set_app(None)
+
+
+def test_notes_auto_modifies_limits_recalculation(tmp_path, fake, tree):
+    _app_with(tmp_path, fake, tree, "modifies")
+    try:
+        # notes périmées partout (comme après des modifications dans l'interface)
+        for n in fake.objects["Note"].values():
+            n["text"]["string"] += " (périmé)"
+        p = server.arbre_proposer(CIT_DEATH, "Décès", "Acte lu.")
+        notes = p["transaction_gramps"]["bilan"].get("Note", {})
+        # seulement Jean MARTIN, ses événements et ses familles : pas toute la base
+        assert 0 < notes.get("update", 0) < len(fake.objects["Note"]) // 2, notes
+        server.arbre_appliquer(p["jeton"])
+        ev = _death_event(fake)
+        assert any("probable" in fake.objects["Note"][h]["text"]["string"]
+                   and "périmé" not in fake.objects["Note"][h]["text"]["string"] for h in ev["note_list"])
+        stale = [n for n in fake.objects["Note"].values() if "périmé" in n["text"]["string"]]
+        assert stale  # les autres notes ne sont pas recalculées
+        assert "jeton" in server.gramps_recalculer_notes()  # recalcul global toujours possible
+    finally:
+        server.set_app(None)
+
+
+def test_massive_transaction_warning_and_proof_only_count(tmp_path, fake, tree):
+    from genealogiste_mcp.gramps import backend as gb
+    _app_with(tmp_path, fake, tree, "true")
+    try:
+        for n in fake.objects["Note"].values():
+            n["text"]["string"] += " (périmé)"
+        old = gb.MASSIVE_OBJECTS
+        gb.MASSIVE_OBJECTS = 5
+        try:
+            p = server.arbre_proposer(CIT_DEATH, "Décès", "Acte lu.")
+        finally:
+            gb.MASSIVE_OBJECTS = old
+        tg = p["transaction_gramps"]
+        assert tg["dont_notes_de_preuve_seules"] >= 10
+        assert any("notes de preuve" in w for w in p["avertissements"])
+    finally:
+        server.set_app(None)
+
+
+def test_notes_auto_config_values():
+    from genealogiste_mcp.config import notes_auto_mode
+    assert notes_auto_mode("") == "true" and notes_auto_mode("Modifies") == "modifies"
+    assert notes_auto_mode("non") == "false"
+    with pytest.raises(ValueError):
+        notes_auto_mode("parfois")

@@ -33,6 +33,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import re
 import uuid
 from dataclasses import asdict, dataclass, field
 
@@ -81,6 +82,14 @@ A_PRECISION, A_PAROISSE, A_CAUSE, A_AGE = "Précision", "Paroisse", "Cause", "Ag
 CIT_ATTRS = ("Consulté", "Type de source", "Information", "Preuve", "Date de consultation", "QUAY")
 SRC_ATTRS = ("URL", "Type de source", "Dérivée de")
 STATUS_TAG = "Preuve : "
+# Gabarits des notes générées par Sosa (export GEDCOM/GeneWeb, ancien export Gramps) : reconnues comme
+# générées même sans étiquette Sosa:auto, puis adoptées (étiquetées et réécrites en place) au lieu d'être doublées.
+GENERATED_NOTE = re.compile(r"^(?:(?:⛔|🟡|🟢|✅|⚠️|⚠|❌) Preuve : |Filiation de .+ : |"
+                            r"Fiche de preuve \(plugin genealogiste\)|Lien : https?://)")
+
+
+def looks_generated(text: str) -> bool:
+    return bool(GENERATED_NOTE.match(text or ""))
 EVEN_DEFAULT = "Événement"
 
 TYPES = {
@@ -288,7 +297,9 @@ class _Reader:
 
     # ------------------------------------------------------------------ notes, citations, lieux
     def is_auto(self, note: dict) -> bool:
-        return bool(self.auto_tag) and self.auto_tag in (note.get("tag_list") or [])
+        if self.auto_tag and self.auto_tag in (note.get("tag_list") or []):
+            return True
+        return looks_generated(self.note_text(note))
 
     def note(self, h: str) -> dict | None:
         n = self.db.get("Note", h)
@@ -635,7 +646,8 @@ def proof_data(tree: Tree, strict: bool = False) -> dict:
 
 
 class _Writer:
-    def __init__(self, tree: Tree, base: GrampsDb | None, strict: bool, generated: bool):
+    def __init__(self, tree: Tree, base: GrampsDb | None, strict: bool, generated: bool,
+                 only: set[tuple[str, str]] | None = None):
         self.t = tree
         self.base = base or GrampsDb()
         self.strict = strict
@@ -645,6 +657,7 @@ class _Writer:
         self.out = GrampsDb()
         self.gen = proof_data(tree, strict) if generated else {"notes": {}, "status": {}, "best": {}}
         self.generated = generated
+        self.only = only  # None : toutes les notes générées recalculées ; sinon seulement ces objets (cls, clé)
         self.place_by_name: dict[str, str] = {}
         for h in self.base.all("Place"):
             nm = self.reader.place_name(self.base.all("Place")[h])
@@ -656,6 +669,13 @@ class _Writer:
                       "temoins_lies": 0, "temoins_nommes": 0, "associations": 0, "sources_url": 0}
 
     # ------------------------------------------------------------------ utilitaires
+    def regen(self, cls: str, key: str) -> bool:
+        """Notes et étiquettes de preuve de cet objet recalculées ? Sinon celles de la base sont gardées telles quelles."""
+        return self.generated and (self.only is None or (cls, key) in self.only)
+
+    def auto(self, cls: str, key: str) -> list[tuple[str, str]] | None:
+        return self.gen["notes"].get((cls, key)) if self.regen(cls, key) else None
+
     def handle(self, cls: str, key: str) -> str:
         return self.info.handles.get((cls, key)) or det_handle(cls, key)
 
@@ -753,9 +773,11 @@ class _Writer:
         return h
 
     def notes(self, texts: list[str], base_handles: list[str] | None, typ: str, owner: str,
-              auto: list[tuple[str, str]] | None = None, url: str = "") -> list[str]:
+              auto: list[tuple[str, str]] | None = None, url: str = "", keep: bool = False) -> list[str]:
         """Notes d'un objet : manuelles réutilisées à l'identique, partagées (@N1@), générées (Sosa:auto)."""
         base_handles = list(base_handles or [])
+        if self.generated:  # note de preuve venue d'un GEDCOM : régénérée, jamais doublée en note manuelle (#15)
+            texts = [t for t in texts if not looks_generated(t)]
         avail, auto_avail = [], []
         for h in base_handles:
             n = self.base.get("Note", h)
@@ -781,6 +803,12 @@ class _Writer:
                 out.append(hit[0])
             else:
                 out.append(self.plain_note(text, typ, f"{owner}:{i}"))
+        if keep:  # notes générées non recalculées : conservées à l'identique (#16)
+            for h in auto_avail:
+                if h not in self.out.all("Note"):
+                    self.out.put(copy.deepcopy(self.base.get("Note", h)))
+                out.append(h)
+            auto_avail = []
         for i, (atype, text) in enumerate(auto or []):
             if not text:
                 continue
@@ -799,8 +827,10 @@ class _Writer:
         return _same_list(base_handles, out)
 
     def single(self, text: str, base_handles: list[str] | None, typ: str, owner: str,
-               auto: list[tuple[str, str]] | None = None, url: str = "") -> list[str]:
+               auto: list[tuple[str, str]] | None = None, url: str = "", keep: bool = False) -> list[str]:
         """Champ texte unique : la base est gardée telle quelle si son texte est inchangé."""
+        if self.generated and looks_generated(text):  # note de preuve venue d'un GEDCOM (#15)
+            text = ""
         manual = [h for h in base_handles or [] if self.base.get("Note", h)
                   and not self.reader.is_auto(self.base.get("Note", h))]
         if manual and self.reader.single_note(manual) == text:
@@ -808,8 +838,8 @@ class _Writer:
                 if h not in self.out.all("Note"):
                     self.out.put(copy.deepcopy(self.base.get("Note", h)))
             autos = [h for h in base_handles or [] if h not in manual]
-            return _same_list(list(base_handles or []), manual + self.notes([], autos, typ, owner, auto, url))
-        return self.notes([text] if text else [], base_handles, typ, owner, auto, url)
+            return _same_list(list(base_handles or []), manual + self.notes([], autos, typ, owner, auto, url, keep))
+        return self.notes([text] if text else [], base_handles, typ, owner, auto, url, keep)
 
     def shared_note(self, key: str) -> str:
         h = self.handle("Note", key)
@@ -887,11 +917,12 @@ class _Writer:
         self.set_attrs(obj, lambda t: t in (A_UID, A_STATUT, A_CAUSE, A_PAROISSE, A_PRECISION, A_ASSO), desired)
         obj["citation_list"] = _same_list(obj.get("citation_list") or [],
                                           self.citations(e.citations, obj.get("citation_list"), h))
-        auto = self.gen["notes"].get(("Event", e.uid)) if self.generated else None
-        obj["note_list"] = self.single(e.note, obj.get("note_list"), "Event Note", h, auto)
-        tags = [x for x in obj.get("tag_list") or [] if x not in self.reader.status_tags]
+        regen = self.regen("Event", e.uid)
+        obj["note_list"] = self.single(e.note, obj.get("note_list"), "Event Note", h, self.auto("Event", e.uid),
+                                       keep=not regen)
+        tags = [x for x in obj.get("tag_list") or [] if not regen or x not in self.reader.status_tags]
         st = self.gen["status"].get(e.uid)
-        if st and self.generated:
+        if st and regen:
             from ..evidence import LABELS
             tags.append(self.tag(STATUS_TAG + LABELS.get(st, st), STATUS_COLORS.get(st, "#000000"),
                                  list(STATUS_COLORS).index(st) + 1 if st in STATUS_COLORS else 9))
@@ -990,8 +1021,8 @@ class _Writer:
             self.set_attrs(obj, lambda x: x in (A_UID, A_STATUT) or x.startswith(A_STATUT_FIL), desired + statut_attrs)
             obj["citation_list"] = _same_list(obj.get("citation_list") or [],
                                               self.citations(f.citations, obj.get("citation_list"), h))
-            auto = self.gen["notes"].get(("Family", fid)) if self.generated else None
-            obj["note_list"] = self.notes(f.notes, obj.get("note_list"), "Family Note", h, auto)
+            obj["note_list"] = self.notes(f.notes, obj.get("note_list"), "Family Note", h, self.auto("Family", fid),
+                                          keep=not self.regen("Family", fid))
             fams[fid] = obj
             self.stats["familles"] += 1
         # personnes : noms, références (propres, témoins), associations, notes
@@ -1078,8 +1109,8 @@ class _Writer:
                     desired.append(attribute(f"{A_STATUT_NOM}{i}", _statut_write(n.statut_manuel)))
             self.set_attrs(obj, lambda x: x in (A_UID, A_UID_NOMS, A_ASSO, A_VIVANT) or x.startswith(A_STATUT_NOM),
                            desired)
-            auto = self.gen["notes"].get(("Person", pid)) if self.generated else None
-            obj["note_list"] = self.notes(p.notes, obj.get("note_list"), "Person Note", h, auto)
+            obj["note_list"] = self.notes(p.notes, obj.get("note_list"), "Person Note", h, self.auto("Person", pid),
+                                          keep=not self.regen("Person", pid))
             out.put(obj)
             self.stats["personnes"] += 1
         for obj in fams.values():
@@ -1105,10 +1136,12 @@ class _Writer:
                                 else s.original) if s.original else ""),
                 ("URL", s.url)) if v]
             self.set_attrs(obj, lambda x: x in SRC_ATTRS, desired)
-            auto = [("Source Note", f"Lien : {s.url}")] if s.url and self.generated else None
+            regen = self.regen("Source", sid)
+            auto = [("Source Note", f"Lien : {s.url}")] if s.url and regen else None
             if s.url:
                 self.stats["sources_url"] += 1
-            obj["note_list"] = self.single(s.note, obj.get("note_list"), "Source Note", h, auto, url=s.url)
+            obj["note_list"] = self.single(s.note, obj.get("note_list"), "Source Note", h, auto, url=s.url,
+                                           keep=not regen)
             out.put(obj)
         for rid in sorted(t.depots):
             r = t.depots[rid]
@@ -1172,9 +1205,55 @@ class _Writer:
 
 
 def tree_to_gramps(tree: Tree, base: GrampsDb | None = None, strict: bool = False,
-                   generated: bool = True) -> GrampsDb:
-    """Arbre Sosa -> base Gramps (par-dessus ``base`` si fournie). ``generated`` : notes Sosa:auto."""
-    return _Writer(tree, base, strict, generated).build()
+                   generated: bool = True, only: set[tuple[str, str]] | None = None) -> GrampsDb:
+    """Arbre Sosa -> base Gramps (par-dessus ``base`` si fournie). ``generated`` : notes Sosa:auto ; ``only`` :
+    les recalculer seulement pour ces objets (cls, clé Sosa), celles des autres sont conservées telles quelles."""
+    return _Writer(tree, base, strict, generated, only).build()
+
+
+def touched_keys(before: Tree, after: Tree) -> set[tuple[str, str]]:
+    """Objets dont le statut de preuve peut changer : personnes, familles, événements et sources modifiés,
+    plus les membres des familles modifiées et les familles des personnes modifiées (filiations)."""
+    out: set[tuple[str, str]] = set()
+
+    def changed(a, b) -> bool:
+        return a is None or b is None or a.to_dict() != b.to_dict()
+
+    for sid, s in after.sources.items():
+        if changed(before.sources.get(sid), s):
+            out.add(("Source", sid))
+    persons = {pid for pid, p in after.personnes.items() if changed(before.personnes.get(pid), p)}
+    families = {fid for fid, f in after.familles.items() if changed(before.familles.get(fid), f)}
+    for fid in list(families):
+        f = after.familles[fid]
+        persons |= {x for x in (f.epoux, f.epouse, *(c.enfant for c in f.enfants)) if x in after.personnes}
+    for fid, f in after.familles.items():
+        if persons & {f.epoux, f.epouse, *(c.enfant for c in f.enfants)}:
+            families.add(fid)
+    for pid in persons:
+        out.add(("Person", pid))
+        out |= {("Event", e.uid) for e in after.personnes[pid].evenements}
+    for fid in families:
+        out.add(("Family", fid))
+        out |= {("Event", e.uid) for e in after.familles[fid].evenements}
+    return out
+
+
+def proof_only(item: dict, auto_tags: set[str]) -> bool:
+    """Élément de transaction qui ne porte que sur des notes ou étiquettes de preuve générées."""
+    cls = item["_class"]
+    obj = item.get("new") or item.get("old") or {}
+    if cls == "Note":
+        return bool(auto_tags & set(obj.get("tag_list") or [])) or looks_generated(
+            ((obj.get("text") or {}).get("string")) or "")
+    if cls == "Tag":
+        name = obj.get("name") or ""
+        return name == SOSA_AUTO or name.startswith(STATUS_TAG)
+    if item["type"] != "update":
+        return False
+    old, new = _strip_change(item["old"]), _strip_change(item["new"])
+    keys = {k for k in set(old) | set(new) if old.get(k) != new.get(k)}
+    return bool(keys) and keys <= {"note_list", "tag_list"}
 
 
 def tree_to_gramps_stats(tree: Tree, base: GrampsDb | None = None, strict: bool = False,

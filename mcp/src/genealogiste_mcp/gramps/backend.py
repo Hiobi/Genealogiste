@@ -21,12 +21,36 @@ from pathlib import Path
 
 from ..gedcom.mapping import write_gedcom
 from ..models import Tree
-from ..tree.proposals import CONSIGNE, TTL_SECONDS, ProposalError, TokenStore, new_alerts, prepare, tree_diff
+from ..tree.proposals import (
+    CONSIGNE,
+    TTL_SECONDS,
+    ProposalError,
+    TokenStore,
+    new_alerts,
+    prepare,
+    tree_diff,
+    validated,
+)
 from ..tree.store import TreeStore
 from .client import ConflictError, GrampsClient, GrampsError
-from .mapping import GrampsDb, _strip_change, apply_items, diff, gramps_to_tree, summarize, tree_to_gramps
+from .mapping import (
+    SOSA_AUTO,
+    GrampsDb,
+    _strip_change,
+    apply_items,
+    diff,
+    gramps_to_tree,
+    proof_only,
+    summarize,
+    touched_keys,
+    tree_to_gramps,
+)
 
 MAX_PREVIEW_OBJECTS = 40
+
+
+MASSIVE_OBJECTS = 50  # au-delà, pour moins de MASSIVE_OPERATIONS opérations : avertissement explicite
+MASSIVE_OPERATIONS = 5
 
 
 def _now() -> str:
@@ -60,7 +84,7 @@ class GrampsBackend:
 
     def __init__(self, client: GrampsClient, data_dir: Path, proposals_dir: Path, exiger_source: bool = True,
                  strict: bool = False, ttl: float = 30.0, mirror: GitMirror | None = None,
-                 clock=time.monotonic):
+                 clock=time.monotonic, notes_auto: str = "true"):
         self.client = client
         self.tokens = TokenStore(proposals_dir)
         self.log_path = Path(data_dir) / "gramps-transactions.jsonl"
@@ -69,6 +93,7 @@ class GrampsBackend:
         self.ttl = ttl
         self.mirror = mirror
         self.clock = clock
+        self.notes_auto = notes_auto  # true | modifies | false (GENEALOGISTE_GRAMPS_NOTES_AUTO)
         self.db: GrampsDb | None = None
         self._tree: Tree | None = None
         self._read_at = -1e18
@@ -110,33 +135,54 @@ class GrampsBackend:
                 "transactions_journalisees": len(self.transactions(1000))}
 
     # ------------------------------------------------------------------ propositions
-    def _preview(self, items: list[dict]) -> dict:
-        return {"bilan": summarize(items), "objets": [_label(i) for i in items[:MAX_PREVIEW_OBJECTS]]
-                + ([f"… {len(items) - MAX_PREVIEW_OBJECTS} autre(s)"] if len(items) > MAX_PREVIEW_OBJECTS else [])}
+    def _preview(self, items: list[dict], db: GrampsDb | None = None) -> dict:
+        out = {"bilan": summarize(items), "objets": [_label(i) for i in items[:MAX_PREVIEW_OBJECTS]]
+               + ([f"… {len(items) - MAX_PREVIEW_OBJECTS} autre(s)"] if len(items) > MAX_PREVIEW_OBJECTS else [])}
+        if db is not None:
+            auto_tags = {h for h, t in db.all("Tag").items() if t.get("name") == SOSA_AUTO}
+            out["dont_notes_de_preuve_seules"] = sum(proof_only(i, auto_tags) for i in items)
+        return out
+
+    def _massive(self, items: list[dict], preview: dict, n_ops: int) -> str:
+        if len(items) <= MASSIVE_OBJECTS or n_ops >= MASSIVE_OPERATIONS:
+            return ""
+        proof = preview.get("dont_notes_de_preuve_seules", 0)
+        return (f"Transaction massive : {len(items)} objets Gramps pour {n_ops} opération(s), dont {proof} portant "
+                f"seulement sur des notes de preuve générées (Sosa:auto) et {len(items) - proof} réellement modifiés. "
+                "Cause probable : première écriture sur cette base ou recalcul global des notes de preuve. "
+                "Pour l'éviter : GENEALOGISTE_GRAMPS_NOTES_AUTO=modifies (recalcul limité aux objets touchés) "
+                "ou false (aucune note générée).")
 
     def propose(self, operations: list[dict], titre: str, justification: str,
-                sources: list[str] | None = None) -> dict:
+                sources: list[str] | None = None, all_notes: bool = False) -> dict:
         db = self.snapshot(fresh=True)
         tree = self.load()
         ctx, token, message = prepare(tree, operations, titre, justification, sources, self.exiger_source)
-        new = tree_to_gramps(ctx.tree, base=db, strict=self.strict)
+        only = touched_keys(tree, ctx.tree) if self.notes_auto == "modifies" and not all_notes else None
+        new = tree_to_gramps(ctx.tree, base=db, strict=self.strict, generated=self.notes_auto != "false", only=only)
         items = diff(db, new)
         if not items:
             raise ProposalError("La proposition ne modifie rien.")
+        preview = self._preview(items, db)
+        warnings = list(ctx.warnings)
+        if w := self._massive(items, preview, len(operations)):
+            warnings.append(w)
         self.tokens.create({"jeton": token, "type": "transaction", "items": items, "message": message,
                             "operations": operations, "resume": ctx.summary, "references": ctx.refs})
         return {
             "jeton": token, "expire_dans_minutes": TTL_SECONDS // 60, "resume": ctx.summary,
             "references_creees": ctx.refs, "diff": tree_diff(write_gedcom(tree), write_gedcom(ctx.tree), "Gramps Web"),
-            "transaction_gramps": self._preview(items), "nouvelles_alertes_coherence": new_alerts(tree, ctx.tree),
-            "avertissements": ctx.warnings, "message_de_transaction": message, "consigne": CONSIGNE,
+            "transaction_gramps": preview, "nouvelles_alertes_coherence": new_alerts(tree, ctx.tree),
+            "avertissements": warnings, "message_de_transaction": message, "consigne": CONSIGNE,
         }
 
     def propose_notes(self) -> dict:
         """Recalcul des notes de preuve Sosa:auto (après des modifications faites dans l'interface)."""
+        if self.notes_auto == "false":
+            raise ProposalError("Notes de preuve générées désactivées (GENEALOGISTE_GRAMPS_NOTES_AUTO=false).")
         return self.propose([], "Recalcul des notes de preuve (Sosa:auto)",
                             "Notes et étiquettes de preuve générées recalculées sur l'état actuel de l'arbre ; "
-                            "les notes manuelles ne sont pas touchées.")
+                            "les notes manuelles ne sont pas touchées.", all_notes=True)
 
     def _check(self, db: GrampsDb, items: list[dict], side: str = "old") -> None:
         """Conflit si un objet a changé depuis la proposition (comparaison locale, puis par le serveur)."""
@@ -169,19 +215,21 @@ class GrampsBackend:
         kind = record.get("type")
         if kind == "annulation":
             self._check(db, record["items"], side="new")
-            written = self._write(record["items"], record["message"], undo=True)
-            self._log({"id": token, "type": "annulation", "annule": record["annule"], "message": record["message"],
+            message = f"{record['message']}, validée explicitement par l'utilisateur (jeton {token})."
+            written = self._write(record["items"], message, undo=True)
+            self._log({"id": token, "type": "annulation", "annule": record["annule"], "message": message,
                        "items": written})
-            commit = self.mirror.sync(self.load(fresh=False), record["message"]) if self.mirror else ""
+            commit = self.mirror.sync(self.load(fresh=False), message) if self.mirror else ""
             return {"transaction": token, "annule": record["annule"], "objets": summarize(written),
                     "miroir_git": commit or None}
         if kind != "transaction":
             raise ProposalError("Jeton d'un autre type (bascule : utiliser gramps_bascule_appliquer).")
         self._check(db, record["items"])
-        written = self._write(record["items"], record["message"])
-        self._log({"id": token, "type": "transaction", "message": record["message"], "resume": record["resume"],
+        message = validated(record["message"], token)
+        written = self._write(record["items"], message)
+        self._log({"id": token, "type": "transaction", "message": message, "resume": record["resume"],
                    "items": written})
-        commit = self.mirror.sync(self.load(fresh=False), record["message"]) if self.mirror else ""
+        commit = self.mirror.sync(self.load(fresh=False), message) if self.mirror else ""
         return {"transaction": token, "resume": record["resume"], "references_creees": record["references"],
                 "objets": summarize(written), "miroir_git": commit or None}
 
@@ -194,7 +242,7 @@ class GrampsBackend:
             raise ProposalError(f"La transaction {reference} a déjà été annulée.")
         self.snapshot(fresh=True)
         title = entry["message"].splitlines()[0] if entry.get("message") else reference
-        message = f"Annulation : {title}\n\nAnnulation de la transaction {reference}, validée explicitement."
+        message = f"Annulation : {title}\n\nAnnulation de la transaction {reference}"
         token = self.tokens.create({"type": "annulation", "annule": reference, "items": entry["items"],
                                     "message": message, "resume": [f"Annulation de {reference} : {title}"]})
         return {"jeton": token, "expire_dans_minutes": TTL_SECONDS // 60, "annule": {"id": reference, "titre": title},
@@ -229,7 +277,8 @@ class GrampsBackend:
 
 # ============================================================================ bascule fichier -> Gramps Web
 
-def bascule_preview(client: GrampsClient, store: TreeStore, tokens: TokenStore, strict: bool) -> dict:
+def bascule_preview(client: GrampsClient, store: TreeStore, tokens: TokenStore, strict: bool,
+                    generated: bool = True) -> dict:
     """Prépare l'envoi de l'arbre local complet dans un arbre Gramps Web vide (vivants inclus : instance
     privée). Après accord, Gramps Web devient la référence et arbre.ged est figé."""
     if store.frozen():
@@ -240,7 +289,7 @@ def bascule_preview(client: GrampsClient, store: TreeStore, tokens: TokenStore, 
         raise ProposalError(f"L'arbre Gramps Web n'est pas vide ({occupied}) : la bascule exige un arbre vide "
                             "(pas de synchronisation bidirectionnelle).")
     tree = store.load()
-    new = tree_to_gramps(tree, base=remote, strict=strict)
+    new = tree_to_gramps(tree, base=remote, strict=strict, generated=generated)
     items = diff(remote, new)
     if not items:
         raise ProposalError("Arbre local vide : rien à basculer.")

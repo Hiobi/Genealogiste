@@ -23,6 +23,7 @@ jamais dans Git, un journal ou une issue.
 | `GENEALOGISTE_GRAMPS_URL` | ex. `http://localhost:5055` (`http://grampsweb:5000` dans la stack Docker) |
 | `GENEALOGISTE_GRAMPS_USER` / `_PASSWORD` | compte local dédié, rôle Editor |
 | `GENEALOGISTE_GRAMPS_TTL` | secondes entre deux relectures incrémentales en lecture (défaut 30) |
+| `GENEALOGISTE_GRAMPS_NOTES_AUTO` | notes de preuve `Sosa:auto` : `true` (défaut, recalcul sur toute la base à chaque écriture), `modifies` (recalcul limité aux objets touchés), `false` (aucune note ni étiquette générée ; celles qui existent sont conservées telles quelles) |
 | `GENEALOGISTE_GIT_MIRROR` | `true` : miroir GEDCOM 7 versionné de l'arbre Gramps (défaut `false`) |
 | `GENEALOGISTE_GIT_REMOTE` | dépôt distant optionnel du répertoire de données (**privé**) |
 
@@ -82,7 +83,23 @@ lieu Gramps (coordonnées et code INSEE mis en commun). Un événement partagé 
 Statut de preuve de chaque fait (note *Research* + étiquette « Preuve : … » sur l'événement), fiche de preuve
 de la personne, filiations de la famille, lien cliquable des sources : notes étiquetées **`Sosa:auto`**,
 recalculées à chaque écriture et ignorées à la lecture. Après des modifications faites dans l'interface,
-`gramps_recalculer_notes` propose leur recalcul. Les notes manuelles ne sont **jamais** modifiées.
+`gramps_recalculer_notes` propose leur recalcul (toute la base, même en mode `modifies` ; refusé en mode
+`false`). Les notes manuelles ne sont **jamais** modifiées.
+
+En mode `modifies`, sont recalculées les notes des personnes, familles, événements et sources modifiés par la
+proposition, plus les membres des familles modifiées et les familles des personnes modifiées (filiations). Le
+statut d'un fait calculé localement (`arbre_fiche`, `arbre_statut_preuve`) reste toujours exact ; seules les
+notes de la base Gramps peuvent être en retard.
+
+`arbre_proposer` indique dans `transaction_gramps.dont_notes_de_preuve_seules` combien d'objets ne changent que
+par leurs notes ou étiquettes de preuve, et ajoute un avertissement quand la transaction dépasse 50 objets pour
+moins de 5 opérations (première écriture, recalcul global).
+
+Les notes de preuve **sans** étiquette (import d'un GEDCOM ou d'un export GeneWeb produit par Sosa) sont
+reconnues à leur gabarit : `⛔|🟡|🟢|✅|⚠️|❌ Preuve : …`, `Filiation de … : …`,
+`Fiche de preuve (plugin genealogiste)…`, `Lien : http…`. Elles sont **adoptées** à la première écriture
+(étiquetées `Sosa:auto` et réécrites en place), jamais doublées. Une note manuelle qui commence par l'un de ces
+gabarits est donc traitée comme générée : la reformuler si elle doit être conservée.
 
 ## Bascule fichier → Gramps Web
 
