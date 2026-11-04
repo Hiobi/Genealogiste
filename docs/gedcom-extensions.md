@@ -12,6 +12,7 @@ Déclarées dans `HEAD.SCHMA` ; ignorées sans perte par les logiciels qui ne le
 | `_SIGLE` | `REPO` | texte | sigle du dépôt (AD17, AN, SHD…) pour la citation normalisée |
 | `_ORIG` | enregistrement `SOUR` | pointeur `@S…@` | source originale dont celle-ci dérive (indépendance) |
 | `_URL` | enregistrement `SOUR` | URL | accès en ligne |
+| `_ARK` | enregistrement `SOUR`, citation | `ark:/NAAN/nom[/qualificatif]` | identifiant pérenne : ressource (source, sans qualificatif) ou image / page (citation) |
 | `_SOUR` | `FAM.CHIL` | structure de citation | preuve de la filiation (GEDCOM 7 n'autorise pas `SOUR` sous `CHIL`) |
 | `_STAT` | événement, `NAME`, `FAM`, `FAM.CHIL` | `refute` \| `contradictoire` (+ `NOTE` justification) | statut **manuel** ; les autres statuts sont calculés |
 | `_VIVANT` | `INDI` | `Y` \| `N` | forçage du statut vivant (RGPD) |

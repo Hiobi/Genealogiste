@@ -16,7 +16,7 @@ est refusé, sauf `"non_source": true` + `"motif": "…"` (la mention « Non sou
 
 | op | Paramètres |
 |---|---|
-| `ajouter_source` | `titre`*, `auteur`, `publication`, `depot`, `cote`, `url`, `type_source`, `original`, `note`, `ref` |
+| `ajouter_source` | `titre`*, `auteur`, `publication`, `depot`, `cote`, `url`, `ark`, `type_source`, `original`, `note`, `ref` |
 | `ajouter_depot` | `nom`, `sigle`, `adresse`, `url`, `ref` |
 | `modifier_source` | `id`, `champs` |
 | `ajouter_personne` | `noms`* `[{prenoms, nom, surnom, type, citations}]`, `sexe`, `evenements`, `citations`, `notes`, `vivant`, `ref` |
@@ -32,11 +32,22 @@ est refusé, sauf `"non_source": true` + `"motif": "…"` (la mention « Non sou
 | `lier_enfant` / `delier_enfant` | `famille`, `enfant`, (`filiation`, `citations`, `non_source`, `motif`) |
 | `lier_conjoint` | `famille`, `personne`, `role` (`epoux`/`epouse`) |
 | `ajouter_citation` | `cible` `{type: evenement(uid) | nom(id, index) | filiation(famille, enfant) | personne | famille | media (id)}`, `citation` |
+| | Citation : `source`, `page`, `texte`, `qualite`, `type_source`, `information`, `preuve`, `consultation`, `ark`, `note` |
 | `ajouter_media` | `fichier`*, `format`, `titre`, `citations`, `lier_a` `[ids]`, `ref` |
 | `fusionner_personnes` | `conserver`, `absorber`, `justification`*, `forcer` |
 | `scinder_personne` | `id`, `evenements` `[uid]`, `familles_parents`, `familles_conjoint`, `noms`, `sexe`, `justification`*, `ref` |
 | `definir_statut` | `cible` `{type: evenement | nom | filiation …}`, `statut` (`refute` \| `contradictoire` \| `""`), `justification`* |
 | `marquer_vivant` | `id`, `vivant` (`Y` \| `N` \| `""`) |
+
+### ARK (liens pérennes des archives)
+
+- `ajouter_source` avec un `ark` (ou une `url` contenant `ark:/NAAN/…`) : ARK de la ressource enregistré sans
+  qualificatif, URL canonique déduite, dépôt déduit du NAAN (créé s'il manque : BnF, AD59, AD62…). Si une
+  source porte déjà le même ARK, elle est **réutilisée** (avertissement) au lieu d'être doublée.
+- Citation avec un `ark` (ou une `page` contenant un ARK) : ARK complet de l'image enregistré ; `source`
+  facultative (retrouvée par l'ARK de la ressource) ; `page` déduite de la vue Gallica (`f12` → « vue 12 »).
+- `ark_resoudre(ark)` : service, URL canonique, repli `n2t.net`, disponibilité (HEAD), manifeste IIIF, citation
+  suggérée. NAAN inconnu : registre public de l'ARK Alliance (cache 30 jours).
 
 Exemple :
 

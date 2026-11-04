@@ -32,7 +32,7 @@ from .core import Node, parse_lines, serialize, strip_xref
 
 EXT_DOC = "https://github.com/hiobi/sosa/blob/main/docs/gedcom-extensions.md"
 EXTENSIONS = ["_STAT", "_TYPE", "_INFO", "_PREUVE", "_CONSULT", "_VU", "_ORIG", "_URL", "_SOUR", "_VIVANT",
-              "_PAROISSE", "_SIGLE"]
+              "_PAROISSE", "_SIGLE", "_ARK"]
 INSEE_EXID = "http://id.insee.fr/geo/commune"
 
 # RELA (GEDCOM 5.5.1, vocabulaire GeneWeb) <-> ROLE GEDCOM 7 + détail français
@@ -116,7 +116,8 @@ class _Reader:
             src = self.inline_source(v or "(source sans titre)")
         data = n.first("DATA")
         quay = n.val("QUAY")
-        known = {"PAGE", "DATA", "QUAY", "_TYPE", "_INFO", "_PREUVE", "_CONSULT", "_VU", "NOTE", "CONT", "CONC"}
+        known = {"PAGE", "DATA", "QUAY", "_TYPE", "_INFO", "_PREUVE", "_CONSULT", "_VU", "_ARK", "NOTE", "CONT",
+                 "CONC"}
         extra = [c.to_dict() for c in n.children if c.tag not in known]
         if data:
             others = [c for c in data.children if c.tag != "TEXT"]
@@ -127,7 +128,8 @@ class _Reader:
             qualite=int(quay) if quay.isdigit() else None,
             type_source=n.val("_TYPE", "indeterminee"), information=n.val("_INFO", "indeterminee"),
             preuve=n.val("_PREUVE", "directe"), date_consultation=n.val("_CONSULT"),
-            note="\n".join(x.value for x in n.all("NOTE")), consultation=n.val("_VU"), extra=extra,
+            note="\n".join(x.value for x in n.all("NOTE")), consultation=n.val("_VU"), ark=n.val("_ARK"),
+            extra=extra,
         )
 
     def place(self, n: Node | None) -> Place | None:
@@ -235,12 +237,13 @@ def read_gedcom(text: str) -> tuple[Tree, dict]:
                 id=r.xref, titre=r.val("TITL"), auteur=r.val("AUTH"), publication=r.val("PUBL"),
                 depot=(strip_xref(repo.value) if repo and strip_xref(repo.value) != "VOID" else ""),
                 cote=repo.val("CALN") if repo else "",
-                url=r.val("_URL") or r.val("WWW"),
+                url=r.val("_URL") or r.val("WWW"), ark=r.val("_ARK"),
                 type_source=r.val("_TYPE", "indeterminee"),
                 original=strip_xref(r.val("_ORIG")),
                 note="\n".join(x.value for x in r.all("NOTE")),
                 extra=[c.to_dict() for c in r.children
-                       if c.tag not in ("TITL", "AUTH", "PUBL", "REPO", "_URL", "WWW", "_TYPE", "_ORIG", "NOTE")],
+                       if c.tag not in ("TITL", "AUTH", "PUBL", "REPO", "_URL", "WWW", "_ARK", "_TYPE", "_ORIG",
+                                        "NOTE")],
             )
     for r in roots:
         tag = r.tag
@@ -406,6 +409,7 @@ def _w_citation(parent: Node, c: Citation, tag: str = "SOUR") -> None:
         n.add("_PREUVE", c.preuve)
     n.add_if("_VU", c.consultation)
     n.add_if("_CONSULT", c.date_consultation)
+    n.add_if("_ARK", c.ark)
     n.add_if("NOTE", c.note)
     _extra(n, [x for x in c.extra if x.get("tag") != "DATA"])
 
@@ -587,6 +591,7 @@ def to_nodes(tree: Tree, version: int = 7) -> list[Node]:
         elif s.cote:
             r.add("REPO", "@VOID@" if version >= 7 else "").add("CALN", s.cote)
         r.add_if("_URL", s.url)
+        r.add_if("_ARK", s.ark)
         if s.type_source and s.type_source != "indeterminee":
             r.add("_TYPE", s.type_source)
         if s.original:

@@ -89,6 +89,7 @@ class Citation(_Base):
     date_consultation: str = ""
     note: str = ""
     consultation: str = ""  # original | image | transcription | index | non_vu ("" = non précisé)
+    ark: str = ""  # identifiant pérenne de l'image ou de la page (ark:/NAAN/nom/qualificatif)
     extra: list = field(default_factory=list)
 
 
@@ -236,6 +237,7 @@ class Source(_Base):
     depot: str = ""  # xref REPO
     cote: str = ""  # CALN
     url: str = ""
+    ark: str = ""  # identifiant pérenne de la ressource (ark:/NAAN/nom), clé de dédoublonnage
     type_source: str = "indeterminee"  # originale | derivee | composite
     original: str = ""  # xref de la source originale dont celle-ci dérive (indépendance)
     note: str = ""

@@ -60,8 +60,8 @@ Module unique, utilisé par l'export Gramps XML et par le mode direct, testé al
 | témoin, parrain, officier… de l'arbre | référence d'événement sur sa fiche (rôle Witness, Godparent, Celebrant, Informant, ou libellé français) + attribut `Sosa-Association` |
 | intervenant seulement nommé | attribut d'événement `Sosa-Association` « rang \| RÔLE \| précision \| nom \| » avec ses citations |
 | parrain/marraine de niveau individu | `personref` + attribut de personne `Sosa-Association` « … \| xref » |
-| citation | page, confiance (QUAY ; attribut `QUAY` si 2), notes `Transcript` / `Citation`, attributs Consulté, Type de source, Information, Preuve, Date de consultation |
-| source | titre, auteur, publication, dépôt + cote, attributs URL, Type de source, Dérivée de |
+| citation | page, confiance (QUAY ; attribut `QUAY` si 2), notes `Transcript` / `Citation`, attributs Consulté, Type de source, Information, Preuve, Date de consultation, ARK |
+| source | titre, auteur, publication, dépôt + cote, attributs URL, ARK, Type de source, Dérivée de |
 | lieu | titre « Commune, Département, Pays », code INSEE, coordonnées ; paroisse en attribut d'événement |
 | âge | attribut `Age` de la référence d'événement |
 | cause, précision du type | attributs `Cause`, `Précision` |
