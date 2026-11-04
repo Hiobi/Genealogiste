@@ -28,6 +28,7 @@ from .journal import Journal
 from .normalize import dates as d
 from .normalize.names import normalize_name, surname_similarity
 from .normalize.places import normalize_place
+from .notes import Notes, NotesError, touched
 from .sources import ark_resolver, familysearch, gallica, geo, liens, matchid, wikidata, wikitree
 from .sources.base import SourceContext
 from .tree.proposals import ProposalError, Proposals, TokenStore
@@ -59,6 +60,8 @@ class App:
         self.proposals = Proposals(self.store, self.config.proposals_dir, self.config.exiger_source)
         self.tokens = TokenStore(self.config.proposals_dir)
         self.sctx = SourceContext(self.http, self.journal, self.config)
+        self.notes = Notes(self.config.notes_dir, self.config.notes_vivants, self.config.strict_evidence,
+                           self.config.sosa_racine, self.journal)
         self._gramps_transport = gramps_transport
         self._gramps_sleeper = sleeper
         self._client = None
@@ -82,6 +85,20 @@ class App:
 
     def tree(self):
         return self.backend.load() if self.config.backend == "gramps" else self.store.load()
+
+    def refresh_notes(self, ids: list[str]) -> dict | None:
+        """Hook : fiches de notes régénérées après une écriture ou une entrée de journal (jamais bloquant)."""
+        if not (self.notes.enabled() and self.config.notes_auto and ids):
+            return None
+        tree = self.tree()
+        out: dict = {"ecrites": [], "erreurs": []}
+        for oid in dict.fromkeys(ids):
+            try:
+                r = self.notes.generate(tree, oid)
+                out["ecrites"] += r["ecrites"]
+            except (NotesError, KeyError, OSError) as exc:
+                out["erreurs"].append(f"{oid} : {exc}")
+        return out
 
 
 _APP: App | None = None
@@ -591,10 +608,16 @@ def arbre_appliquer(jeton: str) -> dict:
     """Écrit une proposition (commit Git, ou transaction Gramps Web en mode gramps). À n'appeler qu'après accord
     EXPLICITE de l'utilisateur sur le diff présenté. Jeton à usage unique, refusé si l'arbre a changé (conflit
     avec une modification faite dans l'interface : recharger, reformuler, redemander l'accord)."""
+    a = app()
+    before = a.tree() if a.notes.enabled() and a.config.notes_auto else None
     try:
-        return _gramps_guard(lambda: app().backend.apply(jeton))
+        res = _gramps_guard(lambda: a.backend.apply(jeton))
     except ProposalError as exc:
         return {"erreur": str(exc)}
+    if before is not None and "erreur" not in res:
+        if notes := a.refresh_notes(touched(before, a.tree())):
+            res["notes"] = notes
+    return res
 
 
 @mcp.tool()
@@ -747,8 +770,42 @@ def journal_ajouter(source: str, operation: str, statut: str, resume: str, param
     statut : positif | negatif | erreur | manuel."""
     if statut not in ("positif", "negatif", "erreur", "manuel"):
         return {"erreur": "statut : positif | negatif | erreur | manuel"}
-    return {"journal": app().journal.add(source, operation, parametres or {}, statut, resume=resume,
-                                         references=references, personne=personne or None)}
+    out = {"journal": app().journal.add(source, operation, parametres or {}, statut, resume=resume,
+                                        references=references, personne=personne or None)}
+    if personne and (notes := app().refresh_notes([personne])):
+        out["notes"] = notes
+    return out
+
+
+# ============================================================================ notes de recherche Markdown
+
+def _notes(fn):
+    try:
+        return fn()
+    except NotesError as exc:
+        return {"erreur": str(exc)}
+
+
+@mcp.tool()
+def notes_generer(id: str = "tout") -> dict:
+    """Crée ou met à jour les fiches Markdown (Obsidian) dans GENEALOGISTE_NOTES_DIR : personne, famille, source
+    ou « tout » (+ index.md). Seules les sections générées et le frontmatter sont réécrits ; le texte libre et les
+    propriétés ajoutées à la main sont conservés ; régénérer sans changement ne modifie aucun fichier."""
+    return _notes(lambda: app().notes.generate(app().tree(), id))
+
+
+@mcp.tool()
+def notes_lire(id: str) -> dict:
+    """Fiche de notes d'une personne, famille ou source, texte libre compris (contexte pour l'agent ; générée si
+    absente). Les notes ne modifient jamais l'arbre : arbre_proposer → accord → arbre_appliquer."""
+    return _notes(lambda: app().notes.read(app().tree(), id))
+
+
+@mcp.tool()
+def notes_ajouter(id: str, texte: str, section: str = "note") -> dict:
+    """Ajoute une entrée datée dans le texte libre d'une fiche, sous la section hypothese | piste | conclusion |
+    courrier | a_faire | note (piste, conclusion, courrier envoyé…)."""
+    return _notes(lambda: app().notes.add(app().tree(), id, texte, section))
 
 
 @mcp.tool()
