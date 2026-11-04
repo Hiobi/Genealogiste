@@ -70,7 +70,7 @@ Module unique, utilisé par l'export Gramps XML et par le mode direct, testé al
 
 Une personne, un événement ou une note créés dans l'interface Gramps sont lus sans attribut Sosa et
 réécrits **à l'identique** tant que Sosa ne les modifie pas. Ce que Sosa ne modélise pas (adresses, URL,
-étiquettes, titres et suffixes de nom, lieux hiérarchiques, médias d'événements, notes isolées…) est
+étiquettes, titres et suffixes de nom, noms alternatifs et dates des lieux, médias d'événements, notes isolées…) est
 conservé tel quel.
 
 Non mappé : les nœuds GEDCOM non interprétés (`extra`), perdus à l'aller-retour. Normalisations : type de
@@ -137,4 +137,16 @@ Le dépôt est local par défaut. `GENEALOGISTE_GIT_REMOTE` ajoute un push aprè
 - `gramps_envoyer_medias` : liste des fichiers absents ou différents dans Gramps Web (médias créés avant cette
   version, bascule), puis envoi avec `appliquer=true` après accord. La bascule envoie aussi les fichiers.
 
-Hors v1 (issues séparées) : plusieurs arbres, fusion native, lieux hiérarchiques.
+## Lieux hiérarchiques
+
+- Un lieu « Commune, Département, Pays » est écrit en hiérarchie Gramps : commune (type *City*, code INSEE,
+  coordonnées) → département (*Department*, code du département) → pays (*Country*). Les lieux englobants sont
+  partagés et réutilisés s'ils existent déjà sous le même nom complet.
+- Le nom relu (commune, puis lieux englobants) est identique au nom écrit : l'aller-retour GEDCOM ↔ Gramps ne
+  change pas. Une forme non canonique (espaces autour des virgules, niveau vide) reste à plat.
+- La **région n'est pas ajoutée** : les régions actuelles (2016) seraient anachroniques pour des actes anciens et
+  changeraient le nom du lieu. Une région déjà présente dans le nom devient un niveau *Region*.
+- `gramps_structurer_lieux` : propose de rattacher les lieux à plat d'une base existante (titre complet, créés
+  par une version antérieure ou un import) à cette hiérarchie ; diff puis accord, aucun événement modifié.
+
+Hors v1 (issues séparées) : plusieurs arbres, fusion native.
