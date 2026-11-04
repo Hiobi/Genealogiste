@@ -122,3 +122,13 @@ def test_places_are_hierarchical_in_real_gramps(client, loaded):
     t, _ = gramps_to_tree(db)
     assert any(e.lieu and e.lieu.nom == "Rochefort, Charente-Maritime, France"
                for p in t.personnes.values() for e in p.evenements)
+
+
+def test_token_carries_tree_and_data_dir_is_bound(client, loaded, tmp_path):
+    """#9 : le jeton Gramps Web porte l'arbre du compte ; le répertoire de données lui est lié."""
+    from genealogiste_mcp.gramps.backend import TREE_FILE, check_tree
+    tree = client.tree()
+    print("arbre du compte de test :", tree)
+    assert tree
+    assert check_tree(client, tmp_path) == tree and (tmp_path / TREE_FILE).exists()
+    assert check_tree(client, tmp_path) == tree  # même arbre : accepté

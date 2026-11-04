@@ -83,6 +83,31 @@ def media_upload(client: GrampsClient, todo: list[dict]) -> dict:
     return {"envoyes": sent, "erreurs": errors}
 
 
+TREE_FILE = "GRAMPS_ARBRE.json"
+
+
+def check_tree(client: GrampsClient, data_dir: Path) -> str:
+    """Un répertoire de données = un arbre Gramps Web : l'arbre du compte est enregistré à la première connexion,
+    puis tout autre arbre est refusé (journal, propositions, miroir Git et notes ne doivent jamais se mélanger)."""
+    tree = client.tree()
+    if not tree:
+        return ""  # serveur qui n'indique pas l'arbre : rien à comparer
+    path = Path(data_dir) / TREE_FILE
+    if path.exists():
+        known = json.loads(path.read_text(encoding="utf-8"))
+        if known.get("tree") != tree:
+            raise GrampsError(
+                f"Ce répertoire de données ({data_dir}) appartient à l'arbre Gramps Web {known.get('tree')!r} "
+                f"(compte {known.get('compte', '?')}), pas à l'arbre {tree!r} du compte {client._user!r}. Un arbre = "
+                "un répertoire de données : définir un autre GENEALOGISTE_DATA_DIR pour cet arbre (docs/gramps-web.md, "
+                f"« Plusieurs arbres »). Si le changement est voulu, supprimer {TREE_FILE} après avoir vérifié.")
+        return tree
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"tree": tree, "url": client.base.removesuffix("/api"), "compte": client._user,
+                                "date": _now()}, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    return tree
+
+
 MASSIVE_OBJECTS = 50  # au-delà, pour moins de MASSIVE_OPERATIONS opérations : avertissement explicite
 MASSIVE_OPERATIONS = 5
 
@@ -138,6 +163,7 @@ class GrampsBackend:
     def snapshot(self, fresh: bool = True) -> GrampsDb:
         """Base Gramps de la session (chargée une fois, puis rafraîchie de façon incrémentale)."""
         if self.db is None:
+            check_tree(self.client, self.data_dir)
             self.db = self.client.load_all()
             self._read_at = self.clock()
             self.last_refresh = {"chargement_complet": self.db.count()}
@@ -365,6 +391,7 @@ def bascule_preview(client: GrampsClient, store: TreeStore, tokens: TokenStore, 
     privée). Après accord, Gramps Web devient la référence et arbre.ged est figé."""
     if store.frozen():
         raise ProposalError("Bascule déjà faite : " + json.dumps(store.frozen(), ensure_ascii=False))
+    check_tree(client, store.dir)
     remote = client.load_all()
     occupied = {c: n for c, n in remote.count().items() if c not in ("Tag",)}
     if occupied:
@@ -392,6 +419,7 @@ def bascule_apply(client: GrampsClient, store: TreeStore, tokens: TokenStore, to
         raise ProposalError("Ce jeton n'est pas une bascule.")
     if store.digest() != record["empreinte_base"]:
         raise ProposalError("arbre.ged a changé depuis la proposition : refaire gramps_bascule_proposer.")
+    check_tree(client, store.dir)
     remote = client.load_all()
     if any(n for c, n in remote.count().items() if c != "Tag"):
         raise ProposalError("L'arbre Gramps Web n'est plus vide : bascule refusée.")

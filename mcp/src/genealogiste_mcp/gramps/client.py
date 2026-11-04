@@ -33,6 +33,21 @@ class ConflictError(GrampsError):
     """L'arbre Gramps a été modifié (interface, autre client) depuis la lecture."""
 
 
+def jwt_claims(token: str) -> dict:
+    """Revendications d'un jeton JWT (lecture seule, sans vérification de signature : information locale)."""
+    import base64
+    import json as _json
+    parts = (token or "").split(".")
+    if len(parts) != 3:
+        return {}
+    try:
+        payload = parts[1] + "=" * (-len(parts[1]) % 4)
+        data = _json.loads(base64.urlsafe_b64decode(payload))
+    except (ValueError, TypeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
 class GrampsClient:
     def __init__(self, url: str, user: str, password: str, timeout: float = 60.0,
                  transport: httpx.BaseTransport | None = None, sleeper: Callable[[float], None] = time.sleep,
@@ -49,6 +64,7 @@ class GrampsClient:
         self._access = ""
         self._refresh = ""
         self._exp = 0.0
+        self.tree_id = ""  # arbre du compte (revendication « tree » du jeton Gramps Web)
 
     # ------------------------------------------------------------------ authentification
     def _login(self) -> None:
@@ -58,6 +74,7 @@ class GrampsClient:
         data = r.json()
         self._access, self._refresh = data.get("access_token", ""), data.get("refresh_token", "")
         self._exp = time.time() + 600
+        self.tree_id = jwt_claims(self._access).get("tree") or ""
 
     def _renew(self) -> None:
         if self._refresh:
@@ -111,6 +128,12 @@ class GrampsClient:
         if r.status_code == 412:
             raise ConflictError("Conflit : le fichier du média a été modifié dans Gramps Web depuis la lecture.")
         self._ok(r, f"envoi du fichier du média {handle}")
+
+    def tree(self) -> str:
+        """Identifiant de l'arbre Gramps Web du compte (connexion si nécessaire)."""
+        if not self._access:
+            self._login()
+        return self.tree_id
 
     # ------------------------------------------------------------------ lecture
     def list(self, cls: str, **params) -> list[dict]:
