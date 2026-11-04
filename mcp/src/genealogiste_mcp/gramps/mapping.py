@@ -33,6 +33,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import re
 import uuid
 from dataclasses import asdict, dataclass, field
 
@@ -81,6 +82,14 @@ A_PRECISION, A_PAROISSE, A_CAUSE, A_AGE = "Précision", "Paroisse", "Cause", "Ag
 CIT_ATTRS = ("Consulté", "Type de source", "Information", "Preuve", "Date de consultation", "QUAY")
 SRC_ATTRS = ("URL", "Type de source", "Dérivée de")
 STATUS_TAG = "Preuve : "
+# Gabarits des notes générées par Sosa (export GEDCOM/GeneWeb, ancien export Gramps) : reconnues comme
+# générées même sans étiquette Sosa:auto, puis adoptées (étiquetées et réécrites en place) au lieu d'être doublées.
+GENERATED_NOTE = re.compile(r"^(?:(?:⛔|🟡|🟢|✅|⚠️|⚠|❌) Preuve : |Filiation de .+ : |"
+                            r"Fiche de preuve \(plugin genealogiste\)|Lien : https?://)")
+
+
+def looks_generated(text: str) -> bool:
+    return bool(GENERATED_NOTE.match(text or ""))
 EVEN_DEFAULT = "Événement"
 
 TYPES = {
@@ -288,7 +297,9 @@ class _Reader:
 
     # ------------------------------------------------------------------ notes, citations, lieux
     def is_auto(self, note: dict) -> bool:
-        return bool(self.auto_tag) and self.auto_tag in (note.get("tag_list") or [])
+        if self.auto_tag and self.auto_tag in (note.get("tag_list") or []):
+            return True
+        return looks_generated(self.note_text(note))
 
     def note(self, h: str) -> dict | None:
         n = self.db.get("Note", h)
@@ -756,6 +767,8 @@ class _Writer:
               auto: list[tuple[str, str]] | None = None, url: str = "") -> list[str]:
         """Notes d'un objet : manuelles réutilisées à l'identique, partagées (@N1@), générées (Sosa:auto)."""
         base_handles = list(base_handles or [])
+        if self.generated:  # note de preuve venue d'un GEDCOM : régénérée, jamais doublée en note manuelle (#15)
+            texts = [t for t in texts if not looks_generated(t)]
         avail, auto_avail = [], []
         for h in base_handles:
             n = self.base.get("Note", h)
@@ -801,6 +814,8 @@ class _Writer:
     def single(self, text: str, base_handles: list[str] | None, typ: str, owner: str,
                auto: list[tuple[str, str]] | None = None, url: str = "") -> list[str]:
         """Champ texte unique : la base est gardée telle quelle si son texte est inchangé."""
+        if self.generated and looks_generated(text):  # note de preuve venue d'un GEDCOM (#15)
+            text = ""
         manual = [h for h in base_handles or [] if self.base.get("Note", h)
                   and not self.reader.is_auto(self.base.get("Note", h))]
         if manual and self.reader.single_note(manual) == text:

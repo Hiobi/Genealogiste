@@ -15,6 +15,7 @@ from genealogiste_mcp.gramps.mapping import (
     GrampsDb,
     diff,
     gramps_to_tree,
+    looks_generated,
     tree_to_gramps,
 )
 from genealogiste_mcp.gramps.types import date_from_gramps, date_to_gramps, tname, to_raw
@@ -27,8 +28,10 @@ FIXTURES = ["famille.ged", "geneweb7_gwb2ged.ged", "legacy551.ged"]
 def normalize(tree) -> dict:
     """Vue comparable d'un arbre, hors champs non mappés (extra) et normalisations documentées."""
     def strip(o):
-        if isinstance(o, dict):
-            return {k: strip(v) for k, v in o.items() if k not in ("extra",)}
+        if isinstance(o, dict):  # notes de preuve générées (#15) : régénérées en Sosa:auto, hors modèle
+            return {k: ([x for x in v if not looks_generated(x)] if k == "notes" and isinstance(v, list)
+                        else "" if k == "note" and isinstance(v, str) and looks_generated(v) else strip(v))
+                    for k, v in o.items() if k not in ("extra",)}
         if isinstance(o, list):
             return [strip(x) for x in o]
         return o

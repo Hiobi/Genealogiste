@@ -247,3 +247,42 @@ def test_backend_names():
     assert backend_name("gramps") == backend_name("grampsweb") == "gramps"
     with pytest.raises(ValueError):
         backend_name("sqlite")
+
+
+def test_untagged_proof_notes_are_adopted_not_duplicated(tmp_path, fake, tree):
+    """#15 : notes de preuve importées sans étiquette Sosa:auto (export GEDCOM/GeneWeb) reconnues et adoptées."""
+    import re
+    seed(fake, tree)
+    auto = next(h for h, t in fake.objects["Tag"].items() if t["name"] == SOSA_AUTO)
+    del fake.objects["Tag"][auto]
+    for n in fake.objects["Note"].values():
+        n["tag_list"] = [t for t in n["tag_list"] if t != auto]
+        n["type"] = {"_class": "NoteType", "value": 1, "string": ""}  # « General », comme après un import GEDCOM
+    notes_before = len(fake.objects["Note"])
+    make_app(tmp_path)
+    try:
+        p = server.arbre_proposer(CIT_DEATH, "Décès", "Acte lu.")
+        assert p["transaction_gramps"]["bilan"].get("Note", {}).get("add", 0) == 0
+        server.arbre_appliquer(p["jeton"])
+    finally:
+        server.set_app(None)
+    assert len(fake.objects["Note"]) == notes_before
+    proof = re.compile(r"^(⛔|🟡|🟢|✅|⚠️|❌) Preuve : ")
+    for ev in fake.objects["Event"].values():
+        texts = [fake.objects["Note"][h]["text"]["string"] for h in ev["note_list"]]
+        assert sum(bool(proof.match(t)) for t in texts) <= 1
+    new_auto = next(h for h, t in fake.objects["Tag"].items() if t["name"] == SOSA_AUTO)
+    assert all(new_auto in n["tag_list"] for n in fake.objects["Note"].values()
+               if proof.match(n["text"]["string"]) or n["text"]["string"].startswith("Fiche de preuve"))
+
+
+def test_generated_note_patterns():
+    from genealogiste_mcp.gramps.mapping import looks_generated
+    assert looks_generated("🟡 Preuve : hypothèse — 1 source(s)\nÀ consulter : AD")
+    assert looks_generated("⚠️ Preuve : contradictoire — 0 source(s)")
+    assert looks_generated("Filiation de Jean MARTIN : ⛔ non sourcé")
+    assert looks_generated("Fiche de preuve (plugin genealogiste) — réf. I1\n…")
+    assert looks_generated("Lien : https://exemple.org/x")
+    assert not looks_generated("Vérifier le registre paroissial")
+    assert not looks_generated("Preuve : voir le registre")  # sans icône : note manuelle
+    assert not looks_generated("Lien : voir mon cousin")

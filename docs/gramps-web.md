@@ -84,6 +84,12 @@ de la personne, filiations de la famille, lien cliquable des sources : notes ét
 recalculées à chaque écriture et ignorées à la lecture. Après des modifications faites dans l'interface,
 `gramps_recalculer_notes` propose leur recalcul. Les notes manuelles ne sont **jamais** modifiées.
 
+Les notes de preuve **sans** étiquette (import d'un GEDCOM ou d'un export GeneWeb produit par Sosa) sont
+reconnues à leur gabarit : `⛔|🟡|🟢|✅|⚠️|❌ Preuve : …`, `Filiation de … : …`,
+`Fiche de preuve (plugin genealogiste)…`, `Lien : http…`. Elles sont **adoptées** à la première écriture
+(étiquetées `Sosa:auto` et réécrites en place), jamais doublées. Une note manuelle qui commence par l'un de ces
+gabarits est donc traitée comme générée : la reformuler si elle doit être conservée.
+
 ## Bascule fichier → Gramps Web
 
 1. `gramps_bascule_proposer` : bilan de l'envoi de tout `arbre.ged` dans un arbre Gramps Web **vide** ;
