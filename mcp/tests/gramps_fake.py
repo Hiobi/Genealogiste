@@ -59,8 +59,9 @@ def differs(old, cur) -> bool:
 
 
 class FakeGrampsWeb:
-    def __init__(self, user: str = "sosa", password: str = "secret"):
+    def __init__(self, user: str = "sosa", password: str = "secret", tree: str = ""):
         self.user, self.password = user, password
+        self.tree = tree  # si défini : jeton de type JWT portant la revendication « tree » (comme Gramps Web)
         self.objects: dict[str, dict[str, dict]] = {c: {} for c in CLASSES}
         self.clock = 1_000
         self.messages: list[str] = []
@@ -117,7 +118,12 @@ class FakeGrampsWeb:
         data = json.loads(req.content)
         if (data.get("username"), data.get("password")) != (self.user, self.password):
             return httpx.Response(403, json={"error": {"code": 403, "message": "Wrong username or password"}})
-        return httpx.Response(200, json={"access_token": "A1", "refresh_token": "R1"})
+        access = "A1"
+        if self.tree:
+            import base64
+            payload = base64.urlsafe_b64encode(json.dumps({"tree": self.tree}).encode()).decode().rstrip("=")
+            access = f"A1.{payload}.signature"
+        return httpx.Response(200, json={"access_token": access, "refresh_token": "R1"})
 
     def _list(self, req, plural):
         if (r := self._auth(req)) is not None:

@@ -149,4 +149,43 @@ Le dépôt est local par défaut. `GENEALOGISTE_GIT_REMOTE` ajoute un push aprè
 - `gramps_structurer_lieux` : propose de rattacher les lieux à plat d'une base existante (titre complet, créés
   par une version antérieure ou un import) à cette hiérarchie ; diff puis accord, aucun événement modifié.
 
-Hors v1 (issues séparées) : plusieurs arbres, fusion native.
+## Plusieurs arbres
+
+Dans Gramps Web, **un compte appartient à un seul arbre** : l'arbre est inscrit dans le jeton de connexion
+(revendication `tree`) et toutes les requêtes passent par lui. Gérer plusieurs arbres (familles, clients)
+demande donc un compte Gramps par arbre et, côté Sosa, **un répertoire de données par arbre** (journal,
+propositions, miroir Git et notes ne doivent jamais se mélanger).
+
+Garde-fou : à la première connexion, l'arbre du compte est enregistré dans `<données>/GRAMPS_ARBRE.json` ; un
+autre arbre est ensuite refusé avec un message explicite (lecture et écriture). Changement voulu : vérifier,
+puis supprimer ce fichier.
+
+Exemple : un serveur MCP par arbre (paramètres utilisateur de Claude Code, `.mcp.json`), les identifiants de
+chaque arbre dans le `.env` de son répertoire de données :
+
+```json
+{
+  "mcpServers": {
+    "genealogiste-famille": {
+      "command": "uv",
+      "args": ["run", "--quiet", "--directory", "/chemin/vers/sosa/mcp", "genealogiste-mcp"],
+      "env": {"GENEALOGISTE_DATA_DIR": "~/genealogie/famille"}
+    },
+    "genealogiste-client-dupont": {
+      "command": "uv",
+      "args": ["run", "--quiet", "--directory", "/chemin/vers/sosa/mcp", "genealogiste-mcp"],
+      "env": {"GENEALOGISTE_DATA_DIR": "~/genealogie/client-dupont"}
+    }
+  }
+}
+```
+
+```sh
+# ~/genealogie/client-dupont/.env
+GENEALOGISTE_BACKEND=gramps
+GENEALOGISTE_GRAMPS_URL=https://gramps.exemple.org
+GENEALOGISTE_GRAMPS_USER=sosa-dupont
+GENEALOGISTE_GRAMPS_PASSWORD=…
+```
+
+Hors v1 : fusion native de Gramps (la fusion passe par `/fusionne`).
