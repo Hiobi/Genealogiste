@@ -48,6 +48,10 @@ est refusé, sauf `"non_source": true` + `"motif": "…"` (la mention « Non sou
   facultative (retrouvée par l'ARK de la ressource) ; `page` déduite de la vue Gallica (`f12` → « vue 12 »).
 - `ark_resoudre(ark)` : service, URL canonique, repli `n2t.net`, disponibilité (HEAD), manifeste IIIF, citation
   suggérée. NAAN inconnu : registre public de l'ARK Alliance (cache 30 jours).
+- `archive_image(source, page, region, largeur, gris)` : image d'acte par IIIF (ARK Gallica, manifeste v2/v3,
+  `info.json`, URL d'image). Pour les AD, coller le lien obtenu par « Copier le lien IIIF » dans la visionneuse.
+  Aperçu 800 px en gris, puis recadrage `pct:x,y,l,h` jusqu'à 2000 px ; coût estimé en tokens ; image gardée
+  dans `medias/iiif/`, jamais retéléchargée ; une image par appel.
 
 Exemple :
 

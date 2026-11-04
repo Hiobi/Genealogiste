@@ -29,7 +29,7 @@ from .normalize import dates as d
 from .normalize.names import normalize_name, surname_similarity
 from .normalize.places import normalize_place
 from .notes import Notes, NotesError, touched
-from .sources import ark_resolver, familysearch, gallica, geo, liens, matchid, wikidata, wikitree
+from .sources import ark_resolver, familysearch, gallica, geo, iiif, liens, matchid, wikidata, wikitree
 from .sources.base import SourceContext
 from .tree.proposals import ProposalError, Proposals, TokenStore
 from .tree.store import TreeStore, remote_problem
@@ -225,6 +225,16 @@ def ark_resoudre(ark: str, verifier: bool = True, titre: str = "") -> dict:
     URL canonique et repli n2t.net, disponibilité (requête HEAD, aucun téléchargement), manifeste IIIF éventuel
     et citation suggérée (source = ressource ARK sans qualificatif, citation = ARK complet, vue)."""
     return ark_resolver.resolve(app().sctx, ark, verifier, titre)
+
+
+@mcp.tool()
+def archive_image(source: str, page: int = 0, region: str = "full", largeur: int = 800, gris: bool = True) -> dict:
+    """Image d'acte par IIIF, à lire ensuite avec l'outil de lecture de fichiers. source : ARK Gallica, manifeste
+    IIIF, info.json ou URL d'image IIIF (pour les AD : lien copié avec « Copier le lien IIIF » dans la
+    visionneuse). Méthode économe : aperçu (largeur 800, gris) pour repérer l'acte, puis recadrage
+    region='pct:x,y,l,h' en largeur 1500-2000 ; coût estimé en tokens renvoyé. Image téléchargée une seule fois
+    (medias/iiif/). Pour Gallica, essayer d'abord le texte OCR (gallica_texte)."""
+    return iiif.fetch(app().sctx, app().config.media_dir, source, page, region, largeur, gris)
 
 
 @mcp.tool()

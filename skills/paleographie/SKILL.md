@@ -7,6 +7,9 @@ description: Aide à la lecture des actes anciens — paléographie française (
 
 ## Procédure de transcription (/genealogiste:transcris)
 
+0. **Image** : `archive_image` pour une image IIIF (ARK Gallica, manifeste, info.json, lien « Copier le lien
+   IIIF » d'une visionneuse d'AD) : aperçu 800 px en gris, puis recadrage de l'acte seul ; l'image n'est
+   téléchargée qu'une fois.
 1. **Décrire le document** : type d'acte, langue, époque estimée, état (lisibilité, taches, lacunes).
 2. **Transcription diplomatique** ligne à ligne : orthographe d'origine conservée, abréviations développées
    entre crochets `[ ]`, mots incertains suivis de `(?)`, illisibles `[…]`. Ne jamais compléter un nom
