@@ -51,6 +51,8 @@ et renseigner au minimum :
 | `GENEALOGISTE_STRICT` | `1` : règle stricte 3/2/1 sources sans pondération |
 | `GENEALOGISTE_EXIGER_SOURCE` | `1` (défaut) : pas de fait ni de filiation sans citation, sauf `non_source` + motif |
 | `GENEALOGISTE_OFFLINE` | `1` : cache uniquement |
+| `GENEALOGISTE_NOTES_DIR` | notes de recherche Markdown (vault Obsidian) ; vide = désactivées (voir [docs/notes.md](docs/notes.md)) |
+| `GENEALOGISTE_NOTES_VIVANTS` / `_NOTES_AUTO` / `GENEALOGISTE_SOSA_RACINE` | `masquer` (défaut) ou `complet` ; régénération après écriture (défaut `true`) ; personne n° 1 des numéros Sosa des notes |
 
 Les variables peuvent aussi être exportées dans l'environnement de Claude Code. `make check` affiche la
 configuration effective.

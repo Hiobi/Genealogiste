@@ -44,6 +44,10 @@ class Config:
     fs_password: str = ""
     strict_evidence: bool = False
     exiger_source: bool = True  # règle de métier : pas de fait sans source sauf motif explicite
+    notes_dir: Path | None = None  # notes de recherche Markdown (Obsidian) ; None = désactivées
+    notes_vivants: str = "masquer"  # masquer | complet
+    notes_auto: bool = True  # régénérer les fiches touchées après arbre_appliquer / journal_ajouter
+    sosa_racine: str = ""  # personne n° 1 de la numérotation Sosa des notes
     cog_mvt_url: str = "https://www.insee.fr/fr/statistiques/fichier/7766585/v_mvt_commune_2024.csv"
     cog_communes_url: str = "https://www.insee.fr/fr/statistiques/fichier/7766585/v_commune_depuis_1943.csv"
     http_timeout: float = 30.0
@@ -96,6 +100,13 @@ def notes_auto_mode(value: str | None) -> str:
     return NOTES_AUTO[v]
 
 
+def notes_vivants_mode(value: str | None) -> str:
+    v = (value or "masquer").strip().lower()
+    if v not in ("masquer", "complet"):
+        raise ValueError(f"GENEALOGISTE_NOTES_VIVANTS={value!r} : valeurs possibles masquer | complet")
+    return v
+
+
 def _bool(value: str | None, default: bool = False) -> bool:
     if value is None or value == "":
         return default
@@ -133,6 +144,10 @@ def load_config() -> Config:
         strict_evidence=env("GENEALOGISTE_STRICT", "0") in ("1", "true", "oui"),
         exiger_source=env("GENEALOGISTE_EXIGER_SOURCE", "1") not in ("0", "false", "non"),
         offline=env("GENEALOGISTE_OFFLINE", "0") in ("1", "true", "oui"),
+        notes_dir=Path(env("GENEALOGISTE_NOTES_DIR")).expanduser() if env("GENEALOGISTE_NOTES_DIR") else None,
+        notes_vivants=notes_vivants_mode(env("GENEALOGISTE_NOTES_VIVANTS")),
+        notes_auto=_bool(env("GENEALOGISTE_NOTES_AUTO"), True),
+        sosa_racine=env("GENEALOGISTE_SOSA_RACINE", ""),
     )
     if env("GENEALOGISTE_USER_AGENT"):
         cfg.user_agent = env("GENEALOGISTE_USER_AGENT")
