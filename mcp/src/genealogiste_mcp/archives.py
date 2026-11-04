@@ -70,6 +70,9 @@ def departemental(dep: str) -> dict | None:
 def staleness(s: dict, today: date | None = None) -> str:
     today = today or date.today()
     if not s.get("verifie_le"):
+        if s.get("origine", "").startswith("import"):
+            return (f"{s['code']} : entrée importée automatiquement (site et NAAN), jamais vérifiée par une "
+                    "personne ; mise en ligne inconnue : contrôler sur le site du service.")
         return f"{s['code']} : entrée jamais vérifiée, à contrôler sur le site du service."
     age = (today - date.fromisoformat(s["verifie_le"])).days
     if age > STALE_DAYS:
