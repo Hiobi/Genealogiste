@@ -9,6 +9,7 @@ from __future__ import annotations
 import copy
 from datetime import date
 
+from .. import ark
 from ..models import (
     CONSULTATIONS,
     EVENT_LABELS,
@@ -67,9 +68,32 @@ def _date(value: str) -> str:
     return g.gedcom(7)
 
 
+def _ark_of(*values: str) -> ark.Ark | None:
+    for v in values:
+        a = ark.find(v) if v else None
+        if a:
+            return a
+    return None
+
+
+def _source_by_ark(tree: Tree, a: ark.Ark) -> str:
+    return next((sid for sid, s in sorted(tree.sources.items())
+                 if (s.ark and ark.same_resource(s.ark, a.base)) or (s.url and ark.same_resource(s.url, a.base))), "")
+
+
 def _citation(ctx: Ctx, d: dict) -> Citation:
     d = dict(d)
     d["source"] = ctx.r(d.get("source"))
+    a = _ark_of(d.get("ark", ""), d.get("page", ""))
+    if a:  # ARK de l'image ou de la page : normalisé, source et vue déduites
+        d["ark"] = a.id
+        if not d["source"]:
+            d["source"] = _source_by_ark(ctx.tree, a)
+            if not d["source"]:
+                raise OpError(f"Citation : aucune source pour {a.base} (créer la source d'abord : ajouter_source avec "
+                              f"ark={a.base!r})")
+        if not d.get("page") and a.vue:
+            d["page"] = f"vue {a.vue}"
     if d["source"] not in ctx.tree.sources:
         raise OpError(f"Citation : source inconnue {d['source']!r} (créer la source d'abord)")
     for k, allowed in (("type_source", ("originale", "derivee", "composite", "indeterminee")),
@@ -330,9 +354,37 @@ def op_lier_conjoint(ctx: Ctx, o: dict) -> None:
     ctx.summary.append(f"{fam.id} : {role} = {p.label()}")
 
 
+def _depot_for(ctx: Ctx, a: ark.Ark) -> str:
+    """Dépôt du service qui a attribué l'ARK (créé s'il n'existe pas)."""
+    svc = a.service
+    if not svc:
+        return ""
+    rid = next((rid for rid, r in sorted(ctx.tree.depots.items()) if r.sigle == svc["code"]), "")
+    if not rid:
+        rid = ctx.tree.next_id("depots")
+        ctx.tree.depots[rid] = Repository(id=rid, nom=svc["nom"], sigle=svc["code"], url=svc.get("hote", ""))
+        ctx.summary.append(f"Dépôt {rid} : {svc['nom']} (déduit de l'ARK {a.naan})")
+    return rid
+
+
 def op_ajouter_source(ctx: Ctx, o: dict) -> None:
-    sid = ctx.tree.next_id("sources")
     d = {k: v for k, v in o.items() if k not in ("op", "ref")}
+    a = _ark_of(d.get("ark", ""), d.get("url", ""))
+    if a:
+        same = _source_by_ark(ctx.tree, a)
+        if same:  # dédoublonnage : une ressource ARK = une source
+            if o.get("ref"):
+                ctx.refs[o["ref"]] = same
+            ctx.sources_cited.add(same)
+            ctx.warnings.append(f"Source {same} réutilisée : même ARK ({a.base}) que « {ctx.tree.sources[same].titre} ».")
+            ctx.summary.append(f"Source {same} réutilisée (même ARK {a.base})")
+            return
+        d["ark"] = a.base
+        if not d.get("url"):
+            d["url"] = ark.Ark(a.naan, a.nom, "", a.hote).url()
+        if not d.get("depot"):
+            d["depot"] = _depot_for(ctx, a)
+    sid = ctx.tree.next_id("sources")
     d["depot"] = ctx.r(d.get("depot"))
     d["original"] = ctx.r(d.get("original"))
     if d["depot"] and d["depot"] not in ctx.tree.depots:

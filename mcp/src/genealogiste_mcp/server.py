@@ -27,7 +27,7 @@ from .journal import Journal
 from .normalize import dates as d
 from .normalize.names import normalize_name, surname_similarity
 from .normalize.places import normalize_place
-from .sources import familysearch, gallica, geo, liens, matchid, wikidata, wikitree
+from .sources import ark_resolver, familysearch, gallica, geo, liens, matchid, wikidata, wikitree
 from .sources.base import SourceContext
 from .tree.proposals import ProposalError, Proposals, TokenStore
 from .tree.store import TreeStore, remote_problem
@@ -199,6 +199,14 @@ def gallica_alto(ark: str, page: int) -> dict:
 def gallica_iiif(ark: str, page: int = 0, region: str = "full", taille: str = "full") -> dict:
     """URL IIIF (manifeste, image d'une page, région 'x,y,l,h', taille 'pct:50' / '1500,')."""
     return gallica.iiif(ark, page or None, region, taille)
+
+
+@mcp.tool()
+def ark_resoudre(ark: str, verifier: bool = True, titre: str = "") -> dict:
+    """Identifiant pérenne ARK (seul ou dans une URL d'archives / Gallica) : service qui l'a attribué (NAAN),
+    URL canonique et repli n2t.net, disponibilité (requête HEAD, aucun téléchargement), manifeste IIIF éventuel
+    et citation suggérée (source = ressource ARK sans qualificatif, citation = ARK complet, vue)."""
+    return ark_resolver.resolve(app().sctx, ark, verifier, titre)
 
 
 @mcp.tool()

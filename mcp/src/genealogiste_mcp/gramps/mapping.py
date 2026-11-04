@@ -79,8 +79,8 @@ A_UID, A_UID_NOMS, A_STATUT, A_ASSO, A_VIVANT = "Sosa-UID", "Sosa-UID noms", "So
     "Sosa-Vivant"
 A_STATUT_NOM, A_STATUT_FIL = "Sosa-Statut nom ", "Sosa-Statut filiation "
 A_PRECISION, A_PAROISSE, A_CAUSE, A_AGE = "Précision", "Paroisse", "Cause", "Age"
-CIT_ATTRS = ("Consulté", "Type de source", "Information", "Preuve", "Date de consultation", "QUAY")
-SRC_ATTRS = ("URL", "Type de source", "Dérivée de")
+CIT_ATTRS = ("Consulté", "Type de source", "Information", "Preuve", "Date de consultation", "QUAY", "ARK")
+SRC_ATTRS = ("URL", "ARK", "Type de source", "Dérivée de")
 STATUS_TAG = "Preuve : "
 # Gabarits des notes générées par Sosa (export GEDCOM/GeneWeb, ancien export Gramps) : reconnues comme
 # générées même sans étiquette Sosa:auto, puis adoptées (étiquetées et réécrites en place) au lieu d'être doublées.
@@ -356,7 +356,8 @@ class _Reader:
             information=_REV_INFOS.get(_attr_value(c, "Information"), "indeterminee"),
             preuve=_REV_PREUVES.get(_attr_value(c, "Preuve"), "directe"),
             date_consultation=_attr_value(c, "Date de consultation"), note="\n\n".join(note),
-            consultation=_REV_VU.get(_attr_value(c, "Consulté"), _attr_value(c, "Consulté")))
+            consultation=_REV_VU.get(_attr_value(c, "Consulté"), _attr_value(c, "Consulté")),
+            ark=_attr_value(c, "ARK"))
 
     def citations(self, handles: list[str]) -> list[Citation]:
         return [c for c in (self.citation(h) for h in handles or []) if c]
@@ -538,7 +539,7 @@ class _Reader:
             t.sources[sid] = Source(
                 id=sid, titre=s.get("title") or "", auteur=s.get("author") or "", publication=s.get("pubinfo") or "",
                 depot=self.xid("Repository", repo.get("ref")), cote=repo.get("call_number") or "",
-                url=_attr_value(s, "URL"), type_source=_REV_TYPES.get(_attr_value(s, "Type de source"), "indeterminee"),
+                url=_attr_value(s, "URL"), ark=_attr_value(s, "ARK"), type_source=_REV_TYPES.get(_attr_value(s, "Type de source"), "indeterminee"),
                 original=orig, note=self.single_note(s.get("note_list")))
         for h, r in sorted(db.all("Repository").items(), key=lambda kv: self.xid("Repository", kv[0])):
             rid = self.xid("Repository", h)
@@ -759,7 +760,7 @@ class _Writer:
                 ("Type de source", SOURCE_TYPE_LABELS.get(stype, "")),
                 ("Information", INFOS.get(c.information, "")), ("Preuve", PREUVES.get(c.preuve, "")),
                 ("Date de consultation", c.date_consultation),
-                ("QUAY", str(c.qualite) if c.qualite == 2 else "")]
+                ("QUAY", str(c.qualite) if c.qualite == 2 else ""), ("ARK", c.ark)]
         obj["attribute_list"] = [attribute(k, v, src=True) for k, v in vals if v]
         return obj
 
@@ -1134,7 +1135,7 @@ class _Writer:
                 ("Type de source", SOURCE_TYPE_LABELS.get(s.type_source, "")),
                 ("Dérivée de", (f"{s.original} — {t.sources[s.original].titre}" if s.original in t.sources
                                 else s.original) if s.original else ""),
-                ("URL", s.url)) if v]
+                ("URL", s.url), ("ARK", s.ark)) if v]
             self.set_attrs(obj, lambda x: x in SRC_ATTRS, desired)
             regen = self.regen("Source", sid)
             auto = [("Source Note", f"Lien : {s.url}")] if s.url and regen else None
