@@ -32,6 +32,9 @@ restent dans `fr_sources.py` et dans la skill `sources-francaises`.
   valeurs ne sont pas des données.
 - `verifie_le` : date à laquelle **une personne** a vérifié l'entrée sur le site du service. Absente ou de plus
   de 12 mois : avertissement dans les réponses.
+- Entrées importées : `wikidata` (identifiant de l'élément), `origine` (« import : … »), `site_repond_le` (date
+  à laquelle le site a répondu à une requête HEAD). Une entrée importée n'a pas de `verifie_le` tant qu'une
+  personne ne l'a pas contrôlée.
 
 ## Règles de contribution
 
@@ -45,6 +48,14 @@ restent dans `fr_sources.py` et dans la skill `sources-francaises`.
 
 ## Couverture actuelle
 
-Entrées de départ : AD59, AD62, Archives de Paris, Archives nationales, Léonore, ANOM, SHD, Mémoire des hommes,
-FranceArchives, Gallica (BnF), Retronews, matchID. Les autres AD sont renvoyées vers FranceArchives, avec un
-avertissement, tant qu'elles ne sont pas saisies.
+- **Les 101 départements** ont une entrée : AD59, AD62 et Archives de Paris saisies à la main ; les 98 autres
+  importées le 2026-11-04 :
+  - nom et site officiel : Wikidata (éléments « archives départementales », Q2860456, propriété P856), site
+    gardé seulement s'il répond (86 sur 98) ; redirection vers un autre domaine : nouvelle adresse retenue si
+    c'est le site des archives, écartée sinon ;
+  - NAAN ARK : registre public de l'ARK Alliance, rapproché par département (78 sur 98) ;
+  - sites injoignables (06, 08, 11, 13, 24, 26, 2A, 2B, 50, 974, 976) : pas de site, note explicite.
+- Services nationaux et autres : Archives nationales, Léonore, ANOM, SHD, Mémoire des hommes, FranceArchives,
+  Gallica (BnF), Retronews, matchID.
+- **Reste à faire** (issue #25) : bornes de mise en ligne (`en_ligne`) relevées sur chaque site, sites
+  injoignables, visionneuse et IIIF de chaque AD, vérification humaine (`verifie_le`).

@@ -19,8 +19,22 @@ def test_service_by_place_departement_code():
     assert server.archives_service(lieu="Somain (59)")["code"] == "AD59"
     assert server.archives_service(departement="62")["visionneuse"].startswith("http://archivesenligne")
     assert server.archives_service(code="SHD")["type"] == "militaires"
-    unknown = server.archives_service(departement="17")
-    assert unknown["code"] == "AD17" and "absentes du référentiel" in unknown["avertissement"]
+    imported = server.archives_service(departement="17")
+    assert imported["code"] == "AD17" and imported["wikidata"].startswith("Q")
+    assert "importée automatiquement" in imported["avertissement"]
+    assert server.archives_service(departement="75")["code"] == "AP"
+
+
+def test_every_department_has_an_entry():
+    from genealogiste_mcp.normalize.places import DEPARTEMENTS
+    have = {s["departement"] for s in archives.services() if s["type"] == "departementales"}
+    assert set(DEPARTEMENTS) <= have
+
+
+def test_missing_department_falls_back_to_francearchives(monkeypatch):
+    monkeypatch.setattr(archives, "departemental", lambda dep: None)
+    r = server.archives_service(departement="17")
+    assert r["code"] == "AD17" and "absentes du référentiel" in r["avertissement"]
     assert "erreur" in server.archives_service(code="XYZ") and "erreur" in server.archives_service()
 
 
