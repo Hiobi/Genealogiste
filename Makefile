@@ -2,7 +2,7 @@
 MCP := mcp
 UV  := uv --directory $(MCP)
 
-.PHONY: help install test test-gramps lint format check run run-http docker-build docker-up docker-gramps docker-down validate clean
+.PHONY: help install test test-gramps lint format check run run-http docker-build docker-up docker-gramps docker-down validate clean verifier-archives
 
 help: ## Liste des cibles
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-14s %s\n", $$1, $$2}'
@@ -55,3 +55,6 @@ validate: ## Valide le manifeste du plugin (nécessite la CLI claude)
 clean: ## Supprime caches et environnements
 	rm -rf $(MCP)/.venv $(MCP)/.pytest_cache $(MCP)/.ruff_cache
 	find . -name __pycache__ -type d -prune -exec rm -rf {} +
+
+verifier-archives: ## Vérifie que les sites du référentiel des archives répondent (HEAD)
+	$(UV) run python scripts/verifier_archives.py

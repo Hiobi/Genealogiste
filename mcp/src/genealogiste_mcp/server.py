@@ -12,7 +12,8 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
-from . import coherence, evidence, matching, privacy
+from . import archives, coherence, evidence, matching, privacy
+from .archives import communicability_online
 from .cache import Cache
 from .config import Config, load_config
 from .export import charts
@@ -20,7 +21,7 @@ from .export.fiche import fiche_markdown, gaps, tree_gaps
 from .export.geneweb import to_geneweb
 from .export.gramps_xml import to_gramps_xml_stats
 from .export.rapport import proof_report
-from .fr_sources import communicability, next_source_hint
+from .fr_sources import next_source_hint
 from .gedcom.mapping import read_gedcom, write_gedcom
 from .http import HttpClient
 from .journal import Journal
@@ -286,6 +287,15 @@ def cotes_a_consulter(fait: str, date_fait: str = "", lieu: str = "") -> dict:
 
 
 @mcp.tool()
+def archives_service(lieu: str = "", departement: str = "", code: str = "", document: str = "",
+                     annee: int = 0) -> dict:
+    """Service d'archives réel (référentiel) d'un lieu, d'un département ou d'un code (AD59, AN, SHD, ANOM…) :
+    site, visionneuse, NAAN ARK, ce qui est en ligne (document = naissance, mariage, deces, recensement,
+    matricule… ; annee pour savoir si c'est en ligne ; None = inconnu), inscription, date de vérification."""
+    return archives.service(lieu, departement, code, document, annee or None)
+
+
+@mcp.tool()
 def source_collee(source: str, texte: str, url: str = "", parametres: dict | None = None, personne: str = "",
                   negatif: bool = False) -> dict:
     """Trace au journal un résultat consulté manuellement (Geneanet, AD, Mémoire des hommes…) et collé par
@@ -347,10 +357,12 @@ def comparer_profils(profil1: dict, profil2: dict) -> dict:
 
 
 @mcp.tool()
-def communicabilite(document: str, date_document: str = "", date_naissance: str = "", date_deces: str = "") -> dict:
+def communicabilite(document: str, date_document: str = "", date_naissance: str = "", date_deces: str = "",
+                    lieu: str = "", personne: str = "") -> dict:
     """Délai de communicabilité (Code du patrimoine) : naissance, mariage, deces, recensement, notaire, matricule,
-    judiciaire, vie_privee, medical, cadastre, hypotheques, tables_decennales."""
-    return communicability(document, date_document, date_naissance, date_deces)
+    judiciaire, vie_privee, medical, cadastre, hypotheques, tables_decennales. Avec lieu : distingue
+    « communicable » et « en ligne » (référentiel des archives) et propose sinon une demande avec modèle de courrier."""
+    return communicability_online(document, date_document, date_naissance, date_deces, lieu, personne)
 
 
 @mcp.tool()

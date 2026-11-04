@@ -5,7 +5,7 @@ description: Droit des archives et protection des données en généalogie — d
 
 # Communicabilité et protection des personnes
 
-Outil : `communicabilite(document, date_document, date_naissance, date_deces)` ; statut vivant :
+Outil : `communicabilite(document, date_document, date_naissance, date_deces, lieu, personne)` (avec `lieu` : communicable **et** en ligne ? sinon modèle de courrier) ; statut vivant :
 `arbre_vivant`.
 
 ## Délais (Code du patrimoine, art. L213-2) — à vérifier auprès du service
