@@ -51,7 +51,7 @@ def _call(ctx: SourceContext, action: str, **params) -> tuple[list | dict, bool]
     if not ctx.config.wikitree_app_id:
         raise RuntimeError("GENEALOGISTE_WIKITREE_APPID non défini (identifiant d'application WikiTree obligatoire).")
     data = {"action": action, "appId": ctx.config.wikitree_app_id, "format": "json", **params}
-    return ctx.http.post(API, data=data, ttl=7 * DAY, source="wikitree")
+    return ctx.http.post(API, data=data, ttl=7 * DAY, source="wikitree", idempotent=True)  # POST de lecture
 
 
 def get_profile(ctx: SourceContext, cle: str) -> dict:

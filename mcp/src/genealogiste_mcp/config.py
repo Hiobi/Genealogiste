@@ -51,6 +51,7 @@ class Config:
     cog_mvt_url: str = "https://www.insee.fr/fr/statistiques/fichier/7766585/v_mvt_commune_2024.csv"
     cog_communes_url: str = "https://www.insee.fr/fr/statistiques/fichier/7766585/v_commune_depuis_1943.csv"
     http_timeout: float = 30.0
+    hotes_autorises: list[str] = field(default_factory=list)  # exceptions à la politique réseau (hôte[:port])
     offline: bool = False
     extra: dict = field(default_factory=dict)
 
@@ -148,6 +149,7 @@ def load_config() -> Config:
         notes_vivants=notes_vivants_mode(env("GENEALOGISTE_NOTES_VIVANTS")),
         notes_auto=_bool(env("GENEALOGISTE_NOTES_AUTO"), True),
         sosa_racine=env("GENEALOGISTE_SOSA_RACINE", ""),
+        hotes_autorises=[h for h in env("GENEALOGISTE_HOTES_AUTORISES", "").split(",") if h.strip()],
     )
     if env("GENEALOGISTE_USER_AGENT"):
         cfg.user_agent = env("GENEALOGISTE_USER_AGENT")

@@ -12,6 +12,18 @@ from genealogiste_mcp.gedcom.mapping import read_gedcom
 FIX = Path(__file__).parent / "fixtures"
 
 
+INTERNES = {"localhost": "127.0.0.1", "interne.example": "10.0.0.5", "metadata.example": "169.254.169.254",
+            "rebond.example": "192.168.1.1"}
+
+
+@pytest.fixture(autouse=True)
+def dns_fictif(monkeypatch):
+    """Aucune résolution DNS réelle : noms publics -> adresse publique de documentation, noms « internes » ->
+    adresses privées (politique réseau #42)."""
+    from genealogiste_mcp import reseau
+    monkeypatch.setattr(reseau, "getaddrinfo", lambda host, port: [INTERNES.get(host, "93.184.216.34")])
+
+
 @pytest.fixture
 def fixtures() -> Path:
     return FIX

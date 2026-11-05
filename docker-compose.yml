@@ -17,6 +17,9 @@ services:
       GENEALOGISTE_DATA_DIR: /data
       GENEALOGISTE_CACHE: /cache/cache.sqlite
       GENEALOGISTE_GRAMPS_URL: ${GENEALOGISTE_GRAMPS_URL:-http://grampsweb:5000}
+      # port publié sur 127.0.0.1 seulement : pas de jeton par défaut. Définir MCP_TOKEN pour l'exiger.
+      MCP_TOKEN: ${MCP_TOKEN:-}
+      MCP_SANS_AUTH: ${MCP_SANS_AUTH:-1}
     volumes:
       - ./data:/data
       - mcp_cache:/cache
