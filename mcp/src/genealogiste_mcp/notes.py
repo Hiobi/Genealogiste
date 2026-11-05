@@ -1,6 +1,6 @@
 """Notes de recherche Markdown (Obsidian / LLM) dans GENEALOGISTE_NOTES_DIR.
 
-Une fiche par personne, famille et source, plus ``index.md``. Chaque fiche a :
+Une fiche par personne, famille, source et patronyme (#61), plus ``index.md``. Chaque fiche a :
 - un frontmatter YAML typé (Dataview / Bases) ; les clés ajoutées à la main sont conservées ;
 - des sections générées entre ``<!-- sosa:debut NOM -->`` et ``<!-- sosa:fin -->``, régénérables ;
 - une section « Notes libres » que l'outil ne modifie jamais (sauf ``notes_ajouter``, sur demande).
@@ -13,13 +13,18 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+from collections import Counter
 from datetime import date
 from pathlib import Path
+from urllib.parse import quote
 
 from .evidence import assess_person
 from .export.charts import _years, ancestors
 from .export.fiche import _fmt_date
 from .models import EVENT_LABELS, Tree
+from .normalize.dates import parse_date
+from .normalize.names import normalize_surname
+from .pieces import _part, _personne, lire_nom
 from .privacy import is_living
 from .statuts import GRAVITE, ICONS
 from .statuts import LABELS as LABEL
@@ -28,7 +33,8 @@ START = "<!-- sosa:debut {} -->"
 END = "<!-- sosa:fin -->"
 FREE = "## Notes libres"
 FREE_HINT = "<!-- Texte libre : jamais modifié par l'outil (hypothèses, réflexions, à faire). -->"
-FOLDERS = {"personne": "personnes", "famille": "familles", "source": "sources"}
+FOLDERS = {"personne": "personnes", "famille": "familles", "source": "sources", "patronyme": "patronymes"}
+METHODS = {"personne": "person", "famille": "family", "source": "source", "patronyme": "surname"}
 SECTIONS = {"hypothese": "Hypothèses", "piste": "Pistes", "conclusion": "Conclusions", "courrier": "Courriers",
             "a_faire": "À faire", "note": "Notes"}
 RANK = GRAVITE
@@ -40,7 +46,7 @@ _BLOCK = re.compile(r"<!-- sosa:debut (?P<name>[\w-]+) -->\n.*?<!-- sosa:fin -->
 # conservées comme « manuelles » (sinon un remasquage laisserait nom et dates d'un vivant, #36).
 GENERATED_KEYS = {"id", "type", "nom", "statut", "sosa", "naissance", "deces", "lieux", "sources", "journal", "vivant",
                   "epoux", "epouse", "mariage", "titre", "depot", "cote", "url", "nature", "cite_par", "personnes",
-                  "familles", "mis_a_jour"}
+                  "familles", "mis_a_jour", "patronyme", "variantes", "berceau"}
 
 
 class NotesError(RuntimeError):
@@ -50,6 +56,11 @@ class NotesError(RuntimeError):
 def _safe(text: str, limit: int = 80) -> str:
     s = _BAD.sub(" ", text).replace(".", " ").strip()
     return re.sub(r"\s+", " ", s)[:limit].strip()
+
+
+def patronyme(p) -> str:
+    """Clé du patronyme : celle des dossiers de pièces (``documents/<type>/<NOM>/``, docs/pieces.md)."""
+    return _part(p.nom_principal.nom).upper()
 
 
 def _yaml(value) -> str:
@@ -121,11 +132,15 @@ class Notes:
 
     def name(self, tree: Tree, kind: str, oid: str) -> str:
         """Nom de fichier stable (sans .md) : le fichier existant est réutilisé même si le libellé change."""
+        if kind == "patronyme":
+            return _safe(oid, 120)
         hit = self._existing(kind, oid)
         return hit.stem if hit else self.fresh_name(tree, kind, oid)
 
     def fresh_name(self, tree: Tree, kind: str, oid: str) -> str:
         """Nom qu'aurait un fichier créé maintenant (sans tenir compte de l'existant)."""
+        if kind == "patronyme":
+            return _safe(oid, 120)
         if kind == "personne":
             p = tree.personnes[oid]
             if self._masked(tree, oid):
@@ -177,6 +192,9 @@ class Notes:
         facts = assess_person(tree, pid, self.strict)
         father, mother = tree.father_mother(pid)
         ident = [f"- **Sexe** : {({'M': 'masculin', 'F': 'féminin'}).get(p.sexe, 'inconnu')}"]
+        pat = patronyme(p)
+        if pat and _safe(pat):
+            ident.append(f"- **Patronyme** : [[{_safe(pat, 120)}]]")
         ident += [f"- **Autre nom** : {n.complet}" for n in p.noms[1:]]
         for role, x in (("Père", father), ("Mère", mother)):
             if x and x in tree.personnes:
@@ -214,7 +232,7 @@ class Notes:
         birth = next((e for e in p.evenements if e.type in ("BIRT", "CHR", "BAPM")), None)
         death = next((e for e in p.evenements if e.type in ("DEAT", "BURI")), None)
         places = sorted({e.lieu.nom for e in p.evenements if e.lieu and e.lieu.nom})
-        fm = {"id": pid, "type": "personne", "nom": p.nom_principal.complet,
+        fm = {"id": pid, "type": "personne", "nom": p.nom_principal.complet, "patronyme": pat,
               "statut": min(essentials, key=lambda s: RANK.get(s, 9)) if essentials else "non_source",
               "sosa": sosa.get(pid), "naissance": birth.date if birth else "", "deces": death.date if death else "",
               "lieux": places, "sources": src_links, "journal": [e["id"] for e in jr], "vivant": False}
@@ -257,6 +275,86 @@ class Notes:
             else:
                 ligne += f"\n{titre}"
             out.append(ligne)
+        return out
+
+    def _porteurs(self, tree: Tree) -> dict[str, list[str]]:
+        """Patronyme -> personnes affichables qui le portent (nom principal) ; personnes masquées exclues."""
+        out: dict[str, list[str]] = {}
+        for pid in sorted(tree.personnes):
+            pat = patronyme(tree.personnes[pid])
+            if pat and _safe(pat) and not self._masked(tree, pid):
+                out.setdefault(pat, []).append(pid)
+        return out
+
+    def surname(self, tree: Tree, key: str, porteurs: dict[str, list[str]]) -> tuple[dict, dict[str, str], str]:
+        """(frontmatter, blocs, titre) d'un patronyme : personnes, variantes, berceau, pièces, requête Dataview."""
+        pids = porteurs.get(key, [])
+        if not pids:
+            return ({"type": "patronyme", "nom": key, "personnes": 0},
+                    {"personnes": "Aucune personne affichable (personnes présumées vivantes ou privées masquées)."},
+                    key)
+
+        def naissance(pid):
+            e = next(iter(tree.personnes[pid].events("BIRT", "CHR", "BAPM")), None)
+            g = parse_date(e.date) if e else None
+            return (g.start.bounds()[0] if g and g.start else float("inf"), pid)  # année déclarée
+
+        pids = sorted(pids, key=naissance)
+        gens = [f"- {self.link(tree, 'personne', x)}" for x in pids]
+        variantes: set[str] = set()
+        for x in pids:
+            p = tree.personnes[x]
+            variantes |= {_part(n.nom).upper() for n in p.noms[1:] if n.nom}
+            variantes |= {_part(n.surnom).upper() for n in p.noms if n.surnom}
+            variantes |= set(normalize_surname(p.nom_principal.nom)["dit"])
+        variantes.discard(key)
+        variantes.discard("")
+        phon = normalize_surname(key)["phonetique"]
+        proches = sorted(k for k in porteurs if k != key and phon and normalize_surname(k)["phonetique"] == phon)
+        communes = Counter(e.lieu.nom.split(",")[0].strip() for x in pids for e in tree.personnes[x].evenements
+                           if e.lieu and e.lieu.nom.strip())
+        berceau = [c for c, _ in communes.most_common(5) if c]
+        var_lines = [f"- {v}" for v in sorted(variantes)] + [f"- [[{_safe(k, 120)}]] (même phonétique)"
+                                                             for k in proches]
+        var_lines.append(f"- Clé phonétique : `{phon}`" if phon else "")
+        fm = {"type": "patronyme", "nom": key, "personnes": len(pids), "variantes": sorted(variantes) + proches,
+              "berceau": berceau}
+        requete = ("```dataview\nTABLE naissance, deces, statut, sosa\nFROM \"personnes\"\n"
+                   f"WHERE patronyme = {_yaml(key)}\nSORT naissance ASC\n```")
+        blocks = {
+            "personnes": f"## Porteurs ({len(pids)})\n\n" + "\n".join(gens),
+            "variantes": "## Variantes\n\n" + ("\n".join(x for x in var_lines if x) or "- (aucune)"),
+            "berceau": "## Berceau\n\n" + ("\n".join(f"- {c} ({n} faits)" for c, n in communes.most_common(5) if c)
+                                             or "- (aucun lieu)"),
+            "pieces": "## Pièces\n\n" + ("\n".join(self._pieces_patronyme(tree, key)) or "- (aucune)"),
+            "requete": "## Requête Dataview\n\n" + requete,
+        }
+        return fm, blocks, key
+
+    def _pieces_patronyme(self, tree: Tree, key: str) -> list[str]:
+        """Pièces rangées sous documents/*/<NOM>/, photographies/<NOM>/ et photographies/Sépultures/<NOM>/ ;
+        celles dont le nom désigne une personne masquée sont omises."""
+        racine = self._require()
+        dossiers = [*sorted((racine / "documents").glob(f"*/{key}")), racine / "photographies" / key,
+                    racine / "photographies" / "Sépultures" / key]
+        caches = set()
+        for x, p in tree.personnes.items():
+            if self._masked(tree, x):
+                caches |= {_personne({"nom": n.nom, "prenom": n.prenoms}).casefold() for n in p.noms}
+        out = []
+        for d in dossiers:
+            if not d.is_dir() or d.is_symlink():
+                continue
+            for f in sorted(d.rglob("*")):
+                rel = f.relative_to(racine)
+                if not f.is_file() or f.is_symlink() or f.suffix.lower() == ".md" \
+                        or any(part.startswith(".") for part in rel.parts):
+                    continue
+                if {n.casefold() for n in lire_nom(f.name)["personnes"]} & caches:
+                    continue
+                # lien Markdown encodé : les crochets de « [1820] » casseraient un wikilink
+                label = f.name.replace("[", "\\[").replace("]", "\\]")
+                out.append(f"- [{label}](../{quote(rel.as_posix())})")  # relatif à patronymes/
         return out
 
     def family(self, tree: Tree, fid: str) -> tuple[dict, dict[str, str], str]:
@@ -343,19 +441,20 @@ class Notes:
     def generate(self, tree: Tree, target: str = "tout") -> dict:
         root = self._require()
         sosa = self._sosa(tree)
-        ids = self._targets(tree, target)
+        porteurs = self._porteurs(tree)
+        ids = self._targets(tree, target, porteurs)
         written, unchanged, alertes = [], 0, []
+        extra = {"personne": (sosa,), "patronyme": (porteurs,)}
         for kind, oid in ids:
-            fm, blocks, title = getattr(self, {"personne": "person", "famille": "family", "source": "source"}[kind])(
-                tree, oid, *((sosa,) if kind == "personne" else ()))
+            fm, blocks, title = getattr(self, METHODS[kind])(tree, oid, *extra.get(kind, ()))
             path = self.path(tree, kind, oid)
             if self._write(path, fm, blocks, title):
                 written.append(str(path.relative_to(root)))
             else:
                 unchanged += 1
-            alertes += self._alertes(tree, kind, oid, path)
+            alertes += self._alertes(tree, kind, oid, path, porteurs)
         if target == "tout":
-            self._index(tree)
+            self._index(tree, porteurs)
         out = {"repertoire": str(root), "ecrites": written, "inchangees": unchanged}
         if alertes:
             out["alertes"] = alertes
@@ -363,8 +462,13 @@ class Notes:
             out["avertissement"] = w
         return out
 
-    def _alertes(self, tree: Tree, kind: str, oid: str, path: Path) -> list[str]:
+    def _alertes(self, tree: Tree, kind: str, oid: str, path: Path, porteurs: dict | None = None) -> list[str]:
         """Ce qui reste d'une personne masquée et que l'outil ne touche pas : nom de fichier, texte manuel."""
+        if kind == "patronyme":
+            if porteurs is not None and oid not in porteurs:
+                return [f"{path.relative_to(self._require())} : plus aucune personne affichable ; le nom du fichier "
+                        "et le texte saisi à la main peuvent identifier une personne masquée (supprimer à la main ?)."]
+            return []
         masked = (kind == "personne" and self._masked(tree, oid)) or (kind == "famille" and any(
             x in tree.personnes and self._masked(tree, x) for x in (tree.familles[oid].epoux, tree.familles[oid].epouse)))
         if not masked:
@@ -384,26 +488,40 @@ class Notes:
                        "pas de données sur la personne masquée.")
         return out
 
-    def _targets(self, tree: Tree, target: str) -> list[tuple[str, str]]:
+    def _targets(self, tree: Tree, target: str, porteurs: dict | None = None) -> list[tuple[str, str]]:
+        porteurs = self._porteurs(tree) if porteurs is None else porteurs
         if target == "tout":
+            # patronymes : ceux des personnes affichables, et les fiches existantes devenues sans porteur (remasquage)
+            folder = self._require() / FOLDERS["patronyme"]
+            existants = {f.stem for f in folder.glob("*.md")} if folder.exists() else set()
+            stems = {_safe(k, 120) for k in porteurs}
             return ([("personne", x) for x in sorted(tree.personnes)] + [("famille", x) for x in sorted(tree.familles)]
-                    + [("source", x) for x in sorted(tree.sources)])
+                    + [("source", x) for x in sorted(tree.sources)]
+                    + [("patronyme", k) for k in sorted(porteurs)] + [("patronyme", s) for s in sorted(existants - stems)])
         for kind, coll in (("personne", tree.personnes), ("famille", tree.familles), ("source", tree.sources)):
             if target in coll:
-                return [(kind, target)]
-        raise NotesError(f"Identifiant inconnu dans l'arbre : {target!r} (personne, famille, source ou « tout »)")
+                out = [(kind, target)]
+                pat = patronyme(tree.personnes[target]) if kind == "personne" else ""
+                if pat in porteurs and target in porteurs[pat]:
+                    out.append(("patronyme", pat))  # fiche du patronyme tenue à jour avec ses porteurs
+                return out
+        if target.upper() in porteurs:
+            return [("patronyme", target.upper())]
+        raise NotesError(f"Identifiant inconnu dans l'arbre : {target!r} (personne, famille, source, patronyme "
+                         "ou « tout »)")
 
-    def _index(self, tree: Tree) -> None:
+    def _index(self, tree: Tree, porteurs: dict[str, list[str]]) -> None:
         path = self._require() / "index.md"
         lines = ["## Personnes", ""] + [f"- {self.link(tree, 'personne', x)}" for x in sorted(tree.personnes)]
         lines += ["", "## Familles", ""] + [f"- {self.link(tree, 'famille', x)}" for x in sorted(tree.familles)]
         lines += ["", "## Sources", ""] + [f"- {self.link(tree, 'source', x)}" for x in sorted(tree.sources)]
+        lines += ["", "## Patronymes", ""] + [f"- [[{_safe(k, 120)}]] ({len(v)})" for k, v in sorted(porteurs.items())]
         fm = {"type": "index", "personnes": len(tree.personnes), "familles": len(tree.familles),
-              "sources": len(tree.sources)}
+              "sources": len(tree.sources), "patronymes": len(porteurs)}
         self._write(path, fm, {"index": "\n".join(lines)}, "Index des notes de recherche")
 
     def read(self, tree: Tree, oid: str) -> dict:
-        kind, _ = self._targets(tree, oid)[0]
+        kind, oid = self._targets(tree, oid)[0]
         path = self.path(tree, kind, oid)
         if not path.exists():
             self.generate(tree, oid)
@@ -415,7 +533,7 @@ class Notes:
             raise NotesError(f"section : {', '.join(SECTIONS)}")
         if not texte.strip():
             raise NotesError("texte vide")
-        kind, _ = self._targets(tree, oid)[0]
+        kind, oid = self._targets(tree, oid)[0]
         if kind == "personne" and self._masked(tree, oid):
             raise NotesError("Personne présumée vivante : fiche masquée (GENEALOGISTE_NOTES_VIVANTS=complet).")
         path = self.path(tree, kind, oid)
