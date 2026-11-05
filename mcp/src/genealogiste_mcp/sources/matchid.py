@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import csv
+import io
+from collections.abc import Callable
 from pathlib import Path
 
 from ..chemins import CheminRefuse, sortie_donnees
@@ -90,9 +93,40 @@ def _fmt_date(v: str) -> str:
     return str(g.to_dict()["annee_min"])
 
 
+def _filtrer_csv(path: Path, colonnes: dict, sep: str, exclure: Callable[[dict], bool]) -> tuple[bytes, list[int]]:
+    """Contenu à envoyer, sans les lignes que la politique « vivants » exclut ; numéros des lignes retirées."""
+    raw = path.read_bytes()
+    try:
+        texte, enc = raw.decode("utf-8-sig"), "utf-8"
+    except UnicodeDecodeError:
+        texte, enc = raw.decode("cp1252"), "cp1252"
+    lignes = list(csv.reader(io.StringIO(texte, newline=""), delimiter=sep))
+    if not lignes:
+        raise ValueError("fichier CSV vide")
+    entete = lignes[0]
+    absentes = sorted(v for v in colonnes.values() if v not in entete)
+    if absentes:
+        raise ValueError(f"colonnes absentes de l'en-tête : {absentes}")
+    idx = {k: entete.index(v) for k, v in colonnes.items()}
+    gardees, exclues = [entete], []
+    for n, ligne in enumerate(lignes[1:], start=2):
+        if not any(c.strip() for c in ligne):
+            continue
+        champs = {k: ligne[i] if i < len(ligne) else "" for k, i in idx.items()}
+        if exclure(champs):
+            exclues.append(n)
+        else:
+            gardees.append(ligne)
+    out = io.StringIO()
+    csv.writer(out, delimiter=sep, lineterminator="\n").writerows(gardees)
+    return out.getvalue().encode(enc), exclues
+
+
 def bulk_submit(ctx: SourceContext, chemin_csv: str, colonnes: dict, sep: str = ",", format_date: str = "",
-                candidats: int = 1) -> dict:
-    """Lance un appariement par lot. colonnes : {firstName: 'Prenom', lastName: 'Nom', birthDate: 'Date', ...}."""
+                candidats: int = 1, exclure: Callable[[dict], bool] | None = None) -> dict:
+    """Lance un appariement par lot. colonnes : {firstName: 'Prenom', lastName: 'Nom', birthDate: 'Date', ...}.
+    exclure(champs) : vrai pour une ligne à ne pas envoyer (personne présumée vivante). Chaque ligne est
+    contrôlée avant l'envoi ; seul le contenu filtré part."""
     path = Path(chemin_csv).expanduser()
     if not path.is_file():
         return {"erreur": f"Fichier introuvable : {path}"}
@@ -101,15 +135,23 @@ def bulk_submit(ctx: SourceContext, chemin_csv: str, colonnes: dict, sep: str = 
     bad = set(colonnes) - allowed
     if bad:
         return {"erreur": f"Colonnes inconnues {sorted(bad)} ; autorisées : {sorted(allowed)}"}
+    if len(sep) != 1:
+        return {"erreur": f"Séparateur d'un seul caractère attendu : {sep!r}"}
+    try:
+        contenu, exclues = _filtrer_csv(path, colonnes, sep, exclure or (lambda _c: False))
+    except (ValueError, OSError, csv.Error) as exc:
+        return {"erreur": f"CSV illisible : {exc}"}
+    if contenu.count(b"\n") <= 1:
+        return {"refus": "Aucune ligne envoyable : toutes désignent des personnes présumées vivantes ou sont vides.",
+                "lignes_exclues": exclues}
     data = {**colonnes, "sep": sep, "candidateNumber": str(candidats)}
     if format_date:
         data["dateFormat"] = format_date
     headers = {"Authorization": f"Bearer {ctx.config.matchid_token}"} if ctx.config.matchid_token else None
-    params = {"fichier": str(path), **data}
+    params = {"fichier": str(path), "lignes_exclues": len(exclues), **data}
     try:
-        with path.open("rb") as fh:
-            res, _ = ctx.http.post(f"{BASE}/search/csv", data=data, files={"fileName": (path.name, fh, "text/csv")},
-                                   headers=headers, ttl=0, source="matchid", use_cache=False)
+        res, _ = ctx.http.post(f"{BASE}/search/csv", data=data, files={"fileName": (path.name, contenu, "text/csv")},
+                               headers=headers, ttl=0, source="matchid", use_cache=False)
     except Exception as exc:  # noqa: BLE001
         out = error_envelope(ctx, "matchid", "appariement_csv", params, exc)
         if "401" in str(exc) or "403" in str(exc):
@@ -117,7 +159,12 @@ def bulk_submit(ctx: SourceContext, chemin_csv: str, colonnes: dict, sep: str = 
                               "(jeton obtenu via /deces/api/v1/register puis /auth).")
         return out
     ctx.journal.add("matchid", "appariement_csv", params, "positif", resume=f"job {res.get('id')}")
-    return {"job": res.get("id"), "statut": res.get("msg"), "suite": "Appeler matchid_appariement_statut(job)."}
+    out = {"job": res.get("id"), "statut": res.get("msg"), "suite": "Appeler matchid_appariement_statut(job)."}
+    if exclues:
+        out["lignes_exclues"] = exclues
+        out["note"] = (f"{len(exclues)} ligne(s) non envoyée(s) : personnes présumées vivantes de l'arbre (RGPD). "
+                       "Numéros de ligne du fichier d'origine.")
+    return out
 
 
 def bulk_status(ctx: SourceContext, job: str, sortie: str = "") -> dict:

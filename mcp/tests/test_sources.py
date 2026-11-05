@@ -55,7 +55,7 @@ def test_backoff_on_429(app, api):
 
 
 @respx.mock
-def test_negative_search_is_logged(app):
+def test_negative_search_is_logged(app_famille):
     respx.get("https://deces.matchid.io/deces/api/v1/search").mock(
         return_value=httpx.Response(200, json={"response": {"total": 0, "persons": []}}))
     r = server.matchid_recherche(nom="Zzyzx", personne="I1")

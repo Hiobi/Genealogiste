@@ -121,16 +121,10 @@ def set_app(a: App | None) -> None:
     _APP = a
 
 
-def _guard_living(personne: str | None) -> dict | None:
-    if not personne:
-        return None
-    t = app().tree()
-    if personne in t.personnes:
-        st = privacy.is_living(t, t.personnes[personne])
-        if st["vivant"]:
-            return {"refus": f"{personne} est présumé(e) vivant(e) ({st['raison']}) : aucune donnée n'est envoyée "
-                              "à un service externe (RGPD). Marquer _VIVANT N si la personne est décédée."}
-    return None
+def _garde(personne: str = "", nom: str = "", prenom: str = "", ne_vers: str = "", texte: str = "") -> dict | None:
+    """Politique de sortie réseau (privacy.external_guard) : appelée par TOUT outil qui envoie des noms ou un
+    identifiant de personne à un service externe (vérifié par test_outils)."""
+    return privacy.external_guard(app().tree(), personne, nom, prenom, ne_vers, texte)
 
 
 # ============================================================================ sources prioritaires
@@ -141,16 +135,26 @@ def matchid_recherche(nom: str = "", prenom: str = "", ne_vers: str = "", lieu_n
                       taille: int = 20, page: int = 1, personne: str = "") -> dict:
     """Fichier des décès INSEE (depuis 1970) via matchID. Dates : '12/03/1920', '1920', 'vers 1920'
     (±2 ans). personne = id de l'arbre (journal). Résultats classés par score explicite."""
-    return _guard_living(personne) or matchid.search(app().sctx, nom, prenom, ne_vers, lieu_naissance, decede_vers,
-                                                     lieu_deces, sexe, texte, taille, page, personne or None)
+    return _garde(personne, nom, prenom, ne_vers, texte) or matchid.search(
+        app().sctx, nom, prenom, ne_vers, lieu_naissance, decede_vers, lieu_deces, sexe, texte, taille, page,
+        personne or None)
 
 
 @mcp.tool()
 def matchid_appariement_csv(chemin_csv: str, colonnes: dict, sep: str = ",", format_date: str = "",
                             candidats: int = 1) -> dict:
     """Appariement par lot matchID d'un CSV. colonnes = {firstName:'Prenom', lastName:'Nom', birthDate:'Naissance',
-    birthCity:..., deathDate:...}. Peut exiger un jeton (GENEALOGISTE_MATCHID_TOKEN)."""
-    return matchid.bulk_submit(app().sctx, chemin_csv, colonnes, sep, format_date, candidats)
+    birthCity:..., deathDate:...}. Peut exiger un jeton (GENEALOGISTE_MATCHID_TOKEN). Les lignes désignant une
+    personne présumée vivante de l'arbre ne sont pas envoyées (lignes_exclues)."""
+    t = app().tree()
+    index = privacy.living_index(t)
+
+    def exclure(c: dict) -> bool:
+        nom = c.get("lastName", "") or c.get("legalName", "")
+        return privacy.external_guard(t, nom=nom, prenom=c.get("firstName", ""), ne_vers=c.get("birthDate", ""),
+                                      index=index) is not None
+
+    return matchid.bulk_submit(app().sctx, chemin_csv, colonnes, sep, format_date, candidats, exclure)
 
 
 @mcp.tool()
@@ -164,7 +168,7 @@ def matchid_appariement_statut(job: str, sortie: str = "") -> dict:
 def wikitree_recherche(nom: str, prenom: str = "", ne_vers: str = "", lieu: str = "", decede_vers: str = "",
                        limite: int = 20, personne: str = "") -> dict:
     """searchPerson WikiTree (arbre collaboratif = piste, source composite)."""
-    return _guard_living(personne) or wikitree.search(app().sctx, nom, prenom, ne_vers, lieu, decede_vers, limite,
+    return _garde(personne, nom, prenom, ne_vers) or wikitree.search(app().sctx, nom, prenom, ne_vers, lieu, decede_vers, limite,
                                                       personne or None)
 
 
@@ -197,14 +201,14 @@ def gallica_recherche(texte: str, type_doc: str = "", titre: str = "", debut: st
                       exact: bool = True, nombre: int = 20, depart: int = 1, personne: str = "") -> dict:
     """Recherche SRU Gallica. type_doc : presse | livre | carte | manuscrit. titre : filtre (ex. 'annuaire').
     debut/fin : années de publication. exact=True : expression exacte."""
-    return _guard_living(personne) or gallica.search(app().sctx, texte, type_doc, titre, debut, fin, exact, nombre,
+    return _garde(personne, texte=texte) or gallica.search(app().sctx, texte, type_doc, titre, debut, fin, exact, nombre,
                                                      depart, personne or None)
 
 
 @mcp.tool()
 def gallica_recherche_document(ark: str, texte: str) -> dict:
     """Pages d'un document Gallica contenant le texte (ContentSearch) avec extraits et liens image."""
-    return gallica.search_in_document(app().sctx, ark, texte)
+    return _garde(texte=texte) or gallica.search_in_document(app().sctx, ark, texte)
 
 
 @mcp.tool()
@@ -244,15 +248,17 @@ def archive_image(source: str, page: int = 0, region: str = "full", largeur: int
 
 
 @mcp.tool()
-def wikidata_personne(nom: str, prenom: str = "", ne_vers: str = "", lieu: str = "", limite: int = 20) -> dict:
+def wikidata_personne(nom: str, prenom: str = "", ne_vers: str = "", lieu: str = "", limite: int = 20,
+                      personne: str = "") -> dict:
     """Recherche d'une personnalité dans Wikidata (dates avec précision, lieux, parents)."""
-    return wikidata.search_person(app().sctx, nom, prenom, ne_vers, lieu, limite)
+    return _garde(personne, nom, prenom, ne_vers) or wikidata.search_person(app().sctx, nom, prenom, ne_vers, lieu,
+                                                                             limite, personne or None)
 
 
 @mcp.tool()
 def wikidata_sparql(requete: str) -> dict:
     """Requête SPARQL en lecture seule sur query.wikidata.org."""
-    return wikidata.sparql(app().sctx, requete)
+    return _garde(texte=requete) or wikidata.sparql(app().sctx, requete)
 
 
 @mcp.tool()
@@ -273,7 +279,7 @@ def recherche_multi(nom: str, prenom: str = "", ne_vers: str = "", lieu: str = "
                     sources: list[str] | None = None, personne: str = "") -> dict:
     """Recherche multi-sources (matchID, WikiTree, Wikidata, Gallica) + liens des sources secondaires.
     Résultats fusionnés et classés par score de correspondance explicite."""
-    refus = _guard_living(personne)
+    refus = _garde(personne, nom, prenom, ne_vers)
     if refus:
         return refus
     a = app()

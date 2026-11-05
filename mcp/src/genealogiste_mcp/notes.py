@@ -18,9 +18,11 @@ from pathlib import Path
 
 from .evidence import assess_person
 from .export.charts import _years, ancestors
-from .export.fiche import ICONS, LABEL, _fmt_date
+from .export.fiche import _fmt_date
 from .models import EVENT_LABELS, Tree
 from .privacy import is_living
+from .statuts import GRAVITE, ICONS
+from .statuts import LABELS as LABEL
 
 START = "<!-- sosa:debut {} -->"
 END = "<!-- sosa:fin -->"
@@ -29,7 +31,7 @@ FREE_HINT = "<!-- Texte libre : jamais modifié par l'outil (hypothèses, réfle
 FOLDERS = {"personne": "personnes", "famille": "familles", "source": "sources"}
 SECTIONS = {"hypothese": "Hypothèses", "piste": "Pistes", "conclusion": "Conclusions", "courrier": "Courriers",
             "a_faire": "À faire", "note": "Notes"}
-RANK = {"refute": 0, "contradictoire": 1, "non_source": 2, "hypothese": 3, "probable": 4, "confirme": 5}
+RANK = GRAVITE
 _BAD = re.compile(r'[\\/:*?"<>|#^\[\]]+')
 _BLOCK = re.compile(r"<!-- sosa:debut (?P<name>[\w-]+) -->\n.*?<!-- sosa:fin -->", re.S)
 

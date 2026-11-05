@@ -15,13 +15,14 @@ Les extensions `_…` sont omises (ged2gwb les ignore, ou les verse en notes ave
 from __future__ import annotations
 
 from ..citations import format_citation
-from ..evidence import LABELS, assess_person
+from ..evidence import assess_person
 from ..gedcom.core import Node, serialize
 from ..gedcom.mapping import godparent_rela, rela_of
 from ..models import EVENT_LABELS, UNIQUE_EVENTS, Association, Event, Tree
 from ..normalize.dates import parse_gedcom_date
+from ..statuts import ICONS, LABELS, RANG_VERSION
 
-RANK = {"confirme": 0, "probable": 1, "hypothese": 2, "contradictoire": 3, "non_source": 4, "refute": 5}
+RANK = RANG_VERSION
 
 
 def split_versions(events: list[Event], facts: dict) -> tuple[list[Event], dict[str, list[str]]]:
@@ -51,8 +52,7 @@ def split_versions(events: list[Event], facts: dict) -> tuple[list[Event], dict[
     return keep, extra_notes
 
 
-ICON = {"confirme": "✅", "probable": "🟢", "hypothese": "🟡", "contradictoire": "⚠️", "refute": "❌",
-        "non_source": "⛔"}
+ICON = ICONS
 
 
 def _date(v: str) -> str:

@@ -59,6 +59,7 @@ from ..models import (
     Tree,
 )
 from ..normalize.places import DEPARTEMENTS
+from ..statuts import COULEURS
 from .types import (
     attribute,
     blank,
@@ -117,8 +118,7 @@ EVENT_ROLES = {"WITN": "Witness", "CLERGY": "Clergy", "OFFICIATOR": "Celebrant"}
 ROLE_CODES = {"Witness": "WITN", "Clergy": "CLERGY", "Celebrant": "OFFICIATOR", "Godparent": "GODP",
               "Friend": "FRIEND", "Neighbor": "NGHBR", "Father": "FATH", "Mother": "MOTH", "Parent": "PARENT",
               "Child": "CHIL", "Multiple birth": "MULTIPLE"}
-STATUS_COLORS = {"confirme": "#2e7d32", "probable": "#689f38", "hypothese": "#f9a825",
-                 "contradictoire": "#ef6c00", "refute": "#c62828", "non_source": "#757575"}
+STATUS_COLORS = COULEURS
 AUTO_COLOR = "#607d8b"
 _NS = uuid.UUID("5f0e8f9e-9a51-4d1c-9d43-7d2b8f4c0a11")
 _REV_VU = {v: k for k, v in VU.items()}
@@ -671,7 +671,7 @@ def proof_data(tree: Tree, strict: bool = False) -> dict:
                     f"Filiation de {tree.personnes[pid].nom_principal.complet} : {ICON[f['statut']]} "
                     f"{LABELS[f['statut']]}")
         notes[("Person", pid)] = [("Research", proof_summary(pid, facts))]
-        from ..export.geneweb import RANK
+        from ..statuts import RANG_VERSION as RANK
         for typ in ("BIRT", "DEAT"):
             cands = [(RANK.get(f.get("statut", "non_source"), 4), -f.get("points", 0), i, f["uid"])
                      for i, f in enumerate(facts) if f["fait"] == typ and not f.get("famille") and f.get("uid")]

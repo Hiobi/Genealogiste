@@ -25,6 +25,37 @@ Module `chemins.py` (#41, #51). Les chemins sont résolus (liens symboliques com
 
 Le test `tests/test_chemins.py::test_hook_statut_matchid` exécute réellement la commande du hook.
 
+Ces décisions sont déclarées une seule fois, outil par outil, dans `mcp/src/genealogiste_mcp/outils.py` (effet :
+lecture, réseau, journal, proposition, écriture, identifiants ; décision du hook). `tests/test_outils.py` refuse
+un outil enregistré mais non déclaré, et tout écart entre ce catalogue et `hooks/hooks.json`. Ajouter un outil
+impose donc de le classer.
+
+## Personnes vivantes : rien vers l'extérieur
+
+**Présomption de vie** (`privacy.is_living`) : une personne est présumée vivante tant qu'une naissance il y a
+moins de 100 ans reste possible. La décision porte sur la **borne haute** de l'intervalle de naissance, jamais
+sur son milieu : `BEF 1970`, `AFT 1900` ou `BET 1900 AND 1930` laissent une naissance récente possible. Sans
+naissance datée, la borne vient du mariage ou d'un enfant (15 ans avant), d'un autre fait daté, ou d'un parent
+(50 ans après lui). Un décès, une inhumation ou une crémation **réfutés** (statut manuel) sont ignorés, et la
+contradiction est signalée (`contradictions`). Le marquage `_VIVANT Y/N` prime.
+
+**Sorties réseau** (`privacy.external_guard`) : politique unique, appliquée dans le code par tout outil réseau
+qui reçoit un nom, un texte libre ou un identifiant de personne (matchID, WikiTree, Gallica, Wikidata dont
+SPARQL, recherche multi-sources). Refus sans aucun appel réseau si :
+
+- l'identifiant `personne` est **inconnu** de l'arbre ou désigne une personne présumée vivante ;
+- les noms ou le texte désignent un vivant de l'arbre (nom **et** prénom présents), sauf si `ne_vers` est
+  incompatible avec sa naissance (homonyme ancien) ou si la requête porte sur la personne décédée désignée
+  par `personne`.
+
+Un nom seul (`MARTIN`) n'est pas refusé. L'appariement par lot matchID contrôle **chaque ligne** du CSV : les
+lignes désignant un vivant sont retirées du contenu envoyé (`lignes_exclues`, numéros du fichier d'origine) ;
+rien n'est envoyé si aucune ligne ne reste.
+
+`tests/test_outils.py` vérifie que tout outil réseau recevant un paramètre de personne figure dans la liste des
+outils gardés (exemptions justifiées : communes de l'API Géo, serveur Gramps Web de l'utilisateur), et
+`tests/test_vivants.py` qu'aucun de ces outils ne fait d'appel réseau pour un vivant.
+
 ## Réseau : seules les adresses publiques
 
 Module `reseau.py` (#42), appliqué par le client HTTP commun (`http.py`) à **toutes** les sources externes
@@ -99,6 +130,6 @@ un proxy authentifiant, `MCP_SANS_AUTH=1`.
 
 ## Tests
 
-`tests/test_chemins.py` et `tests/test_reseau.py`. Aucune résolution DNS réelle pendant les tests : la
+`tests/test_chemins.py`, `tests/test_reseau.py`, `tests/test_outils.py` et `tests/test_vivants.py`. Aucune résolution DNS réelle pendant les tests : la
 fixture `dns_fictif` (`conftest.py`, autouse) renvoie une adresse publique de documentation pour tout nom,
 et des adresses privées pour quelques noms « internes ».
