@@ -148,7 +148,35 @@ class DatePoint:
     month: int | None = None
     day: int | None = None
 
+    def validate(self) -> DatePoint:
+        """Composantes possibles dans leur calendrier, sinon ValueError au message clair (#46)."""
+        y, m, d = self.year, self.month, self.day
+        cal = {"GREGORIAN": "grégorien", "JULIAN": "julien", "FRENCH_R": "républicain"}.get(self.calendar)
+        if cal is None:
+            raise ValueError(f"Calendrier inconnu : {self.calendar}")
+        if y is None or y < 1 or (self.calendar == "FRENCH_R" and y > 20):
+            raise ValueError(f"Année impossible dans le calendrier {cal} : {y}")
+        if m is None:
+            if d is not None:
+                raise ValueError("Jour sans mois")
+            return self
+        if not 1 <= m <= (13 if self.calendar == "FRENCH_R" else 12):
+            raise ValueError(f"Mois impossible dans le calendrier {cal} : {m}")
+        if d is None:
+            return self
+        if self.calendar == "FRENCH_R":
+            last = 30 if m <= 12 else french_year_length(y) - 360
+        elif m == 2:
+            leap = y % 4 == 0 if self.calendar == "JULIAN" else (y % 4 == 0 and (y % 100 != 0 or y % 400 == 0))
+            last = 29 if leap else 28
+        else:
+            last = 30 if m in (4, 6, 9, 11) else 31
+        if not 1 <= d <= last:
+            raise ValueError(f"Jour impossible : {d}/{m}/{y} (calendrier {cal}, {last} jours dans ce mois)")
+        return self
+
     def bounds(self) -> tuple[int, int]:
+        self.validate()
         y, m, d = self.year, self.month, self.day
         if self.calendar == "FRENCH_R":
             if m is None:
@@ -324,6 +352,38 @@ def _parse_point(text: str) -> DatePoint:
     return pt
 
 
+def _ordered(g: GenDate) -> GenDate:
+    if g.start.bounds()[0] > g.end.bounds()[1]:
+        raise ValueError(f"Intervalle inversé : {g.start.gedcom()} est après {g.end.gedcom()}")
+    return g
+
+
+def date_problem(text: str) -> str:
+    """Motif précis du refus d'une date (composante impossible, intervalle inversé…), ou "" si elle est valide
+    ou simplement non reconnue."""
+    up = (text or "").strip().upper()
+    up = re.sub(r"\(.*\)\s*$", "", up).strip()
+    try:
+        for pat, q in ((r"^BET\s+(.+?)\s+AND\s+(.+)$", "BET"), (r"^FROM\s+(.+?)\s+TO\s+(.+)$", "FROMTO")):
+            m = re.match(pat, up)
+            if m:
+                _ordered(GenDate(text, q, _parse_point(m.group(1)), _parse_point(m.group(2))))
+                return ""
+        q = next((q for q in ("ABT", "CAL", "EST", "BEF", "AFT", "FROM", "TO", "INT") if up.startswith(q + " ")), "")
+        _parse_point(up[len(q) + 1:] if q else up)
+    except ValueError as exc:
+        msg = str(exc)
+        if msg.startswith(("Mois inconnu", "Année invalide", "Date vide")):
+            pass
+        else:
+            return msg
+    try:
+        _parse_fr_point(_strip(text.lower()))
+    except ValueError as exc:
+        return str(exc)
+    return ""
+
+
 def parse_gedcom_date(value: str) -> GenDate | None:
     if not value or not value.strip():
         return None
@@ -340,10 +400,10 @@ def parse_gedcom_date(value: str) -> GenDate | None:
     try:
         m = re.match(r"^BET\s+(.+?)\s+AND\s+(.+)$", up)
         if m:
-            return GenDate(raw, "BET", _parse_point(m.group(1)), _parse_point(m.group(2)), phrase)
+            return _ordered(GenDate(raw, "BET", _parse_point(m.group(1)), _parse_point(m.group(2)), phrase))
         m = re.match(r"^FROM\s+(.+?)\s+TO\s+(.+)$", up)
         if m:
-            return GenDate(raw, "FROMTO", _parse_point(m.group(1)), _parse_point(m.group(2)), phrase)
+            return _ordered(GenDate(raw, "FROMTO", _parse_point(m.group(1)), _parse_point(m.group(2)), phrase))
         for q in ("ABT", "CAL", "EST", "BEF", "AFT", "FROM", "TO", "INT"):
             if up.startswith(q + " "):
                 return GenDate(raw, None if q == "INT" else q, _parse_point(up[len(q) + 1:]), None, phrase)
@@ -371,23 +431,23 @@ def _parse_fr_point(t: str) -> DatePoint | None:
         return pt
     m = re.fullmatch(r"(\d{4})-(\d{2})-(\d{2})", t)
     if m:
-        return DatePoint("GREGORIAN", int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        return DatePoint("GREGORIAN", int(m.group(1)), int(m.group(2)), int(m.group(3))).validate()
     m = re.fullmatch(r"(\d{1,2})[/.](\d{1,2})[/.](\d{4})", t)
     if m:
-        return DatePoint("GREGORIAN", int(m.group(3)), int(m.group(2)), int(m.group(1)))
+        return DatePoint("GREGORIAN", int(m.group(3)), int(m.group(2)), int(m.group(1))).validate()
     m = re.fullmatch(r"(\d{4})(\d{2})(\d{2})", t)
     if m:
         y, mo, d = (int(x) for x in m.groups())
-        return DatePoint("GREGORIAN", y, mo or None, d or None)
+        return DatePoint("GREGORIAN", y, mo or None, (d or None) if mo else None).validate()
     julian = "julien" in t or "vieux style" in t
     t = t.replace("julien", "").replace("(", "").replace(")", "").replace("vieux style", "").strip()
     m = re.fullmatch(r"(?:(\d{1,2})\s+)?([a-z0-9]+)\.?\s+(\d{3,4})", t)
     if m and m.group(2) in FR_MONTHS_TEXT:
         return DatePoint("JULIAN" if julian else "GREGORIAN", int(m.group(3)), FR_MONTHS_TEXT[m.group(2)],
-                         int(m.group(1)) if m.group(1) else None)
+                         int(m.group(1)) if m.group(1) else None).validate()
     m = re.fullmatch(r"(\d{3,4})", t)
     if m:
-        return DatePoint("JULIAN" if julian else "GREGORIAN", int(m.group(1)))
+        return DatePoint("JULIAN" if julian else "GREGORIAN", int(m.group(1))).validate()
     return None
 
 
@@ -410,13 +470,16 @@ def parse_date(text: str, tolerance_years: int = APPROX_YEARS) -> GenDate | None
             qual = q
             t = t[len(w):].strip()
             break
-    m = re.match(r"^entre\s+(.+?)\s+et\s+(.+)$", t)
-    if m:
-        a, b = _parse_fr_point(m.group(1)), _parse_fr_point(m.group(2))
-        if a and b:
-            return GenDate(text, "BET", a, b, tolerance_years=tolerance_years)
+    try:
+        m = re.match(r"^entre\s+(.+?)\s+et\s+(.+)$", t)
+        if m:
+            a, b = _parse_fr_point(m.group(1)), _parse_fr_point(m.group(2))
+            if a and b:
+                return _ordered(GenDate(text, "BET", a, b, tolerance_years=tolerance_years))
+            return None
+        pt = _parse_fr_point(t)
+    except (ValueError, IndexError):  # composante impossible : jamais d'exception brute (#46)
         return None
-    pt = _parse_fr_point(t)
     if not pt:
         return None
     return GenDate(text, qual, pt, tolerance_years=tolerance_years)
@@ -506,7 +569,8 @@ def convert(text: str) -> dict:
     """Conversion lisible : toutes les représentations d'une date."""
     g = parse_date(text)
     if not g:
-        return {"erreur": f"Date non reconnue : {text!r}"}
+        why = date_problem(text)
+        return {"erreur": f"Date impossible : {text!r} — {why}" if why else f"Date non reconnue : {text!r}"}
     out = g.to_dict()
     if g.qualifier is None and g.start.day:
         j = g.start.bounds()[0]

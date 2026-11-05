@@ -168,6 +168,10 @@ Tests : `tests/test_ecritures.py`.
 
 ## Tests
 
-`tests/test_chemins.py`, `tests/test_reseau.py`, `tests/test_outils.py` et `tests/test_vivants.py`. Aucune résolution DNS réelle pendant les tests : la
+`tests/test_chemins.py`, `tests/test_reseau.py`, `tests/test_outils.py`, `tests/test_vivants.py`,
+`tests/test_publication.py`, `tests/test_ecritures.py`, `tests/test_integrite.py` et
+`tests/test_garanties.py`. Ce dernier vérifie les propriétés globales : aucun outil réseau gardé n'interroge un
+service pour un vivant, quel que soit le paramètre qui le désigne (outils et paramètres découverts dans le
+catalogue), et aucun export, graphique, fiche ou note de recherche ne nomme une personne masquée. Aucune résolution DNS réelle pendant les tests : la
 fixture `dns_fictif` (`conftest.py`, autouse) renvoie une adresse publique de documentation pour tout nom,
 et des adresses privées pour quelques noms « internes ».

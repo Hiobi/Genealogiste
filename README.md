@@ -114,11 +114,12 @@ Les commandes d'un plugin sont préfixées par son nom : `/genealogiste:cherche`
   secondaire / indéterminée ; preuve directe / indirecte / négative (extensions GEDCOM documentées dans
   [docs/gedcom-extensions.md](docs/gedcom-extensions.md)).
 - **Statut de preuve calculé** : les citations sont regroupées par source originale indépendante (acte +
-  table décennale = une seule source) ; poids 2 pour un original primaire direct, 1 sinon, 0 pour un arbre
+  table décennale = une seule source ; chaîne « dérivée de » suivie jusqu'à l'original ; même acte noté
+  « vue 1 » ou « v. 01 » = une seule source) ; poids 2 pour un original primaire direct, 1 sinon, 0 pour un arbre
   en ligne. *Confirmé* ≥ 3 points et ≥ 2 sources indépendantes, *probable* 2, *hypothèse* 1 ;
   *contradictoire* détecté automatiquement ; *réfuté* par décision justifiée. Mode strict disponible.
 - **Recoupement** : noms (variantes, phonétique française, latin des registres, particules, « dit »),
-  dates ±2 ans, calendriers républicain et julien, âges recalculés, lieux normalisés et historiques (COG),
+  dates ±2 ans (date impossible, comme un 31 février, refusée avec le motif), calendriers républicain et julien, âges recalculés, lieux normalisés et historiques (COG),
   contrôles biologiques.
 - **Homonymes** : score critère par critère ; une contradiction franche l'emporte ; jamais de fusion
   automatique.
