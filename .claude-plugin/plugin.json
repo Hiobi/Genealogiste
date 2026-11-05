@@ -1,6 +1,6 @@
 {
   "name": "genealogiste",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Généalogiste professionnel français : recherche multi-sources (matchID/INSEE, WikiTree, Gallica, Wikidata, API Géo/COG), méthode GPS, fact-check à sources indépendantes, détection d'homonymes et arbre GEDCOM 7 versionné en Git avec validation explicite.",
   "author": { "name": "hiobi" },
   "homepage": "https://github.com/hiobi/sosa",
