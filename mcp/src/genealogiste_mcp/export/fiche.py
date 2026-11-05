@@ -8,11 +8,9 @@ from ..fr_sources import next_source_hint
 from ..models import EVENT_LABELS, Tree
 from ..normalize.dates import parse_date
 from ..privacy import is_living
+from ..statuts import ICONS, LABELS
 
-ICONS = {"confirme": "✅", "probable": "🟢", "hypothese": "🟡", "contradictoire": "⚠️", "refute": "❌",
-         "non_source": "⛔"}
-LABEL = {"confirme": "confirmé", "probable": "probable", "hypothese": "hypothèse", "contradictoire": "contradictoire",
-         "refute": "réfuté", "non_source": "non sourcé"}
+LABEL = LABELS
 
 
 def _fmt_date(d: str) -> str:

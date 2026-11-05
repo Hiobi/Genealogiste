@@ -16,11 +16,7 @@ from .citations import format_citation
 from .models import UNIQUE_EVENTS, Citation, Event, Tree
 from .normalize.dates import compare, parse_date
 from .normalize.places import place_similarity
-
-LABELS = {
-    "confirme": "confirmé", "probable": "probable", "hypothese": "hypothèse",
-    "contradictoire": "contradictoire", "refute": "réfuté", "non_source": "non sourcé",
-}
+from .statuts import LABELS
 
 
 def _norm_page(p: str) -> str:

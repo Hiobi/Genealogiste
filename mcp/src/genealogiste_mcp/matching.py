@@ -172,8 +172,4 @@ def score_candidate(query: dict, candidate: dict) -> float:
     return compare_profiles(query, candidate)["score"]
 
 
-def person_from_profile_dict(d: dict) -> dict:  # pour symétrie d'API
-    return d
-
-
 __all__ = ["compare_profiles", "compare_persons", "profile_from_person", "score_candidate", "Person"]

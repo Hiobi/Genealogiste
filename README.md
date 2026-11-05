@@ -150,8 +150,10 @@ justification + sources. Opérations disponibles : [docs/operations.md](docs/ope
 
 ## Données personnelles
 
-Personne sans décès et née (estimation) il y a moins de 100 ans = présumée vivante : aucune donnée
-envoyée à un service externe, masquage à l'export et refus de récit. Délais de communicabilité :
+Personne sans décès (non réfuté) dont une naissance il y a moins de 100 ans reste possible = présumée
+vivante : aucune donnée envoyée à un service externe (identifiant, nom et prénom, ou ligne de CSV : contrôle
+dans le code, voir [docs/securite.md](docs/securite.md#personnes-vivantes--rien-vers-lextérieur)), masquage à
+l'export et refus de récit. Délais de communicabilité :
 skill `droit-communicabilite` et outil `communicabilite`.
 
 ## Sécurité
