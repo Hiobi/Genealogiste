@@ -39,6 +39,31 @@ est refusé, sauf `"non_source": true` + `"motif": "…"` (la mention « Non sou
 | `definir_statut` | `cible` `{type: evenement | nom | filiation …}`, `statut` (`refute` \| `contradictoire` \| `""`), `justification`* |
 | `marquer_vivant` | `id`, `vivant` (`Y` \| `N` \| `""`) |
 
+### Intégrité (contrôlée à chaque proposition)
+
+Une proposition est **refusée** si elle introduit :
+
+- un **cycle de parenté** (une personne serait son propre parent ou ascendant), quelle que soit l'opération
+  (`lier_enfant`, `ajouter_famille`, `lier_conjoint`, fusion) ;
+- une **référence pendante** (personne, famille, source, dépôt, média ou note partagée absents) ;
+- un **UID d'événement dupliqué**.
+
+Les défauts déjà présents ne bloquent pas : `arbre_coherence` les signale (`cycle_parente`,
+`reference_cassee`, `uid_duplique`). Les parcours d'ascendance s'arrêtent sur un cycle et sont plafonnés
+(20 000 entrées Sosa).
+
+**Import en ajout** (`arbre_importer_gedcom(…, "ajouter")`) : personnes, familles, sources, dépôts, médias et
+notes partagées renumérotés, y compris les références imbriquées (citations des médias, médias des citations,
+renvois `@N…@`) ; UID en collision réattribués.
+
+**Fusion** (`fusionner_personnes`), champ par champ :
+
+- protection la plus restrictive retenue : `vivant` (forcé vivant > déduit > forcé décédé) et `prive` ; le
+  conflit est indiqué dans le résumé, à confirmer par `marquer_vivant` ;
+- extensions GEDCOM (`extra`) des deux fiches conservées ;
+- événements identiques : citations, associations, notes, cause, âge, valeur et statut manuel fusionnés ; une
+  valeur divergente est reportée en note, le statut le plus grave (`refute`, puis `contradictoire`) est retenu.
+
 ### ARK (liens pérennes des archives)
 
 - `ajouter_source` avec un `ark` (ou une `url` contenant `ark:/NAAN/…`) : ARK de la ressource enregistré sans
