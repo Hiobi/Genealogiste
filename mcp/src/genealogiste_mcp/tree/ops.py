@@ -31,7 +31,7 @@ from ..models import (
     Tree,
     new_uid,
 )
-from ..normalize.dates import parse_date
+from ..normalize.dates import date_problem, parse_date
 
 MANUAL_STATUSES = ("refute", "contradictoire", "")
 
@@ -65,6 +65,9 @@ def _date(value: str) -> str:
         return ""
     g = parse_date(value)
     if not g:
+        why = date_problem(value)
+        if why:
+            raise OpError(f"Date impossible : {value!r} — {why}")
         raise OpError(f"Date non reconnue : {value!r} (formats : 12 MAR 1820, ABT 1820, 12 vendémiaire an III…)")
     return g.gedcom(7)
 

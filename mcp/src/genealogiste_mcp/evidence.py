@@ -12,15 +12,37 @@ Mode strict (GENEALOGISTE_STRICT=1) : chaque groupe vaut 1 ; confirmé = 3 group
 
 from __future__ import annotations
 
+import re
+
 from .citations import format_citation
 from .models import UNIQUE_EVENTS, Citation, Event, Tree
 from .normalize.dates import compare, parse_date
 from .normalize.places import place_similarity
 from .statuts import LABELS
 
+_ABREV = {"v": "vue", "vues": "vue", "view": "vue", "page": "p", "pages": "p", "pp": "p", "fo": "f", "folio": "f",
+          "fol": "f", "acte": "n", "no": "n", "num": "n", "numero": "n"}
+
 
 def _norm_page(p: str) -> str:
-    return " ".join((p or "").lower().split())
+    """Localisation normalisée (#45) : casse, accents, ponctuation, abréviations (v., f°, n°) et zéros de tête
+    sans effet : « Vue 01 », « vue 1 » et « v. 1 » désignent la même vue."""
+    from .normalize.names import strip_accents
+
+    t = strip_accents((p or "").lower()).replace("°", " ").replace("º", " ")
+    t = re.sub(r"(\d+)", lambda m: f" {int(m.group(1))} ", t)
+    words = [_ABREV.get(w, w) for w in re.split(r"[^a-z0-9]+", t) if w]
+    words = [w for i, w in enumerate(words) if i == 0 or w != words[i - 1]]  # « acte n° 36 » = « acte 36 »
+    return " ".join(words)
+
+
+def root_source(tree: Tree, sid: str) -> str:
+    """Source originale ultime : chaîne « dérivée de » suivie récursivement (cycle : arrêt)."""
+    seen = set()
+    while sid in tree.sources and tree.sources[sid].original and sid not in seen:
+        seen.add(sid)
+        sid = tree.sources[sid].original
+    return sid
 
 
 def citation_weight(c: Citation, tree: Tree, strict: bool = False) -> float:
@@ -49,7 +71,7 @@ def group_citations(citations: list[Citation], tree: Tree) -> dict[str, list[Cit
     for c in citations:
         src = tree.sources.get(c.source)
         if src and src.original:
-            derived.append((src.original, c))
+            derived.append((root_source(tree, c.source), c))
         else:
             groups.setdefault(f"{c.source}|{_norm_page(c.page)}", []).append(c)
     for orig, c in derived:
