@@ -46,6 +46,23 @@ Elles restent masquées par défaut dans les exports publics (`arbre_exporter`).
 - **Annulation** : `arbre_historique` donne la référence de la transaction ; `arbre_annuler_modification`
   prépare la transaction inverse (`undo`), refusée si les objets ont changé depuis.
 
+## Journal d'intention et reprise
+
+`gramps-transactions.jsonl` trace chaque transaction en plusieurs lignes (même `id`, fusionnées à la lecture) :
+
+| État | Écrit |
+|---|---|
+| `intention` | **avant** l'envoi, avec les objets à écrire |
+| `envoyee` | dès la réponse de Gramps Web, avec les objets écrits |
+| `terminee` / `complements_en_echec` | après les étapes complémentaires (`etapes` : envoi des médias, miroir Git) |
+| `refusee` | conflit ou refus du serveur : rien n'a été écrit |
+| `indeterminee` | interruption pendant l'envoi (réseau coupé, arrêt) |
+
+Une transaction acceptée par Gramps Web reste donc annulable même si la suite échoue : le résultat porte un
+`avertissement` (relancer `gramps_envoyer_medias` ou `gramps_synchroniser`). Avant toute application ou
+annulation, les transactions `intention` ou `indeterminee` sont comparées à l'état de Gramps Web et marquées
+`envoyee`, `non_envoyee` ou `partielle`. `arbre_historique` affiche l'état et les étapes.
+
 ## Correspondance Sosa ↔ Gramps (`mcp/src/genealogiste_mcp/gramps/mapping.py`)
 
 Module unique, utilisé par l'export Gramps XML et par le mode direct, testé aller-retour
