@@ -76,9 +76,11 @@ renvois `@N…@`) ; UID en collision réattribués.
 - `archive_image(source, page, region, largeur, gris)` : image d'acte par IIIF (ARK Gallica, manifeste v2/v3,
   `info.json`, URL d'image). Pour les AD, coller le lien obtenu par « Copier le lien IIIF » dans la visionneuse.
   Aperçu 800 px en gris, puis recadrage `pct:x,y,l,h` jusqu'à 2000 px ; coût estimé en tokens ; image gardée
-  dans `medias/iiif/`, jamais retéléchargée ; une image par appel. **Sans IIIF** (AD59 par exemple : la
+  dans le cache de lecture (`<données>/cache-images/`, hors du vault), jamais retéléchargée ; une image par appel. **Sans IIIF** (AD59 par exemple : la
   visionneuse propose seulement « Télécharger ») : passer le chemin du fichier téléchargé ou l'URL directe de
-  l'image ; recadrage et réduction faits en local (Pillow), original gardé une fois dans `medias/originaux/`.
+  l'image ; recadrage et réduction faits en local (Pillow), original gardé une fois dans
+  `cache-images/originaux/`. Pour **conserver** la vue dans le vault : `piece_archiver` (pleine résolution,
+  nom selon la convention, note compagnon, voir [pieces.md](pieces.md#archiver-une-pièce-consultée-en-ligne-ark-iiif)).
 
 Exemple :
 

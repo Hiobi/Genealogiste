@@ -39,7 +39,7 @@ def test_preview_then_crop_with_cost_and_cache(app):
     prev = respx.get(f"{SVC}/full/800,/0/gray.jpg").mock(return_value=httpx.Response(200, content=JPEG))
     r = server.archive_image(f"{SVC}/info.json")
     assert r["dimensions_demandees"] == [800, 600] and r["cout_estime_tokens"] == 640
-    assert open(r["chemin_absolu"], "rb").read() == JPEG and r["fichier"].startswith("medias/iiif/")
+    assert open(r["chemin_absolu"], "rb").read() == JPEG and r["fichier"].startswith("cache-images/iiif/")
     again = server.archive_image(f"{SVC}/info.json")
     assert again["depuis_cache"] is True and prev.call_count == 1  # jamais retéléchargée
     crop = respx.get(f"{SVC}/pct:10,20,50,30/1500,/0/gray.jpg").mock(return_value=httpx.Response(200, content=JPEG))

@@ -34,6 +34,7 @@ OUTILS: dict[str, tuple[str, str]] = {
     "gallica_iiif": (LECTURE, ALLOW),
     "ark_resoudre": (RESEAU, DEFAUT),
     "archive_image": (RESEAU, DEFAUT),
+    "piece_archiver": (RESEAU, DEFAUT),  # écrit l'image et sa note dans le répertoire des médias
     "wikidata_personne": (RESEAU, ALLOW),
     "wikidata_sparql": (RESEAU, ALLOW),
     "geo_commune": (RESEAU, ALLOW),
@@ -109,4 +110,5 @@ EXEMPTIONS = {
     "geo_commune": "nom = nom de commune",
     "geo_historique": "nom = nom de commune",
     "gramps_recherche": "serveur Gramps Web de l'utilisateur (son propre arbre), pas un service tiers",
+    "piece_archiver": "nom = nom de fichier local ; seule l'adresse de la vue part sur le réseau",
 }

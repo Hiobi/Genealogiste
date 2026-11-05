@@ -54,6 +54,7 @@ class Config:
     media_dir_conf: Path | None = None  # GENEALOGISTE_MEDIA_DIR (ex. <vault>/documents) ; défaut <données>/medias
     rapports_dir_conf: Path | None = None  # GENEALOGISTE_RAPPORTS_DIR ; défaut <données>/rapports
     exports_dir_conf: Path | None = None  # GENEALOGISTE_EXPORTS_DIR ; défaut <données>/exports
+    cache_images_dir_conf: Path | None = None  # GENEALOGISTE_CACHE_IMAGES_DIR ; défaut <données>/cache-images
     hotes_autorises: list[str] = field(default_factory=list)  # exceptions à la politique réseau (hôte[:port])
     offline: bool = False
     extra: dict = field(default_factory=dict)
@@ -81,6 +82,23 @@ class Config:
     @property
     def exports_dir(self) -> Path:
         return self.exports_dir_conf or self.data_dir / "exports"
+
+    @property
+    def pieces_root(self) -> Path:
+        """Racine de l'arborescence des pièces (documents/, photographies/, archives/, _À trier/) : le dossier
+        parent quand le répertoire des médias est lui-même « documents » (ex. <vault>/documents), sinon lui."""
+        m = self.media_dir
+        return m.parent if m.name.lower() == "documents" else m
+
+    @property
+    def cache_images_dir(self) -> Path:
+        """Aperçus et recadrages de lecture (archive_image) : hors du vault, jamais versionnés."""
+        return self.cache_images_dir_conf or self.data_dir / "cache-images"
+
+    @property
+    def pieces_registre(self) -> Path:
+        """Registre des pièces archivées (source -> fichier, empreinte) : une pièce n'est jamais retéléchargée."""
+        return self.data_dir / "pieces-archivees.jsonl"
 
     def media_ref(self, path: Path) -> str:
         """Référence d'un média enregistrée dans l'arbre : relative au répertoire de données quand il s'y trouve
@@ -171,6 +189,7 @@ def load_config() -> Config:
         media_dir_conf=_dir(env("GENEALOGISTE_MEDIA_DIR")),
         rapports_dir_conf=_dir(env("GENEALOGISTE_RAPPORTS_DIR")),
         exports_dir_conf=_dir(env("GENEALOGISTE_EXPORTS_DIR")),
+        cache_images_dir_conf=_dir(env("GENEALOGISTE_CACHE_IMAGES_DIR")),
     )
     if env("GENEALOGISTE_USER_AGENT"):
         cfg.user_agent = env("GENEALOGISTE_USER_AGENT")

@@ -21,14 +21,14 @@ _THREADS: dict[str, threading.RLock] = {}
 _GUARD = threading.Lock()
 
 
-def ecrire_atomique(path: Path, text: str) -> None:
+def ecrire_atomique(path: Path, text: str | bytes) -> None:
     """Écrit dans un temporaire du même répertoire, fsync, puis os.replace : jamais de fichier tronqué."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
     try:
-        with os.fdopen(fd, "w", encoding="utf-8", newline="") as fh:
-            fh.write(text)
+        with os.fdopen(fd, "wb") as fh:
+            fh.write(text if isinstance(text, bytes) else text.encode("utf-8"))
             fh.flush()
             os.fsync(fh.fileno())
         os.replace(tmp, path)
