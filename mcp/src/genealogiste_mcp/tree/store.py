@@ -12,10 +12,18 @@ import re
 import subprocess
 from pathlib import Path
 
+from ..fichiers import LOCK_NAME, ecrire_atomique
 from ..gedcom.mapping import read_gedcom, write_gedcom
 from ..models import Tree
 
-GITIGNORE = ".propositions/\n.env\nexports/\n*.sqlite\n"
+# Toujours présents dans .gitignore, même s'il existait déjà (#48) : secrets, jetons, fichiers techniques.
+GITIGNORE_REQUIS = (".propositions/", ".env", ".env.*", "*.token", "*.key", "*.pem", "exports/", "*.sqlite",
+                    LOCK_NAME, ".*.tmp")
+GITIGNORE = "\n".join(GITIGNORE_REQUIS) + "\n"
+ARBRE = "arbre.ged"
+# Fichiers internes versionnés à part (jamais dans le commit d'une modification d'arbre : une annulation ne
+# doit pas effacer d'entrées du journal).
+INTERNES = ("journal.jsonl", "gramps-transactions.jsonl")
 README = """# Données généalogiques (plugin genealogiste)
 
 - `arbre.ged` : arbre de travail, GEDCOM 7 (source de vérité en mode fichier ; miroir de Gramps Web en mode
@@ -70,23 +78,44 @@ class TreeStore:
             self._git("config", "user.name", "genealogiste")
             self._git("config", "user.email", "genealogiste@localhost")
         gi = self.dir / ".gitignore"
-        if not gi.exists():
-            gi.write_text(GITIGNORE, encoding="utf-8")
+        actuel = gi.read_text(encoding="utf-8") if gi.exists() else ""
+        lignes = {x.strip() for x in actuel.splitlines()}
+        manquants = [x for x in GITIGNORE_REQUIS if x not in lignes]
+        if manquants:
+            sep = "" if not actuel or actuel.endswith("\n") else "\n"
+            gi.write_text(actuel + sep + "\n".join(manquants) + "\n", encoding="utf-8")
         rd = self.dir / "README.md"
         if not rd.exists():
             rd.write_text(README, encoding="utf-8")
         if not self.path.exists():
-            self.path.write_text(write_gedcom(Tree()), encoding="utf-8")
-            self.commit("Initialisation de l'arbre de travail")
+            ecrire_atomique(self.path, write_gedcom(Tree()))
+            self.commit("Initialisation de l'arbre de travail", [ARBRE, ".gitignore", "README.md"])
+        elif manquants and (self.dir / ".git").exists():
+            self.commit("Exclusion des secrets et fichiers techniques (.gitignore)", [".gitignore"])
 
-    def commit(self, message: str) -> str:
-        self._git("add", "-A")
-        status = self._git("status", "--porcelain")
-        if not status.strip():
+    def commit(self, message: str, paths: list[str] | None = None) -> str:
+        """Commit des seuls fichiers indiqués (relatifs au répertoire de données ; arbre.ged par défaut), jamais
+        de ``git add -A`` : un fichier étranger (.env, document) n'est jamais embarqué (#48)."""
+        paths = list(paths or [ARBRE])
+        presents = [x for x in paths if (self.dir / x).exists()]
+        if presents:
+            self._git("add", "--", *presents)
+        absents = [x for x in paths if not (self.dir / x).exists()]
+        if absents:
+            self._git("rm", "-q", "--cached", "--ignore-unmatch", "--", *absents)
+        if not self._git("diff", "--cached", "--name-only", "--", *paths).strip():
             return ""
-        self._git("commit", "-q", "-m", message)
+        self._git("commit", "-q", "-m", message, "--", *paths)
         self.push()
         return self._git("rev-parse", "--short", "HEAD").strip()
+
+    def commit_internes(self) -> str:
+        """Versionne le journal de recherche et des transactions, dans un commit à part."""
+        return self.commit("Journal de recherche", [x for x in INTERNES if (self.dir / x).exists()] or [INTERNES[0]])
+
+    def files(self, commit: str) -> list[str]:
+        out = self._git("show", "--name-only", "--format=", commit, check=False)
+        return [x for x in out.splitlines() if x.strip()]
 
     def push(self) -> str:
         """Pousse vers le dépôt distant optionnel ; un échec n'empêche jamais l'écriture locale."""
@@ -116,10 +145,15 @@ class TreeStore:
         return entries
 
     def show(self, commit: str) -> str:
-        return self._git("show", "--format=", commit, "--", "arbre.ged", check=False)
+        """Diff complet du commit : exactement ce qu'une annulation (git revert) défera (#48)."""
+        return self._git("show", "--format=", commit, check=False)
 
     def revert(self, commit: str) -> str:
-        self._git("revert", "--no-edit", commit)
+        try:
+            self._git("revert", "--no-edit", commit)
+        except GitError:
+            self._git("revert", "--abort", check=False)
+            raise
         self.push()
         return self._git("rev-parse", "--short", "HEAD").strip()
 
@@ -136,8 +170,11 @@ class TreeStore:
 
     def write(self, tree: Tree) -> str:
         text = write_gedcom(tree)
-        self.path.write_text(text, encoding="utf-8")
+        ecrire_atomique(self.path, text)
         return text
+
+    def write_text(self, text: str) -> None:
+        ecrire_atomique(self.path, text)
 
     # ------------------------------------------------------------------ bascule vers Gramps Web
     def frozen(self) -> dict | None:
@@ -145,5 +182,6 @@ class TreeStore:
         return json.loads(p.read_text(encoding="utf-8")) if p.exists() else None
 
     def freeze(self, info: dict) -> str:
-        (self.dir / BASCULE).write_text(json.dumps(info, ensure_ascii=False, indent=2), encoding="utf-8")
-        return self.commit("Bascule vers Gramps Web\n\n" + json.dumps(info, ensure_ascii=False, indent=2))
+        ecrire_atomique(self.dir / BASCULE, json.dumps(info, ensure_ascii=False, indent=2))
+        return self.commit("Bascule vers Gramps Web\n\n" + json.dumps(info, ensure_ascii=False, indent=2),
+                           [BASCULE, ARBRE])

@@ -21,6 +21,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from ..chemins import CheminRefuse, sous
+from ..fichiers import ajouter_jsonl, lire_jsonl
 from ..gedcom.mapping import write_gedcom
 from ..models import Tree
 from ..tree.proposals import (
@@ -151,7 +152,8 @@ class GitMirror:
         text = write_gedcom(tree)
         if self.store.path.read_text(encoding="utf-8") == text:
             return ""
-        self.store.path.write_text(text, encoding="utf-8")
+        self.store.commit_internes()
+        self.store.write_text(text)
         return self.store.commit(message)
 
 
@@ -166,6 +168,7 @@ class GrampsBackend:
         self.tokens = TokenStore(proposals_dir)
         self.data_dir = Path(data_dir)
         self.log_path = self.data_dir / "gramps-transactions.jsonl"
+        self.lignes_corrompues: list[int] = []
         self.exiger_source = exiger_source
         self.strict = strict
         self.ttl = ttl
@@ -383,14 +386,10 @@ class GrampsBackend:
     # ------------------------------------------------------------------ journal des transactions
     def _log(self, entry: dict) -> None:
         entry["date"] = _now()
-        self.log_path.parent.mkdir(parents=True, exist_ok=True)
-        with self.log_path.open("a", encoding="utf-8") as fh:
-            fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        ajouter_jsonl(self.log_path, entry)
 
     def transactions(self, limit: int = 20) -> list[dict]:
-        if not self.log_path.exists():
-            return []
-        lines = [json.loads(x) for x in self.log_path.read_text(encoding="utf-8").splitlines() if x.strip()]
+        lines, self.lignes_corrompues = lire_jsonl(self.log_path)
         return lines[-limit:]
 
     def history(self, limit: int = 20) -> list[dict]:

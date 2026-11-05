@@ -772,7 +772,8 @@ def rapport_enregistrer(id: str, titre: str, contenu: str) -> dict:
     if not path.resolve().is_relative_to(a.config.data_dir.resolve()):
         return {"fichier": str(path), "commit": None,
                 "note": "Rapport hors du répertoire de données (GENEALOGISTE_RAPPORTS_DIR) : non versionné par Sosa."}
-    commit = a.store.commit(f"Rapport de preuve : {titre} ({id})")
+    rel = path.resolve().relative_to(a.config.data_dir.resolve()).as_posix()
+    commit = a.store.commit(f"Rapport de preuve : {titre} ({id})", [rel])
     return {"fichier": str(path), "commit": commit}
 
 
@@ -922,8 +923,14 @@ def pieces_appliquer(jeton: str) -> dict:
 
 @mcp.tool()
 def journal_lister(source: str = "", personne: str = "", statut: str = "", texte: str = "", limite: int = 50) -> list[dict]:
-    """Journal de recherche (requêtes, paramètres, date, résultats y compris négatifs)."""
-    return app().journal.entries(source or None, personne or None, statut or None, texte or None, limite)
+    """Journal de recherche (requêtes, paramètres, date, résultats y compris négatifs). Des lignes illisibles
+    (arrêt pendant une écriture) sont ignorées et signalées en tête de liste."""
+    j = app().journal
+    out = j.entries(source or None, personne or None, statut or None, texte or None, limite)
+    if j.lignes_corrompues:
+        out.insert(0, {"avertissement": f"journal.jsonl : ligne(s) illisible(s) ignorée(s) {j.lignes_corrompues[:20]}"
+                                        " ; les autres entrées sont intactes."})
+    return out
 
 
 @mcp.tool()
