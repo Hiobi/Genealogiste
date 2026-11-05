@@ -92,8 +92,9 @@ def _manual_keys(lines: list[str], generated: set[str]) -> list[str]:
 
 class Notes:
     def __init__(self, directory: Path | None, vivants: str = "masquer", strict: bool = False,
-                 sosa_racine: str = "", journal=None, today=date.today):
+                 sosa_racine: str = "", journal=None, today=date.today, data_dir: Path | None = None):
         self.dir = Path(directory).expanduser() if directory else None
+        self.data_dir = Path(data_dir) if data_dir else None
         self.vivants = vivants
         self.strict = strict
         self.sosa_racine = sosa_racine
@@ -218,10 +219,45 @@ class Notes:
               "sosa": sosa.get(pid), "naissance": birth.date if birth else "", "deces": death.date if death else "",
               "lieux": places, "sources": src_links, "journal": [e["id"] for e in jr], "vivant": False}
         blocks = {"identite": "\n".join(ident), "faits": "## Faits et statut de preuve\n\n" + "\n".join(rows),
+                  "pieces": "## Pièces\n\n" + ("\n\n".join(self._pieces(tree, pid)) or "- (aucune)"),
                   "sources": "## Sources\n\n" + ("\n".join(f"- {x}" for x in src_links) or "- (aucune)"),
                   "prochaines": "## Prochaines sources\n\n" + ("\n".join(dict.fromkeys(todo)) or "- (aucune)"),
                   "recherches": "## Recherches (journal)\n\n" + ("\n".join(research) or "- (aucune)")}
         return fm, blocks, p.label()
+
+    def _pieces(self, tree: Tree, pid: str) -> list[str]:
+        """Médias de la personne, de ses noms, faits et citations (et des unions) : image affichée et lien vers la
+        note de la pièce (vue graphique d'Obsidian) ; hors du vault, chemin seulement (#70)."""
+        p = tree.personnes[pid]
+        from .tree.integrite import iter_citations
+
+        ids = list(p.medias)
+        owners = [p, *tree.spouses_families(pid)]
+        for o in owners:
+            ids += [m for c in iter_citations(o) for m in c.medias]
+        out = []
+        racine = self._require().resolve()
+        for mid in dict.fromkeys(ids):
+            m = tree.medias.get(mid)
+            if not m or not m.fichier:
+                continue
+            f = Path(m.fichier).expanduser()
+            if not f.is_absolute() and self.data_dir:
+                f = self.data_dir / f
+            f = f.resolve()
+            titre = m.titre or f.stem
+            if not f.is_relative_to(racine):
+                out.append(f"- {titre} : `{m.fichier}` (hors du vault)")
+                continue
+            rel = f.relative_to(racine).as_posix()
+            ligne = f"![[{rel}]]"
+            note = f.with_suffix(".md")
+            if note.exists() and note != f:
+                ligne += f"\n[[{note.relative_to(racine).with_suffix('').as_posix()}|{titre}]]"
+            else:
+                ligne += f"\n{titre}"
+            out.append(ligne)
+        return out
 
     def family(self, tree: Tree, fid: str) -> tuple[dict, dict[str, str], str]:
         f = tree.familles[fid]

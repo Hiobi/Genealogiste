@@ -144,8 +144,8 @@ Le dépôt est local par défaut. `GENEALOGISTE_GIT_REMOTE` ajoute un push aprè
 
 ## Médias (images d'actes)
 
-- `ajouter_media` (`fichier` relatif au répertoire des données, par exemple `medias/iiif/….jpg` produit par
-  `archive_image`) crée l'objet Media ; une citation le référence par `medias` (`media_list` de la citation
+- `ajouter_media` (`fichier` produit par `piece_archiver` : relatif au répertoire des données, ou absolu
+  dans le vault ; l'envoi accepte le répertoire des médias et l'arborescence des pièces) crée l'objet Media ; une citation le référence par `medias` (`media_list` de la citation
   Gramps, `OBJE` sous la citation en GEDCOM) : l'image prouve la citation.
 - La proposition annonce les fichiers à envoyer (`transaction_gramps.fichiers_a_envoyer`, ou
   `fichiers_absents`). Après accord, la transaction crée l'objet, puis chaque fichier est envoyé par

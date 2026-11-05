@@ -23,6 +23,9 @@ ce qu'elles prouvent.
 5. Pour chaque résultat : classification (originale/dérivée/composite, primaire/secondaire, directe/indirecte),
    score de correspondance et raisons, homonymes possibles (`comparer_profils`). Un arbre en ligne est une
    **piste** : remonter à l'acte cité.
+6. Acte retenu, consulté en image (ARK, IIIF, visionneuse d'AD) : proposer de le **conserver** avec
+   `piece_archiver` (pleine résolution, nom selon la convention, rangé dans le vault avec sa note) ; une vue
+   par appel, jamais de lot.
 
 ## Rendu (concis)
 - Tableau des pièces : source, référence complète (cote/URL/page), données extraites, classification, score.

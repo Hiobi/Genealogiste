@@ -109,6 +109,11 @@ Grave) :
 | `GENEALOGISTE_MEDIA_DIR` | `<données>/medias` | images d'actes (`media_enregistrer`, `archive_image`), par exemple `<vault>/documents` |
 | `GENEALOGISTE_RAPPORTS_DIR` | `<données>/rapports` | rapports de preuve (`rapport_enregistrer`) |
 | `GENEALOGISTE_EXPORTS_DIR` | `<données>/exports` | exports GEDCOM, GeneWeb, Gramps XML… |
+| `GENEALOGISTE_CACHE_IMAGES_DIR` | `<données>/cache-images` | aperçus et recadrages de lecture (`archive_image`), jamais dans le vault ni dans Git |
+
+Quand le répertoire des médias s'appelle `documents` (ex. `<vault>/documents`), l'arborescence des pièces
+(`documents/`, `photographies/`, `archives/`, `_À trier/`) part de son dossier parent, le vault : une pièce classée
+va dans `<vault>/documents/État civil/DUPONT/`, une photo dans `<vault>/photographies/DUPONT/`.
 
 - Un média situé dans le répertoire de données est référencé en relatif (`medias/…`). Hors de celui-ci, il
   l'est en chemin absolu. L'envoi vers Gramps Web accepte les deux racines et refuse tout le reste.
@@ -118,6 +123,33 @@ Grave) :
 
 Ces variables remplacent le contournement par liens symboliques (`<données>/medias → <vault>/documents`).
 
+## Archiver une pièce consultée en ligne (ARK, IIIF)
+
+`archive_image` sert à **lire** (aperçu 800 px en gris, recadrages) : ses images restent dans le cache, hors du
+vault. Pour **conserver** une vue d'acte, `piece_archiver` :
+
+1. télécharge la vue entière en **pleine résolution et en couleur** (IIIF `full/max`, repli `full/full`), ou
+   reprend le fichier téléchargé depuis une visionneuse sans IIIF, ou une URL d'image directe ;
+2. la nomme selon la convention (vue renseignée d'après l'ARK ou le manifeste ; dépôt et cote repris de la
+   source de l'arbre avec `source_arbre`) et la range dans `documents/<type>/<NOM>/` (sinon `_À trier/`) ;
+3. écrit à côté une **note** `<même nom>.md` : propriétés Obsidian (`ark`, `url`, `url_image`, `service_iiif`,
+   `manifeste`, `vue`, `depot`, `cote`, `consulte_le`, `sha256`, `reutilisation`), l'image affichée, des liens
+   vers les fiches des personnes et de la source, et une section libre jamais réécrite ;
+4. inscrit la pièce dans `<données>/pieces-archivees.jsonl` : une vue déjà archivée (même vue ou même contenu)
+   n'est **jamais retéléchargée** ; même nom avec un autre contenu : suffixe « (2) » ;
+5. renvoie les opérations à proposer (`ajouter_media`, puis `ajouter_citation` avec `citation_suggeree` : ARK,
+   vue, `consultation: image`). Rien n'est écrit dans l'arbre sans `arbre_proposer` et ton accord.
+
+Alertes : pièce rangée dans `_À trier/`, personne présumée vivante (son nom figure dans le nom du fichier),
+conditions de réutilisation du dépôt (champ `reutilisation` du référentiel, sinon renvoi au site du service).
+Une vue par appel, jamais de téléchargement par lot (CGU des services).
+
+**Dans Obsidian.** Chaque fiche de personne générée (`notes_generer`) a une section **« Pièces »** : les images
+de ses médias, de ses faits et de leurs citations sont affichées (`![[…]]`), avec un lien vers la note de chaque
+pièce. La note de la pièce renvoie à la personne et à la source : la vue graphique relie personne, pièce et
+source (afficher les pièces jointes dans les filtres du graphe pour y voir aussi les images). Rien pour une
+personne masquée.
+
 ## Outils
 
 | Outil | Effet | Confirmation |
@@ -126,4 +158,5 @@ Ces variables remplacent le contournement par liens symboliques (`<données>/med
 | `pieces_proposer(dossier, renommages, annuler)` | plan complet (TSV), aperçu, résumé par dossier, jeton | non |
 | `pieces_appliquer(jeton)` | déplacements, journal, contrôle | **oui** |
 | `piece_nommer(personnes, …)` | nom selon la convention et dossier de destination | non |
+| `piece_archiver(source, page, personnes, …)` | vue téléchargée en pleine résolution, nommée, rangée, avec sa note | règle par défaut |
 | `media_enregistrer(chemin, nom, classer)` | copie d'une pièce dans le répertoire des médias | règle par défaut |

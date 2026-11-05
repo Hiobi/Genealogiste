@@ -234,7 +234,7 @@ def test_media_enregistrer_dans_media_dir(app, vault_medias, tmp_path):
     assert Path(r["chemin_absolu"]) == vault_medias / "acte.jpg" and r["fichier"] == str(vault_medias / "acte.jpg")
     assert "erreur" in server.media_enregistrer(str(src), "../evasion.jpg")
     c = server.media_enregistrer(str(src), "naissance DUPONT.jpg", classer=True)
-    assert Path(c["chemin_absolu"]) == vault_medias / "documents/État civil/DUPONT/naissance DUPONT.jpg"
+    assert Path(c["chemin_absolu"]) == vault_medias / "État civil/DUPONT/naissance DUPONT.jpg"  # pas de documents/documents
     assert Path(server.media_enregistrer(str(src), "zz.jpg", classer=True)["chemin_absolu"]).parent.name == "_À trier"
 
 
@@ -244,11 +244,14 @@ def test_media_enregistrer_defaut_relatif(app, tmp_path):
     assert server.media_enregistrer(str(src), "a.jpg")["fichier"] == "medias/a.jpg"
 
 
-def test_archive_image_dans_media_dir(app, vault_medias, tmp_path):
+def test_archive_image_hors_du_vault(app, vault_medias, tmp_path):
+    """#70 : aperçus et recadrages de lecture dans le cache, jamais dans le vault."""
     img = tmp_path / "acte.png"
     Image.new("RGB", (100, 80), "white").save(img)
     r = server.archive_image(str(img))
-    assert Path(r["chemin_absolu"]).is_relative_to(vault_medias) and Path(r["chemin_absolu"]).exists()
+    chemin = Path(r["chemin_absolu"])
+    assert chemin.exists() and chemin.is_relative_to(app.config.cache_images_dir)
+    assert not chemin.is_relative_to(vault_medias)
 
 
 def test_media_pending_accepte_media_dir(tmp_path):

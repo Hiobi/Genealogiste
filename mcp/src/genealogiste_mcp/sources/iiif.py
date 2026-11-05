@@ -223,6 +223,52 @@ def fetch(ctx: SourceContext, media_dir: Path, source: str, page: int = 0, regio
     return out
 
 
+# ---------------------------------------------------------------------------- archivage (pleine résolution)
+
+_MAGIC = ((b"\xff\xd8", ".jpg"), (b"\x89PNG", ".png"), (b"II*\x00", ".tif"), (b"MM\x00*", ".tif"),
+          (b"%PDF", ".pdf"), (b"GIF8", ".gif"))
+
+
+def extension_of(data: bytes) -> str:
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return ".webp"
+    return next((ext for magic, ext in _MAGIC if data.startswith(magic)), "")
+
+
+def archive_key(ctx: SourceContext, source: str, page: int = 0) -> tuple[str, dict]:
+    """Clé stable d'une vue (service IIIF, URL directe ou empreinte du fichier local) et sa localisation."""
+    src = (source or "").strip()
+    p = Path(src).expanduser()
+    if src and not src.startswith(("http://", "https://")) and p.is_file():
+        h = hashlib.sha256(p.read_bytes()).hexdigest()
+        return f"fichier:{h}", {"mode": "fichier local", "fichier_source": str(p)}
+    if _DIRECT.match(src) and not _IMAGE_URL.match(src):
+        return f"url:{src}", {"mode": "URL directe"}
+    loc = locate(ctx, src, page)
+    return f"iiif:{loc['service']}", {**loc, "mode": "IIIF"}
+
+
+def full_image(ctx: SourceContext, source: str, loc: dict) -> tuple[bytes, dict]:
+    """Vue entière en pleine résolution et en couleur (IIIF full/max, repli full/full), sans réduction."""
+    src = (source or "").strip()
+    if loc["mode"] == "fichier local":
+        return Path(loc["fichier_source"]).read_bytes(), {}
+    if loc["mode"] == "URL directe":
+        raw, _ = ctx.http.get(src, parse="bytes", use_cache=False, source="iiif")
+        return raw.encode("latin-1"), {"url_image": src}
+    last = None
+    for size in ("max", "full"):
+        url = f"{loc['service']}/full/{size}/0/default.jpg"
+        try:
+            raw, _ = ctx.http.get(url, parse="bytes", use_cache=False, source="iiif")
+            return raw.encode("latin-1"), {"url_image": url}
+        except SourceError as exc:
+            last = exc
+            if exc.status != 400:
+                raise
+    raise last
+
+
 CONSIGNE_LIRE = ("Lire l'image avec l'outil de lecture de fichiers (chemin_absolu). Aperçu d'abord "
                  f"(largeur ≈ {PREVIEW_WIDTH}, gris) pour repérer l'acte, puis recadrer l'acte seul "
                  "(region pct:x,y,l,h, largeur 1500-2000). Transcription produite par le modèle : à "

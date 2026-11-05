@@ -65,7 +65,7 @@ class App:
         self.tokens = TokenStore(self.config.proposals_dir)
         self.sctx = SourceContext(self.http, self.journal, self.config)
         self.notes = Notes(self.config.notes_dir, self.config.notes_vivants, self.config.strict_evidence,
-                           self.config.sosa_racine, self.journal)
+                           self.config.sosa_racine, self.journal, data_dir=self.config.data_dir)
         self._gramps_transport = gramps_transport
         self._gramps_sleeper = sleeper
         self._client = None
@@ -77,7 +77,7 @@ class App:
                                          self.config.gramps_ttl,
                                          GitMirror(self.store) if self.config.git_mirror else None,
                                          notes_auto=self.config.gramps_notes_auto,
-                                         media_dir=self.config.media_dir_conf)
+                                         media_dir=self.config.pieces_root if self.config.media_dir_conf else None)
 
     def gramps(self):
         """Client Gramps Web (compte dédié, identifiants de l'environnement)."""
@@ -244,7 +244,7 @@ def archive_image(source: str, page: int = 0, region: str = "full", largeur: int
     visionneuse). Méthode économe : aperçu (largeur 800, gris) pour repérer l'acte, puis recadrage
     region='pct:x,y,l,h' en largeur 1500-2000 ; coût estimé en tokens renvoyé. Image téléchargée une seule fois
     (medias/iiif/). Pour Gallica, essayer d'abord le texte OCR (gallica_texte)."""
-    return iiif.fetch(app().sctx, app().config.media_dir, source, page, region, largeur, gris)
+    return iiif.fetch(app().sctx, app().config.cache_images_dir, source, page, region, largeur, gris)
 
 
 @mcp.tool()
@@ -792,7 +792,7 @@ def media_enregistrer(chemin: str, nom: str = "", classer: bool = False) -> dict
     try:
         name = pieces.nom_compatible(nom_simple(nom or src.name))
         sub = (pieces.destination(pieces.detecter(Path(name))) or pieces.A_TRIER) if classer else ""
-        dest = sous(media_dir, Path(sub) / name)
+        dest = sous(cfg.pieces_root if classer else media_dir, Path(sub) / name)
     except CheminRefuse as exc:
         return {"erreur": str(exc)}
     if dest.exists() and dest.read_bytes() != src.read_bytes():
@@ -800,6 +800,106 @@ def media_enregistrer(chemin: str, nom: str = "", classer: bool = False) -> dict
     dest.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(src, dest)
     return {"fichier": cfg.media_ref(dest), "chemin_absolu": str(dest)}
+
+
+@mcp.tool()
+def piece_archiver(source: str, page: int = 0, personnes: list[str] | None = None, type_piece: str = "",
+                   commune: str = "", depot: str = "", annees: str = "", cote: str = "", acte: str = "",
+                   source_arbre: str = "", nom: str = "") -> dict:
+    """Archive une vue d'acte dans le répertoire des médias (vault) : pleine résolution, couleur, nom selon la
+    convention (docs/pieces.md), rangée dans documents/<type>/<NOM>/ (sinon _À trier), avec une note .md à côté
+    (ARK, URL, vue, consultation, personnes, source : liens Obsidian). source : ARK Gallica, manifeste IIIF,
+    info.json, URL d'image IIIF ou directe, ou fichier téléchargé depuis une visionneuse. personnes : I12 ou
+    « NOM Prénom ». source_arbre (S3) : dépôt et cote repris de l'arbre. Une vue déjà archivée n'est jamais
+    retéléchargée. Rien n'est écrit dans l'arbre : opérations suggérées pour arbre_proposer."""
+    from . import archivage
+    from .archives import by_code
+    from .fichiers import ecrire_atomique
+    from .http import SourceError
+
+    a = app()
+    cfg = a.config
+    personnes = personnes or []
+    try:
+        t = a.tree()
+        cle, loc = iiif.archive_key(a.sctx, source, page)
+        hit = archivage.deja_archivee(cfg.pieces_registre, cle=cle)
+        if hit:
+            return {"deja_archivee": True, "fichier": hit["fichier"], "chemin_absolu": hit["chemin_absolu"],
+                    "note": hit.get("note"), "suite": "Pièce déjà archivée : rien n'a été retéléchargé."}
+        if source_arbre:
+            s = t.sources[source_arbre]
+            r = t.depots.get(s.depot)
+            depot = depot or ((r.sigle or r.nom) if r else "")
+            cote = cote or s.cote
+        data, extra = iiif.full_image(a.sctx, source, loc)
+        ext = iiif.extension_of(data)
+        if not ext:
+            return {"erreur": "Le contenu reçu n'est ni une image ni un PDF (page HTML ou accès refusé ?). "
+                              + iiif.CONSIGNE_AD, "source": source}
+        h = archivage.empreinte(data)
+        vue = str(loc.get("vue") or page or "")
+        labels = [_person_label(x) for x in personnes]
+        nom_f = archivage.nom_piece(labels, ext, nom, commune=commune, depot=depot, type_piece=type_piece,
+                                    annees=annees, cote=cote, vue=vue, acte=acte)
+        meme = archivage.deja_archivee(cfg.pieces_registre, empreinte=h)
+        if meme:
+            dest, existe = Path(meme["chemin_absolu"]), True
+        else:
+            dest, existe = archivage.emplacement(cfg.pieces_root, nom_f, data)
+        if not existe:
+            ecrire_atomique(dest, data)
+    except (iiif.IiifError, SourceError, KeyError, CheminRefuse, pieces.PieceError, OSError) as exc:
+        return {"erreur": str(exc), "source": source}
+    from . import ark as _ark
+    a_ = _ark.find(source)
+    service = by_code(depot) if depot else None
+    reutil = ""
+    if service:
+        reutil = service.get("reutilisation") or (f"conditions à vérifier sur {service['site']}"
+                                                  if service.get("site") else "")
+    meta = {"ark": a_.id if a_ else "", "url": source if source.startswith(("http://", "https://")) else "",
+            "url_image": extra.get("url_image", ""), "service_iiif": loc.get("service", ""),
+            "manifeste": loc.get("manifeste", ""), "vue": int(vue) if vue.isdigit() else vue, "depot": depot,
+            "cote": cote, "commune": commune, "type_piece": type_piece.upper(), "annees": annees, "acte": acte,
+            "consulte_le": date.today().isoformat(), "sha256": h, "reutilisation": reutil}
+    ids = [x for x in personnes if x in t.personnes]
+    if a.notes.enabled():
+        liens = [a.notes.link(t, "personne", x) if x in t.personnes else x for x in personnes]
+        src_lien = a.notes.link(t, "source", source_arbre) if source_arbre in t.sources else ""
+    else:
+        liens, src_lien = labels, source_arbre
+    note = archivage.note_compagnon(dest, meta, liens, src_lien)
+    ref = cfg.media_ref(dest)
+    archivage.enregistrer(cfg.pieces_registre, {"cle": cle, "sha256": h, "fichier": ref, "chemin_absolu": str(dest),
+                                                "note": cfg.media_ref(note), "source": source, "vue": vue})
+    a.journal.add(source="archives", operation="piece_archiver", parametres={"source": source, "vue": vue},
+                  statut="positif", resume=ref, references=[x for x in (meta["ark"], source) if x],
+                  personne=ids[0] if ids else None)
+    citation = {"source": source_arbre or "<S… : créer la source d'abord>", "page": f"vue {vue}" if vue else "",
+                "medias": ["$piece"], "consultation": "image"}
+    if meta["ark"]:
+        citation["ark"] = meta["ark"]
+    out = {"fichier": ref, "chemin_absolu": str(dest), "note": cfg.media_ref(note), "deja_present": existe,
+           "octets": len(data), "dossier": str(dest.parent.relative_to(cfg.pieces_root.resolve()))
+           if dest.resolve().is_relative_to(cfg.pieces_root.resolve()) else str(dest.parent),
+           "operations_suggerees": [{"op": "ajouter_media", "ref": "piece", "fichier": ref,
+                                     "format": archivage.MIME.get(ext, ""), "titre": dest.stem, "lier_a": ids}],
+           "citation_suggeree": citation,
+           "suite": "Proposer via arbre_proposer : ajouter_media, puis ajouter_citation sur le fait prouvé "
+                    "(cible evenement uid) avec citation_suggeree."}
+    alertes = []
+    if pieces.A_TRIER in dest.parts:
+        alertes.append("Rangée dans _À trier : préciser personnes et type_piece pour le classement.")
+    vivants = [x for x in ids if privacy.is_living(t, t.personnes[x])["vivant"]]
+    if vivants:
+        alertes.append(f"Personne(s) présumée(s) vivante(s) {vivants} : le nom du fichier contient son nom ; "
+                       "pièce à garder hors de toute publication.")
+    if reutil:
+        alertes.append(f"Réutilisation : {reutil}.")
+    if alertes:
+        out["alertes"] = alertes
+    return out
 
 
 # ============================================================================ pièces (dossier existant, #60)

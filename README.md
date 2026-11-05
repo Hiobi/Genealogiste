@@ -53,6 +53,7 @@ et renseigner au minimum :
 | `GENEALOGISTE_OFFLINE` | `1` : cache uniquement |
 | `GENEALOGISTE_NOTES_DIR` | notes de recherche Markdown (vault Obsidian) ; vide = désactivées (voir [docs/notes.md](docs/notes.md)) |
 | `GENEALOGISTE_MEDIA_DIR` / `_RAPPORTS_DIR` / `_EXPORTS_DIR` | médias, rapports, exports ailleurs que dans le répertoire de données (ex. un vault Obsidian) ; voir [docs/pieces.md](docs/pieces.md) |
+| `GENEALOGISTE_CACHE_IMAGES_DIR` | aperçus et recadrages de lecture d'`archive_image` (défaut `<données>/cache-images`, hors du vault) |
 | `GENEALOGISTE_HOTES_AUTORISES` | hôtes internes que les sources peuvent joindre (`hôte` ou `hôte:port`, virgules) ; par défaut, seules les adresses publiques en http(s) sont jointes, redirections comprises |
 | `MCP_TOKEN` / `MCP_SANS_AUTH` | transport HTTP : jeton exigé en `Authorization: Bearer` ; sans jeton, démarrage refusé hors adresse locale sauf `MCP_SANS_AUTH=1` (port publié sur 127.0.0.1 seulement) |
 | `GENEALOGISTE_NOTES_VIVANTS` / `_NOTES_AUTO` / `GENEALOGISTE_SOSA_RACINE` | `masquer` (défaut) ou `complet` ; régénération après écriture (défaut `true`) ; personne n° 1 des numéros Sosa des notes |
