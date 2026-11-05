@@ -32,7 +32,21 @@ from .core import Node, parse_lines, serialize, strip_xref
 
 EXT_DOC = "https://github.com/hiobi/sosa/blob/main/docs/gedcom-extensions.md"
 EXTENSIONS = ["_STAT", "_TYPE", "_INFO", "_PREUVE", "_CONSULT", "_VU", "_ORIG", "_URL", "_SOUR", "_VIVANT",
-              "_PAROISSE", "_SIGLE", "_ARK"]
+              "_PAROISSE", "_SIGLE", "_ARK", "_RESN"]
+RESN_TAGS = ("RESN", "_RESN")
+
+
+def is_private(value: str) -> bool:
+    """RESN « PRIVACY » ou « CONFIDENTIAL » (liste séparée par des virgules en GEDCOM 7)."""
+    return any(x.strip().upper() in ("PRIVACY", "CONFIDENTIAL") for x in (value or "").split(","))
+
+
+def _private_in(n: Node) -> bool:
+    return any(c.tag in RESN_TAGS and is_private(c.value) for c in n.children)
+
+
+def _not_private(c: Node) -> bool:
+    return not (c.tag in RESN_TAGS and is_private(c.value))
 INSEE_EXID = "http://id.insee.fr/geo/commune"
 
 # RELA (GEDCOM 5.5.1, vocabulaire GeneWeb) <-> ROLE GEDCOM 7 + détail français
@@ -121,7 +135,7 @@ class _Reader:
         medias = [strip_xref(x.value) for x in n.all("OBJE") if x.value.strip().startswith("@")]
         if medias:
             known = known | {"OBJE"}
-        extra = [c.to_dict() for c in n.children if c.tag not in known]
+        extra = [c.to_dict() for c in n.children if c.tag not in known and _not_private(c)]
         if data:
             others = [c for c in data.children if c.tag != "TEXT"]
             if others:
@@ -132,7 +146,7 @@ class _Reader:
             type_source=n.val("_TYPE", "indeterminee"), information=n.val("_INFO", "indeterminee"),
             preuve=n.val("_PREUVE", "directe"), date_consultation=n.val("_CONSULT"),
             note="\n".join(x.value for x in n.all("NOTE")), consultation=n.val("_VU"), ark=n.val("_ARK"),
-            medias=medias, extra=extra,
+            medias=medias, extra=extra, prive=_private_in(n),
         )
 
     def place(self, n: Node | None) -> Place | None:
@@ -193,7 +207,7 @@ class _Reader:
                     assos.append(a)
                 else:
                     extra.append(c.to_dict())
-            elif c.tag not in known:
+            elif c.tag not in known and _not_private(c):
                 extra.append(c.to_dict())
         return Event(
             type=n.tag, date=self.date(n.val("DATE")), lieu=self.place(n.first("PLAC")),
@@ -201,6 +215,7 @@ class _Reader:
             cause=n.val("CAUS"), note="\n".join(x.value for x in n.all("NOTE")),
             citations=[self.citation(c) for c in n.all("SOUR")], associations=assos,
             uid=n.val("UID") or n.val("_UID") or new_uid(), statut_manuel=self.statut(n), extra=extra,
+            prive=_private_in(n),
         )
 
     def name(self, n: Node) -> Name:
@@ -246,14 +261,15 @@ def read_gedcom(text: str) -> tuple[Tree, dict]:
                 note="\n".join(x.value for x in r.all("NOTE")),
                 extra=[c.to_dict() for c in r.children
                        if c.tag not in ("TITL", "AUTH", "PUBL", "REPO", "_URL", "WWW", "_ARK", "_TYPE", "_ORIG",
-                                        "NOTE")],
+                                        "NOTE") and _not_private(c)],
+                prive=_private_in(r),
             )
     for r in roots:
         tag = r.tag
         if tag in ("HEAD", "TRLR", "SOUR"):
             continue
         if tag == "INDI":
-            p = Person(id=r.xref, uid=r.val("UID") or r.val("_UID") or new_uid())
+            p = Person(id=r.xref, uid=r.val("UID") or r.val("_UID") or new_uid(), prive=_private_in(r))
             for c in r.children:
                 if c.tag == "NAME":
                     p.noms.append(rd.name(c))
@@ -291,13 +307,14 @@ def read_gedcom(text: str) -> tuple[Tree, dict]:
                     p.notes.append("@" + strip_xref(c.value) + "@")
                 elif c.tag == "_VIVANT":
                     p.vivant = c.value
-                elif c.tag in ("UID", "_UID"):
+                elif c.tag in ("UID", "_UID") or not _not_private(c):
                     continue
                 else:
                     p.extra.append(c.to_dict())
             tree.personnes[p.id] = p
         elif tag == "FAM":
-            f = Family(id=r.xref, uid=r.val("UID") or r.val("_UID") or new_uid(), statut_manuel=rd.statut(r))
+            f = Family(id=r.xref, uid=r.val("UID") or r.val("_UID") or new_uid(), statut_manuel=rd.statut(r),
+                       prive=_private_in(r))
             for c in r.children:
                 if c.tag == "HUSB":
                     f.epoux = strip_xref(c.value)
@@ -315,7 +332,7 @@ def read_gedcom(text: str) -> tuple[Tree, dict]:
                     f.citations.append(rd.citation(c))
                 elif c.tag == "NOTE":
                     f.notes.append(c.value)
-                elif c.tag in ("UID", "_UID", "_STAT"):
+                elif c.tag in ("UID", "_UID", "_STAT") or not _not_private(c):
                     continue
                 else:
                     f.extra.append(c.to_dict())
@@ -328,10 +345,12 @@ def read_gedcom(text: str) -> tuple[Tree, dict]:
             tree.medias[r.xref] = Media(
                 id=r.xref, fichier=fn.value if fn else "", format=(fn.val("FORM") if fn else "") or r.val("FORM"),
                 titre=(fn.val("TITL") if fn else "") or r.val("TITL"),
-                citations=[rd.citation(c) for c in r.all("SOUR")],
+                citations=[rd.citation(c) for c in r.all("SOUR")], prive=_private_in(r),
             )
         elif tag in ("SNOTE", "NOTE") and r.xref:
             tree.notes[r.xref] = r.value
+            if _private_in(r):
+                tree.notes_privees.add(r.xref)
         else:
             tree.extra_records.append(r.to_dict())
             warnings.append(f"Enregistrement {tag} conservé sans interprétation")
@@ -416,6 +435,8 @@ def _w_citation(parent: Node, c: Citation, tag: str = "SOUR") -> None:
     for m in c.medias:
         n.add("OBJE", f"@{m}@")
     n.add_if("NOTE", c.note)
+    if c.prive:
+        n.add("_RESN", "PRIVACY")
     _extra(n, [x for x in c.extra if x.get("tag") != "DATA"])
 
 
@@ -491,6 +512,8 @@ def _w_event(parent: Node, e: Event, version: int) -> None:
     for c in e.citations:
         _w_citation(n, c)
     _w_statut(n, e.statut_manuel)
+    if e.prive:
+        n.add("RESN", "PRIVACY")
     _extra(n, e.extra)
     n.add("UID" if version >= 7 else "_UID", e.uid)
 
@@ -559,6 +582,8 @@ def to_nodes(tree: Tree, version: int = 7) -> list[Node]:
             else:
                 r.add("NOTE", note)
         r.add_if("_VIVANT", p.vivant)
+        if p.prive:
+            r.add("RESN", "PRIVACY")
         _extra(r, p.extra)
         r.add("UID" if version >= 7 else "_UID", p.uid)
         nodes.append(r)
@@ -581,6 +606,8 @@ def to_nodes(tree: Tree, version: int = 7) -> list[Node]:
         for note in f.notes:
             r.add("NOTE", note)
         _w_statut(r, f.statut_manuel)
+        if f.prive:
+            r.add("RESN", "PRIVACY")
         _extra(r, f.extra)
         r.add("UID" if version >= 7 else "_UID", f.uid)
         nodes.append(r)
@@ -602,6 +629,8 @@ def to_nodes(tree: Tree, version: int = 7) -> list[Node]:
         if s.original:
             r.add("_ORIG", f"@{s.original}@")
         r.add_if("NOTE", s.note)
+        if s.prive:
+            r.add("_RESN", "PRIVACY")
         _extra(r, s.extra)
         nodes.append(r)
     for rid in sorted(tree.depots, key=_num_key):
@@ -620,9 +649,14 @@ def to_nodes(tree: Tree, version: int = 7) -> list[Node]:
         fn.add_if("TITL", m.titre)
         for c in m.citations:
             _w_citation(r, c)
+        if m.prive:
+            r.add("RESN", "PRIVACY")
         nodes.append(r)
     for nid in sorted(tree.notes, key=_num_key):
-        nodes.append(Node("SNOTE" if version >= 7 else "NOTE", tree.notes[nid], nid))
+        sn = Node("SNOTE" if version >= 7 else "NOTE", tree.notes[nid], nid)
+        if nid in tree.notes_privees:
+            sn.add("_RESN", "PRIVACY")
+        nodes.append(sn)
     for x in tree.extra_records:
         nodes.append(Node.from_dict(x))
     nodes.append(Node("TRLR"))

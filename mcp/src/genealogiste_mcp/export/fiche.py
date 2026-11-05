@@ -26,9 +26,9 @@ def _fmt_date(d: str) -> str:
 def fiche_markdown(tree: Tree, pid: str, strict: bool = False, mask_living: bool = True) -> str:
     p = tree.person(pid)
     living = is_living(tree, p)
-    if mask_living and living["vivant"]:
-        return (f"# {p.nom_principal.nom.upper()} (personne présumée vivante)\n\n"
-                f"Données masquées (RGPD) : {living['raison']}.\n")
+    if mask_living and (living["vivant"] or p.prive):
+        raison = living["raison"] if living["vivant"] else "personne marquée privée"
+        return f"# Vivant [{p.id}] (données masquées)\n\nDonnées masquées (RGPD) : {raison}.\n"
     facts = assess_person(tree, pid, strict)
     lines = [f"# {p.nom_principal.complet} [{p.id}]", ""]
     sexe = {"M": "masculin", "F": "féminin"}.get(p.sexe, "inconnu")

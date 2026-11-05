@@ -3,6 +3,9 @@ possible (borne haute de l'intervalle de naissance), sauf décès non réfuté o
 
 from __future__ import annotations
 
+import copy
+import re
+from dataclasses import fields, is_dataclass
 from datetime import date
 
 from .models import Person, Tree
@@ -103,27 +106,184 @@ def living_ids(tree: Tree, today: date | None = None) -> set[str]:
     return {pid for pid, p in tree.personnes.items() if is_living(tree, p, today)["vivant"]}
 
 
-def mask_tree(tree: Tree, today: date | None = None) -> tuple[Tree, set[str]]:
-    """Copie de l'arbre où les vivants sont réduits à « Vivant » sans date ni lieu."""
-    import copy
+def hidden_ids(tree: Tree, today: date | None = None) -> set[str]:
+    """Personnes jamais publiées : présumées vivantes ou marquées privées (#37)."""
+    return living_ids(tree, today) | {pid for pid, p in tree.personnes.items() if p.prive}
 
+
+# ============================================================================ publication (#33, #37)
+
+_ACCENTS = {"a": "aàâäáã", "e": "eéèêë", "i": "iîïíì", "o": "oôöóò", "u": "uùûüú", "c": "cç", "y": "yÿ",
+            "n": "nñ"}
+
+
+def _fuzzy(mot: str) -> str:
+    from .normalize.names import strip_accents
+
+    out = []
+    for ch in mot:
+        base = strip_accents(ch).lower()
+        if base in _ACCENTS:
+            out.append(f"[{_ACCENTS[base]}]")
+        elif ch in " -'’":
+            out.append(r"[\s\-'’]+")
+        else:
+            out.append(re.escape(ch))
+    return "".join(out)
+
+
+def identifying_patterns(tree: Tree, ids: set[str]) -> list[re.Pattern]:
+    """Chaînes identifiantes des personnes masquées : prénom et nom accolés, dans les deux ordres
+    (« Alice Secret », « SECRET Alice », « Alice /Secret/ », « Secret, Alice »), sans accents ni casse."""
+    sep = r"[\s/,]+"
+    pats = set()
+    for pid in ids:
+        p = tree.personnes.get(pid)
+        for n in p.noms if p else []:
+            nom = n.nom.strip()
+            if len(nom) < 2:
+                continue
+            prenoms = {x for x in [n.prenoms.strip(), *n.prenoms.split()] if len(x) > 1}
+            for g in prenoms:
+                pats.add(rf"(?<!\w)/?{_fuzzy(g)}{sep}{_fuzzy(nom)}/?(?!\w)")
+                pats.add(rf"(?<!\w)/?{_fuzzy(nom)}/?{sep}{_fuzzy(g)}(?!\w)")
+    return [re.compile(x, re.I) for x in sorted(pats, key=len, reverse=True)]
+
+
+def residues(text: str, patterns: list[re.Pattern]) -> list[str]:
+    """Chaînes identifiantes encore présentes dans un contenu publié (doit être vide)."""
+    return sorted({m.group(0) for p in patterns for m in p.finditer(text or "")})
+
+
+def _scrub(obj, patterns: list[re.Pattern]):
+    """Remplace les chaînes identifiantes par « Vivant » dans tous les textes d'un objet (récursif)."""
+    if isinstance(obj, str):
+        for p in patterns:
+            obj = p.sub("Vivant", obj)
+        return obj
+    if isinstance(obj, list):
+        return [_scrub(x, patterns) for x in obj]
+    if isinstance(obj, dict):
+        return {k: _scrub(v, patterns) for k, v in obj.items()}
+    if is_dataclass(obj):
+        for f in fields(obj):
+            setattr(obj, f.name, _scrub(getattr(obj, f.name), patterns))
+    return obj
+
+
+def _citations(obj) -> list:
+    """Toutes les listes de citations d'un objet (noms, événements, associations, filiations)."""
+    out = []
+    if hasattr(obj, "citations"):
+        out.append(obj.citations)
+    for attr in ("noms", "evenements", "associations", "enfants"):
+        for x in getattr(obj, attr, []) or []:
+            out += _citations(x)
+    return out
+
+
+def publication(tree: Tree, today: date | None = None) -> tuple[Tree, set[str], dict]:
+    """Projection de publication : copie de l'arbre sans aucune donnée identifiante d'un vivant ni d'objet privé.
+
+    - personnes présumées vivantes ou marquées privées : réduites à « Vivant », sans nom, fait, note ni média ;
+    - objets partagés (sources, médias, notes) liés à au moins une personne masquée, ou marqués privés : retirés
+      avec toutes leurs références (y compris chez les défunts) ; liés seulement à des défunts : conservés ;
+    - événements et citations privés, associations désignant une personne masquée : retirés ;
+    - enregistrements non interprétés (contenu indécidable) : exclus ;
+    - passe sur tous les textes : « Prénom Nom » d'une personne masquée remplacé par « Vivant ».
+    Renvoie (arbre publié, personnes masquées, rapport)."""
     from .models import Name
 
     t = copy.deepcopy(tree)
-    living = living_ids(t, today)
-    for pid in living:
+    hidden = hidden_ids(t, today)
+    patterns = identifying_patterns(tree, hidden)
+    sources = {s for s, x in t.sources.items() if x.prive}
+    medias = {m for m, x in t.medias.items() if x.prive}
+    notes = set(t.notes_privees)
+
+    def sensibles(owner) -> None:
+        for cits in _citations(owner):
+            for c in cits:
+                sources.add(c.source)
+                medias.update(c.medias)
+        medias.update(getattr(owner, "medias", []) or [])
+        notes.update(n.strip("@") for n in getattr(owner, "notes", []) or [] if n.startswith("@") and n.endswith("@"))
+
+    for pid in hidden:
+        sensibles(t.personnes[pid])
+    familles = [f for f in t.familles.values() if f.prive or f.epoux in hidden or f.epouse in hidden]
+    for f in familles:
+        sensibles(f)
+    for f in t.familles.values():
+        for link in f.enfants:
+            if link.enfant in hidden:
+                sensibles(link)
+    for cits in (c for m in t.medias.values() for c in [m.citations]):
+        for c in cits:
+            if c.source in sources:
+                medias.update(c.medias)
+
+    # personnes et familles masquées
+    for pid in hidden:
         p = t.personnes[pid]
-        surname = p.nom_principal.nom
-        p.noms = [Name(prenoms="Vivant", nom=surname)]
-        p.evenements = []
-        p.citations = []
-        p.notes = []
-        p.medias = []
-        p.extra = []
-    for fam in t.familles.values():
-        if fam.epoux in living or fam.epouse in living:
-            fam.evenements = []
-    return t, living
+        p.noms = [Name(prenoms="Vivant")]
+        p.evenements, p.citations, p.notes, p.medias, p.extra, p.associations = [], [], [], [], [], []
+    for f in familles:
+        f.evenements, f.citations, f.notes, f.extra, f.statut_manuel = [], [], [], [], None
+    for f in t.familles.values():
+        for link in f.enfants:
+            if link.enfant in hidden:
+                link.citations, link.statut_manuel = [], None
+
+    # retrait des objets sensibles et de leurs références, partout
+    def garder_cit(c) -> bool:
+        if c.prive or c.source in sources:
+            return False
+        c.medias = [m for m in c.medias if m not in medias]
+        return True
+
+    def nettoyer(owner) -> None:
+        for attr in ("citations",):
+            if hasattr(owner, attr):
+                setattr(owner, attr, [c for c in getattr(owner, attr) if garder_cit(c)])
+        if hasattr(owner, "associations"):
+            owner.associations = [a for a in owner.associations if a.personne not in hidden
+                                  and not residues(a.nom, patterns)]
+        if hasattr(owner, "evenements"):
+            owner.evenements = [e for e in owner.evenements if not e.prive]
+        for attr in ("noms", "evenements", "associations", "enfants"):
+            for x in getattr(owner, attr, []) or []:
+                nettoyer(x)
+        if hasattr(owner, "medias") and isinstance(owner.medias, list):
+            owner.medias = [m for m in owner.medias if m not in medias]
+        if hasattr(owner, "notes") and isinstance(owner.notes, list):
+            owner.notes = [n for n in owner.notes if n.strip("@") not in notes or not n.startswith("@")]
+
+    for o in [*t.personnes.values(), *t.familles.values(), *t.medias.values()]:
+        nettoyer(o)
+    retires = {"sources": sorted(s for s in sources if s in t.sources),
+               "medias": sorted(m for m in medias if m in t.medias),
+               "notes": sorted(n for n in notes if n in t.notes),
+               "enregistrements_non_interpretes": len(t.extra_records)}
+    for s in sources:
+        t.sources.pop(s, None)
+    for m in medias:
+        t.medias.pop(m, None)
+    for n in notes:
+        t.notes.pop(n, None)
+    t.notes_privees = set()
+    for s in t.sources.values():
+        if s.original in sources:
+            s.original = ""
+    t.extra_records = []
+    _scrub(t, patterns)
+    return t, hidden, {"masques": sorted(hidden), "retires": retires, "motifs": patterns}
+
+
+def mask_tree(tree: Tree, today: date | None = None) -> tuple[Tree, set[str]]:
+    """Projection de publication (voir ``publication``) : (arbre publié, personnes masquées)."""
+    t, hidden, _ = publication(tree, today)
+    return t, hidden
 
 
 # ============================================================================ sorties réseau

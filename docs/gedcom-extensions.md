@@ -16,6 +16,7 @@ Déclarées dans `HEAD.SCHMA` ; ignorées sans perte par les logiciels qui ne le
 | `_SOUR` | `FAM.CHIL` | structure de citation | preuve de la filiation (GEDCOM 7 n'autorise pas `SOUR` sous `CHIL`) |
 | `_STAT` | événement, `NAME`, `FAM`, `FAM.CHIL` | `refute` \| `contradictoire` (+ `NOTE` justification) | statut **manuel** ; les autres statuts sont calculés |
 | `_VIVANT` | `INDI` | `Y` \| `N` | forçage du statut vivant (RGPD) |
+| `_RESN` | enregistrements `SOUR` et `SNOTE`, citation `SOUR` | `PRIVACY` | marque « privé » là où GEDCOM 7 n'autorise pas `RESN` (standard, écrit sur `INDI`, `FAM`, événements et `OBJE`) ; un objet privé (Gramps `private`) n'est jamais publié |
 | `_PAROISSE` | `PLAC` | texte | paroisse d'Ancien Régime correspondant au lieu |
 
 Lieux : le code INSEE est stocké en `EXID` avec `TYPE http://id.insee.fr/geo/commune` (`_INSEE` en 5.5.1).

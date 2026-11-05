@@ -350,7 +350,7 @@ class _Reader:
         texts, shared = [], []
         for h in handles or []:
             n = self.note(h)
-            if n is None or self.is_auto(n):
+            if n is None or self.is_auto(n) or n.get("private"):  # privée : gardée dans Gramps, jamais publiée
                 continue
             if tname(n.get("type")) in inline:
                 texts.append(self.note_text(n))
@@ -365,7 +365,7 @@ class _Reader:
         out = []
         for h in handles or []:
             n = self.note(h)
-            if n is not None and not self.is_auto(n):
+            if n is not None and not self.is_auto(n) and not n.get("private"):
                 out.append(self.note_text(n))
         return "\n\n".join(out)
 
@@ -377,7 +377,7 @@ class _Reader:
         texte, note = [], []
         for nh in c.get("note_list") or []:
             n = self.note(nh)
-            if n is None or self.is_auto(n):
+            if n is None or self.is_auto(n) or n.get("private"):
                 continue
             (texte if tname(n.get("type")) == "Transcript" else note).append(self.note_text(n))
         conf = c.get("confidence", 2)
@@ -392,7 +392,8 @@ class _Reader:
             date_consultation=_attr_value(c, "Date de consultation"), note="\n\n".join(note),
             consultation=_REV_VU.get(_attr_value(c, "Consulté"), _attr_value(c, "Consulté")),
             ark=_attr_value(c, "ARK"),
-            medias=[x for x in (self.xid("Media", r.get("ref")) for r in c.get("media_list") or []) if x])
+            medias=[x for x in (self.xid("Media", r.get("ref")) for r in c.get("media_list") or []) if x],
+            prive=bool(c.get("private")))
 
     def citations(self, handles: list[str]) -> list[Citation]:
         return [c for c in (self.citation(h) for h in handles or []) if c]
@@ -454,7 +455,7 @@ class _Reader:
         e = Event(type=code, date=date_from_gramps(ev.get("date")), lieu=lieu, valeur=ev.get("description") or "",
                   type_detail=detail, age=_attr_value(ref, A_AGE), cause=_attr_value(ev, A_CAUSE),
                   note=self.single_note(ev.get("note_list")), citations=self.citations(ev.get("citation_list")), uid=uid,
-                  statut_manuel=_statut_read(_attr_value(ev, A_STATUT)))
+                  statut_manuel=_statut_read(_attr_value(ev, A_STATUT)), prive=bool(ev.get("private")))
         named = []
         for a in _attrs(ev):
             if tname(a.get("type")) == A_ASSO:
@@ -490,7 +491,8 @@ class _Reader:
                     uid=uids[i] if i < len(uids) else derived_uid(h, "nom", str(i)),
                     statut_manuel=_statut_read(st)))
             person = Person(id=pid, noms=noms, sexe=GENDER_CODES.get(p.get("gender", 2), "U"),
-                            uid=_attr_value(p, A_UID) or derived_uid(h), vivant=_attr_value(p, A_VIVANT))
+                            uid=_attr_value(p, A_UID) or derived_uid(h), vivant=_attr_value(p, A_VIVANT),
+                            prive=bool(p.get("private")))
             self.info.handles[("PersonUID", person.uid)] = h
             for ref in p.get("event_ref_list") or []:
                 role = tname(ref.get("role"))
@@ -530,7 +532,7 @@ class _Reader:
             fam = Family(id=fid, epoux=self.xid("Person", f.get("father_handle")),
                          epouse=self.xid("Person", f.get("mother_handle")),
                          uid=_attr_value(f, A_UID) or derived_uid(h),
-                         statut_manuel=_statut_read(_attr_value(f, A_STATUT)))
+                         statut_manuel=_statut_read(_attr_value(f, A_STATUT)), prive=bool(f.get("private")))
             for cr in f.get("child_ref_list") or []:
                 cid = self.xid("Person", cr.get("ref"))
                 if not cid:
@@ -575,7 +577,7 @@ class _Reader:
                 id=sid, titre=s.get("title") or "", auteur=s.get("author") or "", publication=s.get("pubinfo") or "",
                 depot=self.xid("Repository", repo.get("ref")), cote=repo.get("call_number") or "",
                 url=_attr_value(s, "URL"), ark=_attr_value(s, "ARK"), type_source=_REV_TYPES.get(_attr_value(s, "Type de source"), "indeterminee"),
-                original=orig, note=self.single_note(s.get("note_list")))
+                original=orig, note=self.single_note(s.get("note_list")), prive=bool(s.get("private")))
         for h, r in sorted(db.all("Repository").items(), key=lambda kv: self.xid("Repository", kv[0])):
             rid = self.xid("Repository", h)
             self.rep("Repository", h)
@@ -594,7 +596,8 @@ class _Reader:
             self.rep("Media", h)
             t.medias[mid] = Media(id=mid, fichier=_attr_value(m, A_FICHIER) or m.get("path") or "",
                                   format=m.get("mime") or "",
-                                  titre=m.get("desc") or "", citations=self.citations(m.get("citation_list")))
+                                  titre=m.get("desc") or "", citations=self.citations(m.get("citation_list")),
+                                  prive=bool(m.get("private")))
         # notes partagées non référencées (enregistrements NOTE du GEDCOM)
         referenced = {nh for cls in ORDER for o in db.all(cls).values() for nh in _note_refs(o)}
         for h, n in db.all("Note").items():
@@ -602,6 +605,8 @@ class _Reader:
                 continue
             self.rep("Note", h)
             t.notes[n["gramps_id"]] = self.note_text(n)
+            if n.get("private"):
+                t.notes_privees.add(n["gramps_id"])
         for key, h in [((c, n.get("gramps_id")), hh) for c in ("Note",) for hh, n in db.all(c).items()]:
             if key[1]:
                 self.info.handles[key] = h
@@ -785,6 +790,7 @@ class _Writer:
         obj["source_handle"] = self.handle("Source", c.source)
         obj["page"] = c.page
         obj["confidence"] = 2 if c.qualite is None else c.qualite
+        obj["private"] = c.prive
         notes = []
         if c.texte:
             notes.append(self.plain_note(c.texte, "Transcript", f"{h}:t"))
@@ -818,16 +824,20 @@ class _Writer:
         base_handles = list(base_handles or [])
         if self.generated:  # note de preuve venue d'un GEDCOM : régénérée, jamais doublée en note manuelle (#15)
             texts = [t for t in texts if not looks_generated(t)]
-        avail, auto_avail = [], []
+        avail, auto_avail, privees = [], [], []
         for h in base_handles:
             n = self.base.get("Note", h)
             if n is None:
                 continue
-            if self.reader.is_auto(n):
+            if n.get("private") and not self.reader.is_auto(n):  # hors modèle : conservée telle quelle
+                privees.append(h)
+                if h not in self.out.all("Note"):
+                    self.out.put(copy.deepcopy(n))
+            elif self.reader.is_auto(n):
                 auto_avail.append(h)
             else:
                 avail.append((h, self.reader.note_text(n)))
-        out = []
+        out = list(privees)
         for i, text in enumerate(texts):
             if text.startswith("@") and text.endswith("@") and len(text) > 2:
                 key = text.strip("@")
@@ -872,7 +882,8 @@ class _Writer:
         if self.generated and looks_generated(text):  # note de preuve venue d'un GEDCOM (#15)
             text = ""
         manual = [h for h in base_handles or [] if self.base.get("Note", h)
-                  and not self.reader.is_auto(self.base.get("Note", h))]
+                  and not self.reader.is_auto(self.base.get("Note", h))
+                  and not self.base.get("Note", h).get("private")]
         if manual and self.reader.single_note(manual) == text:
             for h in manual:
                 if h not in self.out.all("Note"):
@@ -887,6 +898,7 @@ class _Writer:
             n = self.start("Note", h, key)
             if self.reader.note_text(n) != self.t.notes[key] or not self.base.get("Note", h):
                 n["text"] = {"_class": "StyledText", "string": self.t.notes[key], "tags": []}
+            n["private"] = key in self.t.notes_privees
             self.out.put(n)
             self.stats["notes"] += 1
         return h
@@ -965,6 +977,7 @@ class _Writer:
     def event(self, e: Event, owner: str, owner_cls: str) -> str:
         h = self.info.handles.get(("Event", e.uid)) or det_handle("Event", e.uid)
         obj = self.start("Event", h)
+        obj["private"] = e.prive
         base_e = None
         if self.base.get("Event", h):
             base_e = self.reader.event(h, owner, owner_cls, {})
@@ -1053,6 +1066,7 @@ class _Writer:
             p = t.personnes[pid]
             h = self.handle("Person", pid)
             obj = self.start("Person", h, pid)
+            obj["private"] = p.prive
             base_refs = obj.get("event_ref_list") or []
             refs = []
             for e in p.evenements:
@@ -1066,6 +1080,7 @@ class _Writer:
             f = t.familles[fid]
             h = self.handle("Family", fid)
             obj = self.start("Family", h, fid)
+            obj["private"] = f.prive
             obj["father_handle"] = self.handle("Person", f.epoux) if f.epoux in t.personnes else None
             obj["mother_handle"] = self.handle("Person", f.epouse) if f.epouse in t.personnes else None
             base_refs = obj.get("event_ref_list") or []
@@ -1204,7 +1219,7 @@ class _Writer:
             s = t.sources[sid]
             h = self.handle("Source", sid)
             obj = self.start("Source", h, sid)
-            obj.update(title=s.titre, author=s.auteur, pubinfo=s.publication)
+            obj.update(title=s.titre, author=s.auteur, pubinfo=s.publication, private=s.prive)
             reps = obj.get("reporef_list") or []
             if s.depot and s.depot in t.depots:
                 rr = copy.deepcopy(reps[0]) if reps else {
@@ -1274,6 +1289,7 @@ class _Writer:
             m = t.medias[mid]
             h = self.handle("Media", mid)
             obj = self.start("Media", h, mid)
+            obj["private"] = m.prive
             base = self.base.get("Media", h)
             uploaded = bool(base and base.get("checksum")) and (
                 (_attr_value(base, A_FICHIER) or base.get("path")) == m.fichier)

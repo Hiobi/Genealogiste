@@ -36,6 +36,13 @@ _BAD = re.compile(r'[\\/:*?"<>|#^\[\]]+')
 _BLOCK = re.compile(r"<!-- sosa:debut (?P<name>[\w-]+) -->\n.*?<!-- sosa:fin -->", re.S)
 
 
+# Clés de frontmatter produites par le générateur (toutes catégories) : toujours remplacées ou retirées, jamais
+# conservées comme « manuelles » (sinon un remasquage laisserait nom et dates d'un vivant, #36).
+GENERATED_KEYS = {"id", "type", "nom", "statut", "sosa", "naissance", "deces", "lieux", "sources", "journal", "vivant",
+                  "epoux", "epouse", "mariage", "titre", "depot", "cote", "url", "nature", "cite_par", "personnes",
+                  "familles", "mis_a_jour"}
+
+
 class NotesError(RuntimeError):
     pass
 
@@ -103,7 +110,8 @@ class Notes:
         return self.dir
 
     def _masked(self, tree: Tree, pid: str) -> bool:
-        return self.vivants != "complet" and is_living(tree, tree.personnes[pid])["vivant"]
+        p = tree.personnes[pid]
+        return p.prive or (self.vivants != "complet" and is_living(tree, p)["vivant"])
 
     def _existing(self, kind: str, oid: str) -> Path | None:
         folder = self._require() / FOLDERS[kind]
@@ -113,8 +121,10 @@ class Notes:
     def name(self, tree: Tree, kind: str, oid: str) -> str:
         """Nom de fichier stable (sans .md) : le fichier existant est réutilisé même si le libellé change."""
         hit = self._existing(kind, oid)
-        if hit:
-            return hit.stem
+        return hit.stem if hit else self.fresh_name(tree, kind, oid)
+
+    def fresh_name(self, tree: Tree, kind: str, oid: str) -> str:
+        """Nom qu'aurait un fichier créé maintenant (sans tenir compte de l'existant)."""
         if kind == "personne":
             p = tree.personnes[oid]
             if self._masked(tree, oid):
@@ -260,7 +270,7 @@ class Notes:
         """(texte, modifié ?) : sections générées remplacées, texte libre et clés manuelles conservés."""
         old = path.read_text(encoding="utf-8") if path.exists() else ""
         old_fm, body = _split(old)
-        keep = _manual_keys(old_fm, set(fm) | {"mis_a_jour"})
+        keep = _manual_keys(old_fm, set(fm) | GENERATED_KEYS)
         if not old:
             parts = [f"# {title}", ""] + [f"{START.format(k)}\n{v}\n{END}\n" for k, v in blocks.items()]
             body = "\n".join(parts) + f"\n{FREE}\n\n{FREE_HINT}\n"
@@ -270,9 +280,11 @@ class Notes:
             def repl(m):
                 k = m.group("name")
                 seen.add(k)
-                return f"{START.format(k)}\n{blocks[k]}\n{END}" if k in blocks else m.group(0)
+                # bloc généré absent du nouveau contenu (ex. fiche remasquée) : retiré, jamais conservé
+                return f"{START.format(k)}\n{blocks[k]}\n{END}" if k in blocks else ""
 
-            body = _BLOCK.sub(repl, body)
+            body = re.sub(r"\n{3,}", "\n\n", _BLOCK.sub(repl, body))
+            body = re.sub(r"\A(\s*)# [^\n]*", lambda m: f"{m.group(1)}# {title}", body, count=1)  # titre généré
             missing = [k for k in blocks if k not in seen]
             if missing:
                 add = "\n".join(f"{START.format(k)}\n{blocks[k]}\n{END}\n" for k in missing)
@@ -296,7 +308,7 @@ class Notes:
         root = self._require()
         sosa = self._sosa(tree)
         ids = self._targets(tree, target)
-        written, unchanged = [], 0
+        written, unchanged, alertes = [], 0, []
         for kind, oid in ids:
             fm, blocks, title = getattr(self, {"personne": "person", "famille": "family", "source": "source"}[kind])(
                 tree, oid, *((sosa,) if kind == "personne" else ()))
@@ -305,11 +317,35 @@ class Notes:
                 written.append(str(path.relative_to(root)))
             else:
                 unchanged += 1
+            alertes += self._alertes(tree, kind, oid, path)
         if target == "tout":
             self._index(tree)
         out = {"repertoire": str(root), "ecrites": written, "inchangees": unchanged}
+        if alertes:
+            out["alertes"] = alertes
         if w := self.git_warning():
             out["avertissement"] = w
+        return out
+
+    def _alertes(self, tree: Tree, kind: str, oid: str, path: Path) -> list[str]:
+        """Ce qui reste d'une personne masquée et que l'outil ne touche pas : nom de fichier, texte manuel."""
+        masked = (kind == "personne" and self._masked(tree, oid)) or (kind == "famille" and any(
+            x in tree.personnes and self._masked(tree, x) for x in (tree.familles[oid].epoux, tree.familles[oid].epouse)))
+        if not masked:
+            return []
+        out = []
+        rel = path.relative_to(self._require())
+        fresh = self.fresh_name(tree, kind, oid)
+        if path.stem != fresh:
+            out.append(f"{rel} : le nom du fichier peut identifier une personne masquée ; le renommer à la main en "
+                       f"« {fresh}.md » (les liens Obsidian suivent un renommage fait dans Obsidian).")
+        old_fm, body = _split(path.read_text(encoding="utf-8"))
+        libre = body.split(FREE, 1)[1].replace(FREE_HINT, "").strip() if FREE in body else ""
+        manuel = _BLOCK.sub("", body.split(FREE, 1)[0])
+        manuel = re.sub(r"\A\s*# [^\n]*", "", manuel).strip()
+        if libre or manuel or _manual_keys(old_fm, GENERATED_KEYS):
+            out.append(f"{rel} : texte ou propriétés saisis à la main conservés ; vérifier qu'ils ne contiennent "
+                       "pas de données sur la personne masquée.")
         return out
 
     def _targets(self, tree: Tree, target: str) -> list[tuple[str, str]]:

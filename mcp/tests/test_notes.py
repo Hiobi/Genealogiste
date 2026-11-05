@@ -103,3 +103,38 @@ def test_journal_hook_lists_research(napp):
 
 def test_unknown_id(napp):
     assert "inconnu" in server.notes_lire("I999")["erreur"]
+
+
+# ---------------------------------------------------------------- #36 remasquage
+
+def test_remasquage_retire_les_donnees_generees(napp):
+    napp.notes.vivants = "complet"
+    server.notes_generer()
+    vault = napp.config.notes_dir
+    f = next((vault / "personnes").glob("I9 - *.md"))
+    assert "Lucas" in f.name and "1990" in f.read_text(encoding="utf-8")
+    texte = f.read_text(encoding="utf-8").replace("---\n", "---\nma_cle: rencontre 2024\n", 1)
+    f.write_text(texte + "\nAppel téléphonique avec Lucas.\n", encoding="utf-8")
+
+    napp.notes.vivants = "masquer"
+    r = server.notes_generer()
+    apres = f.read_text(encoding="utf-8")
+    entete, corps = apres.split("\n---\n", 1)
+    assert "vivant: true" in entete
+    for s in ("nom:", "naissance:", "1990", "Faits et statut", "Sources"):
+        assert s not in entete + corps.split("## Notes libres")[0], s
+    assert corps.lstrip().startswith("# I9 (personne vivante)")
+    assert "ma_cle: rencontre 2024" in entete and "Appel téléphonique" in corps  # manuel : conservé…
+    alertes = "\n".join(r.get("alertes", []))
+    assert f.name in alertes and "renommer" in alertes                             # …mais signalé
+    assert "saisis à la main" in alertes
+    assert f.exists()                                                              # pas de renommage
+
+
+def test_personne_privee_masquee_dans_les_notes(napp):
+    t = napp.tree()
+    t.personnes["I1"].prive = True
+    napp.store.write(t)
+    server.notes_generer()
+    f = next((napp.config.notes_dir / "personnes").glob("I1 - *.md"))
+    assert "Faits et statut" not in f.read_text(encoding="utf-8")
