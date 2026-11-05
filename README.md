@@ -152,6 +152,13 @@ Personne sans décès et née (estimation) il y a moins de 100 ans = présumée 
 envoyée à un service externe, masquage à l'export et refus de récit. Délais de communicabilité :
 skill `droit-communicabilite` et outil `communicabilite`.
 
+## Sécurité
+
+Garanties dans le code, valables pour tout client MCP : fichiers confinés au répertoire de données,
+sources externes limitées aux adresses publiques (redirections revalidées), pas de POST rejoué en cas de
+résultat incertain, jeton `MCP_TOKEN` pour le transport HTTP. Détail et réglages :
+[docs/securite.md](docs/securite.md).
+
 ## Développement
 
 ```bash
@@ -173,3 +180,5 @@ make validate  # claude plugin validate .
 - Mode Gramps Web (v1) : pas d'envoi des médias, un seul arbre, pas de fusion native ni de lieux
   hiérarchiques en écriture (issues #8 à #11).
 - Les cotes proposées suivent le cadre de classement réglementaire : toujours vérifier l'inventaire du service.
+- Sorties réseau : contrôle de l'adresse à la résolution DNS, pas d'épinglage à la connexion (DNS rebinding
+  théoriquement possible, voir [docs/securite.md](docs/securite.md#limites-connues)).
