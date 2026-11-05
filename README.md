@@ -169,6 +169,19 @@ make lint      # ruff
 make validate  # claude plugin validate .
 ```
 
+### Publier une version
+
+Claude Code ne propose une mise à jour que si le **numéro de version** change (il ne compare pas les
+commits). À chaque publication sur `main` :
+
+```bash
+make version V=0.4.0   # plugin.json, marketplace.json, pyproject.toml et uv.lock ensemble
+```
+
+Côté utilisateur : `claude plugin marketplace update sosa` puis `claude plugin update genealogiste@sosa`,
+et une nouvelle session (ou `/mcp` → reconnecter genealogiste) pour relancer le serveur. Le test
+`test_version.py` refuse des versions divergentes entre ces fichiers.
+
 ## Limites connues
 
 - Gallica est protégé par Cloudflare : depuis certaines IP (cloud, datacenter) les requêtes sont bloquées ;
