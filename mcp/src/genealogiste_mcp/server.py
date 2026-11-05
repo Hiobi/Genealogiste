@@ -12,7 +12,7 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
-from . import archives, coherence, evidence, matching, privacy
+from . import archives, coherence, evidence, matching, pieces, privacy
 from .archives import communicability_online
 from .auth import BearerAuth, bind_problem
 from .cache import Cache
@@ -76,7 +76,8 @@ class App:
                                          self.config.exiger_source, self.config.strict_evidence,
                                          self.config.gramps_ttl,
                                          GitMirror(self.store) if self.config.git_mirror else None,
-                                         notes_auto=self.config.gramps_notes_auto)
+                                         notes_auto=self.config.gramps_notes_auto,
+                                         media_dir=self.config.media_dir_conf)
 
     def gramps(self):
         """Client Gramps Web (compte dédié, identifiants de l'environnement)."""
@@ -746,35 +747,162 @@ def arbre_rapport_preuve(id: str, fait: str = "") -> str:
 
 @mcp.tool()
 def rapport_enregistrer(id: str, titre: str, contenu: str) -> dict:
-    """Enregistre un rapport de preuve rédigé dans <données>/rapports/ et le commit (accord requis)."""
+    """Enregistre un rapport de preuve rédigé dans <données>/rapports/ (ou GENEALOGISTE_RAPPORTS_DIR) et le
+    commit quand il est dans le répertoire de données (accord requis)."""
     import re as _re
     a = app()
     a.tree().person(id)
     slug = _re.sub(r"[^a-z0-9]+", "-", titre.lower()).strip("-")[:60] or "rapport"
-    path = a.config.data_dir / "rapports" / f"{id}-{slug}.md"
+    path = a.config.rapports_dir / f"{id}-{slug}.md"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(contenu, encoding="utf-8")
+    if not path.resolve().is_relative_to(a.config.data_dir.resolve()):
+        return {"fichier": str(path), "commit": None,
+                "note": "Rapport hors du répertoire de données (GENEALOGISTE_RAPPORTS_DIR) : non versionné par Sosa."}
     commit = a.store.commit(f"Rapport de preuve : {titre} ({id})")
     return {"fichier": str(path), "commit": commit}
 
 
 @mcp.tool()
-def media_enregistrer(chemin: str, nom: str = "") -> dict:
-    """Copie une image/un PDF d'acte dans <données>/medias/ (à lier ensuite via ajouter_media).
-    nom : nom de fichier simple, sans répertoire ; un fichier existant au contenu différent n'est pas écrasé."""
+def media_enregistrer(chemin: str, nom: str = "", classer: bool = False) -> dict:
+    """Copie une image/un PDF d'acte dans le répertoire des médias (<données>/medias/ ou GENEALOGISTE_MEDIA_DIR),
+    à lier ensuite via ajouter_media. nom : nom de fichier simple, sans répertoire (convention : piece_nommer),
+    rendu compatible Windows/Nextcloud ; un fichier existant au contenu différent n'est pas écrasé.
+    classer=True : rangé selon la convention (documents/<type>/<PATRONYME>/, photographies/…, _À trier/)."""
     src = Path(chemin).expanduser()
     if not src.is_file():
         return {"erreur": f"Fichier introuvable : {src}"}
-    media_dir = app().config.media_dir
+    cfg = app().config
+    media_dir = cfg.media_dir
     media_dir.mkdir(parents=True, exist_ok=True)
     try:
-        dest = sous(media_dir, nom_simple(nom or src.name))
+        name = pieces.nom_compatible(nom_simple(nom or src.name))
+        sub = (pieces.destination(pieces.detecter(Path(name))) or pieces.A_TRIER) if classer else ""
+        dest = sous(media_dir, Path(sub) / name)
     except CheminRefuse as exc:
         return {"erreur": str(exc)}
     if dest.exists() and dest.read_bytes() != src.read_bytes():
-        return {"erreur": f"medias/{dest.name} existe déjà avec un autre contenu : choisir un autre nom"}
+        return {"erreur": f"{cfg.media_ref(dest)} existe déjà avec un autre contenu : choisir un autre nom"}
+    dest.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(src, dest)
-    return {"fichier": f"medias/{dest.name}", "chemin_absolu": str(dest)}
+    return {"fichier": cfg.media_ref(dest), "chemin_absolu": str(dest)}
+
+
+# ============================================================================ pièces (dossier existant, #60)
+
+def _tree_media_paths() -> set[Path]:
+    """Fichiers référencés par les médias de l'arbre (jamais déplacés par l'organisation)."""
+    a = app()
+    try:
+        medias = a.tree().medias.values()
+    except Exception:  # noqa: BLE001 — arbre indisponible : aucune référence connue
+        return set()
+    out = set()
+    for m in medias:
+        if m.fichier:
+            p = Path(m.fichier).expanduser()
+            out.add((p if p.is_absolute() else a.config.data_dir / p).resolve())
+    return out
+
+
+def _person_label(ref: str) -> str:
+    """« I12 » -> « DUPONT Jean » (nom principal de l'arbre) ; tout autre texte est repris tel quel."""
+    import re as _re
+    if _re.fullmatch(r"I\d+", ref.strip()):
+        n = app().tree().person(ref.strip()).noms[0]
+        return f"{n.nom.upper()} {n.prenoms}".strip()
+    return ref
+
+
+@mcp.tool()
+def piece_nommer(personnes: list[str], commune: str = "", depot: str = "", type_piece: str = "", annees: str = "",
+                 cote: str = "", vue: str = "", acte: str = "", extension: str = ".jpg", source: str = "") -> dict:
+    """Nom de fichier d'une pièce selon la convention (docs/pieces.md) :
+    NOM Prénom[ + NOM Prénom] -- COMMUNE - DÉPÔT - TYPE [AAAA-AAAA] - cote - p.vue n.acte.ext
+    personnes : « NOM Prénom » ou identifiants de l'arbre (I12). type_piece : N, B, M, D, S, NMD, BMS, TD, RM,
+    ANMT, REC, SIGN, PHOTO… source (S3) : complète dépôt (sigle) et cote depuis l'arbre. Ne renomme rien."""
+    try:
+        noms = [_person_label(p) for p in personnes]
+        if source:
+            t = app().tree()
+            s = t.sources[source]
+            r = t.depots.get(s.depot)
+            depot = depot or (r.sigle or r.nom if r else "")
+            cote = cote or s.cote
+        nom = pieces.nommer(noms, commune, depot, type_piece, annees, cote, vue, acte, extension)
+    except (pieces.PieceError, KeyError) as exc:
+        return {"erreur": f"{exc}"}
+    info = pieces.detecter(Path(nom))
+    return {"nom": nom, "dossier_convention": pieces.destination(info) or pieces.A_TRIER, "lecture": pieces.lire_nom(nom)}
+
+
+def _dossier(dossier: str) -> Path:
+    p = Path(dossier).expanduser().resolve()
+    if not p.is_dir():
+        raise pieces.PieceError(f"Dossier introuvable : {dossier}")
+    if p == Path(p.anchor) or p == Path.home().resolve():
+        raise pieces.PieceError("Refus : désigner le dossier de pièces lui-même, pas la racine ni le dossier personnel.")
+    return p
+
+
+@mcp.tool()
+def pieces_inventaire(dossier: str) -> dict:
+    """Inventaire d'un dossier de pièces existant (scans, photos, PDF, audio, GeneWeb/GEDCOM) : types déduits des
+    noms, patronymes, doublons (SHA-256), fichiers ignorés. Lecture seule."""
+    try:
+        return pieces.inventaire(_dossier(dossier))
+    except pieces.PieceError as exc:
+        return {"erreur": str(exc)}
+
+
+@mcp.tool()
+def pieces_proposer(dossier: str, renommages: list[dict] | None = None, annuler: str = "",
+                    apercu: int = 60) -> dict:
+    """Plan de classement d'un dossier de pièces (rien n'est déplacé) : documents/<type>/<PATRONYME>/,
+    photographies/…, archives/ (GeneWeb, GEDCOM, INSEE, Doublons), _À trier/. Jamais de suppression ; les
+    notes Markdown, dossiers cachés et personnes/ familles/ sources/ ne sont pas touchés ; les médias liés à
+    l'arbre ne sont pas déplacés. renommages : [{actuel, propose}] (agent trieur, piece_nommer) ; le fichier est
+    reclassé d'après son nouveau nom. annuler : nom d'un journal _organisation/*.tsv à défaire. Renvoie un jeton
+    pour pieces_appliquer, à n'utiliser qu'après accord explicite de l'utilisateur sur le plan."""
+    a = app()
+    try:
+        racine = _dossier(dossier)
+        plan = (pieces.plan_annulation(racine, annuler) if annuler
+                else pieces.planifier(racine, renommages, _tree_media_paths()))
+    except pieces.PieceError as exc:
+        return {"erreur": str(exc)}
+    moves = plan["deplacements"]
+    if not moves:
+        return {**{k: v for k, v in plan.items() if k not in ("empreintes", "deplacements")},
+                "note": "Rien à déplacer."}
+    jeton = TokenStore(a.config.proposals_dir).create({"type": "organisation", "dossier": str(racine), "plan": plan,
+                                                      "resume": [f"{len(moves)} déplacement(s) dans {racine}"]})
+    tsv = a.config.proposals_dir / f"plan-{jeton}.tsv"
+    tsv.write_text("ancien_chemin\tnouveau_chemin\tmotif\n" + "".join(
+        f"{m['de']}\t{m['vers']}\t{m['motif']}\n" for m in moves), encoding="utf-8")
+    return {**{k: v for k, v in plan.items() if k not in ("empreintes", "deplacements")},
+            "nb_deplacements": len(moves), "apercu": [f"{m['de']}  →  {m['vers']}  ({m['motif']})"
+                                                      for m in moves[:apercu]],
+            "plan_complet": str(tsv), "jeton": jeton,
+            "consigne": "Présenter le plan (résumé par dossier, doublons, _À trier) et n'appeler pieces_appliquer "
+                        "qu'après accord explicite de l'utilisateur."}
+
+
+@mcp.tool()
+def pieces_appliquer(jeton: str) -> dict:
+    """Applique un plan de pieces_proposer validé par l'utilisateur : déplacements (jamais de suppression),
+    journal TSV _organisation/<date>.tsv pour annuler, contrôle du nombre de fichiers et des empreintes."""
+    a = app()
+    store = TokenStore(a.config.proposals_dir)
+    try:
+        rec = store.take(jeton)
+        if rec.get("type") != "organisation":
+            return {"erreur": "Ce jeton n'est pas un plan d'organisation de pièces."}
+        out = pieces.appliquer(Path(rec["dossier"]), rec["plan"])
+    except (ProposalError, pieces.PieceError) as exc:
+        return {"erreur": str(exc)}
+    (a.config.proposals_dir / f"plan-{jeton}.tsv").unlink(missing_ok=True)
+    return out
 
 
 # ============================================================================ journal

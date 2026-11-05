@@ -51,6 +51,9 @@ class Config:
     cog_mvt_url: str = "https://www.insee.fr/fr/statistiques/fichier/7766585/v_mvt_commune_2024.csv"
     cog_communes_url: str = "https://www.insee.fr/fr/statistiques/fichier/7766585/v_commune_depuis_1943.csv"
     http_timeout: float = 30.0
+    media_dir_conf: Path | None = None  # GENEALOGISTE_MEDIA_DIR (ex. <vault>/documents) ; défaut <données>/medias
+    rapports_dir_conf: Path | None = None  # GENEALOGISTE_RAPPORTS_DIR ; défaut <données>/rapports
+    exports_dir_conf: Path | None = None  # GENEALOGISTE_EXPORTS_DIR ; défaut <données>/exports
     hotes_autorises: list[str] = field(default_factory=list)  # exceptions à la politique réseau (hôte[:port])
     offline: bool = False
     extra: dict = field(default_factory=dict)
@@ -69,11 +72,22 @@ class Config:
 
     @property
     def media_dir(self) -> Path:
-        return self.data_dir / "medias"
+        return self.media_dir_conf or self.data_dir / "medias"
+
+    @property
+    def rapports_dir(self) -> Path:
+        return self.rapports_dir_conf or self.data_dir / "rapports"
 
     @property
     def exports_dir(self) -> Path:
-        return self.data_dir / "exports"
+        return self.exports_dir_conf or self.data_dir / "exports"
+
+    def media_ref(self, path: Path) -> str:
+        """Référence d'un média enregistrée dans l'arbre : relative au répertoire de données quand il s'y trouve
+        (« medias/… »), absolue sinon (GENEALOGISTE_MEDIA_DIR hors des données, ex. un vault Obsidian)."""
+        p = Path(path).resolve()
+        base = Path(self.data_dir).resolve()
+        return p.relative_to(base).as_posix() if p.is_relative_to(base) else str(p)
 
 
 BACKENDS = {"fichier": "fichier", "file": "fichier", "gedcom": "fichier", "": "fichier",
@@ -114,6 +128,10 @@ def _bool(value: str | None, default: bool = False) -> bool:
     return value.strip().lower() in ("1", "true", "oui", "yes", "on")
 
 
+def _dir(value: str | None) -> Path | None:
+    return Path(value).expanduser() if value else None
+
+
 def load_config() -> Config:
     env_file = os.environ.get("GENEALOGISTE_ENV_FILE")
     if env_file:
@@ -150,6 +168,9 @@ def load_config() -> Config:
         notes_auto=_bool(env("GENEALOGISTE_NOTES_AUTO"), True),
         sosa_racine=env("GENEALOGISTE_SOSA_RACINE", ""),
         hotes_autorises=[h for h in env("GENEALOGISTE_HOTES_AUTORISES", "").split(",") if h.strip()],
+        media_dir_conf=_dir(env("GENEALOGISTE_MEDIA_DIR")),
+        rapports_dir_conf=_dir(env("GENEALOGISTE_RAPPORTS_DIR")),
+        exports_dir_conf=_dir(env("GENEALOGISTE_EXPORTS_DIR")),
     )
     if env("GENEALOGISTE_USER_AGENT"):
         cfg.user_agent = env("GENEALOGISTE_USER_AGENT")

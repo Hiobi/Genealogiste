@@ -52,6 +52,7 @@ et renseigner au minimum :
 | `GENEALOGISTE_EXIGER_SOURCE` | `1` (défaut) : pas de fait ni de filiation sans citation, sauf `non_source` + motif |
 | `GENEALOGISTE_OFFLINE` | `1` : cache uniquement |
 | `GENEALOGISTE_NOTES_DIR` | notes de recherche Markdown (vault Obsidian) ; vide = désactivées (voir [docs/notes.md](docs/notes.md)) |
+| `GENEALOGISTE_MEDIA_DIR` / `_RAPPORTS_DIR` / `_EXPORTS_DIR` | médias, rapports, exports ailleurs que dans le répertoire de données (ex. un vault Obsidian) ; voir [docs/pieces.md](docs/pieces.md) |
 | `GENEALOGISTE_HOTES_AUTORISES` | hôtes internes que les sources peuvent joindre (`hôte` ou `hôte:port`, virgules) ; par défaut, seules les adresses publiques en http(s) sont jointes, redirections comprises |
 | `MCP_TOKEN` / `MCP_SANS_AUTH` | transport HTTP : jeton exigé en `Authorization: Bearer` ; sans jeton, démarrage refusé hors adresse locale sauf `MCP_SANS_AUTH=1` (port publié sur 127.0.0.1 seulement) |
 | `GENEALOGISTE_NOTES_VIVANTS` / `_NOTES_AUTO` / `GENEALOGISTE_SOSA_RACINE` | `masquer` (défaut) ou `complet` ; régénération après écriture (défaut `true`) ; personne n° 1 des numéros Sosa des notes |
@@ -102,6 +103,7 @@ Les commandes d'un plugin sont préfixées par son nom : `/genealogiste:cherche`
 | `ajoute`, `modifie`, `fusionne` | édition avec diff et validation explicite |
 | `import <gedcom\|familysearch>`, `export <format>` | GeneWeb, GEDCOM 5.5.1/7, Gramps XML, Mermaid, SVG, fiche Markdown |
 | `transcris <image>` | paléographie, latin, transcription et extraction des données |
+| `organise <dossier> [triage]` | inventaire, classement et renommage d'un dossier de pièces existant (plan validé, réversible, aucune suppression) ; triage des pièces non identifiées par l'agent `trieur` ([docs/pieces.md](docs/pieces.md)) |
 | `recit <id>` | biographie dont chaque phrase est sourcée |
 | `preuve <id> [fait]` | rapport de preuve rédigé (question, pièces, analyse, contradictions, conclusion) |
 | `journal` | historique des recherches (y compris négatives) et des commits |
