@@ -53,7 +53,18 @@ from .mapping import (
 MAX_PREVIEW_OBJECTS = 40
 
 
-def media_pending(db: GrampsDb, data_dir: Path, handles: set[str] | None = None) -> tuple[list[dict], list[str]]:
+def _local_media(local: str, data_dir: Path, media_dir: Path | None) -> Path:
+    """Fichier d'un média : confiné au répertoire de données ou au répertoire des médias configuré."""
+    try:
+        return sous(data_dir, local)
+    except CheminRefuse:
+        if media_dir is None:
+            raise
+        return sous(media_dir, local)
+
+
+def media_pending(db: GrampsDb, data_dir: Path, handles: set[str] | None = None,
+                  media_dir: Path | None = None) -> tuple[list[dict], list[str]]:
     """Fichiers locaux à envoyer (somme MD5 différente de celle de Gramps) et fichiers locaux absents."""
     todo, missing = [], []
     for h, m in sorted(db.all("Media").items()):
@@ -62,7 +73,7 @@ def media_pending(db: GrampsDb, data_dir: Path, handles: set[str] | None = None)
         local = _attr_value(m, A_FICHIER) or m.get("path") or ""
         if local:
             try:
-                p = sous(data_dir, local)
+                p = _local_media(local, data_dir, media_dir)
             except CheminRefuse:
                 missing.append(f"{m.get('gramps_id') or h} : {local} (hors du répertoire de données, refusé)")
                 continue
@@ -149,8 +160,9 @@ class GrampsBackend:
 
     def __init__(self, client: GrampsClient, data_dir: Path, proposals_dir: Path, exiger_source: bool = True,
                  strict: bool = False, ttl: float = 30.0, mirror: GitMirror | None = None,
-                 clock=time.monotonic, notes_auto: str = "true"):
+                 clock=time.monotonic, notes_auto: str = "true", media_dir: Path | None = None):
         self.client = client
+        self.media_dir = Path(media_dir) if media_dir else None
         self.tokens = TokenStore(proposals_dir)
         self.data_dir = Path(data_dir)
         self.log_path = self.data_dir / "gramps-transactions.jsonl"
@@ -234,7 +246,7 @@ class GrampsBackend:
         preview = self._preview(items, db)
         medias = {i["handle"] for i in items if i["_class"] == "Media" and i["type"] != "delete"}
         if medias:
-            todo, missing = media_pending(new, self.data_dir, medias)
+            todo, missing = media_pending(new, self.data_dir, medias, self.media_dir)
             preview["fichiers_a_envoyer"] = [f"{t['id']} : {t['fichier']} ({t['taille_octets']} octets)" for t in todo]
             if missing:
                 preview["fichiers_absents"] = missing
@@ -311,7 +323,7 @@ class GrampsBackend:
         medias = {i["handle"] for i in written if i["_class"] == "Media" and i["type"] != "delete"}
         uploaded = None
         if medias:  # fichiers des médias de la proposition acceptée (annoncés dans fichiers_a_envoyer)
-            todo, _ = media_pending(self.db, self.data_dir, medias)
+            todo, _ = media_pending(self.db, self.data_dir, medias, self.media_dir)
             if todo:
                 uploaded = media_upload(self.client, todo)
                 self._reload_media(todo)
@@ -335,12 +347,12 @@ class GrampsBackend:
         self._tree = None
 
     def media_status(self) -> dict:
-        todo, missing = media_pending(self.snapshot(fresh=True), self.data_dir)
+        todo, missing = media_pending(self.snapshot(fresh=True), self.data_dir, None, self.media_dir)
         return {"a_envoyer": [f"{t['id']} : {t['fichier']} ({t['taille_octets']} octets)" for t in todo],
                 "absents_en_local": missing}
 
     def media_send(self) -> dict:
-        todo, missing = media_pending(self.snapshot(fresh=True), self.data_dir)
+        todo, missing = media_pending(self.snapshot(fresh=True), self.data_dir, None, self.media_dir)
         if not todo:
             return {"envoyes": [], "erreurs": [], "absents_en_local": missing, "note": "Rien à envoyer."}
         out = media_upload(self.client, todo)

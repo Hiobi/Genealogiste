@@ -162,7 +162,7 @@ def local(ctx: SourceContext, media_dir: Path, source: str, region: str = "full"
             out.save(dest, "JPEG", quality=85)
     with Image.open(dest) as im:
         dw, dh = im.size
-    return {"fichier": f"medias/iiif/{dest.name}", "chemin_absolu": str(dest), "depuis_cache": cached,
+    return {"fichier": ctx.config.media_ref(dest), "chemin_absolu": str(dest), "depuis_cache": cached,
             "original": str(path), "original_telecharge": downloaded, "dimensions_originales": [w, h],
             "zone_pixels": list(box), "dimensions_demandees": [dw, dh],
             "cout_estime_tokens": round(dw * dh * TOKENS_PER_PIXEL), "mode": "local (sans IIIF)"}
@@ -207,7 +207,7 @@ def fetch(ctx: SourceContext, media_dir: Path, source: str, page: int = 0, regio
             dest.write_bytes(raw.encode("latin-1"))
     except (IiifError, SourceError) as exc:
         return {"erreur": str(exc), "source": source}
-    out = {"fichier": f"medias/iiif/{dest.name}", "chemin_absolu": str(dest), "url_image": url,
+    out = {"fichier": ctx.config.media_ref(dest), "chemin_absolu": str(dest), "url_image": url,
            "depuis_cache": cached, **{k: v for k, v in loc.items() if k != "service"}, "service_iiif": loc["service"]}
     if info.get("width") and info.get("height"):
         w, h = int(info["width"]), int(info["height"])
