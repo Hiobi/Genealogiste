@@ -3,11 +3,20 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "mcp__.*genealogiste.*__(matchid_recherche|matchid_appariement_statut|wikitree_.*|gallica_.*|wikidata_.*|geo_.*|recherche_multi|liens_recherche|cotes_a_consulter|source_collee|normaliser_.*|comparer_.*|convertir_date|naissance_depuis_age|communicabilite|prochaine_source|journal_lister|journal_ajouter|arbre_(info|recherche|personne|fiche|statut_preuve|coherence|comparer|ascendance|descendance|lacunes|vivant|historique|rapport_preuve|cercle|proposer|annuler_proposition|annuler_modification|importer_gedcom)|gramps_recherche|gramps_personne|gramps_bascule_proposer|gramps_recalculer_notes|gramps_synchroniser)$",
+        "matcher": "mcp__.*genealogiste.*__(matchid_recherche|wikitree_.*|gallica_.*|wikidata_.*|geo_.*|recherche_multi|liens_recherche|cotes_a_consulter|source_collee|normaliser_.*|comparer_.*|convertir_date|naissance_depuis_age|communicabilite|prochaine_source|journal_lister|journal_ajouter|arbre_(info|recherche|personne|fiche|statut_preuve|coherence|comparer|ascendance|descendance|lacunes|vivant|historique|rapport_preuve|cercle|proposer|annuler_proposition|annuler_modification|importer_gedcom)|gramps_recherche|gramps_personne|gramps_bascule_proposer|gramps_recalculer_notes|gramps_synchroniser)$",
         "hooks": [
           {
             "type": "command",
             "command": "printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\",\"permissionDecisionReason\":\"genealogiste : lecture seule ou proposition sans écriture\"}}'"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__.*genealogiste.*__matchid_appariement_statut$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if grep -Eq '\"sortie\"[[:space:]]*:[[:space:]]*\"[^\"]'; then printf '%s' '{\"hookSpecificOutput\": {\"hookEventName\": \"PreToolUse\", \"permissionDecision\": \"ask\", \"permissionDecisionReason\": \"genealogiste : matchid_appariement_statut écrit un fichier (sortie) — validation explicite requise\"}}'; else printf '%s' '{\"hookSpecificOutput\": {\"hookEventName\": \"PreToolUse\", \"permissionDecision\": \"allow\", \"permissionDecisionReason\": \"genealogiste : consultation du statut sans écriture\"}}'; fi"
           }
         ]
       },

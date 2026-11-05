@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from ..chemins import CheminRefuse, sortie_donnees
 from ..normalize.dates import parse_date
 from .base import DAY, SourceContext, envelope, error_envelope, person_record, rank
 
@@ -120,6 +121,12 @@ def bulk_submit(ctx: SourceContext, chemin_csv: str, colonnes: dict, sep: str = 
 
 
 def bulk_status(ctx: SourceContext, job: str, sortie: str = "") -> dict:
+    cible = None
+    if sortie:
+        try:
+            cible = sortie_donnees(ctx.config.data_dir, sortie, ".csv")
+        except CheminRefuse as exc:
+            return {"erreur": f"{exc} (sortie : fichier .csv dans le répertoire de données)"}
     headers = {"Authorization": f"Bearer {ctx.config.matchid_token}"} if ctx.config.matchid_token else None
     try:
         res, _ = ctx.http.get(f"{BASE}/search/csv/{job}", params={"order": "true"}, headers=headers,
@@ -134,11 +141,10 @@ def bulk_status(ctx: SourceContext, job: str, sortie: str = "") -> dict:
         except ValueError:
             pass
     out = {"job": job, "en_cours": False, "lignes": text.count("\n")}
-    if sortie:
-        p = Path(sortie).expanduser()
-        p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(text, encoding="utf-8")
-        out["fichier"] = str(p)
+    if cible:
+        cible.parent.mkdir(parents=True, exist_ok=True)
+        cible.write_text(text, encoding="utf-8")
+        out["fichier"] = str(cible)
     else:
         out["apercu"] = "\n".join(text.splitlines()[:20])
     ctx.journal.add("matchid", "appariement_resultat", {"job": job}, "positif", nb_resultats=out["lignes"])
