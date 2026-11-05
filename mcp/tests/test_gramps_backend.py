@@ -362,3 +362,60 @@ def test_notes_auto_config_values():
     assert notes_auto_mode("non") == "false"
     with pytest.raises(ValueError):
         notes_auto_mode("parfois")
+
+
+# ---------------------------------------------------------------------------- journal d'intention (#49)
+
+def _etats(a, jeton):
+    import json
+    return [json.loads(x).get("etat") for x in a.backend.log_path.read_text(encoding="utf-8").splitlines()
+            if json.loads(x)["id"] == jeton]
+
+
+def test_intention_journalisee_avant_envoi(gapp, fake, monkeypatch):
+    p = server.arbre_proposer(CIT_DEATH, "Décès", "Acte lu.")
+    vu = []
+    vrai = gapp.backend.client.transaction
+
+    def espion(*a, **k):
+        vu.append(_etats(gapp, p["jeton"]))
+        return vrai(*a, **k)
+    monkeypatch.setattr(gapp.backend.client, "transaction", espion)
+    server.arbre_appliquer(p["jeton"])
+    assert vu == [["intention"]]
+    assert _etats(gapp, p["jeton"]) == ["intention", "envoyee", "terminee"]
+
+
+def test_complements_en_echec_transaction_tracee_et_annulable(tmp_path, fake, tree, monkeypatch):
+    seed(fake, tree)
+    a = make_app(tmp_path, mirror=True)
+    server.arbre_info()
+
+    def panne(*_a, **_k):
+        raise OSError("disque plein")
+    monkeypatch.setattr(a.backend.mirror, "sync", panne)
+    r = server.arbre_appliquer(server.arbre_proposer(CIT_DEATH, "Décès", "Acte lu.")["jeton"])
+    assert r["transaction"] and "avertissement" in r and "disque plein" in r["avertissement"]
+    h = server.arbre_historique(1)[0]
+    assert h["etat"] == "complements_en_echec" and "échec" in h["etapes"]["miroir_git"]
+    assert "jeton" in server.arbre_annuler_modification(r["transaction"])
+    server.set_app(None)
+
+
+@pytest.mark.parametrize("appliquee,etat", [(True, "envoyee"), (False, "non_envoyee")])
+def test_interruption_pendant_l_envoi_reprise(gapp, fake, monkeypatch, appliquee, etat):
+    p = server.arbre_proposer(CIT_DEATH, "Décès", "Acte lu.")
+    vrai = gapp.backend.client.transaction
+
+    def coupure(*a, **k):
+        if appliquee:
+            vrai(*a, **k)
+        raise ConnectionError("connexion coupée")
+    monkeypatch.setattr(gapp.backend.client, "transaction", coupure)
+    with pytest.raises(ConnectionError):
+        gapp.backend.apply(p["jeton"])
+    assert _etats(gapp, p["jeton"])[-1] == "indeterminee"
+    monkeypatch.setattr(gapp.backend.client, "transaction", vrai)
+    assert gapp.backend.recover() == [{"transaction": p["jeton"], "etat": etat}]
+    u = server.arbre_annuler_modification(p["jeton"])
+    assert ("jeton" in u) is appliquee

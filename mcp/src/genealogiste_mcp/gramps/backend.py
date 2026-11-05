@@ -306,37 +306,92 @@ class GrampsBackend:
         return written or items
 
     def apply(self, token: str) -> dict:
-        record = self.tokens.take(token)
-        db = self.snapshot(fresh=True)
+        """Journal d'intention (#49) : « intention » écrite AVANT l'envoi, « envoyee » dès la réponse du serveur,
+        puis l'état des étapes complémentaires (médias, miroir Git). Une transaction acceptée par Gramps Web est
+        donc toujours retrouvable pour l'annulation, même si la suite échoue ou si le processus s'arrête."""
+        record = self.tokens.peek(token)
         kind = record.get("type")
-        if kind == "annulation":
-            self._check(db, record["items"], side="new")
-            message = f"{record['message']}, validée explicitement par l'utilisateur (jeton {token})."
-            written = self._write(record["items"], message, undo=True)
-            self._log({"id": token, "type": "annulation", "annule": record["annule"], "message": message,
-                       "items": written})
-            commit = self.mirror.sync(self.load(fresh=False), message) if self.mirror else ""
-            return {"transaction": token, "annule": record["annule"], "objets": summarize(written),
-                    "miroir_git": commit or None}
-        if kind != "transaction":
+        if kind not in ("annulation", "transaction"):
             raise ProposalError("Jeton d'un autre type (bascule : utiliser gramps_bascule_appliquer).")
-        self._check(db, record["items"])
-        message = validated(record["message"], token)
-        written = self._write(record["items"], message)
-        medias = {i["handle"] for i in written if i["_class"] == "Media" and i["type"] != "delete"}
-        uploaded = None
-        if medias:  # fichiers des médias de la proposition acceptée (annoncés dans fichiers_a_envoyer)
-            todo, _ = media_pending(self.db, self.data_dir, medias, self.media_dir)
-            if todo:
-                uploaded = media_upload(self.client, todo)
-                self._reload_media(todo)
-        self._log({"id": token, "type": "transaction", "message": message, "resume": record["resume"],
-                   "items": written})
-        commit = self.mirror.sync(self.load(fresh=False), message) if self.mirror else ""
-        out = {"transaction": token, "resume": record["resume"], "references_creees": record["references"],
-               "objets": summarize(written), "miroir_git": commit or None}
-        if uploaded:
-            out["medias"] = uploaded
+        self.recover()
+        db = self.snapshot(fresh=True)
+        undo = kind == "annulation"
+        try:
+            self._check(db, record["items"], side="new" if undo else "old")
+        except ProposalError:
+            self.tokens.consume(token)
+            raise
+        message = (f"{record['message']}, validée explicitement par l'utilisateur (jeton {token})." if undo
+                   else validated(record["message"], token))
+        base = {"id": token, "type": kind, "message": message}
+        if undo:
+            base["annule"] = record["annule"]
+        else:
+            base["resume"] = record["resume"]
+        self._log({**base, "etat": "intention", "items": record["items"]})
+        self.tokens.consume(token)
+        try:
+            written = self._write(record["items"], message, undo=undo)
+        except ProposalError as exc:
+            self._log({"id": token, "etat": "refusee", "erreur": str(exc)})
+            raise
+        except BaseException as exc:  # réseau coupé, interruption : issue inconnue, reprise par recover()
+            self._log({"id": token, "etat": "indeterminee", "erreur": str(exc)[:500]})
+            raise
+        self._log({"id": token, "etat": "envoyee", "items": written})
+        out = {"transaction": token, "objets": summarize(written)}
+        out.update({"annule": record["annule"]} if undo else
+                   {"resume": record["resume"], "references_creees": record["references"]})
+        etapes: dict[str, str] = {}
+        if not undo:
+            medias = {i["handle"] for i in written if i["_class"] == "Media" and i["type"] != "delete"}
+            if medias:  # fichiers des médias de la proposition acceptée (annoncés dans fichiers_a_envoyer)
+                try:
+                    todo, _ = media_pending(self.db, self.data_dir, medias, self.media_dir)
+                    if todo:
+                        out["medias"] = media_upload(self.client, todo)
+                        self._reload_media(todo)
+                    etapes["medias"] = "ok"
+                except Exception as exc:  # noqa: BLE001
+                    etapes["medias"] = f"échec : {exc}"
+        try:
+            commit = self.mirror.sync(self.load(fresh=False), message) if self.mirror else ""
+            out["miroir_git"] = commit or None
+            etapes["miroir_git"] = "ok"
+        except Exception as exc:  # noqa: BLE001
+            out["miroir_git"] = None
+            etapes["miroir_git"] = f"échec : {exc}"
+        echecs = {k: v for k, v in etapes.items() if v != "ok"}
+        self._log({"id": token, "etat": "terminee" if not echecs else "complements_en_echec", "etapes": etapes})
+        if echecs:
+            out["avertissement"] = ("Transaction enregistrée dans Gramps Web et journalisée (annulable), mais "
+                                    f"étapes complémentaires en échec : {echecs}. Relancer : "
+                                    "gramps_envoyer_medias / gramps_synchroniser.")
+        return out
+
+    def recover(self) -> list[dict]:
+        """Reprise après interruption : chaque transaction restée « intention » ou « indeterminee » est comparée
+        à l'état de Gramps Web (appliquée, non appliquée ou partielle) et son état est mis à jour."""
+        pending = [e for e in self.transactions(10_000) if e.get("etat") in ("intention", "indeterminee")]
+        if not pending:
+            return []
+        db = self.snapshot(fresh=True)
+        out = []
+        for e in pending:
+            side = "old" if e["type"] == "annulation" else "new"
+            other = "new" if side == "old" else "old"
+            def same(it, key):
+                cur = db.get(it["_class"], it["handle"])
+                want = it.get(key)
+                return (cur is None) == (want is None) and (cur is None or _strip_change(cur) == _strip_change(want))
+            if all(same(it, side) for it in e.get("items", [])):
+                etat = "envoyee"
+            elif all(same(it, other) for it in e.get("items", [])):
+                etat = "non_envoyee"
+            else:
+                etat = "partielle"
+            self._log({"id": e["id"], "etat": etat, "reprise": True})
+            out.append({"transaction": e["id"], "etat": etat})
         return out
 
     def _reload_media(self, todo: list[dict]) -> None:
@@ -363,11 +418,12 @@ class GrampsBackend:
         return {**out, "absents_en_local": missing}
 
     def propose_undo(self, reference: str) -> dict:
+        self.recover()
         entry = next((e for e in reversed(self.transactions(1000)) if e["id"] == reference
-                      and e["type"] == "transaction"), None)
+                      and e["type"] == "transaction" and self._effective(e)), None)
         if not entry:
             raise ProposalError(f"Transaction inconnue dans gramps-transactions.jsonl : {reference!r}")
-        if any(e.get("annule") == reference for e in self.transactions(1000)):
+        if any(e.get("annule") == reference and self._effective(e) for e in self.transactions(1000)):
             raise ProposalError(f"La transaction {reference} a déjà été annulée.")
         self.snapshot(fresh=True)
         title = entry["message"].splitlines()[0] if entry.get("message") else reference
@@ -389,14 +445,24 @@ class GrampsBackend:
         ajouter_jsonl(self.log_path, entry)
 
     def transactions(self, limit: int = 20) -> list[dict]:
+        """Transactions, une par identifiant : les lignes successives (intention, envoyee, terminee…) fusionnées."""
         lines, self.lignes_corrompues = lire_jsonl(self.log_path)
-        return lines[-limit:]
+        merged: dict[str, dict] = {}
+        for e in lines:
+            merged.setdefault(e.get("id", ""), {}).update(e)
+        return list(merged.values())[-limit:]
+
+    @staticmethod
+    def _effective(e: dict) -> bool:
+        """Transaction réellement écrite dans Gramps Web (anciens journaux : sans état = écrite)."""
+        return e.get("etat", "envoyee") in ("envoyee", "terminee", "complements_en_echec")
 
     def history(self, limit: int = 20) -> list[dict]:
         out = []
         for e in reversed(self.transactions(limit)):
             out.append({"transaction": e["id"], "type": e["type"], "date": e["date"], "message": e.get("message", ""),
-                        "objets": summarize(e.get("items", [])), "annule": e.get("annule")})
+                        "objets": summarize(e.get("items", [])), "annule": e.get("annule"),
+                        "etat": e.get("etat", "envoyee"), **({"etapes": e["etapes"]} if e.get("etapes") else {})})
         return out
 
 
