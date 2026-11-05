@@ -29,6 +29,7 @@ from ..models import (
     Repository,
     Source,
     Tree,
+    new_uid,
 )
 from ..normalize.dates import parse_date
 
@@ -514,6 +515,38 @@ def _same_event(a: Event, b: Event) -> bool:
     return a.type == b.type and a.date == b.date and (a.lieu.nom if a.lieu else "") == (b.lieu.nom if b.lieu else "")
 
 
+# Ordre de protection pour la fusion : forcé vivant > déduit > forcé décédé.
+_PROTECTION = {"Y": 0, "": 1, "N": 2}
+_GRAVITE_STATUT = {"refute": 0, "contradictoire": 1}
+
+
+def _merge_event(twin: Event, e: Event) -> list[str]:
+    """Fusion champ par champ de deux événements jugés identiques ; renvoie les conflits (#43)."""
+    conflits = []
+    twin.citations += [c for c in e.citations if c not in twin.citations]
+    twin.associations += [a for a in e.associations if a not in twin.associations]
+    if e.note and e.note not in twin.note:
+        twin.note = f"{twin.note}\n{e.note}".strip()
+    for champ in ("cause", "age", "valeur", "type_detail"):
+        a, b = getattr(twin, champ), getattr(e, champ)
+        if b and not a:
+            setattr(twin, champ, b)
+        elif a and b and a != b:
+            twin.note = f"{twin.note}\n{champ} (fiche absorbée) : {b}".strip()
+            conflits.append(f"{e.type} {e.date} : {champ} « {a} » conservé, « {b} » reporté en note")
+    sa, sb = twin.statut_manuel, e.statut_manuel
+    if sb and sb.statut and not (sa and sa.statut):
+        twin.statut_manuel = sb
+    elif sa and sb and sa.statut and sb.statut and sa.statut != sb.statut:
+        grave = min((sa, sb), key=lambda x: _GRAVITE_STATUT.get(x.statut, 9))
+        conflits.append(f"{e.type} {e.date} : statut {sa.statut} / {sb.statut} → {grave.statut} retenu")
+        twin.statut_manuel = Assertion(statut=grave.statut,
+                                       justification=" ; ".join(x for x in (sa.justification, sb.justification) if x))
+    twin.prive = twin.prive or e.prive
+    twin.extra += [x for x in e.extra if x not in twin.extra]
+    return conflits
+
+
 def op_fusionner_personnes(ctx: Ctx, o: dict) -> None:
     keep_id, gone_id = ctx.r(o["conserver"]), ctx.r(o["absorber"])
     if keep_id == gone_id:
@@ -529,13 +562,23 @@ def op_fusionner_personnes(ctx: Ctx, o: dict) -> None:
         else:
             target = next(k for k in keep.noms if k.complet == n.complet)
             target.citations += n.citations
+    conflits: list[str] = []
     for e in gone.evenements:
         twin = next((k for k in keep.evenements if _same_event(k, e)), None)
         if twin:
-            twin.citations += [c for c in e.citations if c not in twin.citations]
-            twin.associations += [a for a in e.associations if a not in twin.associations]
+            conflits += _merge_event(twin, e)
         else:
             keep.evenements.append(e)
+    # protection : la plus restrictive est retenue en attendant une décision explicite (#43)
+    if keep.vivant != gone.vivant:
+        retenu = min((keep.vivant, gone.vivant), key=lambda v: _PROTECTION[v])
+        conflits.append(f"vivant : {keep_id}={keep.vivant or 'déduit'}, {gone_id}={gone.vivant or 'déduit'} → "
+                        f"{retenu or 'déduit'} retenu (le plus protecteur ; à confirmer par marquer_vivant)")
+        keep.vivant = retenu
+    if gone.prive and not keep.prive:
+        conflits.append(f"privé : {gone_id} marqué privé → fiche fusionnée marquée privée")
+    keep.prive = keep.prive or gone.prive
+    keep.extra += [x for x in gone.extra if x not in keep.extra]
     keep.citations += gone.citations
     keep.associations += gone.associations
     for a in _all_associations(ctx.tree):
@@ -562,6 +605,7 @@ def op_fusionner_personnes(ctx: Ctx, o: dict) -> None:
     keep.fams = list(dict.fromkeys(keep.fams + gone.fams))
     del ctx.tree.personnes[gone_id]
     ctx.summary.append(f"Fusion : {gone_id} absorbé dans {keep.label()} — {o['justification']}")
+    ctx.summary += [f"Fusion, conflit résolu : {c}" for c in conflits]
 
 
 def op_scinder_personne(ctx: Ctx, o: dict) -> None:
@@ -646,64 +690,81 @@ def op_marquer_vivant(ctx: Ctx, o: dict) -> None:
 def op_remplacer_arbre(ctx: Ctx, o: dict) -> None:
     """Import complet (GEDCOM) : remplace ou fusionne l'arbre (usage interne par l'import)."""
     from ..gedcom.mapping import read_gedcom
+    from .integrite import iter_citations
 
     new: Tree = read_gedcom(o["gedcom_texte"])[0]
     if o.get("mode", "remplacer") == "remplacer":
         ctx.tree.__dict__.update(copy.deepcopy(new).__dict__)
         ctx.summary.append(f"Import : arbre remplacé ({len(new.personnes)} personnes)")
         return
-    # mode « ajouter » : renumérotation pour éviter les collisions
-    mapping: dict[str, str] = {}
-    for kind in ("sources", "depots", "medias", "personnes", "familles"):
+    # mode « ajouter » : TOUTES les références renumérotées (#40), UID en collision réattribués (#39)
+    new = copy.deepcopy(new)
+    kinds = ("sources", "depots", "medias", "personnes", "familles", "notes")
+    maps: dict[str, dict[str, str]] = {k: {} for k in kinds}
+    for kind in kinds:
         for old in getattr(new, kind):
             nid = ctx.tree.next_id(kind)
             getattr(ctx.tree, kind)[nid] = None  # réservation
-            mapping[old] = nid
-    for kind in ("sources", "depots", "medias", "personnes", "familles"):
-        for old, obj in getattr(new, kind).items():
-            obj = copy.deepcopy(obj)
-            obj.id = mapping[old]
-            getattr(ctx.tree, kind)[obj.id] = obj
-    for p in (ctx.tree.personnes[mapping[k]] for k in new.personnes):
-        p.famc = [mapping.get(f, f) for f in p.famc]
-        p.fams = [mapping.get(f, f) for f in p.fams]
-        p.medias = [mapping.get(m, m) for m in p.medias]
-    for f in (ctx.tree.familles[mapping[k]] for k in new.familles):
-        f.epoux = mapping.get(f.epoux, f.epoux)
-        f.epouse = mapping.get(f.epouse, f.epouse)
-        for c in f.enfants:
-            c.enfant = mapping.get(c.enfant, c.enfant)
-    for s in (ctx.tree.sources[mapping[k]] for k in new.sources):
-        s.depot = mapping.get(s.depot, s.depot)
-        s.original = mapping.get(s.original, s.original)
+            maps[kind][old] = nid
+    P, F, S, R, M, N = (maps[k] for k in ("personnes", "familles", "sources", "depots", "medias", "notes"))
 
-    def remap_cits(cits):
-        for c in cits:
-            c.source = mapping.get(c.source, c.source)
+    def note_ref(n: str) -> str:
+        if n.startswith("@") and n.endswith("@") and len(n) > 2:
+            return f"@{N.get(n.strip('@'), n.strip('@'))}@"
+        return n
 
-    def remap_assos(assos):
-        for a in assos:
-            a.personne = mapping.get(a.personne, a.personne)
-            remap_cits(a.citations)
+    used = {e.uid for x in [*ctx.tree.personnes.values(), *ctx.tree.familles.values()] if x for e in x.evenements}
+    used |= {x.uid for x in [*ctx.tree.personnes.values(), *ctx.tree.familles.values()] if x}
+    renumbered_uids = 0
 
-    for k in new.personnes:
-        p = ctx.tree.personnes[mapping[k]]
-        remap_cits(p.citations)
-        remap_assos(p.associations)
-        for n in p.noms:
-            remap_cits(n.citations)
+    def fresh(obj) -> None:
+        nonlocal renumbered_uids
+        if obj.uid in used:
+            obj.uid = new_uid()
+            renumbered_uids += 1
+        used.add(obj.uid)
+
+    for p in new.personnes.values():
+        p.id = P[p.id]
+        p.famc = [F.get(f, f) for f in p.famc]
+        p.fams = [F.get(f, f) for f in p.fams]
+        p.medias = [M.get(m, m) for m in p.medias]
+        p.notes = [note_ref(n) for n in p.notes]
+        fresh(p)
         for e in p.evenements:
-            remap_cits(e.citations)
-            remap_assos(e.associations)
-    for k in new.familles:
-        f = ctx.tree.familles[mapping[k]]
-        remap_cits(f.citations)
-        for e in f.evenements:
-            remap_cits(e.citations)
-            remap_assos(e.associations)
+            fresh(e)
+    for f in new.familles.values():
+        f.id = F[f.id]
+        f.epoux, f.epouse = P.get(f.epoux, f.epoux), P.get(f.epouse, f.epouse)
         for c in f.enfants:
-            remap_cits(c.citations)
-    ctx.summary.append(f"Import : {len(new.personnes)} personnes ajoutées (renumérotées) — "
+            c.enfant = P.get(c.enfant, c.enfant)
+        f.notes = [note_ref(n) for n in f.notes]
+        fresh(f)
+        for e in f.evenements:
+            fresh(e)
+    for s in new.sources.values():
+        s.id, s.depot, s.original = S[s.id], R.get(s.depot, s.depot), S.get(s.original, s.original)
+    for r in new.depots.values():
+        r.id = R[r.id]
+    for m in new.medias.values():
+        m.id = M[m.id]
+    for owner in [*new.personnes.values(), *new.familles.values(), *new.medias.values()]:
+        for c in iter_citations(owner):
+            c.source = S.get(c.source, c.source)
+            c.medias = [M.get(m, m) for m in c.medias]
+        for a in [*getattr(owner, "associations", []),
+                  *(a for e in getattr(owner, "evenements", []) for a in e.associations)]:
+            a.personne = P.get(a.personne, a.personne)
+    for kind, coll in (("personnes", new.personnes), ("familles", new.familles), ("sources", new.sources),
+                       ("depots", new.depots), ("medias", new.medias)):
+        for obj in coll.values():
+            getattr(ctx.tree, kind)[obj.id] = obj
+    for old, text in new.notes.items():
+        ctx.tree.notes[N[old]] = text
+        if old in new.notes_privees:
+            ctx.tree.notes_privees.add(N[old])
+    ctx.summary.append(f"Import : {len(new.personnes)} personnes ajoutées (renumérotées"
+                       + (f", {renumbered_uids} UID réattribués" if renumbered_uids else "") + ") — "
                        "doublons éventuels à traiter par /gen:recoupe puis fusion validée")
 
 
@@ -723,4 +784,9 @@ def apply_ops(tree: Tree, ops: list[dict], exiger_source: bool = True) -> Ctx:
             raise OpError(f"Opération {i} ({name}) : {exc}") from exc
         except KeyError as exc:
             raise OpError(f"Opération {i} ({name}) : élément ou paramètre manquant {exc}") from exc
+    from .integrite import introduced
+
+    problems = introduced(tree, ctx.tree)
+    if problems:
+        raise OpError("Proposition refusée, elle romprait l'intégrité de l'arbre : " + " ; ".join(problems[:10]))
     return ctx

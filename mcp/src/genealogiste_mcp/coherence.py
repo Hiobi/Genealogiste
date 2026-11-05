@@ -129,9 +129,14 @@ def check_tree(tree: Tree) -> list[dict]:
     issues = []
     for pid in sorted(tree.personnes):
         issues += check_person(tree, pid)
-    # références cassées
-    for fam in tree.familles.values():
-        for ref in [fam.epoux, fam.epouse] + [c.enfant for c in fam.enfants]:
-            if ref and ref not in tree.personnes:
-                issues.append(_issue("erreur", "reference_cassee", f"{fam.id} référence {ref} inexistant", ref))
+    from .tree.integrite import dangling, duplicate_event_uids, parent_cycles
+
+    for cyc in parent_cycles(tree):
+        what = (f"{cyc[0]} est son propre parent" if len(cyc) == 1
+                else "cycle de parenté : " + " → ".join(cyc + [cyc[0]]))
+        issues.append(_issue("erreur", "cycle_parente", what, cyc[0]))
+    for d in duplicate_event_uids(tree):
+        issues.append(_issue("erreur", "uid_duplique", d, ""))
+    for d in dangling(tree):  # références cassées
+        issues.append(_issue("erreur", "reference_cassee", d, d.split(" ")[0]))
     return issues

@@ -24,16 +24,22 @@ def _years(tree: Tree, pid: str) -> str:
     return f"{b or '?'}–{d}" if (b or d) else ""
 
 
+MAX_SOSA = 20_000
+
+
 def ancestors(tree: Tree, pid: str, generations: int = 4, hidden: set[str] | None = None) -> list[dict]:
     """Liste Sosa : [{sosa, id, nom, dates, generation}]."""
     hidden = hidden or set()
     out = []
-    frontier = [(1, pid)]
+    frontier = [(1, pid, frozenset())]
     for gen in range(1, generations + 1):
         nxt = []
-        for sosa, xid in frontier:
-            if not xid or xid not in tree.personnes:
+        for sosa, xid, lignee in frontier:
+            # cycle de parenté (#47) : on ne remonte pas au-delà d'une personne déjà dans sa propre lignée
+            if not xid or xid not in tree.personnes or xid in lignee:
                 continue
+            if len(out) >= MAX_SOSA:  # implexes sur de nombreuses générations : parcours borné
+                return out
             p = tree.personnes[xid]
             out.append({
                 "sosa": sosa, "id": xid, "generation": gen,
@@ -41,7 +47,7 @@ def ancestors(tree: Tree, pid: str, generations: int = 4, hidden: set[str] | Non
                 "dates": "" if xid in hidden else _years(tree, xid),
             })
             f, m = tree.father_mother(xid)
-            nxt += [(2 * sosa, f), (2 * sosa + 1, m)]
+            nxt += [(2 * sosa, f, lignee | {xid}), (2 * sosa + 1, m, lignee | {xid})]
         frontier = nxt
     return out
 
