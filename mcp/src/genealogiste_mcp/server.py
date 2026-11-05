@@ -15,6 +15,7 @@ from mcp.server.fastmcp import FastMCP
 from . import archives, coherence, evidence, matching, privacy
 from .archives import communicability_online
 from .cache import Cache
+from .chemins import CheminRefuse, nom_simple, sous
 from .config import Config, load_config
 from .export import charts
 from .export.fiche import fiche_markdown, gaps, tree_gaps
@@ -150,7 +151,8 @@ def matchid_appariement_csv(chemin_csv: str, colonnes: dict, sep: str = ",", for
 
 @mcp.tool()
 def matchid_appariement_statut(job: str, sortie: str = "") -> dict:
-    """Statut / résultat d'un appariement par lot matchID (sortie = chemin CSV où écrire le résultat)."""
+    """Statut / résultat d'un appariement par lot matchID. sortie (facultatif) : fichier .csv dans le
+    répertoire de données (chemin relatif à celui-ci), où écrire le résultat ; ailleurs, refusé."""
     return matchid.bulk_status(app().sctx, job, sortie)
 
 
@@ -755,12 +757,19 @@ def rapport_enregistrer(id: str, titre: str, contenu: str) -> dict:
 
 @mcp.tool()
 def media_enregistrer(chemin: str, nom: str = "") -> dict:
-    """Copie une image/un PDF d'acte dans <données>/medias/ (à lier ensuite via ajouter_media)."""
+    """Copie une image/un PDF d'acte dans <données>/medias/ (à lier ensuite via ajouter_media).
+    nom : nom de fichier simple, sans répertoire ; un fichier existant au contenu différent n'est pas écrasé."""
     src = Path(chemin).expanduser()
     if not src.is_file():
         return {"erreur": f"Fichier introuvable : {src}"}
-    dest = app().config.media_dir / (nom or src.name)
-    dest.parent.mkdir(parents=True, exist_ok=True)
+    media_dir = app().config.media_dir
+    media_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        dest = sous(media_dir, nom_simple(nom or src.name))
+    except CheminRefuse as exc:
+        return {"erreur": str(exc)}
+    if dest.exists() and dest.read_bytes() != src.read_bytes():
+        return {"erreur": f"medias/{dest.name} existe déjà avec un autre contenu : choisir un autre nom"}
     shutil.copy2(src, dest)
     return {"fichier": f"medias/{dest.name}", "chemin_absolu": str(dest)}
 

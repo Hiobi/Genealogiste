@@ -20,6 +20,7 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
+from ..chemins import CheminRefuse, sous
 from ..gedcom.mapping import write_gedcom
 from ..models import Tree
 from ..tree.proposals import (
@@ -59,7 +60,12 @@ def media_pending(db: GrampsDb, data_dir: Path, handles: set[str] | None = None)
         if handles is not None and h not in handles:
             continue
         local = _attr_value(m, A_FICHIER) or m.get("path") or ""
-        p = Path(data_dir) / local
+        if local:
+            try:
+                p = sous(data_dir, local)
+            except CheminRefuse:
+                missing.append(f"{m.get('gramps_id') or h} : {local} (hors du répertoire de données, refusé)")
+                continue
         if not local or not p.is_file():
             if local and not m.get("checksum"):
                 missing.append(f"{m.get('gramps_id') or h} : {local}")
