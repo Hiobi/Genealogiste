@@ -52,6 +52,8 @@ et renseigner au minimum :
 | `GENEALOGISTE_EXIGER_SOURCE` | `1` (défaut) : pas de fait ni de filiation sans citation, sauf `non_source` + motif |
 | `GENEALOGISTE_OFFLINE` | `1` : cache uniquement |
 | `GENEALOGISTE_NOTES_DIR` | notes de recherche Markdown (vault Obsidian) ; vide = désactivées (voir [docs/notes.md](docs/notes.md)) |
+| `GENEALOGISTE_HOTES_AUTORISES` | hôtes internes que les sources peuvent joindre (`hôte` ou `hôte:port`, virgules) ; par défaut, seules les adresses publiques en http(s) sont jointes, redirections comprises |
+| `MCP_TOKEN` / `MCP_SANS_AUTH` | transport HTTP : jeton exigé en `Authorization: Bearer` ; sans jeton, démarrage refusé hors adresse locale sauf `MCP_SANS_AUTH=1` (port publié sur 127.0.0.1 seulement) |
 | `GENEALOGISTE_NOTES_VIVANTS` / `_NOTES_AUTO` / `GENEALOGISTE_SOSA_RACINE` | `masquer` (défaut) ou `complet` ; régénération après écriture (défaut `true`) ; personne n° 1 des numéros Sosa des notes |
 
 Les variables peuvent aussi être exportées dans l'environnement de Claude Code. `make check` affiche la
@@ -64,7 +66,12 @@ cp .env.example .env            # puis compléter
 docker compose up -d            # MCP HTTP sur 127.0.0.1:8765/mcp, données dans ./data
 docker compose --profile gramps up -d   # + Gramps Web sur 127.0.0.1:5055 (redis + celery)
 claude mcp add --transport http genealogiste http://127.0.0.1:8765/mcp
+# avec MCP_TOKEN défini :
+claude mcp add --transport http genealogiste http://127.0.0.1:8765/mcp --header "Authorization: Bearer $MCP_TOKEN"
 ```
+
+Le conteneur écoute sur `0.0.0.0` ; `docker-compose.yml` ne publie le port que sur `127.0.0.1` et pose donc
+`MCP_SANS_AUTH=1` par défaut. Définir `MCP_TOKEN` dans `.env` pour exiger le jeton.
 
 En mode Docker, désactiver le serveur stdio du plugin (`/mcp` → genealogiste → disable) pour n'en garder
 qu'un. Les hooks d'approbation s'appliquent aux deux (motif `mcp__.*genealogiste.*__…`).
@@ -75,8 +82,8 @@ accès, puis renseigner `GENEALOGISTE_GRAMPS_*`.
 
 Stacks → Add stack → Repository : URL `https://github.com/hiobi/sosa`, compose path
 `docker-compose.portainer.yml`, variables d'après `portainer/stack.env.example`. La stack démarre le MCP et
-Gramps Web ensemble (sans profils). Le MCP n'ayant pas d'authentification, il reste lié à `127.0.0.1` par
-défaut. Pour travailler en direct sur Gramps Web : `GENEALOGISTE_BACKEND=gramps` (voir
+Gramps Web ensemble (sans profils). `MCP_TOKEN` est exigé (le conteneur refuse de démarrer sans) ; à défaut,
+`MCP_SANS_AUTH=1` seulement si `MCP_BIND=127.0.0.1` ou derrière un proxy authentifiant. Pour travailler en direct sur Gramps Web : `GENEALOGISTE_BACKEND=gramps` (voir
 [docs/gramps-web.md](docs/gramps-web.md), bascule depuis le mode fichier avec `gramps_bascule_proposer`).
 
 ## Commandes
@@ -145,6 +152,13 @@ Personne sans décès et née (estimation) il y a moins de 100 ans = présumée 
 envoyée à un service externe, masquage à l'export et refus de récit. Délais de communicabilité :
 skill `droit-communicabilite` et outil `communicabilite`.
 
+## Sécurité
+
+Garanties dans le code, valables pour tout client MCP : fichiers confinés au répertoire de données,
+sources externes limitées aux adresses publiques (redirections revalidées), pas de POST rejoué en cas de
+résultat incertain, jeton `MCP_TOKEN` pour le transport HTTP. Détail et réglages :
+[docs/securite.md](docs/securite.md).
+
 ## Développement
 
 ```bash
@@ -179,3 +193,5 @@ et une nouvelle session (ou `/mcp` → reconnecter genealogiste) pour relancer l
 - Mode Gramps Web (v1) : pas d'envoi des médias, un seul arbre, pas de fusion native ni de lieux
   hiérarchiques en écriture (issues #8 à #11).
 - Les cotes proposées suivent le cadre de classement réglementaire : toujours vérifier l'inventaire du service.
+- Sorties réseau : contrôle de l'adresse à la résolution DNS, pas d'épinglage à la connexion (DNS rebinding
+  théoriquement possible, voir [docs/securite.md](docs/securite.md#limites-connues)).

@@ -14,6 +14,7 @@ from mcp.server.fastmcp import FastMCP
 
 from . import archives, coherence, evidence, matching, privacy
 from .archives import communicability_online
+from .auth import BearerAuth, bind_problem
 from .cache import Cache
 from .chemins import CheminRefuse, nom_simple, sous
 from .config import Config, load_config
@@ -30,6 +31,7 @@ from .normalize import dates as d
 from .normalize.names import normalize_name, surname_similarity
 from .normalize.places import normalize_place
 from .notes import Notes, NotesError, touched
+from .reseau import NetworkPolicy
 from .sources import ark_resolver, familysearch, gallica, geo, iiif, liens, matchid, wikidata, wikitree
 from .sources.base import SourceContext
 from .tree.proposals import ProposalError, Proposals, TokenStore
@@ -54,7 +56,8 @@ class App:
         self.cache = Cache(self.config.cache_path)
         kw = {"sleeper": sleeper} if sleeper else {}
         self.http = HttpClient(self.cache, self.config.user_agent, self.config.http_timeout, RATE,
-                               offline=self.config.offline, transport=transport, **kw)
+                               offline=self.config.offline, transport=transport,
+                               policy=NetworkPolicy(self.config.hotes_autorises), **kw)
         self.store = TreeStore(self.config.data_dir, self.config.git_remote)
         self.store.ensure()
         self.journal = Journal(self.config.journal_path)
@@ -988,10 +991,20 @@ def main() -> None:
         print(json.dumps(arbre_info(), ensure_ascii=False, indent=2, default=str))
         print("WikiTree appId :", "défini" if a.config.wikitree_app_id else "ABSENT")
         return
-    if args.transport != "stdio":
-        mcp.settings.host = args.host
-        mcp.settings.port = args.port
-    mcp.run(transport=args.transport)
+    if args.transport == "stdio":
+        mcp.run(transport="stdio")
+        return
+    import os
+
+    import uvicorn
+    token = os.environ.get("MCP_TOKEN", "")
+    if problem := bind_problem(args.host, token, os.environ.get("MCP_SANS_AUTH", "")):
+        raise SystemExit(problem)
+    mcp.settings.host, mcp.settings.port = args.host, args.port
+    asgi = mcp.streamable_http_app() if args.transport == "streamable-http" else mcp.sse_app()
+    if token:
+        asgi = BearerAuth(asgi, token)
+    uvicorn.run(asgi, host=args.host, port=args.port, log_level=mcp.settings.log_level.lower())
 
 
 if __name__ == "__main__":
