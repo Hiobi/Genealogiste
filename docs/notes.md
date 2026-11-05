@@ -53,6 +53,16 @@ change).
 
 ## Personnes vivantes
 
-Par défaut, la fiche d'une personne présumée vivante ne contient que son id (RGPD) et `notes_ajouter` est refusé.
+Par défaut, la fiche d'une personne présumée vivante ou marquée privée ne contient que son id (RGPD) et
+`notes_ajouter` est refusé.
+
+**Remasquage** (passage de `complet` à `masquer`, ou personne devenue présumée vivante) : toutes les propriétés et
+sections produites par l'outil sont retirées, y compris celles qui n'existent plus dans la fiche masquée, et le
+titre est remplacé. Le fichier n'est **pas renommé** (les liens existants restent valides) ; `notes_generer`
+renvoie des `alertes` :
+
+- nom de fichier pouvant identifier la personne (ex. `I9 - Lucas MARTIN (1990).md`) : le renommer à la main dans
+  Obsidian, qui met les liens à jour ;
+- texte libre ou propriétés saisis à la main : conservés, mais signalés pour vérification.
 Si le répertoire est dans un dépôt Git qui a un dépôt distant, `notes_generer` avertit : vérifier qu'il est
 **privé**.

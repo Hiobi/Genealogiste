@@ -64,6 +64,11 @@ def _text(tag: str, value: str) -> str:
     return f"<{tag}>{escape(value)}</{tag}>" if value else ""
 
 
+def _priv(o: dict) -> str:
+    """Marque « privé » de Gramps (priv="1") : restituée à l'export (#37)."""
+    return ' priv="1"' if o.get("private") else ""
+
+
 def _common_tail(o: dict) -> str:
     return _refs("tagref", o.get("tag_list"))
 
@@ -118,7 +123,7 @@ def db_to_xml(db: GrampsDb) -> str:
                      f"color={quoteattr(t.get('color', '#000000000000'))} priority=\"{t.get('priority', 0)}\"/>"
                      for t in sorted(db.all("Tag").values(), key=lambda t: (t.get("priority", 0), t.get("name", "")))])
     section("events", [
-        f"<event handle={_h(e['handle'])} id={quoteattr(e.get('gramps_id') or '')}>"
+        f"<event handle={_h(e['handle'])} id={quoteattr(e.get('gramps_id') or '')}{_priv(e)}>"
         + _text("type", tname(e.get("type"))) + date_xml(e.get("date"))
         + (f"<place hlink={_h(e['place'])}/>" if e.get("place") else "")
         + _text("description", e.get("description", ""))
@@ -127,7 +132,7 @@ def db_to_xml(db: GrampsDb) -> str:
         + _common_tail(e) + "</event>" for e in by_id("Event")])
     people = []
     for p in by_id("Person"):
-        x = [f"<person handle={_h(p['handle'])} id={quoteattr(p.get('gramps_id') or '')}>",
+        x = [f"<person handle={_h(p['handle'])} id={quoteattr(p.get('gramps_id') or '')}{_priv(p)}>",
              f"<gender>{GENDERS.get(p.get('gender', 2), 'U')}</gender>", _name(p["primary_name"], False)]
         x += [_name(n, True) for n in p.get("alternate_names") or []]
         x += [_eventref(r) for r in _ordered_refs(p)]
@@ -149,7 +154,7 @@ def db_to_xml(db: GrampsDb) -> str:
     section("people", people)
     fams = []
     for f in by_id("Family"):
-        x = [f"<family handle={_h(f['handle'])} id={quoteattr(f.get('gramps_id') or '')}>"
+        x = [f"<family handle={_h(f['handle'])} id={quoteattr(f.get('gramps_id') or '')}{_priv(f)}>"
              f"<rel type={quoteattr(tname(f.get('type')) or 'Unknown')}/>"]
         if f.get("father_handle"):
             x.append(f"<father hlink={_h(f['father_handle'])}/>")
@@ -169,14 +174,14 @@ def db_to_xml(db: GrampsDb) -> str:
         fams.append("".join(x))
     section("families", fams)
     section("citations", [
-        f"<citation handle={_h(c['handle'])} id={quoteattr(c.get('gramps_id') or '')}>" + date_xml(c.get("date"))
+        f"<citation handle={_h(c['handle'])} id={quoteattr(c.get('gramps_id') or '')}{_priv(c)}>" + date_xml(c.get("date"))
         + _text("page", c.get("page", "")) + f"<confidence>{c.get('confidence', 2)}</confidence>"
         + _refs("noteref", c.get("note_list")) + _refs("objref", [m["ref"] for m in c.get("media_list") or []])
         + "".join(_attr(a, "srcattribute") for a in c.get("attribute_list") or [])
         + (f"<sourceref hlink={_h(c['source_handle'])}/>" if c.get("source_handle") else "")
         + _common_tail(c) + "</citation>" for c in by_id("Citation")])
     section("sources", [
-        f"<source handle={_h(s['handle'])} id={quoteattr(s.get('gramps_id') or '')}>" + _text("stitle", s.get("title", ""))
+        f"<source handle={_h(s['handle'])} id={quoteattr(s.get('gramps_id') or '')}{_priv(s)}>" + _text("stitle", s.get("title", ""))
         + _text("sauthor", s.get("author", "")) + _text("spubinfo", s.get("pubinfo", ""))
         + _text("sabbrev", s.get("abbrev", "")) + _refs("noteref", s.get("note_list"))
         + "".join(_attr(a, "srcattribute") for a in s.get("attribute_list") or [])
@@ -195,7 +200,7 @@ def db_to_xml(db: GrampsDb) -> str:
         places.append(x + "</placeobj>")
     section("places", places)
     section("objects", [
-        f"<object handle={_h(m['handle'])} id={quoteattr(m.get('gramps_id') or '')}>"
+        f"<object handle={_h(m['handle'])} id={quoteattr(m.get('gramps_id') or '')}{_priv(m)}>"
         f"<file src={quoteattr(m.get('path', ''))} mime={quoteattr(m.get('mime', ''))} "
         f"description={quoteattr(m.get('desc') or m.get('path', ''))}/>"
         + _refs("noteref", m.get("note_list")) + _refs("citationref", m.get("citation_list")) + _common_tail(m)
@@ -218,7 +223,7 @@ def db_to_xml(db: GrampsDb) -> str:
             + (f" value={quoteattr(str(t['value']))}" if t.get("value") is not None else "") + ">"
             + "".join(f'<range start="{a}" end="{b}"/>' for a, b in t.get("ranges") or []) + "</style>"
             for t in text.get("tags") or [])
-        notes.append(f"<note handle={_h(n['handle'])} id={quoteattr(n.get('gramps_id') or '')} "
+        notes.append(f"<note handle={_h(n['handle'])} id={quoteattr(n.get('gramps_id') or '')}{_priv(n)} "
                      f"type={quoteattr(tname(n.get('type')) or 'General')}>"
                      f"<text>{escape(text.get('string', ''))}</text>{styles}{_common_tail(n)}</note>")
     section("notes", notes)

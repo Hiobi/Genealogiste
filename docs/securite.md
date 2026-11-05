@@ -52,6 +52,22 @@ Un nom seul (`MARTIN`) n'est pas refusé. L'appariement par lot matchID contrôl
 lignes désignant un vivant sont retirées du contenu envoyé (`lignes_exclues`, numéros du fichier d'origine) ;
 rien n'est envoyé si aucune ligne ne reste.
 
+**Exports** (`privacy.publication`, `arbre_exporter` avec `masquer_vivants`, par défaut) : projection distincte
+de l'arbre de travail.
+
+- Personnes présumées vivantes **ou marquées privées** (`RESN PRIVACY`, Gramps `private`) : réduites à
+  « Vivant », sans patronyme, fait, note, média ni association.
+- Sources, médias et notes partagées liés à au moins une de ces personnes, ou marqués privés : retirés avec
+  **toutes** leurs références, y compris chez les défunts. Liés seulement à des défunts : conservés.
+- Événements et citations privés, associations désignant une personne masquée (lien ou nom écrit) : retirés.
+  Enregistrements non interprétés : exclus (contenu indécidable).
+- Passe sur tous les textes : « Prénom Nom », « NOM Prénom », « Prénom /Nom/ » d'une personne masquée remplacés
+  par « Vivant » (sans tenir compte des accents ni de la casse).
+- Garde-fou : si une de ces chaînes subsiste dans le fichier produit, l'export est refusé et rien n'est écrit.
+
+`tests/test_publication.py` exporte un arbre piégé dans les quatre formats et vérifie qu'aucune chaîne
+identifiante ne subsiste.
+
 `tests/test_outils.py` vérifie que tout outil réseau recevant un paramètre de personne figure dans la liste des
 outils gardés (exemptions justifiées : communes de l'API Géo, serveur Gramps Web de l'utilisateur), et
 `tests/test_vivants.py` qu'aucun de ces outils ne fait d'appel réseau pour un vivant.

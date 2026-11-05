@@ -511,7 +511,7 @@ def arbre_comparer(id1: str, id2: str) -> dict:
 def arbre_ascendance(id: str, generations: int = 4, format: str = "liste") -> Any:
     """Ascendance (numérotation Sosa). format : liste | mermaid | svg."""
     t = app().tree()
-    hidden = privacy.living_ids(t)
+    hidden = privacy.hidden_ids(t)
     generations = max(1, min(generations, 12))
     if format == "mermaid":
         return charts.mermaid_ancestors(t, id, generations, hidden)
@@ -524,7 +524,7 @@ def arbre_ascendance(id: str, generations: int = 4, format: str = "liste") -> An
 def arbre_descendance(id: str, generations: int = 3, format: str = "liste") -> Any:
     """Descendance. format : liste | mermaid | svg. Vivants masqués."""
     t = app().tree()
-    hidden = privacy.living_ids(t)
+    hidden = privacy.hidden_ids(t)
     generations = max(1, min(generations, 10))
     if format == "mermaid":
         return charts.mermaid_descendants(t, id, generations, hidden)
@@ -697,12 +697,15 @@ def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", gene
     """Export : gedcom7 | gedcom551 | geneweb | gramps | mermaid_asc | mermaid_desc | svg_asc | svg_desc | fiche.
     geneweb : GEDCOM 5.5.1 pour ged2gwb, avec citations complètes, statut de preuve et témoins visibles dans
     GeneWeb (temoins_en_personnes=True crée une fiche pour chaque témoin seulement nommé).
-    Vivants masqués par défaut (RGPD). chemin par défaut : <données>/exports/."""
+    Vivants et objets privés masqués par défaut (RGPD) : sources, médias et notes liés à une personne masquée
+    retirés avec leurs références, noms remplacés par « Vivant » dans les textes. chemin par défaut :
+    <données>/exports/."""
     a = app()
     t = a.tree()
     hidden: set[str] = set()
+    rapport: dict = {}
     if masquer_vivants:
-        t, hidden = privacy.mask_tree(t)
+        t, hidden, rapport = privacy.publication(t)
     ext = {"gedcom7": "ged", "gedcom551": "ged", "geneweb": "ged", "gramps": "gramps", "mermaid_asc": "mmd", "mermaid_desc": "mmd",
            "svg_asc": "svg", "svg_desc": "svg", "fiche": "md"}
     if format not in ext:
@@ -727,12 +730,16 @@ def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", gene
         content = charts.svg_descendants(t, id, generations, hidden)
     else:
         content = fiche_markdown(t, id, a.config.strict_evidence, masquer_vivants)
+    reste = privacy.residues(content, rapport.get("motifs", []))
+    if reste:  # garde-fou : la projection a laissé passer une chaîne identifiante
+        return {"erreur": "Export refusé : données identifiantes d'une personne masquée encore présentes "
+                          f"({len(reste)} occurrence(s)). Rien n'a été écrit.", "occurrences": reste[:20]}
     out = Path(chemin).expanduser() if chemin else a.config.exports_dir / (
         f"{id or 'arbre'}-{format}-{date.today().isoformat()}.{ext[format]}")
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(content, encoding="utf-8")
     res = {"fichier": str(out), "format": format, "octets": len(content.encode("utf-8")),
-           "vivants_masques": len(hidden), "apercu": content[:1500] if format.startswith(("mermaid", "fiche")) else None}
+           "vivants_masques": len(hidden), "retires": rapport.get("retires"), "apercu": content[:1500] if format.startswith(("mermaid", "fiche")) else None}
     if format == "geneweb":
         res["statistiques"] = stats
         res["import"] = f"ged2gwb {out.name} -o <base> -f   (voir docs/geneweb.md)"
