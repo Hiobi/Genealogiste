@@ -8,11 +8,14 @@ import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 
+from .fichiers import ajouter_jsonl, lire_jsonl
+
 
 class Journal:
     def __init__(self, path: Path):
         self.path = Path(path)
         self._lock = threading.Lock()
+        self.lignes_corrompues: list[int] = []
 
     def add(
         self,
@@ -43,9 +46,7 @@ class Journal:
             "note": note,
         }
         with self._lock:
-            self.path.parent.mkdir(parents=True, exist_ok=True)
-            with self.path.open("a", encoding="utf-8") as fh:
-                fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
+            ajouter_jsonl(self.path, entry)
         return entry["id"]
 
     def entries(
@@ -56,13 +57,9 @@ class Journal:
         texte: str | None = None,
         limite: int = 50,
     ) -> list[dict]:
-        if not self.path.exists():
-            return []
+        lignes, self.lignes_corrompues = lire_jsonl(self.path)
         out = []
-        for line in self.path.read_text(encoding="utf-8").splitlines():
-            if not line.strip():
-                continue
-            e = json.loads(line)
+        for e in lignes:
             if source and e["source"] != source:
                 continue
             if personne and e.get("personne") != personne:

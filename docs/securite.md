@@ -136,6 +136,28 @@ claude mcp add --transport http genealogiste http://127.0.0.1:8765/mcp --header 
 le message « Refus de démarrer… ». Définir `MCP_TOKEN` (recommandé) ou, si `MCP_BIND=127.0.0.1` ou derrière
 un proxy authentifiant, `MCP_SANS_AUTH=1`.
 
+## Arbre et dépôt Git : écritures sûres
+
+- **Verrou** : `arbre_appliquer` s'exécute sous un verrou exclusif (`<données>/.genealogiste.lock`, `flock`),
+  entre processus et entre fils. Vérification de l'empreinte, écriture, commit et consommation du jeton forment
+  un tout : deux applications concurrentes ne peuvent pas réussir sur la même base.
+- **Instantané unique** : le diff et l'empreinte d'une proposition sont calculés sur le même texte lu.
+- **Écriture atomique** : fichier temporaire du même répertoire, `fsync`, puis `os.replace`. Jamais d'arbre
+  tronqué.
+- **Reprise** : si le commit échoue, l'arbre précédent est restauré et le jeton reste valable ; le résultat
+  distingue `ecrit` et `commite`. Une annulation (`git revert`) en échec est abandonnée (`revert --abort`).
+- **Indexation explicite** : jamais de `git add -A`. Un commit d'arbre ne contient que `arbre.ged` ; le journal
+  est versionné dans un commit à part (une annulation n'efface pas d'entrées du journal), un rapport dans le
+  sien. `.gitignore` est complété à chaque démarrage, même s'il existait (`.env`, `.env.*`, `*.token`, `*.key`,
+  `*.pem`, `.propositions/`, `exports/`, `*.sqlite`, verrou, temporaires).
+- **Aperçu d'annulation** : `arbre_annuler_modification` montre le diff complet du commit et la liste
+  `fichiers_annules` ; `attention` signale tout fichier autre que l'arbre.
+- **Journaux JSONL** (`journal.jsonl`, `gramps-transactions.jsonl`) : ajout avec `flush` + `fsync` ; une ligne
+  tronquée par un arrêt est ignorée et signalée (`journal_lister` : `avertissement` en tête), les autres entrées
+  restent lisibles.
+
+Tests : `tests/test_ecritures.py`.
+
 ## Limites connues
 
 - **DNS rebinding** : l'adresse est vérifiée à la résolution, puis httpx résout de nouveau à la connexion.

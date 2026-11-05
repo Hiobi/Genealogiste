@@ -8,19 +8,27 @@ et que le jeton n'a pas expiré. Le contenu écrit est exactement celui qui a é
 from __future__ import annotations
 
 import difflib
+import hashlib
 import json
+import os
 import secrets
+import threading
 import time
 from pathlib import Path
 
 from ..coherence import check_tree
-from ..gedcom.mapping import write_gedcom
+from ..fichiers import verrou
+from ..gedcom.mapping import read_gedcom, write_gedcom
 from .ops import Ctx, OpError, apply_ops
-from .store import TreeStore
+from .store import GitError, TreeStore
 
 TTL_SECONDS = 3600
 MAX_DIFF_LINES = 400
 CONSIGNE = "Présenter ce diff à l'utilisateur et n'appeler arbre_appliquer qu'après son accord explicite."
+
+
+def _digest(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 class ProposalError(RuntimeError):
@@ -46,15 +54,32 @@ class TokenStore:
         return token
 
     def take(self, token: str) -> dict:
-        """Retire le jeton (usage unique, même si l'écriture échoue ensuite)."""
+        """Retire le jeton (usage unique)."""
+        record = self.peek(token)
+        self.consume(token)
+        return record
+
+    def peek(self, token: str) -> dict:
+        """Lit le jeton sans le consommer ; un jeton expiré est retiré."""
         path = self._path(token)
-        if not path.exists():
-            raise ProposalError("Jeton inconnu ou déjà utilisé.")
-        record = json.loads(path.read_text(encoding="utf-8"))
-        path.unlink()
+        try:
+            record = json.loads(path.read_text(encoding="utf-8"))
+        except FileNotFoundError:
+            raise ProposalError("Jeton inconnu ou déjà utilisé.") from None
         if time.time() - record["cree"] > TTL_SECONDS:
+            path.unlink(missing_ok=True)
             raise ProposalError("Proposition expirée : la reformuler.")
         return record
+
+    def consume(self, token: str) -> None:
+        """Consommation atomique : un seul appelant y parvient (le renommage échoue pour les autres)."""
+        path = self._path(token)
+        pris = path.with_suffix(f".pris-{os.getpid()}-{threading.get_ident()}")
+        try:
+            os.rename(path, pris)
+        except FileNotFoundError:
+            raise ProposalError("Jeton inconnu ou déjà utilisé.") from None
+        pris.unlink(missing_ok=True)
 
     def cancel(self, token: str) -> bool:
         path = self._path(token)
@@ -147,14 +172,14 @@ class Proposals:
     def propose(self, operations: list[dict], titre: str, justification: str,
                 sources: list[str] | None = None) -> dict:
         self._frozen()
-        tree = self.store.load()
-        before = self.store.text()
+        before = self.store.text()  # un seul instantané : diff et empreinte portent sur le même état (#38)
+        tree = read_gedcom(before)[0]
         ctx, token, message = prepare(tree, operations, titre, justification, sources, self.exiger_source)
         after = write_gedcom(ctx.tree)
         if after == before:
             raise ProposalError("La proposition ne modifie rien.")
         self.tokens.create({
-            "jeton": token, "type": "modification", "empreinte_base": self.store.digest(), "resultat": after,
+            "jeton": token, "type": "modification", "empreinte_base": _digest(before), "resultat": after,
             "message": message, "operations": operations, "resume": ctx.summary, "references": ctx.refs})
         return {
             "jeton": token, "expire_dans_minutes": TTL_SECONDS // 60, "resume": ctx.summary,
@@ -169,25 +194,50 @@ class Proposals:
         entry = next((e for e in self.store.log(200, "arbre.ged") if e["commit"].startswith(reference)), None)
         if not entry or not reference:
             raise ProposalError(f"Commit introuvable dans l'historique de l'arbre : {reference!r}")
+        base = self.store.text()
         diff = self.store.show(entry["commit"])
+        fichiers = self.store.files(entry["commit"])
         token = self.tokens.create({"type": "annulation", "commit": entry["commit"],
-                                    "empreinte_base": self.store.digest(),
+                                    "empreinte_base": _digest(base), "fichiers": fichiers,
                                     "resume": [f"Annulation du commit {entry['commit']} : "
                                                f"{entry['message'].splitlines()[0]}"]})
-        return {"jeton": token, "expire_dans_minutes": TTL_SECONDS // 60, "annule": entry,
-                "diff_annule": diff[:20000], "consigne": CONSIGNE}
+        out = {"jeton": token, "expire_dans_minutes": TTL_SECONDS // 60, "annule": entry,
+               "fichiers_annules": fichiers, "diff_annule": diff[:20000], "consigne": CONSIGNE}
+        autres = [f for f in fichiers if f != "arbre.ged"]
+        if autres:
+            out["attention"] = (f"L'annulation défait tout le commit, y compris {', '.join(autres)} "
+                                "(voir diff_annule).")
+        return out
 
     def apply(self, token: str) -> dict:
-        record = self.tokens.take(token)
-        self._frozen()
-        if self.store.digest() != record["empreinte_base"]:
-            raise ProposalError("L'arbre a changé depuis la proposition : la reformuler sur l'état actuel.")
-        if record.get("type") == "annulation":
-            commit = self.store.revert(record["commit"])
-            return {"commit": commit, "resume": record["resume"]}
-        self.store.path.write_text(record["resultat"], encoding="utf-8")
-        commit = self.store.commit(validated(record["message"], token))
-        return {"commit": commit, "resume": record["resume"], "references_creees": record["references"]}
+        """Sous verrou : vérification, écriture atomique, commit, puis seulement consommation du jeton (#38, #44).
+        Si le commit échoue, l'arbre précédent est restauré et le jeton reste valable (reprise possible)."""
+        with verrou(self.store.dir):
+            record = self.tokens.peek(token)
+            self._frozen()
+            avant = self.store.text()
+            if _digest(avant) != record["empreinte_base"]:
+                self.tokens.consume(token)
+                raise ProposalError("L'arbre a changé depuis la proposition : la reformuler sur l'état actuel.")
+            if record.get("type") == "annulation":
+                try:
+                    commit = self.store.revert(record["commit"])
+                except GitError as exc:
+                    raise ProposalError(f"Annulation impossible ({exc}) : rien n'a changé, le jeton reste "
+                                        "valable.") from exc
+                self.tokens.consume(token)
+                return {"commit": commit, "ecrit": True, "commite": True, "resume": record["resume"]}
+            self.store.commit_internes()
+            self.store.write_text(record["resultat"])
+            try:
+                commit = self.store.commit(validated(record["message"], token))
+            except GitError as exc:
+                self.store.write_text(avant)
+                raise ProposalError(f"Échec du commit ({exc}) : arbre restauré à l'état précédent, jeton "
+                                    "toujours valable ; corriger le dépôt Git puis relancer arbre_appliquer.") from exc
+            self.tokens.consume(token)
+        return {"commit": commit, "ecrit": True, "commite": True, "resume": record["resume"],
+                "references_creees": record["references"]}
 
     def cancel(self, token: str) -> bool:
         return self.tokens.cancel(token)
