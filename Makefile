@@ -2,7 +2,7 @@
 MCP := mcp
 UV  := uv --directory $(MCP)
 
-.PHONY: help install test test-gramps lint format check run run-http docker-build docker-up docker-gramps docker-down validate clean verifier-archives
+.PHONY: version help install test test-gramps lint format check run run-http docker-build docker-up docker-gramps docker-down validate clean verifier-archives
 
 help: ## Liste des cibles
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-14s %s\n", $$1, $$2}'
@@ -48,6 +48,10 @@ docker-gramps: ## Démarre le serveur MCP + Gramps Web (:5055)
 
 docker-down: ## Arrête la pile
 	docker compose --profile gramps down
+
+version: ## Affiche la version, ou la fixe partout : make version V=0.3.0 (à faire à chaque publication)
+	@python3 scripts/version.py $(V)
+	@if [ -n "$(V)" ]; then $(UV) lock -q && echo "uv.lock mis à jour"; fi
 
 validate: ## Valide le manifeste du plugin (nécessite la CLI claude)
 	claude plugin validate .
