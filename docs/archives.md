@@ -58,9 +58,10 @@ restent dans `fr_sources.py` et dans la skill `sources-francaises`.
     c'est le site des archives, écartée sinon ;
   - NAAN ARK : registre public de l'ARK Alliance, rapproché par département (78 sur 98) ;
   - sites jugés injoignables à l'import (06, 08, 11, 13, 24, 26, 2A, 2B, 50, 974, 976), repris le 2026-11-05 :
-    06 refusait seulement HEAD ; 08, 24, 50, 974 ont une nouvelle adresse ; 11 (anti-robots), 13 et 26 (TLS
-    incomplet) gardent l'adresse Wikidata, à vérifier dans un navigateur ; 2A, 2B (Archives de la Collectivité
-    de Corse depuis 2020) et 976 : pas de site retenu, piste dans `notes`.
+    24 et 974 : nouvelle adresse, identité confirmée ; 13 et 26 : adresse Wikidata, identité confirmée par le
+    titre de la page (chaîne TLS incomplète) ; 06, 08, 11, 50 : le site répond par une page anti-robots,
+    identité à confirmer dans un navigateur ; 2A, 2B (Archives de la Collectivité de Corse depuis 2020) et
+    976 : pas de site retenu, piste dans `notes`.
 - Services nationaux et autres : Archives nationales, Léonore, ANOM, SHD, Mémoire des hommes, FranceArchives,
   Gallica (BnF), Retronews, matchID.
 - **Reste à faire** (issue #25) : bornes de mise en ligne (`en_ligne`) relevées sur chaque site, site de la
