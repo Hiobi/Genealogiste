@@ -101,8 +101,12 @@ class App:
             try:
                 r = self.notes.generate(tree, oid)
                 out["ecrites"] += r["ecrites"]
+                if r.get('alertes'):
+                    out.setdefault('alertes', []).extend(r['alertes'])
             except (NotesError, KeyError, OSError) as exc:
                 out["erreurs"].append(f"{oid} : {exc}")
+        if 'alertes' in out:
+            out['alertes'] = list(dict.fromkeys(out['alertes']))
         return out
 
 
@@ -1058,8 +1062,8 @@ def _notes(fn):
 
 @mcp.tool()
 def notes_generer(id: str = "tout") -> dict:
-    """Crée ou met à jour les fiches Markdown (Obsidian) dans GENEALOGISTE_NOTES_DIR : personne, famille, source
-    ou « tout » (+ index.md). Seules les sections générées et le frontmatter sont réécrits ; le texte libre et les
+    """Crée ou met à jour les fiches Markdown (Obsidian) dans GENEALOGISTE_NOTES_DIR : personne, famille, source,
+    patronyme (NOM) ou « tout » (+ patronymes/ et index.md). Seules les sections générées et le frontmatter sont réécrits ; le texte libre et les
     propriétés ajoutées à la main sont conservés ; régénérer sans changement ne modifie aucun fichier."""
     return _notes(lambda: app().notes.generate(app().tree(), id))
 

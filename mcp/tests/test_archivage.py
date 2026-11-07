@@ -57,7 +57,7 @@ def test_archivage_iiif_complet(vapp, iiif):
     assert f.parent == vapp.vault / "documents" / "État civil" / "MARTIN"
     assert f.name == "MARTIN Jean -- ROCHEFORT - AD17 - D [1885] - 2 E 299 - n.3.jpg"
     note = f.with_suffix(".md").read_text(encoding="utf-8")
-    assert f"![[{f.name}]]" in note and "[[I1 - Jean MARTIN (1820-1885)]]" in note
+    assert "![](" in note and "%5B1885%5D" in note and "[[I1 - Jean MARTIN (1820-1885)]]" in note
     assert f"service_iiif: \"{SERVICE}\"" in note and f"consulte_le: \"{date.today().isoformat()}\"" in note
     assert "sha256:" in note
     # jamais retéléchargé
@@ -122,9 +122,8 @@ def test_fiche_affiche_la_piece_et_lien_graphique(vapp, tmp_path):
     server.arbre_appliquer(p["jeton"])
     server.notes_generer()
     fiche = next((vapp.vault / "personnes").glob("I1 - *.md")).read_text(encoding="utf-8")
-    rel = Path(r["chemin_absolu"]).relative_to(vapp.vault).as_posix()
-    assert "## Pièces" in fiche and f"![[{rel}]]" in fiche
-    assert f"[[{rel[:-4]}|" in fiche  # lien vers la note de la pièce
+    assert "## Pièces" in fiche and "![](../documents/" in fiche and "%5B1885%5D" in fiche
+    assert ".md)" in fiche  # lien Markdown vers la note de la pièce
 
 
 def test_vivant_masque_sans_piece(vapp, tmp_path):
@@ -135,7 +134,7 @@ def test_vivant_masque_sans_piece(vapp, tmp_path):
     server.arbre_appliquer(p["jeton"])
     server.notes_generer()
     fiche = next((vapp.vault / "personnes").glob("I9 - *.md")).read_text(encoding="utf-8")
-    assert "![[" not in fiche
+    assert "## Pièces" not in fiche
 
 
 def test_cache_apercus_ignore_par_git(vapp):
@@ -147,3 +146,31 @@ def test_media_enregistrer_classe_sans_double_documents(vapp, tmp_path):
     a.write_bytes(_jpeg("orange"))
     r = server.media_enregistrer(str(a), "DUPONT Jean -- PHOTO.jpg", classer=True)
     assert Path(r["chemin_absolu"]).parent == vapp.vault / "photographies" / "DUPONT"
+
+
+def test_liens_markdown_des_pieces_resolvent_les_fichiers(vapp, tmp_path):
+    from urllib.parse import unquote, urlsplit
+
+    from markdown_it import MarkdownIt
+
+    source = tmp_path / 'original.jpg'
+    source.write_bytes(_jpeg())
+    resultat = server.piece_archiver(str(source), personnes=['I1'], type_piece='N',
+                                     nom='MARTIN Jean -- N [1820] (copie) #1.jpg')
+    image = Path(resultat['chemin_absolu'])
+    proposition = server.arbre_proposer(resultat['operations_suggerees'], 'Image fictive', 'Test de lien.')
+    server.arbre_appliquer(proposition['jeton'])
+    server.notes_generer()
+    fiche = next((vapp.vault / 'personnes').glob('I1 - *.md'))
+    compagnon = image.with_suffix('.md')
+    for note in (fiche, compagnon):
+        enfants = [enfant for bloc in MarkdownIt().parse(note.read_text()) for enfant in bloc.children or []]
+        images = [c.attrGet('src') for c in enfants if c.type == 'image']
+        assert len(images) == 1
+        url = urlsplit(images[0])
+        assert not url.fragment and not url.query
+        assert (note.parent / unquote(url.path)).resolve() == image
+        assert '%5B1820%5D' in images[0] and '%23' in images[0]
+        if note == fiche:
+            liens = [c.attrGet('href') for c in enfants if c.type == 'link_open']
+            assert any((note.parent / unquote(lien)).resolve() == compagnon for lien in liens)
