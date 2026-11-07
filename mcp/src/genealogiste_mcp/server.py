@@ -335,7 +335,8 @@ def archives_service(lieu: str = "", departement: str = "", code: str = "", docu
                      annee: int = 0) -> dict:
     """Service d'archives réel (référentiel) d'un lieu, d'un département ou d'un code (AD59, AN, SHD, ANOM…) :
     site, visionneuse, NAAN ARK, ce qui est en ligne (document = naissance, mariage, deces, recensement,
-    matricule… ; annee pour savoir si c'est en ligne ; None = inconnu), inscription, date de vérification."""
+    matricule… ; préciser lieu pour les exceptions communales et annee ; None = inconnu), inscription,
+    date de vérification et couverture sourcée. Un accès déclaré ne prouve pas l'existence d'un acte."""
     return archives.service(lieu, departement, code, document, annee or None)
 
 

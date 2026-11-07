@@ -26,10 +26,13 @@ restent dans `fr_sources.py` et dans la skill `sources-francaises`.
 ```
 
 - `type` : `departementales`, `communales`, `nationales`, `militaires`, `notariales`, `diocesaines`, `autre`.
-- `en_ligne` : clés `naissance`, `mariage`, `deces`, `tables_decennales`, `recensement`, `notaire`, `matricule`,
+- `couvertures` : format recommandé pour les règles sourcées, périodes, communes, exceptions et lacunes ;
+  voir [le modèle de disponibilité](couvertures-archives.md).
+- `en_ligne` (compatibilité) : clés `naissance`, `mariage`, `deces`, `tables_decennales`, `recensement`, `notaire`, `matricule`,
   `cadastre`, `paroissiaux` ; bornes `de` / `a` en années (une borne absente = ouverte). **Clé absente =
   inconnu** : l'outil répond alors `null`, jamais « en ligne ». L'exemple ci-dessus montre le format, ses
-  valeurs ne sont pas des données.
+  valeurs ne sont pas des données. Hors d’une ancienne plage, le résultat est désormais inconnu,
+  sans en déduire une absence.
 - `references` : liste d’URL officielles justifiant les compléments d’une entrée ;
   `releve_le` : date ISO de leur lecture automatisée. Ces champs sont informatifs, exposés dans la fiche,
   et ne remplacent pas `verifie_le` ; ils ne valident pas les autres champs hérités, notamment le NAAN.
@@ -52,7 +55,7 @@ restent dans `fr_sources.py` et dans la skill `sources-francaises`.
   protections). Verdicts : `OK`, `AVERT` (site présent mais non contrôlable automatiquement : protection
   anti-robots, certificat TLS non vérifiable — à vérifier dans un navigateur ; n'échoue pas), `KO`. Le
   script ne modifie jamais `verifie_le`.
-- `pytest tests/test_archives.py tests/test_verifier_archives.py` : format et verdicts HTTP simulés,
+- `pytest tests/test_archives.py tests/test_couverture_archives.py tests/test_verifier_archives.py` : format et verdicts HTTP simulés,
   replis, redirections, fermeture des réponses et absence de mutation du référentiel. Ces tests font partie
   de `make test` ; `make lint` couvre déjà `mcp/scripts/`.
 
@@ -99,3 +102,11 @@ Avant d’ajouter des plages `en_ligne`, tenir compte des exceptions communales 
 unique n’exprime pas ces cas et la note n’est pas interprétée par le calcul. Aucun intervalle global
 n’est donc ajouté dans ce lot ; l’issue #93 suit l’évolution du modèle de couverture. `verifie_le` reste
 inchangé sur toutes les entrées.
+
+## Couvertures structurées — 0.15.0
+
+Le modèle de #93 est implémenté : périodes annoncées, couvertures partielles, lacunes, règles par commune,
+renvois et indisponibilités explicites. Le [guide de saisie](couvertures-archives.md) décrit les priorités,
+la frontière des seuils glissants et la compatibilité des anciennes plages. Les résultats ne prouvent
+pas la présence d’un acte. #25 peut poursuivre la saisie de petits lots avec ces règles, sans transformer
+les couvertures variables en booléens globaux.
