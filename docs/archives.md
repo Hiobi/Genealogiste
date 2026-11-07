@@ -30,6 +30,11 @@ restent dans `fr_sources.py` et dans la skill `sources-francaises`.
   `cadastre`, `paroissiaux` ; bornes `de` / `a` en années (une borne absente = ouverte). **Clé absente =
   inconnu** : l'outil répond alors `null`, jamais « en ligne ». L'exemple ci-dessus montre le format, ses
   valeurs ne sont pas des données.
+- `references` : liste d’URL officielles justifiant les compléments d’une entrée ;
+  `releve_le` : date ISO de leur lecture automatisée. Ces champs sont informatifs, exposés dans la fiche,
+  et ne remplacent pas `verifie_le` ; ils ne valident pas les autres champs hérités, notamment le NAAN.
+- `visionneuse` : point d’accès à la recherche ou à la sélection des fonds conduisant à la consultation ;
+  il ne désigne pas nécessairement une image directement ouverte.
 - `verifie_le` : date à laquelle **une personne** a vérifié l'entrée sur le site du service. Absente ou de plus
   de 12 mois : avertissement dans les réponses.
 - Entrées importées : `wikidata` (identifiant de l'élément), `origine` (« import : … »), `site_repond_le` (date
@@ -81,3 +86,16 @@ Aucun `verifie_le` ni aucune borne `en_ligne` n’a été ajouté.
 Les adresses AD06, AD08, AD11, AD13, AD26 et AD50 sont donc conservées uniquement dans `notes`,
 conformément à la règle sur les données incertaines. Leur éventuelle présence dans un annuaire tiers
 ne remplace pas la validation sur le site du service. Le champ `site` est rétabli pour AD24 et AD974.
+
+## Complément du lot — 0.14.4
+
+Les sites AD06, AD08, AD13, AD26 et AD50 ont depuis été identifiés par lecture de leurs pages officielles
+dans le navigateur. Les observations précédentes restent l’historique du premier contrôle, pas l’état
+actuel de ces cinq adresses. Cinq accès aux fonds sont ajoutés (AD08, AD13, AD24, AD26, AD50).
+Les sources, dates et limites sont consignées dans le [relevé du 7 novembre](releves-archives-2026-11-07.md).
+L’Aude reste candidate ; Corse et Mayotte restent à traiter.
+
+Avant d’ajouter des plages `en_ligne`, tenir compte des exceptions communales et lacunes : une plage
+unique n’exprime pas ces cas et la note n’est pas interprétée par le calcul. Aucun intervalle global
+n’est donc ajouté dans ce lot ; l’issue #93 suit l’évolution du modèle de couverture. `verifie_le` reste
+inchangé sur toutes les entrées.
