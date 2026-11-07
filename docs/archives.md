@@ -33,7 +33,7 @@ restent dans `fr_sources.py` et dans la skill `sources-francaises`.
 - `verifie_le` : date à laquelle **une personne** a vérifié l'entrée sur le site du service. Absente ou de plus
   de 12 mois : avertissement dans les réponses.
 - Entrées importées : `wikidata` (identifiant de l'élément), `origine` (« import : … »), `site_repond_le` (date
-  à laquelle le site a répondu à une requête HEAD). Une entrée importée n'a pas de `verifie_le` tant qu'une
+  à laquelle le site a répondu au contrôle HTTP (HEAD ou repli GET)). Une entrée importée n'a pas de `verifie_le` tant qu'une
   personne ne l'a pas contrôlée.
 
 ## Règles de contribution
@@ -42,9 +42,14 @@ restent dans `fr_sources.py` et dans la skill `sources-francaises`.
   réel). Une donnée incertaine reste absente.
 - Les bornes de mise en ligne diffèrent souvent du délai légal de communicabilité : un registre communicable
   peut ne pas être numérisé.
-- `make verifier-archives` : vérifie le format et que chaque site répond (requête HEAD, aucun contenu
-  téléchargé, respect des CGU). Le script ne modifie jamais `verifie_le`.
-- `pytest tests/test_archives.py` : validation du format.
+- `make verifier-archives` : vérifie le format et que chaque site répond (requête HEAD ; si le site refuse HEAD
+  ou coupe la connexion, un seul repli GET, redirections suivies sans lire les corps ; respect des CGU, aucun contournement des
+  protections). Verdicts : `OK`, `AVERT` (site présent mais non contrôlable automatiquement : protection
+  anti-robots, certificat TLS non vérifiable — à vérifier dans un navigateur ; n'échoue pas), `KO`. Le
+  script ne modifie jamais `verifie_le`.
+- `pytest tests/test_archives.py tests/test_verifier_archives.py` : format et verdicts HTTP simulés,
+  replis, redirections, fermeture des réponses et absence de mutation du référentiel. Ces tests font partie
+  de `make test` ; `make lint` couvre déjà `mcp/scripts/`.
 
 ## Couverture actuelle
 
@@ -54,8 +59,22 @@ restent dans `fr_sources.py` et dans la skill `sources-francaises`.
     gardé seulement s'il répond (86 sur 98) ; redirection vers un autre domaine : nouvelle adresse retenue si
     c'est le site des archives, écartée sinon ;
   - NAAN ARK : registre public de l'ARK Alliance, rapproché par département (78 sur 98) ;
-  - sites injoignables (06, 08, 11, 13, 24, 26, 2A, 2B, 50, 974, 976) : pas de site, note explicite.
+  - sites jugés injoignables à l'import (06, 08, 11, 13, 24, 26, 2A, 2B, 50, 974, 976), repris le 2026-11-05 :
+    24 et 974 : nouvelle adresse, identité confirmée ; 13 et 26 : adresse Wikidata, identité confirmée par le
+    titre de la page (chaîne TLS incomplète) ; 06, 08, 11, 50 : le site répond par une page anti-robots,
+    identité à confirmer dans un navigateur ; 2A, 2B (Archives de la Collectivité de Corse depuis 2020) et
+    976 : pas de site retenu, piste dans `notes`.
 - Services nationaux et autres : Archives nationales, Léonore, ANOM, SHD, Mémoire des hommes, FranceArchives,
   Gallica (BnF), Retronews, matchID.
-- **Reste à faire** (issue #25) : bornes de mise en ligne (`en_ligne`) relevées sur chaque site, sites
-  injoignables, visionneuse et IIIF de chaque AD, vérification humaine (`verifie_le`).
+- **Reste à faire** (issue #25) : bornes de mise en ligne (`en_ligne`) relevées sur chaque site, site de la
+  Corse et de Mayotte, visionneuse et IIIF de chaque AD, vérification humaine (`verifie_le`).
+
+## Relecture du lot de sites (7 novembre 2026)
+
+Les observations des 5–6 novembre ci-dessus proviennent de la PR #76. La relecture automatique du
+7 novembre retrouve l’identité des [archives de Dordogne](https://archives.dordogne.fr/) et de la
+[page départementale de La Réunion](https://www.departement974.fr/archives-departementales).
+Les autres adresses reprises restent à confirmer dans un navigateur : pages demandant JavaScript/cookies
+(AD08, AD50), rejet de requête (AD11), accès non obtenu par l’outil de relecture (AD06, AD13, AD26).
+Ces résultats ne prouvent ni une panne du service ni la cause TLS rapportée historiquement.
+Aucun `verifie_le` ni aucune borne `en_ligne` n’a été ajouté.

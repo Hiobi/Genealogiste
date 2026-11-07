@@ -60,5 +60,5 @@ clean: ## Supprime caches et environnements
 	rm -rf $(MCP)/.venv $(MCP)/.pytest_cache $(MCP)/.ruff_cache
 	find . -name __pycache__ -type d -prune -exec rm -rf {} +
 
-verifier-archives: ## Vérifie que les sites du référentiel des archives répondent (HEAD)
+verifier-archives: ## Vérifie que les sites du référentiel des archives répondent (HEAD, repli GET sans lecture du corps)
 	$(UV) run python scripts/verifier_archives.py
