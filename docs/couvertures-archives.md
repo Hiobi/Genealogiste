@@ -48,7 +48,8 @@ ou du délai légal de communicabilité.
 `archives_service` conserve ses paramètres. Pour les exceptions, fournir `lieu` avec la commune et son
 département, même si `code` est aussi renseigné. Un département seul ne vaut pas une commune.
 Une incohérence explicite entre le lieu et le département du service donne un résultat inconnu,
-y compris avec une plage historique. Les noms et codes de départements seuls sont reconnus ; une
+y compris avec une plage historique. Les noms et codes de départements seuls sont reconnus ; un département explicite conserve
+la commune homonyme (Vienne (38), Paris (75)). Une
 précision géographique non reconnue reste inconnue. Aucun périmètre départemental ou pays n’est
 inventé pour un service national/autre dépourvu de département, notamment MATCHID.
 

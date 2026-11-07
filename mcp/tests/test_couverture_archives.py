@@ -163,3 +163,16 @@ def test_legacy_validation_matches_evaluation(monkeypatch, bounds):
     monkeypatch.setattr(archives, 'services', lambda: [s])
     assert archives.validate()
     assert archives.online(s, 'naissance', 1850) is None
+
+
+@pytest.mark.parametrize('lieu', ['Vienne (38)', 'Vienne, Isère', 'Vienne, 38, France'])
+def test_explicit_department_preserves_homonymous_commune(lieu):
+    s = service(rule(communes=['Vienne'], de=1800, a=1900))
+    s['departement'] = '38'
+    assert archives.online(s, 'naissance', 1850, lieu=lieu) is True
+
+
+def test_paris_is_a_commune_when_explicitly_qualified():
+    s = service(rule(communes=['Paris'], de=1800, a=1900))
+    s['departement'] = '75'
+    assert archives.online(s, 'naissance', 1850, lieu='Paris (75)') is True
