@@ -68,8 +68,8 @@ def _location(service: dict, lieu: str) -> tuple[str, str]:
     if not department:
         return commune, ''  # ne pas inventer une restriction territoriale pour un service national/autre
     departments = {place_key(name): code for code, name in DEPARTEMENTS.items()}
-    departments.update({place_key(code): code for code in DEPARTEMENTS})
-    identified = departments.get(commune)
+    raw_commune = place.get('commune', '').strip().upper()
+    identified = raw_commune if raw_commune in DEPARTEMENTS else departments.get(commune)
     explicit = place.get('departement_code')
     if (identified and identified != department) or (explicit and explicit != department):
         return '', 'Le lieu et le département du service sont incohérents.'
@@ -78,9 +78,11 @@ def _location(service: dict, lieu: str) -> tuple[str, str]:
     parts = [part.strip() for part in lieu.split(',') if part.strip()]
     if len(parts) == 2:
         tail = place_key(parts[1])
-        if tail in departments and departments[tail] != department:
+        raw_tail = parts[1].upper()
+        tail_department = raw_tail if raw_tail in DEPARTEMENTS else departments.get(tail)
+        if tail_department and tail_department != department:
             return '', 'Le lieu et le département du service sont incohérents.'
-        if tail not in departments and tail not in {'france', 'fr'}:
+        if not tail_department and tail not in {'france', 'fr'}:
             return '', 'Précision géographique non reconnue : disponibilité inconnue.'
     if identified or commune in {'france', 'fr'}:
         commune = ''
