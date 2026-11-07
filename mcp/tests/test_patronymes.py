@@ -319,3 +319,123 @@ def test_texte_libre_signale_si_patronyme_garde_des_porteurs_masques(napp):
     assert 'Lucas : appel familial à conserver' in contenu.split('## Notes libres', 1)[1]
     assert 'Lucas' not in contenu.split('## Notes libres', 1)[0]
     assert any('MARTIN.md' in a and 'saisis à la main' in a for a in resultat.get('alertes', []))
+
+
+@pytest.mark.parametrize('nom, prenom', [('李', 'Lucas'), ('X', 'Lucas'), ('李', '雷')])
+def test_piece_nommant_un_masque_avec_nom_court_exclue(napp, nom, prenom):
+    tree = napp.tree()
+    tree.personnes['I1'].noms[0].nom = nom
+    tree.personnes['I9'].noms[0].nom = nom
+    tree.personnes['I9'].noms[0].prenoms = prenom
+    napp.store.write(tree)
+    dossier = napp.config.notes_dir / 'photographies' / nom
+    dossier.mkdir(parents=True)
+    (dossier / f'{nom} {prenom} -- PHOTO [2020].jpg').write_bytes(b'fictif')
+    (dossier / f'{nom} Jean -- PHOTO [1880].jpg').write_bytes(b'fictif')
+    resultat = server.notes_generer()
+    assert 'erreur' not in resultat, resultat
+    contenu = server.notes_lire(nom)['contenu']
+    assert f'{nom} {prenom}' not in contenu
+    assert f'{nom} Jean' in contenu
+    napp.notes.vivants = 'complet'
+    server.notes_generer()
+    assert f'{nom} {prenom}' in server.notes_lire(nom)['contenu']
+
+
+@pytest.mark.parametrize('lien', [
+    'vivant', 'prive', 'citation', 'partage', 'alias', 'source_privee', 'citation_privee', 'evenement_prive',
+    'personne_privee', 'association', 'association_nom', 'association_evenement',
+])
+def test_media_confidentiel_au_nom_neutre_exclu_des_notes(napp, lien):
+    from genealogiste_mcp.models import Association, Citation, Event, Media
+
+    tree = napp.tree()
+    dossier = napp.config.notes_dir / 'photographies/MARTIN'
+    dossier.mkdir(parents=True)
+    secret = dossier / 'scan-fictif.jpg'
+    public = dossier / 'acte-historique.jpg'
+    secret.write_bytes(b'fictif')
+    public.write_bytes(b'fictif')
+    tree.medias['O99'] = Media(id='O99', fichier=str(secret), prive=lien == 'prive')
+    tree.medias['O98'] = Media(id='O98', fichier=str(public), citations=[Citation(source='S3')])
+    tree.personnes['I1'].medias.append('O98')
+    if lien in {'vivant', 'partage', 'alias', 'personne_privee'}:
+        tree.personnes['I9'].medias.append('O99')
+    elif lien == 'citation':
+        tree.personnes['I9'].citations.append(Citation(source='S1', medias=['O99']))
+    if lien in {'prive', 'partage'}:
+        tree.personnes['I1'].medias.append('O99')
+    if lien == 'personne_privee':
+        tree.personnes['I9'].prive = True
+    if lien == 'alias':
+        tree.medias['O97'] = Media(id='O97', fichier='../vault/photographies/MARTIN/scan-fictif.jpg')
+        tree.personnes['I1'].medias.append('O97')
+    if lien == 'source_privee':
+        tree.sources['S1'].prive = True
+        tree.personnes['I1'].citations.append(Citation(source='S1', medias=['O99']))
+    if lien == 'citation_privee':
+        tree.personnes['I1'].citations.append(Citation(source='S3', prive=True, medias=['O99']))
+    if lien == 'evenement_prive':
+        tree.personnes['I1'].evenements.append(Event(type='EVEN', prive=True,
+                                                   citations=[Citation(source='S3', medias=['O99'])]))
+    if lien in {'association', 'association_nom', 'association_evenement'}:
+        association = Association(personne='I9' if lien != 'association_nom' else '',
+                                  nom='Lucas MARTIN' if lien == 'association_nom' else '',
+                                  citations=[Citation(source='S1', medias=['O99'])])
+        if lien == 'association_evenement':
+            tree.personnes['I1'].evenements[0].associations.append(association)
+        else:
+            tree.personnes['I1'].associations.append(association)
+    napp.store.write(tree)
+    resultat = server.notes_generer()
+    assert 'erreur' not in resultat, resultat
+    for contenu in (server.notes_lire('MARTIN')['contenu'], server.notes_lire('I1')['contenu']):
+        assert 'scan-fictif.jpg' not in contenu
+        assert 'acte-historique.jpg' in contenu
+    napp.notes.vivants = 'complet'
+    server.notes_generer()
+    assert ('scan-fictif.jpg' in server.notes_lire('MARTIN')['contenu']) == (lien not in {'prive', 'source_privee', 'citation_privee', 'evenement_prive', 'personne_privee'})
+    assert secret.read_bytes() == b'fictif' and public.read_bytes() == b'fictif'
+
+
+def test_remasquage_retire_media_connu_et_preserve_notes_libres(napp):
+    from genealogiste_mcp.models import Media
+
+    tree = napp.tree()
+    dossier = napp.config.notes_dir / 'photographies/MARTIN'
+    dossier.mkdir(parents=True)
+    image = dossier / 'scan-fictif.jpg'
+    image.write_bytes(b'fictif')
+    tree.medias['O99'] = Media(id='O99', fichier=str(image))
+    tree.personnes['I9'].medias.append('O99')
+    napp.store.write(tree)
+    napp.notes.vivants = 'complet'
+    server.notes_generer()
+    server.notes_ajouter('MARTIN', 'Texte manuel conservé')
+    assert 'scan-fictif.jpg' in server.notes_lire('MARTIN')['contenu']
+    napp.notes.vivants = 'masquer'
+    resultat = server.notes_generer('I9')
+    contenu = server.notes_lire('MARTIN')['contenu']
+    assert 'scan-fictif.jpg' not in contenu and 'Texte manuel conservé' in contenu
+    assert image.read_bytes() == b'fictif'
+    assert any('MARTIN.md' in a for a in resultat.get('alertes', []))
+
+
+def test_ancienne_fiche_externe_refusee_avant_toute_ecriture(napp, tmp_path):
+    tree = napp.tree()
+    tree.personnes = {'I9': tree.personnes['I9']}
+    tree.familles, tree.sources, tree.depots = {}, {}, {}
+    napp.store.write(tree)
+    externe = tmp_path / 'hors-vault'
+    externe.mkdir()
+    ancien = externe / 'legacy.md'
+    ancien.write_text('---\ntype: "patronyme"\nnom: "MARTIN"\n---\n# MARTIN\n'
+                      '<!-- sosa:debut personnes -->\nAncien contenu\n<!-- sosa:fin -->\n'
+                      '## Notes libres\nTexte manuel.\n')
+    avant = ancien.read_bytes()
+    napp.config.notes_dir.mkdir()
+    (napp.config.notes_dir / 'patronymes').symlink_to(externe, target_is_directory=True)
+    resultat = server.notes_generer('I9')
+    assert 'erreur' in resultat
+    assert not (napp.config.notes_dir / 'personnes').exists()
+    assert ancien.read_bytes() == avant

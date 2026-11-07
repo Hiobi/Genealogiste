@@ -164,3 +164,52 @@ def test_note_privee_gramps_conservee_jamais_publiee(arbre):
     db2 = tree_to_gramps(t2, base=db)
     assert "nprive" in db2.all("Note") and "nprive" in next(
         p for p in db2.all("Person").values() if p["gramps_id"] == "I2")["note_list"]
+
+
+@pytest.mark.parametrize('origine', ['citation', 'evenement', 'source'])
+def test_projection_exclut_media_de_provenance_privee_sans_modifier_arbre(origine):
+    from genealogiste_mcp.models import Citation, Event, Media
+
+    tree = read_gedcom(GED)[0]
+    tree.medias['O99'] = Media(id='O99', fichier='scan-interdit.jpg')
+    citation = Citation(source='S2', medias=['O99'], prive=origine == 'citation')
+    if origine == 'evenement':
+        tree.personnes['I2'].evenements.append(Event(type='EVEN', prive=True, citations=[citation]))
+    else:
+        tree.personnes['I2'].citations.append(citation)
+    if origine == 'source':
+        tree.sources['S2'].prive = True
+    avant = write_gedcom(tree)
+    pub, _, _ = publication(tree)
+    contenu = write_gedcom(pub)
+    assert 'scan-interdit.jpg' not in contenu
+    assert 'tombe-paul.jpg' in contenu
+    if origine != 'source':
+        assert 'S2' in pub.sources
+    assert write_gedcom(tree) == avant
+
+
+@pytest.mark.parametrize('nom, prenom', [('李', 'Lucas'), ('李', '雷'), ('X', 'Lucas')])
+def test_projection_masque_les_mentions_de_noms_courts(nom, prenom):
+    tree = read_gedcom(GED)[0]
+    tree.personnes['I1'].noms[0].nom = nom
+    tree.personnes['I1'].noms[0].prenoms = prenom
+    tree.personnes['I2'].notes.append(f'Témoin : {nom} {prenom}. Lieu public : {nom}.')
+    pub, _, _ = publication(tree)
+    contenu = write_gedcom(pub)
+    assert f'{nom} {prenom}' not in contenu
+    assert f'Lieu public : {nom}.' in contenu
+
+
+def test_projection_exclut_media_cite_par_association_vers_vivant():
+    from genealogiste_mcp.models import Association, Citation, Media
+
+    tree = read_gedcom(GED)[0]
+    tree.medias['O99'] = Media(id='O99', fichier='scan-association.jpg')
+    tree.personnes['I2'].associations.append(Association(personne='I1',
+                                            citations=[Citation(source='S2', medias=['O99'])]))
+    avant = write_gedcom(tree)
+    pub, _, _ = publication(tree)
+    assert 'scan-association.jpg' not in write_gedcom(pub)
+    assert 'tombe-paul.jpg' in write_gedcom(pub)
+    assert write_gedcom(tree) == avant
