@@ -344,10 +344,10 @@ def test_piece_nommant_un_masque_avec_nom_court_exclue(napp, nom, prenom):
 
 @pytest.mark.parametrize('lien', [
     'vivant', 'prive', 'citation', 'partage', 'alias', 'source_privee', 'citation_privee', 'evenement_prive',
-    'personne_privee',
+    'personne_privee', 'association', 'association_nom', 'association_evenement',
 ])
 def test_media_confidentiel_au_nom_neutre_exclu_des_notes(napp, lien):
-    from genealogiste_mcp.models import Citation, Event, Media
+    from genealogiste_mcp.models import Association, Citation, Event, Media
 
     tree = napp.tree()
     dossier = napp.config.notes_dir / 'photographies/MARTIN'
@@ -378,6 +378,14 @@ def test_media_confidentiel_au_nom_neutre_exclu_des_notes(napp, lien):
     if lien == 'evenement_prive':
         tree.personnes['I1'].evenements.append(Event(type='EVEN', prive=True,
                                                    citations=[Citation(source='S3', medias=['O99'])]))
+    if lien in {'association', 'association_nom', 'association_evenement'}:
+        association = Association(personne='I9' if lien != 'association_nom' else '',
+                                  nom='Lucas MARTIN' if lien == 'association_nom' else '',
+                                  citations=[Citation(source='S1', medias=['O99'])])
+        if lien == 'association_evenement':
+            tree.personnes['I1'].evenements[0].associations.append(association)
+        else:
+            tree.personnes['I1'].associations.append(association)
     napp.store.write(tree)
     resultat = server.notes_generer()
     assert 'erreur' not in resultat, resultat
@@ -411,3 +419,23 @@ def test_remasquage_retire_media_connu_et_preserve_notes_libres(napp):
     assert 'scan-fictif.jpg' not in contenu and 'Texte manuel conservé' in contenu
     assert image.read_bytes() == b'fictif'
     assert any('MARTIN.md' in a for a in resultat.get('alertes', []))
+
+
+def test_ancienne_fiche_externe_refusee_avant_toute_ecriture(napp, tmp_path):
+    tree = napp.tree()
+    tree.personnes = {'I9': tree.personnes['I9']}
+    tree.familles, tree.sources, tree.depots = {}, {}, {}
+    napp.store.write(tree)
+    externe = tmp_path / 'hors-vault'
+    externe.mkdir()
+    ancien = externe / 'legacy.md'
+    ancien.write_text('---\ntype: "patronyme"\nnom: "MARTIN"\n---\n# MARTIN\n'
+                      '<!-- sosa:debut personnes -->\nAncien contenu\n<!-- sosa:fin -->\n'
+                      '## Notes libres\nTexte manuel.\n')
+    avant = ancien.read_bytes()
+    napp.config.notes_dir.mkdir()
+    (napp.config.notes_dir / 'patronymes').symlink_to(externe, target_is_directory=True)
+    resultat = server.notes_generer('I9')
+    assert 'erreur' in resultat
+    assert not (napp.config.notes_dir / 'personnes').exists()
+    assert ancien.read_bytes() == avant

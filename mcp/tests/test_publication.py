@@ -199,3 +199,17 @@ def test_projection_masque_les_mentions_de_noms_courts(nom, prenom):
     contenu = write_gedcom(pub)
     assert f'{nom} {prenom}' not in contenu
     assert f'Lieu public : {nom}.' in contenu
+
+
+def test_projection_exclut_media_cite_par_association_vers_vivant():
+    from genealogiste_mcp.models import Association, Citation, Media
+
+    tree = read_gedcom(GED)[0]
+    tree.medias['O99'] = Media(id='O99', fichier='scan-association.jpg')
+    tree.personnes['I2'].associations.append(Association(personne='I1',
+                                            citations=[Citation(source='S2', medias=['O99'])]))
+    avant = write_gedcom(tree)
+    pub, _, _ = publication(tree)
+    assert 'scan-association.jpg' not in write_gedcom(pub)
+    assert 'tombe-paul.jpg' in write_gedcom(pub)
+    assert write_gedcom(tree) == avant

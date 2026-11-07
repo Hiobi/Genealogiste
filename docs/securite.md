@@ -192,5 +192,6 @@ lors de l’audit. L’import GEDCOM reste disponible. Voir [production.md](prod
 `privacy.private_resources` détermine sans mutation les sources, médias et notes exclus selon les
 propriétaires masqués et les marques privées. Les notes réutilisent cette règle pour omettre aussi un
 média au nom neutre, explicitement privé, partagé avec un vivant, ou rattaché par une citation ou un
-événement privé. Le masquage des chaînes identifiantes reconnaît également un patronyme ou prénom
+événement privé, ainsi que les citations des associations qui désignent une personne masquée.
+Le masquage des chaînes identifiantes reconnaît également un patronyme ou prénom
 d’un caractère, en exigeant toujours leur couple : un patronyme isolé n’est pas masqué par ce mécanisme.

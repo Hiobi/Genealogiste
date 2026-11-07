@@ -494,7 +494,11 @@ class Notes:
     def _surname_files(self) -> dict[Path, str]:
         """Identité enregistrée dans les fiches gérées, jamais déduite d'un nom de fichier tronqué."""
         out = {}
-        for path in sorted((self._require() / FOLDERS['patronyme']).glob('*.md')):
+        root = self._require()
+        folder = root / FOLDERS['patronyme']
+        if not folder.resolve().is_relative_to(root.resolve()):
+            raise NotesError('Dossier patronymique hors du répertoire des notes : génération refusée.')
+        for path in sorted(folder.glob('*.md')):
             if path.is_symlink() or not path.is_file():
                 continue
             lines, body = _split(path.read_text(encoding='utf-8'))
@@ -518,10 +522,12 @@ class Notes:
                                 if path == self.path(tree, 'patronyme', key)}
         chemins = {}
         ids = [('patronyme', key) for key in sorted(keys)]
-        for _, oid in ids:
-            path = self.path(tree, 'patronyme', oid)
+        paths = {self.path(tree, 'patronyme', key) for key in keys} | set(existants)
+        for path in paths:
             if path.is_symlink() or not path.resolve().is_relative_to(root.resolve()):
                 raise NotesError('Fiche patronymique hors du répertoire des notes ou lien symbolique : génération refusée.')
+        for _, oid in ids:
+            path = self.path(tree, 'patronyme', oid)
             portable = unicodedata.normalize('NFC', path.name).casefold()
             if portable in chemins and chemins[portable] != oid:
                 raise NotesError('Collision de fichiers patronymiques : génération refusée sans écrasement.')

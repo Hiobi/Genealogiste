@@ -209,12 +209,19 @@ def private_resources(tree: Tree, hidden: set[str]) -> tuple[set[str], set[str],
         for link in f.enfants:
             if link.enfant in hidden:
                 sensibles(link)
-    for owner in [*tree.personnes.values(), *tree.familles.values(), *tree.medias.values()]:
+    owners = [*tree.personnes.values(), *tree.familles.values(), *tree.medias.values()]
+    patterns = identifying_patterns(tree, hidden)
+    for owner in owners:
+        for subject in [owner, *getattr(owner, 'evenements', [])]:
+            for association in getattr(subject, 'associations', []):
+                if association.personne in hidden or residues(association.nom, patterns):
+                    sensibles(association)
         for event in getattr(owner, 'evenements', []):
             if event.prive:
                 for cits in _citations(event):
                     for c in cits:
                         medias.update(c.medias)
+    for owner in owners:
         for cits in _citations(owner):
             for c in cits:
                 if c.prive or c.source in sources:

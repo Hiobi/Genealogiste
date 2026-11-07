@@ -128,7 +128,8 @@ résolution vers les fichiers synthétiques ; elle ne remplace pas un contrôle 
 
 Avant de lister ou d’incorporer une pièce, les fiches de personnes et de patronymes consultent la
 provenance du modèle : marques privées, liens directs ou citations d’un porteur masqué, ressources
-partagées avec un défunt, citations et événements privés. Une règle commune avec les exports détermine
+partagées avec un défunt, citations et événements privés, citations des associations désignant un
+porteur masqué (par identifiant ou par nom). Une règle commune avec les exports détermine
 les ressources exclues ; le filtrage des noms de fichiers reste un complément, avec prise en charge
 des noms et prénoms d’un seul caractère.
 
