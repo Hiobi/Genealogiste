@@ -69,14 +69,18 @@ def _location(service: dict, lieu: str) -> tuple[str, str]:
         return commune, ''  # ne pas inventer une restriction territoriale pour un service national/autre
     departments = {place_key(name): code for code, name in DEPARTEMENTS.items()}
     raw_commune = place.get('commune', '').strip().upper()
+    parts = [part.strip() for part in lieu.split(',') if part.strip()]
+    codes = {part.upper() for part in parts[1:] if part.upper() in DEPARTEMENTS}
     explicit = place.get('departement_code')
+    if len(codes) > 1 or (explicit and codes and explicit not in codes):
+        return '', 'Le lieu contient des départements contradictoires.'
+    explicit = explicit or next(iter(codes), None)
     # Un département explicite désambiguïse les communes homonymes (Vienne (38), Paris (75)).
     identified = (raw_commune if raw_commune in DEPARTEMENTS else departments.get(commune)) if not explicit else None
     if (identified and identified != department) or (explicit and explicit != department):
         return '', 'Le lieu et le département du service sont incohérents.'
     if place.get('pays') and place['pays'] != 'France':
         return '', 'Le pays du lieu est hors du périmètre du service départemental.'
-    parts = [part.strip() for part in lieu.split(',') if part.strip()]
     if len(parts) == 2:
         tail = place_key(parts[1])
         raw_tail = parts[1].upper()
