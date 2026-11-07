@@ -86,6 +86,22 @@ Gramps Web ensemble (sans profils). `MCP_TOKEN` est exigé (le conteneur refuse 
 `MCP_SANS_AUTH=1` seulement si `MCP_BIND=127.0.0.1` ou derrière un proxy authentifiant. Pour travailler en direct sur Gramps Web : `GENEALOGISTE_BACKEND=gramps` (voir
 [docs/gramps-web.md](docs/gramps-web.md), bascule depuis le mode fichier avec `gramps_bascule_proposer`).
 
+## Mode Gramps Web
+
+| Backend | Arbre de référence | Écriture après proposition et accord |
+|---|---|---|
+| `fichier` (défaut) | GEDCOM 7 dans le dépôt Git des données | commit Git |
+| `gramps` | arbre Gramps Web privé | transaction Gramps, avec contrôle de conflit |
+
+Pour le mode direct : créer un compte local dédié de rôle Editor, renseigner
+`GENEALOGISTE_GRAMPS_URL`, `GENEALOGISTE_GRAMPS_USER` et `GENEALOGISTE_GRAMPS_PASSWORD`, puis
+sélectionner `GENEALOGISTE_BACKEND=gramps`. Pour transférer un arbre fichier vers un arbre Gramps vide,
+utiliser d’abord `gramps_bascule_proposer`, puis `gramps_bascule_appliquer` après accord.
+
+`gramps_synchroniser` relit l’arbre ; `gramps_recalculer_notes` propose le recalcul des notes `Sosa:auto`.
+Le miroir Git optionnel (`GENEALOGISTE_GIT_MIRROR=true`) conserve un export GEDCOM versionné,
+sans synchronisation bidirectionnelle. Configuration, limites et annulation : [guide Gramps Web](docs/gramps-web.md).
+
 ## Commandes
 
 Les commandes d'un plugin sont préfixées par son nom : `/genealogiste:cherche` (ou `/cherche` sans conflit).
@@ -105,7 +121,7 @@ Les commandes d'un plugin sont préfixées par son nom : `/genealogiste:cherche`
 | `organise <dossier> [triage]` | inventaire, classement et renommage d'un dossier de pièces existant (plan validé, réversible, aucune suppression) ; triage des pièces non identifiées par l'agent `trieur` ([docs/pieces.md](docs/pieces.md)) |
 | `recit <id>` | biographie dont chaque phrase est sourcée |
 | `preuve <id> [fait]` | rapport de preuve rédigé (question, pièces, analyse, contradictions, conclusion) |
-| `journal` | historique des recherches (y compris négatives) et des commits |
+| `journal` | historique des recherches (y compris négatives) et des modifications (commits ou transactions Gramps) |
 
 ## Méthode appliquée
 

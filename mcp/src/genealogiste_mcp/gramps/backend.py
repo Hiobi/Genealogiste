@@ -201,7 +201,8 @@ class GrampsBackend:
         """Modifications constatées hors de Sosa : commitées dans le miroir Git à la synchronisation."""
         self._tree = None
         if self.mirror:
-            self.mirror.sync(self.load(fresh=False), f"{title}\n\nÉtat de l'arbre Gramps Web constaté le {_now()} "
+            self._tree = gramps_to_tree(self.db)[0]
+            self.mirror.sync(self._tree, f"{title}\n\nÉtat de l'arbre Gramps Web constaté le {_now()} "
                              f"(modifications hors de Sosa : interface ou autre client) : "
                              f"{json.dumps(self.last_refresh, ensure_ascii=False)}")
 

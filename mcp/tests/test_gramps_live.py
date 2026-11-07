@@ -132,3 +132,28 @@ def test_token_carries_tree_and_data_dir_is_bound(client, loaded, tmp_path):
     assert tree
     assert check_tree(client, tmp_path) == tree and (tmp_path / TREE_FILE).exists()
     assert check_tree(client, tmp_path) == tree  # même arbre : accepté
+
+
+def test_sosa_auto_recalc_and_git_mirror(client, loaded, tmp_path):
+    from genealogiste_mcp.gramps.backend import GitMirror
+    from genealogiste_mcp.tree.store import TreeStore
+
+    store = TreeStore(tmp_path / "donnees")
+    b = GrampsBackend(client, tmp_path / "donnees", tmp_path / "propositions", ttl=0, mirror=GitMirror(store))
+    b.load(fresh=True)
+    assert store.log(1)[0]["message"].startswith("Miroir de Gramps Web")
+    db = client.load_all()
+    cit = next(iter(db.all("Citation")))
+    eh = next(h for h, event in db.all("Event").items() if not event["citation_list"])
+    obj = client.request("GET", f"/events/{eh}").json()
+    obj["citation_list"] = [cit]
+    assert client.request("PUT", f"/events/{eh}", json=obj).status_code == 200
+    b.snapshot(fresh=True)
+    msg = store.log(1)[0]["message"]
+    assert msg.startswith("Modifications externes") and '"Event"' in msg
+    assert b.last_refresh["Event"]["modifies"] >= 1
+    r = b.apply(b.propose_notes()["jeton"])
+    assert r["objets"]["Note"]["update"] >= 1
+    assert r["miroir_git"] is None
+    with pytest.raises(ProposalError):
+        b.propose_notes()
