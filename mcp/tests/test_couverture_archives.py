@@ -140,3 +140,26 @@ def test_communicability_passes_place_and_uncertain_year():
     assert result['service_archives']['lien'] in result['si_pas_en_ligne']['conseil']
     result = server.communicabilite('naissance', 'BET 1800 AND 1950', lieu='Valence (26)')
     assert result['en_ligne'] is None
+
+
+@pytest.mark.parametrize('lieu', ['Arles (26)', 'Drôme', '26', 'Arles, Canada', 'Arles, Québec, Canada'])
+@pytest.mark.parametrize('legacy', [False, True])
+def test_all_formats_reject_incoherent_department(lieu, legacy):
+    s = service(rule())
+    if legacy:
+        s = {'departement': '13', 'en_ligne': {'naissance': {'de': 1800, 'a': 1900}}}
+    assert archives.online(s, 'naissance', 1850, lieu=lieu) is None
+
+
+@pytest.mark.parametrize('year,expected', [(2000, True), (1969, False)])
+def test_matchid_has_no_inferred_department_scope(year, expected):
+    s = archives.by_code('MATCHID')
+    assert archives.online(s, 'deces', year, lieu='Montréal, Québec, Canada') is expected
+
+
+@pytest.mark.parametrize('bounds', [{'de': 0}, {'a': 10000}, {'de': True}, {'de': 1900, 'a': 1800}])
+def test_legacy_validation_matches_evaluation(monkeypatch, bounds):
+    s = {'code': 'X', 'nom': 'Fictif', 'type': 'autre', 'en_ligne': {'naissance': bounds}}
+    monkeypatch.setattr(archives, 'services', lambda: [s])
+    assert archives.validate()
+    assert archives.online(s, 'naissance', 1850) is None

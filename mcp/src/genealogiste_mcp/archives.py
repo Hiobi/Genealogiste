@@ -53,11 +53,8 @@ def validate() -> list[str]:
             errs.append(f"{c} : en_ligne doit être un objet")
             legacy = {}
         for k, v in legacy.items():
-            if k not in DOCUMENTS or not isinstance(v, dict) or not set(v) <= {"de", "a", "note"}:
-                errs.append(f"{c} : en_ligne.{k} invalide (documents : {', '.join(DOCUMENTS)} ; {{de, a, note}})")
-            elif (any(type(v[x]) is not int or not 1 <= v[x] <= 9999 for x in ('de', 'a') if x in v)
-                  or v.get('de', 1) > v.get('a', 9999)):
-                errs.append(f"{c} : en_ligne.{k} bornes invalides")
+            if k not in DOCUMENTS or not couverture_archives.valid_legacy(v):
+                errs.append(f"{c} : en_ligne.{k} invalide (document ou bornes historiques)")
         if "couvertures" in s:
             errs.extend(f"{c} : {error}" for error in couverture_archives.validate(s['couvertures'], DOCUMENTS))
         if s.get("verifie_le"):

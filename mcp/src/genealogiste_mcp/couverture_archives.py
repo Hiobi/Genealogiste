@@ -53,6 +53,40 @@ def validate(data, documents: tuple[str, ...]) -> list[str]:
     return errors
 
 
+def valid_legacy(value) -> bool:
+    if not isinstance(value, dict) or not set(value) <= {'de', 'a', 'note'}:
+        return False
+    if any(type(value[k]) is not int or not 1 <= value[k] <= 9999 for k in ('de', 'a') if k in value):
+        return False
+    return value.get('de', 1) <= value.get('a', 9999) and ('note' not in value or isinstance(value['note'], str))
+
+
+def _location(service: dict, lieu: str) -> tuple[str, str]:
+    place = normalize_place(lieu)
+    commune = place_key(place.get('commune', ''))
+    department = service.get('departement')
+    if not department:
+        return commune, ''  # ne pas inventer une restriction territoriale pour un service national/autre
+    departments = {place_key(name): code for code, name in DEPARTEMENTS.items()}
+    departments.update({place_key(code): code for code in DEPARTEMENTS})
+    identified = departments.get(commune)
+    explicit = place.get('departement_code')
+    if (identified and identified != department) or (explicit and explicit != department):
+        return '', 'Le lieu et le département du service sont incohérents.'
+    if place.get('pays') and place['pays'] != 'France':
+        return '', 'Le pays du lieu est hors du périmètre du service départemental.'
+    parts = [part.strip() for part in lieu.split(',') if part.strip()]
+    if len(parts) == 2:
+        tail = place_key(parts[1])
+        if tail in departments and departments[tail] != department:
+            return '', 'Le lieu et le département du service sont incohérents.'
+        if tail not in departments and tail not in {'france', 'fr'}:
+            return '', 'Précision géographique non reconnue : disponibilité inconnue.'
+    if identified or commune in {'france', 'fr'}:
+        commune = ''
+    return commune, ''
+
+
 def _period(rule: dict, year: int, today: date) -> bool | None:
     if year < rule.get('de', 1) or year > rule.get('a', 9999):
         return False
@@ -87,6 +121,10 @@ def evaluate(service: dict | None, document: str, year: int | None, lieu: str = 
     if type(year) is not int or not 1 <= year <= 9999:
         result['motif'] = 'Année invalide : disponibilité inconnue.'
         return result
+    commune, location_error = _location(service, lieu)
+    if location_error:
+        result['motif'] = location_error
+        return result
     coverage = service.get('couvertures', {})
     if not isinstance(coverage, dict):
         result['motif'] = 'Couverture invalide : disponibilité inconnue.'
@@ -95,26 +133,14 @@ def evaluate(service: dict | None, document: str, year: int | None, lieu: str = 
         # Anciennes plages : conserver les positifs, ne plus déduire une absence hors de la plage.
         legacy_data = service.get('en_ligne') or {}
         legacy = legacy_data.get(document) if isinstance(legacy_data, dict) else None
-        if isinstance(legacy, dict) and set(legacy) <= {'de', 'a', 'note'}:
-            bounds = [legacy[k] for k in ('de', 'a') if k in legacy]
-            if bounds and all(type(x) is int for x in bounds) and legacy.get('de', 1) <= year <= legacy.get('a', 9999):
+        if valid_legacy(legacy) and any(k in legacy for k in ('de', 'a')):
+            if legacy.get('de', 1) <= year <= legacy.get('a', 9999):
                 result.update(en_ligne=True, motif='Période déclarée par une entrée au format historique.')
         return result
     rules = coverage[document]
     if not isinstance(rules, list) or not rules or any(not valid_rule(r) for r in rules):
         result['motif'] = 'Couverture invalide : disponibilité inconnue.'
         return result
-    place = normalize_place(lieu)
-    if place.get('pays') and place['pays'] != 'France':
-        result['motif'] = 'Le pays du lieu est hors du périmètre du service français.'
-        return result
-    if place.get('departement_code') and service.get('departement') and place['departement_code'] != service['departement']:
-        result['motif'] = 'Le lieu et le département du service sont incohérents.'
-        return result
-    commune = place_key(place.get('commune', ''))
-    if commune in {place_key(service.get('departement', '')),
-                   place_key(DEPARTEMENTS.get(service.get('departement'), '')), 'france'}:
-        commune = ''
     candidates = []
     uncertain = []
     for rule in rules:
