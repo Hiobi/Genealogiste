@@ -76,7 +76,7 @@ _organisation/            journaux TSV des déplacements
 - **Contrôle** : le dossier doit être identique au plan (nombre de fichiers et empreintes), sinon le plan est
   refusé. Chaque fichier est vérifié avant son déplacement. Après l'application, le résultat indique le
   nombre de fichiers avant et après et compare les empreintes.
-- **Hors du périmètre**, et donc jamais touchés : les dossiers `personnes/`, `familles/` et `sources/`
+- **Hors du périmètre**, et donc jamais touchés : les dossiers `personnes/`, `familles/`, `sources/` et `patronymes/`
   générés par les notes ([notes.md](notes.md)), les dossiers et fichiers cachés (`.obsidian`, `.git`), les
   liens symboliques, les notes Markdown et les fichiers texte qui ne sont pas des fichiers INSEE.
 - **Médias de l'arbre** : un fichier référencé par un média de l'arbre n'est pas déplacé (la référence

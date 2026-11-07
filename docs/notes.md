@@ -20,6 +20,7 @@ référence** : rien n'est écrit dans l'arbre depuis les notes (`arbre_proposer
 ├── personnes/I1 - Jean MARTIN (1820-1885).md
 ├── familles/F1 - MARTIN × DUPONT.md
 ├── sources/S1 - Registres d'état civil de Rochefort.md
+├── patronymes/MARTIN.md
 └── index.md
 ```
 
@@ -30,8 +31,8 @@ touche pas.
 
 ## Format d'une fiche
 
-- **Frontmatter** (propriétés Dataview / Bases) : `id`, `type` (`personne` | `famille` | `source` | `index`),
-  `nom`, `statut` (statut le plus faible parmi naissance, décès, filiation), `sosa`, `naissance`, `deces`,
+- **Frontmatter** (propriétés Dataview / Bases) : `id`, `type` (`personne` | `famille` | `source` | `patronyme` |
+  `index`), `nom`, `patronyme`, `statut` (statut le plus faible parmi naissance, décès, filiation), `sosa`, `naissance`, `deces`,
   `lieux`, `sources` (liens), `journal` (ids des entrées), `vivant`, `mis_a_jour`. Les propriétés ajoutées à la
   main sont **conservées** (replacées en fin de frontmatter).
 - **Sections générées** entre `<!-- sosa:debut NOM -->` et `<!-- sosa:fin -->` : identité et liens familiaux,
@@ -43,11 +44,31 @@ touche pas.
 Régénérer sans changement dans l'arbre ne modifie **aucun** fichier (`mis_a_jour` ne bouge que si le contenu
 change).
 
+## Patronymes
+
+Une fiche `patronymes/<NOM>.md` par nom de famille (nom principal, en capitales, comme le dossier `<NOM>` des
+pièces, voir [pieces.md](pieces.md)) :
+
+- **Porteurs** : liens vers les fiches, triés par année de naissance ;
+- **Variantes** : autres noms et « dit » des porteurs, patronymes de l'arbre de même clé phonétique (liens) ;
+- **Berceau** : les 5 communes les plus fréquentes dans leurs faits ;
+- **Pièces** : fichiers rangés sous `documents/*/<NOM>/`, `photographies/<NOM>/` et
+  `photographies/Sépultures/<NOM>/` (liens Markdown, les crochets des noms de pièces cassant les wikilinks) ;
+- **Requête Dataview** sur `personnes/` (propriété `patronyme`), plus les propriétés `variantes` et `berceau`.
+
+Comme les autres fiches, sections générées et texte libre préservé. Créées par `notes_generer("tout")`, et mises
+à jour avec la fiche d'un porteur (`notes_generer("I1")`, hook après écriture). `notes_lire("MARTIN")` et
+`notes_ajouter("MARTIN", …)` acceptent un patronyme.
+
+**Vivants** (mode `masquer`) : les personnes masquées ne sont ni comptées ni listées, ni leurs lieux ; une pièce
+dont le nom désigne une personne masquée (`NOM Prénom`) est omise. Un patronyme porté seulement par des personnes
+masquées n'a pas de fiche ; si elle existait, elle est vidée et signalée dans les `alertes` (nom du fichier).
+
 ## Outils
 
 | Outil | Rôle |
 |---|---|
-| `notes_generer(id \| "tout")` | crée ou met à jour les fiches (sections générées et frontmatter seulement) ; `tout` met aussi à jour `index.md` |
+| `notes_generer(id \| "tout")` | crée ou met à jour les fiches (sections générées et frontmatter seulement) ; `tout` met aussi à jour les patronymes et `index.md` |
 | `notes_lire(id)` | fiche complète, texte libre compris (générée si absente) |
 | `notes_ajouter(id, texte, section)` | entrée datée dans le texte libre |
 

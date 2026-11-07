@@ -6,7 +6,7 @@ Principes :
 - doublons (même SHA-256) isolés dans archives/Doublons/ ;
 - journal TSV ancien_chemin → nouveau_chemin écrit au fil des déplacements (annulation) ;
 - noms compatibles Windows et Nextcloud ;
-- notes générées (personnes/, familles/, sources/), dossiers cachés et notes Markdown jamais touchés ;
+- notes générées (personnes/, familles/, sources/, patronymes/), dossiers cachés et notes Markdown jamais touchés ;
 - contrôle avant/après : même nombre de fichiers, mêmes empreintes.
 """
 
@@ -171,7 +171,7 @@ _MOTS = [  # (motif sur nom normalisé, code) — le premier qui correspond l'em
 _CODES_CONVENTION = {c for c in TYPES} | {"NM", "ND", "MD"}
 _PAS_PATRONYME = {*TYPES, "AD", "AM", "AN", "SHD", "ANMT", "NMD", "BMS", "TD", "IMG", "DSC", "DCIM", "SCAN",
                   "PDF", "JPG", "PNG", "COPIE", "COPY", "PXL", "WA", "VID", "PAGE", "VUE", "ACTE", "NOUVEAU"}
-_PROTEGES = {"personnes", "familles", "sources", "_organisation"}
+_PROTEGES = {"personnes", "familles", "sources", "patronymes", "_organisation"}
 CLASSES = ("documents", "photographies", "archives")
 A_TRIER = "_À trier"
 
