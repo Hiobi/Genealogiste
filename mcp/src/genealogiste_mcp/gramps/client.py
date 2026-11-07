@@ -109,8 +109,8 @@ class GrampsClient:
                     if r.status_code != 401 or method != "GET" or renewed:
                         break
                     r.close()
-                    self._renew()
                     renewed = True
+                    self._renew()
             except httpx.HTTPError as exc:
                 if attempt < attempts:
                     self.sleep(2 ** attempt)

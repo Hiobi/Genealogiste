@@ -146,3 +146,16 @@ def test_explicit_call_after_write_401_renews_token(fake):
     assert route.call_count == 1 and fake.router.routes[1].call_count == 0
     assert client.request("POST", "/test/").status_code == 200
     assert route.call_count == 2 and fake.router.routes[1].call_count == 1
+
+
+def test_failed_token_renewal_is_not_repeated(fake):
+    sleeps = []
+    client = GrampsClient(URL, "sosa", "secret", sleeper=sleeps.append)
+    reads = fake.router.routes[-2]
+    reads.side_effect = lambda request, **kwargs: httpx.Response(401)
+    refresh = fake.router.routes[1]
+    refresh.side_effect = httpx.ReadError("renouvellement interrompu")
+    with pytest.raises(GrampsError):
+        client.list("Tag")
+    assert reads.call_count == 2 and refresh.call_count == 1
+    assert sleeps == [2]
