@@ -14,6 +14,7 @@ from pathlib import Path
 from . import pieces
 from .chemins import nom_simple, sous
 from .fichiers import ajouter_jsonl, ecrire_atomique, lire_jsonl
+from .markdown import lien_fichier
 
 MIME = {".jpg": "image/jpeg", ".png": "image/png", ".tif": "image/tiff", ".pdf": "application/pdf",
         ".gif": "image/gif", ".webp": "image/webp"}
@@ -85,7 +86,7 @@ def note_compagnon(image: Path, meta: dict, personnes_liens: list[str], source_l
     if source_lien:
         fm["source"] = source_lien
     lignes = ["---", *(f"{k}: {_yaml(v)}" for k, v in fm.items()), "---", "", f"# {image.stem}", "",
-              f"![[{image.name}]]", ""]
+              lien_fichier(image.name, image=True), ""]
     if personnes_liens:
         lignes.append("- **Personnes** : " + ", ".join(personnes_liens))
     if source_lien:

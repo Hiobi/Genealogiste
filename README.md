@@ -216,3 +216,7 @@ Importer un GEDCOM obtenu séparément ; ne plus fournir d’identifiants Family
 
 Développement : `make test` charge la configuration pytest de `mcp/` (ou lancer pytest depuis `mcp/`).
 `make format` applique `ruff check --fix`, sans exécuter `ruff format`.
+
+Les notes Obsidian incluent aussi des fiches de patronymes : porteurs, variantes, berceau et pièces.
+Leurs sections générées se mettent à jour sans supprimer le texte libre ; consulter [docs/notes.md](docs/notes.md)
+pour le remasquage et les alertes sur les fichiers existants.

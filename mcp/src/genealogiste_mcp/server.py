@@ -101,8 +101,12 @@ class App:
             try:
                 r = self.notes.generate(tree, oid)
                 out["ecrites"] += r["ecrites"]
+                if r.get('alertes'):
+                    out.setdefault('alertes', []).extend(r['alertes'])
             except (NotesError, KeyError, OSError) as exc:
                 out["erreurs"].append(f"{oid} : {exc}")
+        if 'alertes' in out:
+            out['alertes'] = list(dict.fromkeys(out['alertes']))
         return out
 
 

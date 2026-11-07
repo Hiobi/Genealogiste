@@ -145,7 +145,7 @@ conditions de réutilisation du dépôt (champ `reutilisation` du référentiel,
 Une vue par appel, jamais de téléchargement par lot (CGU des services).
 
 **Dans Obsidian.** Chaque fiche de personne générée (`notes_generer`) a une section **« Pièces »** : les images
-de ses médias, de ses faits et de leurs citations sont affichées (`![[…]]`), avec un lien vers la note de chaque
+de ses médias, de ses faits et de leurs citations sont affichées (liens image Markdown à destination URL encodée), avec un lien vers la note de chaque
 pièce. La note de la pièce renvoie à la personne et à la source : la vue graphique relie personne, pièce et
 source (afficher les pièces jointes dans les filtres du graphe pour y voir aussi les images). Rien pour une
 personne masquée.
