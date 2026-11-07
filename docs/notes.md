@@ -123,3 +123,21 @@ Régénérer les fiches pour actualiser leurs sections « Pièces ». Les notes 
 ne sont pas réécrites : leur texte peut avoir été modifié manuellement. Corriger leurs anciennes
 incorporations dans Obsidian au besoin. La validation automatique vérifie l’analyse Markdown et la
 résolution vers les fichiers synthétiques ; elle ne remplace pas un contrôle visuel dans Obsidian.
+
+## Médias confidentiels connus (0.14.1)
+
+Avant de lister ou d’incorporer une pièce, les fiches de personnes et de patronymes consultent la
+provenance du modèle : marques privées, liens directs ou citations d’un porteur masqué, ressources
+partagées avec un défunt, citations et événements privés. Une règle commune avec les exports détermine
+les ressources exclues ; le filtrage des noms de fichiers reste un complément, avec prise en charge
+des noms et prénoms d’un seul caractère.
+
+Les chemins des médias sont résolus depuis le répertoire de données : une référence relative et une
+référence absolue vers le même fichier sont exclues ensemble. Les fichiers physiques ne sont ni
+supprimés ni modifiés. En mode `complet`, les médias des vivants peuvent être affichés, mais les marques
+privées explicites restent appliquées. Une pièce non enregistrée dans le modèle et sans nom
+identifiant ne peut pas être classée confidentielle par ces seuls contrôles.
+
+Après mise à jour ou changement de politique de visibilité, lancer `notes_generer("tout")` pour nettoyer
+toutes les sections générées existantes. Les textes libres et propriétés manuelles restent conservés
+et doivent être relus avant tout partage. Les notes demeurent un espace de travail privé.

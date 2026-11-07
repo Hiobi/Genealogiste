@@ -141,9 +141,9 @@ def identifying_patterns(tree: Tree, ids: set[str]) -> list[re.Pattern]:
         p = tree.personnes.get(pid)
         for n in p.noms if p else []:
             nom = n.nom.strip()
-            if len(nom) < 2:
+            if not nom:
                 continue
-            prenoms = {x for x in [n.prenoms.strip(), *n.prenoms.split()] if len(x) > 1}
+            prenoms = {x for x in [n.prenoms.strip(), *n.prenoms.split()] if x}
             for g in prenoms:
                 pats.add(rf"(?<!\w)/?{_fuzzy(g)}{sep}{_fuzzy(nom)}/?(?!\w)")
                 pats.add(rf"(?<!\w)/?{_fuzzy(nom)}/?{sep}{_fuzzy(g)}(?!\w)")
@@ -182,24 +182,15 @@ def _citations(obj) -> list:
     return out
 
 
-def publication(tree: Tree, today: date | None = None) -> tuple[Tree, set[str], dict]:
-    """Projection de publication : copie de l'arbre sans aucune donnée identifiante d'un vivant ni d'objet privé.
+def private_resources(tree: Tree, hidden: set[str]) -> tuple[set[str], set[str], set[str]]:
+    """Sources, médias et notes à exclure selon les marques privées et les propriétaires masqués.
 
-    - personnes présumées vivantes ou marquées privées : réduites à « Vivant », sans nom, fait, note ni média ;
-    - objets partagés (sources, médias, notes) liés à au moins une personne masquée, ou marqués privés : retirés
-      avec toutes leurs références (y compris chez les défunts) ; liés seulement à des défunts : conservés ;
-    - événements et citations privés, associations désignant une personne masquée : retirés ;
-    - enregistrements non interprétés (contenu indécidable) : exclus ;
-    - passe sur tous les textes : « Prénom Nom » d'une personne masquée remplacé par « Vivant ».
-    Renvoie (arbre publié, personnes masquées, rapport)."""
-    from .models import Name
-
-    t = copy.deepcopy(tree)
-    hidden = hidden_ids(t, today)
-    patterns = identifying_patterns(tree, hidden)
-    sources = {s for s, x in t.sources.items() if x.prive}
-    medias = {m for m, x in t.medias.items() if x.prive}
-    notes = set(t.notes_privees)
+    Lecture seule, commune aux exports et aux notes. Une ressource partagée reste sensible
+    même si elle est aussi liée à un défunt ; son nom de fichier ne constitue pas une preuve de visibilité.
+    """
+    sources = {s for s, x in tree.sources.items() if x.prive}
+    medias = {m for m, x in tree.medias.items() if x.prive}
+    notes = set(tree.notes_privees)
 
     def sensibles(owner) -> None:
         for cits in _citations(owner):
@@ -210,18 +201,44 @@ def publication(tree: Tree, today: date | None = None) -> tuple[Tree, set[str], 
         notes.update(n.strip("@") for n in getattr(owner, "notes", []) or [] if n.startswith("@") and n.endswith("@"))
 
     for pid in hidden:
-        sensibles(t.personnes[pid])
-    familles = [f for f in t.familles.values() if f.prive or f.epoux in hidden or f.epouse in hidden]
+        sensibles(tree.personnes[pid])
+    familles = [f for f in tree.familles.values() if f.prive or f.epoux in hidden or f.epouse in hidden]
     for f in familles:
         sensibles(f)
-    for f in t.familles.values():
+    for f in tree.familles.values():
         for link in f.enfants:
             if link.enfant in hidden:
                 sensibles(link)
-    for cits in (c for m in t.medias.values() for c in [m.citations]):
-        for c in cits:
-            if c.source in sources:
-                medias.update(c.medias)
+    for owner in [*tree.personnes.values(), *tree.familles.values(), *tree.medias.values()]:
+        for event in getattr(owner, 'evenements', []):
+            if event.prive:
+                for cits in _citations(event):
+                    for c in cits:
+                        medias.update(c.medias)
+        for cits in _citations(owner):
+            for c in cits:
+                if c.prive or c.source in sources:
+                    medias.update(c.medias)
+    for mid, media in tree.medias.items():
+        if any(c.prive or c.source in sources for c in media.citations):
+            medias.add(mid)
+    return sources, medias, notes
+
+
+def publication(tree: Tree, today: date | None = None) -> tuple[Tree, set[str], dict]:
+    """Projection de publication : copie sans données identifiantes de vivants ou objets privés.
+
+    Les ressources privées ou liées à un masqué sont retirées, y compris chez les défunts.
+    Les noms des personnes masquées sont remplacés dans tous les textes. Les enregistrements
+    non interprétés sont exclus. Renvoie (arbre publié, personnes masquées, rapport).
+    """
+    from .models import Name
+
+    t = copy.deepcopy(tree)
+    hidden = hidden_ids(t, today)
+    patterns = identifying_patterns(tree, hidden)
+    sources, medias, notes = private_resources(tree, hidden)
+    familles = [f for f in t.familles.values() if f.prive or f.epoux in hidden or f.epouse in hidden]
 
     # personnes et familles masquées
     for pid in hidden:
