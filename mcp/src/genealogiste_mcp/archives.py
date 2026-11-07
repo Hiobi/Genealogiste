@@ -2,7 +2,8 @@
 
 Chaque entrée : code, nom, type, département, site, visionneuse, NAAN ARK, mise en ligne par type de document
 (``{"naissance": {"de": 1792, "a": 1922}}`` ; absent = inconnu), inscription, demande à distance, date de
-vérification. Les valeurs sont vérifiées à la main : rien n'est déduit ni inventé (docs/archives.md).
+vérification. Les sources et relevés sont documentés ; un relevé automatisé ne remplace pas la validation humaine
+(docs/archives.md et docs/couvertures-archives.md).
 """
 
 from __future__ import annotations
@@ -12,7 +13,7 @@ from datetime import date
 from functools import lru_cache
 from pathlib import Path
 
-from . import ark
+from . import ark, couverture_archives
 from .normalize.places import DEPARTEMENTS, normalize_place
 
 PATH = Path(__file__).parent / "referentiels" / "archives_fr.json"
@@ -47,9 +48,18 @@ def validate() -> list[str]:
             errs.append(f"{c} : type {s.get('type')!r} (valeurs : {', '.join(TYPES)})")
         if s.get("type") == "departementales" and s.get("departement") not in DEPARTEMENTS:
             errs.append(f"{c} : département {s.get('departement')!r} inconnu")
-        for k, v in (s.get("en_ligne") or {}).items():
+        legacy = s.get('en_ligne') or {}
+        if not isinstance(legacy, dict):
+            errs.append(f"{c} : en_ligne doit être un objet")
+            legacy = {}
+        for k, v in legacy.items():
             if k not in DOCUMENTS or not isinstance(v, dict) or not set(v) <= {"de", "a", "note"}:
                 errs.append(f"{c} : en_ligne.{k} invalide (documents : {', '.join(DOCUMENTS)} ; {{de, a, note}})")
+            elif (any(type(v[x]) is not int or not 1 <= v[x] <= 9999 for x in ('de', 'a') if x in v)
+                  or v.get('de', 1) > v.get('a', 9999)):
+                errs.append(f"{c} : en_ligne.{k} bornes invalides")
+        if "couvertures" in s:
+            errs.extend(f"{c} : {error}" for error in couverture_archives.validate(s['couvertures'], DOCUMENTS))
         if s.get("verifie_le"):
             try:
                 date.fromisoformat(s["verifie_le"])
@@ -72,7 +82,7 @@ def staleness(s: dict, today: date | None = None) -> str:
     if not s.get("verifie_le"):
         if s.get("origine", "").startswith("import"):
             return (f"{s['code']} : entrée importée automatiquement (site et NAAN), jamais vérifiée par une "
-                    "personne ; mise en ligne inconnue : contrôler sur le site du service.")
+                    "personne ; contrôler les informations et la couverture sur le site du service.")
         return f"{s['code']} : entrée jamais vérifiée, à contrôler sur le site du service."
     age = (today - date.fromisoformat(s["verifie_le"])).days
     if age > STALE_DAYS:
@@ -80,23 +90,24 @@ def staleness(s: dict, today: date | None = None) -> str:
     return ""
 
 
-def online(s: dict | None, document: str, annee: int | None) -> bool | None:
-    """Document de cette année en ligne chez ce service ? None = inconnu (référentiel muet)."""
-    if not s or annee is None:
-        return None
-    rng = (s.get("en_ligne") or {}).get(document)
-    if not rng:
-        return None
-    lo, hi = rng.get("de"), rng.get("a")
-    return (lo is None or annee >= lo) and (hi is None or annee <= hi)
+def online(s: dict | None, document: str, annee: int | None, lieu: str = "",
+           today: date | None = None) -> bool | None:
+    """Disponibilité déclarée du fonds ; hors périmètre ou lacune = inconnu, jamais preuve d'un acte."""
+    return couverture_archives.evaluate(s, document, annee, lieu, today)['en_ligne']
 
 
-def view(s: dict, document: str = "", annee: int | None = None) -> dict:
+def view(s: dict, document: str = "", annee: int | None = None, lieu: str = "") -> dict:
     out = {k: v for k, v in s.items() if v not in ("", None, {}, [])}
     out["lien"] = s.get("visionneuse") or s.get("site") or (
         f"https://francearchives.gouv.fr/fr/search?q={s['nom'].replace(' ', '+')}")
     if document:
-        out["en_ligne_pour_la_demande"] = online(s, document, annee)
+        coverage = couverture_archives.evaluate(s, document, annee, lieu)
+        out["en_ligne_pour_la_demande"] = coverage['en_ligne']
+        out["couverture_pour_la_demande"] = coverage
+        if coverage.get('etat') == 'autre_service':
+            links = {r['lien'] for r in coverage['regles'] if r.get('lien')}
+            if len(links) == 1:
+                out['lien'] = links.pop()
     if w := staleness(s):
         out["avertissement"] = w
     return out
@@ -109,7 +120,7 @@ def service(lieu: str = "", departement: str = "", code: str = "", document: str
         s = by_code(code)
         if not s:
             return {"erreur": f"Service inconnu : {code!r}", "codes": [x["code"] for x in services()]}
-        return view(s, document, annee)
+        return view(s, document, annee, lieu)
     dep = departement.strip().upper().zfill(2) if departement and departement.strip().isdigit() else \
         departement.strip().upper()
     if lieu and not dep:
@@ -118,7 +129,7 @@ def service(lieu: str = "", departement: str = "", code: str = "", document: str
         return {"erreur": "Préciser un lieu avec son département, un numéro de département ou un code de service."}
     s = departemental(dep)
     if s:
-        return view(s, document, annee)
+        return view(s, document, annee, lieu)
     nom = DEPARTEMENTS.get(dep, dep)
     return {"code": f"AD{dep}", "nom": f"Archives départementales — {nom} ({dep})", "type": "departementales",
             "departement": dep, **({"en_ligne_pour_la_demande": None} if document else {}),
@@ -152,7 +163,10 @@ def request_letter(document: str, regle: str, personne: str = "", lieu: str = ""
 def _year(v: str) -> int | None:
     from .normalize.dates import parse_date
     g = parse_date(v) if v else None
-    return g.to_dict()["annee_min"] if g else None
+    if not g:
+        return None
+    bounds = g.to_dict()
+    return bounds['annee_min'] if bounds['annee_min'] == bounds['annee_max'] else None
 
 
 ETAT_CIVIL = ("naissance", "mariage", "deces")
@@ -171,7 +185,7 @@ def communicability_online(document: str, date_document: str = "", date_naissanc
     res["en_ligne"] = svc.get("en_ligne_pour_la_demande")
     if res.get("communicable") and res["en_ligne"] is not True:
         conseil = ("Communicable mais " + ("pas en ligne" if res["en_ligne"] is False else
-                                            "mise en ligne inconnue pour cette année (référentiel muet)") + " : "
+                                            "mise en ligne inconnue pour cette demande") + " : "
                    f"vérifier la visionneuse ({svc.get('lien', '')}), sinon demander une copie.")
         if key in ETAT_CIVIL:
             conseil += (" En règle générale, les registres de l'état civil de moins de 100 ans environ sont encore en "
