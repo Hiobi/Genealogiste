@@ -175,6 +175,10 @@ make lint      # ruff
 make validate  # claude plugin validate .
 ```
 
+Les PR vers `main` sont vérifiées par GitHub Actions (tests Python 3.11/3.13, Ruff et
+manifestes). Les tests Gramps disposent d'un workflow manuel distinct. Configuration des
+contrôles obligatoires et reproduction locale : [docs/integration-continue.md](docs/integration-continue.md).
+
 ### Publier une version
 
 Claude Code ne propose une mise à jour que si le **numéro de version** change (il ne compare pas les
