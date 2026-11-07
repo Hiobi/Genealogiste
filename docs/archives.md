@@ -60,9 +60,8 @@ restent dans `fr_sources.py` et dans la skill `sources-francaises`.
     c'est le site des archives, écartée sinon ;
   - NAAN ARK : registre public de l'ARK Alliance, rapproché par département (78 sur 98) ;
   - sites jugés injoignables à l'import (06, 08, 11, 13, 24, 26, 2A, 2B, 50, 974, 976), repris le 2026-11-05 :
-    24 et 974 : nouvelle adresse, identité confirmée ; 13 et 26 : adresse Wikidata, identité confirmée par le
-    titre de la page (chaîne TLS incomplète) ; 06, 08, 11, 50 : le site répond par une page anti-robots,
-    identité à confirmer dans un navigateur ; 2A, 2B (Archives de la Collectivité de Corse depuis 2020) et
+    24 et 974 : nouvelle adresse, identité confirmée ; 06, 08, 11, 13, 26, 50 : adresses candidates conservées
+    dans les notes, sans champ `site` tant que leur identité n’a pas été confirmée sur le site du service ; 2A, 2B (Archives de la Collectivité de Corse depuis 2020) et
     976 : pas de site retenu, piste dans `notes`.
 - Services nationaux et autres : Archives nationales, Léonore, ANOM, SHD, Mémoire des hommes, FranceArchives,
   Gallica (BnF), Retronews, matchID.
@@ -78,3 +77,7 @@ Les autres adresses reprises restent à confirmer dans un navigateur : pages dem
 (AD08, AD50), rejet de requête (AD11), accès non obtenu par l’outil de relecture (AD06, AD13, AD26).
 Ces résultats ne prouvent ni une panne du service ni la cause TLS rapportée historiquement.
 Aucun `verifie_le` ni aucune borne `en_ligne` n’a été ajouté.
+
+Les adresses AD06, AD08, AD11, AD13, AD26 et AD50 sont donc conservées uniquement dans `notes`,
+conformément à la règle sur les données incertaines. Leur éventuelle présence dans un annuaire tiers
+ne remplace pas la validation sur le site du service. Le champ `site` est rétabli pour AD24 et AD974.
