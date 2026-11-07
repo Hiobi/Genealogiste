@@ -4,7 +4,7 @@ name: genealogiste-test
 
 services:
   grampsweb:
-    image: ghcr.io/gramps-project/grampsweb:${GRAMPSWEB_VERSION:-latest}
+    image: ${GRAMPSWEB_IMAGE:-ghcr.io/gramps-project/grampsweb@sha256:dbd20a8ba954e19ae8ed17e5e1537d55a3d16ccef6adf7a8fe8cb783bab81411}
     ports:
       - "127.0.0.1:${GRAMPSWEB_TEST_PORT:-5056}:5000"
     environment:

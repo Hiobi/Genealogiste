@@ -1,15 +1,15 @@
 # Stack Portainer : serveur MCP genealogiste + Gramps Web (interface graphique).
 # Portainer > Stacks > Add stack > Repository
-#   URL : https://github.com/hiobi/sosa   Référence : refs/heads/feat/genealogiste
+#   URL : https://github.com/hiobi/sosa   Référence : refs/heads/main
 #   Compose path : docker-compose.portainer.yml
 #   Variables : voir portainer/stack.env.example (ou « Load variables from .env file »)
 #
-# Le MCP n'a pas d'authentification : il reste sur 127.0.0.1 par défaut (tunnel SSH ou reverse proxy authentifié).
+# Le MCP exige un jeton par défaut ; ports locaux, ou reverse proxy TLS authentifié.
 # Gramps Web a ses propres comptes : créer l'administrateur au premier accès, puis renseigner GRAMPS_USER/PASSWORD.
 name: genealogiste
 
 x-grampsweb: &grampsweb
-  image: ghcr.io/gramps-project/grampsweb:${GRAMPSWEB_VERSION:-latest}
+  image: ${GRAMPSWEB_IMAGE:-ghcr.io/gramps-project/grampsweb@sha256:dbd20a8ba954e19ae8ed17e5e1537d55a3d16ccef6adf7a8fe8cb783bab81411}
   restart: unless-stopped
   environment:
     GRAMPSWEB_TREE: ${GRAMPSWEB_TREE:-Genealogiste}
@@ -34,6 +34,8 @@ services:
     build: ./mcp
     image: genealogiste-mcp:local
     restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: ["ALL"]
     ports:
       - "${MCP_BIND:-127.0.0.1}:${MCP_PORT:-8765}:8765"
     environment:
@@ -50,8 +52,6 @@ services:
       GENEALOGISTE_GRAMPS_PASSWORD: ${GENEALOGISTE_GRAMPS_PASSWORD:-}
       GENEALOGISTE_WIKITREE_APPID: ${GENEALOGISTE_WIKITREE_APPID:-}
       GENEALOGISTE_MATCHID_TOKEN: ${GENEALOGISTE_MATCHID_TOKEN:-}
-      GENEALOGISTE_FS_USER: ${GENEALOGISTE_FS_USER:-}
-      GENEALOGISTE_FS_PASSWORD: ${GENEALOGISTE_FS_PASSWORD:-}
       GENEALOGISTE_STRICT: ${GENEALOGISTE_STRICT:-0}
       GENEALOGISTE_EXIGER_SOURCE: ${GENEALOGISTE_EXIGER_SOURCE:-1}
       GENEALOGISTE_OFFLINE: ${GENEALOGISTE_OFFLINE:-0}

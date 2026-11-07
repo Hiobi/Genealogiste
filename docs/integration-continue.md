@@ -34,7 +34,7 @@ L'ajout des workflows ne configure pas automatiquement cette protection GitHub.
 Dans Actions, choisir `Intégration Gramps`, puis `Run workflow`. Ce workflow est disponible
 une fois son fichier présent sur la branche par défaut ; il n'est pas requis pour les PR.
 Il lance `make test-gramps` sur Docker avec un arbre fictif jetable, puis détruit les conteneurs
-et volumes, y compris après un échec. Il reprend l'image du compose de test (`latest` par défaut) :
+et volumes, y compris après un échec. Il reprend l'image du compose de test (épinglée par empreinte) :
 il ne certifie pas une version Gramps de production.
 
 ## Reproduire localement
@@ -56,3 +56,12 @@ les commandes et cette documentation ensemble lors d'un changement de version.
 Références : [uv dans GitHub Actions](https://docs.astral.sh/uv/guides/integration/github/),
 [installation Claude Code](https://code.claude.com/docs/en/setup),
 [validation des manifestes](https://code.claude.com/docs/en/plugins-reference#validate-the-manifest).
+
+## Contrôles de sécurité et conteneur (0.13.0)
+
+Le workflow `Sécurité` s’exécute sur les PR, sur `main` et chaque lundi :
+`Secrets et distribution` vérifie les chemins suivis par Git et l’historique avec Gitleaks ;
+`Dépendances Python` contrôle tous les groupes du lockfile avec pip-audit. Le job `Conteneur MCP`
+construit l’image et teste refus sans jeton, HTTP 401, appel MCP autorisé et permissions privées.
+Ces trois noms de checks complètent les trois contrôles Python/Ruff à rendre obligatoires sur `main`.
+Les avis de dépendances sont interrogés en ligne : une panne de ce service peut faire échouer le contrôle.

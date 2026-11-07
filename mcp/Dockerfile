@@ -1,8 +1,12 @@
-FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim@sha256:531f855bda2c73cd6ef67d56b733b357cea384185b3022bd09f05e002cd144ca
 
 RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
-    && git config --system --add safe.directory '*'
+    && groupadd --gid 10001 genealogiste \
+    && useradd --uid 10001 --gid 10001 --create-home genealogiste \
+    && mkdir -p /data /cache \
+    && chown genealogiste:genealogiste /data /cache \
+    && chmod 700 /data /cache
 
 WORKDIR /app
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy \
@@ -12,6 +16,9 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 COPY src ./src
 RUN uv sync --frozen --no-dev
+
+ENV UV_CACHE_DIR=/cache/uv
+USER 10001:10001
 
 VOLUME ["/data", "/cache"]
 EXPOSE 8765

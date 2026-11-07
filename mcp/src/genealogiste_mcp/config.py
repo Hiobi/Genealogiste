@@ -40,8 +40,6 @@ class Config:
     gramps_notes_auto: str = "true"  # notes de preuve Sosa:auto : true (toute la base) | modifies | false
     git_mirror: bool = False  # mode gramps : miroir GEDCOM 7 versionné de l'arbre Gramps
     git_remote: str = ""  # dépôt distant optionnel (privé !) du répertoire de données
-    fs_user: str = ""
-    fs_password: str = ""
     strict_evidence: bool = False
     exiger_source: bool = True  # règle de métier : pas de fait sans source sauf motif explicite
     notes_dir: Path | None = None  # notes de recherche Markdown (Obsidian) ; None = désactivées
@@ -176,8 +174,6 @@ def load_config() -> Config:
         gramps_notes_auto=notes_auto_mode(env("GENEALOGISTE_GRAMPS_NOTES_AUTO")),
         git_mirror=_bool(env("GENEALOGISTE_GIT_MIRROR"), False),
         git_remote=env("GENEALOGISTE_GIT_REMOTE", ""),
-        fs_user=env("GENEALOGISTE_FS_USER", ""),
-        fs_password=env("GENEALOGISTE_FS_PASSWORD", ""),
         strict_evidence=env("GENEALOGISTE_STRICT", "0") in ("1", "true", "oui"),
         exiger_source=env("GENEALOGISTE_EXIGER_SOURCE", "1") not in ("0", "false", "non"),
         offline=env("GENEALOGISTE_OFFLINE", "0") in ("1", "true", "oui"),

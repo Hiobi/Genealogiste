@@ -1,12 +1,12 @@
 ---
 description: Importer un GEDCOM (5.5.1/7) ou un export FamilySearch
-argument-hint: <chemin.ged | familysearch ID1 [ID2…]> [ajouter|remplacer]
+argument-hint: <chemin.ged> [ajouter|remplacer]
 ---
 Import : **$ARGUMENTS**
 
 - **Fichier GEDCOM** : `arbre_importer_gedcom(chemin, mode)` (défaut `ajouter`, renumérotation).
-- **FamilySearch** : `familysearch_exporter(ids, ascendants, descendants)` (identifiants dans le `.env`
-  du répertoire de données ; l'utilisateur confirme), puis `arbre_importer_gedcom(fichier, "ajouter")`.
+- **FamilySearch** : l’ancien exporteur est désactivé pour sécurité. Importer un GEDCOM obtenu
+  séparément ; ne jamais demander d’identifiants FamilySearch.
 - **Gramps Web** (mode fichier) : `gramps_tirer(mode)` lit l'arbre Gramps Web par l'API. Pour travailler en
   direct sur Gramps Web, `GENEALOGISTE_BACKEND=gramps` ; pour y envoyer l'arbre local une fois pour toutes :
   `gramps_bascule_proposer` puis, après accord, `gramps_bascule_appliquer` (docs/gramps-web.md).

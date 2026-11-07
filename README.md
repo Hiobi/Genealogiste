@@ -1,7 +1,7 @@
 # Sosa — plugin Claude Code « genealogiste »
 
 Un généalogiste professionnel français dans Claude Code : recherche multi-sources (INSEE/matchID,
-WikiTree, Gallica, Wikidata, API Géo + COG historique, FamilySearch, liens Geneanet / AD / Mémoire des
+WikiTree, Gallica, Wikidata, API Géo + COG historique, liens Geneanet / AD / Mémoire des
 hommes), méthode du *Genealogical Proof Standard*, fact-check à sources indépendantes, détection
 d'homonymes, et arbre **GEDCOM 7 versionné en Git** — ou directement **Gramps Web** — où rien n'est écrit
 sans votre validation.
@@ -9,9 +9,9 @@ sans votre validation.
 ```
 .claude-plugin/   plugin.json, marketplace.json
 .mcp.json         serveur MCP lancé par uv (stdio)
-commands/         17 commandes slash
-skills/           methodologie-gps, sources-francaises, paleographie, droit-communicabilite
-agents/           chercheur, verificateur (indépendant), redacteur
+commands/         18 commandes slash
+skills/           methodologie-gps, sources-francaises, paleographie, droit-communicabilite, organisation-pieces
+agents/           chercheur, verificateur (indépendant), redacteur, trieur
 hooks/            lecture des sources sans approbation ; écritures soumises à confirmation
 mcp/              serveur MCP Python (FastMCP, uv) + tests pytest
 docs/             extensions GEDCOM, opérations d'édition, mode Gramps Web
@@ -44,7 +44,6 @@ et renseigner au minimum :
 | `GENEALOGISTE_DATA_DIR` | dépôt Git de l'arbre, du journal et des médias (défaut `~/.local/share/genealogiste`) |
 | `GENEALOGISTE_WIKITREE_APPID` | identifiant d'application WikiTree (obligatoire pour WikiTree, libre) |
 | `GENEALOGISTE_MATCHID_TOKEN` | jeton matchID pour l'appariement CSV par lot (facultatif) |
-| `GENEALOGISTE_FS_USER` / `_PASSWORD` | FamilySearch via getmyancestors (facultatif, `uv sync --extra familysearch`) |
 | `GENEALOGISTE_BACKEND` | `fichier` (défaut, GEDCOM 7 + Git) ou `gramps` (Gramps Web = arbre de référence) |
 | `GENEALOGISTE_GRAMPS_URL` / `_USER` / `_PASSWORD` | Gramps Web : compte local dédié, rôle Editor |
 | `GENEALOGISTE_GIT_MIRROR` / `_GIT_REMOTE` | miroir Git de l'arbre Gramps ; dépôt distant **privé** optionnel |
@@ -65,19 +64,18 @@ configuration effective.
 
 ```bash
 cp .env.example .env            # puis compléter
-docker compose up -d            # MCP HTTP sur 127.0.0.1:8765/mcp, données dans ./data
+docker compose up -d            # MCP HTTP sur 127.0.0.1:8765/mcp, données dans un volume Docker privé
 docker compose --profile gramps up -d   # + Gramps Web sur 127.0.0.1:5055 (redis + celery)
-claude mcp add --transport http genealogiste http://127.0.0.1:8765/mcp
-# avec MCP_TOKEN défini :
+# avec le même MCP_TOKEN que celui défini dans .env :
 claude mcp add --transport http genealogiste http://127.0.0.1:8765/mcp --header "Authorization: Bearer $MCP_TOKEN"
 ```
 
-Le conteneur écoute sur `0.0.0.0` ; `docker-compose.yml` ne publie le port que sur `127.0.0.1` et pose donc
-`MCP_SANS_AUTH=1` par défaut. Définir `MCP_TOKEN` dans `.env` pour exiger le jeton.
+Le conteneur écoute sur `0.0.0.0` ; `docker-compose.yml` ne publie le port que sur `127.0.0.1`.
+`MCP_SANS_AUTH=0` par défaut impose l’authentification. Définir `MCP_TOKEN` dans `.env` avant le démarrage.
 
 En mode Docker, désactiver le serveur stdio du plugin (`/mcp` → genealogiste → disable) pour n'en garder
 qu'un. Les hooks d'approbation s'appliquent aux deux (motif `mcp__.*genealogiste.*__…`).
-Gramps Web : épingler `GRAMPSWEB_VERSION` pour la production ; créer le compte administrateur au premier
+Gramps Web : l’image est épinglée par empreinte (`GRAMPSWEB_IMAGE` pour la remplacer) ; créer le compte administrateur au premier
 accès, puis renseigner `GENEALOGISTE_GRAMPS_*`.
 
 ### Portainer
@@ -102,7 +100,7 @@ Les commandes d'un plugin sont préfixées par son nom : `/genealogiste:cherche`
 | `ascendance <id> [n]` / `descendance <id> [n]` | arbres Sosa / descendants (tableau + Mermaid, SVG) |
 | `lacunes <id\|arbre>` | faits manquants ou faibles + plan priorisé (source, cote, archives) |
 | `ajoute`, `modifie`, `fusionne` | édition avec diff et validation explicite |
-| `import <gedcom\|familysearch>`, `export <format>` | GeneWeb, GEDCOM 5.5.1/7, Gramps XML, Mermaid, SVG, fiche Markdown |
+| `import <gedcom>`, `export <format>` | GeneWeb, GEDCOM 5.5.1/7, Gramps XML, Mermaid, SVG, fiche Markdown |
 | `transcris <image>` | paléographie, latin, transcription et extraction des données |
 | `organise <dossier> [triage]` | inventaire, classement et renommage d'un dossier de pièces existant (plan validé, réversible, aucune suppression) ; triage des pièces non identifiées par l'agent `trieur` ([docs/pieces.md](docs/pieces.md)) |
 | `recit <id>` | biographie dont chaque phrase est sourcée |
@@ -185,7 +183,7 @@ Claude Code ne propose une mise à jour que si le **numéro de version** change 
 commits). À chaque publication sur `main` :
 
 ```bash
-make version V=0.4.0   # plugin.json, marketplace.json, pyproject.toml et uv.lock ensemble
+make version V=x.y.z   # remplacer par la nouvelle version   # plugin.json, marketplace.json, pyproject.toml et uv.lock ensemble
 ```
 
 Côté utilisateur : `claude plugin marketplace update sosa` puis `claude plugin update genealogiste@sosa`,
@@ -200,8 +198,21 @@ et une nouvelle session (ou `/mcp` → reconnecter genealogiste) pour relancer l
   la cote, l'utilisateur colle le résultat (`source_collee`), sans extraction automatisée (CGU).
 - L'appariement CSV matchID peut exiger un compte.
 - COG INSEE : historique des communes depuis 1943 ; avant, se reporter au dictionnaire Cassini (EHESS).
-- Mode Gramps Web (v1) : pas d'envoi des médias, un seul arbre, pas de fusion native ni de lieux
-  hiérarchiques en écriture (issues #8 à #11).
+- Mode Gramps Web : un seul arbre configuré ; la fusion et les écritures dépendent des opérations
+  documentées dans [docs/gramps-web.md](docs/gramps-web.md). Médias et lieux hiérarchiques sont pris en charge.
 - Les cotes proposées suivent le cadre de classement réglementaire : toujours vérifier l'inventaire du service.
 - Sorties réseau : contrôle de l'adresse à la résolution DNS, pas d'épinglage à la connexion (DNS rebinding
   théoriquement possible, voir [docs/securite.md](docs/securite.md#limites-connues)).
+
+## Exploitation et partage
+
+Le dépôt public contient le plugin et des fixtures fictives. Conserver arbres, médias, notes, journaux,
+identifiants et sauvegardes dans des répertoires privés distincts. Le serveur refuse un répertoire de
+données placé dans le dépôt du plugin. Voir [le guide de production](docs/production.md) et
+[la politique de sécurité](SECURITY.md).
+
+L’ancien exporteur FamilySearch est désactivé : ses dépendances imposées sont vulnérables.
+Importer un GEDCOM obtenu séparément ; ne plus fournir d’identifiants FamilySearch au plugin.
+
+Développement : `make test` charge la configuration pytest de `mcp/` (ou lancer pytest depuis `mcp/`).
+`make format` applique `ruff check --fix`, sans exécuter `ruff format`.

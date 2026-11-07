@@ -71,6 +71,10 @@ class TreeStore:
 
     def ensure(self) -> None:
         """Initialise le répertoire de données et son dépôt Git si nécessaire."""
+        for parent in (self.dir.resolve(), *self.dir.resolve().parents):
+            if (parent / ".claude-plugin/plugin.json").is_file() and (parent / "mcp/pyproject.toml").is_file():
+                raise GitError("Répertoire de données dans le dépôt du plugin : refusé. "
+                               "Choisir un répertoire privé distinct avec GENEALOGISTE_DATA_DIR.")
         self.dir.mkdir(parents=True, exist_ok=True)
         (self.dir / "medias").mkdir(exist_ok=True)
         if not (self.dir / ".git").exists():

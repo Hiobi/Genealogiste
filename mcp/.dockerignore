@@ -3,3 +3,13 @@ tests
 __pycache__
 .pytest_cache
 .ruff_cache
+.env
+.env.*
+*.pem
+*.key
+*.token
+*.sqlite*
+*.ged
+*.gramps
+*.gpkg
+*.jsonl

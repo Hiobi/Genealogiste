@@ -348,7 +348,7 @@ def source_collee(source: str, texte: str, url: str = "", parametres: dict | Non
 
 @mcp.tool()
 def familysearch_exporter(ids: list[str], ascendants: int = 4, descendants: int = 0, conjoints: bool = True) -> dict:
-    """Télécharge un GEDCOM depuis FamilySearch via getmyancestors (identifiants de l'utilisateur en .env)."""
+    """Ancien exporteur FamilySearch désactivé pour sécurité ; importer un GEDCOM obtenu séparément."""
     return familysearch.export_gedcom(app().sctx, ids, ascendants, descendants, conjoints)
 
 
@@ -1227,6 +1227,10 @@ def gramps_synchroniser() -> dict:
 # ============================================================================ point d'entrée
 
 def main() -> None:
+    import os
+
+    # Arbres, caches et journaux nouvellement créés restent privés sur l'hôte.
+    os.umask(0o077)
     parser = argparse.ArgumentParser(description="Serveur MCP genealogiste")
     parser.add_argument("--transport", choices=["stdio", "streamable-http", "sse"], default="stdio")
     parser.add_argument("--host", default="127.0.0.1")
@@ -1242,9 +1246,8 @@ def main() -> None:
     if args.transport == "stdio":
         mcp.run(transport="stdio")
         return
-    import os
-
     import uvicorn
+    load_config()  # charge aussi le .env privé avant de lire les réglages du transport
     token = os.environ.get("MCP_TOKEN", "")
     if problem := bind_problem(args.host, token, os.environ.get("MCP_SANS_AUTH", "")):
         raise SystemExit(problem)
