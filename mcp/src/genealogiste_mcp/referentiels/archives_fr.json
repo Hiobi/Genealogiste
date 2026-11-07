@@ -1,5 +1,5 @@
 {
-  "_description": "Référentiel des services d'archives publiques françaises (docs/archives.md). Ne saisir que des valeurs vérifiées ; en_ligne vide = inconnu. verifie_le = date de la dernière vérification de l'entrée.",
+  "_description": "Référentiel des services d'archives publiques françaises (docs/archives.md). Ne saisir que des valeurs vérifiées ; couvertures et en_ligne absents = inconnu. verifie_le = date de la dernière vérification humaine de l'entrée.",
   "services": [
     {"code": "AD01", "nom": "Archives départementales de l'Ain", "type": "departementales", "departement": "01", "site": "https://www.archives.ain.fr", "ark_naan": "22231", "en_ligne": {}, "wikidata": "Q2860468", "origine": "import : Wikidata (site officiel P856), registre NAAN de l'ARK Alliance", "site_repond_le": "2026-11-04"},
     {"code": "AD02", "nom": "Archives départementales de l'Aisne", "type": "departementales", "departement": "02", "site": "https://archives.aisne.fr", "ark_naan": "63271", "en_ligne": {}, "wikidata": "Q2860469", "origine": "import : Wikidata (site officiel P856), registre NAAN de l'ARK Alliance", "site_repond_le": "2026-11-04"},
