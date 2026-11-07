@@ -66,19 +66,34 @@ class HttpClient:
 
     def _send(self, method: str, url: str, *, params, data, json, files, headers) -> httpx.Response:
         """Requête avec redirections suivies manuellement ; chaque URL passe la politique réseau."""
+        sans_secrets = False
+        sensibles = {"authorization", "proxy-authorization", "cookie", "x-api-key"}
         for _ in range(MAX_REDIRECTS + 1):
             try:
                 self.policy.check(url)
             except DestinationRefusee as exc:
                 raise SourceError(str(exc)) from exc
-            resp = self.client.request(method, url, params=params, data=data, json=json, files=files, headers=headers)
+            requete = self.client.build_request(method, url, params=params, data=data, json=json, files=files, headers=headers)
+            if sans_secrets:
+                for nom in sensibles:
+                    requete.headers.pop(nom, None)
+            resp = self.client.send(requete)
             location = resp.headers.get("Location")
             if resp.status_code not in (301, 302, 303, 307, 308) or not location:
                 return resp
-            url = urljoin(str(resp.url), location)
-            params = None  # la cible de redirection porte déjà sa requête
+            destination = urljoin(str(resp.url), location)
+            origine = httpx.URL(str(resp.url))
+            cible = httpx.URL(destination)
             if resp.status_code == 303 or (resp.status_code in (301, 302) and method == "POST"):
                 method, data, json, files = "GET", None, None, None
+            if (origine.scheme, origine.host, origine.port) != (cible.scheme, cible.host, cible.port):
+                # Les secrets de la source ne doivent pas suivre une redirection tierce,
+                # ni une dégradation HTTPS -> HTTP. Comparaison insensible à la casse.
+                if method.upper() not in IDEMPOTENT:
+                    raise SourceError("Redirection vers une autre origine refusée pour une requête avec écriture.")
+                sans_secrets = True
+            url = destination
+            params = None  # la cible de redirection porte déjà sa requête
         raise SourceError(f"Trop de redirections ({MAX_REDIRECTS}) depuis {url}")
 
     def request(

@@ -1,0 +1,35 @@
+name: Intégration Gramps
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  UV_LOCKED: "true"
+
+jobs:
+  gramps:
+    name: Gramps Web jetable
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.11.14"
+          python-version: "3.11"
+          enable-cache: true
+          cache-dependency-glob: mcp/uv.lock
+      - name: Installer les dépendances verrouillées
+        run: uv --directory mcp sync --locked
+      - name: Tester avec des données fictives
+        run: make test-gramps
+        env:
+          UV_OFFLINE: "true"
+      - name: Nettoyer les conteneurs même après un échec
+        if: always()
+        run: docker compose -f docker-compose.test.yml down -v

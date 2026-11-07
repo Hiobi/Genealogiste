@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UV_LOCKED: "true"
+  GENEALOGISTE_TEST_GRAMPS_URL: ""
+
+jobs:
+  tests:
+    name: Tests Python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.11.14"
+          python-version: ${{ matrix.python }}
+          enable-cache: true
+          cache-dependency-glob: mcp/uv.lock
+      - name: Installer les dépendances verrouillées
+        run: uv --directory mcp sync --locked
+      - name: Tester le serveur et la cohérence des versions
+        run: make test
+        env:
+          UV_OFFLINE: "true"
+
+  qualite:
+    name: Ruff et manifestes
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DISABLE_AUTOUPDATER: "1"
+      DISABLE_TELEMETRY: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.11.14"
+          python-version: "3.11"
+          enable-cache: true
+          cache-dependency-glob: mcp/uv.lock
+      - name: Installer les dépendances verrouillées
+        run: uv --directory mcp sync --locked
+      - name: Vérifier le style
+        run: make lint
+        env:
+          UV_OFFLINE: "true"
+      - name: Installer le validateur Claude Code
+        shell: bash
+        run: |
+          curl -fsSL https://claude.ai/install.sh -o "$RUNNER_TEMP/install-claude.sh"
+          bash "$RUNNER_TEMP/install-claude.sh" 2.1.319
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Valider la marketplace et le plugin
+        run: |
+          make validate
+          claude plugin validate .claude-plugin/plugin.json
+
+  conteneur:
+    name: Conteneur MCP
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: '0.11.14'
+          python-version: '3.13'
+      - name: Installer les dépendances verrouillées
+        run: uv --directory mcp sync --locked
+      - name: Construire le conteneur
+        run: docker build -t sosa-controle mcp
+      - name: Vérifier authentification et permissions sur données fictives
+        run: uv --directory mcp run python ../scripts/verifier_conteneur.py sosa-controle

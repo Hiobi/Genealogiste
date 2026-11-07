@@ -237,7 +237,8 @@ def test_git_mirror_commits_transactions_and_external_changes(tmp_path, fake, tr
 
 def test_remote_repository_rules():
     for bad in ("https://github.com/Hiobi/Sosa", "https://github.com/hiobi/sosa.git", "git@github.com:Hiobi/Sosa.git",
-                "ssh://git@github.com/hiobi/sosa"):
+                "ssh://git@github.com/hiobi/sosa", "https://github.com/Hiobi/Sosa.git/",
+                "git@github.com:Hiobi/Sosa.git/", "ssh://git@github.com:22/Hiobi/Sosa.git"):
         assert remote_problem(bad), bad
     assert remote_problem("git@forge.example:famille/arbre-prive.git") == ""
 

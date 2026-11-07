@@ -123,7 +123,7 @@ Sans jeton ni dérogation, le serveur **refuse de démarrer** s'il écoute aille
 | Déploiement | Réglage par défaut |
 |---|---|
 | `make run-http`, `genealogiste-mcp --transport streamable-http` | écoute sur 127.0.0.1, jeton facultatif |
-| `docker-compose.yml` | le conteneur écoute sur `0.0.0.0` mais le port n'est publié que sur `127.0.0.1` : `MCP_SANS_AUTH=1` posé ; définir `MCP_TOKEN` dans `.env` pour exiger le jeton |
+| `docker-compose.yml` | le conteneur écoute sur `0.0.0.0` mais le port n'est publié que sur `127.0.0.1` : `MCP_TOKEN` exigé par défaut, y compris sur le réseau interne Docker |
 | `docker-compose.portainer.yml` | `MCP_BIND` configurable : `MCP_TOKEN` exigé (`MCP_SANS_AUTH=0`) |
 
 Client Claude Code avec jeton :
@@ -175,3 +175,14 @@ service pour un vivant, quel que soit le paramètre qui le désigne (outils et p
 catalogue), et aucun export, graphique, fiche ou note de recherche ne nomme une personne masquée. Aucune résolution DNS réelle pendant les tests : la
 fixture `dns_fictif` (`conftest.py`, autouse) renvoie une adresse publique de documentation pour tout nom,
 et des adresses privées pour quelques noms « internes ».
+
+## Distribution publique (0.13.0)
+
+Le dépôt du plugin refuse désormais de servir de répertoire de données. Les fichiers privés sont
+ignorés et leur suivi forcé est contrôlé en CI. Gitleaks scanne l’historique accessible, pip-audit
+contrôle les dépendances et GitHub protège les pushs contenant des secrets reconnus.
+
+Les redirections HTTP vers une autre origine ne transmettent plus Authorization, Cookie,
+Proxy-Authorization ni X-Api-Key. Les identifiants de l’ancien exporteur FamilySearch ne sont plus utilisés
+et son exécution est désactivée : dépendances imposées vulnérables, dont DiskCache sans correctif connu
+lors de l’audit. L’import GEDCOM reste disponible. Voir [production.md](production.md).

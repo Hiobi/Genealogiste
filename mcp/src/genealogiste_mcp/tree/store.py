@@ -11,6 +11,7 @@ import json
 import re
 import subprocess
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from ..fichiers import LOCK_NAME, ecrire_atomique
 from ..gedcom.mapping import read_gedcom, write_gedcom
@@ -48,9 +49,16 @@ def remote_problem(url: str) -> str:
     """Motif de refus d'un dépôt distant, ou ""."""
     if not url:
         return ""
-    norm = re.sub(r"^(https?://|ssh://|git@)", "", url.strip().lower()).replace(":", "/").removesuffix(".git")
-    norm = re.sub(r"^[^@/]+@", "", norm).rstrip("/")
-    if any(norm.endswith(r) or norm == r for r in PLUGIN_REPOS):
+    valeur = url.strip().lower()
+    if "://" in valeur:
+        parsed = urlsplit(valeur)
+        host, path = parsed.hostname or "", parsed.path
+    elif match := re.fullmatch(r"(?:[^@/]+@)?([^/:]+):(.+)", valeur):
+        host, path = match.groups()
+    else:
+        host, _, path = valeur.partition("/")
+    norm = f"{host}/{path.strip('/').removesuffix('.git')}"
+    if norm in PLUGIN_REPOS:
         return "GENEALOGISTE_GIT_REMOTE pointe vers le dépôt du plugin : refusé (aucune donnée d'arbre dans ce dépôt)."
     return ""
 
@@ -71,6 +79,10 @@ class TreeStore:
 
     def ensure(self) -> None:
         """Initialise le répertoire de données et son dépôt Git si nécessaire."""
+        for parent in (self.dir.resolve(), *self.dir.resolve().parents):
+            if (parent / ".claude-plugin/plugin.json").is_file() and (parent / "mcp/pyproject.toml").is_file():
+                raise GitError("Répertoire de données dans le dépôt du plugin : refusé. "
+                               "Choisir un répertoire privé distinct avec GENEALOGISTE_DATA_DIR.")
         self.dir.mkdir(parents=True, exist_ok=True)
         (self.dir / "medias").mkdir(exist_ok=True)
         if not (self.dir / ".git").exists():

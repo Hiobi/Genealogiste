@@ -23,10 +23,10 @@ test-gramps: ## Tests d'intégration sur un Gramps Web jetable (Docker, données
 	  status=$$?; $(GW_TEST) down -v; exit $$status
 
 lint: ## Vérifie le style (ruff)
-	$(UV) run ruff check src tests
+	$(UV) run ruff check src tests scripts ../scripts
 
 format: ## Formate le code (ruff)
-	$(UV) run ruff check --fix src tests
+	$(UV) run ruff check --fix src tests scripts ../scripts
 
 check: ## Vérifie la configuration et l'arbre de travail
 	$(UV) run genealogiste-mcp --check

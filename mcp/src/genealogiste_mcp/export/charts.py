@@ -15,6 +15,11 @@ def _years(tree: Tree, pid: str) -> str:
         for e in p.events(*types):
             g = parse_date(e.date)
             if g:
+                # bornes ouvertes (#72) : l'intervalle s'étend sur 100 ans, son milieu décalerait de ±50 ans
+                if g.qualifier in ("BEF", "TO", "AFT", "FROM"):
+                    a, b = g.start.bounds()
+                    avant = g.qualifier in ("BEF", "TO")
+                    return ("av. " if avant else "ap. ") + str(jdn_to_gregorian(a if avant else b)[0])
                 lo, hi = g.interval
                 prefix = "~" if hi - lo > 366 else ""
                 return prefix + str(jdn_to_gregorian((lo + hi) // 2)[0])

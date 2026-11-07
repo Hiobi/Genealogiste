@@ -8,6 +8,8 @@ services:
     build: ./mcp
     image: genealogiste-mcp:local
     restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: ["ALL"]
     ports:
       - "127.0.0.1:8765:8765"
     env_file:
@@ -17,16 +19,16 @@ services:
       GENEALOGISTE_DATA_DIR: /data
       GENEALOGISTE_CACHE: /cache/cache.sqlite
       GENEALOGISTE_GRAMPS_URL: ${GENEALOGISTE_GRAMPS_URL:-http://grampsweb:5000}
-      # port publié sur 127.0.0.1 seulement : pas de jeton par défaut. Définir MCP_TOKEN pour l'exiger.
+      # Jeton exigé, même sur le réseau Docker interne.
       MCP_TOKEN: ${MCP_TOKEN:-}
-      MCP_SANS_AUTH: ${MCP_SANS_AUTH:-1}
+      MCP_SANS_AUTH: ${MCP_SANS_AUTH:-0}
     volumes:
-      - ./data:/data
+      - ${GENEALOGISTE_DATA_PATH:-genealogiste_data}:/data
       - mcp_cache:/cache
 
   grampsweb: &grampsweb
     profiles: ["gramps"]
-    image: ghcr.io/gramps-project/grampsweb:${GRAMPSWEB_VERSION:-latest}
+    image: ${GRAMPSWEB_IMAGE:-ghcr.io/gramps-project/grampsweb@sha256:dbd20a8ba954e19ae8ed17e5e1537d55a3d16ccef6adf7a8fe8cb783bab81411}
     restart: unless-stopped
     ports:
       - "127.0.0.1:5055:5000"
@@ -58,6 +60,7 @@ services:
     restart: unless-stopped
 
 volumes:
+  genealogiste_data:
   mcp_cache:
   gramps_users:
   gramps_index:

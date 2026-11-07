@@ -82,6 +82,49 @@ def test_boucle_de_redirections(http):
 
 
 @respx.mock
+@pytest.mark.parametrize("destination", ["https://autre.example/x", "http://a.example/x"])
+def test_redirection_ne_transmet_pas_les_secrets(http, destination):
+    respx.get("https://a.example/x").mock(
+        return_value=httpx.Response(302, headers={"Location": destination}))
+    cible = respx.get(destination).mock(return_value=httpx.Response(200, json={}))
+    http.get("https://a.example/x", use_cache=False,
+             headers={"Authorization": "Bearer jeton-fictif", "Cookie": "session=fictive",
+                      "X-Api-Key": "cle-fictive"})
+    assert cible.called
+    for nom in ("authorization", "cookie", "x-api-key"):
+        assert nom not in cible.calls[0].request.headers
+
+
+@respx.mock
+def test_redirection_meme_origine_conserve_auth(http):
+    respx.get("https://a.example/x").mock(
+        return_value=httpx.Response(302, headers={"Location": "/y"}))
+    cible = respx.get("https://a.example/y").mock(return_value=httpx.Response(200, json={}))
+    http.get("https://a.example/x", use_cache=False, headers={"Authorization": "Bearer fictif"})
+    assert cible.calls[0].request.headers["authorization"] == "Bearer fictif"
+
+
+@respx.mock
+def test_redirection_ne_transmet_pas_cookie_du_client(http):
+    http.client.cookies.set("session", "fictive", domain="a.example")
+    respx.get("https://a.example/x").mock(
+        return_value=httpx.Response(302, headers={"Location": "http://a.example/y"}))
+    cible = respx.get("http://a.example/y").mock(return_value=httpx.Response(200, json={}))
+    http.get("https://a.example/x", use_cache=False)
+    assert "cookie" not in cible.calls[0].request.headers
+
+
+@respx.mock
+def test_redirection_post_ne_transmet_pas_corps_tiers(http):
+    respx.post("https://a.example/x").mock(
+        return_value=httpx.Response(307, headers={"Location": "https://tiers.example/x"}))
+    cible = respx.post("https://tiers.example/x").mock(return_value=httpx.Response(200, json={}))
+    with pytest.raises(SourceError, match="origine"):
+        http.post("https://a.example/x", json={"donnees": "fictives"}, use_cache=False)
+    assert not cible.called
+
+
+@respx.mock
 def test_manifeste_iiif_pointant_vers_interne(app):
     """Un manifeste tiers dont le service d'image vise le réseau interne : aucune requête interne."""
     from genealogiste_mcp import server
