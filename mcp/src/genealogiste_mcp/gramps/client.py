@@ -20,7 +20,8 @@ from .mapping import GrampsDb
 from .types import CLASSES, to_raw
 
 BACKGROUND_THRESHOLD = 200  # objets : au-delà, transaction en tâche de fond (Celery)
-REFETCH_LIMIT = 200  # objets modifiés : au-delà, relecture complète de la classe
+REFETCH_LIMIT = 200  # objets à relire : au-delà, relecture complète de la classe
+READ_ATTEMPTS = 3
 
 
 class GrampsError(RuntimeError):
@@ -93,17 +94,36 @@ class GrampsClient:
         return {"Authorization": f"Bearer {self._access}"}
 
     def request(self, method: str, path: str, headers: dict | None = None, **kw) -> httpx.Response:
-        for attempt in (1, 2):
+        """Seuls les GET sont repris : 401 une fois, panne réseau/502/503/504 sur trois essais.
+
+        Une écriture n'est jamais rejouée, même sur 401 ; le jeton est renouvelé avant l'appel si expiré.
+        """
+        method = method.upper()
+        attempts = READ_ATTEMPTS if method == "GET" else 1
+        renewed = False
+        for attempt in range(1, attempts + 1):
             try:
-                r = self.client.request(method, f"{self.base}{path}", headers={**self._headers(), **(headers or {})},
-                                        **kw)
+                while True:
+                    r = self.client.request(method, f"{self.base}{path}",
+                                            headers={**self._headers(), **(headers or {})}, **kw)
+                    if r.status_code != 401 or method != "GET" or renewed:
+                        break
+                    r.close()
+                    self._renew()
+                    renewed = True
             except httpx.HTTPError as exc:
+                if attempt < attempts:
+                    self.sleep(2 ** attempt)
+                    continue
                 raise GrampsError(f"Gramps Web injoignable ({type(exc).__name__})") from exc
-            if r.status_code == 401 and attempt == 1:
-                self._access = ""
+            if r.status_code == 401:
+                self._exp = 0  # nouvel appel explicite : renouveler avant d'envoyer, sans rejouer cette écriture
+            if r.status_code in (502, 503, 504) and attempt < attempts:
+                r.close()
+                self.sleep(2 ** attempt)
                 continue
             return r
-        return r
+        raise AssertionError("Nombre d'essais de lecture invalide")
 
     @staticmethod
     def _message(r: httpx.Response) -> str:
@@ -160,20 +180,26 @@ class GrampsClient:
         for cls in CLASSES:
             stamps = {o["handle"]: o.get("change", 0) for o in self.list(cls, keys="handle,change")}
             local = out.all(cls)
-            changed = [h for h, c in stamps.items() if h not in local or local[h].get("change") != c]
-            gone = [h for h in local if h not in stamps]
-            if len(changed) > REFETCH_LIMIT:
-                for h in list(local):
-                    out.remove(cls, h)
-                for o in self.list(cls):
-                    out.put(to_raw(o, cls))
+            # Gramps date les modifications à la seconde. Relire la seconde la plus récente de chaque
+            # classe même si son horodatage n'a pas changé ; comparer le contenu avant de compter.
+            horizon = max((o.get("change", 0) for o in local.values()), default=0)
+            check = [h for h, c in stamps.items() if h not in local or local[h].get("change") != c or c >= horizon]
+            if len(check) > REFETCH_LIMIT:
+                fresh = {o["handle"]: to_raw(o, cls) for o in self.list(cls)}
             else:
-                for h in changed:
+                fresh = {h: o for h, o in local.items() if h in stamps}
+                for h in check:
                     o = self.get(cls, h)
-                    if o is not None:
-                        out.put(o)
+                    if o is None:
+                        fresh.pop(h, None)
+                    else:
+                        fresh[h] = o
+            gone = local.keys() - fresh.keys()
+            changed = [h for h, o in fresh.items() if local.get(h) != o]
             for h in gone:
                 out.remove(cls, h)
+            for h in changed:
+                out.put(fresh[h])
             if changed or gone:
                 report[cls] = {"modifies": len(changed), "supprimes": len(gone)}
         return out, report

@@ -66,13 +66,18 @@ def test_reads_tree_from_gramps(gapp, fake):
     assert server.arbre_ascendance("I3", 3)
 
 
-def test_incremental_refresh_fetches_only_changed(gapp, fake):
+def test_incremental_refresh_fetches_changed_and_boundary(gapp, fake):
     server.arbre_info()
     get_one = fake.router.routes[-1]
     before = get_one.call_count
+    expected = {h for objects in gapp.backend.db.objects.values() if objects
+                for h, o in objects.items() if o.get("change", 0) == max(x.get("change", 0) for x in objects.values())}
+    expected.add(fake.find("Person", "I2")["handle"])
     fake.ui_edit("Person", "I2", lambda o: o["primary_name"].update(first_name="Marie-Anne"))
     assert server.arbre_personne("I2")["noms"][0]["prenoms"] == "Marie-Anne"
-    assert get_one.call_count - before == 1
+    calls = get_one.calls[before:]
+    assert {str(call.request.url).rsplit("/", 1)[-1] for call in calls} == expected
+    assert get_one.call_count - before == len(expected)
     assert gapp.backend.last_refresh == {"Person": {"modifies": 1, "supprimes": 0}}
 
 

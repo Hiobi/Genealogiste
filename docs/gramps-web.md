@@ -33,7 +33,8 @@ Elles restent masquées par défaut dans les exports publics (`arbre_exporter`).
 ## Fonctionnement
 
 - **Lecture** : chargement complet au premier besoin (`GET /api/<objets>/`), puis relecture incrémentale
-  (`?keys=handle,change`, seuls les objets modifiés sont relus). Preuve, cohérence, ascendance, lacunes
+  (`?keys=handle,change`). Les objets modifiés et ceux à l’horodatage le plus récent de chaque classe sont
+  relus : Gramps date les modifications à la seconde. Le bilan ne compte que les contenus réellement changés. Preuve, cohérence, ascendance, lacunes
   sont calculées localement.
 - **Proposition** : l'arbre est relu, les opérations appliquées sur une copie, puis réécrites en objets
   Gramps **par-dessus** l'état lu ; seuls les objets réellement modifiés entrent dans la transaction. Le
@@ -206,3 +207,17 @@ GENEALOGISTE_GRAMPS_PASSWORD=…
 ```
 
 Hors v1 : fusion native de Gramps (la fusion passe par `/fusionne`).
+
+## Reprise des lectures
+
+Les GET sont tentés au plus trois fois sur erreur réseau ou HTTP 502/503/504 (attentes de 2 puis
+4 secondes). Un 401 de lecture autorise un renouvellement de jeton et une nouvelle lecture ; les autres
+statuts ne déclenchent pas de reprise. Le jeton expiré localement est renouvelé avant tout appel.
+
+POST, PUT et DELETE ne sont jamais rejoués automatiquement, y compris sur 401. Après un refus 401,
+un nouvel appel explicite renouvelle d’abord le jeton. Après une réponse perdue pendant une écriture,
+relire l’arbre et le journal avant de proposer une nouvelle opération : l’absence de réponse ne prouve
+pas que la transaction a échoué.
+
+Le miroir Git utilise l’état qui vient d’être lu, sans nouvelle synchronisation imbriquée : son message
+conserve le bilan des modifications externes, même avec un TTL de zéro.
