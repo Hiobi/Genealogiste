@@ -21,6 +21,25 @@ from pathlib import Path
 from configurer_codex import ROOT, profil
 
 
+def diff_outil(value):
+    """Retrouve le diff dans l'enveloppe Responses/MCP, pour le présenter dans le chat natif."""
+    if isinstance(value, str):
+        try:
+            return diff_outil(json.loads(value))
+        except ValueError:
+            return None
+    if isinstance(value, dict):
+        if isinstance(value.get("diff"), str):
+            return value["diff"]
+        value = value.values()
+    elif not isinstance(value, list):
+        return None
+    for item in value:
+        if diff := diff_outil(item):
+            return diff
+    return None
+
+
 class Fournisseur(ThreadingHTTPServer):
     """Une sortie outil imposée par le test, puis un message final ; aucun modèle distant."""
 
@@ -40,10 +59,13 @@ class Reponse(BaseHTTPRequestHandler):
             self.send_error(500, "Boucle inattendue")
             return
         item = fixture.appel
-        if any(i.get("type") == "function_call_output" and i.get("call_id") == item["call_id"]
-               for i in body["input"]):
+        output = next((i for i in body["input"] if i.get("type") == "function_call_output"
+                       and i.get("call_id") == item["call_id"]), None)
+        if output:
+            diff = diff_outil(output.get("output"))
+            text = "Diff à relire avant application :\n" + diff if diff else "Recette terminée."
             item = {"type": "message", "id": "msg_final", "role": "assistant", "status": "completed",
-                    "content": [{"type": "output_text", "text": "Recette terminée."}]}
+                    "content": [{"type": "output_text", "text": text}]}
         self.send_response(200)
         self.send_header("Content-Type", "text/event-stream")
         self.end_headers()
@@ -112,6 +134,7 @@ class Client:
         self.rpc("turn/start", {"threadId": thread, "input": [{"type": "text", "text": f"Recette {name}"}]})
         prompts = 0
         result = None
+        presentation = []
         while True:
             message = self.receive()
             if message.get("method") == "mcpServer/elicitation/request":
@@ -128,6 +151,8 @@ class Client:
                 raise AssertionError(f"Demande native inattendue : {message['method']}")
             elif message.get("method") == "item/completed":
                 item = message["params"]["item"]
+                if item["type"] == "agentMessage":
+                    presentation.append(item["text"])
                 if item["type"] == "mcpToolCall":
                     result = item
             elif message.get("method") == "turn/completed":
@@ -139,7 +164,10 @@ class Client:
                     return result
                 assert not result["error"], result
                 content = result["result"]["content"]
-                return json.loads(next(c["text"] for c in content if c["type"] == "text"))
+                payload = json.loads(next(c["text"] for c in content if c["type"] == "text"))
+                if payload.get("diff"):
+                    assert payload["diff"] in "\n".join(presentation), "Diff absent des messages assistant"
+                return payload
 
 
 def verifier(base: Path):
@@ -217,7 +245,9 @@ requires_openai_auth = false
             intact()
             assert (data / ".propositions" / (p["jeton"] + ".json")).is_file()
             outil("arbre_annuler_proposition", {"jeton": p["jeton"]})
+            ancien_jeton = p["jeton"]
             p = importer()
+            assert p["jeton"] != ancien_jeton
             applied = outil("arbre_appliquer", {"jeton": p["jeton"]}, avant=intact)
             assert "erreur" not in applied, applied
             assert arbre.read_bytes() != original
