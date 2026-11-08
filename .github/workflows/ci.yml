@@ -93,6 +93,6 @@ jobs:
       - name: Installer les dépendances verrouillées
         run: uv --directory mcp sync --locked
       - name: Construire le conteneur
-        run: docker build -t sosa-controle mcp
+        run: docker build -t genealogiste-controle mcp
       - name: Vérifier authentification et permissions sur données fictives
-        run: uv --directory mcp run python ../scripts/verifier_conteneur.py sosa-controle
+        run: uv --directory mcp run python ../scripts/verifier_conteneur.py genealogiste-controle

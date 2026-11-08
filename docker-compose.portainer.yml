@@ -1,6 +1,6 @@
 # Stack Portainer : serveur MCP genealogiste + Gramps Web (interface graphique).
 # Portainer > Stacks > Add stack > Repository
-#   URL : https://github.com/hiobi/sosa   Référence : refs/heads/main
+#   URL : https://github.com/Hiobi/Genealogiste   Référence : refs/heads/main
 #   Compose path : docker-compose.portainer.yml
 #   Variables : voir portainer/stack.env.example (ou « Load variables from .env file »)
 #

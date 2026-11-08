@@ -1,5 +1,5 @@
 {
-  "name": "sosa",
+  "name": "genealogiste",
   "owner": { "name": "hiobi" },
   "metadata": { "description": "Plugins de généalogie française pour Claude Code" },
   "plugins": [
@@ -7,7 +7,7 @@
       "name": "genealogiste",
       "source": "./",
       "description": "Assistant généalogique : sources françaises, méthode GPS, arbre GEDCOM 7 versionné.",
-      "version": "0.15.1",
+      "version": "0.16.0",
       "category": "productivity"
     }
   ]

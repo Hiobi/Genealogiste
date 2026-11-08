@@ -1,4 +1,4 @@
-# Sosa — plugin Claude Code « genealogiste »
+# Genealogiste — assistant de recherche familiale
 
 Un généalogiste professionnel français dans Claude Code : recherche multi-sources (INSEE/matchID,
 WikiTree, Gallica, Wikidata, API Géo + COG historique, liens Geneanet / AD / Mémoire des
@@ -25,11 +25,19 @@ Prérequis : Claude Code, [uv](https://docs.astral.sh/uv/), git, Python ≥ 3.11
 
 ```bash
 # depuis Claude Code
-/plugin marketplace add hiobi/sosa
-/plugin install genealogiste@sosa
+/plugin marketplace add Hiobi/Genealogiste
+/plugin install genealogiste@genealogiste
 ```
 
-ou en local : `git clone … && claude --plugin-dir ./Sosa`.
+Ou en local :
+
+```bash
+git clone https://github.com/Hiobi/Genealogiste.git
+claude --plugin-dir ./Genealogiste
+```
+
+**Installation existante sous `sosa` :** suivre le [guide de migration](docs/renommage-genealogiste.md)
+avant de changer de marketplace.
 
 Au premier lancement, `uv` installe les dépendances du serveur MCP (`mcp/`) et le répertoire de données
 est créé et initialisé en dépôt Git.
@@ -80,7 +88,7 @@ accès, puis renseigner `GENEALOGISTE_GRAMPS_*`.
 
 ### Portainer
 
-Stacks → Add stack → Repository : URL `https://github.com/hiobi/sosa`, compose path
+Stacks → Add stack → Repository : URL `https://github.com/Hiobi/Genealogiste`, compose path
 `docker-compose.portainer.yml`, variables d'après `portainer/stack.env.example`. La stack démarre le MCP et
 Gramps Web ensemble (sans profils). `MCP_TOKEN` est exigé (le conteneur refuse de démarrer sans) ; à défaut,
 `MCP_SANS_AUTH=1` seulement si `MCP_BIND=127.0.0.1` ou derrière un proxy authentifiant. Pour travailler en direct sur Gramps Web : `GENEALOGISTE_BACKEND=gramps` (voir
@@ -202,7 +210,7 @@ commits). À chaque publication sur `main` :
 make version V=x.y.z   # remplacer par la nouvelle version   # plugin.json, marketplace.json, pyproject.toml et uv.lock ensemble
 ```
 
-Côté utilisateur : `claude plugin marketplace update sosa` puis `claude plugin update genealogiste@sosa`,
+Côté utilisateur : `claude plugin marketplace update genealogiste` puis `claude plugin update genealogiste@genealogiste`,
 et une nouvelle session (ou `/mcp` → reconnecter genealogiste) pour relancer le serveur. Le test
 `test_version.py` refuse des versions divergentes entre ces fichiers.
 

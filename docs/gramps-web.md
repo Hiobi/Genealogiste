@@ -1,4 +1,4 @@
-# Mode Gramps Web : Sosa en direct sur un arbre Gramps Web
+# Mode Gramps Web : Genealogiste en direct sur un arbre Gramps Web
 
 Deux backends, choisis par `GENEALOGISTE_BACKEND` (pas de synchronisation bidirectionnelle) :
 
@@ -13,7 +13,7 @@ puis `arbre_appliquer`).
 
 ## Configuration
 
-Compte **local** Gramps Web dédié à Sosa, rôle *Editor* (créé dans Gramps Web : Paramètres >
+Compte **local** Gramps Web dédié à Genealogiste, rôle *Editor* (créé dans Gramps Web : Paramètres >
 Administration > Utilisateurs). Identifiants dans l'environnement ou le `.env` du répertoire de données,
 jamais dans Git, un journal ou une issue.
 
@@ -64,12 +64,12 @@ Une transaction acceptée par Gramps Web reste donc annulable même si la suite 
 annulation, les transactions `intention` ou `indeterminee` sont comparées à l'état de Gramps Web et marquées
 `envoyee`, `non_envoyee` ou `partielle`. `arbre_historique` affiche l'état et les étapes.
 
-## Correspondance Sosa ↔ Gramps (`mcp/src/genealogiste_mcp/gramps/mapping.py`)
+## Correspondance Genealogiste ↔ Gramps (`mcp/src/genealogiste_mcp/gramps/mapping.py`)
 
 Module unique, utilisé par l'export Gramps XML et par le mode direct, testé aller-retour
 (`tests/test_gramps_mapping.py`, et sur un vrai Gramps Web par `make test-gramps`).
 
-| Sosa | Gramps |
+| Genealogiste | Gramps |
 |---|---|
 | xref `I12`, `F3`, `S7`, `R1`, `O2`, note partagée `N4` | `gramps_id` |
 | uid de personne, famille, événement | attribut `Sosa-UID` (absent si l'objet vient de l'interface : uid dérivé du handle) |
@@ -86,8 +86,8 @@ Module unique, utilisé par l'export Gramps XML et par le mode direct, testé al
 | cause, précision du type | attributs `Cause`, `Précision` |
 | date GEDCOM 7 | date Gramps (calendrier, qualificatif, qualité) ; la chaîne GEDCOM est gardée dans `text` |
 
-Une personne, un événement ou une note créés dans l'interface Gramps sont lus sans attribut Sosa et
-réécrits **à l'identique** tant que Sosa ne les modifie pas. Ce que Sosa ne modélise pas (adresses, URL,
+Une personne, un événement ou une note créés dans l'interface Gramps sont lus sans attribut historique `Sosa-*` et
+réécrits **à l'identique** tant que Genealogiste ne les modifie pas. Ce que Genealogiste ne modélise pas (adresses, URL,
 étiquettes, titres et suffixes de nom, noms alternatifs et dates des lieux, médias d'événements, notes isolées…) est
 conservé tel quel.
 
@@ -113,7 +113,7 @@ notes de la base Gramps peuvent être en retard.
 par leurs notes ou étiquettes de preuve, et ajoute un avertissement quand la transaction dépasse 50 objets pour
 moins de 5 opérations (première écriture, recalcul global).
 
-Les notes de preuve **sans** étiquette (import d'un GEDCOM ou d'un export GeneWeb produit par Sosa) sont
+Les notes de preuve **sans** étiquette (import d'un GEDCOM ou d'un export GeneWeb produit par Genealogiste) sont
 reconnues à leur gabarit : `⛔|🟡|🟢|✅|⚠️|❌ Preuve : …`, `Filiation de … : …`,
 `Fiche de preuve (plugin genealogiste)…`, `Lien : http…`. Elles sont **adoptées** à la première écriture
 (étiquetées `Sosa:auto` et réécrites en place), jamais doublées. Une note manuelle qui commence par l'un de ces
@@ -131,7 +131,7 @@ gabarits est donc traitée comme générée : la reformuler si elle doit être c
 
 `GENEALOGISTE_GIT_MIRROR=true` (mode gramps) : l'arbre Gramps est exporté en GEDCOM 7 dans `arbre.ged`
 (même dépôt et même historique qu'en mode fichier), un commit par transaction ; les modifications faites
-hors de Sosa sont commitées à la synchronisation suivante (« Modifications externes »,
+hors de Genealogiste sont commitées à la synchronisation suivante (« Modifications externes »,
 `gramps_synchroniser`).
 
 Le dépôt est local par défaut. `GENEALOGISTE_GIT_REMOTE` ajoute un push après chaque commit : il doit être
@@ -171,7 +171,7 @@ Le dépôt est local par défaut. `GENEALOGISTE_GIT_REMOTE` ajoute un push aprè
 
 Dans Gramps Web, **un compte appartient à un seul arbre** : l'arbre est inscrit dans le jeton de connexion
 (revendication `tree`) et toutes les requêtes passent par lui. Gérer plusieurs arbres (familles, clients)
-demande donc un compte Gramps par arbre et, côté Sosa, **un répertoire de données par arbre** (journal,
+demande donc un compte Gramps par arbre et, côté Genealogiste, **un répertoire de données par arbre** (journal,
 propositions, miroir Git et notes ne doivent jamais se mélanger).
 
 Garde-fou : à la première connexion, l'arbre du compte est enregistré dans `<données>/GRAMPS_ARBRE.json` ; un
@@ -186,12 +186,12 @@ chaque arbre dans le `.env` de son répertoire de données :
   "mcpServers": {
     "genealogiste-famille": {
       "command": "uv",
-      "args": ["run", "--quiet", "--directory", "/chemin/vers/sosa/mcp", "genealogiste-mcp"],
+      "args": ["run", "--quiet", "--directory", "/chemin/vers/Genealogiste/mcp", "genealogiste-mcp"],
       "env": {"GENEALOGISTE_DATA_DIR": "~/genealogie/famille"}
     },
     "genealogiste-client-dupont": {
       "command": "uv",
-      "args": ["run", "--quiet", "--directory", "/chemin/vers/sosa/mcp", "genealogiste-mcp"],
+      "args": ["run", "--quiet", "--directory", "/chemin/vers/Genealogiste/mcp", "genealogiste-mcp"],
       "env": {"GENEALOGISTE_DATA_DIR": "~/genealogie/client-dupont"}
     }
   }
