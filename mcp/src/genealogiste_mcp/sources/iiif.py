@@ -22,7 +22,7 @@ from urllib.parse import urljoin, urlsplit
 from .. import ark
 from ..fichiers import ecrire_atomique, verrou
 from ..http import SourceError
-from .base import DAY, SourceContext
+from .base import DAY, SourceContext, error_envelope
 from .visionneuses import VisionneuseError, VueResolue
 from .visionneuses import resoudre as resoudre_visionneuse
 
@@ -322,7 +322,8 @@ def fetch(ctx: SourceContext, media_dir: Path, source: str, page: int = 0, regio
             dest.parent.mkdir(parents=True, exist_ok=True)
             dest.write_bytes(raw.encode("latin-1"))
     except (IiifError, SourceError, OSError) as exc:
-        return {"erreur": str(exc), "source": source}
+        failure = error_envelope(ctx, "iiif", "image", {"source": source, "page": page, "region": region}, exc)
+        return {"erreur": str(exc), "source": source, "journal": failure["journal"]}
     out = {"fichier": ctx.config.media_ref(dest), "chemin_absolu": str(dest), "url_image": url,
            "depuis_cache": cached, **{k: v for k, v in loc.items() if k not in {"service", "url_image"}}, "service_iiif": loc["service"], "dimensions_originales": None,
            "dimensions_demandees": None, "cout_estime_tokens": None, "largeur_demandee": demandee}

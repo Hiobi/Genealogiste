@@ -43,7 +43,7 @@ def nom_piece(personnes: list[str], extension: str, nom: str = "", **segments) -
     """Nom selon la convention ; sans personne connue : « DÉPÔT - cote - p.vue », rangé dans _À trier."""
     if nom:
         n = pieces.nom_compatible(nom_simple(nom))
-        return n if Path(n).suffix else n + extension
+        return n if Path(n).suffix.lower() in set(MIME) | {".jpeg", ".tiff"} else n + extension
     if personnes:
         return pieces.nommer(personnes, extension=extension, **segments)
     parts = [segments.get("depot") or "Archive", segments.get("cote", ""),

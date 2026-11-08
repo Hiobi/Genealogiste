@@ -15,10 +15,12 @@ REPLI = "Télécharger la vue dans la visionneuse, puis fournir le fichier local
 
 def _json(ctx, host, params):
     try:
-        data, _ = ctx.http.get(host + "/visualizer/api", params=params, ttl=7 * DAY,
+        data, cached = ctx.http.get(host + "/visualizer/api", params=params, ttl=7 * DAY,
                                source="visionneuse", headers={"Accept": "application/json"})
     except SourceError as exc:
         raise VisionneuseError(f"Visionneuse indisponible : {exc}. {REPLI}") from exc
+    ctx.journal.add(source="visionneuse", operation="resolution_api", parametres=params,
+                    statut="positif", references=[host + "/visualizer/api"], cache=cached)
     if not isinstance(data, (dict, list)):
         raise VisionneuseError(f"Réponse de visionneuse inattendue. {REPLI}")
     return data

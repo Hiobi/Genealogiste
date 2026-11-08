@@ -835,6 +835,10 @@ def piece_archiver(source: str, page: int = 0, personnes: list[str] | None = Non
             nom_simple(custom_name)
         except CheminRefuse as exc:
             return {"erreur": str(exc)}
+    extension_demandee = Path(custom_name).suffix.lower() if custom_name else ""
+    extensions_images = set(archivage.MIME) | {".jpeg", ".tiff"}
+    if extension_demandee and extension_demandee not in extensions_images and not extension_demandee[1:].isdigit():
+        return {"erreur": "nom_fichier : extension d'image ou PDF attendue ; .md est réservé à la note compagnon."}
     if type_piece and type_piece.upper() not in pieces.TYPES:
         return {"erreur": "type_piece inconnu : utiliser un code de la convention de classement."}
     if custom_name and " -- " not in custom_name:
@@ -876,6 +880,10 @@ def piece_archiver(source: str, page: int = 0, personnes: list[str] | None = Non
         if not ext:
             return {"erreur": "Le contenu reçu n'est ni une image ni un PDF (page HTML ou accès refusé ?). "
                               + iiif.CONSIGNE_AD, "source": source}
+        aliases = {".jpeg": ".jpg", ".tiff": ".tif"}
+        if extension_demandee in extensions_images and aliases.get(extension_demandee, extension_demandee) != ext:
+            return {"erreur": f"Extension {extension_demandee} incompatible avec le contenu {ext} ; "
+                              "omettre l'extension pour utiliser celle de l'originale."}
         h = archivage.empreinte(data)
         vue = str(loc.get("vue") or page or "")
         nom_f = archivage.nom_piece(labels, ext, custom_name, commune=commune, depot=depot, type_piece=type_piece,
@@ -891,20 +899,23 @@ def piece_archiver(source: str, page: int = 0, personnes: list[str] | None = Non
         if not existe:
             ecrire_atomique(dest, data)
     except (iiif.IiifError, SourceError, KeyError, CheminRefuse, pieces.PieceError, OSError) as exc:
-        return {"erreur": str(exc), "source": source}
+        from .sources.base import error_envelope
+        failure = error_envelope(a.sctx, "archives", "piece_archiver", {"source": source, "page": page}, exc)
+        return {"erreur": str(exc), "source": source, "journal": failure["journal"]}
     from . import ark as _ark
-    a_ = _ark.find(source)
     source_obj = t.sources.get(source_arbre)
     arbre_ark = (source_obj.ark or source_obj.url) if source_obj else ""
     source_ark = _ark.find(arbre_ark)
-    ark_citation = loc.get("ark_vue") or (a_.id if a_ else "") or (source_ark.id if source_ark else "")
-    loc["ark_vue"] = ark_citation
+    ark_citation = loc.get("ark_vue") or ""
+    if not loc.get("ark_ressource") and source_ark:
+        loc["ark_ressource"] = source_ark.base
+    ark_lien = ark_citation or (source_ark.id if source_ark else "") or loc.get("ark_ressource", "")
     service = by_code(depot) if depot else None
     reutil = ""
     if service:
         reutil = service.get("reutilisation") or (f"conditions à vérifier sur {service['site']}"
                                                   if service.get("site") else "")
-    meta = {"ark": ark_citation, "url": source if source.startswith(("http://", "https://")) else "",
+    meta = {"ark": ark_lien, "url": source if source.startswith(("http://", "https://")) else "",
             "url_image": extra.get("url_image", ""), "service_iiif": loc.get("service", ""),
             "manifeste": loc.get("manifeste", ""), "vue": int(vue) if vue.isdigit() else vue, "depot": depot,
             "cote": cote, "commune": commune, "type_piece": type_piece.upper(), "annees": annees, "acte": acte,
@@ -940,8 +951,8 @@ def piece_archiver(source: str, page: int = 0, personnes: list[str] | None = Non
                   personne=ids[0] if ids else None)
     citation = {"source": source_arbre or "<S… : créer la source d'abord>", "page": (f"vue {vue}" + (f"/{loc['nb_vues']}" if loc.get("nb_vues") else "")) if vue else "",
                 "medias": ["$piece"], "consultation": "image"}
-    if meta["ark"]:
-        citation["ark"] = meta["ark"]
+    if ark_citation:
+        citation["ark"] = ark_citation
     out = {**localisation, "dimensions_originales": dimensions, "cout_estime_tokens": cout_tokens,
            "fichier": ref, "chemin_absolu": str(dest), "note": cfg.media_ref(note), "deja_present": existe,
            "octets": len(data), "dossier": str(dest.parent.relative_to(cfg.pieces_root.resolve()))

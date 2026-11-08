@@ -235,3 +235,38 @@ def test_ark_image_api_ne_contient_pas_taille_rotation_qualite(app, routes):
     loc = iiif.resoudre_vue(app.sctx, service + "/pct:10,20,30,40/800,/0/default.jpg")
     assert loc["vue"] == 12 and loc["ark_vue"] == "ark:/12148/bpt6k123/f12"
     assert not routes.calls
+
+
+def test_manifest_ark_technique_pas_transforme_en_citation_de_vue(app_famille, routes):
+    manifest = HOST + "/iiif/ark:/33518/registrefictif/manifest.json"
+    service = "https://images.exemple.org/iiif/opaque"
+    routes.get(manifest).respond(200, json={"items": [{"items": [{"items": [{"body": {
+        "id": service + "/full/max/0/default.jpg", "service": [{"id": service}]}}]}]}]})
+    routes.get(service + "/full/max/0/default.jpg").respond(200, content=jpeg())
+    result = server.piece_archiver(manifest)
+    assert "erreur" not in result, result
+    assert result["ark_vue"] == ""
+    assert "ark" not in result["citation_suggeree"]
+    note = Path(result["chemin_absolu"]).with_suffix(".md").read_text()
+    assert 'ark: "ark:/33518/registrefictif"' in note
+    assert 'ark: "ark:/33518/registrefictif/manifest.json"' not in note
+
+
+@pytest.mark.parametrize("nom", ["MARTIN Jean -- N.md", "MARTIN Jean -- N.txt"])
+def test_nom_image_avec_extension_non_image_refuse_avant_reseau(app_famille, routes, nom):
+    assert "erreur" in server.piece_archiver(VIEW, nom_fichier=nom)
+    assert not routes.calls
+
+
+def test_extension_image_incompatible_contenu_ne_cree_pas_piece(app_famille, routes):
+    routes.get(IMAGE).respond(200, content=jpeg())
+    result = server.piece_archiver(IMAGE, nom_fichier="MARTIN Jean -- N.png")
+    assert "erreur" in result
+    assert not list(app_famille.config.pieces_root.rglob("*.png"))
+
+
+def test_erreur_de_resolution_tracee_au_journal(app, routes):
+    routes.get(API, params=PARAMS).respond(403, text="Accès refusé")
+    result = server.archive_image(VIEW)
+    assert "erreur" in result
+    assert app.journal.entries(statut="erreur")

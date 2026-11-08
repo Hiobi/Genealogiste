@@ -152,7 +152,10 @@ ce sont des métadonnées à contrôler, pas une transcription ni une preuve de 
 un patronyme seul. L'omettre pour construire le nom avec `personnes`, `type_piece`, `commune`, `cote`,
 `vue` et `acte`. `nom` reste un ancien alias avec avertissement. Le classement utilise les personnes et
 le type fournis, y compris lorsqu'un nom complet personnalisé remplace le nom calculé. Les noms invalides
-et références inconnues sont refusés avant de télécharger.
+et références inconnues sont refusés avant de télécharger. `.md` est réservé à la note : un nom de pièce
+avec cette extension est refusé ; une autre extension doit correspondre au contenu réellement reçu.
+Sans extension d'image/PDF, celle de l'originale est ajoutée. Un ARK de manifeste ou de ressource n'est
+pas transformé en identifiant de vue dans la citation suggérée.
 
 Exemples de demandes : « Lis cette vue des AD59 en aperçu », « Recadre la moitié droite », puis
 « Archive l'original pour I1, naissance, acte 47 ». L'archivage crée des fichiers et une note ; le
