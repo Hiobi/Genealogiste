@@ -110,3 +110,12 @@ renvois et indisponibilités explicites. Le [guide de saisie](couvertures-archiv
 la frontière des seuils glissants et la compatibilité des anciennes plages. Les résultats ne prouvent
 pas la présence d’un acte. #25 peut poursuivre la saisie de petits lots avec ces règles, sans transformer
 les couvertures variables en booléens globaux.
+
+## Complément du lot — 0.15.1
+
+Le [relevé du 8 novembre](releves-archives-2026-11-08.md) confirme l’identité du site de l’Aude,
+le portail documentaire commun aux deux départements corses et une page officielle de publications
+pour Mayotte. Les anciennes réserves de confirmation ci-dessus sont l’historique des premiers essais.
+L’Aude dispose de couvertures `annoncee` (registres jusqu’à 1922, tables sans bornes établies) ; le calcul
+reste inconnu. Aucune plage corse n’est déduite du formulaire et aucune visionneuse mahoraise n’est
+revendiquée. Les références et `releve_le` sont renseignés, sans modification de `verifie_le`.
