@@ -8,7 +8,9 @@ import subprocess
 from collections import Counter
 from pathlib import Path
 
+import httpx
 import pytest
+import respx
 from PIL import Image
 
 from genealogiste_mcp import pieces, server
@@ -299,3 +301,239 @@ def _decision(tool: str) -> str | None:
                                           ("piece_nommer", "allow"), ("pieces_appliquer", "ask")])
 def test_hooks_pieces(tool, attendu):
     assert _decision(f"mcp__plugin_genealogiste_genealogiste__{tool}") == attendu
+
+
+# ---------------------------------------------------------------- #101 : périmètre, note et annulation
+
+@pytest.mark.parametrize("origine", ["configuration", "obsidian", "exterieur"])
+def test_sous_dossier_racine_et_annulation(app, tmp_path, origine):
+    vault = tmp_path / "fonds"
+    scope = vault / pieces.A_TRIER
+    _ecrire(vault, f"{pieces.A_TRIER}/scan.jpg", b"selection")
+    _ecrire(vault, f"{pieces.A_TRIER}/opaque.jpg", b"non identifie")
+    _ecrire(vault, "ailleurs/naissance MARTIN.jpg", b"hors perimetre")
+    if origine == "configuration":
+        app.config.media_dir_conf = vault / "documents"
+    elif origine == "obsidian":
+        (vault / ".obsidian").mkdir()
+    racine = scope if origine == "exterieur" else vault
+    avant = _etat(vault)
+    nom = pieces.nommer(["DUPONT Jean"], type_piece="N", extension="jpg")
+    r = server.pieces_proposer(str(scope), renommages=[{"actuel": "scan.jpg", "propose": nom}])
+    assert r["racine"] == str(racine) and r["perimetre"] == str(scope)
+    if origine != "exterieur":
+        assert r["nb_deplacements"] == 1
+        assert r["apercu"][0].startswith("_À trier/scan.jpg  →  documents/")
+    out = server.pieces_appliquer(r["jeton"])
+    assert not out["erreurs"] and out["controle"]["empreintes_identiques"]
+    assert (racine / "documents/État civil/DUPONT" / nom).exists()
+    assert (racine / out["journal"]).exists()
+    assert not (scope / "_À trier/_À trier").exists()
+    assert server.pieces_proposer(str(scope))["note"] == "Rien à déplacer."
+    undo = server.pieces_proposer(str(scope), annuler=Path(out["journal"]).name)
+    assert not server.pieces_appliquer(undo["jeton"])["erreurs"]
+    assert _etat(vault) == avant
+
+
+def test_seulement_renommages_ignore_doublons_et_autres_pieces(app, dossier):
+    avant = _etat(dossier)
+    nom = pieces.nommer(["DUPONT Jean"], type_piece="N", extension="jpg")
+    r = server.pieces_proposer(str(dossier), seulement_renommages=True,
+                              renommages=[{"actuel": "scans/copie/acte naissance DUPONT 1850 (1).jpg", "propose": nom}])
+    assert r["nb_deplacements"] == 1 and r["doublons"] == 0
+    assert "archives/Doublons" not in r["apercu"][0]
+    assert not server.pieces_appliquer(r["jeton"])["erreurs"]
+    apres = _etat(dossier)
+    change = "scans/copie/acte naissance DUPONT 1850 (1).jpg"
+    assert all(apres.get(p) == h for p, h in avant.items() if p != change)
+    assert server.pieces_proposer(str(dossier), seulement_renommages=True)["note"] == "Rien à déplacer."
+
+
+@pytest.mark.parametrize("legacy", [False, True])
+def test_note_compagnon_liens_texte_libre_et_retour_exact(app, tmp_path, legacy):
+    from genealogiste_mcp import archivage
+    from genealogiste_mcp.markdown import lien_fichier
+
+    vault = tmp_path / "fonds"
+    app.config.media_dir_conf = vault
+    image = vault / "_À trier/scan [1].jpg"
+    _ecrire(vault, "_À trier/scan [1].jpg", b"image")
+    note = archivage.note_compagnon(image, {"ark": "ark:/12345/test", "vue": 12}, ["[[personnes/I1]]"], "[[sources/S1]]")
+    texte = note.read_text()
+    if legacy:
+        texte = texte.replace(lien_fichier(image.name, image=True), f"![[{image.name}]]")
+    libre = '\nTexte personnel : scan [1].jpg\n![[scan [1].jpg]]\n'
+    note.write_text(texte + libre)
+    avant = _etat(vault)
+    nom = pieces.nommer(["DUPONT Jean"], type_piece="N", annees="1850", extension="jpg")
+    r = server.pieces_proposer(str(image.parent), seulement_renommages=True,
+                              renommages=[{"actuel": image.name, "propose": nom}])
+    assert r["nb_deplacements"] == 2 and _etat(vault) == avant
+    out = server.pieces_appliquer(r["jeton"])
+    assert not out["erreurs"] and out["controle"]["empreintes_identiques"]
+    cible = vault / "documents/État civil/DUPONT" / nom
+    texte_apres = cible.with_suffix(".md").read_text()
+    assert f'fichier: "{nom}"' in texte_apres
+    assert lien_fichier(nom, image=True) in texte_apres
+    assert texte_apres.endswith(libre) and '[[personnes/I1]]' in texte_apres
+    assert not note.exists() and not image.exists()
+    undo = server.pieces_proposer(str(vault), annuler=Path(out["journal"]).name)
+    assert not server.pieces_appliquer(undo["jeton"])["erreurs"]
+    assert _etat(vault) == avant
+
+
+def test_note_modifiee_refuse_tout_le_plan(app, tmp_path):
+    from genealogiste_mcp import archivage
+    vault = tmp_path / "fonds"
+    _ecrire(vault, "scan.jpg", b"image")
+    note = archivage.note_compagnon(vault / "scan.jpg", {}, [], "")
+    r = server.pieces_proposer(str(vault))
+    note.write_text(note.read_text() + "\nSaisie récente\n")
+    avant = _etat(vault)
+    assert "modifiée" in server.pieces_appliquer(r["jeton"])["erreur"]
+    assert _etat(vault) == avant
+
+
+def test_collision_note_suffixe_image_et_note(app, tmp_path):
+    from genealogiste_mcp import archivage
+    vault = tmp_path / "fonds"
+    _ecrire(vault, "scan.jpg", b"image")
+    archivage.note_compagnon(vault / "scan.jpg", {}, [], "")
+    _ecrire(vault, "_À trier/scan.md", b"note manuelle a preserver")
+    r = server.pieces_proposer(str(vault))
+    assert r["nb_deplacements"] == 2
+    assert not server.pieces_appliquer(r["jeton"])["erreurs"]
+    assert (vault / "_À trier/scan (2).jpg").exists()
+    assert (vault / "_À trier/scan (2).md").exists()
+    assert (vault / "_À trier/scan.md").read_bytes() == b"note manuelle a preserver"
+
+
+def test_echec_deplacement_restaure_paire(app, tmp_path, monkeypatch):
+    from genealogiste_mcp import archivage
+    vault = tmp_path / "fonds"
+    _ecrire(vault, "scan.jpg", b"image")
+    archivage.note_compagnon(vault / "scan.jpg", {}, [], "")
+    avant = _etat(vault)
+    r = server.pieces_proposer(str(vault))
+    rename = pieces.os.rename
+    def echec(src, dst):
+        if src.name == "scan.jpg":
+            raise OSError("échec simulé")
+        return rename(src, dst)
+    monkeypatch.setattr(pieces.os, "rename", echec)
+    out = server.pieces_appliquer(r["jeton"])
+    assert out["erreurs"] and out["deplaces"] == 0
+    assert _etat(vault) == avant
+
+
+def test_registre_archivage_suit_rangement_et_annulation(app, tmp_path, monkeypatch):
+    from genealogiste_mcp.sources import iiif
+    image = tmp_path / "original.jpg"
+    Image.new("RGB", (20, 30), "white").save(image)
+    vault = tmp_path / "fonds"
+    app.config.media_dir_conf = vault
+    archive = server.piece_archiver(str(image))
+    fichier = Path(archive["chemin_absolu"])
+    nom = pieces.nommer(["DUPONT Jean"], type_piece="N", extension="jpg")
+    plan = server.pieces_proposer(str(fichier.parent), seulement_renommages=True,
+                                 renommages=[{"actuel": fichier.name, "propose": nom}])
+    out = server.pieces_appliquer(plan["jeton"])
+    assert not out["erreurs"]
+    def interdit(*args, **kwargs):
+        raise AssertionError("aucun nouveau téléchargement")
+    monkeypatch.setattr(iiif, "full_image", interdit)
+    hit = server.piece_archiver(str(image))
+    cible = vault / "documents/État civil/DUPONT" / nom
+    assert hit["deja_archivee"] and hit["chemin_absolu"] == str(cible)
+    assert hit["fichier"] == app.config.media_ref(cible)
+    assert hit["note"] == app.config.media_ref(cible.with_suffix(".md"))
+    undo = server.pieces_proposer(str(vault), annuler=Path(out["journal"]).name)
+    assert not server.pieces_appliquer(undo["jeton"])["erreurs"]
+    assert server.piece_archiver(str(image))["chemin_absolu"] == str(fichier)
+
+
+@pytest.mark.parametrize("dossier", ["personnes", ".obsidian", "sources"])
+def test_perimetre_protege_refuse(app, tmp_path, dossier):
+    app.config.media_dir_conf = tmp_path
+    (tmp_path / dossier).mkdir()
+    assert "protégé" in server.pieces_proposer(str(tmp_path / dossier))["erreur"]
+
+
+def test_note_sur_place_si_seule_casse_extension_change(app, tmp_path):
+    from genealogiste_mcp import archivage
+    vault = tmp_path / "fonds"
+    _ecrire(vault, "_À trier/scan.JPG", b"image")
+    app.config.media_dir_conf = vault
+    archivage.note_compagnon(vault / "_À trier/scan.JPG", {}, [], "")
+    avant = _etat(vault)
+    r = server.pieces_proposer(str(vault))
+    out = server.pieces_appliquer(r["jeton"])
+    assert not out["erreurs"] and out["notes_compagnons"] == {"verifiees": 1, "conformes": True}
+    assert 'fichier: "scan.jpg"' in (vault / "_À trier/scan.md").read_text()
+    undo = server.pieces_proposer(str(vault), annuler=Path(out["journal"]).name)
+    assert not server.pieces_appliquer(undo["jeton"])["erreurs"]
+    assert _etat(vault) == avant
+
+
+def test_note_ordinaire_et_lien_symbolique_restent_intacts(app, tmp_path):
+    vault = tmp_path / "fonds"
+    _ecrire(vault, "scan.jpg", b"image")
+    _ecrire(vault, "scan.md", b"---\ntype: personne\n---\nContenu manuel")
+    _ecrire(vault, "autre.jpg", b"autre")
+    externe = tmp_path / "externe.md"
+    externe.write_text('---\ntype: piece\n---\n')
+    (vault / "autre.md").symlink_to(externe)
+    out = server.pieces_appliquer(server.pieces_proposer(str(vault))["jeton"])
+    assert not out["erreurs"] and out["notes_compagnons"]["verifiees"] == 0
+    assert (vault / "scan.md").read_bytes().endswith(b"Contenu manuel")
+    assert (vault / "autre.md").is_symlink() and externe.read_text() == '---\ntype: piece\n---\n'
+
+
+def test_note_partagee_refuse_meme_en_mode_cible(app, tmp_path):
+    from genealogiste_mcp import archivage
+    vault = tmp_path / "fonds"
+    _ecrire(vault, "scan.jpg", b"jpg")
+    _ecrire(vault, "scan.png", b"png")
+    archivage.note_compagnon(vault / "scan.jpg", {}, [], "")
+    avant = _etat(vault)
+    r = server.pieces_proposer(str(vault), seulement_renommages=True,
+                              renommages=[{"actuel": "scan.jpg", "propose": "autre.jpg"}])
+    assert "partagée" in r["erreur"] and _etat(vault) == avant
+
+
+def test_note_editee_apres_rangement_annulation_refusee(app, tmp_path):
+    from genealogiste_mcp import archivage
+    vault = tmp_path / "fonds"
+    _ecrire(vault, "scan.jpg", b"image")
+    archivage.note_compagnon(vault / "scan.jpg", {}, [], "")
+    out = server.pieces_appliquer(server.pieces_proposer(str(vault))["jeton"])
+    note = vault / "_À trier/scan.md"
+    note.write_text(note.read_text() + "\nTexte postérieur\n")
+    avant = _etat(vault)
+    undo = server.pieces_proposer(str(vault), annuler=Path(out["journal"]).name)
+    assert "modifiée" in server.pieces_appliquer(undo["jeton"])["erreur"]
+    assert _etat(vault) == avant
+
+
+@respx.mock
+def test_url_archivee_deplacee_reconnue_sans_reseau(app, tmp_path, monkeypatch):
+    import io
+
+    from genealogiste_mcp.sources import iiif
+    buf = io.BytesIO()
+    Image.new("RGB", (20, 30), "red").save(buf, "JPEG")
+    source = "https://archives.example/acte.jpg"
+    respx.get(source).mock(return_value=httpx.Response(200, content=buf.getvalue()))
+    app.config.media_dir_conf = tmp_path / "fonds"
+    archive = server.piece_archiver(source)
+    image = Path(archive["chemin_absolu"])
+    nom = pieces.nommer(["DUPONT Jean"], type_piece="N", extension="jpg")
+    plan = server.pieces_proposer(str(image.parent), seulement_renommages=True,
+                                 renommages=[{"actuel": image.name, "propose": nom}])
+    assert not server.pieces_appliquer(plan["jeton"])["erreurs"]
+    def interdit(*args, **kwargs):
+        raise AssertionError("ni résolution ni téléchargement attendus")
+    monkeypatch.setattr(iiif, "resoudre_vue", interdit)
+    hit = server.piece_archiver(source)
+    assert hit["deja_archivee"] and Path(hit["chemin_absolu"]).name == nom
+    assert len(respx.calls) == 1

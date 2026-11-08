@@ -29,7 +29,9 @@ CAPTURE (arbre en ligne), PHOTO, TOMBE, LIEU.
 
 ## Déroulé
 1. `pieces_inventaire` → 2. `pieces_proposer` → accord → `pieces_appliquer` → 3. triage de `_À trier/`
-(analyse de classement) → `pieces_proposer(renommages=…)` → accord → `pieces_appliquer`.
+(analyse de classement) → `pieces_proposer(renommages=…, seulement_renommages=true)` → accord → `pieces_appliquer`.
+Présenter la racine, le périmètre et le résumé du plan. Les chemins `actuel` sont relatifs au dossier
+parcouru ; l’aperçu est relatif à la racine. Les notes `type: piece` suivent automatiquement leur image.
 Gros dossiers : présenter le résumé, jamais la liste complète. Le plan complet est dans le fichier TSV.
 
 ## Rattacher une pièce à l'arbre

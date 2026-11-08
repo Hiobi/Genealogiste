@@ -75,16 +75,20 @@ _organisation/            journaux TSV des déplacements
   On garde l'exemplaire déjà classé, sinon le premier par ordre de chemin.
 - **Journal TSV** `_organisation/<date>.tsv` (`ancien_chemin`, `nouveau_chemin`, `motif`, `sha256`). Il est
   écrit et synchronisé ligne par ligne. Pour annuler : `pieces_proposer(dossier, annuler="<journal>.tsv")`,
-  puis `pieces_appliquer`.
+  puis `pieces_appliquer`. Les journaux avec notes compagnons contiennent aussi leurs contenus avant/après
+  et leurs empreintes, pour restaurer exactement le texte initial. Ils restent privés dans le fonds.
 - **Contrôle** : le dossier doit être identique au plan (nombre de fichiers et empreintes), sinon le plan est
   refusé. Chaque fichier est vérifié avant son déplacement. Après l'application, le résultat indique le
   nombre de fichiers avant et après et compare les empreintes.
 - **Hors du périmètre**, et donc jamais touchés : les dossiers `personnes/`, `familles/`, `sources/` et `patronymes/`
   générés par les notes ([notes.md](notes.md)), les dossiers et fichiers cachés (`.obsidian`, `.git`), les
-  liens symboliques, les notes Markdown et les fichiers texte qui ne sont pas des fichiers INSEE.
+  liens symboliques, les notes Markdown ordinaires et les fichiers texte qui ne sont pas des fichiers INSEE. Une note
+  de même nom de base que la pièce et portant `type: piece` suit celle-ci ; `fichier` et son image
+  incorporée sont actualisés. La section `## Notes` et les autres propriétés sont préservées. Une note
+  modifiée depuis le plan bloque l’application avant tout déplacement.
 - **Médias de l'arbre** : un fichier référencé par un média de l'arbre n'est pas déplacé (la référence
   casserait) ; il est listé dans `references_arbre_non_deplacees`.
-- Tous les déplacements restent **dans le dossier** (chemins résolus et confinés, voir
+- Tous les déplacements restent **dans la racine affichée** (chemins résolus et confinés, voir
   [securite.md](securite.md)) : un nom proposé comme `../x.jpg` se réduit à `x.jpg`. La racine du disque et
   le dossier personnel sont refusés.
 - Déplacements par renommage atomique, sans copie puis suppression.
@@ -102,7 +106,7 @@ Grave) :
    proposition `arbre_proposer` à valider. **Il n'écrit jamais dans l'arbre** ;
 4. il laisse les pièces illisibles dans `_À trier/` avec un nom descriptif (`illisible - acte manuscrit
    XVIIIe - 1.jpg`) ;
-5. il passe les renommages à `pieces_proposer(dossier, renommages=[{actuel, propose}])`. Chaque pièce est
+5. il passe les renommages à `pieces_proposer(dossier, renommages=[{actuel, propose}], seulement_renommages=true)`. Chaque pièce est
    reclassée d'après son nouveau nom.
 
 ## Médias et rapports dans le vault
@@ -180,16 +184,46 @@ personne masquée.
 | Outil | Effet | Confirmation |
 |---|---|---|
 | `pieces_inventaire(dossier)` | comptes par type, patronymes, doublons, fichiers ignorés | non |
-| `pieces_proposer(dossier, renommages, annuler)` | plan complet (TSV), aperçu, résumé par dossier, jeton | non |
+| `pieces_proposer(dossier, renommages, annuler, seulement_renommages)` | plan complet (TSV), aperçu, résumé par dossier, jeton | non |
 | `pieces_appliquer(jeton)` | déplacements, journal, contrôle | **oui** |
 | `piece_nommer(personnes, …)` | nom selon la convention et dossier de destination | non |
 | `piece_archiver(source, page, personnes, …)` | vue téléchargée en pleine résolution, nommée, rangée, avec sa note | règle par défaut |
 | `media_enregistrer(chemin, nom, classer)` | copie d'une pièce dans le répertoire des médias | règle par défaut |
 
-Le reclassement ultérieur depuis un sous-dossier et le déplacement automatique des notes compagnons
-restent suivis dans [l'issue #101](https://github.com/Hiobi/Genealogiste/issues/101). Pour une pièce connue,
-renseigner les personnes et le type dès l'archivage pour obtenir directement son emplacement final ;
-éviter de déplacer séparément l'image et sa note.
+## Ranger depuis un sous-dossier
+
+`dossier` délimite les pièces à examiner. La racine des destinations est déterminée séparément :
+
+1. racine des pièces configurée (`GENEALOGISTE_MEDIA_DIR`, ou son parent si le dossier s’appelle `documents`),
+   lorsque le périmètre se trouve dedans ;
+2. sinon, plus proche dossier parent contenant `.obsidian/` ;
+3. sinon, le dossier fourni constitue un fonds autonome. Un dossier extérieur n’est pas importé
+   automatiquement dans le vault configuré.
+
+Le plan affiche `racine`, `perimetre` et des chemins depuis la racine :
+
+```text
+racine : /chemin/fonds
+perimetre : /chemin/fonds/_À trier
+_À trier/scan.jpg → documents/État civil/DUPONT/DUPONT Jean -- N [1850].jpg
+_À trier/scan.md  → documents/État civil/DUPONT/DUPONT Jean -- N [1850].md
+```
+
+Les chemins `actuel` des renommages restent relatifs au `dossier` fourni. Pour traiter seulement
+quelques pièces, utiliser `seulement_renommages=true` : les autres pièces et doublons ne sont pas déplacés.
+Sans ce paramètre, le classement complet porte sur le périmètre. Les destinations et journaux
+`_organisation/` restent sous la racine. Une relance sans changement dans `_À trier/` ne crée aucun
+niveau supplémentaire (même si ce dossier constitue un fonds autonome) ; une pièce déjà à sa place n’apparaît pas dans le plan.
+
+L’image et sa note sont traitées ensemble : une collision sur l’un des deux noms entraîne un suffixe
+commun ; un échec de déplacement restaure le groupe. Une note partagée par plusieurs pièces est refusée
+pour éviter d’attribuer son contenu au mauvais fichier. Le renommage conserve l’extension : il ne convertit
+pas l’image. Le contrôle d’empreintes porte sur les pièces ; les notes actualisées sont contrôlées séparément.
+
+Pour annuler, fournir le nom du journal à `pieces_proposer`, depuis la racine ou un de ses sous-dossiers.
+Les anciens journaux restent lisibles en désignant leur racine d’origine. Le registre d’archivage suit les
+nouveaux emplacements et leur annulation, pour reconnaître une originale conservée sans la télécharger
+à nouveau. Les médias déjà référencés dans l’arbre restent protégés ; le rattachement se fait après rangement.
 
 ## Vérifier le téléchargement sur des ressources publiques
 
@@ -205,4 +239,4 @@ Elle utilise un dossier jetable, un arbre vide, un aperçu, un recadrage et un a
 puis exige qu'un nouvel archivage ne fasse aucune requête. Aucune image réelle n'est ajoutée au dépôt.
 Les quatre cas ont été essayés le 8 novembre 2026 : [résultats et limites](telechargement-international.md).
 Les estimations de tokens sont des ordres de grandeur, pas un décompte de facturation du modèle.
-Le catalogue de compatibilité complet du wiki est suivi dans [l'issue #107](https://github.com/Hiobi/Genealogiste/issues/107).
+Voir le [catalogue de compatibilité du wiki](../wiki/Services-archives.md).

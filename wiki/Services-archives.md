@@ -4,7 +4,7 @@
 document. Un ARK identifie une ressource ; il ne garantit ni sa numérisation, ni l’accès à son image.
 Le pays ne détermine pas la compatibilité : un lien IIIF exploitable peut fonctionner sans adaptateur national.
 
-Ce catalogue décrit **Genealogiste 0.19.0**, avec un état de qualification au **8 novembre 2026**.
+Ce catalogue décrit **Genealogiste 0.19.1**, avec un état de qualification au **8 novembre 2026**.
 Il complète le [référentiel des services français](../docs/archives.md), qui indique les lieux et fonds
 à rechercher : être dans ce référentiel ne signifie pas disposer d’un téléchargement automatisé.
 
@@ -54,7 +54,7 @@ connus ; IIIF peut rester inconnu. Ne pas extrapoler l’adaptateur AD59 aux ser
 ## Services documentés avec accès manuel ou non qualifié
 
 Ces portails constituent des pistes pour poursuivre la qualification. Aucun adaptateur spécifique de
-téléchargement n’est livré pour eux en 0.19.0. Les sources institutionnelles et leurs contraintes détaillées
+téléchargement n’est livré pour eux en 0.19.1. Les sources institutionnelles et leurs contraintes détaillées
 figurent dans la [matrice documentaire internationale](../docs/telechargement-international.md#matrice-documentaire-par-service).
 Aucun appel authentifié ni commande payante n’a été effectué.
 
@@ -79,7 +79,7 @@ Aucun appel authentifié ni commande payante n’a été effectué.
 | Voir et recadrer | `archive_image` : aperçu 800 px en gris par défaut ; région ciblée ensuite | Largeur bornée à 2000 px, pas d’agrandissement au-delà de la région source ; recadrage local si absence de IIIF |
 | Lire / transcrire | Demande de lecture assistée, notamment `/genealogiste:transcris` | Étape du modèle après obtention de l’image ; incertitudes à relire. Les recettes réseau ne valident ni transcription ni exactitude des noms et dates |
 | Conserver l’original | `piece_archiver` récupère la vue entière en pleine résolution et couleur, ou le fichier fourni | Ne conserve pas seulement l’aperçu ; un PDF local peut être conservé sans rendre ses pages pour lecture |
-| Classer et documenter | Nom conventionnel, classement selon personnes/type, note Markdown compagnon, empreinte SHA-256 et registre local | Sans informations suffisantes : `_À trier/`. Le reclassement et les déplacements des notes restent suivis dans [#101](https://github.com/Hiobi/Genealogiste/issues/101) |
+| Classer et documenter | Nom conventionnel, classement selon personnes/type, note Markdown compagnon, empreinte SHA-256 et registre local | Sans informations suffisantes : `_À trier/`. Rangement depuis un sous-dossier, renommages ciblés et déplacement de la note avec restauration par journal ; médias déjà liés à l’arbre protégés |
 | Conserver la provenance | Liens fournis, ARK de vue et de ressource distincts, URL technique, cote, titre, droits reçus, date de consultation | Champs absents laissés inconnus ; aucune pérennité affirmée pour une simple URL technique. Conserver aussi les références relevées manuellement |
 | Rattacher à l’arbre | Opérations et citation suggérées, puis `arbre_proposer` / `arbre_appliquer` après accord | Archiver ne modifie pas l’arbre ; une image téléchargée ne confirme pas seule une filiation |
 

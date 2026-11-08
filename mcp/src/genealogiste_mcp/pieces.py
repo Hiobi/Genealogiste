@@ -6,7 +6,7 @@ Principes :
 - doublons (même SHA-256) isolés dans archives/Doublons/ ;
 - journal TSV ancien_chemin → nouveau_chemin écrit au fil des déplacements (annulation) ;
 - noms compatibles Windows et Nextcloud ;
-- notes générées (personnes/, familles/, sources/, patronymes/), dossiers cachés et notes Markdown jamais touchés ;
+- notes générées (personnes/, familles/, sources/, patronymes/), dossiers cachés et notes Markdown ordinaires jamais touchées ; les notes type: piece suivent leur média ;
 - contrôle avant/après : même nombre de fichiers, mêmes empreintes.
 """
 
@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import json
 import os
 import re
 import unicodedata
@@ -21,8 +22,11 @@ from collections import Counter
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import quote
 
 from .chemins import CheminRefuse, sous
+from .fichiers import ecrire_atomique
+from .markdown import lien_fichier
 
 # ---------------------------------------------------------------- convention de nommage
 
@@ -338,24 +342,80 @@ def _libre(cible: Path, prises: set[Path], racine: Path, source: Path) -> Path:
     return c
 
 
-def planifier(racine: Path, renommages: list[dict] | None = None, references: set[Path] | None = None) -> dict:
+def racine_organisation(perimetre: Path, configuree: Path) -> Path:
+    """Racine configurée si le périmètre y appartient, sinon vault Obsidian, sinon dossier autonome."""
+    perimetre, configuree = perimetre.resolve(), configuree.resolve()
+    racine = configuree if perimetre.is_relative_to(configuree) else next(
+        (p for p in (perimetre, *perimetre.parents) if (p / ".obsidian").is_dir()), perimetre)
+    if any(_ignore_dossier(p) for p in perimetre.relative_to(racine).parts):
+        raise PieceError("Le périmètre est dans un dossier protégé ou caché.")
+    return racine
+
+
+def _compagnon(racine: Path, rel: Path) -> tuple[Path, str] | None:
+    note = rel.with_suffix(".md")
+    if (racine / note).is_symlink():
+        return None
+    path = sous(racine, note)
+    if not path.is_file():
+        return None
+    try:
+        texte = path.read_bytes().decode("utf-8")
+        fm = re.match(r"\A---\r?\n(.*?)\r?\n---(?:\r?\n|$)", texte, re.S)
+        piece = fm and re.search(r'(?m)^type: *[\"\']?piece[\"\']? *(?:#[^\r\n]*)?\r?$', fm[1])
+    except UnicodeError:
+        return None
+    return (note, texte) if piece else None
+
+
+def _actualiser_note(texte: str, ancien: Path, nouveau: Path) -> str:
+    """Modifie seulement la propriété fichier, le titre généré et les embeds exacts avant les notes libres."""
+    fm = re.match(r"\A---\r?\n(.*?)\r?\n---(?:\r?\n|$)", texte, re.S)
+    propriete = "fichier: " + json.dumps(nouveau.name, ensure_ascii=False)
+    entete, n = re.subn(r"(?m)^fichier:[^\r\n]*", lambda _: propriete, fm[0])
+    if not n:
+        debut = entete.index("\n") + 1
+        fin_ligne = "\r\n" if "\r\n" in entete else "\n"
+        entete = entete[:debut] + propriete + fin_ligne + entete[debut:]
+    corps = texte[fm.end():]
+    # Le contenu libre n'est jamais réécrit, même s'il contient le nom de l'ancienne image.
+    limite = re.search(r"(?m)^## Notes\s*$", corps)
+    genere, libre = (corps[:limite.start()], corps[limite.start():]) if limite else (corps, "")
+    genere = genere.replace(f"# {ancien.stem}\n", f"# {nouveau.stem}\n", 1)
+    for cible in {quote(ancien.name, safe='/'), ancien.name}:
+        motif = r"!\[[^\]\r\n]*\]\(<?" + re.escape(cible) + r">?\)"
+        genere = re.sub(motif, lambda _: lien_fichier(nouveau.name, image=True), genere)
+    genere = re.sub(r"!\[\[" + re.escape(ancien.name) + r"(?:\|[^\]\r\n]*)?\]\]",
+                    lambda _: lien_fichier(nouveau.name, image=True), genere)
+    return entete + genere + libre
+
+
+def planifier(racine: Path, renommages: list[dict] | None = None, references: set[Path] | None = None,
+              perimetre: Path | None = None, seulement_renommages: bool = False) -> dict:
     """Plan de déplacements {de, vers, motif} ; ne modifie rien.
     renommages : [{actuel: chemin relatif, propose: nouveau nom de fichier}] (agent trieur, piece_nommer) ;
     le fichier est ensuite classé d'après son nouveau nom.
     references : chemins absolus de médias liés à l'arbre (jamais déplacés)."""
     racine = Path(racine).resolve()
-    fichiers, ignores = parcourir(racine)
+    perimetre = Path(perimetre or racine).resolve()
+    if not perimetre.is_relative_to(racine):
+        raise PieceError("Le périmètre doit appartenir à la racine.")
+    tous, ignores = parcourir(racine)
+    fichiers = [f for f in tous if (racine / f.rel).is_relative_to(perimetre)]
     par_rel = {f.rel: f for f in fichiers}
     noms: dict[Path, str] = {}
     erreurs = []
     for r in renommages or []:
-        rel = Path(r.get("actuel", ""))
-        if rel not in par_rel:
+        relatif = Path(r.get("actuel", ""))
+        rel = perimetre.relative_to(racine) / relatif
+        if relatif.is_absolute() or ".." in relatif.parts or rel not in par_rel:
             erreurs.append(f"Renommage ignoré : {rel} n'est pas une pièce du dossier")
             continue
         propose = nom_compatible(Path(r.get("propose", "")).name)
         if not Path(propose).suffix:
             propose += rel.suffix.lower()
+        if Path(propose).suffix.lower() != rel.suffix.lower():
+            raise PieceError("Un renommage ne convertit pas le contenu : conserver son extension.")
         noms[rel] = propose
         par_rel[rel].info = detecter(rel.with_name(propose))
     references = {Path(p).resolve() for p in references or ()}
@@ -366,13 +426,17 @@ def planifier(racine: Path, renommages: list[dict] | None = None, references: se
     for f in fichiers:
         groupes.setdefault(f.sha256, []).append(f)
     doublons: set[Path] = set()
-    for grp in groupes.values():
+    for grp in (() if seulement_renommages else groupes.values()):
         grp = [f for f in grp if f.rel.parts[:2] != ("archives", "Doublons")]  # déjà isolés : restent
         if len(grp) > 1:
             grp.sort(key=lambda f: (not f.classe, (racine / f.rel).resolve() not in references, str(f.rel)))
             doublons.update(f.rel for f in grp[1:] if (racine / f.rel).resolve() not in references)
 
+    notes = {}
+    par_note = Counter(f.rel.with_suffix(".md") for f in tous)
     for f in sorted(fichiers, key=lambda f: str(f.rel)):
+        if seulement_renommages and f.rel not in noms:
+            continue
         if (racine / f.rel).resolve() in references:
             if f.rel in noms or f.rel in doublons or not f.classe:
                 protegees.append(str(f.rel))
@@ -390,7 +454,7 @@ def planifier(racine: Path, renommages: list[dict] | None = None, references: se
         else:
             dest = destination(f.info)
             if dest is None:
-                cible_dir = Path(A_TRIER)
+                cible_dir = Path() if racine.name == A_TRIER else Path(A_TRIER)
                 motif = "patronyme inconnu" if f.info["type"] else "type non reconnu"
             else:
                 cible_dir = Path(dest)
@@ -400,15 +464,37 @@ def planifier(racine: Path, renommages: list[dict] | None = None, references: se
         cible = cible_dir / nom
         if cible == f.rel:
             continue
-        cible = _libre(cible, prises, racine, f.rel)
+        compagnon = _compagnon(racine, f.rel)
+        if compagnon and (racine / compagnon[0]).resolve() in references:
+            protegees.append(str(f.rel))
+            continue
+        while True:
+            cible = _libre(cible, prises, racine, f.rel)
+            note_cible = cible.with_suffix(".md")
+            if not compagnon or (note_cible not in prises and
+                                 (not (racine / note_cible).exists() or note_cible == compagnon[0])):
+                break
+        if compagnon:
+            if par_note[compagnon[0]] > 1:
+                raise PieceError(f"Note compagnon partagée par plusieurs pièces : {compagnon[0]}")
+            note_rel, avant = compagnon
+            if note_rel in notes:
+                raise PieceError(f"Note compagnon partagée par plusieurs pièces : {note_rel}")
+            apres = _actualiser_note(avant, f.rel, cible)
+            notes[note_rel] = hashlib.sha256(avant.encode()).hexdigest()
+            prises.add(note_cible)
+            moves.append({"de": str(note_rel), "vers": str(note_cible), "motif": "note compagnon",
+                          "sha256": notes[note_rel], "sha256_apres": hashlib.sha256(apres.encode()).hexdigest(),
+                          "contenu_avant": avant, "contenu_apres": apres, "piece": str(f.rel)})
         moves.append({"de": str(f.rel), "vers": str(cible), "motif": motif, "sha256": f.sha256})
     resume = Counter(str(Path(m["vers"]).parent) for m in moves)
     return {
-        "dossier": str(racine), "pieces": len(fichiers), "deplacements": moves,
+        "dossier": str(racine), "racine": str(racine), "perimetre": str(perimetre),
+        "seulement_renommages": seulement_renommages, "pieces": len(fichiers), "deplacements": moves,
         "resume_par_dossier": dict(sorted(resume.items())),
         "doublons": len(doublons), "a_trier": sum(1 for m in moves if m["vers"].startswith(A_TRIER)),
         "references_arbre_non_deplacees": protegees, "ignores": ignores, "erreurs": erreurs,
-        "empreintes": sorted(f.sha256 for f in fichiers),
+        "empreintes": sorted(f.sha256 for f in tous),
     }
 
 
@@ -425,13 +511,31 @@ def plan_annulation(racine: Path, journal: str) -> dict:
         lignes = [r for r in csv.DictReader(fh, delimiter="\t") if r.get("nouveau_chemin")]
     moves = []
     for r in reversed(lignes):
-        p = racine / r["nouveau_chemin"]
+        try:
+            p = sous(racine, r["nouveau_chemin"])
+            sous(racine, r["ancien_chemin"])
+        except CheminRefuse as exc:
+            raise PieceError(str(exc)) from exc
         if not p.is_file():
             raise PieceError(f"Annulation impossible : {r['nouveau_chemin']} n'existe plus")
         moves.append({"de": r["nouveau_chemin"], "vers": r["ancien_chemin"], "motif": "annulation",
-                      "sha256": r.get("sha256") or sha256(p)})
+                      "sha256": r.get("sha256_apres") or r.get("sha256") or sha256(p)})
+        if r.get("contenu_avant"):
+            try:
+                avant, apres = json.loads(r["contenu_apres"]), json.loads(r["contenu_avant"])
+                if not isinstance(avant, str) or not isinstance(apres, str):
+                    raise ValueError("contenu de note invalide")
+                if hashlib.sha256(apres.encode()).hexdigest() != r["sha256"]:
+                    raise ValueError("empreinte de restauration incohérente")
+            except (ValueError, TypeError) as exc:
+                raise PieceError(f"Journal de note invalide : {journal}") from exc
+            moves[-1].update(contenu_avant=avant, contenu_apres=apres, sha256_apres=r["sha256"])
+        if r.get("piece"):
+            # L'annulation garde le même groupe image/note (avec les chemins inversés).
+            image = next((ligne for ligne in lignes if ligne["ancien_chemin"] == r["piece"]), None)
+            moves[-1]["piece"] = image["nouveau_chemin"] if image else r["piece"]
     fichiers, _ = parcourir(racine)
-    return {"dossier": str(racine), "pieces": len(fichiers), "deplacements": moves,
+    return {"dossier": str(racine), "racine": str(racine), "pieces": len(fichiers), "deplacements": moves,
             "resume_par_dossier": dict(Counter(str(Path(m["vers"]).parent) for m in moves)),
             "empreintes": sorted(f.sha256 for f in fichiers), "annulation_de": str(path.name)}
 
@@ -452,44 +556,78 @@ def appliquer(racine: Path, plan: dict) -> dict:
             raise PieceError(str(exc)) from exc
         if not src.is_file():
             raise PieceError(f"Source absente : {m['de']}")
-        if dst.exists():
+        if sha256(src) != m["sha256"]:
+            raise PieceError(f"Source modifiée depuis le plan : {m['de']}")
+        if dst != src and dst.exists():
             raise PieceError(f"Cible déjà existante : {m['vers']}")
-    jdir = racine / "_organisation"
+    try:
+        jdir = sous(racine, "_organisation")
+    except CheminRefuse as exc:
+        raise PieceError(str(exc)) from exc
     jdir.mkdir(exist_ok=True)
-    journal = jdir / f"{datetime.now().strftime('%Y-%m-%dT%H%M%S')}.tsv"
-    faits, erreurs = 0, []
-    with journal.open("w", encoding="utf-8", newline="") as fh:
+    journal = jdir / f"{datetime.now().strftime('%Y-%m-%dT%H%M%S%f')}.tsv"
+    faits, erreurs, realises = 0, [], []
+    colonnes = ["ancien_chemin", "nouveau_chemin", "motif", "sha256"]
+    if any("contenu_avant" in m for m in plan["deplacements"]):
+        colonnes += ["sha256_apres", "contenu_avant", "contenu_apres", "piece"]
+    with journal.open("x", encoding="utf-8", newline="") as fh:
         w = csv.writer(fh, delimiter="\t", lineterminator="\n")
-        w.writerow(["ancien_chemin", "nouveau_chemin", "motif", "sha256"])
+        w.writerow(colonnes)
         fh.flush()
+        # Une image et sa note forment un groupe : si une opération échoue, restaurer le groupe.
+        groupes = {}
         for m in plan["deplacements"]:
-            src, dst = racine / m["de"], racine / m["vers"]
+            groupes.setdefault(m.get("piece", m["de"]), []).append(m)
+        for groupe in groupes.values():
+            faits_groupe = []
             try:
-                if sha256(src) != m["sha256"]:
-                    raise PieceError("contenu modifié depuis le plan")
-                dst.parent.mkdir(parents=True, exist_ok=True)
-                if dst.exists():
-                    raise PieceError("cible apparue entre-temps")
-                os.rename(src, dst)  # même dossier racine : renommage atomique, jamais de copie + suppression
-            except (OSError, PieceError) as exc:
-                erreurs.append(f"{m['de']} : {exc}")
+                for m in groupe:
+                    src, dst = sous(racine, m["de"]), sous(racine, m["vers"])
+                    if sha256(src) != m["sha256"]:
+                        raise PieceError("contenu modifié depuis le plan")
+                    dst.parent.mkdir(parents=True, exist_ok=True)
+                    if dst != src and dst.exists():
+                        raise PieceError("cible apparue entre-temps")
+                    if dst != src:
+                        os.rename(src, dst)
+                    faits_groupe.append(m)
+                    if "contenu_apres" in m:
+                        ecrire_atomique(dst, m["contenu_apres"])
+            except (OSError, PieceError, CheminRefuse) as exc:
+                for m in reversed(faits_groupe):
+                    src, dst = racine / m["de"], racine / m["vers"]
+                    if "contenu_avant" in m:
+                        ecrire_atomique(dst, m["contenu_avant"])
+                    os.rename(dst, src)
+                erreurs.append(f"{groupe[0]['de']} : {exc}")
                 continue
-            w.writerow([m["de"], m["vers"], m["motif"], m["sha256"]])
+            for m in groupe:
+                ligne = [m["de"], m["vers"], m["motif"], m["sha256"]]
+                if len(colonnes) > 4:
+                    ligne += [m.get("sha256_apres", ""),
+                              json.dumps(m["contenu_avant"], ensure_ascii=False) if "contenu_avant" in m else "",
+                              json.dumps(m["contenu_apres"], ensure_ascii=False) if "contenu_apres" in m else "",
+                              m.get("piece", "")]
+                w.writerow(ligne)
             fh.flush()
             os.fsync(fh.fileno())
-            faits += 1
-    _vider_dossiers(racine, {Path(m["de"]).parent for m in plan["deplacements"]})
+            faits += len(groupe)
+            realises.extend(groupe)
+    _vider_dossiers(racine, {Path(m["de"]).parent for m in realises}, Path(plan.get("perimetre", racine)))
     apres, _ = parcourir(racine)
     controle = {"avant": len(avant), "apres": len(apres),
                 "empreintes_identiques": Counter(f.sha256 for f in avant) == Counter(f.sha256 for f in apres)}
-    return {"deplaces": faits, "erreurs": erreurs, "journal": f"_organisation/{journal.name}",
-            "controle": controle, "annuler": f"pieces_proposer(dossier, annuler='{journal.name}')"}
+    notes = [m for m in realises if "contenu_apres" in m]
+    controle_notes = {"verifiees": len(notes), "conformes": all(sha256(racine / m["vers"]) ==
+                      m["sha256_apres"] for m in notes)}
+    return {"notes_compagnons": controle_notes, "deplaces": faits, "erreurs": erreurs, "journal": f"_organisation/{journal.name}",
+            "controle": controle, "deplacements_realises": realises, "annuler": f"pieces_proposer(dossier, annuler='{journal.name}')"}
 
 
-def _vider_dossiers(racine: Path, dossiers: set[Path]) -> None:
+def _vider_dossiers(racine: Path, dossiers: set[Path], perimetre: Path) -> None:
     """Retire les dossiers devenus vides (jamais un fichier)."""
     for d in sorted(dossiers, key=lambda p: len(p.parts), reverse=True):
         p = racine / d
-        while p != racine and p.is_dir() and not any(p.iterdir()):
+        while p not in (racine, perimetre) and p.is_dir() and not any(p.iterdir()):
             p.rmdir()
             p = p.parent
