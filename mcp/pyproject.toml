@@ -1,6 +1,6 @@
 [project]
 name = "genealogiste-mcp"
-version = "0.15.1"
+version = "0.16.0"
 description = "Serveur MCP du plugin Claude Code « genealogiste » : sources généalogiques françaises, arbre GEDCOM 7 versionné, méthodologie GPS."
 requires-python = ">=3.11"
 license = { text = "MIT" }

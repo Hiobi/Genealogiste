@@ -37,7 +37,7 @@ Chaque modification de l'arbre est un commit dont le message contient la justifi
 Ce dépôt contient des données personnelles : ne le publiez pas sans masquer les personnes vivantes.
 """
 # Le dépôt du plugin ne doit jamais recevoir de données d'arbre
-PLUGIN_REPOS = ("github.com/hiobi/sosa",)
+PLUGIN_REPOS = ("github.com/hiobi/sosa", "github.com/hiobi/genealogiste")
 BASCULE = "BASCULE.json"
 
 

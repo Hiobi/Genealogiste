@@ -117,7 +117,7 @@ va dans `<vault>/documents/État civil/DUPONT/`, une photo dans `<vault>/photogr
 
 - Un média situé dans le répertoire de données est référencé en relatif (`medias/…`). Hors de celui-ci, il
   l'est en chemin absolu. L'envoi vers Gramps Web accepte les deux racines et refuse tout le reste.
-- Un rapport écrit hors du répertoire de données n'est **pas versionné** par Sosa (`commit: null`).
+- Un rapport écrit hors du répertoire de données n'est **pas versionné** par Genealogiste (`commit: null`).
 - `media_enregistrer(chemin, nom, classer=true)` range directement selon la convention :
   `documents/<type>/<NOM>/`, ou `_À trier/` si le nom ne suffit pas.
 

@@ -30,7 +30,7 @@ from ..models import (
 from ..normalize.dates import parse_gedcom_date
 from .core import Node, parse_lines, serialize, strip_xref
 
-EXT_DOC = "https://github.com/hiobi/sosa/blob/main/docs/gedcom-extensions.md"
+EXT_DOC = "https://github.com/Hiobi/Genealogiste/blob/main/docs/gedcom-extensions.md"
 EXTENSIONS = ["_STAT", "_TYPE", "_INFO", "_PREUVE", "_CONSULT", "_VU", "_ORIG", "_URL", "_SOUR", "_VIVANT",
               "_PAROISSE", "_SIGLE", "_ARK", "_RESN"]
 RESN_TAGS = ("RESN", "_RESN")

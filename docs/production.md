@@ -1,4 +1,4 @@
-# Exploiter Sosa et partager le plugin
+# Exploiter Genealogiste et partager le plugin
 
 Le code public se partage ; les données familiales restent dans un espace privé. Cette version vise
 un usage personnel ou familial de confiance, avec une instance et des données distinctes par foyer.

@@ -1,7 +1,7 @@
 # Signaler un problème de sécurité
 
 Ne publiez ni secret, ni donnée généalogique réelle, ni reproduction contenant des données personnelles
-dans une issue publique. Utilisez [le signalement privé GitHub](https://github.com/Hiobi/Sosa/security/advisories/new).
+dans une issue publique. Utilisez [le signalement privé GitHub](https://github.com/Hiobi/Genealogiste/security/advisories/new).
 Fournissez la version, les étapes sur données fictives et l’impact attendu. Les correctifs de sécurité
 portent sur la dernière version publiée ; mettez à jour le plugin et redémarrez le serveur MCP.
 
