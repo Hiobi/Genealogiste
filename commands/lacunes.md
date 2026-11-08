@@ -9,4 +9,4 @@ Lacunes de : **$ARGUMENTS**
    puis faits faibles) : fait, problème, **source à consulter**, service et **cote typique**
    (`cotes_a_consulter`), accès en ligne, délai de communicabilité si récent (`communicabilite`).
 3. Regrouper les actions par service d'archives / déplacement pour un plan efficace.
-4. Proposer de lancer les recherches en ligne correspondantes (`/gen:cherche` ou agent `chercheur`).
+4. Proposer de lancer les recherches en ligne correspondantes (`/genealogiste:cherche` ou agent `chercheur`).

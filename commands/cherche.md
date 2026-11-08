@@ -16,4 +16,4 @@ sources ou variantes ; sinon :
    classification de la source (originale/dérivée/composite), lien. Signaler les **homonymes probables**.
 4. Lister les recherches négatives et les liens des sources secondaires (`liens_recherche`) à consulter par
    l'utilisateur (Geneanet, AD, Mémoire des hommes…) ; proposer de coller le résultat (`source_collee`).
-5. Terminer par la prochaine source à consulter. Ne rien écrire dans l'arbre sans `/gen:ajoute`.
+5. Terminer par la prochaine source à consulter. Ne rien écrire dans l'arbre sans `/genealogiste:ajoute`.

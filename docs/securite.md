@@ -18,7 +18,7 @@ Module `chemins.py` (#41, #51). Les chemins sont résolus (liens symboliques com
 
 | Décision | Outils |
 |---|---|
-| Sans confirmation | recherches, consultations, propositions (`arbre_proposer`, `gramps_bascule_proposer`…) |
+| Sans confirmation | recherches, consultations, propositions (`arbre_proposer`, `gramps_bascule_proposer`…), ainsi que `gramps_recalculer_notes` et `gramps_synchroniser` (écritures auxiliaires déclarées au catalogue) |
 | Confirmation demandée | écritures (`arbre_appliquer`, `rapport_enregistrer`, `gramps_bascule_appliquer`, `gramps_tirer`), identifiants (`familysearch_exporter`, `matchid_appariement_csv`) |
 | Selon les paramètres | `matchid_appariement_statut` : sans confirmation pour consulter, confirmation si `sortie` est renseignée (écriture d'un fichier) |
 | Règle par défaut de Claude Code | tout outil absent des listes (ex. `media_enregistrer`) |
