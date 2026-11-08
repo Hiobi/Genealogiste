@@ -20,9 +20,14 @@ def _years(tree: Tree, pid: str) -> str:
                     a, b = g.start.bounds()
                     avant = g.qualifier in ("BEF", "TO")
                     return ("av. " if avant else "ap. ") + str(jdn_to_gregorian(a if avant else b)[0])
-                lo, hi = g.interval
-                prefix = "~" if hi - lo > 366 else ""
-                return prefix + str(jdn_to_gregorian((lo + hi) // 2)[0])
+                # Affichage des points déclarés, distinct de l'intervalle utilisé pour les comparaisons.
+                # Une fourchette ne constitue pas une estimation de son milieu (#102).
+                lo, hi = g.start.bounds()
+                start = str(jdn_to_gregorian((lo + hi) // 2)[0])
+                if g.qualifier in ("BET", "FROMTO") and g.end:
+                    lo, hi = g.end.bounds()
+                    return start + "/" + str(jdn_to_gregorian((lo + hi) // 2)[0])
+                return ("~" if g.qualifier in ("ABT", "EST", "CAL") else "") + start
         return ""
 
     b, d = y("BIRT", "CHR", "BAPM"), y("DEAT", "BURI")

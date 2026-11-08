@@ -15,7 +15,7 @@ Prérequis : Codex CLI, Git, uv et Python 3.11 ou plus. Conserver un checkout du
 MCP utilisera ce chemin. Les données doivent se trouver dans un autre répertoire privé.
 
 ```bash
-git clone --branch v0.18.0 https://github.com/Hiobi/Genealogiste.git
+git clone --branch v0.18.1 https://github.com/Hiobi/Genealogiste.git
 cd Genealogiste
 codex plugin marketplace add "$PWD" --json
 codex plugin add genealogiste@genealogiste --json
