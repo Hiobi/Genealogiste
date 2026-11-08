@@ -142,7 +142,7 @@ def _label(item: dict) -> str:
 
 class GitMirror:
     """Miroir Git optionnel : arbre Gramps exporté en GEDCOM 7 dans le dépôt des données, un commit par
-    transaction ; les modifications faites hors de Sosa sont commitées à la synchronisation suivante."""
+    transaction ; les modifications faites hors de Genealogiste sont commitées à la synchronisation suivante."""
 
     def __init__(self, store: TreeStore):
         self.store = store
@@ -198,12 +198,12 @@ class GrampsBackend:
         return self.db
 
     def _changed(self, title: str) -> None:
-        """Modifications constatées hors de Sosa : commitées dans le miroir Git à la synchronisation."""
+        """Modifications constatées hors de Genealogiste : commitées dans le miroir Git à la synchronisation."""
         self._tree = None
         if self.mirror:
             self._tree = gramps_to_tree(self.db)[0]
             self.mirror.sync(self._tree, f"{title}\n\nÉtat de l'arbre Gramps Web constaté le {_now()} "
-                             f"(modifications hors de Sosa : interface ou autre client) : "
+                             f"(modifications hors de Genealogiste : interface ou autre client) : "
                              f"{json.dumps(self.last_refresh, ensure_ascii=False)}")
 
     def load(self, fresh: bool = False) -> Tree:
@@ -508,7 +508,7 @@ def bascule_apply(client: GrampsClient, store: TreeStore, tokens: TokenStore, to
     if any(n for c, n in remote.count().items() if c != "Tag"):
         raise ProposalError("L'arbre Gramps Web n'est plus vide : bascule refusée.")
     try:
-        written = client.transaction(record["items"], "Bascule depuis Sosa (arbre.ged)\n\n" + record["resume"][0])
+        written = client.transaction(record["items"], "Bascule depuis Genealogiste (arbre.ged)\n\n" + record["resume"][0])
     except GrampsError as exc:
         raise ProposalError(str(exc)) from exc
     info = {"date": _now(), "gramps_url": client.base.removesuffix("/api"), "objets": summarize(record["items"]),

@@ -776,7 +776,7 @@ def rapport_enregistrer(id: str, titre: str, contenu: str) -> dict:
     path.write_text(contenu, encoding="utf-8")
     if not path.resolve().is_relative_to(a.config.data_dir.resolve()):
         return {"fichier": str(path), "commit": None,
-                "note": "Rapport hors du répertoire de données (GENEALOGISTE_RAPPORTS_DIR) : non versionné par Sosa."}
+                "note": "Rapport hors du répertoire de données (GENEALOGISTE_RAPPORTS_DIR) : non versionné par Genealogiste."}
     rel = path.resolve().relative_to(a.config.data_dir.resolve()).as_posix()
     commit = a.store.commit(f"Rapport de preuve : {titre} ({id})", [rel])
     return {"fichier": str(path), "commit": commit}
@@ -1123,7 +1123,7 @@ def gramps_recherche(texte: str, nombre: int = 20) -> dict:
 
 @mcp.tool()
 def gramps_personne(handle: str) -> dict:
-    """Personne Gramps Web (handle) lue avec la correspondance Sosa (id, noms, faits, statut de preuve)."""
+    """Personne Gramps Web (handle) lue avec la correspondance Genealogiste (id, noms, faits, statut de preuve)."""
     def run():
         from .gramps.mapping import gramps_to_tree
         db = app().gramps().load_all() if app().config.backend != "gramps" else app().backend.snapshot(fresh=False)

@@ -1,14 +1,14 @@
-"""Correspondance modèle Sosa <-> objets Gramps (format JSON brut de Gramps 6 / Gramps Web).
+"""Correspondance modèle Genealogiste <-> objets Gramps (format JSON brut de Gramps 6 / Gramps Web).
 
 Module unique utilisé par l'export Gramps XML et par le mode direct (API) :
-- :func:`gramps_to_tree` lit une base Gramps (:class:`GrampsDb`) en arbre Sosa ;
-- :func:`tree_to_gramps` écrit un arbre Sosa en objets Gramps, **par-dessus** la base lue (``base``) :
-  les identifiants (handles) sont réutilisés et tout ce que Sosa ne modélise pas est conservé tel quel
+- :func:`gramps_to_tree` lit une base Gramps (:class:`GrampsDb`) en arbre Genealogiste ;
+- :func:`tree_to_gramps` écrit un arbre Genealogiste en objets Gramps, **par-dessus** la base lue (``base``) :
+  les identifiants (handles) sont réutilisés et tout ce que Genealogiste ne modélise pas est conservé tel quel
   (adresses, URL, médias d'événements, étiquettes, champs de nom, lieux hiérarchiques…) ;
 - :func:`diff` calcule les éléments de transaction (add / update / delete) entre deux bases.
 
 Correspondance (voir docs/gramps-web.md) :
-- identifiants : ``gramps_id`` = xref Sosa (I12, F3, S7, R1, O2, N4) ; attribut ``Sosa-UID`` sur personnes,
+- identifiants : ``gramps_id`` = xref Genealogiste (I12, F3, S7, R1, O2, N4) ; attribut ``Sosa-UID`` sur personnes,
   familles, événements, ``Sosa-UID noms`` sur la personne (uid des noms dans l'ordre). Un objet créé dans
   l'interface Gramps reçoit un uid dérivé de son handle, non écrit tant qu'il suffit ;
 - statut manuel forcé : attribut ``Sosa-Statut`` (« refute | justification ») sur l'événement / la famille,
@@ -85,7 +85,7 @@ A_FICHIER = "Sosa-Fichier"  # chemin du fichier local (medias/…) ; le chemin G
 CIT_ATTRS = ("Consulté", "Type de source", "Information", "Preuve", "Date de consultation", "QUAY", "ARK")
 SRC_ATTRS = ("URL", "ARK", "Type de source", "Dérivée de")
 STATUS_TAG = "Preuve : "
-# Gabarits des notes générées par Sosa (export GEDCOM/GeneWeb, ancien export Gramps) : reconnues comme
+# Gabarits des notes générées par Genealogiste (export GEDCOM/GeneWeb, ancien export Gramps) : reconnues comme
 # générées même sans étiquette Sosa:auto, puis adoptées (étiquetées et réécrites en place) au lieu d'être doublées.
 GENERATED_NOTE = re.compile(r"^(?:(?:⛔|🟡|🟢|✅|⚠️|⚠|❌) Preuve : |Filiation de .+ : |"
                             r"Fiche de preuve \(plugin genealogiste\)|Lien : https?://)")
@@ -132,7 +132,7 @@ ORDER = ("Tag", "Repository", "Source", "Place", "Note", "Media", "Citation", "E
 
 @dataclass
 class GrampsDb:
-    """Objets Gramps bruts par classe puis handle (+ ce que la lecture a représenté dans Sosa)."""
+    """Objets Gramps bruts par classe puis handle (+ ce que la lecture a représenté dans Genealogiste)."""
     objects: dict[str, dict[str, dict]] = field(default_factory=lambda: {c: {} for c in ORDER})
 
     def get(self, cls: str, handle: str | None) -> dict | None:
@@ -165,7 +165,7 @@ class GrampsDb:
 
 
 def det_handle(*parts: str) -> str:
-    """Handle déterministe (objets créés par Sosa) : stable d'un calcul à l'autre."""
+    """Handle déterministe (objets créés par Genealogiste) : stable d'un calcul à l'autre."""
     return hashlib.sha1("\x1f".join(parts).encode("utf-8")).hexdigest()[:24]
 
 
@@ -236,7 +236,7 @@ def event_role(a: Association) -> str:
 
 
 def role_guess(role: str) -> tuple[str, str]:
-    """Rôle Gramps saisi dans l'interface -> (rôle Sosa, précision)."""
+    """Rôle Gramps saisi dans l'interface -> (rôle Genealogiste, précision)."""
     if role in ROLE_CODES:
         return ROLE_CODES[role], ""
     if role == "Informant":
@@ -295,13 +295,13 @@ def _same_list(base: list, new: list) -> list:
     return base if sorted(map(key, base)) == sorted(map(key, new)) else new
 
 
-# ============================================================================ lecture : Gramps -> Sosa
+# ============================================================================ lecture : Gramps -> Genealogiste
 
 @dataclass
 class ReadInfo:
     """Index produit par la lecture, réutilisé par l'écriture."""
     represented: set[tuple[str, str]] = field(default_factory=set)
-    handles: dict[tuple[str, str], str] = field(default_factory=dict)  # (classe, id Sosa ou uid) -> handle
+    handles: dict[tuple[str, str], str] = field(default_factory=dict)  # (classe, id Genealogiste ou uid) -> handle
     event_owner: dict[str, str] = field(default_factory=dict)  # handle d'événement -> id du propriétaire
     auto_tag: str = ""
 
@@ -651,7 +651,7 @@ def gramps_to_tree(db: GrampsDb) -> tuple[Tree, ReadInfo]:
     return _Reader(db).read()
 
 
-# ============================================================================ écriture : Sosa -> Gramps
+# ============================================================================ écriture : Genealogiste -> Gramps
 
 def proof_data(tree: Tree, strict: bool = False) -> dict:
     """Notes et étiquettes générées (statut de preuve) : {clé : [(type, texte)]}, {uid : statut}."""
@@ -741,7 +741,7 @@ class _Writer:
         return h
 
     def set_attrs(self, obj: dict, owned, desired: list[dict]) -> None:
-        """Remplace les attributs gérés par Sosa (``owned(type)``), conserve les autres et l'ordre."""
+        """Remplace les attributs gérés par Genealogiste (``owned(type)``), conserve les autres et l'ordre."""
         base = obj.get("attribute_list") or []
         keep, pending = [], list(desired)
         for a in base:
@@ -1054,7 +1054,7 @@ class _Writer:
     def build(self) -> GrampsDb:
         t, base, out = self.t, self.base, self.out
         self.links: list[tuple[str, str, int, Association, str]] = []
-        # objets de la base non représentés dans Sosa : conservés tels quels (lieux, notes isolées…)
+        # objets de la base non représentés dans Genealogiste : conservés tels quels (lieux, notes isolées…)
         self.ev_handle: dict[tuple[str, str], str] = {}
         for cls in ORDER:
             for h, o in base.all(cls).items():
@@ -1315,7 +1315,7 @@ def tree_to_gramps(tree: Tree, base: GrampsDb | None = None, strict: bool = Fals
                    generated: bool = True, only: set[tuple[str, str]] | None = None,
                    structure: bool = False) -> GrampsDb:
     """Arbre Sosa -> base Gramps (par-dessus ``base`` si fournie). ``generated`` : notes Sosa:auto ; ``only`` :
-    les recalculer seulement pour ces objets (cls, clé Sosa), celles des autres sont conservées telles quelles ;
+    les recalculer seulement pour ces objets (cls, clé Genealogiste), celles des autres sont conservées telles quelles ;
     ``structure`` : rattacher aussi les lieux à plat de la base à une hiérarchie."""
     w = _Writer(tree, base, strict, generated, only)
     out = w.build()
