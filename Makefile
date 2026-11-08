@@ -2,7 +2,7 @@
 MCP := mcp
 UV  := uv --directory $(MCP)
 
-.PHONY: version help install test test-gramps test-codex lint format check run run-http docker-build docker-up docker-gramps docker-down validate clean verifier-archives
+.PHONY: version help install test test-gramps test-codex lint format check run run-http docker-build docker-up docker-gramps docker-down validate clean verifier-archives verifier-telechargements
 
 help: ## Liste des cibles
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-14s %s\n", $$1, $$2}'
