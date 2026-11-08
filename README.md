@@ -20,6 +20,7 @@ Genealogiste vous aide à distinguer les faits étayés, les hypothèses et les 
 Les sources sont principalement françaises. Certains sites sont consultés par API ; d’autres nécessitent
 une consultation manuelle. Pour les actes, vous pouvez fournir un lien IIIF international, un lien de
 visionneuse AD59 ou un fichier : [lecture et archivage des pièces](https://github.com/Hiobi/Genealogiste/wiki/Pieces-et-medias).
+[Services d’archives : fonctions et limites](https://github.com/Hiobi/Genealogiste/wiki/Services-archives).
 **Une correspondance trouvée n’est pas une preuve.**
 
 ## Installer et démarrer

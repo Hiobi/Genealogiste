@@ -6,6 +6,9 @@ Il décrit les **services d'archives** eux-mêmes (AD, archives communales, Arch
 site, visionneuse, préfixe ARK (NAAN), ce qui est **en ligne**. Les **types** de sources (séries E, M, R…)
 restent dans `fr_sources.py` et dans la skill `sources-francaises`.
 
+Pour savoir quelles images le plugin peut résoudre et télécharger, voir le
+[catalogue des services et fonctions disponibles](../wiki/Services-archives.md).
+
 ## Utilisation
 
 | Outil | Apport du référentiel |

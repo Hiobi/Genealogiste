@@ -72,6 +72,12 @@
     "groupe": "Utiliser le plugin"
   },
   {
+    "slug": "Services-archives",
+    "source": "wiki/Services-archives.md",
+    "titre": "Services d’archives et compatibilité",
+    "groupe": "Utiliser le plugin"
+  },
+  {
     "slug": "Referentiel-des-archives",
     "source": "docs/archives.md",
     "titre": "Référentiel des archives",

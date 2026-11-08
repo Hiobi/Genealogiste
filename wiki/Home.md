@@ -25,6 +25,7 @@ la lecture des actes ni le jugement généalogique.
 
 - [Configuration](Configuration.md) et [commandes](Commandes.md).
 - [Sources, archives et limites](Sources.md) ; [référentiel des archives](../docs/archives.md).
+- [Services d’archives : compatibilité, API et limites](Services-archives.md).
 - [Notes et Obsidian](../docs/notes.md), [pièces et médias](../docs/pieces.md).
 - [Exporter un arbre](Exports.md), [publier dans GeneWeb](../docs/geneweb.md).
 - [Confidentialité et approbations](Confidentialite.md), [sauvegardes](Sauvegardes.md).

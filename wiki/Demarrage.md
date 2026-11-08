@@ -73,6 +73,9 @@ Pour continuer, faire une nouvelle proposition si nécessaire puis l’appliquer
 Le jeton n’est utilisable qu’une fois et expire ; un changement concurrent de l’arbre impose de reproposer.
 Les [opérations disponibles](../docs/operations.md) et les [approbations](Confidentialite.md) détaillent ce mécanisme.
 
+Pour consulter un acte en ligne, choisir le bon lien dans le [catalogue des services d’archives](Services-archives.md) :
+IIIF, visionneuse reconnue ou téléchargement manuel selon le service.
+
 ## 5. Passer à votre propre recherche
 
 Fermer cette session, retirer les exports de l’exercice ou ouvrir un nouveau terminal, puis sélectionner
