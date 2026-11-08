@@ -10,6 +10,9 @@ audio, ancienne base GeneWeb…) s'organise en trois temps :
 Le même mécanisme que `arbre_proposer` s'applique : un plan est présenté, puis exécuté seulement avec son jeton
 et après accord explicite.
 
+Pour les pièces en ligne, consulter les [services pris en charge et leurs limites](../wiki/Services-archives.md)
+avant de choisir un lien de visionneuse, IIIF ou de fichier.
+
 ## Convention de nommage
 
 ```

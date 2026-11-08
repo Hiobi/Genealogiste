@@ -28,6 +28,9 @@ Une date `releve_le` décrit un relevé automatisé ; `verifie_le` est réservé
 Un site qui répond n’est pas un inventaire intégralement vérifié. Les cotes proposées sont des pistes
 à confronter à l’inventaire du service.
 
+Le [catalogue des services d’archives](Services-archives.md) précise les API, les fonctions de
+téléchargement livrées, les essais réels et les cas qui demandent un fichier manuel.
+
 ## Quand vous consultez un site vous-même
 
 Garder l’URL et une citation précise, puis fournir au plugin le contenu que vous avez le droit de réutiliser.
