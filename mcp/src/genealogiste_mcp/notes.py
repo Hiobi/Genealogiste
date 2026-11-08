@@ -579,8 +579,9 @@ class Notes:
                         pass
             if fields.get("id") != oid or fields.get("type") != "personne" or not _BLOCK.search(body):
                 continue
-            prefix = _safe(f"{oid} - {fields.get('nom', '')}", 120)
-            generated = re.fullmatch(re.escape(prefix) + r"(?: \([0-9 ?~apv.à/–-]+\))?", old.stem)
+            label = fields.get("nom") or "(sans nom)"
+            prefix = _safe(f"{oid} - {label}", 120)
+            generated = re.fullmatch(re.escape(prefix) + r"(?: \([0-9 ?~apv.à/–-]*\)?)?", old.stem)
             if not generated:
                 continue  # nom personnalisé : conserver le choix de l'utilisateur
             new = old.with_name(self.fresh_name(tree, kind, oid) + ".md")

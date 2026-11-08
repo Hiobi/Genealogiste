@@ -46,3 +46,13 @@ def test_bare_wikilink_ambigu_et_homonyme_non_modifies(liens):
     root, old, new = liens
     text = f"[[{old.stem}]] [[autre/{old.stem}]] [homonyme]({quote(old.name)})"
     assert renommer_liens(text, root / "autre/note.md", root, {old: new}, set()) == text
+
+
+@pytest.mark.parametrize("definition", ["[fiche]: {url} \"titre\"\n", "> [fiche]: <{url}>\n",
+                                         "[fiche]:\n  <{url}> \"titre\"\n"])
+def test_definitions_markdown_de_reference(liens, definition):
+    root, old, new = liens
+    url_old, url_new = quote("personnes/" + old.name), quote("personnes/" + new.name)
+    text = "[Jean][fiche]\n\n" + definition.format(url=url_old)
+    attendu = "[Jean][fiche]\n\n" + definition.format(url=url_new)
+    assert renommer_liens(text, root / "recherche.md", root, {old: new}, {old.stem}) == attendu

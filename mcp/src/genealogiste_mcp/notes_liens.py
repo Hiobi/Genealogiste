@@ -10,6 +10,7 @@ from markdown_it import MarkdownIt
 
 _WIKI = re.compile(r"\[\[([^\]\n]+)\]\]")
 _MARKDOWN = re.compile(r'(?<=\]\()(<[^>\n]+>|[^()\s]+)(?=\)|[ \t]+[\"\x27])')
+_REFERENCE = re.compile(r"(?P<prefix>\]:[ \t]*(?:\n[ \t]*(?:>[ \t]*)*)?)(?P<url><[^>\n]+>|[^\s]+)")
 _INLINE = re.compile(r"(?<!`)(`+)(?!`)[\s\S]*?(?<!`)\1(?!`)")
 
 
@@ -39,18 +40,17 @@ def renommer_liens(text: str, source: Path, root: Path, renames: dict[Path, Path
         parent = path.rsplit("/", 1)[0] + "/" if "/" in path else ""
         return parent + (new if wiki else quote(new, safe="")) + sep + fragment
 
+    def markdown(raw: str) -> str:
+        angled = raw.startswith("<") and raw.endswith(">")
+        value = destination(raw[1:-1] if angled else raw, False)
+        return "<" + value + ">" if angled else value
+
     def prose(part: str) -> str:
         def wikilink(m):
             target, sep, label = m[1].partition("|")
             return "[[" + destination(target, True) + sep + label + "]]"
 
-        def markdown(m):
-            raw = m[1]
-            angled = raw.startswith("<") and raw.endswith(">")
-            value = destination(raw[1:-1] if angled else raw, False)
-            return "<" + value + ">" if angled else value
-
-        return _MARKDOWN.sub(markdown, _WIKI.sub(wikilink, part))
+        return _MARKDOWN.sub(lambda m: markdown(m[1]), _WIKI.sub(wikilink, part))
 
     def sans_code(chunk: str) -> str:
         cursor, parts = 0, []
@@ -61,11 +61,18 @@ def renommer_liens(text: str, source: Path, root: Path, renames: dict[Path, Path
         return "".join(parts)
 
     # Les cartes de lignes CommonMark protègent aussi les blocs imbriqués dans une liste/citation.
-    protected = {line for token in MarkdownIt("commonmark").parse(text)
-                 if token.type in {"fence", "code_block", "html_block"} and token.map
+    environment = {}
+    tokens = MarkdownIt("commonmark").parse(text, environment)
+    protected = {line for token in tokens if token.type in {"fence", "code_block", "html_block"} and token.map
                  for line in range(*token.map)}
+    lines = text.splitlines(keepends=True)
+    for reference in environment.get("references", {}).values():
+        start, end = reference["map"]
+        fragment = "".join(lines[start:end])
+        fragment = _REFERENCE.sub(lambda m: m["prefix"] + markdown(m["url"]), fragment, count=1)
+        lines[start:end] = fragment.splitlines(keepends=True)
     out, pending = [], []
-    for number, line in enumerate(text.splitlines(keepends=True)):
+    for number, line in enumerate(lines):
         if number in protected:
             out.extend((sans_code("".join(pending)), line))
             pending = []

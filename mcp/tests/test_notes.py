@@ -281,3 +281,20 @@ def test_renommage_indisponible_preserve_originaux(napp, monkeypatch):
     monkeypatch.setattr(notes.os, "link", refuser)
     assert "erreur" in server.notes_generer("I1")
     assert snapshot(napp.config.notes_dir) == avant
+
+
+@pytest.mark.parametrize("prenom, nom", [("", ""), ("A" * 98, "MARTIN"), ("É" * 80, "MARTIN")])
+def test_fiche_sans_nom_ou_tronquee_reconnue_comme_generee(napp, prenom, nom):
+    tree = napp.tree()
+    tree.personnes["I1"].noms[0].prenoms = prenom
+    tree.personnes["I1"].noms[0].nom = nom
+    napp.store.write(tree)
+    server.notes_generer("I1")
+    ancienne = next((napp.config.notes_dir / "personnes").glob("I1 - *.md"))
+    _modifier_deces(napp)
+    attendu = napp.notes.fresh_name(napp.tree(), "personne", "I1") + ".md"
+    assert ancienne.name != attendu  # le cas doit réellement nécessiter un renommage
+    server.notes_generer("I1")
+    nouvelle = next((napp.config.notes_dir / "personnes").glob("I1 - *.md"))
+    assert nouvelle.name == attendu
+    assert not ancienne.exists()
