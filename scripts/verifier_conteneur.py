@@ -8,7 +8,7 @@ import time
 from urllib.error import HTTPError, URLError
 from urllib.request import urlopen
 
-import httpx
+import httpx2
 from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 
@@ -20,12 +20,15 @@ def docker(*args):
 
 
 async def verifier(url):
-    async with httpx.AsyncClient(headers={'Authorization': f'Bearer {TOKEN}'}, timeout=30) as client:
-        async with streamable_http_client(url, http_client=client) as (lecture, ecriture, _):
-            async with ClientSession(lecture, ecriture) as session:
-                await session.initialize()
-                result = await session.call_tool('arbre_info', {})
-                assert not result.isError, 'arbre_info doit réussir sur un arbre vide synthétique'
+    for negotiation in ('initialize', 'discover'):
+        async with httpx2.AsyncClient(headers={'Authorization': f'Bearer {TOKEN}'}, timeout=30) as client:
+            async with streamable_http_client(url, http_client=client) as (lecture, ecriture):
+                async with ClientSession(lecture, ecriture) as session:
+                    await getattr(session, negotiation)()
+                    result = await session.call_tool('arbre_info', {})
+                    assert not result.is_error, 'arbre_info doit réussir sur un arbre vide synthétique'
+                    payload = result.structured_content or json.loads(result.content[0].text)
+                    assert payload['personnes'] == 0 and payload['backend'] == 'fichier'
 
 
 def main():

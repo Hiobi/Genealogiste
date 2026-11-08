@@ -13,7 +13,7 @@ commands/         18 commandes slash
 skills/           methodologie-gps, sources-francaises, paleographie, droit-communicabilite, organisation-pieces
 agents/           chercheur, verificateur (indépendant), redacteur, trieur
 hooks/            lecture des sources sans approbation ; écritures soumises à confirmation
-mcp/              serveur MCP Python (FastMCP, uv) + tests pytest
+mcp/              serveur MCP Python (MCPServer, uv) + tests pytest
 docs/             extensions GEDCOM, opérations d'édition, mode Gramps Web
 data/             point de montage Docker (contenu ignoré par Git)
 docker-compose.yml  MCP en HTTP + Gramps Web (profil optionnel)
