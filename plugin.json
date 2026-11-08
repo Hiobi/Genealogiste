@@ -1,0 +1,19 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "genealogiste",
+  "version": "0.18.0",
+  "description": "Assistant généalogique : sources françaises, méthode GPS, arbre GEDCOM 7 versionné.",
+  "author": { "name": "hiobi" },
+  "repository": "https://github.com/Hiobi/Genealogiste",
+  "license": "MIT",
+  "extensions": {
+    "com.openai": {
+      "hooks": [],
+      "interface": {
+        "displayName": "Genealogiste",
+        "shortDescription": "Recherche familiale et arbre documenté",
+        "category": "Productivity"
+      }
+    }
+  }
+}

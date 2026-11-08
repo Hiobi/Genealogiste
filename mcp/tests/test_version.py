@@ -26,15 +26,16 @@ def test_uv_lock_aligne():
 
 
 def test_set_version_conserve_la_forme(tmp_path, monkeypatch):
-    for name in ("PLUGIN", "MARKETPLACE", "PYPROJECT"):
+    for name in ("PLUGIN", "PORTABLE", "MARKETPLACE", "PYPROJECT"):
         src = getattr(version_script, name)
-        dst = tmp_path / src.name
+        dst = tmp_path / name / src.name
+        dst.parent.mkdir()
         dst.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
         monkeypatch.setattr(version_script, name, dst)
-    avant = (tmp_path / "plugin.json").read_text(encoding="utf-8")
+    avant = (tmp_path / "PLUGIN" / "plugin.json").read_text(encoding="utf-8")
     version_script.set_version("9.8.7")
     assert set(version_script.versions().values()) == {"9.8.7"}
-    apres = (tmp_path / "plugin.json").read_text(encoding="utf-8")
+    apres = (tmp_path / "PLUGIN" / "plugin.json").read_text(encoding="utf-8")
     assert len(avant.splitlines()) == len(apres.splitlines())
     with pytest.raises(SystemExit):
         version_script.set_version("v1")

@@ -2,7 +2,7 @@
 MCP := mcp
 UV  := uv --directory $(MCP)
 
-.PHONY: version help install test test-gramps lint format check run run-http docker-build docker-up docker-gramps docker-down validate clean verifier-archives
+.PHONY: version help install test test-gramps test-codex lint format check run run-http docker-build docker-up docker-gramps docker-down validate clean verifier-archives
 
 help: ## Liste des cibles
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-14s %s\n", $$1, $$2}'
@@ -12,6 +12,9 @@ install: ## Installe les dépendances du serveur MCP (uv)
 
 test: ## Lance les tests pytest (APIs mockées, aucun accès réseau)
 	$(UV) run pytest
+
+test-codex: ## Recette native Codex CLI 0.166.0, fournisseur local et données fictives
+	python3 scripts/verifier_codex.py
 
 GW_TEST := docker compose -f docker-compose.test.yml
 GW_PORT ?= 5056

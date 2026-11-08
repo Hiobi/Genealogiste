@@ -1,6 +1,6 @@
 # Genealogiste
 
-**Un assistant de recherche familiale dans Claude Code.**
+**Un assistant de recherche familiale dans Claude Code et Codex.**
 
 Partez d’une personne ou d’un acte, croisez les sources et construisez un arbre documenté.
 Genealogiste vous aide à distinguer les faits étayés, les hypothèses et les homonymes.
@@ -75,7 +75,8 @@ détaille ce parcours et le résultat attendu.
 
 [Wiki : tous les guides](https://github.com/Hiobi/Genealogiste/wiki) · [Signaler un problème](https://github.com/Hiobi/Genealogiste/issues) · [Proposer une amélioration](https://github.com/Hiobi/Genealogiste/issues/new) · [Signaler une vulnérabilité en privé](https://github.com/Hiobi/Genealogiste/security/advisories/new)
 
-L’intégration livrée est celle de **Claude Code**. L’adaptation à Codex est suivie dans [l’issue #80](https://github.com/Hiobi/Genealogiste/issues/80).
+Pour **Codex CLI**, suivre le [guide d’installation et d’approbation](https://github.com/Hiobi/Genealogiste/wiki/Codex) :
+le paquet fournit les skills ; un profil séparé active le MCP avec confirmation native de chaque outil.
 Le mode fichier fonctionne sans Gramps Web ni Obsidian. L’ancien exporteur FamilySearch est désactivé ;
 un GEDCOM obtenu séparément peut être importé.
 

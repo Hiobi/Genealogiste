@@ -12,6 +12,12 @@
     "groupe": "Commencer"
   },
   {
+    "slug": "Codex",
+    "source": "docs/adaptation-codex.md",
+    "titre": "Codex (local)",
+    "groupe": "Commencer"
+  },
+  {
     "slug": "Demarrage",
     "source": "wiki/Demarrage.md",
     "titre": "Premiers pas",
