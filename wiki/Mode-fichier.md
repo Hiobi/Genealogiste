@@ -26,7 +26,7 @@ Créer un dossier privé distinct, vérifier `arbre_info`, puis importer une **c
 ```
 
 Le mode d’import par défaut ajoute les objets en adaptant les identifiants. Le mode `remplacer` remplace
-l’arbre : lire soigneusement le diff et le bilan avant accord. Ne répéter pas un import approuvé sans
+l’arbre : lire soigneusement le diff et le bilan avant accord. Ne pas répéter un import approuvé sans
 examiner le risque de doublons. Un arbre importé reste à vérifier ; il ne vaut pas un ensemble de preuves.
 
 ## Modifier sans perdre la trace
