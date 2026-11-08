@@ -65,3 +65,8 @@ Le workflow `Sécurité` s’exécute sur les PR, sur `main` et chaque lundi :
 construit l’image et teste refus sans jeton, HTTP 401, appel MCP autorisé et permissions privées.
 Ces trois noms de checks complètent les trois contrôles Python/Ruff à rendre obligatoires sur `main`.
 Les avis de dépendances sont interrogés en ligne : une panne de ce service peut faire échouer le contrôle.
+
+Le téléchargement de Gitleaks réessaie l’URL de l’archive puis utilise l’API des releases via `gh`
+si cette URL échoue. Les deux chemins sélectionnent la même version et le même fichier ; la vérification
+SHA-256 épinglée reste obligatoire avant extraction et exécution. Le jeton fourni à `gh` est celui
+de GitHub Actions, avec la permission `contents: read` déjà déclarée, sans secret supplémentaire.
