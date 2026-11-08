@@ -16,6 +16,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PLUGIN = ROOT / ".claude-plugin" / "plugin.json"
+PORTABLE = ROOT / "plugin.json"
 MARKETPLACE = ROOT / ".claude-plugin" / "marketplace.json"
 PYPROJECT = ROOT / "mcp" / "pyproject.toml"
 SEMVER = re.compile(r"^\d+\.\d+\.\d+$")
@@ -26,6 +27,7 @@ def versions() -> dict[str, str]:
     market = json.loads(MARKETPLACE.read_text(encoding="utf-8"))
     entry = next(p for p in market["plugins"] if p["name"] == "genealogiste")
     return {
+        "plugin.json": json.loads(PORTABLE.read_text(encoding="utf-8"))["version"],
         ".claude-plugin/plugin.json": json.loads(PLUGIN.read_text(encoding="utf-8"))["version"],
         ".claude-plugin/marketplace.json": entry["version"],
         "mcp/pyproject.toml": PYPROJECT_VERSION.search(PYPROJECT.read_text(encoding="utf-8")).group(1),
@@ -45,6 +47,7 @@ def _set_json(path: Path, version: str, find) -> None:
 def set_version(version: str) -> None:
     if not SEMVER.match(version):
         raise SystemExit(f"Version invalide : {version!r} (attendu : X.Y.Z)")
+    _set_json(PORTABLE, version, lambda d: d["version"])
     _set_json(PLUGIN, version, lambda d: d["version"])
     _set_json(MARKETPLACE, version, lambda d: next(p for p in d["plugins"] if p["name"] == "genealogiste")["version"])
     text = PYPROJECT.read_text(encoding="utf-8")

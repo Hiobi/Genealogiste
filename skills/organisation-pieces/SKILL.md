@@ -29,11 +29,11 @@ CAPTURE (arbre en ligne), PHOTO, TOMBE, LIEU.
 
 ## Déroulé
 1. `pieces_inventaire` → 2. `pieces_proposer` → accord → `pieces_appliquer` → 3. triage de `_À trier/`
-(agent `trieur`) → `pieces_proposer(renommages=…)` → accord → `pieces_appliquer`.
+(analyse de classement) → `pieces_proposer(renommages=…)` → accord → `pieces_appliquer`.
 Gros dossiers : présenter le résumé, jamais la liste complète. Le plan complet est dans le fichier TSV.
 
 ## Rattacher une pièce à l'arbre
-Une fois la pièce rangée et nommée, l'ajouter comme média d'une citation via `/genealogiste:ajoute`
+Une fois la pièce rangée et nommée, l'ajouter comme média d'une citation via une proposition `arbre_proposer`
 (opération `ajouter_media`, chemin du fichier). Un fichier référencé par l'arbre ne sera plus déplacé par
 les organisations suivantes.
 

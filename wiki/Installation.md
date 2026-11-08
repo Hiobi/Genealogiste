@@ -67,6 +67,8 @@ Passer ensuite au [tutoriel fictif](Demarrage.md).
 
 ## Autres parcours
 
+- [Codex local](../docs/adaptation-codex.md) pour le paquet de skills et les approbations natives MCP.
+
 - [Configuration](Configuration.md) pour les options et les sources nécessitant un identifiant.
 - [Gramps Web](../docs/gramps-web.md) pour travailler sur un serveur existant.
 - [Docker/Portainer](Docker-et-Portainer.md) pour un serveur MCP HTTP.

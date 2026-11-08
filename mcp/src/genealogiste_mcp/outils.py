@@ -10,7 +10,7 @@ from __future__ import annotations
 LECTURE = "lecture"  # local, sans écriture
 RESEAU = "reseau"  # requête vers un service externe
 JOURNAL = "journal"  # trace au journal de recherche
-PROPOSITION = "proposition"  # diff ou plan, sans écriture
+PROPOSITION = "proposition"  # diff ou plan ; persiste un jeton, peut écrire au journal
 ECRITURE = "ecriture"  # arbre, fichiers, Gramps Web
 IDENTIFIANTS = "identifiants"  # usage d'identifiants de l'utilisateur
 
@@ -85,7 +85,7 @@ OUTILS: dict[str, tuple[str, str]] = {
     "journal_lister": (LECTURE, ALLOW),
     "journal_ajouter": (JOURNAL, ALLOW),
     "notes_generer": (ECRITURE, DEFAUT),
-    "notes_lire": (LECTURE, DEFAUT),
+    "notes_lire": (ECRITURE, DEFAUT),
     "notes_ajouter": (ECRITURE, DEFAUT),
     "cache_purger": (ECRITURE, DEFAUT),
     # Gramps Web

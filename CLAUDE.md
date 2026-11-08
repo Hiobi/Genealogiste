@@ -68,7 +68,7 @@ Le marqueur `gramps_live` n'est exécuté que via `make test-gramps`.
 ## Publication
 
 Claude Code ne propose une mise à jour que si la version change. `make version V=x.y.z` met à jour
-`.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `mcp/pyproject.toml` et `uv.lock` ensemble ;
+`plugin.json`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `mcp/pyproject.toml` et `uv.lock` ensemble ;
 `test_version.py` échoue si elles divergent.
 
 ## Docs de référence
@@ -76,3 +76,10 @@ Claude Code ne propose une mise à jour que si la version change. `make version 
 `docs/` : `operations.md` (ops d'édition), `gedcom-extensions.md` (classification des citations),
 `securite.md` (confinement fichiers, politique réseau, vivants, `MCP_TOKEN`), `gramps-web.md`, `pieces.md`,
 `notes.md`, `geneweb.md`. Variables d'environnement : `README.md` et `.env.example`.
+
+## Distribution Codex
+
+`plugin.json` et `mcp.json` fournissent les skills sans hooks ni serveur implicite ; le profil généré par
+`scripts/configurer_codex.py` active le MCP avec approbation native de chaque outil. Pour toucher au
+conditionnement ou aux permissions Codex, lire `docs/adaptation-codex.md` et exécuter `make test-codex`
+avec Codex CLI 0.166.0. Conserver la distribution et les hooks Claude.

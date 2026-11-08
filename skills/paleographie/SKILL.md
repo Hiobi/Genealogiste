@@ -5,7 +5,7 @@ description: Aide à la lecture des actes anciens — paléographie française (
 
 # Paléographie et lecture d'actes
 
-## Procédure de transcription (/genealogiste:transcris)
+## Procédure de transcription
 
 0. **Image** : `archive_image` pour une image IIIF (ARK Gallica, manifeste, info.json, lien « Copier le lien
    IIIF » d'une visionneuse d'AD) : aperçu 800 px en gris, puis recadrage de l'acte seul ; l'image n'est
