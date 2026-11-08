@@ -4,7 +4,7 @@ argument-hint: <id_conservé> <id_absorbé> | scinder <id>
 ---
 Fusion / scission : **$ARGUMENTS**
 
-1. Toujours commencer par l'analyse `/gen:recoupe` (score, contradictions, pièce reliant les deux mentions).
+1. Toujours commencer par l'analyse `/genealogiste:recoupe` (score, contradictions, pièce reliant les deux mentions).
    Si le verdict n'est pas « même personne » étayé, le dire et ne pas proposer la fusion sans
    insistance explicite de l'utilisateur.
 2. Fusion : `fusionner_personnes(conserver, absorber, justification)` — la justification cite la pièce

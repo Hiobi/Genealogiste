@@ -1,0 +1,170 @@
+[
+  {
+    "slug": "Home",
+    "source": "wiki/Home.md",
+    "titre": "Accueil",
+    "groupe": "Commencer"
+  },
+  {
+    "slug": "Installation",
+    "source": "wiki/Installation.md",
+    "titre": "Installation",
+    "groupe": "Commencer"
+  },
+  {
+    "slug": "Demarrage",
+    "source": "wiki/Demarrage.md",
+    "titre": "Premiers pas",
+    "groupe": "Commencer"
+  },
+  {
+    "slug": "Configuration",
+    "source": "wiki/Configuration.md",
+    "titre": "Configuration",
+    "groupe": "Commencer"
+  },
+  {
+    "slug": "Mode-fichier",
+    "source": "wiki/Mode-fichier.md",
+    "titre": "Mode fichier",
+    "groupe": "Commencer"
+  },
+  {
+    "slug": "Gramps-Web",
+    "source": "docs/gramps-web.md",
+    "titre": "Gramps Web",
+    "groupe": "Commencer"
+  },
+  {
+    "slug": "Docker-et-Portainer",
+    "source": "wiki/Docker-et-Portainer.md",
+    "titre": "Docker et Portainer",
+    "groupe": "Commencer"
+  },
+  {
+    "slug": "Migration",
+    "source": "docs/renommage-genealogiste.md",
+    "titre": "Migration depuis Sosa",
+    "groupe": "Commencer"
+  },
+  {
+    "slug": "Commandes",
+    "source": "wiki/Commandes.md",
+    "titre": "Commandes",
+    "groupe": "Utiliser le plugin"
+  },
+  {
+    "slug": "Parcours-de-recherche",
+    "source": "wiki/Parcours-de-recherche.md",
+    "titre": "Parcours de recherche",
+    "groupe": "Utiliser le plugin"
+  },
+  {
+    "slug": "Sources",
+    "source": "wiki/Sources.md",
+    "titre": "Sources et limites",
+    "groupe": "Utiliser le plugin"
+  },
+  {
+    "slug": "Referentiel-des-archives",
+    "source": "docs/archives.md",
+    "titre": "Référentiel des archives",
+    "groupe": "Utiliser le plugin"
+  },
+  {
+    "slug": "Couvertures-des-archives",
+    "source": "docs/couvertures-archives.md",
+    "titre": "Couvertures des archives",
+    "groupe": "Utiliser le plugin"
+  },
+  {
+    "slug": "Notes-et-Obsidian",
+    "source": "docs/notes.md",
+    "titre": "Notes et Obsidian",
+    "groupe": "Utiliser le plugin"
+  },
+  {
+    "slug": "Pieces-et-medias",
+    "source": "docs/pieces.md",
+    "titre": "Pièces et médias",
+    "groupe": "Utiliser le plugin"
+  },
+  {
+    "slug": "Exports",
+    "source": "wiki/Exports.md",
+    "titre": "Exports",
+    "groupe": "Utiliser le plugin"
+  },
+  {
+    "slug": "GeneWeb",
+    "source": "docs/geneweb.md",
+    "titre": "GeneWeb",
+    "groupe": "Utiliser le plugin"
+  },
+  {
+    "slug": "Confidentialite",
+    "source": "wiki/Confidentialite.md",
+    "titre": "Confidentialité et approbations",
+    "groupe": "Entretenir et contribuer"
+  },
+  {
+    "slug": "Sauvegardes",
+    "source": "wiki/Sauvegardes.md",
+    "titre": "Sauvegardes et restauration",
+    "groupe": "Entretenir et contribuer"
+  },
+  {
+    "slug": "Mises-a-jour",
+    "source": "wiki/Mises-a-jour.md",
+    "titre": "Mises à jour",
+    "groupe": "Entretenir et contribuer"
+  },
+  {
+    "slug": "Depannage",
+    "source": "wiki/Depannage.md",
+    "titre": "Dépannage et FAQ",
+    "groupe": "Entretenir et contribuer"
+  },
+  {
+    "slug": "Securite-technique",
+    "source": "docs/securite.md",
+    "titre": "Sécurité technique",
+    "groupe": "Entretenir et contribuer"
+  },
+  {
+    "slug": "Exploitation",
+    "source": "docs/production.md",
+    "titre": "Exploitation",
+    "groupe": "Entretenir et contribuer"
+  },
+  {
+    "slug": "Operations-arbre",
+    "source": "docs/operations.md",
+    "titre": "Opérations d’arbre",
+    "groupe": "Entretenir et contribuer"
+  },
+  {
+    "slug": "Extensions-GEDCOM",
+    "source": "docs/gedcom-extensions.md",
+    "titre": "Extensions GEDCOM",
+    "groupe": "Entretenir et contribuer"
+  },
+  {
+    "slug": "Integration-continue",
+    "source": "docs/integration-continue.md",
+    "titre": "Intégration continue",
+    "groupe": "Entretenir et contribuer"
+  },
+  {
+    "slug": "Migration-MCP-2",
+    "source": "docs/migration-mcp-2.md",
+    "titre": "Migration MCP 2",
+    "groupe": "Entretenir et contribuer"
+  },
+  {
+    "slug": "Maintenance",
+    "source": "wiki/Maintenance.md",
+    "titre": "Maintenir le wiki",
+    "groupe": "Entretenir et contribuer"
+  }
+]

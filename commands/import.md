@@ -13,4 +13,4 @@ Import : **$ARGUMENTS**
 
 Présenter le bilan (version, personnes, familles, sources, avertissements) et un extrait du diff ; rappeler
 que les données importées sont **composites/non vérifiées**. Appliquer seulement après accord explicite.
-Ensuite : `arbre_coherence()` et proposer `/gen:recoupe` sur les doublons probables (même nom ± 2 ans).
+Ensuite : `arbre_coherence()` et proposer `/genealogiste:recoupe` sur les doublons probables (même nom ± 2 ans).

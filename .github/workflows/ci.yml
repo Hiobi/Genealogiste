@@ -67,6 +67,10 @@ jobs:
         run: make lint
         env:
           UV_OFFLINE: "true"
+      - name: Vérifier les pages et liens du wiki
+        run: uv --directory mcp run python ../scripts/preparer_wiki.py --output "$RUNNER_TEMP/genealogiste-wiki"
+        env:
+          UV_OFFLINE: "true"
       - name: Installer le validateur Claude Code
         shell: bash
         run: |

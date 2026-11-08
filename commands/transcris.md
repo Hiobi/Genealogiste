@@ -23,7 +23,7 @@ Applique la skill `paleographie`.
    l'image avec `piece_archiver` (vue en ligne ou fichier téléchargé : pleine résolution, nom selon la
    convention, rangement, note compagnon ; les aperçus d'`archive_image` ne sont qu'un cache de lecture), puis
    d'ajouter le média (`operations_suggerees`), la source, la citation (`citation_suggeree`, avec la transcription
-   dans `texte`) et faits à l'arbre via `/gen:ajoute` (validation explicite).
+   dans `texte`) et faits à l'arbre via `/genealogiste:ajoute` (validation explicite).
 5. Si l'image est un fichier local au nom opaque, proposer son **nom selon la convention** :
    `piece_nommer` avec les données lues (personnes, commune, dépôt, type, années, cote, vue, n° d'acte),
    puis le renommage via `pieces_proposer(dossier, renommages=[{actuel, propose}])` après accord. Pour une

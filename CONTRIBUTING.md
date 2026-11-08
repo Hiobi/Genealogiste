@@ -16,3 +16,14 @@ des données fictives. Toute régression corrigée doit être vérifiée au nive
 
 Avant publication, synchroniser les versions avec `make version V=x.y.z`, vérifier les manifestes et
 les contrôles GitHub. Pour les changements de déploiement, suivre [docs/production.md](docs/production.md).
+
+## Documentation
+
+Le README présente le plugin et le démarrage. Les guides utilisateur sont publiés dans le wiki GitHub
+à partir de sources relues dans `wiki/` et des références conservées dans `docs/`.
+`wiki/pages.json` indique la source de chaque page ; ne pas modifier directement sa copie publiée.
+Les anciens chemins `docs/` restent disponibles pour les outils et les liens existants.
+
+Avant une PR documentaire : `uv --directory mcp run python ../scripts/preparer_wiki.py --output /tmp/genealogiste-wiki-a-relire`.
+Le contrôle des liens est aussi exécuté en CI. Après fusion, republier depuis `main` selon
+[la procédure de maintenance](wiki/Maintenance.md), avec la version et la révision source.
