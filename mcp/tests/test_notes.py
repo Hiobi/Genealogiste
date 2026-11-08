@@ -138,3 +138,146 @@ def test_personne_privee_masquee_dans_les_notes(napp):
     server.notes_generer()
     f = next((napp.config.notes_dir / "personnes").glob("I1 - *.md"))
     assert "Faits et statut" not in f.read_text(encoding="utf-8")
+
+
+def test_date_corrigee_renomme_fiche_et_liens_sans_perdre_texte_libre(napp):
+    server.notes_generer()
+    vault = napp.config.notes_dir
+    ancienne = next((vault / "personnes").glob("I1 - *.md"))
+    ancien_nom = ancienne.stem
+    ancienne.write_text(ancienne.read_text(encoding="utf-8") + "\nNote personnelle à conserver.\n", encoding="utf-8")
+    tree = napp.tree()
+    tree.personnes["I1"].events("DEAT")[0].date = "BEF 1925"
+    napp.store.write(tree)
+    server.notes_generer()
+    nouvelle = next((vault / "personnes").glob("I1 - *.md"))
+    assert "av 1925" in nouvelle.stem
+    assert not ancienne.exists()
+    assert "Note personnelle à conserver." in nouvelle.read_text(encoding="utf-8")
+    assert ancien_nom not in "\n".join(snapshot(vault).values())
+
+
+def _modifier_deces(napp, value="BEF 1925"):
+    tree = napp.tree()
+    tree.personnes["I1"].events("DEAT")[0].date = value
+    napp.store.write(tree)
+
+
+def test_ancienne_fiche_1874_migre_meme_sur_generation_ciblee(napp):
+    server.notes_generer()
+    vault = napp.config.notes_dir
+    ancienne = next((vault / "personnes").glob("I1 - *.md"))
+    legacy = ancienne.with_name("I1 - Jean MARTIN (1820-~1874).md")
+    ancienne.rename(legacy)
+    # Reproduit aussi les références présentes dans les anciens vaults.
+    for path in vault.rglob("*.md"):
+        path.write_text(path.read_text(encoding="utf-8").replace(ancienne.stem, legacy.stem), encoding="utf-8")
+    _modifier_deces(napp)
+    res = server.notes_generer("I1")
+    assert res["renommees"] == [{"ancien": "personnes/" + legacy.name,
+                                  "nouveau": "personnes/I1 - Jean MARTIN (1820-av 1925).md"}]
+    assert not legacy.exists()
+    assert legacy.stem not in "\n".join(snapshot(vault).values())
+    avant = snapshot(vault)
+    assert server.notes_generer("I1")["ecrites"] == []
+    assert snapshot(vault) == avant
+
+
+def test_renommage_apres_application_maintient_texte_et_proprietes(napp):
+    server.notes_generer()
+    vault = napp.config.notes_dir
+    ancienne = next((vault / "personnes").glob("I1 - *.md"))
+    text = ancienne.read_text(encoding="utf-8").replace('type: "personne"', 'type: "personne"\nmes_tags: ["à lire"]')
+    ancienne.write_text(text + "\nTexte libre de test.\n", encoding="utf-8")
+    uid = napp.tree().personnes["I1"].events("DEAT")[0].uid
+    proposition = server.arbre_proposer([{"op": "modifier_evenement", "uid": uid, "champs": {"date": "1887"}}],
+                                       "Correction fictive", "Contrôle de recette")
+    assert ancienne.exists()  # préparer n'écrit pas les notes
+    resultat = server.arbre_appliquer(proposition["jeton"])
+    assert not resultat.get("notes", {}).get("erreurs"), resultat
+    nouvelle = next((vault / "personnes").glob("I1 - *.md"))
+    assert nouvelle.name == "I1 - Jean MARTIN (1820-1887).md"
+    assert not ancienne.exists()
+    assert 'mes_tags: ["à lire"]' in nouvelle.read_text(encoding="utf-8")
+    assert "Texte libre de test." in nouvelle.read_text(encoding="utf-8")
+    assert ancienne.stem not in "\n".join(snapshot(vault).values())
+
+
+def test_collision_renommage_ne_modifie_aucun_fichier(napp):
+    server.notes_generer()
+    _modifier_deces(napp)
+    vault = napp.config.notes_dir
+    destination = vault / "personnes/I1 - Jean MARTIN (1820-av 1925).md"
+    destination.write_text("Document personnel préexistant", encoding="utf-8")
+    avant = snapshot(vault)
+    assert "erreur" in server.notes_generer()
+    assert snapshot(vault) == avant
+
+
+def test_renommage_refuse_symlink_source(napp, tmp_path):
+    server.notes_generer()
+    _modifier_deces(napp)
+    path = next((napp.config.notes_dir / "personnes").glob("I1 - *.md"))
+    externe = tmp_path / "externe.md"
+    externe.write_bytes(path.read_bytes())
+    original = externe.read_bytes()
+    path.unlink()
+    path.symlink_to(externe)
+    assert "erreur" in server.notes_generer("I1")
+    assert externe.read_bytes() == original and path.is_symlink()
+
+
+def test_nom_personnalise_conserve(napp):
+    server.notes_generer()
+    path = next((napp.config.notes_dir / "personnes").glob("I1 - *.md"))
+    perso = path.with_name("I1 - Ma fiche personnelle.md")
+    path.rename(perso)
+    _modifier_deces(napp)
+    res = server.notes_generer("I1")
+    assert not res.get("renommees")
+    assert perso.exists()
+    assert "BEF 1925" in perso.read_text(encoding="utf-8")
+
+
+def test_intervalle_nom_fiche_portable(napp):
+    _modifier_deces(napp, "BET 1880 AND 1890")
+    server.notes_generer("I1")
+    path = next((napp.config.notes_dir / "personnes").glob("I1 - *.md"))
+    assert path.name == "I1 - Jean MARTIN (1820-1880 à 1890).md"
+
+
+def test_echec_mise_a_jour_liens_restaure_fichiers(napp, monkeypatch):
+    from genealogiste_mcp import notes
+
+    server.notes_generer()
+    _modifier_deces(napp)
+    vault = napp.config.notes_dir
+    avant = snapshot(vault)
+    original = notes.ecrire_atomique
+    appels = []
+
+    def echouer_une_fois(path, text):
+        appels.append(path)
+        if len(appels) == 2:
+            raise OSError("Panne simulée sur les liens")
+        original(path, text)
+
+    monkeypatch.setattr(notes, "ecrire_atomique", echouer_une_fois)
+    resultat = server.notes_generer("I1")
+    assert "erreur" in resultat
+    assert snapshot(vault) == avant
+
+
+def test_renommage_indisponible_preserve_originaux(napp, monkeypatch):
+    from genealogiste_mcp import notes
+
+    server.notes_generer()
+    _modifier_deces(napp)
+    avant = snapshot(napp.config.notes_dir)
+
+    def refuser(*args, **kwargs):
+        raise OSError("Système de fichiers sans liens physiques")
+
+    monkeypatch.setattr(notes.os, "link", refuser)
+    assert "erreur" in server.notes_generer("I1")
+    assert snapshot(napp.config.notes_dir) == avant

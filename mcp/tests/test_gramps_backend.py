@@ -427,3 +427,42 @@ def test_interruption_pendant_l_envoi_reprise(gapp, fake, monkeypatch, appliquee
     assert gapp.backend.recover() == [{"transaction": p["jeton"], "etat": etat}]
     u = server.arbre_annuler_modification(p["jeton"])
     assert ("jeton" in u) is appliquee
+
+
+@pytest.mark.parametrize("value, compact", [("BEF 1925", "av. 1925"), ("AFT 1925", "ap. 1925"),
+                                          ("BET 1920 AND 1925", "1920/1925"),
+                                          ("FROM 1920 TO 1925", "1920/1925")])
+def test_dates_gramps_affichees_sans_utiliser_sortval(gapp, fake, value, compact):
+    from genealogiste_mcp.gramps.types import date_to_gramps
+
+    death = next(e for e in fake.objects["Event"].values() if tname(e["type"]) == "Death"
+                 and e["date"]["dateval"][2] == 1885)
+    fake.ui_edit("Event", death["gramps_id"], lambda e: e["date"].update(
+        date_to_gramps(value), text="", sortval=0))
+    assert next(e for e in server.arbre_personne("I1")["evenements"] if e["type"] == "DEAT")["date"] == value
+    for outil in (server.arbre_ascendance, server.arbre_descendance):
+        liste = outil("I1", format="liste")
+        assert (liste[0] if isinstance(liste, list) else liste)["dates"] == "1820–" + compact
+        for format in ("mermaid", "svg"):
+            assert "1820–" + compact in outil("I1", format=format)
+
+
+def test_date_modifiee_gramps_renomme_les_notes_apres_accord(gapp, tmp_path):
+    from genealogiste_mcp.notes import Notes
+
+    vault = tmp_path / "notes"
+    gapp.notes = Notes(vault, data_dir=gapp.config.data_dir)
+    server.notes_generer()
+    ancienne = next((vault / "personnes").glob("I1 - *.md"))
+    ancienne.write_text(ancienne.read_text(encoding="utf-8") + "\nHypothèse à conserver.\n", encoding="utf-8")
+    uid = gapp.tree().personnes["I1"].events("DEAT")[0].uid
+    prop = server.arbre_proposer([{"op": "modifier_evenement", "uid": uid, "champs": {"date": "BEF 1925"}}],
+                                "Correction fictive", "Date contrôlée pour la recette")
+    assert "jeton" in prop and ancienne.exists(), prop
+    res = server.arbre_appliquer(prop["jeton"])
+    assert not res.get("erreur") and not res.get("notes", {}).get("erreurs"), res
+    assert res["notes"]["renommees"][0]["ancien"] == "personnes/" + ancienne.name
+    nouvelle = next((vault / "personnes").glob("I1 - *.md"))
+    assert "av 1925" in nouvelle.name and not ancienne.exists()
+    assert "Hypothèse à conserver." in nouvelle.read_text(encoding="utf-8")
+    assert ancienne.stem not in (vault / "index.md").read_text(encoding="utf-8")

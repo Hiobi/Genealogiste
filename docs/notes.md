@@ -24,10 +24,28 @@ référence** : rien n'est écrit dans l'arbre depuis les notes (`arbre_proposer
 └── index.md
 ```
 
-Le nom de fichier est préfixé par l'id ; une fois créé, il est **réutilisé** même si le nom ou les dates changent
-(les `[[wikilinks]]` restent valides). Renommer un fichier dans Obsidian est possible tant que le préfixe
-`<id> - ` est conservé. Les dossiers `recherches/` et `courriers/` peuvent être créés librement : l'outil n'y
-touche pas.
+Le nom de fichier est préfixé par l'id. Les fiches de personnes portant encore leur nom généré sont
+**renommées lors de `notes_generer`** si le nom ou les dates ont changé, y compris après une application
+avec génération automatique. Les anciens noms issus d'un affichage erroné (par exemple `~1874` pour
+`BEF 1925`) sont ainsi corrigés. Le résultat indique les chemins `ancien` et `nouveau` dans `renommees`.
+Une génération ciblée ne renomme que la personne demandée ; `notes_generer("tout")` traite l'ensemble.
+
+Les dates compactes conservent leur sens : `BEF 1925` → `av. 1925`, `AFT` → `ap. …`, `ABT`/`EST`/`CAL`
+→ `~…`, `BET 1920 AND 1925` et `FROM 1920 TO 1925` → `1920/1925`. Les arbres en liste, Mermaid et SVG
+partagent ce formatage. Pour les noms de fichiers portables, les points sont retirés et la barre d'un
+intervalle est remplacée par ` à ` : `(1820-av 1925)` ou `(1820-1920 à 1925)`.
+
+Les destinations des wikilinks et des liens Markdown URL encodés du vault sont mises à jour, y compris
+leurs fragments ; les alias/libellés et le reste du texte libre sont conservés. Les exemples en code et
+les liens externes restent inchangés. Les références hors du vault et les wikilinks sans dossier dont le
+nom est ambigu restent à vérifier manuellement. Les noms personnalisés par l'utilisateur sont conservés
+(préfixe `<id> - ` requis), ainsi que le traitement manuel des anciennes fiches remasquées décrit plus bas.
+
+Les dossiers `recherches/` et `courriers/` peuvent être créés librement : aucune fiche n'y est générée,
+mais les liens vers une fiche renommée peuvent y être actualisés. Les propriétés manuelles sont conservées.
+Une collision de noms ou un lien symbolique sur une fiche à renommer provoque un refus sans écrasement.
+Le renommage nécessite un système de fichiers acceptant les liens physiques ; sinon il est refusé en
+conservant les originaux. Garder la sauvegarde habituelle du vault avant une régénération importante.
 
 ## Format d'une fiche
 

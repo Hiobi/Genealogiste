@@ -245,11 +245,12 @@ wheels = [
 
 [[package]]
 name = "genealogiste-mcp"
-version = "0.18.0"
+version = "0.18.1"
 source = { editable = "." }
 dependencies = [
     { name = "anyio" },
     { name = "httpx" },
+    { name = "markdown-it-py" },
     { name = "mcp", extra = ["cli"] },
     { name = "pillow" },
 ]
@@ -257,7 +258,6 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "httpx2" },
-    { name = "markdown-it-py" },
     { name = "pytest" },
     { name = "respx" },
     { name = "ruff" },
@@ -267,6 +267,7 @@ dev = [
 requires-dist = [
     { name = "anyio", specifier = ">=4.5,<5" },
     { name = "httpx", specifier = ">=0.27" },
+    { name = "markdown-it-py", specifier = ">=3" },
     { name = "mcp", extras = ["cli"], specifier = ">=2.3,<3" },
     { name = "pillow", specifier = ">=10" },
 ]
@@ -274,7 +275,6 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "httpx2", specifier = ">=2.16,<3" },
-    { name = "markdown-it-py", specifier = ">=3" },
     { name = "pytest", specifier = ">=8" },
     { name = "respx", specifier = ">=0.21" },
     { name = "ruff", specifier = ">=0.6" },

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import subprocess
 import unicodedata
@@ -23,11 +24,12 @@ from pathlib import Path
 from .evidence import assess_person
 from .export.charts import _years, ancestors
 from .export.fiche import _fmt_date
-from .fichiers import ecrire_atomique
+from .fichiers import ecrire_atomique, verrou
 from .markdown import lien_fichier
 from .models import EVENT_LABELS, Tree
 from .normalize.dates import parse_date
 from .normalize.names import normalize_surname
+from .notes_liens import renommer_liens
 from .pieces import _part, nom_compatible
 from .privacy import identifying_patterns, is_living, private_resources
 from .statuts import GRAVITE, ICONS
@@ -174,7 +176,7 @@ class Notes:
             p = tree.personnes[oid]
             if self._masked(tree, oid):
                 return f"{oid} - personne vivante"
-            years = _years(tree, oid).replace("–", "-")
+            years = _years(tree, oid).replace("–", "-").replace("/", " à ")
             label = p.nom_principal.complet or "(sans nom)"
             return _safe(f"{oid} - {label}" + (f" ({years})" if years else ""), 120)
         if kind == "famille":
@@ -548,7 +550,90 @@ class Notes:
                            'texte et propriétés saisis à la main conservés, vérifier les liens et le contenu privé.')
         return written, alertes
 
+    def _person_renames(self, tree: Tree, ids: list[tuple[str, str]]) -> dict[Path, Path]:
+        """Plan sans écriture : seules les fiches reconnues portant leur nom généré sont renommées."""
+        root = self._require().resolve()
+        renames = {}
+        for kind, oid in ids:
+            if kind != "personne" or self._masked(tree, oid):
+                continue  # remasquage : conserver les alertes et le traitement manuel existants
+            folder = self._require() / FOLDERS[kind]
+            if not folder.resolve().is_relative_to(root):
+                raise NotesError("Dossier de personnes hors du répertoire des notes : renommage refusé.")
+            hits = sorted(folder.glob(f"{oid} - *.md"))
+            if len(hits) > 1:
+                raise NotesError(f"{oid} : plusieurs fiches existent ; renommage refusé sans écrasement.")
+            if not hits:
+                continue
+            old = hits[0]
+            if old.is_symlink() or not old.is_file():
+                raise NotesError("Fiche liée ou non régulière : renommage refusé.")
+            lines, body = _split(old.read_text(encoding="utf-8"))
+            fields = {}
+            for line in lines:
+                key, _, value = line.partition(":")
+                if key in {"id", "type", "nom"}:
+                    try:
+                        fields[key] = json.loads(value)
+                    except ValueError:
+                        pass
+            if fields.get("id") != oid or fields.get("type") != "personne" or not _BLOCK.search(body):
+                continue
+            prefix = _safe(f"{oid} - {fields.get('nom', '')}", 120)
+            generated = re.fullmatch(re.escape(prefix) + r"(?: \([0-9 ?~apv.à/–-]+\))?", old.stem)
+            if not generated:
+                continue  # nom personnalisé : conserver le choix de l'utilisateur
+            new = old.with_name(self.fresh_name(tree, kind, oid) + ".md")
+            def portable(path):
+                return unicodedata.normalize("NFC", path.name).casefold()
+            if portable(old) == portable(new):
+                continue
+            if new.exists() or new.is_symlink() or any(portable(p) == portable(new) for p in folder.iterdir()):
+                raise NotesError(f"{new.name} : destination déjà occupée ; aucun écrasement.")
+            renames[old.resolve()] = folder.resolve() / new.name
+        return renames
+
+    def _rename_people(self, renames: dict[Path, Path]) -> list[str]:
+        if not renames:
+            return []
+        root = self._require().resolve()
+        files = [p for p in root.rglob("*.md") if not p.is_symlink() and p.is_file()
+                 and p.resolve().is_relative_to(root)
+                 and not any(part.startswith(".") for part in p.relative_to(root).parts)]
+        counts = Counter(p.stem for p in files)
+        uniques = {stem for stem, count in counts.items() if count == 1}
+        updates = []
+        for path in files:
+            before = path.read_text(encoding="utf-8")
+            after = renommer_liens(before, path, root, renames, uniques)
+            if after != before:
+                updates.append((path, before, after))
+        created, written = [], []
+        try:
+            # Un lien physique réserve sans écraser la destination ; les originaux restent disponibles
+            # jusqu'à la fin des mises à jour. Les deux chemins sont dans le même dossier.
+            for old, new in renames.items():
+                os.link(old, new)
+                created.append(new)
+            for path, before, after in updates:
+                destination = renames.get(path, path)
+                ecrire_atomique(destination, after)
+                written.append((destination, before))
+        except BaseException:
+            for path, before in reversed(written):
+                ecrire_atomique(path, before)
+            for path in created:
+                path.unlink()
+            raise
+        for old in renames:
+            old.unlink()
+        return [str(path.relative_to(root)) for path in [*renames.values(), *(p for p, _ in written)]]
+
     def generate(self, tree: Tree, target: str = "tout") -> dict:
+        with verrou(self._require()):
+            return self._generate(tree, target)
+
+    def _generate(self, tree: Tree, target: str) -> dict:
         root = self._require()
         sosa = self._sosa(tree)
         porteurs = self._porteurs(tree)
@@ -556,7 +641,12 @@ class Notes:
         surname_ids, existants = self._prepare_surnames(tree, porteurs)
         ids = [(kind, oid) for kind, oid in ids if kind != 'patronyme'] + surname_ids
         private_paths = self._private_media_paths(tree)
-        written, unchanged, alertes = [], 0, []
+        renames = self._person_renames(tree, ids)
+        try:
+            written = self._rename_people(renames)
+        except OSError as exc:
+            raise NotesError(f"Renommage des fiches impossible : {exc}") from exc
+        unchanged, alertes = 0, []
         extra = {"personne": (sosa, private_paths), "patronyme": (porteurs, private_paths)}
         for kind, oid in ids:
             fm, blocks, title = getattr(self, METHODS[kind])(tree, oid, *extra.get(kind, ()))
@@ -571,7 +661,10 @@ class Notes:
         alertes += retire_alerts
         if target == "tout" or (root / 'index.md').exists():
             self._index(tree, porteurs)
-        out = {"repertoire": str(root), "ecrites": written, "inchangees": unchanged}
+        out = {"repertoire": str(root), "ecrites": list(dict.fromkeys(written)), "inchangees": unchanged}
+        if renames:
+            out["renommees"] = [{"ancien": str(old.relative_to(root.resolve())),
+                                 "nouveau": str(new.relative_to(root.resolve()))} for old, new in renames.items()]
         if alertes:
             out["alertes"] = alertes
         if w := self.git_warning():

@@ -100,6 +100,8 @@ class App:
             try:
                 r = self.notes.generate(tree, oid)
                 out["ecrites"] += r["ecrites"]
+                if r.get("renommees"):
+                    out.setdefault("renommees", []).extend(r["renommees"])
                 if r.get('alertes'):
                     out.setdefault('alertes', []).extend(r['alertes'])
             except (NotesError, KeyError, OSError) as exc:
