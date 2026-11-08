@@ -18,7 +18,9 @@ Genealogiste vous aide à distinguer les faits étayés, les hypothèses et les 
 | Construire et partager un arbre | GEDCOM versionné en Git ou connexion à Gramps Web ; exports masqués par défaut |
 
 Les sources sont principalement françaises. Certains sites sont consultés par API ; d’autres nécessitent
-une consultation manuelle. **Une correspondance trouvée n’est pas une preuve.**
+une consultation manuelle. Pour les actes, vous pouvez fournir un lien IIIF international, un lien de
+visionneuse AD59 ou un fichier : [lecture et archivage des pièces](https://github.com/Hiobi/Genealogiste/wiki/Pieces-et-medias).
+**Une correspondance trouvée n’est pas une preuve.**
 
 ## Installer et démarrer
 

@@ -1,17 +1,18 @@
 ---
 description: Transcrire un acte ancien (paléographie, latin) et en extraire les données
-argument-hint: <chemin de l'image | ARK Gallica | lien IIIF> [type d'acte, lieu, date si connus]
+argument-hint: <image | lien de visionneuse/IIIF | ARK> [type d'acte, lieu, date si connus]
 ---
 Transcription de : **$ARGUMENTS**
 
 Applique la skill `paleographie`.
-1. Obtenir l'image :
-   - fichier local : le lire directement ;
-   - ARK Gallica, manifeste IIIF, `info.json` ou URL d'image IIIF : `archive_image`. Pour les AD, demander le
-     lien copié avec « Copier le lien IIIF » dans la visionneuse, ou à défaut le fichier obtenu avec
-     « Télécharger » (recadrage local) ; jamais explorer l'API d'un site. Méthode
-     économe : **aperçu** (`largeur` 800, `gris`) pour repérer l'acte sur la page, puis **recadrage** de
-     l'acte seul (`region` `pct:x,y,l,h`, `largeur` 1500-2000) ; vérifier `cout_estime_tokens` ;
+1. Obtenir un aperçu avec `archive_image(source)` : fichier local, lien IIIF international, ARK Gallica
+   ou lien de visionneuse qualifiée (AD59). Laisser le serveur résoudre le téléchargement ; ne pas ouvrir
+   le HTML/JavaScript ni charger un manifeste entier dans le contexte du modèle.
+   - D'abord `largeur=800`, `gris=true`, puis lire seulement le `chemin_absolu` renvoyé.
+   - Recadrer l'acte seul (`region='pct:x,y,l,h'`, largeur 1500-2000) avec la même source ; vérifier
+     `cout_estime_tokens` et les limites de résolution. L'originale reste dans le cache pour l'archivage.
+   - Si le service est inconnu ou demande une connexion, suivre le repli du serveur : lien IIIF explicite
+     ou fichier téléchargé manuellement. La présence d'un ARK ne suffit pas à garantir l'accès.
    - Gallica imprimé : essayer d'abord le texte OCR (`gallica_texte`).
    Lire l'image (outil de lecture de fichier). Si elle est floue ou partielle, recadrer plus serré ou demander
    un meilleur cadrage plutôt que deviner.
@@ -21,7 +22,7 @@ Applique la skill `paleographie`.
 3. Classification de la source et des informations (primaire/secondaire par donnée).
 4. Signaler que la transcription est produite par le modèle (à vérifier sur l'image). Proposer de conserver
    l'image avec `piece_archiver` (vue en ligne ou fichier téléchargé : pleine résolution, nom selon la
-   convention, rangement, note compagnon ; les aperçus d'`archive_image` ne sont qu'un cache de lecture), puis
+   convention, rangement, note compagnon ; réutiliser le même lien, sans retélécharger à la main), puis
    d'ajouter le média (`operations_suggerees`), la source, la citation (`citation_suggeree`, avec la transcription
    dans `texte`) et faits à l'arbre via `/genealogiste:ajoute` (validation explicite).
 5. Si l'image est un fichier local au nom opaque, proposer son **nom selon la convention** :

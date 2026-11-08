@@ -57,6 +57,12 @@ def validate() -> list[str]:
                 errs.append(f"{c} : en_ligne.{k} invalide (document ou bornes historiques)")
         if "couvertures" in s:
             errs.extend(f"{c} : {error}" for error in couverture_archives.validate(s['couvertures'], DOCUMENTS))
+        resolution = s.get("resolution_image")
+        if resolution is not None:
+            if not isinstance(resolution, dict) or resolution.get("type") not in {"visualizer_api"}:
+                errs.append(f"{c} : résolution d'image inconnue ou mal formée")
+            elif resolution.get("iiif") not in (True, False, None):
+                errs.append(f"{c} : état IIIF invalide")
         if s.get("verifie_le"):
             try:
                 date.fromisoformat(s["verifie_le"])
@@ -95,6 +101,11 @@ def online(s: dict | None, document: str, annee: int | None, lieu: str = "",
 
 def view(s: dict, document: str = "", annee: int | None = None, lieu: str = "") -> dict:
     out = {k: v for k, v in s.items() if v not in ("", None, {}, [])}
+    resolution = s.get("resolution_image") or {}
+    out["telechargement"] = {"type": resolution.get("type"), "iiif": resolution.get("iiif"),
+                             "adaptateur_disponible": resolution.get("type") == "visualizer_api",
+                             "etat": "automatique" if resolution.get("type") == "visualizer_api"
+                             else "lien_iiif_ou_fichier_a_fournir"}
     out["lien"] = s.get("visionneuse") or s.get("site") or (
         f"https://francearchives.gouv.fr/fr/search?q={s['nom'].replace(' ', '+')}")
     if document:

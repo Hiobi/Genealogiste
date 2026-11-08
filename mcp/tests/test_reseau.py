@@ -223,3 +223,20 @@ def test_lifespan_passe():
         seen.append(scope["type"])
     asyncio.run(BearerAuth(app, "t")({"type": "lifespan"}, None, None))
     assert seen == ["lifespan"]
+
+
+@respx.mock
+def test_cache_control_no_store_respecte(http):
+    route = respx.get("https://public.example/metadata").respond(
+        200, json={"ok": 1}, headers={"Cache-Control": "private, no-store"})
+    assert http.get("https://public.example/metadata")[1] is False
+    assert http.get("https://public.example/metadata")[1] is False
+    assert route.call_count == 2
+
+
+@respx.mock
+def test_parametres_url_conserves_sans_params_explicitement_fourni(http):
+    url = "https://public.example/image?id=123&format=jpeg"
+    route = respx.get(url).respond(200, content=b"image fictive")
+    data, _ = http.get(url, parse="bytes")
+    assert data == "image fictive" and route.call_count == 1

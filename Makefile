@@ -2,7 +2,7 @@
 MCP := mcp
 UV  := uv --directory $(MCP)
 
-.PHONY: version help install test test-gramps test-codex lint format check run run-http docker-build docker-up docker-gramps docker-down validate clean verifier-archives
+.PHONY: version help install test test-gramps test-codex lint format check run run-http docker-build docker-up docker-gramps docker-down validate clean verifier-archives verifier-telechargements
 
 help: ## Liste des cibles
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-14s %s\n", $$1, $$2}'
@@ -65,3 +65,6 @@ clean: ## Supprime caches et environnements
 
 verifier-archives: ## Vérifie que les sites du référentiel des archives répondent (HEAD, repli GET sans lecture du corps)
 	$(UV) run python scripts/verifier_archives.py
+
+verifier-telechargements: ## Recette réseau explicite sur une vue publique (SERVICE=ad59|ad59_td|suisse|loc|tous)
+	$(UV) run python ../scripts/verifier_telechargements.py --service $(or $(SERVICE),ad59)

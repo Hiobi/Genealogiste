@@ -58,7 +58,7 @@ def test_manifest_page_and_gray_fallback(app):
     respx.get(f"{base}/full/800,/0/default.jpg").mock(return_value=httpx.Response(200, content=JPEG))
     r = server.archive_image(url, page=2)
     assert r["vue"] == 2 and r["nb_vues"] == 3 and r["url_image"].endswith("default.jpg")
-    assert "cout_estime_tokens" not in r  # dimensions inconnues
+    assert r["cout_estime_tokens"] is None  # dimensions inconnues
     assert "hors du manifeste" in server.archive_image(url, page=9)["erreur"]
 
 
@@ -72,8 +72,7 @@ def test_gallica_ark_and_width_cap(app):
 
 
 def test_archives_ark_without_iiif_asks_for_link(app):
-    r = server.archive_image("https://archivesdepartementales.lenord.fr/ark:/33518/48150m2qjdhb/"
-                             "7eb8efac-a2f7-4356-bf7a-bfe1f1ea91b7")
+    r = server.archive_image("ark:/64297/registre-inconnu/vue-inconnue")
     assert "Copier le lien IIIF" in r["erreur"]
 
 
@@ -88,7 +87,7 @@ def _image(path, w=3000, h=2000):
 def test_local_file_preview_and_crop(app, tmp_path):
     src = _image(tmp_path / "vue.jpg")
     r = server.archive_image(str(src))
-    assert r["mode"].startswith("local") and r["dimensions_demandees"] == [800, 533]
+    assert r["mode"] == "fichier" and r["dimensions_demandees"] == [800, 533]
     assert r["cout_estime_tokens"] == round(800 * 533 / 750) and r["dimensions_originales"] == [3000, 2000]
     c = server.archive_image(str(src), region="pct:50,50,50,50", largeur=1500)
     assert c["zone_pixels"] == [1500, 1000, 3000, 2000] and c["dimensions_demandees"] == [1500, 1000]

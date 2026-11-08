@@ -129,9 +129,11 @@ Ces variables remplacent le contournement par liens symboliques (`<données>/med
 vault. Pour **conserver** une vue d'acte, `piece_archiver` :
 
 1. télécharge la vue entière en **pleine résolution et en couleur** (IIIF `full/max`, repli `full/full`), ou
-   reprend le fichier téléchargé depuis une visionneuse sans IIIF, ou une URL d'image directe ;
+   résout un lien de visionneuse AD59, reprend un fichier local ou une URL directe. Un lien IIIF reste
+   utilisable indépendamment du pays ; les autres visionneuses demandent un adaptateur qualifié ou un
+   téléchargement manuel ;
 2. la nomme selon la convention (vue renseignée d'après l'ARK ou le manifeste ; dépôt et cote repris de la
-   source de l'arbre avec `source_arbre`) et la range dans `documents/<type>/<NOM>/` (sinon `_À trier/`) ;
+   source de l'arbre avec `source_arbre`, ou des métadonnées de la vue résolue) et la range dans `documents/<type>/<NOM>/` (sinon `_À trier/`) ;
 3. écrit à côté une **note** `<même nom>.md` : propriétés Obsidian (`ark`, `url`, `url_image`, `service_iiif`,
    `manifeste`, `vue`, `depot`, `cote`, `consulte_le`, `sha256`, `reutilisation`), l'image affichée, des liens
    vers les fiches des personnes et de la source, et une section libre jamais réécrite ;
@@ -140,9 +142,29 @@ vault. Pour **conserver** une vue d'acte, `piece_archiver` :
 5. renvoie les opérations à proposer (`ajouter_media`, puis `ajouter_citation` avec `citation_suggeree` : ARK,
    vue, `consultation: image`). Rien n'est écrit dans l'arbre sans `arbre_proposer` et ton accord.
 
+Le même lien peut être utilisé pour l'aperçu, le recadrage et l'archivage. Une originale sans IIIF déjà
+lue est réutilisée, sans nouveau téléchargement. La citation et le lien pérenne de la note privilégient
+l'ARK de la vue ; l'URL technique de l'image reste distincte. Si seule une URL est connue, sa pérennité
+n'est pas affirmée. La cote, le titre, la période et la déclaration de droits peuvent venir du service :
+ce sont des métadonnées à contrôler, pas une transcription ni une preuve de filiation.
+
+`nom_fichier` est facultatif et désigne un **nom complet** suivant la convention (` -- ` requis), jamais
+un patronyme seul. L'omettre pour construire le nom avec `personnes`, `type_piece`, `commune`, `cote`,
+`vue` et `acte`. `nom` reste un ancien alias avec avertissement. Le classement utilise les personnes et
+le type fournis, y compris lorsqu'un nom complet personnalisé remplace le nom calculé. Les noms invalides
+et références inconnues sont refusés avant de télécharger. `.md` est réservé à la note : un nom de pièce
+avec cette extension est refusé ; une autre extension doit correspondre au contenu réellement reçu.
+Sans extension d'image/PDF, celle de l'originale est ajoutée. Un ARK de manifeste ou de ressource n'est
+pas transformé en identifiant de vue dans la citation suggérée.
+
+Exemples de demandes : « Lis cette vue des AD59 en aperçu », « Recadre la moitié droite », puis
+« Archive l'original pour I1, naissance, acte 47 ». L'archivage crée des fichiers et une note ; le
+rattachement à l'arbre passe ensuite par une proposition et l'accord utilisateur.
+
+
 Alertes : pièce rangée dans `_À trier/`, personne présumée vivante (son nom figure dans le nom du fichier),
 conditions de réutilisation du dépôt (champ `reutilisation` du référentiel, sinon renvoi au site du service).
-Une vue par appel, jamais de téléchargement par lot (CGU des services).
+Une vue par appel ; aucune collecte automatique des vues voisines. Les conditions restent propres au service et au document.
 
 **Dans Obsidian.** Chaque fiche de personne générée (`notes_generer`) a une section **« Pièces »** : les images
 de ses médias, de ses faits et de leurs citations sont affichées (liens image Markdown à destination URL encodée), avec un lien vers la note de chaque
@@ -160,3 +182,24 @@ personne masquée.
 | `piece_nommer(personnes, …)` | nom selon la convention et dossier de destination | non |
 | `piece_archiver(source, page, personnes, …)` | vue téléchargée en pleine résolution, nommée, rangée, avec sa note | règle par défaut |
 | `media_enregistrer(chemin, nom, classer)` | copie d'une pièce dans le répertoire des médias | règle par défaut |
+
+Le reclassement ultérieur depuis un sous-dossier et le déplacement automatique des notes compagnons
+restent suivis dans [l'issue #101](https://github.com/Hiobi/Genealogiste/issues/101). Pour une pièce connue,
+renseigner les personnes et le type dès l'archivage pour obtenir directement son emplacement final ;
+éviter de déplacer séparément l'image et sa note.
+
+## Vérifier le téléchargement sur des ressources publiques
+
+Les tests ordinaires utilisent des images et réponses synthétiques, sans réseau. La recette réseau
+est explicite et séparée de la CI :
+
+```bash
+uv --directory mcp run python ../scripts/verifier_telechargements.py --service ad59
+# autres cas : ad59_td, suisse, loc ; tous pour l'ensemble des quatre ressources
+```
+
+Elle utilise un dossier jetable, un arbre vide, un aperçu, un recadrage et un archivage avec note compagnon,
+puis exige qu'un nouvel archivage ne fasse aucune requête. Aucune image réelle n'est ajoutée au dépôt.
+Les quatre cas ont été essayés le 8 novembre 2026 : [résultats et limites](telechargement-international.md).
+Les estimations de tokens sont des ordres de grandeur, pas un décompte de facturation du modèle.
+Le catalogue de compatibilité complet du wiki est suivi dans [l'issue #107](https://github.com/Hiobi/Genealogiste/issues/107).

@@ -25,7 +25,8 @@ ce qu'elles prouvent.
    **piste** : remonter à l'acte cité.
 6. Acte retenu, consulté en image (ARK, IIIF, visionneuse d'AD) : proposer de le **conserver** avec
    `piece_archiver` (pleine résolution, nom selon la convention, rangé dans le vault avec sa note) ; une vue
-   par appel, jamais de lot.
+   par appel, jamais de lot. Réutiliser le lien confié à `archive_image` : le serveur résout et garde
+   l'originale sans charger le HTML ou les listes de vues dans le contexte du modèle.
 
 ## Rendu (concis)
 - Tableau des pièces : source, référence complète (cote/URL/page), données extraites, classification, score.
