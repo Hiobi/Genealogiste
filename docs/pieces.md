@@ -183,6 +183,11 @@ personne masquée.
 | `piece_archiver(source, page, personnes, …)` | vue téléchargée en pleine résolution, nommée, rangée, avec sa note | règle par défaut |
 | `media_enregistrer(chemin, nom, classer)` | copie d'une pièce dans le répertoire des médias | règle par défaut |
 
+Le reclassement ultérieur depuis un sous-dossier et le déplacement automatique des notes compagnons
+restent suivis dans [l'issue #101](https://github.com/Hiobi/Genealogiste/issues/101). Pour une pièce connue,
+renseigner les personnes et le type dès l'archivage pour obtenir directement son emplacement final ;
+éviter de déplacer séparément l'image et sa note.
+
 ## Vérifier le téléchargement sur des ressources publiques
 
 Les tests ordinaires utilisent des images et réponses synthétiques, sans réseau. La recette réseau
