@@ -65,3 +65,6 @@ clean: ## Supprime caches et environnements
 
 verifier-archives: ## Vérifie que les sites du référentiel des archives répondent (HEAD, repli GET sans lecture du corps)
 	$(UV) run python scripts/verifier_archives.py
+
+verifier-telechargements: ## Recette réseau explicite sur une vue publique (SERVICE=ad59|ad59_td|suisse|loc|tous)
+	$(UV) run python ../scripts/verifier_telechargements.py --service $(or $(SERVICE),ad59)

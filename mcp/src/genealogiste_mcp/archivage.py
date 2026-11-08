@@ -28,10 +28,11 @@ def registre(path: Path) -> list[dict]:
     return lire_jsonl(path)[0]
 
 
-def deja_archivee(path: Path, cle: str = "", empreinte: str = "") -> dict | None:
+def deja_archivee(path: Path, cle: str = "", empreinte: str = "", source: str = "", page_demandee: int = 0) -> dict | None:
     """Entrée du registre dont le fichier existe encore avec la même empreinte (par clé de vue ou contenu)."""
     for e in reversed(registre(path)):
-        if (cle and e.get("cle") == cle) or (empreinte and e.get("sha256") == empreinte):
+        meme_source = source and e.get("source") == source and e.get("page_demandee") == page_demandee
+        if meme_source or (cle and e.get("cle") == cle) or (empreinte and e.get("sha256") == empreinte):
             f = Path(e.get("chemin_absolu", ""))
             if f.is_file() and pieces.sha256(f) == e.get("sha256"):
                 return e
@@ -50,10 +51,10 @@ def nom_piece(personnes: list[str], extension: str, nom: str = "", **segments) -
     return pieces.nom_compatible(" - ".join(x for x in parts if x) + extension)
 
 
-def emplacement(racine: Path, nom: str, contenu: bytes) -> tuple[Path, bool]:
+def emplacement(racine: Path, nom: str, contenu: bytes, dossier: str = "") -> tuple[Path, bool]:
     """(chemin, existe déjà avec ce contenu) : dossier de la convention sous la racine des pièces, suffixe
     « (n) » si collision."""
-    sub = pieces.destination(pieces.detecter(Path(nom))) or pieces.A_TRIER
+    sub = dossier or pieces.destination(pieces.detecter(Path(nom))) or pieces.A_TRIER
     cible = sous(racine, Path(sub) / nom)
     stem, ext = cible.stem, cible.suffix
     n = 1
@@ -93,7 +94,8 @@ def note_compagnon(image: Path, meta: dict, personnes_liens: list[str], source_l
         lignes.append(f"- **Source** : {source_lien}")
     lien = meta.get("ark") or meta.get("url") or meta.get("url_image")
     if lien:
-        lignes.append(f"- **Lien pérenne** : {lien}" + (f" (vue {meta['vue']})" if meta.get("vue") else ""))
+        label = "Lien pérenne" if meta.get("ark") else "Lien fourni (pérennité non établie)"
+        lignes.append(f"- **{label}** : {lien}" + (f" (vue {meta['vue']})" if meta.get("vue") else ""))
     if meta.get("reutilisation"):
         lignes.append(f"- **Réutilisation** : {meta['reutilisation']}")
     lignes += ["", "## Notes", "", "<!-- Transcription, remarques : texte libre, jamais modifié par l'outil. -->", ""]

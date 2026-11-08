@@ -244,11 +244,11 @@ def ark_resoudre(ark: str, verifier: bool = True, titre: str = "") -> dict:
 
 @mcp.tool()
 def archive_image(source: str, page: int = 0, region: str = "full", largeur: int = 800, gris: bool = True) -> dict:
-    """Image d'acte par IIIF, à lire ensuite avec l'outil de lecture de fichiers. source : ARK Gallica, manifeste
-    IIIF, info.json ou URL d'image IIIF (pour les AD : lien copié avec « Copier le lien IIIF » dans la
-    visionneuse). Méthode économe : aperçu (largeur 800, gris) pour repérer l'acte, puis recadrage
-    region='pct:x,y,l,h' en largeur 1500-2000 ; coût estimé en tokens renvoyé. Image téléchargée une seule fois
-    (medias/iiif/). Pour Gallica, essayer d'abord le texte OCR (gallica_texte)."""
+    """Aperçu économe d'une vue : lien IIIF (tous pays), ARK Gallica ou visionneuse AD59, image directe,
+    fichier local. Les pages qui déclarent un manifeste IIIF sont résolues côté Python, sans HTML envoyé
+    au modèle. D'abord largeur 800/gris, puis region='pct:x,y,l,h' pour l'acte seul ; coût indicatif renvoyé.
+    Réutilise le cache d'originale pour recadrer et archiver. Un ARK seul ne garantit pas le téléchargement.
+    Pour conserver la pleine résolution : piece_archiver. Pour Gallica, essayer d'abord l'OCR."""
     return iiif.fetch(app().sctx, app().config.cache_images_dir, source, page, region, largeur, gris)
 
 
@@ -811,11 +811,12 @@ def media_enregistrer(chemin: str, nom: str = "", classer: bool = False) -> dict
 @mcp.tool()
 def piece_archiver(source: str, page: int = 0, personnes: list[str] | None = None, type_piece: str = "",
                    commune: str = "", depot: str = "", annees: str = "", cote: str = "", acte: str = "",
-                   source_arbre: str = "", nom: str = "") -> dict:
+                   source_arbre: str = "", nom: str = "", nom_fichier: str = "") -> dict:
     """Archive une vue d'acte dans le répertoire des médias (vault) : pleine résolution, couleur, nom selon la
     convention (docs/pieces.md), rangée dans documents/<type>/<NOM>/ (sinon _À trier), avec une note .md à côté
     (ARK, URL, vue, consultation, personnes, source : liens Obsidian). source : ARK Gallica, manifeste IIIF,
-    info.json, URL d'image IIIF ou directe, ou fichier téléchargé depuis une visionneuse. personnes : I12 ou
+    info.json, URL d'image IIIF ou directe, lien de visionneuse AD59 ou fichier local. nom_fichier : nom complet
+    facultatif suivant la convention, jamais un patronyme seul (nom est un ancien alias). personnes : I12 ou
     « NOM Prénom ». source_arbre (S3) : dépôt et cote repris de l'arbre. Une vue déjà archivée n'est jamais
     retéléchargée. Rien n'est écrit dans l'arbre : opérations suggérées pour arbre_proposer."""
     from . import archivage
@@ -826,49 +827,90 @@ def piece_archiver(source: str, page: int = 0, personnes: list[str] | None = Non
     a = app()
     cfg = a.config
     personnes = personnes or []
+    if nom and nom_fichier and nom != nom_fichier:
+        return {"erreur": "Donner nom_fichier ou l'ancien nom, avec une seule valeur."}
+    custom_name = nom_fichier or nom
+    if custom_name:
+        try:
+            nom_simple(custom_name)
+        except CheminRefuse as exc:
+            return {"erreur": str(exc)}
+    if type_piece and type_piece.upper() not in pieces.TYPES:
+        return {"erreur": "type_piece inconnu : utiliser un code de la convention de classement."}
+    if custom_name and " -- " not in custom_name:
+        return {"erreur": "nom_fichier désigne le nom complet selon la convention (avec ' -- '), pas le patronyme. "
+                          "L'omettre pour calculer le nom depuis personnes, type_piece, cote et vue."}
+    def resultat_archive(hit, localisation=None):
+        return {"deja_archivee": True, "fichier": hit["fichier"], "chemin_absolu": hit["chemin_absolu"],
+                    "note": hit.get("note"), **(hit.get("localisation") or localisation or {}),
+                    "dimensions_originales": hit.get("dimensions_originales"),
+                    "cout_estime_tokens": hit.get("cout_estime_tokens"),
+                    "suite": "Pièce déjà archivée : rien n'a été retéléchargé."}
+
     try:
         t = a.tree()
+        labels = [_person_label(x) for x in personnes]
+        if source_arbre and source_arbre not in t.sources:
+            return {"erreur": f"Source de l'arbre inconnue : {source_arbre}"}
+        if source.startswith(("http://", "https://", "ark:")):
+            hit = archivage.deja_archivee(cfg.pieces_registre, source=source, page_demandee=page)
+            if hit:
+                return resultat_archive(hit)
         cle, loc = iiif.archive_key(a.sctx, source, page)
         hit = archivage.deja_archivee(cfg.pieces_registre, cle=cle)
         if hit:
-            return {"deja_archivee": True, "fichier": hit["fichier"], "chemin_absolu": hit["chemin_absolu"],
-                    "note": hit.get("note"), "suite": "Pièce déjà archivée : rien n'a été retéléchargé."}
+            return resultat_archive(hit, loc)
         if source_arbre:
             s = t.sources[source_arbre]
             r = t.depots.get(s.depot)
             depot = depot or ((r.sigle or r.nom) if r else "")
             cote = cote or s.cote
+        depot = depot or loc.get("depot", "")
+        cote = cote or loc.get("cote", "")
+        bounds = loc.get("periode")
+        if not annees and bounds:
+            annees = bounds[0][:4] + ("-" + bounds[1][:4] if bounds[1][:4] != bounds[0][:4] else "")
         data, extra = iiif.full_image(a.sctx, source, loc)
+        loc["url_image"] = extra.get("url_image") or loc.get("url_image", "")
         ext = iiif.extension_of(data)
         if not ext:
             return {"erreur": "Le contenu reçu n'est ni une image ni un PDF (page HTML ou accès refusé ?). "
                               + iiif.CONSIGNE_AD, "source": source}
         h = archivage.empreinte(data)
         vue = str(loc.get("vue") or page or "")
-        labels = [_person_label(x) for x in personnes]
-        nom_f = archivage.nom_piece(labels, ext, nom, commune=commune, depot=depot, type_piece=type_piece,
+        nom_f = archivage.nom_piece(labels, ext, custom_name, commune=commune, depot=depot, type_piece=type_piece,
                                     annees=annees, cote=cote, vue=vue, acte=acte)
         meme = archivage.deja_archivee(cfg.pieces_registre, empreinte=h)
         if meme:
             dest, existe = Path(meme["chemin_absolu"]), True
         else:
-            dest, existe = archivage.emplacement(cfg.pieces_root, nom_f, data)
+            info_classement = pieces.detecter(Path(archivage.nom_piece(labels, ext, commune=commune,
+                depot=depot, type_piece=type_piece, annees=annees, cote=cote, vue=vue, acte=acte)))
+            dossier = pieces.destination(info_classement) or pieces.A_TRIER
+            dest, existe = archivage.emplacement(cfg.pieces_root, nom_f, data, dossier=dossier)
         if not existe:
             ecrire_atomique(dest, data)
     except (iiif.IiifError, SourceError, KeyError, CheminRefuse, pieces.PieceError, OSError) as exc:
         return {"erreur": str(exc), "source": source}
     from . import ark as _ark
     a_ = _ark.find(source)
+    source_obj = t.sources.get(source_arbre)
+    arbre_ark = (source_obj.ark or source_obj.url) if source_obj else ""
+    source_ark = _ark.find(arbre_ark)
+    ark_citation = loc.get("ark_vue") or (a_.id if a_ else "") or (source_ark.id if source_ark else "")
+    loc["ark_vue"] = ark_citation
     service = by_code(depot) if depot else None
     reutil = ""
     if service:
         reutil = service.get("reutilisation") or (f"conditions à vérifier sur {service['site']}"
                                                   if service.get("site") else "")
-    meta = {"ark": a_.id if a_ else "", "url": source if source.startswith(("http://", "https://")) else "",
+    meta = {"ark": ark_citation, "url": source if source.startswith(("http://", "https://")) else "",
             "url_image": extra.get("url_image", ""), "service_iiif": loc.get("service", ""),
             "manifeste": loc.get("manifeste", ""), "vue": int(vue) if vue.isdigit() else vue, "depot": depot,
             "cote": cote, "commune": commune, "type_piece": type_piece.upper(), "annees": annees, "acte": acte,
-            "consulte_le": date.today().isoformat(), "sha256": h, "reutilisation": reutil}
+            "consulte_le": date.today().isoformat(), "sha256": h, "reutilisation": loc.get("licence") or reutil,
+            "titre_registre": loc.get("titre_registre"), "nb_vues": loc.get("nb_vues"),
+            "mode": loc.get("mode"), "licence": loc.get("licence")}
     ids = [x for x in personnes if x in t.personnes]
     if a.notes.enabled():
         liens = [a.notes.link(t, "personne", x) if x in t.personnes else x for x in personnes]
@@ -877,16 +919,31 @@ def piece_archiver(source: str, page: int = 0, personnes: list[str] | None = Non
         liens, src_lien = labels, source_arbre
     note = archivage.note_compagnon(dest, meta, liens, src_lien)
     ref = cfg.media_ref(dest)
+    dimensions = None
+    if ext != ".pdf":
+        import io
+
+        from PIL import Image
+        try:
+            with Image.open(io.BytesIO(data)) as image:
+                dimensions = list(image.size)
+        except OSError:
+            pass
+    cout_tokens = round(dimensions[0] * dimensions[1] * iiif.TOKENS_PER_PIXEL) if dimensions else None
+    localisation = {k: v for k, v in loc.items() if k not in {"service", "fichier_source"}}
     archivage.enregistrer(cfg.pieces_registre, {"cle": cle, "sha256": h, "fichier": ref, "chemin_absolu": str(dest),
-                                                "note": cfg.media_ref(note), "source": source, "vue": vue})
+                                                "note": cfg.media_ref(note), "source": source, "vue": vue,
+                                                "localisation": localisation, "page_demandee": page, "dimensions_originales": dimensions,
+                                                "cout_estime_tokens": cout_tokens})
     a.journal.add(source="archives", operation="piece_archiver", parametres={"source": source, "vue": vue},
                   statut="positif", resume=ref, references=[x for x in (meta["ark"], source) if x],
                   personne=ids[0] if ids else None)
-    citation = {"source": source_arbre or "<S… : créer la source d'abord>", "page": f"vue {vue}" if vue else "",
+    citation = {"source": source_arbre or "<S… : créer la source d'abord>", "page": (f"vue {vue}" + (f"/{loc['nb_vues']}" if loc.get("nb_vues") else "")) if vue else "",
                 "medias": ["$piece"], "consultation": "image"}
     if meta["ark"]:
         citation["ark"] = meta["ark"]
-    out = {"fichier": ref, "chemin_absolu": str(dest), "note": cfg.media_ref(note), "deja_present": existe,
+    out = {**localisation, "dimensions_originales": dimensions, "cout_estime_tokens": cout_tokens,
+           "fichier": ref, "chemin_absolu": str(dest), "note": cfg.media_ref(note), "deja_present": existe,
            "octets": len(data), "dossier": str(dest.parent.relative_to(cfg.pieces_root.resolve()))
            if dest.resolve().is_relative_to(cfg.pieces_root.resolve()) else str(dest.parent),
            "operations_suggerees": [{"op": "ajouter_media", "ref": "piece", "fichier": ref,
@@ -895,6 +952,10 @@ def piece_archiver(source: str, page: int = 0, personnes: list[str] | None = Non
            "suite": "Proposer via arbre_proposer : ajouter_media, puis ajouter_citation sur le fait prouvé "
                     "(cible evenement uid) avec citation_suggeree."}
     alertes = []
+    if nom:
+        alertes.append("Le paramètre nom est conservé pour compatibilité ; utiliser nom_fichier pour un nom complet.")
+    if custom_name and personnes:
+        alertes.append("nom_fichier remplace le nom calculé ; le classement suit les personnes et le type fournis.")
     if pieces.A_TRIER in dest.parts:
         alertes.append("Rangée dans _À trier : préciser personnes et type_piece pour le classement.")
     vivants = [x for x in ids if privacy.is_living(t, t.personnes[x])["vivant"]]

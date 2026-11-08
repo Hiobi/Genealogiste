@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "genealogiste",
-  "version": "0.18.1",
+  "version": "0.19.0",
   "description": "Assistant généalogique : sources françaises, méthode GPS, arbre GEDCOM 7 versionné.",
   "author": { "name": "hiobi" },
   "repository": "https://github.com/Hiobi/Genealogiste",

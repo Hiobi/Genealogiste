@@ -116,7 +116,7 @@ class HttpClient:
         idempotent : par défaut selon la méthode (GET, HEAD, OPTIONS) ; True pour un POST de pure lecture.
         Une requête non idempotente n'est rejouée que si elle n'a certainement pas été traitée
         (connexion impossible, 429) ; sinon le résultat est signalé indéterminé, sans nouvel envoi."""
-        params = {k: v for k, v in (params or {}).items() if v not in (None, "")}
+        params = {k: v for k, v in params.items() if v not in (None, "")} if params is not None else None
         cacheable = use_cache and files is None and ttl > 0
         key = Cache.key(method, url, params, data, json, parse)
         if cacheable:
@@ -173,7 +173,7 @@ class HttpClient:
                 content = resp.content.decode("latin-1")
             else:
                 content = resp.text
-            if cacheable:
+            if cacheable and "no-store" not in resp.headers.get("Cache-Control", "").lower():
                 self.cache.set(key, content, ttl, source)
             return content, False
         raise SourceError(f"{host} : échec après {self.max_retries} tentatives ({last_exc})")

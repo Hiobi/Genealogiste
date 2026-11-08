@@ -73,14 +73,31 @@ renvois `@N…@`) ; UID en collision réattribués.
   facultative (retrouvée par l'ARK de la ressource) ; `page` déduite de la vue Gallica (`f12` → « vue 12 »).
 - `ark_resoudre(ark)` : service, URL canonique, repli `n2t.net`, disponibilité (HEAD), manifeste IIIF, citation
   suggérée. NAAN inconnu : registre public de l'ARK Alliance (cache 30 jours).
-- `archive_image(source, page, region, largeur, gris)` : image d'acte par IIIF (ARK Gallica, manifeste v2/v3,
-  `info.json`, URL d'image). Pour les AD, coller le lien obtenu par « Copier le lien IIIF » dans la visionneuse.
-  Aperçu 800 px en gris, puis recadrage `pct:x,y,l,h` jusqu'à 2000 px ; coût estimé en tokens ; image gardée
-  dans le cache de lecture (`<données>/cache-images/`, hors du vault), jamais retéléchargée ; une image par appel. **Sans IIIF** (AD59 par exemple : la
-  visionneuse propose seulement « Télécharger ») : passer le chemin du fichier téléchargé ou l'URL directe de
-  l'image ; recadrage et réduction faits en local (Pillow), original gardé une fois dans
-  `cache-images/originaux/`. Pour **conserver** la vue dans le vault : `piece_archiver` (pleine résolution,
-  nom selon la convention, note compagnon, voir [pieces.md](pieces.md#archiver-une-pièce-consultée-en-ligne-ark-iiif)).
+- `archive_image(source, page, region, largeur, gris)` accepte un lien IIIF (Image API, `info.json`,
+  manifeste v2/v3, tous pays), un ARK Gallica, un lien de visionneuse AD59, une image directe ou un fichier.
+  Pour AD59 : ARK de vue complet, ou ARK du registre + `page=N` (vues à partir de 1). Les deux outils
+  `archive_image` et `piece_archiver` partagent la même résolution ; IIIF est utilisé dès qu'il est annoncé.
+- Une page HTTP qui déclare un unique manifeste IIIF est inspectée côté Python. Le modèle ne reçoit ni
+  HTML/JavaScript, ni manifeste entier, ni liste d'images voisines. Sans lien exploitable ou adaptateur
+  qualifié, l'erreur propose « Copier le lien IIIF » ou un téléchargement manuel : **un ARK ne garantit
+  pas une image téléchargeable**, et l'accès peut dépendre d'un compte ou d'une API spécifique.
+- Aperçu 800 px en gris, puis recadrage `pct:x,y,l,h` jusqu'à 2000 px ; estimation indicative en tokens.
+  Les régions invalides sont refusées avant accès réseau, et une largeur supérieure à la résolution
+  disponible est limitée avec avertissement. Aperçus et originales de lecture restent dans
+  `<données>/cache-images/`, hors du vault et de Git. Sans IIIF, l'originale est téléchargée une fois,
+  puis réutilisée pour le recadrage et l'archivage. Avec IIIF, les zones sont demandées au serveur tant
+  qu'une originale locale complète n'est pas disponible.
+- La sortie comporte `mode` (`iiif`, `visionneuse:visualizer_api`, `url_directe`, `fichier`), `vue`,
+  `nb_vues`, `ark_vue`, `cote`, `titre_registre`, `licence`, `dimensions_originales` et
+  `cout_estime_tokens`. Une métadonnée inconnue reste vide/null ; elle n'est pas inventée.
+- Le cache des réponses tient compte de `Cache-Control: no-store`. Les appels explicites à
+  `catalog.archives.gov` ne sont pas mis en cache ; **l'API NARA n'a pas d'adaptateur livré** et requiert
+  une intégration spécifique avec clé et politique de conservation propre.
+- Pour conserver la pleine résolution : `piece_archiver`, avec nom conventionnel, note compagnon et
+  citation suggérée, voir [pieces.md](pieces.md#archiver-une-pièce-consultée-en-ligne-ark-iiif).
+  Les [essais internationaux](telechargement-international.md) distinguent capacités documentées,
+  fonctions effectivement essayées et accès manuels ; l'[étude AD59](visionneuse-ad59.md) décrit le contrat.
+
 
 Exemple :
 

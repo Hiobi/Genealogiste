@@ -1,12 +1,10 @@
 """Images d'actes par IIIF : aperçu basse définition, puis recadrage de l'acte, avec un coût en tokens maîtrisé.
 
-Entrées acceptées : ARK Gallica (modèle connu), manifeste IIIF (Presentation v2 ou v3), ``info.json`` ou URL
-d'image IIIF (``{service}/{region}/{taille}/{rotation}/{qualite}.{format}``). Pour une visionneuse d'archives
-dont l'IIIF n'est pas connu (AD), l'utilisateur copie le lien IIIF depuis la visionneuse (bouton « Copier le
-lien IIIF ») : l'outil n'explore jamais l'API interne d'un site ni ne contourne une protection.
-
-Sans IIIF (visionneuse qui propose seulement « Télécharger », capture d'écran) : fichier local ou URL d'image
-directe ; recadrage et réduction faits en local (Pillow), avec la même économie de tokens.
+Entrées : IIIF v2/v3 (tous pays), image directe, fichier local, ARK Gallica, visionneuse qualifiée AD59.
+Les pages déclarant un manifeste sont inspectées côté Python ; aucun HTML/JavaScript ni manifeste entier
+n'est envoyé au modèle. Les autres interfaces nécessitent un adaptateur qualifié ou un repli manuel.
+Les originales sans IIIF sont partagées entre aperçus, recadrages et archivage ; les vues voisines ne sont
+jamais téléchargées. Les contraintes de cache restent propres au fournisseur (notamment NARA).
 
 Une image n'est téléchargée qu'une fois (``medias/``) ; une requête = une image, jamais de lot (CGU).
 """
@@ -14,19 +12,26 @@ Une image n'est téléchargée qu'une fois (``medias/``) ; une requête = une im
 from __future__ import annotations
 
 import hashlib
+import json
+import math
 import re
+from html.parser import HTMLParser
 from pathlib import Path
+from urllib.parse import urljoin, urlsplit
 
 from .. import ark
+from ..fichiers import ecrire_atomique, verrou
 from ..http import SourceError
 from .base import DAY, SourceContext
+from .visionneuses import VisionneuseError, VueResolue
+from .visionneuses import resoudre as resoudre_visionneuse
 
 MAX_WIDTH = 2000  # au-delà, le modèle réduit l'image : des pixels payés pour rien
 PREVIEW_WIDTH = 800
 TOKENS_PER_PIXEL = 1 / 750  # ordre de grandeur du coût d'une image pour le modèle
 _REGION = re.compile(r"^(full|square|\d+,\d+,\d+,\d+|pct:[\d.]+,[\d.]+,[\d.]+,[\d.]+)$")
 _IMAGE_URL = re.compile(r"^(?P<base>https?://.+?)/(?P<region>full|square|pct:[^/]+|\d+,\d+,\d+,\d+)/"
-                        r"(?P<size>[^/]+)/(?P<rot>!?\d+)/(?P<q>\w+)\.(?P<fmt>\w+)$")
+                        r"(?P<size>[^/]+)/(?P<rot>!?\d+(?:\.\d+)?)/(?P<q>\w+)\.(?P<fmt>\w+)(?P<query>\?[^#]*)?(?:#.*)?$")
 CONSIGNE_AD = ("IIIF de ce service inconnu : ouvrir l'image dans la visionneuse des archives. Si elle propose "
                "« Copier le lien IIIF », rappeler l'outil avec ce lien ; sinon utiliser « Télécharger » et rappeler "
                "l'outil avec le chemin du fichier (ou l'URL directe de l'image) : recadrage fait en local.")
@@ -40,7 +45,9 @@ class IiifError(ValueError):
 def _id(o) -> str:
     if isinstance(o, list):
         o = o[0] if o else {}
-    return (o or {}).get("@id") or (o or {}).get("id") or ""
+    if isinstance(o, str):
+        return o
+    return (o.get("@id") or o.get("id") or "") if isinstance(o, dict) else ""
 
 
 def canvases(manifest: dict) -> list[dict]:
@@ -49,34 +56,137 @@ def canvases(manifest: dict) -> list[dict]:
     if "sequences" in manifest:  # Presentation 2
         for c in (manifest["sequences"] or [{}])[0].get("canvases", []):
             res = ((c.get("images") or [{}])[0]).get("resource", {})
-            out.append({"label": _label(c.get("label")), "service": _id(res.get("service")).rstrip("/")})
+            if not isinstance(res, dict) or res.get("@type", "Image") not in {"Image", "dctypes:Image"}:
+                res = {}
+            view = {"label": _label(c.get("label")), "service": _id(res.get("service")).rstrip("/")}
+            if not view["service"]:
+                view["url_image"] = _id(res)
+            out.append(view)
     else:  # Presentation 3
         for c in manifest.get("items", []):
             body = (((c.get("items") or [{}])[0].get("items") or [{}])[0]).get("body", {})
             if isinstance(body, list):
                 body = body[0] if body else {}
-            out.append({"label": _label(c.get("label")), "service": _id(body.get("service")).rstrip("/")})
+            if not isinstance(body, dict) or body.get("type", "Image") not in {"Image", "dctypes:Image"}:
+                body = {}
+            view = {"label": _label(c.get("label")), "service": _id(body.get("service")).rstrip("/")}
+            if not view["service"]:
+                view["url_image"] = _id(body)
+            out.append(view)
     return out
 
 
 def _label(v) -> str:
     if isinstance(v, dict):  # v3 : {"fr": ["Vue 12"]}
         vals = next(iter(v.values()), [])
-        return vals[0] if vals else ""
-    return v or ""
+        v = vals
+    if isinstance(v, list):
+        v = v[0] if v else ""
+    return v[:4000] if isinstance(v, str) else ""
+
+
+
+def _valider_region(region: str) -> None:
+    if not _REGION.fullmatch(region):
+        raise IiifError("region : full | square | x,y,l,h | pct:x,y,l,h")
+    if region in {"full", "square"}:
+        return
+    try:
+        values = [float(v) for v in region.removeprefix("pct:").split(",")]
+    except ValueError as exc:
+        raise IiifError("Coordonnées de recadrage invalides.") from exc
+    if not all(math.isfinite(v) for v in values) or min(values[:2]) < 0 or min(values[2:]) <= 0:
+        raise IiifError("La zone doit avoir des coordonnées finies et une taille strictement positive.")
+
+
+def _service_url(service: str, suffix: str) -> str:
+    value = urlsplit(service)
+    return value._replace(path=value.path.rstrip("/") + "/" + suffix, fragment="").geturl()
 
 
 def image_url(service: str, region: str = "full", largeur: int = PREVIEW_WIDTH, gris: bool = True) -> str:
-    if not _REGION.match(region):
-        raise IiifError("region : full | x,y,l,h (pixels) | pct:x,y,l,h (pourcentages)")
-    return f"{service}/{region}/{largeur},/0/{'gray' if gris else 'default'}.jpg"
+    _valider_region(region)
+    return _service_url(service, f"{region}/{largeur},/0/{'gray' if gris else 'default'}.jpg")
+
+
+def _resolution_ttl(url: str, default: float) -> float:
+    # Conditions de l'API NARA : aucun stockage/cache des réponses (voir étude internationale).
+    return 0 if urlsplit(url).hostname == "catalog.archives.gov" else default
 
 
 def _json(ctx: SourceContext, url: str) -> dict:
-    data, _ = ctx.http.get(url, ttl=30 * DAY, source="iiif", headers={"Accept": "application/json"})
+    data, _ = ctx.http.get(url, ttl=_resolution_ttl(url, 30 * DAY), source="iiif", headers={"Accept": "application/json"})
     if not isinstance(data, dict):
         raise IiifError(f"Réponse IIIF inattendue : {url}")
     return data
+
+
+
+class _ManifestLinks(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.links = set()
+
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        href = a.get("href") or ""
+        if tag in {"link", "a"} and href and ("manifest" in (a.get("rel") or "").split()
+                or re.search(r"(?:iiif.*manifest|manifest(?:\.json|/|$))", href, re.I)):
+            self.links.add(href)
+
+
+def _document(ctx: SourceContext, url: str) -> dict:
+    # Une page HTML au plus : le code filtre les liens déclarés, aucun HTML/JS n'est envoyé au modèle.
+    text, _ = ctx.http.get(url, parse="text", ttl=_resolution_ttl(url, 7 * DAY), source="iiif")
+    if len(text) > 5_000_000:
+        raise IiifError("Document de résolution trop volumineux : fournir le lien IIIF direct.")
+    try:
+        data = json.loads(text)
+    except ValueError:
+        parser = _ManifestLinks()
+        parser.feed(text)
+        links = {urljoin(url, link) for link in parser.links}
+        if len(links) != 1:
+            raise IiifError("Plusieurs manifestes possibles : fournir le lien IIIF voulu." if links else CONSIGNE_AD) from None
+        return _json(ctx, links.pop())
+    if not isinstance(data, dict):
+        raise IiifError("Document IIIF inattendu : fournir une image ou un manifeste de document.")
+    return data
+
+
+def resoudre_vue(ctx: SourceContext, source: str, page: int = 0) -> dict:
+    """Résolution commune aux aperçus et à l'archivage, indépendante de la présence d'un ARK."""
+    if page < 0:
+        raise IiifError("page : 0 pour la vue du lien, sinon un numéro à partir de 1.")
+    src = (source or "").strip()
+    if src and not src.startswith(("http://", "https://")) and Path(src).expanduser().is_file():
+        return {**VueResolue("fichier", vue=page or None).localisation(), "fichier_source": str(Path(src).expanduser())}
+    if _DIRECT.match(src) and not _IMAGE_URL.match(src):
+        return VueResolue("url_directe", url_image=src, vue=page or None).localisation()
+    explicit_iiif = bool(_IMAGE_URL.match(src) or urlsplit(src).path.endswith("/info.json")
+                         or re.search(r"/manifest(?:\.json)?(?:$|[?#])", src, re.I))
+    try:
+        view = None if explicit_iiif else resoudre_visionneuse(ctx, src, page)
+    except VisionneuseError as exc:
+        raise IiifError(str(exc)) from exc
+    if view:
+        return view.localisation()
+    loc = locate(ctx, src, page)
+    result = VueResolue("iiif", service_iiif=loc.get("service", ""), url_image=loc.get("url_image", ""),
+                        vue=loc.get("vue"), nb_vues=loc.get("nb_vues"),
+                        titre_registre=loc.get("titre_registre", ""), licence=loc.get("licence", "")).localisation()
+    result.update(loc)
+    # L'URL Image API contient region/taille/rotation : ces segments ne font pas partie de l'ARK.
+    a = ark.find(loc.get("service", "")) or ark.find(src)
+    if a:
+        if a.naan == "12148" and (loc.get("vue") or a.vue):
+            result["vue"] = loc.get("vue") or a.vue
+            result["ark_vue"] = a.base + f"/f{result['vue']}"
+        else:
+            result["ark_vue"] = a.id if a.qualificatif not in {"", "manifest", "manifest.json"} else ""
+        result["ark_ressource"] = a.base
+        result["depot"] = (a.service or {}).get("code", "")
+    return result
 
 
 def locate(ctx: SourceContext, source: str, page: int = 0) -> dict:
@@ -84,29 +194,35 @@ def locate(ctx: SourceContext, source: str, page: int = 0) -> dict:
     s = (source or "").strip()
     m = _IMAGE_URL.match(s)
     if m:
-        return {"service": m.group("base"), "vue": page or None}
-    if s.endswith("/info.json"):
-        return {"service": s[: -len("/info.json")], "vue": page or None}
+        return {"service": m.group("base") + (m.group("query") or ""), "vue": page or None}
+    parsed = urlsplit(s)
+    if parsed.path.endswith("/info.json"):
+        return {"service": parsed._replace(path=parsed.path[:-len("/info.json")], fragment="").geturl(),
+                "vue": page or None}
     a = ark.find(s)
     if a and a.naan == "12148" and not s.endswith("manifest.json"):  # Gallica : vue = fNN ou page
         vue = page or a.vue or 1
         return {"service": f"https://gallica.bnf.fr/iiif/{a.base}/f{vue}", "vue": vue,
                 "manifeste": f"https://gallica.bnf.fr/iiif/{a.base}/manifest.json"}
-    if a and not re.search(r"manifest|iiif", s, re.I):
+    if a and not a.hote and not re.search(r"manifest|iiif", s, re.I):
         raise IiifError(CONSIGNE_AD)
     if not s.startswith(("http://", "https://")):
         raise IiifError("source : ARK Gallica, manifeste IIIF, info.json ou URL d'image IIIF.")
-    data = _json(ctx, s)
+    data = _document(ctx, s)
     if data.get("protocol") == "http://iiif.io/api/image" or "profile" in data and "width" in data:
         return {"service": _id(data).rstrip("/") or s, "vue": page or None}
     views = canvases(data)
     if not views:
-        raise IiifError("Manifeste IIIF sans vue exploitable.")
+        raise IiifError("Document sans vue IIIF exploitable. " + CONSIGNE_AD)
     i = (page or 1) - 1
     if not 0 <= i < len(views):
         raise IiifError(f"Vue {page} hors du manifeste ({len(views)} vues).")
-    return {"service": views[i]["service"], "vue": i + 1, "nb_vues": len(views), "libelle": views[i]["label"],
-            "manifeste": s}
+    view = views[i]
+    if not view.get("service") and not view.get("url_image"):
+        raise IiifError("La vue sélectionnée ne fournit ni service IIIF ni image téléchargeable.")
+    return {**view, "vue": i + 1, "nb_vues": len(views), "libelle": view["label"], "manifeste": s,
+            "titre_registre": _label(data.get("label")),
+            "licence": _label(data.get("rights") or data.get("license") or data.get("attribution"))}
 
 
 def _crop_box(region: str, w: int, h: int) -> tuple[int, int, int, int]:
@@ -131,22 +247,11 @@ def local(ctx: SourceContext, media_dir: Path, source: str, region: str = "full"
     """Image sans IIIF (fichier local ou URL directe) : originale gardée une fois, zone réduite en local."""
     from PIL import Image
 
-    if not _REGION.match(region):
-        raise IiifError("region : full | x,y,l,h (pixels) | pct:x,y,l,h (pourcentages)")
+    _valider_region(region)
     path = Path(source).expanduser()
     downloaded = False
     if not path.is_file():
-        ext = _DIRECT.match(source).group(1).lower()
-        path = media_dir / "originaux" / f"{hashlib.sha256(source.encode()).hexdigest()[:16]}.{ext}"
-        if not path.exists():
-            try:
-                raw, _ = ctx.http.get(source, parse="bytes", use_cache=False, source="iiif")
-            except SourceError as exc:
-                raise IiifError(f"{exc} Télécharger l'image depuis la visionneuse et rappeler l'outil avec le "
-                                "chemin du fichier.") from exc
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_bytes(raw.encode("latin-1"))
-            downloaded = True
+        path, downloaded, _ = _originale(ctx, {"mode": "url_directe", "url_image": source})
     key = hashlib.sha256(f"{path.resolve()}|{region}|{largeur}|{gris}".encode()).hexdigest()[:16]
     dest = media_dir / "iiif" / f"{key}.jpg"
     cached = dest.exists()
@@ -165,32 +270,43 @@ def local(ctx: SourceContext, media_dir: Path, source: str, region: str = "full"
     return {"fichier": ctx.config.media_ref(dest), "chemin_absolu": str(dest), "depuis_cache": cached,
             "original": str(path), "original_telecharge": downloaded, "dimensions_originales": [w, h],
             "zone_pixels": list(box), "dimensions_demandees": [dw, dh],
-            "cout_estime_tokens": round(dw * dh * TOKENS_PER_PIXEL), "mode": "local (sans IIIF)"}
+            "cout_estime_tokens": round(dw * dh * TOKENS_PER_PIXEL),
+            "largeur_demandee": largeur,
+            **({"avertissement": "Largeur limitée à la résolution originale de la zone ; aucun agrandissement."}
+               if dw < largeur else {})}
 
 
 def fetch(ctx: SourceContext, media_dir: Path, source: str, page: int = 0, region: str = "full",
           largeur: int = PREVIEW_WIDTH, gris: bool = True) -> dict:
     """Télécharge (une fois) une vue ou une zone, à la largeur demandée ; renvoie le chemin à lire."""
     largeur = max(100, min(int(largeur or PREVIEW_WIDTH), MAX_WIDTH))
-    src = (source or "").strip()
-    if (Path(src).expanduser().is_file() if src and not src.startswith(("http://", "https://")) else False) or (
-            _DIRECT.match(src) and not _IMAGE_URL.match(src)):
-        try:
-            out = local(ctx, media_dir, src, region, largeur, gris)
-        except (IiifError, OSError) as exc:
-            return {"erreur": str(exc), "source": source}
-        ctx.journal.add(source="iiif", operation="image_locale", parametres={"source": src, "region": region,
-                                                                            "largeur": largeur},
-                        statut="positif", resume=out["fichier"], references=[src], cache=out["depuis_cache"])
-        out["consigne"] = CONSIGNE_LIRE
-        return out
     try:
-        loc = locate(ctx, source, page)
+        _valider_region(region)
+        loc = resoudre_vue(ctx, source, page)
+        if not loc.get("service") or _chemin_originale(ctx, loc).is_file():
+            if loc.get("fichier_source"):
+                local_source = loc["fichier_source"]
+            else:
+                original, downloaded, _ = _originale(ctx, loc)
+                local_source = str(original)
+            out = local(ctx, media_dir, local_source, region, largeur, gris)
+            if not loc.get("fichier_source"):
+                out["original_telecharge"] = downloaded
+            out.update({k: v for k, v in loc.items() if k not in {"service", "fichier_source"}})
+            ctx.journal.add(source="iiif", operation="image_locale", parametres={"source": source, "region": region,
+                                    "largeur": largeur}, statut="positif", resume=out["fichier"],
+                            references=[source], cache=out["depuis_cache"])
+            out["consigne"] = CONSIGNE_LIRE
+            return out
         info = {}
         try:
-            info = _json(ctx, loc["service"] + "/info.json")
+            info = _json(ctx, _service_url(loc["service"], "info.json"))
         except (SourceError, IiifError):
             pass  # dimensions inconnues : pas d'estimation de coût
+        demandee = largeur
+        if info.get("width") and info.get("height"):
+            rw, _ = _region_size(region, int(info["width"]), int(info["height"]))
+            largeur = min(largeur, max(1, round(rw)))
         url = image_url(loc["service"], region, largeur, gris)
         key = hashlib.sha256(url.encode()).hexdigest()[:16]
         dest = media_dir / "iiif" / f"{key}.jpg"
@@ -205,10 +321,13 @@ def fetch(ctx: SourceContext, media_dir: Path, source: str, page: int = 0, regio
                 raw, _ = ctx.http.get(url, parse="bytes", use_cache=False, source="iiif")
             dest.parent.mkdir(parents=True, exist_ok=True)
             dest.write_bytes(raw.encode("latin-1"))
-    except (IiifError, SourceError) as exc:
+    except (IiifError, SourceError, OSError) as exc:
         return {"erreur": str(exc), "source": source}
     out = {"fichier": ctx.config.media_ref(dest), "chemin_absolu": str(dest), "url_image": url,
-           "depuis_cache": cached, **{k: v for k, v in loc.items() if k != "service"}, "service_iiif": loc["service"]}
+           "depuis_cache": cached, **{k: v for k, v in loc.items() if k not in {"service", "url_image"}}, "service_iiif": loc["service"], "dimensions_originales": None,
+           "dimensions_demandees": None, "cout_estime_tokens": None, "largeur_demandee": demandee}
+    if largeur < demandee:
+        out["avertissement"] = "Largeur limitée à la résolution originale de la zone ; aucun agrandissement."
     if info.get("width") and info.get("height"):
         w, h = int(info["width"]), int(info["height"])
         rw, rh = _region_size(region, w, h)
@@ -235,38 +354,60 @@ def extension_of(data: bytes) -> str:
     return next((ext for magic, ext in _MAGIC if data.startswith(magic)), "")
 
 
+def _cle(loc: dict) -> str:
+    if loc.get("fichier_source"):
+        return "fichier:" + hashlib.sha256(Path(loc["fichier_source"]).read_bytes()).hexdigest()
+    return "iiif:" + loc["service"] if loc.get("service") else "url:" + loc["url_image"]
+
+
 def archive_key(ctx: SourceContext, source: str, page: int = 0) -> tuple[str, dict]:
-    """Clé stable d'une vue (service IIIF, URL directe ou empreinte du fichier local) et sa localisation."""
-    src = (source or "").strip()
-    p = Path(src).expanduser()
-    if src and not src.startswith(("http://", "https://")) and p.is_file():
-        h = hashlib.sha256(p.read_bytes()).hexdigest()
-        return f"fichier:{h}", {"mode": "fichier local", "fichier_source": str(p)}
-    if _DIRECT.match(src) and not _IMAGE_URL.match(src):
-        return f"url:{src}", {"mode": "URL directe"}
-    loc = locate(ctx, src, page)
-    return f"iiif:{loc['service']}", {**loc, "mode": "IIIF"}
+    loc = resoudre_vue(ctx, source, page)
+    return _cle(loc), loc
+
+
+def _chemin_originale(ctx: SourceContext, loc: dict) -> Path:
+    root = ctx.config.cache_images_dir.resolve()
+    path = root / "originaux" / (hashlib.sha256(_cle(loc).encode()).hexdigest() + ".bin")
+    if path.is_symlink() or not path.parent.resolve().is_relative_to(root):
+        raise IiifError("Cache d'originale hors du dossier autorisé ou lien symbolique : accès refusé.")
+    return path
+
+
+def _originale(ctx: SourceContext, loc: dict) -> tuple[Path, bool, str]:
+    if loc.get("fichier_source"):
+        return Path(loc["fichier_source"]), False, ""
+    path = _chemin_originale(ctx, loc)
+    with verrou(path.parent):
+        metadata = path.with_suffix(".json")
+        if metadata.is_symlink():
+            raise IiifError("Métadonnées du cache liées : accès refusé.")
+        if path.is_file():
+            try:
+                saved = json.loads(metadata.read_text(encoding="utf-8")) if metadata.is_file() else {}
+            except ValueError:
+                saved = {}
+            return path, False, (saved if isinstance(saved, dict) else {}).get("url_image", loc.get("url_image", ""))
+        urls = ([_service_url(loc["service"], f"full/{size}/0/default.jpg") for size in ("max", "full")]
+                if loc.get("service") else [loc["url_image"]])
+        for index, url in enumerate(urls):
+            try:
+                raw, _ = ctx.http.get(url, parse="bytes", use_cache=False, source="iiif")
+                data = raw.encode("latin-1")
+                if not extension_of(data):
+                    raise IiifError("Le téléchargement n'est pas une image ni un PDF (connexion ou accès refusé ?). "
+                                    + CONSIGNE_AD)
+                ecrire_atomique(path, data)
+                ecrire_atomique(metadata, json.dumps({"url_image": url}))
+                return path, True, url
+            except SourceError as exc:
+                if exc.status != 400 or index == len(urls) - 1:
+                    raise IiifError(f"{exc} Télécharger l'image depuis la visionneuse puis fournir le fichier.") from exc
+    raise IiifError("Originale indisponible.")
 
 
 def full_image(ctx: SourceContext, source: str, loc: dict) -> tuple[bytes, dict]:
-    """Vue entière en pleine résolution et en couleur (IIIF full/max, repli full/full), sans réduction."""
-    src = (source or "").strip()
-    if loc["mode"] == "fichier local":
-        return Path(loc["fichier_source"]).read_bytes(), {}
-    if loc["mode"] == "URL directe":
-        raw, _ = ctx.http.get(src, parse="bytes", use_cache=False, source="iiif")
-        return raw.encode("latin-1"), {"url_image": src}
-    last = None
-    for size in ("max", "full"):
-        url = f"{loc['service']}/full/{size}/0/default.jpg"
-        try:
-            raw, _ = ctx.http.get(url, parse="bytes", use_cache=False, source="iiif")
-            return raw.encode("latin-1"), {"url_image": url}
-        except SourceError as exc:
-            last = exc
-            if exc.status != 400:
-                raise
-    raise last
+    path, downloaded, url = _originale(ctx, loc)
+    return path.read_bytes(), {"url_image": url, "original_telecharge": downloaded}
 
 
 CONSIGNE_LIRE = ("Lire l'image avec l'outil de lecture de fichiers (chemin_absolu). Aperçu d'abord "
