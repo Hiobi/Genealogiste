@@ -10,8 +10,6 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from mcp.server.mcpserver import MCPServer
-
 from . import archives, coherence, evidence, matching, pieces, privacy
 from .archives import communicability_online
 from .auth import BearerAuth, bind_problem
@@ -32,6 +30,7 @@ from .normalize.names import normalize_name, surname_similarity
 from .normalize.places import normalize_place
 from .notes import Notes, NotesError, touched
 from .reseau import NetworkPolicy
+from .serveur_mcp import ServeurMCP
 from .sources import ark_resolver, familysearch, gallica, geo, iiif, liens, matchid, wikidata, wikitree
 from .sources.base import SourceContext
 from .tree.proposals import ProposalError, Proposals, TokenStore
@@ -44,7 +43,7 @@ l'utilisateur ; une annulation aussi (arbre_annuler_modification puis arbre_appl
 automatique ; rien sur les personnes vivantes vers l'extérieur ; chaque recherche est tracée au journal (y compris
 négative) ; toujours indiquer la prochaine source à consulter pour un fait non confirmé."""
 
-mcp = MCPServer("genealogiste", instructions=INSTRUCTIONS, log_level="WARNING")
+mcp = ServeurMCP("genealogiste", instructions=INSTRUCTIONS, log_level="WARNING")
 
 RATE = {"deces.matchid.io": 1.0, "api.wikitree.com": 1.0, "gallica.bnf.fr": 1.0, "query.wikidata.org": 1.0,
         "geo.api.gouv.fr": 0.1}

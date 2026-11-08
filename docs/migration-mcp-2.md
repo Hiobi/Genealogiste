@@ -8,6 +8,9 @@ une installation incompatible avec le serveur migré. Python 3.11 reste pris en 
 
 - `FastMCP` est remplacé par `MCPServer`, depuis `mcp.server.mcpserver`. Le nom du serveur et ses
   instructions sont conservés ; les noms, paramètres et décisions des hooks des outils restent identiques.
+- Le SDK 2 exécute les fonctions synchrones dans des workers concurrents. Le point d’entrée
+  `ServeurMCP.call_tool` les sérialise avec un verrou asynchrone avant leur exécution : l’initialisation
+  de l’App, ses limiteurs et l’état partagé du backend gardent le fonctionnement séquentiel du SDK 1.
 - Le démarrage HTTP ne modifie plus `mcp.settings.host` et `port`, supprimés par le SDK. L’écoute est
   toujours configurée sur uvicorn par `--host` et `--port`. Les fabriques ASGI gardent leurs valeurs
   locales par défaut et leur protection contre les en-têtes Host/Origin externes, comme avant la migration.
@@ -33,6 +36,7 @@ qui en configure un doit examiner les règles de collecte de sa propre infrastru
 
 ## Validation
 
+Un test de deux appels simultanés au serveur vérifie qu’un seul outil synchrone entre à la fois.
 Les tests de transport vérifient le démarrage des deux modes HTTP sur écoute locale et toutes
 interfaces, le refus sans jeton ou avec un mauvais jeton, le rejet d’un Host externe, et une
 initialisation HTTP autorisée. Un serveur stdio lancé en sous-processus avec des données temporaires

@@ -79,3 +79,42 @@ def test_stdio_protocole_catalogue_et_lecture(tmp_path):
                     assert payload['backend'] == 'fichier'
     asyncio.run(exchange())
     assert (tmp_path / 'donnees/arbre.ged').exists()
+
+
+def test_outils_synchrones_restent_serialises():
+    """Le SDK 2 ne doit pas rendre concurrents les accès à l'état partagé de l'application."""
+    import threading
+
+    service = type(server.mcp)('controle-concurrence')
+    compteur = threading.Lock()
+    second = threading.Event()
+    actifs = pic = appels = 0
+
+    @service.tool()
+    def sonde() -> dict:
+        nonlocal actifs, pic, appels
+        with compteur:
+            actifs += 1
+            appels += 1
+            premier = appels == 1
+            pic = max(pic, actifs)
+        try:
+            if premier:
+                # Sans sérialisation, le second worker entre pendant que le premier attend.
+                second.wait(timeout=1)
+            else:
+                second.set()
+            return {'ok': True}
+        finally:
+            with compteur:
+                actifs -= 1
+
+    async def exchange():
+        with anyio.fail_after(5):
+            results = await asyncio.gather(service.call_tool('sonde', {}), service.call_tool('sonde', {}))
+            assert all(not result.is_error for result in results)
+    asyncio.run(exchange())
+    assert appels == 2 and pic == 1
+    # Le serveur global est également réutilisable lorsque des tests créent une nouvelle boucle.
+    asyncio.run(exchange())
+    assert appels == 4 and pic == 1
