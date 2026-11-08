@@ -1,4 +1,4 @@
-"""Serveur MCP « genealogiste » (FastMCP) : sources, normalisation, preuve, arbre GEDCOM versionné."""
+"""Serveur MCP « genealogiste » (MCPServer) : sources, normalisation, preuve, arbre GEDCOM versionné."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from . import archives, coherence, evidence, matching, pieces, privacy
 from .archives import communicability_online
@@ -44,7 +44,7 @@ l'utilisateur ; une annulation aussi (arbre_annuler_modification puis arbre_appl
 automatique ; rien sur les personnes vivantes vers l'extérieur ; chaque recherche est tracée au journal (y compris
 négative) ; toujours indiquer la prochaine source à consulter pour un fait non confirmé."""
 
-mcp = FastMCP("genealogiste", instructions=INSTRUCTIONS, log_level="WARNING")
+mcp = MCPServer("genealogiste", instructions=INSTRUCTIONS, log_level="WARNING")
 
 RATE = {"deces.matchid.io": 1.0, "api.wikitree.com": 1.0, "gallica.bnf.fr": 1.0, "query.wikidata.org": 1.0,
         "geo.api.gouv.fr": 0.1}
@@ -1256,7 +1256,6 @@ def main() -> None:
     token = os.environ.get("MCP_TOKEN", "")
     if problem := bind_problem(args.host, token, os.environ.get("MCP_SANS_AUTH", "")):
         raise SystemExit(problem)
-    mcp.settings.host, mcp.settings.port = args.host, args.port
     asgi = mcp.streamable_http_app() if args.transport == "streamable-http" else mcp.sse_app()
     if token:
         asgi = BearerAuth(asgi, token)

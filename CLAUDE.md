@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Projet
 
 Genealogiste, plugin Claude Code « genealogiste » (marketplace `genealogiste`) : commandes slash, skills, agents et hooks à la
-racine, plus un serveur MCP Python (FastMCP) dans `mcp/`. Documentation et messages de commit en français (Conventional Commits : `feat(pieces): …`).
+racine, plus un serveur MCP Python (MCPServer) dans `mcp/`. Documentation et messages de commit en français (Conventional Commits : `feat(pieces): …`).
 Outils MCP et opérations métier : français sans accents, snake_case (`arbre_proposer`, `notes_generer`).
 Conserver les conventions établies des modules internes (`TreeStore.load`, `Person`, `is_living`) ;
 aucune traduction générale. Un renommage public doit prévoir la compatibilité et mettre à jour
