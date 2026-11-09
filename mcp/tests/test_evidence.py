@@ -1,5 +1,19 @@
 from genealogiste_mcp.evidence import assess_citations, assess_person
-from genealogiste_mcp.models import Citation
+from genealogiste_mcp.models import Citation, Source, Tree
+
+
+def _arbre():
+    t = Tree()
+    t.sources["S1"] = Source("S1", titre="Registre AD59 5 Mi 014 R 042", type_source="originale")
+    t.sources["S2"] = Source("S2", titre="Table décennale", type_source="derivee", original="S1")
+    return t
+
+
+def _cit(src, page, **kw):
+    d = {"type_source": "originale" if src == "S1" else "derivee",
+         "information": "primaire", "preuve": "directe", "consultation": "image"}
+    d.update(kw)
+    return Citation(source=src, page=page, **d)
 
 
 def _fact(facts, kind, date=None):
@@ -59,3 +73,38 @@ def test_manual_refutation(tree):
     bad = _fact(facts, "BIRT", "1848")
     assert bad["statut"] == "refute"
     assert good["statut"] == "probable"  # la contradiction est levée
+
+
+# ---------------------------------------------------------------- #105 : même acte, citations variées
+
+def test_page_vide_rattachee_au_groupe_existant():
+    r = assess_citations([_cit("S1", ""), _cit("S1", "vue 287, acte n°47")], _arbre())
+    assert r["sources_independantes"] == 1
+    assert r["statut"] == "probable"
+
+
+def test_total_de_vues_et_commentaire_ignores():
+    r = assess_citations([_cit("S1", "vue 287/1024, acte n°47 (4 juillet 1837)"),
+                          _cit("S1", "vue 287, n° 47")], _arbre())
+    assert r["sources_independantes"] == 1
+
+
+def test_notations_equivalents_une_seule_source():
+    r = assess_citations([_cit("S1", "p.287 n.47"), _cit("S1", "vue 287 acte 47")], _arbre())
+    assert r["sources_independantes"] == 1
+
+
+def test_deux_actes_distincts_deux_groupes():
+    r = assess_citations([_cit("S1", "vue 287, n°47"), _cit("S1", "vue 353, n°72")], _arbre())
+    assert r["sources_independantes"] == 2
+
+
+def test_meme_vue_actes_differents_avertissement():
+    r = assess_citations([_cit("S1", "vue 287, n°47"), _cit("S1", "vue 287, n°48")], _arbre())
+    assert r["sources_independantes"] == 2
+    assert r.get("localisation_ambigue")
+
+
+def test_non_regression_45_zeros_de_tete():
+    r = assess_citations([_cit("S1", "vue 1"), _cit("S1", "vue 01")], _arbre())
+    assert r["sources_independantes"] == 1
