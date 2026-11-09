@@ -10,7 +10,7 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from . import archives, coherence, evidence, matching, pieces, privacy
+from . import archivage, archives, coherence, evidence, matching, pieces, privacy
 from .archives import communicability_online
 from .auth import BearerAuth, bind_problem
 from .cache import Cache
@@ -1049,20 +1049,25 @@ def pieces_inventaire(dossier: str) -> dict:
 
 @mcp.tool()
 def pieces_proposer(dossier: str, renommages: list[dict] | None = None, annuler: str = "",
-                    apercu: int = 60) -> dict:
+                    apercu: int = 60, seulement_renommages: bool = False) -> dict:
     """Plan de classement d'un dossier de pièces (rien n'est déplacé) : documents/<type>/<PATRONYME>/,
     photographies/…, archives/ (GeneWeb, GEDCOM, INSEE, Doublons), _À trier/. Jamais de suppression ; les
-    notes Markdown, dossiers cachés et personnes/ familles/ sources/ ne sont pas touchés ; les médias liés à
+    notes Markdown ordinaires, dossiers cachés et personnes/ familles/ sources/ sont protégés ; les médias liés à
     l'arbre ne sont pas déplacés. renommages : [{actuel, propose}] (agent trieur, piece_nommer) ; le fichier est
-    reclassé d'après son nouveau nom. annuler : nom d'un journal _organisation/*.tsv à défaire. Renvoie un jeton
+    reclassé d'après son nouveau nom. Les chemins actuel sont relatifs à dossier ; l'aperçu est relatif à
+    racine (configuration médias ou vault .obsidian). seulement_renommages limite le plan aux fichiers
+    nommés, sans isoler les doublons. Les notes type: piece suivent leur média, avec fichier et embed mis à
+    jour ; leur texte libre est conservé. annuler : nom d'un journal _organisation/*.tsv à défaire. Renvoie un jeton
     pour pieces_appliquer, à n'utiliser qu'après accord explicite de l'utilisateur sur le plan."""
     a = app()
     try:
-        racine = _dossier(dossier)
+        perimetre = _dossier(dossier)
+        racine = _dossier(str(pieces.racine_organisation(perimetre, a.config.pieces_root)))
         plan = (pieces.plan_annulation(racine, annuler) if annuler
-                else pieces.planifier(racine, renommages, _tree_media_paths()))
+                else pieces.planifier(racine, renommages, _tree_media_paths(), perimetre, seulement_renommages))
     except pieces.PieceError as exc:
         return {"erreur": str(exc)}
+    plan.setdefault("perimetre", str(perimetre))
     moves = plan["deplacements"]
     if not moves:
         return {**{k: v for k, v in plan.items() if k not in ("empreintes", "deplacements")},
@@ -1093,6 +1098,13 @@ def pieces_appliquer(jeton: str) -> dict:
         out = pieces.appliquer(Path(rec["dossier"]), rec["plan"])
     except (ProposalError, pieces.PieceError) as exc:
         return {"erreur": str(exc)}
+    realises = out.pop("deplacements_realises", [])
+    # Préserver la reconnaissance des originales archivées, sans retéléchargement après rangement/annulation.
+    try:
+        archivage.relocaliser(a.config.pieces_registre, Path(rec["dossier"]), realises, a.config.media_ref)
+    except OSError as exc:
+        out["avertissements"] = [f"Pièces déplacées, mais registre d'archivage non actualisé : {exc}. "
+                                 "Conserver le journal ; un archivage ultérieur pourrait retélécharger la vue."]
     (a.config.proposals_dir / f"plan-{jeton}.tsv").unlink(missing_ok=True)
     return out
 

@@ -109,3 +109,19 @@ def enregistrer(path_registre: Path, entree: dict) -> None:
 
 def empreinte(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
+
+def relocaliser(path: Path, racine: Path, mouvements: list[dict], media_ref) -> None:
+    """Ajouter les nouvelles localisations au registre sans réécrire son historique."""
+    par_chemin = {str(racine / m["de"]): m for m in mouvements}
+    derniers = {(e.get("cle"), e.get("source"), e.get("page_demandee")): e for e in registre(path)}
+    for entree in derniers.values():
+        mouvement = par_chemin.get(entree.get("chemin_absolu"))
+        if not mouvement or mouvement["sha256"] != entree.get("sha256"):
+            continue
+        nouveau = racine / mouvement["vers"]
+        nouvelle = {**entree, "chemin_absolu": str(nouveau), "fichier": media_ref(nouveau)}
+        note = par_chemin.get(str((racine / mouvement["de"]).with_suffix(".md")))
+        if note:
+            nouvelle["note"] = media_ref(racine / note["vers"])
+        enregistrer(path, nouvelle)

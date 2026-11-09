@@ -27,5 +27,5 @@ Applique la skill `paleographie`.
    dans `texte`) et faits à l'arbre via `/genealogiste:ajoute` (validation explicite).
 5. Si l'image est un fichier local au nom opaque, proposer son **nom selon la convention** :
    `piece_nommer` avec les données lues (personnes, commune, dépôt, type, années, cote, vue, n° d'acte),
-   puis le renommage via `pieces_proposer(dossier, renommages=[{actuel, propose}])` après accord. Pour une
+   puis le renommage via `pieces_proposer(dossier, renommages=[{actuel, propose}], seulement_renommages=true)` après accord. Pour une
    nouvelle pièce : `media_enregistrer(chemin, nom, classer=true)`.

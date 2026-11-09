@@ -7,7 +7,7 @@
       "name": "genealogiste",
       "source": "./",
       "description": "Assistant généalogique : sources françaises, méthode GPS, arbre GEDCOM 7 versionné.",
-      "version": "0.19.0",
+      "version": "0.19.1",
       "category": "productivity"
     }
   ]
