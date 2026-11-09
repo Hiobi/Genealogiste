@@ -2,7 +2,9 @@
 
 Chaque entrée : code, nom, type, département, site, visionneuse, NAAN ARK, mise en ligne par type de document
 (``{"naissance": {"de": 1792, "a": 1922}}`` ; absent = inconnu), inscription, demande à distance, date de
-vérification. Les sources et relevés sont documentés ; un relevé automatisé ne remplace pas la validation humaine
+vérification, et ``visionneuse_acces`` (famille de visionneuse : iiif_natif, editeur_ad, visionneuse_maison,
+images_statiques, authentifie ; éditeur, IIIF oui/non, protection captcha/Cloudflare, date de relevé). Les
+sources et relevés sont documentés ; un relevé automatisé ne remplace pas la validation humaine
 (docs/archives.md et docs/couvertures-archives.md).
 """
 
@@ -21,6 +23,7 @@ STALE_DAYS = 365
 TYPES = ("departementales", "communales", "nationales", "militaires", "notariales", "diocesaines", "autre")
 DOCUMENTS = ("naissance", "mariage", "deces", "tables_decennales", "recensement", "notaire", "matricule",
              "cadastre", "paroissiaux")
+FAMILLES_VISIONNEUSE = ("iiif_natif", "editeur_ad", "visionneuse_maison", "images_statiques", "authentifie")
 
 
 @lru_cache(maxsize=1)
@@ -63,6 +66,12 @@ def validate() -> list[str]:
                 errs.append(f"{c} : résolution d'image inconnue ou mal formée")
             elif resolution.get("iiif") not in (True, False, None):
                 errs.append(f"{c} : état IIIF invalide")
+        visionneuse = s.get("visionneuse_acces")
+        if visionneuse is not None:
+            if not isinstance(visionneuse, dict) or visionneuse.get("famille") not in FAMILLES_VISIONNEUSE:
+                errs.append(f"{c} : visionneuse_acces.famille inconnue (valeurs : {', '.join(FAMILLES_VISIONNEUSE)})")
+            if visionneuse.get("iiif") not in (True, False, None):
+                errs.append(f"{c} : visionneuse_acces.iiif invalide")
         if s.get("verifie_le"):
             try:
                 date.fromisoformat(s["verifie_le"])
