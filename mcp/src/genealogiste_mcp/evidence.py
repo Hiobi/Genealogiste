@@ -36,6 +36,51 @@ def _norm_page(p: str) -> str:
     return " ".join(words)
 
 
+_VUE = re.compile(r"\b(?:vue|vues|view|pages?|pp|folios?|fol|f|v|p)\b\s*[.·:,]?\s*(\d+)", re.I)
+_ACTE = re.compile(r"\b(?:actes?|nos?|nums?|numeros?|n)\b\s*[.·:,]?\s*(\d+)", re.I)
+
+
+def _locator(page: str) -> tuple[int | None, int | None]:
+    """Localisateurs structurés d'un texte de page : (vue, acte). Champs absents = None.
+
+    « vue 287/1024, acte n°47 (4 juillet 1837) » → (287, 47) : le total de vues, les dates et les
+    commentaires entre parenthèses sont ignorés. « p.287 n.47 » et « vue 287 acte 47 » → (287, 47)."""
+    from .normalize.names import strip_accents
+
+    t = strip_accents((page or "").lower())
+    t = re.sub(r"[°º]", " ", t)  # symboles de numéro : « n° 47 », « f° 3 »
+
+    def num(regex: re.Pattern[str]) -> int | None:
+        m = regex.search(t)
+        return int(m.group(1)) if m else None
+
+    return num(_VUE), num(_ACTE)
+
+
+def _locator_conflicts(groups: dict[str, list[Citation]]) -> list[str]:
+    """Avertissements de localisation ambigüe : même vue pour plusieurs actes, ou même acte sur plusieurs vues."""
+    by_source: dict[str, list[dict[str, str]]] = {}
+    for key in groups:
+        parts = key.split("|")[1:]
+        d = {p.split("=", 1)[0]: p.split("=", 1)[1] for p in parts if "=" in p}
+        by_source.setdefault(key.split("|")[0], []).append(d)
+    out: list[str] = []
+    for src, locs in by_source.items():
+        vues: dict[str, set[str]] = {}
+        actes: dict[str, set[str]] = {}
+        for d in locs:
+            if "vue" in d and "acte" in d:
+                vues.setdefault(d["vue"], set()).add(d["acte"])
+                actes.setdefault(d["acte"], set()).add(d["vue"])
+        for vue, a in vues.items():
+            if len(a) > 1:
+                out.append(f"{src} : vue {vue} citée pour plusieurs actes ({', '.join(sorted(a))})")
+        for acte, v in actes.items():
+            if len(v) > 1:
+                out.append(f"{src} : acte {acte} cité sur plusieurs vues ({', '.join(sorted(v))})")
+    return out
+
+
 def root_source(tree: Tree, sid: str) -> str:
     """Source originale ultime : chaîne « dérivée de » suivie récursivement (cycle : arrêt)."""
     seen = set()
@@ -65,15 +110,30 @@ def citation_weight(c: Citation, tree: Tree, strict: bool = False) -> float:
 
 
 def group_citations(citations: list[Citation], tree: Tree) -> dict[str, list[Citation]]:
-    """Regroupe par source originale indépendante."""
+    """Regroupe par source originale indépendante. Au sein d'une même source, deux citations ne comptent
+    qu'une seule fois si elles désignent le même acte (mêmes localisateurs vue/acte) ; une citation sans
+    localisateur est rattachée au groupe existant de sa source (faute d'information, on suppose le même acte)."""
     groups: dict[str, list[Citation]] = {}
     derived: list[tuple[str, Citation]] = []
+    sans_loc: list[tuple[str, Citation]] = []
     for c in citations:
         src = tree.sources.get(c.source)
         if src and src.original:
             derived.append((root_source(tree, c.source), c))
-        else:
-            groups.setdefault(f"{c.source}|{_norm_page(c.page)}", []).append(c)
+            continue
+        vue, acte = _locator(c.page)
+        if vue is None and acte is None:
+            sans_loc.append((c.source, c))
+            continue
+        parts = [f"vue={vue}"] if vue is not None else []
+        parts += [f"acte={acte}"] if acte is not None else []
+        groups.setdefault(f"{c.source}|{'|'.join(parts)}", []).append(c)
+    # Rattacher les citations sans localisateur au premier groupe de leur source (prudence : même acte).
+    source_keys: dict[str, str] = {}
+    for k in groups:
+        source_keys.setdefault(k.split("|")[0], k)
+    for src, c in sans_loc:
+        groups.setdefault(source_keys.get(src) or f"{src}|", []).append(c)
     for orig, c in derived:
         target = next((k for k in groups if k.split("|")[0] == orig), None)
         groups.setdefault(target or f"{orig}|*", []).append(c)
@@ -109,6 +169,9 @@ def assess_citations(citations: list[Citation], tree: Tree, strict: bool = False
     pistes = [d for d in details if d["poids"] == 0]
     out = {"statut": statut, "points": points, "sources_independantes": indep, "groupes": details,
            "pistes_non_probantes": len(pistes)}
+    ambig = _locator_conflicts(groups)
+    if ambig:
+        out["localisation_ambigue"] = ambig
     unseen = [c for c in citations if c.consultation == "non_vu"]
     if unseen:
         out["actes_a_voir"] = [format_citation(tree, c, False) for c in unseen]
