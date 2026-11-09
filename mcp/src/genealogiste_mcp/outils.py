@@ -43,6 +43,7 @@ OUTILS: dict[str, tuple[str, str]] = {
     "liens_recherche": (LECTURE, ALLOW),
     "cotes_a_consulter": (LECTURE, ALLOW),
     "archives_service": (LECTURE, DEFAUT),
+    "archives_naviguer": (RESEAU, ALLOW),
     "source_collee": (JOURNAL, ALLOW),
     "familysearch_exporter": (IDENTIFIANTS, ASK),
     # analyse

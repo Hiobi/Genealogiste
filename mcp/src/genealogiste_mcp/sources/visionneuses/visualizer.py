@@ -18,7 +18,13 @@ def _json(ctx, host, params):
         data, cached = ctx.http.get(host + "/visualizer/api", params=params, ttl=7 * DAY,
                                source="visionneuse", headers={"Accept": "application/json"})
     except SourceError as exc:
-        raise VisionneuseError(f"Visionneuse indisponible : {exc}. {REPLI}") from exc
+        cause = str(exc)
+        # Distinguer une protection (Cloudflare/captcha) d'un simple échec technique, sans contournement.
+        if exc.status in (401, 403) or "cloudflare" in cause.lower() or "captcha" in cause.lower():
+            cause = "accès protégé (Cloudflare/captcha) : le service refuse ce client."
+        ctx.journal.add(source="visionneuse", operation="resolution_api", parametres=params,
+                        statut="negatif", references=[host + "/visualizer/api"], resume=cause[:500])
+        raise VisionneuseError(f"Visionneuse indisponible : {cause} {REPLI}") from exc
     ctx.journal.add(source="visionneuse", operation="resolution_api", parametres=params,
                     statut="positif", references=[host + "/visualizer/api"], cache=cached)
     if not isinstance(data, (dict, list)):
@@ -52,6 +58,50 @@ def _premier(value):
     if isinstance(value, list):
         value = value[0] if value else ""
     return value[:512] if isinstance(value, str) else ""
+
+
+def naviguer(ctx, a: ark.Ark, service: dict, page: int, pas: int) -> dict:
+    """Fenêtre de vues d'un registre AD59 : métadonnées du registre + vues (vue, ARK de vue, image).
+
+    Utilise la sélection par plage (`start`/`end`), relevée sur le service : une fenêtre de `pas` vues
+    (au plus 100) autour de `page` (1 = début). Le total de vues est obtenu par une résolution de vue
+    (`counts.media`), sans inventer de borne."""
+    host = service["site"].rstrip("/")
+    params = {"naan": a.naan, "arkName": a.nom}
+    if page < 0:
+        raise VisionneuseError("page : numéro de vue à partir de 1 (0 = début du registre).")
+    debut = max(0, page - 1) if page else 0
+    fin = debut + max(1, min(int(pas or 20), 100)) - 1
+    batch = _json(ctx, host, {**params, "start": debut, "end": fin, "group": 0})
+    if not isinstance(batch, dict):
+        raise VisionneuseError(f"Réponse de pagination inattendue. {REPLI}")
+    items = sorted(((int(k), v) for k, v in batch.items() if isinstance(v, dict)), key=lambda x: x[0])
+    registre: dict = {}
+    vues: list[dict] = []
+    for idx, media in items:
+        record = _objet(media, "record")
+        if not registre:
+            period = _objet(record, "period").get("boundaries")
+            registre = {
+                "titre": _premier(record.get("title")),
+                "cote": _premier(record.get("referenceCode")),
+                "commune": _premier(record.get("locationKeywords")),
+                "periode": tuple(period) if isinstance(period, list) else None,
+            }
+        link = ark.find(media.get("url", ""))
+        vues.append({"vue": idx + 1, "ark_vue": link.id if link else "",
+                     "url_image": _objet(media, "location").get("original", "")})
+    nb_vues = None
+    if items:
+        uuid = _uuid(items[0][1].get("uuid"))
+        data = _json(ctx, host, {**params, "uuid": uuid})
+        nb_vues = _objet(data, "counts").get("media") if isinstance(data, dict) else None
+    registre["nb_vues"] = nb_vues
+    return {"mode": "visionneuse:visualizer_api", "depot": service["code"], "registre": registre,
+            "vues": vues, "fenetre": {"de": (items[0][0] + 1) if items else debut + 1,
+                                      "a": (items[-1][0] + 1) if items else fin + 1},
+            "suite": ("archive_image(<ark_vue>) pour lire une vue, piece_archiver(<ark_vue>) pour l'archiver. "
+                      "page=N pour une autre fenêtre.")}
 
 
 def _objet(parent, key):
@@ -103,5 +153,6 @@ def resoudre(ctx, a: ark.Ark, service: dict, page: int) -> VueResolue:
     return VueResolue(mode="visionneuse:visualizer_api", service_iiif=iiif.rstrip("/"), url_image=image,
                       vue=position + 1, nb_vues=count, ark_vue=link.id, ark_ressource=a.base,
                       cote=_premier(record.get("referenceCode")), titre_registre=_premier(record.get("title")),
+                      commune=_premier(record.get("locationKeywords")),
                       periode=tuple(bounds) if isinstance(bounds, list) and len(bounds) == 2 and all(isinstance(x, str) for x in bounds) else None,
                       licence=rights[:4000] if isinstance(rights, str) else "", depot=service["code"])

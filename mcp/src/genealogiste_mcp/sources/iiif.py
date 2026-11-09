@@ -225,6 +225,25 @@ def locate(ctx: SourceContext, source: str, page: int = 0) -> dict:
             "licence": _label(data.get("rights") or data.get("license") or data.get("attribution"))}
 
 
+def naviguer(ctx: SourceContext, source: str, page: int = 0, pas: int = 20) -> dict:
+    """Fenêtre de vues d'un manifeste IIIF (v2/v3) : métadonnées du document et liste des vues."""
+    data = _document(ctx, source)
+    views = canvases(data)
+    if not views:
+        raise IiifError("Document sans vue IIIF exploitable. " + CONSIGNE_AD)
+    debut = max(0, page - 1) if page else 0
+    fin = min(len(views), debut + max(1, min(int(pas or 20), 100)))
+    fenetre = []
+    for i in range(debut, fin):
+        v = views[i]
+        fenetre.append({"vue": i + 1, "libelle": v.get("label", ""), "service_iiif": v.get("service", ""),
+                        "url_image": v.get("url_image", "")})
+    return {"mode": "iiif:manifeste", "registre": {"titre": _label(data.get("label")), "nb_vues": len(views),
+            "licence": _label(data.get("rights") or data.get("license") or data.get("attribution"))},
+            "vues": fenetre, "fenetre": {"de": debut + 1, "a": fin},
+            "suite": "archive_image(<service_iiif>) ou archive_image(source, page=N) pour lire/archiver une vue."}
+
+
 def _crop_box(region: str, w: int, h: int) -> tuple[int, int, int, int]:
     if region == "full":
         return 0, 0, w, h

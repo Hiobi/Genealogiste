@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 from .. import ark
 from ..http import SourceError
 from .base import DAY, SourceContext
@@ -50,4 +52,8 @@ def resolve(ctx: SourceContext, value: str, verifier: bool = True, titre: str = 
     ctx.journal.add(source="ark", operation="resoudre", parametres={"ark": value},
                     statut="positif" if out.get("service") else "negatif", resume=a.id, references=[out["url"]])
     out["citation_suggeree"] = ark.suggested_citation(a, titre)
+    if a.qualificatif and a.vue is None and a.service and re.fullmatch(
+            r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", a.qualificatif.lower()):
+        out["avertissement"] = ("Qualificatif de vue non numérotée (UUID de visionneuse) : le champ vue reste "
+                                "vide ; utiliser archive_image avec cet ARK pour résoudre l'image et la cote.")
     return out
