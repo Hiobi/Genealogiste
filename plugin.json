@@ -5,7 +5,7 @@
   "description": "Assistant généalogique : sources françaises, méthode GPS, arbre GEDCOM 7 versionné.",
   "author": { "name": "hiobi" },
   "repository": "https://github.com/Hiobi/Genealogiste",
-  "license": "MIT",
+  "license": "GPL-3.0-or-later",
   "extensions": {
     "com.openai": {
       "hooks": [],

@@ -84,4 +84,4 @@ Le mode fichier fonctionne sans Gramps Web ni Obsidian. L’ancien exporteur Fam
 un GEDCOM obtenu séparément peut être importé.
 
 Pour contribuer : [CONTRIBUTING.md](CONTRIBUTING.md), [architecture et conventions](CLAUDE.md),
-[tests et CI](docs/integration-continue.md). Licence déclarée dans le manifeste : MIT.
+[tests et CI](docs/integration-continue.md). Licence : [GPL-3.0](LICENSE).
