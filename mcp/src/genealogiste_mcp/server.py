@@ -10,7 +10,7 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from . import archivage, archives, coherence, evidence, matching, pieces, privacy
+from . import archivage, archives, ark, coherence, evidence, matching, pieces, privacy
 from .archives import communicability_online
 from .auth import BearerAuth, bind_problem
 from .cache import Cache
@@ -31,8 +31,20 @@ from .normalize.places import normalize_place
 from .notes import Notes, NotesError, touched
 from .reseau import NetworkPolicy
 from .serveur_mcp import ServeurMCP
-from .sources import ark_resolver, familysearch, gallica, geo, iiif, liens, matchid, wikidata, wikitree
+from .sources import (
+    ark_resolver,
+    familysearch,
+    gallica,
+    geo,
+    iiif,
+    liens,
+    matchid,
+    visionneuses,
+    wikidata,
+    wikitree,
+)
 from .sources.base import SourceContext
+from .sources.visionneuses import VisionneuseError
 from .tree.proposals import ProposalError, Proposals, TokenStore
 from .tree.store import TreeStore, remote_problem
 
@@ -339,6 +351,30 @@ def archives_service(lieu: str = "", departement: str = "", code: str = "", docu
     matricule… ; préciser lieu pour les exceptions communales et annee ; None = inconnu), inscription,
     date de vérification et couverture sourcée. Un accès déclaré ne prouve pas l'existence d'un acte."""
     return archives.service(lieu, departement, code, document, annee or None)
+
+
+@mcp.tool()
+def archives_naviguer(source: str, page: int = 0, pas: int = 20) -> dict:
+    """Parcourir les vues d'un registre d'archives sans connaître la vue à l'avance : renvoie une fenêtre de
+    vues (numéro, ARK de vue, image) et les métadonnées du registre (titre, cote, commune, période, nombre
+    de vues). source : ARK de registre ou de vue AD59 (visionneuse reconnue), ARK Gallica ou manifeste IIIF.
+    page : première vue à lister (1 = début) ; pas : taille de fenêtre (1-100). Ensuite archive_image ou
+    piece_archiver sur une vue choisie. Ne localise pas un acte à partir d'un nom (voir la recherche du
+    service, liens_recherche/cotes_a_consulter pour trouver le registre)."""
+    a = app()
+    try:
+        res = visionneuses.naviguer(a.sctx, source, page, pas)
+    except VisionneuseError as exc:
+        return {"erreur": str(exc), "source": source}
+    if res is not None:
+        return res
+    ark_obj = ark.find(source)
+    manifeste = (f"https://gallica.bnf.fr/iiif/{ark_obj.base}/manifest.json"
+                 if ark_obj and ark_obj.naan == "12148" else source)
+    try:
+        return iiif.naviguer(a.sctx, manifeste, page, pas)
+    except iiif.IiifError as exc:
+        return {"erreur": str(exc), "source": source}
 
 
 @mcp.tool()
@@ -871,6 +907,7 @@ def piece_archiver(source: str, page: int = 0, personnes: list[str] | None = Non
             cote = cote or s.cote
         depot = depot or loc.get("depot", "")
         cote = cote or loc.get("cote", "")
+        commune = commune or loc.get("commune", "")
         bounds = loc.get("periode")
         if not annees and bounds:
             annees = bounds[0][:4] + ("-" + bounds[1][:4] if bounds[1][:4] != bounds[0][:4] else "")

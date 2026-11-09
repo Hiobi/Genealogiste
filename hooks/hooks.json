@@ -3,7 +3,7 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "mcp__.*genealogiste.*__(matchid_recherche|wikitree_.*|gallica_.*|wikidata_.*|geo_.*|recherche_multi|liens_recherche|cotes_a_consulter|source_collee|normaliser_.*|comparer_.*|convertir_date|naissance_depuis_age|communicabilite|prochaine_source|journal_lister|piece_nommer|pieces_inventaire|pieces_proposer|journal_ajouter|arbre_(info|recherche|personne|fiche|statut_preuve|coherence|comparer|ascendance|descendance|lacunes|vivant|historique|rapport_preuve|cercle|proposer|annuler_proposition|annuler_modification|importer_gedcom)|gramps_recherche|gramps_personne|gramps_bascule_proposer|gramps_recalculer_notes|gramps_synchroniser)$",
+        "matcher": "mcp__.*genealogiste.*__(matchid_recherche|wikitree_.*|gallica_.*|wikidata_.*|geo_.*|recherche_multi|liens_recherche|cotes_a_consulter|archives_naviguer|source_collee|normaliser_.*|comparer_.*|convertir_date|naissance_depuis_age|communicabilite|prochaine_source|journal_lister|piece_nommer|pieces_inventaire|pieces_proposer|journal_ajouter|arbre_(info|recherche|personne|fiche|statut_preuve|coherence|comparer|ascendance|descendance|lacunes|vivant|historique|rapport_preuve|cercle|proposer|annuler_proposition|annuler_modification|importer_gedcom)|gramps_recherche|gramps_personne|gramps_bascule_proposer|gramps_recalculer_notes|gramps_synchroniser)$",
         "hooks": [
           {
             "type": "command",

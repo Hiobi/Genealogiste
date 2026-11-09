@@ -142,6 +142,7 @@ def test_resolve_known_service_head_only(app):
     r = server.ark_resoudre(AD59)
     assert head.called and r["disponibilite"] == {"accessible": True}
     assert r["service"]["code"] == "AD59" and r["citation_suggeree"]["source"]["depot"] == "AD59"
+    assert "UUID de visionneuse" in r["avertissement"]
     assert server.journal_lister(source="ark")[-1]["operation"] == "resoudre"
 
 

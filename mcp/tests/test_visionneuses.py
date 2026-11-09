@@ -26,7 +26,8 @@ def metadata():
         "uuid": UUID, "type": "image", "url": VIEW,
         "record": {"arkId": {"naan": 33518, "arkName": "registrefictif"},
                    "title": ["Registre fictif"], "referenceCode": ["2 E FICTIF"],
-                   "period": {"boundaries": ["1800-01-01", "1810-12-31"]}},
+                   "period": {"boundaries": ["1800-01-01", "1810-12-31"]},
+                   "locationKeywords": ["VILLERS-EN-CAUCHIES"]},
         "location": {"original": IMAGE, "iiif": None}}},
         "app": {"licenses": {"visualizer": {"text": "Licence fictive de test", "enabled": True}}},
         "contenu_inutile": "NE PAS ENVOYER AU MODELE " * 1000}
@@ -53,6 +54,7 @@ def test_vue_ark_apercu_recadrage_archivage_un_seul_telechargement(app_famille, 
     assert "erreur" not in preview, preview
     assert preview["mode"] == "visionneuse:visualizer_api"
     assert preview["vue"] == 2 and preview["nb_vues"] == 3 and preview["ark_vue"] == ARK
+    assert preview["commune"] == "VILLERS-EN-CAUCHIES"
     assert preview["dimensions_originales"] == [1200, 800]
     assert preview["dimensions_demandees"] == [800, 533]
     assert "contenu_inutile" not in preview and len(json.dumps(preview)) < 8000
@@ -270,3 +272,35 @@ def test_erreur_de_resolution_tracee_au_journal(app, routes):
     result = server.archive_image(VIEW)
     assert "erreur" in result
     assert app.journal.entries(statut="erreur")
+
+
+def test_navigation_registre_ad59(app, routes):
+    media = metadata()["media"]["1"]
+    batch = {}
+    for i in range(3):
+        m = json.loads(json.dumps(media))
+        m["url"] = VIEW
+        batch[str(i)] = m
+    routes.get(API, params={"naan": "33518", "arkName": "registrefictif", "start": 0, "end": 2,
+                            "group": 0}).respond(200, json=batch)
+    routes.get(API, params=PARAMS).respond(200, json=metadata())
+    r = server.archives_naviguer("ark:/33518/registrefictif", page=1, pas=3)
+    assert "erreur" not in r, r
+    assert r["mode"] == "visionneuse:visualizer_api" and r["depot"] == "AD59"
+    assert r["registre"]["titre"] == "Registre fictif" and r["registre"]["cote"] == "2 E FICTIF"
+    assert r["registre"]["commune"] == "VILLERS-EN-CAUCHIES" and r["registre"]["nb_vues"] == 3
+    assert [v["vue"] for v in r["vues"]] == [1, 2, 3] and all(v["ark_vue"] == ARK for v in r["vues"])
+
+
+def test_navigation_manifest_iiif(app, routes):
+    url = "https://archives.exemple.org/manifest.json"
+    service = "https://images.exemple.org/iiif/abc"
+    manifest = {"label": {"fr": ["Registre fictif suisse"]},
+                "items": [{"items": [{"items": [{"body": {"id": service + "/full/max/0/default.jpg",
+                                                            "service": [{"id": service}]}}]}]} for _ in range(4)]}
+    routes.get(url).respond(200, json=manifest)
+    r = server.archives_naviguer(url)
+    assert "erreur" not in r, r
+    assert r["mode"] == "iiif:manifeste" and r["registre"]["nb_vues"] == 4
+    assert [v["vue"] for v in r["vues"]] == [1, 2, 3, 4]
+    assert all(v["service_iiif"] == service for v in r["vues"])
