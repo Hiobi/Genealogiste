@@ -38,6 +38,12 @@ def test_missing_department_falls_back_to_francearchives(monkeypatch):
     assert "erreur" in server.archives_service(code="XYZ") and "erreur" in server.archives_service()
 
 
+def test_visionneuse_acces_classe_les_services():
+    acces = server.archives_service(code="AD59")["visionneuse_acces"]
+    assert acces["famille"] == "editeur_ad" and acces["iiif"] is False
+    assert acces["protection"] == "cloudflare_hcaptcha"
+
+
 def test_online_unknown_vs_known():
     assert archives.online(archives.by_code("AD59"), "naissance", 1926) is None  # référentiel muet : inconnu
     m = archives.by_code("MATCHID")

@@ -11,7 +11,10 @@ description: Rechercher une personne, importer un GEDCOM, préparer une édition
      Appliquer `methodologie-gps`, `sources-francaises` et `droit-communicabilite`.
      Conserver les références, distinguer homonymes, hypothèses et faits cités.
    - **Import** : `arbre_importer_gedcom` produit un bilan et un diff ; un import reste non vérifié.
-   - **Acte** : appliquer `paleographie` pour la transcription et `organisation-pieces` pour le classement.
+   - **Acte** : pour retrouver un acte depuis une personne, suivre le parcours `archives_service` →
+     recherche du registre (`liens_recherche`, `cotes_a_consulter`) → `archives_naviguer` (parcourir
+     les vues) → `archive_image`/`piece_archiver`. Appliquer `paleographie` pour la transcription et
+     `organisation-pieces` pour le classement. La commande `/genealogiste:acte` détaille ce parcours.
    - **Édition** : `arbre_proposer` prépare les opérations et renvoie diff, alertes et jeton.
 3. Présenter le diff, les sources, les incertitudes et les alertes avant de demander l’application.
    Un diff tronqué exige une inspection complète avant l’accord. Faire valider séparément une fusion
