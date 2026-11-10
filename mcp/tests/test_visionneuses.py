@@ -274,15 +274,18 @@ def test_erreur_de_resolution_tracee_au_journal(app, routes):
     assert app.journal.entries(statut="erreur")
 
 
-def test_navigation_registre_ad59(app, routes):
+def _fenetre(debut, n, forme):
+    """Réponse de plage de l'API : liste JSON si la fenêtre commence à 0, dictionnaire sinon (relevé AD59)."""
     media = metadata()["media"]["1"]
-    batch = {}
-    for i in range(3):
-        m = json.loads(json.dumps(media))
-        m["url"] = VIEW
-        batch[str(i)] = m
+    medias = [json.loads(json.dumps(media)) for _ in range(n)]
+    return medias if forme == "liste" else {str(debut + i): m for i, m in enumerate(medias)}
+
+
+@pytest.mark.parametrize("forme", ["liste", "dict"])
+def test_navigation_registre_ad59(app, routes, forme):
+    """Fenêtre à l'indice 0 : liste JSON sur le service réel (#120) ; le dictionnaire reste accepté."""
     routes.get(API, params={"naan": "33518", "arkName": "registrefictif", "start": 0, "end": 2,
-                            "group": 0}).respond(200, json=batch)
+                            "group": 0}).respond(200, json=_fenetre(0, 3, forme))
     routes.get(API, params=PARAMS).respond(200, json=metadata())
     r = server.archives_naviguer("ark:/33518/registrefictif", page=1, pas=3)
     assert "erreur" not in r, r
@@ -290,6 +293,60 @@ def test_navigation_registre_ad59(app, routes):
     assert r["registre"]["titre"] == "Registre fictif" and r["registre"]["cote"] == "2 E FICTIF"
     assert r["registre"]["commune"] == "VILLERS-EN-CAUCHIES" and r["registre"]["nb_vues"] == 3
     assert [v["vue"] for v in r["vues"]] == [1, 2, 3] and all(v["ark_vue"] == ARK for v in r["vues"])
+
+
+def test_navigation_fenetre_milieu_de_registre_dictionnaire(app, routes):
+    """Fenêtre qui ne commence pas à 0 : dictionnaire indexé par position (non-régression)."""
+    routes.get(API, params={"naan": "33518", "arkName": "registrefictif", "start": 2, "end": 3,
+                            "group": 0}).respond(200, json=_fenetre(2, 2, "dict"))
+    routes.get(API, params=PARAMS).respond(200, json=metadata())
+    r = server.archives_naviguer("ark:/33518/registrefictif", page=3, pas=2)
+    assert "erreur" not in r, r
+    assert [v["vue"] for v in r["vues"]] == [3, 4] and r["fenetre"] == {"de": 3, "a": 4}
+
+
+def test_navigation_fenetre_depassant_la_fin_liste_courte(app, routes):
+    """Une liste plus courte que la fenêtre demandée n'est pas une erreur."""
+    routes.get(API, params={"naan": "33518", "arkName": "registrefictif", "start": 0, "end": 9,
+                            "group": 0}).respond(200, json=_fenetre(0, 3, "liste"))
+    routes.get(API, params=PARAMS).respond(200, json=metadata())
+    r = server.archives_naviguer("ark:/33518/registrefictif", page=1, pas=10)
+    assert "erreur" not in r, r
+    assert [v["vue"] for v in r["vues"]] == [1, 2, 3]
+
+
+def test_navigation_reponse_inconnue_reste_une_erreur_explicite(app, routes):
+    routes.get(API, params={"naan": "33518", "arkName": "registrefictif", "start": 0, "end": 2,
+                            "group": 0}).respond(200, json={"a": {"uuid": UUID}})
+    r = server.archives_naviguer("ark:/33518/registrefictif", page=1, pas=3)
+    assert "erreur" in r and "pagination inattendue" in r["erreur"]
+
+
+def test_vue_proche_du_debut_media_en_liste(app_famille, routes):
+    """Vue de position 1 : `media` est une liste depuis l'indice 0 sur le service réel (#120)."""
+    data = metadata()
+    voisin = json.loads(json.dumps(data["media"]["1"]))
+    voisin["uuid"] = "22222222-2222-4222-8222-222222222222"
+    data["media"] = [voisin, data["media"]["1"]]
+    routes.get(API, params=PARAMS).respond(200, json=data)
+    routes.get(IMAGE).respond(200, content=jpeg())
+    preview = server.archive_image(VIEW)
+    assert "erreur" not in preview, preview
+    assert preview["vue"] == 2 and preview["ark_vue"] == ARK
+
+
+def test_vue_par_page_1_reponse_liste(app_famille, routes):
+    """`page=1` : start=end=0, l'API renvoie une liste d'un élément."""
+    routes.get(API, params={"naan": "33518", "arkName": "registrefictif", "start": 0, "end": 0,
+                            "group": 0}).respond(200, json=[metadata()["media"]["1"]])
+    data = metadata()
+    data["positions"]["media"] = 0
+    data["media"] = [data["media"]["1"]]
+    routes.get(API, params=PARAMS).respond(200, json=data)
+    routes.get(IMAGE).respond(200, content=jpeg())
+    preview = server.archive_image("ark:/33518/registrefictif", page=1)
+    assert "erreur" not in preview, preview
+    assert preview["vue"] == 1
 
 
 def test_navigation_manifest_iiif(app, routes):

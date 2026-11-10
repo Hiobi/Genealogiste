@@ -40,10 +40,21 @@ est `media["286"]`. La vue publique 287 correspond donc à l'indice 286. Pour un
 `N`, la requête utilise `start=end=N-1` et `group=0`. La réponse par page ne fournit pas
 à elle seule le nombre total de vues : ne pas l'inventer.
 
-**Écart avec l'étude initiale :** le compte rendu utilisateur décrivait une liste pour
-`start/end` ; la réponse actuelle est un dictionnaire indexé par position. Les tests
-doivent couvrir ce dictionnaire ; la forme liste constitue une compatibilité avec le
-format rapporté, pas le format observé lors de la recette.
+**Deux formes de réponse (relevé du 10 novembre 2026, #120) :** le serveur encode un tableau
+PHP en **liste JSON** quand les positions vont de 0 à n, et en **dictionnaire** indexé par
+position sinon. La recette du 8 novembre n'avait exercé que des vues au milieu du registre
+(dictionnaire) ; le compte rendu utilisateur décrivait une liste pour `start/end`, ce qui
+correspond à une fenêtre commençant à l'indice 0.
+
+| Appel | Forme observée (registre `jq9hpbzxnc72`) |
+|---|---|
+| `start=0&end=2&group=0` (`page=1`) | liste de 3 médias |
+| `start=799&end=801&group=0` (`page=800`) | dictionnaire `{"799": …}` |
+| `uuid=<vue proche du début>` | `media` : liste depuis l'indice 0 (`positions.media` = position dans cette liste) |
+
+Le module normalise les deux formes en `{position: média}` (`_par_position`) ; les contrôles de
+cohérence (`positions.media`, `counts.media`, UUID, ARK) sont inchangés. Une forme inconnue
+reste une erreur explicite avec repli manuel.
 
 Le média contient notamment `url` (ARK de vue), `uuid`, `record`, `location`, `type` et
 `format`. Son `record.arkId` est un objet
