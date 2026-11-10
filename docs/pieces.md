@@ -133,7 +133,8 @@ Ces variables remplacent le contournement par liens symboliques (`<données>/med
 ## Archiver une pièce consultée en ligne (ARK, IIIF)
 
 `archive_image` sert à **lire** (aperçu 800 px en gris, recadrages) : ses images restent dans le cache, hors du
-vault. Pour **conserver** une vue d'acte, `piece_archiver` :
+vault. Sa réponse est minimale (chemin, vue, dimensions, coût) et ne porte pas la licence : celle-ci est conservée
+ici, dans la note compagnon. Pour **conserver** une vue d'acte, `piece_archiver` :
 
 1. télécharge la vue entière en **pleine résolution et en couleur** (IIIF `full/max`, repli `full/full`), ou
    résout un lien de visionneuse AD59, reprend un fichier local ou une URL directe. Un lien IIIF reste

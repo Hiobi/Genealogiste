@@ -255,13 +255,23 @@ def ark_resoudre(ark: str, verifier: bool = True, titre: str = "") -> dict:
 
 
 @mcp.tool()
-def archive_image(source: str, page: int = 0, region: str = "full", largeur: int = 800, gris: bool = True) -> dict:
+def archive_image(source: str, page: int = 0, region: str = "full", largeur: int = 800, gris: bool = True,
+                  details: bool = False) -> dict:
     """Aperçu économe d'une vue : lien IIIF (tous pays), ARK Gallica ou visionneuse AD59, image directe,
     fichier local. Les pages qui déclarent un manifeste IIIF sont résolues côté Python, sans HTML envoyé
     au modèle. D'abord largeur 800/gris, puis region='pct:x,y,l,h' pour l'acte seul ; coût indicatif renvoyé.
     Réutilise le cache d'originale pour recadrer et archiver. Un ARK seul ne garantit pas le téléchargement.
-    Pour conserver la pleine résolution : piece_archiver. Pour Gallica, essayer d'abord l'OCR."""
-    return iiif.fetch(app().sctx, app().config.cache_images_dir, source, page, region, largeur, gris)
+    Pour conserver la pleine résolution : piece_archiver. Pour Gallica, essayer d'abord l'OCR.
+
+    Sortie minimale : chemin_absolu (à lire avec l'outil de lecture de fichiers), vue, nb_vues, ark_vue,
+    dimensions et coût estimé, registre. Cote, titre, commune et période du registre ne sont donnés qu'au
+    premier aperçu de ce registre dans la session, ou avec details=true. La licence et les conditions de
+    réutilisation ne sont jamais renvoyées ici : elles sont conservées par piece_archiver (note compagnon).
+    Consigne : aperçu d'abord (≈ 800 px, gris) pour repérer l'acte, puis recadrer l'acte seul
+    (region pct:x,y,l,h, largeur 1500-2000). Transcription produite par le modèle : à marquer comme telle
+    et à faire vérifier."""
+    out = iiif.fetch(app().sctx, app().config.cache_images_dir, source, page, region, largeur, gris)
+    return iiif.sortie_minimale(app().sctx, out, details)
 
 
 @mcp.tool()

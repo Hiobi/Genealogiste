@@ -45,6 +45,11 @@ def routes():
         yield mock
 
 
+def _complet(app, *args, **kwargs):
+    """Réponse intégrale de iiif.fetch : résolution partagée avec piece_archiver (mode, licence, URL…)."""
+    return iiif.fetch(app.sctx, app.config.cache_images_dir, *args, **kwargs)
+
+
 def test_vue_ark_apercu_recadrage_archivage_un_seul_telechargement(app_famille, routes):
     original = jpeg()
     api = routes.get(API, params=PARAMS).respond(200, json=metadata())
@@ -52,7 +57,7 @@ def test_vue_ark_apercu_recadrage_archivage_un_seul_telechargement(app_famille, 
     avant = write_gedcom(app_famille.tree())
     preview = server.archive_image(VIEW)
     assert "erreur" not in preview, preview
-    assert preview["mode"] == "visionneuse:visualizer_api"
+    assert _complet(app_famille, VIEW)["mode"] == "visionneuse:visualizer_api"
     assert preview["vue"] == 2 and preview["nb_vues"] == 3 and preview["ark_vue"] == ARK
     assert preview["commune"] == "VILLERS-EN-CAUCHIES"
     assert preview["dimensions_originales"] == [1200, 800]
@@ -63,7 +68,7 @@ def test_vue_ark_apercu_recadrage_archivage_un_seul_telechargement(app_famille, 
     assert "résolution" in cropped["avertissement"]
     archived = server.piece_archiver(VIEW, personnes=["I1"], type_piece="N", commune="Rochefort")
     assert "erreur" not in archived, archived
-    assert archived["mode"] == preview["mode"] and archived["ark_vue"] == ARK
+    assert archived["mode"] == "visionneuse:visualizer_api" and archived["ark_vue"] == ARK
     assert archived["cote"] == "2 E FICTIF" and archived["licence"] == "Licence fictive de test"
     path = Path(archived["chemin_absolu"])
     assert path.read_bytes() == original
@@ -97,7 +102,7 @@ def test_iiif_prioritaire_si_annonce_par_visionneuse(app, routes):
     routes.get(service + "/info.json").respond(200, json={"width": 1200, "height": 800})
     crop = routes.get(service + "/full/800,/0/gray.jpg").respond(200, content=jpeg())
     image = routes.get(IMAGE).respond(200, content=jpeg())
-    result = server.archive_image(VIEW)
+    result = _complet(app, VIEW)
     assert "erreur" not in result, result
     assert result["service_iiif"] == service and crop.call_count == 1 and image.call_count == 0
 
@@ -135,9 +140,10 @@ def test_html_declare_manifest_etranger_sans_ark(app, routes):
             "id": service + "/full/max/0/default.jpg", "service": [{"id": service}]}}]}]}]})
     routes.get(service + "/info.json").respond(200, json={"width": 1200, "height": 800})
     routes.get(service + "/full/800,/0/gray.jpg").respond(200, content=jpeg())
-    result = server.archive_image(page)
+    result = _complet(app, page)
     assert result["mode"] == "iiif" and result["titre_registre"] == "Notice fictive suisse"
     assert result["licence"] == "https://example.org/droits-fictifs" and not result["ark_vue"]
+    assert "licence" not in server.archive_image(page)  # jamais dans la sortie d'archive_image
     server.archive_image(page)
     assert html.call_count == 1
 
@@ -170,7 +176,7 @@ def test_manifest_sans_service_utilise_image_declaree(app, routes):
     routes.get(url).respond(200, json={"items": [{"items": [{"items": [{"body": {
         "id": image, "type": "Image", "format": "image/jpeg"}}]}]}]})
     original = routes.get(image).respond(200, content=jpeg())
-    result = server.archive_image(url)
+    result = _complet(app, url)
     assert "erreur" not in result, result
     assert result["mode"] == "iiif" and original.call_count == 1
 
@@ -189,7 +195,7 @@ def test_lien_iiif_explicite_prioritaire_sur_adaptateur_naan(app, routes):
     service = HOST + f"/iiif/ark:/33518/registrefictif/{UUID}"
     routes.get(service + "/info.json").respond(200, json={"width": 1200, "height": 800})
     image = routes.get(service + "/full/800,/0/gray.jpg").respond(200, content=jpeg())
-    result = server.archive_image(service + "/full/max/0/default.jpg")
+    result = _complet(app, service + "/full/max/0/default.jpg")
     assert "erreur" not in result, result
     assert result["mode"] == "iiif" and image.call_count == 1
 
@@ -361,3 +367,50 @@ def test_navigation_manifest_iiif(app, routes):
     assert r["mode"] == "iiif:manifeste" and r["registre"]["nb_vues"] == 4
     assert [v["vue"] for v in r["vues"]] == [1, 2, 3, 4]
     assert all(v["service_iiif"] == service for v in r["vues"])
+
+
+def test_sortie_minimale_archive_image_figee_sans_licence(app_famille, routes):
+    routes.get(API, params=PARAMS).respond(200, json=metadata())
+    routes.get(IMAGE).respond(200, content=jpeg())
+    avant = _complet(app_famille, VIEW)  # réponse intégrale, avant filtrage
+    premier = server.archive_image(VIEW)
+    suivant = server.archive_image(VIEW)
+    detaille = server.archive_image(VIEW, details=True)
+    minimal = {"chemin_absolu", "vue", "nb_vues", "ark_vue", "dimensions_originales", "dimensions_demandees",
+               "cout_estime_tokens", "registre"}
+    assert set(suivant) == minimal
+    assert minimal < set(premier) <= minimal | {"titre_registre", "cote", "commune", "periode"}
+    assert premier["cote"] == "2 E FICTIF" and premier["commune"] == "VILLERS-EN-CAUCHIES"
+    assert set(detaille) == set(premier)  # details=true rend les métadonnées du registre
+    for sortie in (premier, suivant, detaille):
+        texte = json.dumps(sortie, ensure_ascii=False)
+        assert "licence" not in sortie and "consigne" not in sortie and "Licence fictive" not in texte
+    assert "Licence fictive de test" in json.dumps(avant, ensure_ascii=False)
+    # gain mesuré : taille JSON de la réponse intégrale / première réponse / réponses suivantes
+    taille = {"avant": len(json.dumps(avant, ensure_ascii=False)),
+              "premier": len(json.dumps(premier, ensure_ascii=False)),
+              "suivant": len(json.dumps(suivant, ensure_ascii=False))}
+    print("octets archive_image :", taille)
+    assert taille["suivant"] < taille["avant"] * 0.5
+
+
+def test_metadonnees_registre_une_fois_par_session(app_famille, routes):
+    routes.get(API, params=PARAMS).respond(200, json=metadata())
+    routes.get(IMAGE).respond(200, content=jpeg())
+    assert "cote" in server.archive_image(VIEW)
+    assert "cote" not in server.archive_image(VIEW)
+    assert "cote" in server.archive_image(VIEW, details=True)
+    app_famille.sctx.registres_vus.clear()  # nouvelle session
+    assert "cote" in server.archive_image(VIEW)
+
+
+def test_piece_archiver_garde_licence_et_reutilisation(app_famille, routes):
+    routes.get(API, params=PARAMS).respond(200, json=metadata())
+    routes.get(IMAGE).respond(200, content=jpeg())
+    assert "licence" not in server.archive_image(VIEW)
+    archive = server.piece_archiver(VIEW, personnes=["I1"], type_piece="N", commune="Rochefort")
+    assert "erreur" not in archive, archive
+    assert archive["licence"] == "Licence fictive de test"
+    texte = Path(archive["chemin_absolu"]).with_suffix(".md").read_text(encoding="utf-8")
+    assert 'reutilisation: "Licence fictive de test"' in texte and 'licence: "Licence fictive de test"' in texte
+    assert "**Réutilisation** : Licence fictive de test" in texte

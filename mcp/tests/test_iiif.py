@@ -33,14 +33,19 @@ def test_image_url_and_region_validation():
         raise AssertionError
 
 
+def _complet(app, *args, **kwargs):
+    """Réponse intégrale de iiif.fetch (celle que piece_archiver et l'archivage partagent)."""
+    return iiif.fetch(app.sctx, app.config.cache_images_dir, *args, **kwargs)
+
+
 @respx.mock
 def test_preview_then_crop_with_cost_and_cache(app):
     respx.get(f"{SVC}/info.json").mock(return_value=httpx.Response(200, json=INFO))
     prev = respx.get(f"{SVC}/full/800,/0/gray.jpg").mock(return_value=httpx.Response(200, content=JPEG))
     r = server.archive_image(f"{SVC}/info.json")
     assert r["dimensions_demandees"] == [800, 600] and r["cout_estime_tokens"] == 640
-    assert open(r["chemin_absolu"], "rb").read() == JPEG and r["fichier"].startswith("cache-images/iiif/")
-    again = server.archive_image(f"{SVC}/info.json")
+    assert open(r["chemin_absolu"], "rb").read() == JPEG and "/cache-images/iiif/" in r["chemin_absolu"]
+    again = _complet(app, f"{SVC}/info.json")
     assert again["depuis_cache"] is True and prev.call_count == 1  # jamais retéléchargée
     crop = respx.get(f"{SVC}/pct:10,20,50,30/1500,/0/gray.jpg").mock(return_value=httpx.Response(200, content=JPEG))
     c = server.archive_image(SVC + "/full/800,/0/gray.jpg", region="pct:10,20,50,30", largeur=1500)
@@ -56,9 +61,11 @@ def test_manifest_page_and_gray_fallback(app):
     respx.get(f"{base}/info.json").mock(return_value=httpx.Response(404))
     respx.get(f"{base}/full/800,/0/gray.jpg").mock(return_value=httpx.Response(400))
     respx.get(f"{base}/full/800,/0/default.jpg").mock(return_value=httpx.Response(200, content=JPEG))
+    complet = _complet(app, url, page=2)
+    assert complet["url_image"].endswith("default.jpg")  # repli sans niveau de gris
     r = server.archive_image(url, page=2)
-    assert r["vue"] == 2 and r["nb_vues"] == 3 and r["url_image"].endswith("default.jpg")
-    assert r["cout_estime_tokens"] is None  # dimensions inconnues
+    assert r["vue"] == 2 and r["nb_vues"] == 3
+    assert "cout_estime_tokens" not in r  # dimensions inconnues : clé omise
     assert "hors du manifeste" in server.archive_image(url, page=9)["erreur"]
 
 
@@ -68,7 +75,9 @@ def test_gallica_ark_and_width_cap(app):
     respx.get(f"{base}/info.json").mock(return_value=httpx.Response(200, json={**INFO, "@id": base}))
     img = respx.get(f"{base}/full/2000,/0/gray.jpg").mock(return_value=httpx.Response(200, content=JPEG))
     r = server.archive_image("https://gallica.bnf.fr/ark:/12148/bpt6k5619759j/f12.item", largeur=5000)
-    assert img.called and r["vue"] == 12 and r["manifeste"].endswith("/manifest.json")
+    assert img.called and r["vue"] == 12
+    assert _complet(app, "https://gallica.bnf.fr/ark:/12148/bpt6k5619759j/f12.item",
+                    largeur=5000)["manifeste"].endswith("/manifest.json")
 
 
 def test_archives_ark_without_iiif_asks_for_link(app):
@@ -87,13 +96,13 @@ def _image(path, w=3000, h=2000):
 def test_local_file_preview_and_crop(app, tmp_path):
     src = _image(tmp_path / "vue.jpg")
     r = server.archive_image(str(src))
-    assert r["mode"] == "fichier" and r["dimensions_demandees"] == [800, 533]
+    assert _complet(app, str(src))["mode"] == "fichier" and r["dimensions_demandees"] == [800, 533]
     assert r["cout_estime_tokens"] == round(800 * 533 / 750) and r["dimensions_originales"] == [3000, 2000]
-    c = server.archive_image(str(src), region="pct:50,50,50,50", largeur=1500)
+    c = _complet(app, str(src), region="pct:50,50,50,50", largeur=1500)
     assert c["zone_pixels"] == [1500, 1000, 3000, 2000] and c["dimensions_demandees"] == [1500, 1000]
     small = server.archive_image(str(src), region="0,0,600,400", largeur=1500)
     assert small["dimensions_demandees"] == [600, 400]  # jamais agrandie
-    assert server.archive_image(str(src))["depuis_cache"] is True
+    assert _complet(app, str(src))["depuis_cache"] is True
     from PIL import Image
     assert Image.open(r["chemin_absolu"]).mode == "L"
 
@@ -103,7 +112,7 @@ def test_direct_image_url_downloaded_once(app, tmp_path):
     data = _image(tmp_path / "o.jpg").read_bytes()
     url = "https://archives.exemple.org/images/7eb8efac.jpg"
     route = respx.get(url).mock(return_value=httpx.Response(200, content=data))
-    r = server.archive_image(url)
+    r = _complet(app, url)
     assert r["original_telecharge"] is True and route.call_count == 1
     server.archive_image(url, region="pct:0,0,50,50", largeur=1200)
     assert route.call_count == 1  # originale gardée dans medias/originaux/
