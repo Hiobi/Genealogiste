@@ -73,7 +73,7 @@ renvois `@N…@`) ; UID en collision réattribués.
   facultative (retrouvée par l'ARK de la ressource) ; `page` déduite de la vue Gallica (`f12` → « vue 12 »).
 - `ark_resoudre(ark)` : service, URL canonique, repli `n2t.net`, disponibilité (HEAD), manifeste IIIF, citation
   suggérée. NAAN inconnu : registre public de l'ARK Alliance (cache 30 jours).
-- `archive_image(source, page, region, largeur, gris)` accepte un lien IIIF (Image API, `info.json`,
+- `archive_image(source, page, region, largeur, gris, details)` accepte un lien IIIF (Image API, `info.json`,
   manifeste v2/v3, tous pays), un ARK Gallica, un lien de visionneuse AD59, une image directe ou un fichier.
   Pour AD59 : ARK de vue complet, ou ARK du registre + `page=N` (vues à partir de 1). Les deux outils
   `archive_image` et `piece_archiver` partagent la même résolution ; IIIF est utilisé dès qu'il est annoncé.
@@ -82,6 +82,12 @@ renvois `@N…@`) ; UID en collision réattribués.
   qualifié, l'erreur propose « Copier le lien IIIF » ou un téléchargement manuel : **un ARK ne garantit
   pas une image téléchargeable**, et l'accès peut dépendre d'un compte ou d'une API spécifique.
 - Aperçu 800 px en gris, puis recadrage `pct:x,y,l,h` jusqu'à 2000 px ; estimation indicative en tokens.
+- **Sortie minimale d'`archive_image`** (#124) : `chemin_absolu`, `vue`, `nb_vues`, `ark_vue`,
+  `dimensions_originales`, `dimensions_demandees`, `cout_estime_tokens`, `avertissement` éventuel et `registre`
+  (ARK du registre). Les clés vides sont omises. `titre_registre`, `cote`, `commune` et `periode` ne sont
+  renvoyés qu'au **premier aperçu d'un registre dans la session**, ou avec `details=true`. La **licence** et la
+  réutilisation ne sont jamais renvoyées : `piece_archiver` les conserve (`licence`, `reutilisation`, note
+  compagnon). Le filtre ne s'applique qu'à l'affichage : la résolution partagée avec `piece_archiver` est intacte.
   Les régions invalides sont refusées avant accès réseau, et une largeur supérieure à la résolution
   disponible est limitée avec avertissement. Aperçus et originales de lecture restent dans
   `<données>/cache-images/`, hors du vault et de Git. Sans IIIF, l'originale est téléchargée une fois,

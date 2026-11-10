@@ -362,6 +362,35 @@ def fetch(ctx: SourceContext, media_dir: Path, source: str, page: int = 0, regio
     return out
 
 
+# ---------------------------------------------------------------------------- sortie d'archive_image
+
+CHAMPS_MINIMAUX = ("chemin_absolu", "vue", "nb_vues", "ark_vue", "dimensions_originales", "dimensions_demandees",
+                   "cout_estime_tokens", "avertissement")
+CHAMPS_REGISTRE = ("titre_registre", "cote", "commune", "periode")
+
+
+def sortie_minimale(ctx: SourceContext, out: dict, details: bool = False) -> dict:
+    """Réduit la réponse de ``fetch`` à ce que le modèle lit : l'image et sa place dans le registre.
+
+    Filtre d'affichage seulement : la résolution partagée avec ``piece_archiver`` n'est pas modifiée. Les
+    métadonnées du registre ne sont données qu'au premier aperçu de ce registre dans la session (ou avec
+    ``details``) ; la licence n'est jamais renvoyée ici, ``piece_archiver`` la conserve."""
+    if "erreur" in out:
+        return out
+    res = {k: out[k] for k in CHAMPS_MINIMAUX if out.get(k) not in (None, "", [])}
+    registre = out.get("ark_ressource") or ""
+    if registre:
+        res["registre"] = registre
+    premier = bool(registre) and registre not in ctx.registres_vus
+    if registre:
+        ctx.registres_vus.add(registre)
+    if details or premier:
+        for k in CHAMPS_REGISTRE:
+            if out.get(k):
+                res[k] = list(out[k]) if k == "periode" else out[k]
+    return res
+
+
 # ---------------------------------------------------------------------------- archivage (pleine résolution)
 
 _MAGIC = ((b"\xff\xd8", ".jpg"), (b"\x89PNG", ".png"), (b"II*\x00", ".tif"), (b"MM\x00*", ".tif"),
