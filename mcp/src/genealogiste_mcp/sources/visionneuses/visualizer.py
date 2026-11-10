@@ -121,6 +121,46 @@ def naviguer(ctx, a: ark.Ark, service: dict, page: int, pas: int) -> dict:
                       "page=N pour une autre fenêtre.")}
 
 
+def vues_pour_planche(ctx, a: ark.Ark, service: dict, positions: list[int]) -> dict:
+    """Vues choisies d'un registre AD59 pour une planche-contact : numéro, image originale et miniature.
+
+    Une seule requête de métadonnées pour une plage de 100 vues au plus, sinon une par vue (en cache).
+    Les URL restent confinées à l'origine du service qualifié ; aucune image n'est téléchargée ici."""
+    host = service["site"].rstrip("/")
+    params = {"naan": a.naan, "arkName": a.nom}
+    bas, haut = min(positions) - 1, max(positions) - 1
+    if bas < 0:
+        raise VisionneuseError("Les vues sont numérotées à partir de 1.")
+    if haut - bas < 100:
+        trouvees = _par_position(_json(ctx, host, {**params, "start": bas, "end": haut, "group": 0}), bas)
+        if trouvees is None:
+            raise VisionneuseError(f"Réponse de pagination inattendue. {REPLI}")
+    else:
+        trouvees = {}
+        for n in positions:
+            un = _par_position(_json(ctx, host, {**params, "start": n - 1, "end": n - 1, "group": 0}), n - 1)
+            if un is None:
+                raise VisionneuseError(f"Réponse de pagination inattendue. {REPLI}")
+            trouvees.update(un)
+    vues, absentes = [], []
+    for n in positions:
+        media = trouvees.get(n - 1)
+        if not media:
+            absentes.append(n)
+            continue
+        loc = _objet(media, "location")
+        link = ark.find(media.get("url", ""))
+        vues.append({"vue": n, "ark_vue": link.id if link else "", "url_image": _url(loc.get("original"), host),
+                     "url_miniature": _url(loc.get("thumb"), host)})
+    nb_vues = None
+    premier = next(iter(trouvees.values()), None)
+    if premier:
+        data = _json(ctx, host, {**params, "uuid": _uuid(premier.get("uuid"))})
+        nb_vues = _objet(data, "counts").get("media") if isinstance(data, dict) else None
+    return {"depot": service["code"], "ark_ressource": a.base, "nb_vues": nb_vues, "vues": vues,
+            "absentes": absentes}
+
+
 def _objet(parent, key):
     value = parent.get(key) if isinstance(parent, dict) else None
     return value if isinstance(value, dict) else {}

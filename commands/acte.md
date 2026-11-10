@@ -18,7 +18,9 @@ Applique les skills `methodologie-gps`, `sources-francaises`, `droit-communicabi
      typique), relever l'ARK du registre ou la cote + commune + années, puis tracer avec `source_collee`.
      Ne jamais deviner une cote ni contourner un captcha.
 4. **Localiser la vue de l'acte** : `archives_naviguer(ark_registre, page=…)` pour parcourir les vues
-   (ou la table décennale pour retrouver année et n° d'acte avant d'aller à l'acte). Choisir la vue.
+   (ou la table décennale pour retrouver année et n° d'acte avant d'aller à l'acte). Pour un registre AD59
+   chronologique, `archives_planche(ark_registre, de, a, pas, bandeau="pct:0,0,100,35")` : une seule image de
+   4 à 12 vues (sondage large puis fin) au lieu d'un aperçu par vue. Choisir la vue.
 5. **Lire, transcrire, archiver** : suivre `/genealogiste:transcris` — aperçu (`archive_image`, 800 px gris)
    puis recadrage de l'acte, transcription diplomatique (niveau de confiance par champ), `piece_archiver`
    (pleine résolution + note compagnon), puis `arbre_proposer` : source, média, citation (`consultation: image`,
