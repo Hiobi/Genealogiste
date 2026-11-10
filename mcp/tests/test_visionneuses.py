@@ -102,6 +102,17 @@ def test_iiif_prioritaire_si_annonce_par_visionneuse(app, routes):
     assert result["service_iiif"] == service and crop.call_count == 1 and image.call_count == 0
 
 
+def test_manifeste_annonce_par_visionneuse_ignore_au_profit_de_l_original(app, routes):
+    # AD25 : location.iiif désigne le manifeste du registre, pas un service d'image.
+    data = metadata()
+    data["media"]["1"]["location"]["iiif"] = HOST + "/iiif/ark:/33518/registrefictif/manifest.json"
+    routes.get(API, params=PARAMS).respond(200, json=data)
+    image = routes.get(IMAGE).respond(200, content=jpeg())
+    result = server.archive_image(VIEW)
+    assert "erreur" not in result, result
+    assert not result.get("service_iiif") and image.call_count == 1
+
+
 @pytest.mark.parametrize("defaut", ["registre", "url_privee", "position", "json_malforme"])
 def test_reponse_incoherente_refusee_avant_image(app, routes, defaut):
     data = metadata()
