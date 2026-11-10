@@ -127,7 +127,7 @@ revendiquée. Les références et `releve_le` sont renseignés, sans modificatio
 ## Visionneuses par éditeur — #128
 
 Le [relevé du 10 novembre](releves-archives-2026-11-10.md) classe les 101 services par visionneuse
-(sonde `scripts/sonder_visionneuses.py`). L’adaptateur `visualizer_api` (Naoned / Mnesys) est
+(sonde `scripts/sonder_visionneuses.py`). L’adaptateur `visualizer_api` (Naoned, logiciel Mnesys Expo) est
 générique : AD25 et AD39 rejoignent AD59 après recette réelle ; onze autres services exposent la même
 API et n’ont que `visionneuse_acces` tant qu’aucun registre n’a été testé. Ajouter un service Naoned =
 renseigner `resolution_image` après recette, sans code.

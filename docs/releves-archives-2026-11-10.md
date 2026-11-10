@@ -16,8 +16,33 @@ n’a été contournée.
    `piece_archiver` et répétition sans réseau, dans un dossier jetable.
 4. Lecture de pages publiques (pied de page, chemins de ressources) pour les autres éditeurs.
 
-La visionneuse `/visualizer/api` relève du logiciel **Mnesys**, édité par
-[Naoned](https://naoned.fr/ressources/) (indication du mainteneur, cohérente avec la page de l’éditeur).
+## Logiciel : Mnesys Expo (Naoned)
+
+Vérification dans le code des pages (10 novembre 2026) :
+
+- **12 services sur 14** affichent dans leur page `/page/credits` « Conception et réalisation : Naoned »
+  et décrivent le logiciel **Mnesys Expo** (portail public) aux côtés de Mnesys Archives (gestion
+  interne) : AD19, AD37, AD39, AD51, AD55, AD58, AD59, AD69, AD80, AD90, AD91, AD972. Exemple :
+  [crédits AD37](https://archives.touraine.fr/page/credits).
+- **AD14 et AD25** n’ont pas de page de crédits. Ils servent pourtant le même socle : même ressource
+  `/assets/common.9810116a885a90cd2023.js` (empreinte identique sur les 14 sites), même arborescence
+  `/assets/src/application/Custom/…`, même API. La page [ressources de Naoned](https://naoned.fr/ressources/)
+  cite les Archives du Calvados.
+- **Version : non exposée.** Ni balise `generator`, ni commentaire, ni en-tête (`Server: nginx`/`Apache`,
+  pas de `X-Powered-By`), ni chaîne dans les bundles JS (seules les versions de Bootstrap, Modernizr…),
+  ni champ dans le bloc `app` de l’API. Le référentiel garde `version: null` ; les empreintes des
+  bundles `front.*.js` diffèrent d’un site à l’autre (personnalisation), seul `common.*.js` est partagé.
+- **AD73** sert une génération antérieure : chemins `interfaces/mnesys_cg73portailv1/…` et horodatages
+  d’assets de 2017-2018, sans `/visualizer/api`. Elle est notée `Mnesys (portail v1)` ; l’adaptateur
+  `visualizer_api` ne s’y applique pas.
+
+Sources secondaires : la [Revue française de généalogie](https://www.rfgenealogie.com/mots-cles/naoned)
+mentionne la visionneuse Mnesys Expo de la Somme et des sites Naoned (Nord, Rhône) ; le
+[panorama de D. Roegel (2014)](https://locomat.loria.fr/other/roegel2014panorama-archives.pdf) a une
+section « Mnesys 2.0 ». Aucune ne donne de numéro de version de Mnesys Expo.
+
+Référentiel : `visionneuse_acces.logiciel` (`Mnesys Expo` ou `Mnesys (portail v1)`), `version: null`,
+`reference_logiciel` vers la page de crédits quand elle existe.
 
 ## Résultats de la sonde
 
@@ -62,7 +87,7 @@ originale (`tests/test_visionneuses.py`).
 
 | Service | Éditeur / logiciel | Indice (page lue) |
 |---|---|---|
-| AD73 | Naoned, Mnesys ancienne génération | chemin `interfaces/mnesys_cg73portailv1` sur [recherche-archives.savoie.fr](https://recherche-archives.savoie.fr) ; pas de `/visualizer/api` |
+| AD73 | Naoned, Mnesys portail v1 | chemin `interfaces/mnesys_cg73portailv1` sur [recherche-archives.savoie.fr](https://recherche-archives.savoie.fr) ; pas de `/visualizer/api` |
 | AD92 | Ligeo Archives | pied de page « Ligeo Archives » sur la [recherche état civil](http://archives.hauts-de-seine.fr/archive/recherche/etatcivil/n:92) |
 | AD973 | AvenioWeb | mentions `avenioweb` sur [archives.ctguyane.fr](http://archives.ctguyane.fr/) |
 | AD61 | GAIA | page [état civil](https://archives.orne.fr/index.php/etat-civil) ; éditeur non établi, non saisi |

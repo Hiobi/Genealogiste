@@ -3,7 +3,7 @@
 Chaque entrée : code, nom, type, département, site, visionneuse, NAAN ARK, mise en ligne par type de document
 (``{"naissance": {"de": 1792, "a": 1922}}`` ; absent = inconnu), inscription, demande à distance, date de
 vérification, et ``visionneuse_acces`` (famille de visionneuse : iiif_natif, editeur_ad, visionneuse_maison,
-images_statiques, authentifie ; éditeur, IIIF oui/non, protection captcha/Cloudflare, date de relevé). Les
+images_statiques, authentifie ; éditeur, logiciel et version si exposée, IIIF oui/non, protection captcha/Cloudflare, date de relevé). Les
 sources et relevés sont documentés ; un relevé automatisé ne remplace pas la validation humaine
 (docs/archives.md et docs/couvertures-archives.md).
 """
