@@ -11,6 +11,7 @@ import difflib
 import hashlib
 import json
 import os
+import re
 import secrets
 import threading
 import time
@@ -24,6 +25,8 @@ from .store import GitError, TreeStore
 
 TTL_SECONDS = 3600
 MAX_DIFF_LINES = 400
+MAX_DIFF_LINE_CHARS = 300
+_XREF = re.compile(r"@([^@\s]+)@")
 CONSIGNE = "Présenter ce diff à l'utilisateur et n'appeler arbre_appliquer qu'après son accord explicite."
 
 
@@ -103,11 +106,87 @@ def new_token() -> str:
     return secrets.token_hex(8)
 
 
-def tree_diff(before: str, after: str, label: str = "arbre.ged") -> str:
-    diff = list(difflib.unified_diff(before.splitlines(), after.splitlines(), f"{label} (actuel)",
-                                     f"{label} (proposé)", lineterm="", n=2))
-    truncated = len(diff) > MAX_DIFF_LINES
-    return "\n".join(diff[:MAX_DIFF_LINES]) + ("\n… (diff tronqué)" if truncated else "")
+def _records(text: str) -> dict[str, tuple[str, list[str]]]:
+    """Enregistrements GEDCOM de niveau 0 : xref sans « @ » (ou étiquette : HEAD, TRLR) -> (type, lignes)."""
+    out: dict[str, tuple[str, list[str]]] = {}
+    lines: list[str] = []
+    for line in text.splitlines():
+        if line.startswith("0 ") or not lines:
+            parts = line.split()
+            if len(parts) > 2 and parts[1].startswith("@"):
+                key, kind = parts[1].strip("@"), parts[2]
+            else:
+                key = kind = parts[1] if len(parts) > 1 else line
+            lines = []
+            out[key] = (kind, lines)
+        lines.append(line)
+    return out
+
+
+def _uids(lines: list[str]) -> set[str]:
+    """UID des sous-structures (événements) : une opération peut viser un événement par son UID."""
+    return {p[2] for p in (line.split(maxsplit=2) for line in lines) if len(p) == 3 and p[1] in ("UID", "_UID")}
+
+
+def _cap(line: str) -> str:
+    extra = len(line) - MAX_DIFF_LINE_CHARS
+    return line if extra <= 0 else f"{line[:MAX_DIFF_LINE_CHARS]}… (+{extra} car.)"
+
+
+def targets(ctx: Ctx, operations: list[dict]) -> set[str] | None:
+    """Xrefs et UID visés : chaînes des opérations (« $x » résolues) et objets créés.
+    None sans opération (recalcul global) : tout le diff est alors détaillé."""
+    if not operations:
+        return None
+    out = {v.strip("@") for v in ctx.refs.values()}
+
+    def walk(value) -> None:
+        if isinstance(value, dict):
+            for v in value.values():
+                walk(v)
+        elif isinstance(value, list):
+            for v in value:
+                walk(v)
+        elif isinstance(value, str):
+            out.add(ctx.refs.get(value[1:], value) if value.startswith("$") else value.strip("@"))
+
+    walk(operations)
+    return out
+
+
+def tree_diff(before: str, after: str, label: str = "arbre.ged", cibles: set[str] | None = None) -> str:
+    """Diff par enregistrement de niveau 0 (contexte confiné à l'enregistrement).
+
+    Avec ``cibles``, seuls sont détaillés les enregistrements visés, ceux qui contiennent un événement visé (UID)
+    et ceux dont les lignes modifiées citent une cible (famille d'une personne fusionnée, citation d'une source
+    visée). Les notes (NOTE, SNOTE) non visées sont seulement comptées et nommées ; les autres enregistrements
+    modifiés tiennent sur une ligne ``+a/-b``.
+    Sans ``cibles``, tout est détaillé. Chaque ligne est plafonnée à MAX_DIFF_LINE_CHARS caractères."""
+    old, new = _records(before), _records(after)
+    out = [f"--- {label} (actuel)", f"+++ {label} (proposé)"]
+    notes: list[str] = []
+    for key in list(new) + [k for k in old if k not in new]:
+        kind = (new.get(key) or old[key])[0]
+        b = old[key][1] if key in old else []
+        a = new[key][1] if key in new else []
+        if a == b:
+            continue
+        xref = f"@{key}@ {kind}" if kind != key else key
+        changed = [h for h in difflib.unified_diff(b, a, lineterm="", n=0) if h[:1] in ("+", "-")][2:]
+        cited = set(_XREF.findall("\n".join(changed)))
+        if cibles is None or key in cibles or (_uids(a + b) | cited) & cibles:
+            out.append(f"@@ {xref} @@")
+            hunks = list(difflib.unified_diff(b, a, lineterm="", n=2))[3:]
+            out += [" …" if h.startswith("@@") else _cap(h) for h in hunks]
+        elif kind in ("NOTE", "SNOTE"):
+            notes.append(f"@{key}@")
+        else:
+            plus = sum(h.startswith("+") for h in changed)
+            out.append(f"@@ {xref} (hors cible, détail omis) : +{plus}/-{len(changed) - plus} @@")
+    if notes:
+        out.append(f"@@ {len(notes)} note(s) hors cible modifiée(s), contenu omis : {', '.join(notes)} @@")
+    truncated = len(out) > MAX_DIFF_LINES
+    return "\n".join(out[:MAX_DIFF_LINES]) + ("\n… (diff tronqué)" if truncated else "")
 
 
 def new_alerts(before_tree, after_tree) -> list[dict]:
@@ -183,7 +262,7 @@ class Proposals:
             "message": message, "operations": operations, "resume": ctx.summary, "references": ctx.refs})
         return {
             "jeton": token, "expire_dans_minutes": TTL_SECONDS // 60, "resume": ctx.summary,
-            "references_creees": ctx.refs, "diff": tree_diff(before, after),
+            "references_creees": ctx.refs, "diff": tree_diff(before, after, cibles=targets(ctx, operations)),
             "nouvelles_alertes_coherence": new_alerts(tree, ctx.tree), "avertissements": ctx.warnings,
             "message_de_commit": message, "consigne": CONSIGNE,
         }

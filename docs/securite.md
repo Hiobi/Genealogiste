@@ -142,6 +142,12 @@ un proxy authentifiant, `MCP_SANS_AUTH=1`.
   entre processus et entre fils. Vérification de l'empreinte, écriture, commit et consommation du jeton forment
   un tout : deux applications concurrentes ne peuvent pas réussir sur la même base.
 - **Instantané unique** : le diff et l'empreinte d'une proposition sont calculés sur le même texte lu.
+- **Diff concis** (#124) : le diff est découpé par enregistrement de niveau 0, sans contexte débordant sur
+  l'enregistrement voisin. Sont détaillés les enregistrements visés par les opérations (identifiants, `$x`
+  résolus, objets créés), ceux qui contiennent un événement visé (UID) et ceux dont une ligne modifiée cite une
+  cible. Les autres restent signalés : notes hors cible comptées et nommées sans contenu, autres
+  enregistrements sur une ligne `+a/-b`. Chaque ligne est plafonnée à 300 caractères (« … (+N car.) »), le
+  tout à 400 lignes. Le contenu écrit reste exactement celui de la proposition (jeton, empreinte inchangés).
 - **Écriture atomique** : fichier temporaire du même répertoire, `fsync`, puis `os.replace`. Jamais d'arbre
   tronqué.
 - **Reprise** : si le commit échoue, l'arbre précédent est restauré et le jeton reste valable ; le résultat
