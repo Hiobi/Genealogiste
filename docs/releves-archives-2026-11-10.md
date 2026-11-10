@@ -141,11 +141,22 @@ Détails :
   **pas dans la visionneuse d'un registre ouvert**. Aucune visionneuse d'état civil n'a été ouverte sur ces
   44 services. Les entrées du référentiel le reflètent (`reference` = page lue, `logiciel`/`version` absents,
   `resolution_image` absent).
-- **AD40 — non lu.** `https://www.archives.landes.fr/` n'affiche qu'une page d'erreur du navigateur (« Frame
+- **AD40 — non lu, site hors service (confirmé par l'utilisateur).** `https://www.archives.landes.fr/` n'affiche qu'une page d'erreur du navigateur (« Frame
   … is showing error page », titre de l'onglet = l'URL), deux essais espacés. Ce n'est pas un défi
   Cloudflare visible. Rien n'est saisi ; la note du référentiel (HTTP 403, « consulter dans le navigateur »)
   reste valable.
-- **AD60 — site lu, visionneuse non lue.** `archives.oise.fr` (CMS TYPO3, balise `generator=TYPO3 CMS`, ce qui
+- **AD60 — visionneuse ouverte (mise à jour).** Licence « J'accepte ces conditions » acceptée avec l'accord
+  explicite de l'utilisateur. Le premier clic, sur l'URL de licence nue, renvoie HTTP 403 sur `/v2/ad60/` ;
+  le même clic depuis le lien du site, avec `?ret=registre.html`, mène à
+  `https://ressources.archives.oise.fr/v2/ad60/registre.html` (recherche commune/paroisse/type d'acte,
+  formulaire POST vers `registre_liste.html`). Une recherche (Abancourt, 20 résultats, cotes `3E1/8` etc.)
+  puis un clic ouvre `…/v2/ad60/visualiseur/registre.html?id=600000035` (titre « État civil - Visualiseur »).
+  Pile maison : scripts `/v2/visualiseur/js/` (lazyload, `recherche_alto.js`, `indexation_collaborative.js`),
+  images sous `/cache/…`, jQuery ; aucune chaîne d'éditeur, de Ligeo/Arkotheque/Naoned ni d'IIIF dans la page.
+  Saisi : `famille: visionneuse_maison`, sans `editeur`, `iiif` et `protection` à `null` (non établis).
+  Ancien constat (avant ouverture), conservé pour mémoire : site `archives.oise.fr` (TYPO3, ce qui décrit le
+  site, pas la visionneuse).
+- **AD60 — constat initial.** `archives.oise.fr` (CMS TYPO3, balise `generator=TYPO3 CMS`, ce qui
   décrit le site, pas la visionneuse). Le lien « Consultez les registres d'état civil » mène à
   `https://ressources.archives.oise.fr/v2/ad60/licence_clic`, une page de licence de réutilisation non
   commerciale à accepter (« J'accepte ces conditions ») avant d'accéder aux registres. L'acceptation n'a pas
@@ -159,6 +170,18 @@ Référentiel : 44 entrées reçoivent `visionneuse_acces` (`famille: editeur_ad
 (Anubis, Cloudflare…) n'est pas reportée dans `protection` : elle décrit le défi de la sonde passive, pas
 un obstacle pour un navigateur.
 
+## Visionneuses ouvertes (étape 2 de la suite)
+
+- **AD60** : visionneuse maison (voir plus haut).
+- **AD03 (Arkotheque)** : registre Abrest `2 E 1/3` (NMD 1773-1793, 204 images) ouvert depuis la liste « Etat civil
+  en ligne ». Route `#/_recherche-api/visionneuse-infos/arko_default_…/image/130322`, images servies par
+  `https://archives.allier.fr/image/13367/<id>`, lecteur OpenSeadragon, aucune chaîne `iiif` dans la page
+  (`iiif: false` saisi). Éditeur confirmé *dans la visionneuse*. Bandeau cookies refusé.
+- **AD2A/AD2B (THOT)** : visionneuse non ouverte, le rendu du cadre `FrmSommaireGauche.asp` s'est figé
+  (délai CDP de 45 s) ; à reprendre.
+- **AD01 (Ligeo)** : recherche état civil par commune en GET (`/archive/recherche/etatcivil/n:88`), bandeau du site :
+  « l'accès à certains registres d'état civil numérisés est perturbé » ; registre non ouvert.
+
 ## Limites
 
 - Registres matricules : lisibles par la même visionneuse sur AD14, AD19, AD37, AD69 et AD972 ;
@@ -169,8 +192,8 @@ un obstacle pour un navigateur.
 
 ## Suite
 
-1. Finir les 2 services restants : AD40 (page d'erreur au chargement, à réessayer plus tard) et AD60
-   (accepter ou non la licence de réutilisation pour ouvrir la visionneuse).
+1. AD40 : site hors service (page d'erreur au chargement, trois essais dans deux sessions) ; à reprendre quand
+   il répond. AD60 est fait (voir ci-dessus).
 2. Ouvrir une visionneuse d'état civil sur un service par éditeur (Ligeo, Arkotheque, THOT) pour confirmer
    l'éditeur *dans la visionneuse* (pied de page, chemins d'images, appels réseau) et relever iiif/protection.
 3. Rejouer périodiquement les recettes (le CI mocké ne voit pas un changement d’API réelle).
