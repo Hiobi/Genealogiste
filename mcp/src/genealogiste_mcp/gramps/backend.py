@@ -31,6 +31,7 @@ from ..tree.proposals import (
     TokenStore,
     new_alerts,
     prepare,
+    targets,
     tree_diff,
     validated,
 )
@@ -261,8 +262,9 @@ class GrampsBackend:
                             "operations": operations, "resume": ctx.summary, "references": ctx.refs})
         return {
             "jeton": token, "expire_dans_minutes": TTL_SECONDS // 60, "resume": ctx.summary,
-            "references_creees": ctx.refs, "diff": tree_diff(write_gedcom(tree), write_gedcom(ctx.tree), "Gramps Web"),
-            "transaction_gramps": preview, "nouvelles_alertes_coherence": new_alerts(tree, ctx.tree),
+            "references_creees": ctx.refs, "transaction_gramps": preview,
+            "diff": tree_diff(write_gedcom(tree), write_gedcom(ctx.tree), "Gramps Web", targets(ctx, operations)),
+            "nouvelles_alertes_coherence": new_alerts(tree, ctx.tree),
             "avertissements": warnings, "message_de_transaction": message, "consigne": CONSIGNE,
         }
 
