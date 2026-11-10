@@ -77,6 +77,16 @@ renvois `@N…@`) ; UID en collision réattribués.
   manifeste v2/v3, tous pays), un ARK Gallica, un lien de visionneuse AD59, une image directe ou un fichier.
   Pour AD59 : ARK de vue complet, ou ARK du registre + `page=N` (vues à partir de 1). Les deux outils
   `archive_image` et `piece_archiver` partagent la même résolution ; IIIF est utilisé dès qu'il est annoncé.
+- `archives_planche(source, de, a, pas, bandeau, largeur, gris, miniatures)` (#124) : **une** image composite de
+  4 à 12 vues d'un registre AD59, numéro de vue incrusté, composée en local (Pillow), pour repérer un acte sans
+  lire une image par vue. `pas` : sondage large (une vue sur N), puis planche fine ; `bandeau` (`pct:x,y,l,h`,
+  ex. `pct:0,0,100,35`) : ne garde que le haut de chaque vue (date, numéro d'acte). Limites : 12 vues, 1 600 px
+  de côté, `a=0` = six vues. Une requête de métadonnées par plage (≤ 100 vues) et **un téléchargement par vue** :
+  les originales vont dans le cache partagé avec `archive_image` et `piece_archiver` (jamais retéléchargées) ;
+  arrêt à la première erreur ou protection, aucun contournement. La miniature du service (`location.thumb`,
+  mesurée à 100 × 100 px) ne permet pas de lire une date : `miniatures=true` ne sert qu'à la mise en page.
+  Registres AD59 uniquement ; autre source : `archives_naviguer` puis `archive_image`. Sortie : `chemin_absolu`,
+  `vues`, `grille`, `dimensions_demandees`, `cout_estime_tokens`, `telechargements`.
 - Une page HTTP qui déclare un unique manifeste IIIF est inspectée côté Python. Le modèle ne reçoit ni
   HTML/JavaScript, ni manifeste entier, ni liste d'images voisines. Sans lien exploitable ou adaptateur
   qualifié, l'erreur propose « Copier le lien IIIF » ou un téléchargement manuel : **un ARK ne garantit
