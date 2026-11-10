@@ -83,11 +83,14 @@ def test_links_and_cotes_use_real_service():
     assert c["service"] == "Archives départementales du Nord" and c["service_archives"]["code"] == "AD59"
 
 
-def test_services_naoned_qualifies_par_recette():
-    # #128 : AD25 et AD39 rejoignent AD59 sur l'adaptateur visualizer_api après recette réelle.
+def test_services_mnesys_expo_qualifies_par_recette():
+    # #128 : services Mnesys Expo inscrits sur l'adaptateur visualizer_api après recette réelle.
     par_code = {s["code"]: s for s in archives.services()}
-    for code in ("AD25", "AD39", "AD59"):
+    naoned = ("AD14", "AD19", "AD25", "AD37", "AD39", "AD51", "AD55", "AD58", "AD59", "AD69", "AD80", "AD90",
+              "AD91", "AD972")
+    for code in naoned:
         assert par_code[code]["resolution_image"]["type"] == "visualizer_api"
         assert par_code[code]["visionneuse_acces"]["editeur"] == "naoned"
     assert par_code["AD39"]["ark_naan"] == "36595"
-    assert par_code["AD25"]["site"].startswith("https://")
+    assert par_code["AD972"]["ark_naan"] == "35569"
+    assert all(par_code[c]["site"].startswith("https://") for c in naoned)

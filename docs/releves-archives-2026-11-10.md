@@ -60,23 +60,38 @@ navigateur ; elles peuvent cacher une visionneuse Naoned. Elles restent inconnue
 
 ## Naoned / Mnesys `/visualizer/api`
 
-| Service | ARK de registre testé | Résultat |
-|---|---|---|
-| AD59 | `ark:/33518/d31bpqk27xhj`, table `q0km71zxrv5s` | recette complète OK (relevés antérieurs, rejouée) |
-| AD25 | [`ark:/25993/7rx3d5cm9tzk`](https://archives.doubs.fr/ark:/25993/7rx3d5cm9tzk) (Baume-les-Dames, D 1873-1892) | recette complète OK après correctif (voir plus bas) |
-| AD39 | [`ark:/36595/p3rdck27zjbm`](https://archives39.fr/ark:/36595/p3rdck27zjbm) (Goux, NMD et tables décennales) | recette complète OK |
-| AD14, AD19, AD37, AD51, AD58, AD69 | fiches d’inventaire | API présente ; `Group with index 0 not found` ou `No record…` : la fiche n’est pas l’objet numérisé |
-| AD55, AD80, AD90, AD91, AD972 | aucun ARK de registre trouvé | API présente, non testée |
+Recherche des ARK : la recherche générale de Mnesys Expo (`<site>/search/results?q=…`, formulaire
+« Moteur de recherche » commun aux 14 sites) avec « naissances mariages décès », « tables décennales »
+puis « registre matricule » ; chaque ARK de résultat est essayé sur
+`visualizer/api?…&start=0&end=0&group=0` jusqu’au premier qui renvoie une vue (`uuid`). Les fiches
+d’inventaire sans images répondent `Group with index 0 not found`. Recette complète
+(`verifier_telechargements.verifier`) sur la vue obtenue, dans un dossier jetable.
 
-Référentiel :
+| Service | État civil / tables décennales | Registre matricule | Recette |
+|---|---|---|---|
+| AD59 | `ark:/33518/d31bpqk27xhj`, table `q0km71zxrv5s` | — | OK (relevés antérieurs, rejouée) |
+| AD25 | [`ark:/25993/7rx3d5cm9tzk`](https://archives.doubs.fr/ark:/25993/7rx3d5cm9tzk) (Baume-les-Dames ; D 1873-1892) | — | OK après correctif (voir plus bas) |
+| AD39 | [`ark:/36595/p3rdck27zjbm`](https://archives39.fr/ark:/36595/p3rdck27zjbm) (Goux ; NMD et tables décennales) | — | OK |
+| AD14 | [`ark:/52329/4gp0hnm92sbz`](https://archives.calvados.fr/ark:/52329/4gp0hnm92sbz) (La Boissière ; 1793-1866) | [`ark:/52329/p1cb03qln5t2`](https://archives.calvados.fr/ark:/52329/p1cb03qln5t2) (1R/44) | OK |
+| AD19 | [`ark:/69090/z19r485ldctn`](https://www.archives.correze.fr/ark:/69090/z19r485ldctn) (Bort-les-Orgues ; NMD 1918-1922 ; 2E/28/24) | [`ark:/69090/9nx41wgfdb5p`](https://www.archives.correze.fr/ark:/69090/9nx41wgfdb5p) (Tulle ; classe 1871 ; R/1285) | OK |
+| AD37 | [`ark:/37621/6mgzwc8spr1f`](https://archives.touraine.fr/ark:/37621/6mgzwc8spr1f) (Marcilly-sur-Maulne ; table décennale ; 6NUM2/147/001) | [`ark:/37621/dbq6h2wm8l45`](https://archives.touraine.fr/ark:/37621/dbq6h2wm8l45) (classe 1906 ; 1R742) | OK |
+| AD51 | [`ark:/86869/3kpcd0z4mx65`](https://archives.marne.fr/ark:/86869/3kpcd0z4mx65) (Coole ; table décennale 1853-1862 ; 125 M 88) | non trouvé | OK |
+| AD55 | [`ark:/52669/bf187l9vsd35`](https://archives.meuse.fr/ark:/52669/bf187l9vsd35) (Bouvigny ; tables décennales 1803-1902 ; 1 E 162) | non trouvé | OK |
+| AD58 | [`ark:/60877/vj8cnfkzw916`](https://archives.nievre.fr/ark:/60877/vj8cnfkzw916) (Asnan ; tables décennales ; 5 Mi TD 03) | non trouvé | OK |
+| AD69 | [`ark:/28729/bh9t7gpds0vn`](https://archives.rhone.fr/ark:/28729/bh9t7gpds0vn) (Salles ; N-PM-M-D ; 4E7676) | [`ark:/28729/7jpsqh5l4b1g`](https://archives.rhone.fr/ark:/28729/7jpsqh5l4b1g) (Lyon Central ; 1RP888) | OK |
+| AD80 | [`ark:/58483/q85zl30vcw2t`](https://archives.somme.fr/ark:/58483/q85zl30vcw2t) (Chuignolles ; NMD ; 5MI_D114) | non trouvé | OK |
+| AD90 | [`ark:/12997/1mt6cx54v3dl`](https://archives.territoiredebelfort.fr/ark:/12997/1mt6cx54v3dl) (Beaucourt ; 1 E 9 NDM 14-15) | non trouvé | OK |
+| AD91 | [`ark:/28047/ws6n0xqzk29d`](https://archives.essonne.fr/ark:/28047/ws6n0xqzk29d) (Dourdan ; tables décennales des registres paroissiaux ; 1MI/306/3) | non trouvé | OK |
+| AD972 | [`ark:/35569/kf79xhdvrjc8`](https://www.patrimoines-martinique.org/ark:/35569/kf79xhdvrjc8) (Le François ; NMD ; 2E11/21) | [`ark:/35569/s3nxzwm6p9tq`](https://www.patrimoines-martinique.org/ark:/35569/s3nxzwm6p9tq) (états signalétiques ; 1R11) | OK |
 
-- AD25, AD39 : `resolution_image.type = visualizer_api` et `visionneuse_acces` (éditeur `naoned`).
-  AD25 : site passé en `https://` (le `http://` redirige ; le contrôle d’origine des URL d’image
-  l’exige). AD39 : NAAN `36595`, lu dans les ARK du site et accepté par l’API.
-- Les 11 autres : `visionneuse_acces` seul (éditeur `naoned`, IIIF et protection inconnus), sans
-  `resolution_image` tant qu’aucune recette réelle n’a réussi. Pour AD14 (Calvados), la fiche d’un
-  registre indique « images consultables via le formulaire de recherche dédié » : les ARK lisibles
-  sont à prendre dans ce formulaire.
+Pour les matricules, la recherche a aussi renvoyé des « registres matricules » hors série R (enfants
+trouvés X 1196 à l’AD58, maison d’arrêt 99Y375 à l’AD80, 3 X 112 à l’AD90) : écartés.
+
+Référentiel : les 14 services ont `resolution_image.type = visualizer_api`. Sites passés en
+`https://` quand le `http://` redirige (AD25, AD55, AD58, AD69, AD80, AD91, AD972 : le contrôle
+d’origine des URL d’image l’exige). NAAN lus dans les ARK du site et acceptés par l’API : AD39
+`36595`, AD972 `35569`. `iiif: true` quand la vue annonce un manifeste (AD25, AD37, AD51, AD80,
+AD91).
 
 **Correctif** : l’AD25 annonce dans `location.iiif` le *manifeste* du registre
 (`/iiif/ark:/…/manifest.json`), pas un service d’image. L’adaptateur le prenait pour un service et tentait
@@ -95,7 +110,8 @@ originale (`tests/test_visionneuses.py`).
 
 ## Limites
 
-- Registres matricules : aucun ARK trouvé sur les services testés ; accès non relevé.
+- Registres matricules : lisibles par la même visionneuse sur AD14, AD19, AD37, AD69 et AD972 ;
+  non trouvés par la recherche générale ailleurs (pas de conclusion d’absence).
 - Un classement `naoned_api` ne garantit pas l’accès aux images (protections possibles à l’image).
 - Les relevés par agents de lecture web ont été peu concluants (pages rendues en JavaScript,
   défis anti-robot) ; seules les valeurs vérifiées ci-dessus ont été saisies.
@@ -103,7 +119,6 @@ originale (`tests/test_visionneuses.py`).
 ## Suite
 
 1. Qualifier les 46 services protégés avec un navigateur, sans contournement.
-2. Trouver un ARK de registre pour les 11 services Naoned non testés, puis recette et
-   `resolution_image`.
+2. Rejouer périodiquement les recettes (le CI mocké ne voit pas un changement d’API réelle).
 3. Adaptateurs suivants par nombre de services : à décider après l’étape 1 ; Ligeo, AvenioWeb et
    Mnesys ancienne génération n’ont pour l’instant qu’un service chacun.
