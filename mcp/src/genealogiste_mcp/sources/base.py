@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 
 from ..config import Config
@@ -18,6 +18,7 @@ class SourceContext:
     http: HttpClient
     journal: Journal
     config: Config
+    registres_vus: set = field(default_factory=set)  # ARK de registre déjà détaillés dans la session
 
 
 def person_record(
