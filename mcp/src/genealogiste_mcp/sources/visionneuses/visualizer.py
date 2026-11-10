@@ -60,6 +60,22 @@ def _premier(value):
     return value[:512] if isinstance(value, str) else ""
 
 
+def _par_position(value, debut: int = 0) -> dict[int, dict] | None:
+    """Normalise les médias renvoyés par l'API en `{position: média}`.
+
+    Le serveur encode un tableau PHP en liste JSON quand les clés vont de 0 à n (fenêtre qui commence
+    à l'indice 0), et en dictionnaire `{"286": média}` sinon. Une liste commence donc à `debut`
+    (0 pour une réponse complète, `start` pour une plage). Retourne None si la forme est inconnue."""
+    if isinstance(value, list):
+        return {debut + i: m for i, m in enumerate(value) if isinstance(m, dict)}
+    if isinstance(value, dict):
+        try:
+            return {int(k): m for k, m in value.items() if isinstance(m, dict)}
+        except (TypeError, ValueError):
+            return None
+    return None
+
+
 def naviguer(ctx, a: ark.Ark, service: dict, page: int, pas: int) -> dict:
     """Fenêtre de vues d'un registre AD59 : métadonnées du registre + vues (vue, ARK de vue, image).
 
@@ -73,9 +89,10 @@ def naviguer(ctx, a: ark.Ark, service: dict, page: int, pas: int) -> dict:
     debut = max(0, page - 1) if page else 0
     fin = debut + max(1, min(int(pas or 20), 100)) - 1
     batch = _json(ctx, host, {**params, "start": debut, "end": fin, "group": 0})
-    if not isinstance(batch, dict):
+    positions = _par_position(batch, debut)
+    if positions is None:
         raise VisionneuseError(f"Réponse de pagination inattendue. {REPLI}")
-    items = sorted(((int(k), v) for k, v in batch.items() if isinstance(v, dict)), key=lambda x: x[0])
+    items = sorted(positions.items())
     registre: dict = {}
     vues: list[dict] = []
     for idx, media in items:
@@ -116,8 +133,7 @@ def resoudre(ctx, a: ark.Ark, service: dict, page: int) -> VueResolue:
         raise VisionneuseError("page : numéro de vue à partir de 1 (0 = vue du lien).")
     if page:
         batch = _json(ctx, host, {**params, "start": page - 1, "end": page - 1, "group": 0})
-        media = batch[0] if isinstance(batch, list) and len(batch) == 1 else (
-            batch.get(str(page - 1)) if isinstance(batch, dict) else None)
+        media = (_par_position(batch, page - 1) or {}).get(page - 1)
         if not isinstance(media, dict):
             raise VisionneuseError(f"Vue {page} absente ou hors du registre. {REPLI}")
         uuid = _uuid(media.get("uuid"))
@@ -133,7 +149,7 @@ def resoudre(ctx, a: ark.Ark, service: dict, page: int) -> VueResolue:
         raise VisionneuseError("Nombre de vues ou position incohérent : résolution refusée.")
     if page and page != position + 1:
         raise VisionneuseError("La vue retournée ne correspond pas au numéro demandé.")
-    media = _objet(data, "media").get(str(position))
+    media = (_par_position(data.get("media")) or {}).get(position)
     if not isinstance(media, dict) or media.get("uuid") != uuid or media.get("type") != "image":
         raise VisionneuseError("La réponse ne contient pas l'image de la vue demandée.")
     record = _objet(media, "record")
