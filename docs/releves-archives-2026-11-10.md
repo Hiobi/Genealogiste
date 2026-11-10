@@ -56,7 +56,9 @@ Référentiel : `visionneuse_acces.logiciel` (`Mnesys Expo` ou `Mnesys (portail 
 | `autre` | 36 | le reste (pas de `/visualizer/api` reconnu) |
 
 Les classes `anubis`, `redirection_js` et `cloudflare` (46 services) ne sont pas qualifiables sans
-navigateur ; elles peuvent cacher une visionneuse Naoned. Elles restent inconnues.
+navigateur ; elles peuvent cacher une visionneuse Naoned. Elles ont été qualifiées dans un second
+temps avec un navigateur réel (voir « Services protégés » plus bas) : 44 sur 46 identifiés, AD40 et
+AD60 restent à finir.
 
 ## Naoned / Mnesys `/visualizer/api`
 
@@ -108,6 +110,55 @@ originale (`tests/test_visionneuses.py`).
 | AD61 | GAIA | page [état civil](https://archives.orne.fr/index.php/etat-civil) ; éditeur non établi, non saisi |
 | AD35 | Thot (indice faible) | lien `/thot_internet/` ; visionneuse non ouverte, non saisi |
 
+## Services protégés (relevé au navigateur, 10 novembre 2026)
+
+Méthode : Chrome réel, onglet visible, sans automatisation d'évasion ; un site à la fois, une pause de
+5 s après chargement pour laisser le défi s'exécuter. Aucune case Cloudflare ni captcha n'a été cliquée.
+Pour chaque site : `GET /visualizer/api` et `GET /page/credits` depuis la page (même origine), balises
+`generator`/`author`/`hosted` du `<head>`, et mentions d'éditeur dans le code de la page d'accueil.
+
+Résultat : **aucun des 44 services lus n'est Naoned** (pas de signature « Unable to handle this
+request », pas de page de crédits : HTTP 404 partout, sauf AD63 en 500). Aucune recette
+`verifier_telechargements.py` ni `resolution_image` : il n'y a pas d'API `visualizer` à vérifier.
+
+| Classe de sonde | Éditeur | Indice lu | Services |
+|---|---|---|---|
+| `anubis` (22) | Ligeo Archives | `<meta name="Generator" content="Boscop / Ligeo-Archives">` (+ `Author`, `Hosted`) ; chemins `/archive/recherche/…/n:NNN` vus sur AD01 et AD67 | AD01 AD02 AD05 AD07 AD16 AD31 AD33 AD34 AD41 AD42 AD48 AD57 AD63 AD67 AD70 AD74 AD76 AD79 AD86 AD89 AD93 AD95 |
+| `redirection_js` (20) | Arkotheque | mentions `arkotheque` dans la page, paramètres d'URL `arko_default_…` (AD18, AD50, AD65, AD94), pas de `generator` ; 404 de même gabarit (≈7,7 ko) | AD03 AD04 AD08 AD10 AD15 AD18 AD28 AD36 AD43 AD45 AD46 AD50 AD54 AD65 AD71 AD72 AD78 AD83 AD87 AD94 |
+| `cloudflare` (2 sur 4) | THOT | titre « THOT Internet », chemin `/Internet_THOT/FrmSommaireFrame.asp` | AD2A AD2B (même site, `archives.isula.corsica`) |
+| `cloudflare` (2 sur 4) | non établi | voir ci-dessous | AD40 AD60 |
+
+Détails :
+
+- **AD79 et AD86** partagent un seul site ([archives-deux-sevres-vienne.fr](https://archives-deux-sevres-vienne.fr)), une seule lecture.
+  **AD2A et AD2B** aussi.
+- **Anubis** (AD02, AD67 vus) : la page « Vérification que vous n'êtes pas un robot ! » s'est résolue seule
+  en quelques secondes dans le navigateur ; aucune action humaine.
+- **Cloudflare** (AD60 vu) : « Vérification en cours » s'est résolue seule en environ 15 s ; aucune case à cliquer.
+- **AD63** : `/visualizer/api` et `/page/credits` répondent HTTP 500 (et non 404) ; page d'erreur de 2,6 ko. Ce
+  n'est pas la signature Naoned ; le site porte la balise Ligeo.
+- **Limite commune à Ligeo/Arkotheque/THOT** : l'éditeur est lu sur le *site* (balise, code de page, titre),
+  **pas dans la visionneuse d'un registre ouvert**. Aucune visionneuse d'état civil n'a été ouverte sur ces
+  44 services. Les entrées du référentiel le reflètent (`reference` = page lue, `logiciel`/`version` absents,
+  `resolution_image` absent).
+- **AD40 — non lu.** `https://www.archives.landes.fr/` n'affiche qu'une page d'erreur du navigateur (« Frame
+  … is showing error page », titre de l'onglet = l'URL), deux essais espacés. Ce n'est pas un défi
+  Cloudflare visible. Rien n'est saisi ; la note du référentiel (HTTP 403, « consulter dans le navigateur »)
+  reste valable.
+- **AD60 — site lu, visionneuse non lue.** `archives.oise.fr` (CMS TYPO3, balise `generator=TYPO3 CMS`, ce qui
+  décrit le site, pas la visionneuse). Le lien « Consultez les registres d'état civil » mène à
+  `https://ressources.archives.oise.fr/v2/ad60/licence_clic`, une page de licence de réutilisation non
+  commerciale à accepter (« J'accepte ces conditions ») avant d'accéder aux registres. L'acceptation n'a pas
+  été donnée : elle est à valider par l'utilisateur. Rien n'est saisi pour AD60.
+- Changements d'origine observés et reportés dans `site` : http → https pour AD07, AD31, AD33, AD34, AD48, AD70,
+  AD74, AD76, AD95, AD03, AD04, AD15, AD18, AD36, AD43, AD45, AD46, AD71, AD87, AD94 ; AD15 passe aussi à
+  `www.archives.cantal.fr` et AD65 à `archivesenligne65.fr` (sans `www`).
+
+Référentiel : 44 entrées reçoivent `visionneuse_acces` (`famille: editeur_ad`, `editeur`, `iiif: null`,
+`protection: null`, `releve_le: 2026-11-10`, `reference`). `verifie_le` n'est pas modifié. La classe de sonde
+(Anubis, Cloudflare…) n'est pas reportée dans `protection` : elle décrit le défi de la sonde passive, pas
+un obstacle pour un navigateur.
+
 ## Limites
 
 - Registres matricules : lisibles par la même visionneuse sur AD14, AD19, AD37, AD69 et AD972 ;
@@ -118,7 +169,9 @@ originale (`tests/test_visionneuses.py`).
 
 ## Suite
 
-1. Qualifier les 46 services protégés avec un navigateur, sans contournement.
-2. Rejouer périodiquement les recettes (le CI mocké ne voit pas un changement d’API réelle).
-3. Adaptateurs suivants par nombre de services : à décider après l’étape 1 ; Ligeo, AvenioWeb et
-   Mnesys ancienne génération n’ont pour l’instant qu’un service chacun.
+1. Finir les 2 services restants : AD40 (page d'erreur au chargement, à réessayer plus tard) et AD60
+   (accepter ou non la licence de réutilisation pour ouvrir la visionneuse).
+2. Ouvrir une visionneuse d'état civil sur un service par éditeur (Ligeo, Arkotheque, THOT) pour confirmer
+   l'éditeur *dans la visionneuse* (pied de page, chemins d'images, appels réseau) et relever iiif/protection.
+3. Rejouer périodiquement les recettes (le CI mocké ne voit pas un changement d’API réelle).
+4. Adaptateurs suivants par nombre de services : Ligeo (23 avec AD92) et Arkotheque (20) devancent désormais nettement Mnesys v1, AvenioWeb et THOT (1 à 2 services chacun).
