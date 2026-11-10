@@ -81,3 +81,13 @@ def test_links_and_cotes_use_real_service():
     assert ad["url"] == "https://archivesdepartementales.lenord.fr"
     c = server.cotes_a_consulter("BIRT", "1926", "Somain (59)")
     assert c["service"] == "Archives départementales du Nord" and c["service_archives"]["code"] == "AD59"
+
+
+def test_services_naoned_qualifies_par_recette():
+    # #128 : AD25 et AD39 rejoignent AD59 sur l'adaptateur visualizer_api après recette réelle.
+    par_code = {s["code"]: s for s in archives.services()}
+    for code in ("AD25", "AD39", "AD59"):
+        assert par_code[code]["resolution_image"]["type"] == "visualizer_api"
+        assert par_code[code]["visionneuse_acces"]["editeur"] == "naoned"
+    assert par_code["AD39"]["ark_naan"] == "36595"
+    assert par_code["AD25"]["site"].startswith("https://")

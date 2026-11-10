@@ -22,7 +22,7 @@ PATH = Path(__file__).parent / "referentiels" / "archives_fr.json"
 STALE_DAYS = 365
 TYPES = ("departementales", "communales", "nationales", "militaires", "notariales", "diocesaines", "autre")
 DOCUMENTS = ("naissance", "mariage", "deces", "tables_decennales", "recensement", "notaire", "matricule",
-             "cadastre", "paroissiaux")
+             "cadastre", "paroissiaux", "enregistrement")
 FAMILLES_VISIONNEUSE = ("iiif_natif", "editeur_ad", "visionneuse_maison", "images_statiques", "authentifie")
 
 

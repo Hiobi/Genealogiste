@@ -161,6 +161,9 @@ def resoudre(ctx, a: ark.Ark, service: dict, page: int) -> VueResolue:
         raise VisionneuseError("ARK de vue incohérent : résolution refusée.")
     location = _objet(media, "location")
     image, iiif = _url(location.get("original"), host), _url(location.get("iiif"), host)
+    if iiif.rstrip("/").endswith(("/manifest", "/manifest.json")):
+        iiif = ""  # manifeste de registre (AD25), pas un service d'image : l'original suffit
+
     if not image and not iiif:
         raise VisionneuseError(f"La vue n'annonce aucun téléchargement exploitable. {REPLI}")
     license = _objet(_objet(_objet(data, "app"), "licenses"), "visualizer")
