@@ -44,6 +44,7 @@ OUTILS: dict[str, tuple[str, str]] = {
     "cotes_a_consulter": (LECTURE, ALLOW),
     "archives_service": (LECTURE, DEFAUT),
     "archives_naviguer": (RESEAU, ALLOW),
+    "archives_planche": (RESEAU, DEFAUT),  # écrit une planche dans le cache d'images, comme archive_image
     "source_collee": (JOURNAL, ALLOW),
     "familysearch_exporter": (IDENTIFIANTS, ASK),
     # analyse
