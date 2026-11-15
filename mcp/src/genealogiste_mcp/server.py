@@ -66,9 +66,11 @@ class App:
         self.config = config or load_config()
         self.cache = Cache(self.config.cache_path)
         kw = {"sleeper": sleeper} if sleeper else {}
-        self.http = HttpClient(self.cache, self.config.user_agent, self.config.http_timeout, RATE,
+        intervalles = {**RATE, **archives.intervalles(), **self.config.debits}  # env > référentiel > code
+        self.http = HttpClient(self.cache, self.config.user_agent, self.config.http_timeout, intervalles,
                                offline=self.config.offline, transport=transport,
-                               policy=NetworkPolicy(self.config.hotes_autorises), **kw)
+                               policy=NetworkPolicy(self.config.hotes_autorises),
+                               default_interval=self.config.debit_defaut, **kw)
         self.store = TreeStore(self.config.data_dir, self.config.git_remote)
         self.store.ensure()
         self.journal = Journal(self.config.journal_path)
