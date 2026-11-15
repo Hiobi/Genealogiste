@@ -24,7 +24,7 @@ from .export.gramps_xml import to_gramps_xml_stats
 from .export.rapport import proof_report
 from .fr_sources import next_source_hint
 from .gedcom.mapping import read_gedcom, write_gedcom
-from .http import HttpClient
+from .http import HttpClient, SourceError
 from .journal import Journal
 from .normalize import dates as d
 from .normalize.names import normalize_name, surname_similarity
@@ -44,8 +44,7 @@ from .sources import (
     wikidata,
     wikitree,
 )
-from .sources.base import SourceContext
-from .sources.visionneuses import VisionneuseError
+from .sources.base import SourceContext, error_envelope
 from .tree.proposals import ProposalError, Proposals, TokenStore
 from .tree.store import TreeStore, remote_problem
 
@@ -378,19 +377,20 @@ def archives_naviguer(source: str, page: int = 0, pas: int = 20) -> dict:
     piece_archiver sur une vue choisie. Ne localise pas un acte à partir d'un nom (voir la recherche du
     service, liens_recherche/cotes_a_consulter pour trouver le registre)."""
     a = app()
+    params = {"source": source, "page": page, "pas": pas}
     try:
         res = visionneuses.naviguer(a.sctx, source, page, pas)
-    except VisionneuseError as exc:
-        return {"erreur": str(exc), "source": source}
-    if res is not None:
-        return res
-    ark_obj = ark.find(source)
-    manifeste = (f"https://gallica.bnf.fr/iiif/{ark_obj.base}/manifest.json"
-                 if ark_obj and ark_obj.naan == "12148" else source)
-    try:
+        if res is not None:
+            return res
+        ark_obj = ark.find(source)
+        manifeste = (f"https://gallica.bnf.fr/iiif/{ark_obj.base}/manifest.json"
+                     if ark_obj and ark_obj.naan == "12148" else source)
         return iiif.naviguer(a.sctx, manifeste, page, pas)
-    except iiif.IiifError as exc:
-        return {"erreur": str(exc), "source": source}
+    except (SourceError, ValueError) as exc:  # VisionneuseError et IiifError sont des ValueError
+        out = error_envelope(a.sctx, "archives", "naviguer", params, exc)
+        out["conseil"] = ("Vérifier l'ARK ou l'URL du registre (archives_service pour la visionneuse du service) ; "
+                          "sinon ouvrir le registre dans le navigateur (liens_recherche, cotes_a_consulter).")
+        return out
 
 
 @mcp.tool()
@@ -874,7 +874,6 @@ def piece_archiver(source: str, page: int = 0, personnes: list[str] | None = Non
     from . import archivage
     from .archives import by_code
     from .fichiers import ecrire_atomique
-    from .http import SourceError
 
     a = app()
     cfg = a.config
@@ -952,7 +951,6 @@ def piece_archiver(source: str, page: int = 0, personnes: list[str] | None = Non
         if not existe:
             ecrire_atomique(dest, data)
     except (iiif.IiifError, SourceError, KeyError, CheminRefuse, pieces.PieceError, OSError) as exc:
-        from .sources.base import error_envelope
         failure = error_envelope(a.sctx, "archives", "piece_archiver", {"source": source, "page": page}, exc)
         return {"erreur": str(exc), "source": source, "journal": failure["journal"]}
     from . import ark as _ark

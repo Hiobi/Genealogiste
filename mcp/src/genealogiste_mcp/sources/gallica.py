@@ -86,9 +86,10 @@ def search(ctx: SourceContext, texte: str, type_doc: str = "", titre: str = "", 
 
 
 def search_in_document(ctx: SourceContext, ark: str, texte: str) -> dict:
-    ark = ark_id(ark)
     params = {"ark": ark, "query": texte}
     try:
+        ark = ark_id(ark)
+        params["ark"] = ark
         xml_text, cached = ctx.http.get(f"{BASE}/services/ContentSearch", params=params, ttl=90 * DAY,
                                         source="gallica", parse="text")
         root = ET.fromstring(xml_text)
@@ -107,7 +108,10 @@ def search_in_document(ctx: SourceContext, ark: str, texte: str) -> dict:
 
 
 def text(ctx: SourceContext, ark: str, page: int | None = None, max_caracteres: int = 20000) -> dict:
-    a = ark_id(ark)
+    try:
+        a = ark_id(ark)
+    except ValueError as exc:
+        return error_envelope(ctx, "gallica", "texteBrut", {"ark": ark, "page": page}, exc)
     url = f"{BASE}/ark:/12148/{a}" + (f"/f{page}" if page else "") + ".texteBrut"
     try:
         raw, cached = ctx.http.get(url, ttl=365 * DAY, source="gallica", parse="text")
@@ -125,7 +129,10 @@ def text(ctx: SourceContext, ark: str, page: int | None = None, max_caracteres: 
 
 
 def alto(ctx: SourceContext, ark: str, page: int) -> dict:
-    a = ark_id(ark)
+    try:
+        a = ark_id(ark)
+    except ValueError as exc:
+        return error_envelope(ctx, "gallica", "alto", {"ark": ark, "page": page}, exc)
     params = {"O": a, "E": "ALTO", "Deb": str(page)}
     try:
         raw, cached = ctx.http.get(f"{BASE}/RequestDigitalElement", params=params, ttl=365 * DAY,
@@ -145,7 +152,11 @@ def alto(ctx: SourceContext, ark: str, page: int) -> dict:
 
 
 def iiif(ark: str, page: int | None = None, region: str = "full", taille: str = "full") -> dict:
-    a = ark_id(ark)
+    try:
+        a = ark_id(ark)
+    except ValueError as exc:
+        return {"erreur": str(exc), "requete": {"ark": ark, "page": page},
+                "conseil": "Donner un ARK Gallica (ark:/12148/bpt6k…, btv1b…) ou une URL gallica.bnf.fr."}
     out = {"manifest": f"{BASE}/iiif/ark:/12148/{a}/manifest.json", "visionneuse": f"{BASE}/ark:/12148/{a}"}
     if page:
         out["image"] = f"{BASE}/iiif/ark:/12148/{a}/f{page}/{region}/{taille}/0/native.jpg"
