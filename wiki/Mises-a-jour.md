@@ -12,8 +12,17 @@ claude plugin marketplace update genealogiste
 claude plugin update genealogiste@genealogiste
 ```
 
-Ouvrir une nouvelle session ou reconnecter le serveur MCP, puis vérifier `arbre_info` et les effectifs.
-Les chemins et le backend doivent être ceux de votre installation précédente.
+**Reconnecter le serveur MCP** : une session déjà ouverte garde le serveur de l’ancienne version (outils
+manquants, commandes qui citent des outils absents). Ouvrir une nouvelle session, ou `/mcp` puis reconnecter
+`genealogiste`, dans **chaque** session ouverte. Vérifier ensuite `arbre_info` : `version_serveur` doit être
+celle du plugin, et un avertissement « reconnecter le serveur MCP » signale un écart (aussi dans
+`/genealogiste:diagnostic`). Les chemins et le backend doivent être ceux de votre installation précédente.
+
+**Anciennes versions** : chaque version reste dans le cache des plugins avec son environnement Python
+(environ 100 Mo), sous `~/.claude/plugins/cache/genealogiste/genealogiste/<version>/`. Une fois toutes les
+sessions reconnectées, et aucun processus `genealogiste-mcp` d’une ancienne version encore actif
+(`pgrep -af genealogiste-mcp`), les dossiers des versions antérieures peuvent être supprimés. Ne jamais
+supprimer le dossier de la version en cours ni le répertoire de données.
 Une ancienne installation `genealogiste@sosa` suit d’abord le [guide de migration](../docs/renommage-genealogiste.md) :
 la redirection GitHub de l’ancien dépôt ne change pas automatiquement le nom de marketplace enregistré.
 

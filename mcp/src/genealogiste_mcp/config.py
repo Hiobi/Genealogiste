@@ -25,13 +25,24 @@ def _xdg(var: str, default: str) -> Path:
     return Path(os.environ.get(var) or Path.home() / default)
 
 
+def user_agent_par_defaut() -> str:
+    """User-Agent dérivé de la version du paquet : les services identifient la version qui les interroge."""
+    from importlib import metadata
+
+    try:
+        version = metadata.version("genealogiste-mcp")
+    except metadata.PackageNotFoundError:
+        version = "inconnue"
+    return f"genealogiste-mcp/{version} (plugin Claude Code; usage genealogique personnel)"
+
+
 @dataclass
 class Config:
     data_dir: Path
     cache_path: Path
     wikitree_app_id: str = ""
     matchid_token: str = ""
-    user_agent: str = "genealogiste-mcp/0.1 (plugin Claude Code; usage genealogique personnel)"
+    user_agent: str = field(default_factory=lambda: user_agent_par_defaut())
     backend: str = "fichier"  # fichier (GEDCOM 7 + Git, défaut) | gramps (Gramps Web = source de vérité)
     gramps_url: str = ""
     gramps_user: str = ""

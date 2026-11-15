@@ -502,6 +502,13 @@ def arbre_info() -> dict:
            "familles": len(t.familles), "sources": len(t.sources), "medias": len(t.medias),
            "vivants_presumes": len(privacy.living_ids(t)), "propositions_en_attente": a.backend.pending(),
            "mode_preuve": "strict" if a.config.strict_evidence else "pondéré", "avertissements": []}
+    from . import diagnostic as diag
+    out["version_serveur"] = diag.version_serveur()
+    version_plugin, _ = diag.version_plugin()
+    if version_plugin:
+        out["version_plugin"] = version_plugin
+    if ecart := diag.ecart_version():
+        out["avertissements"].append(ecart)
     if a.config.backend == "gramps":
         out["gramps"] = a.backend.info()
         out["dernier_changement"] = (a.backend.history(1) or [{}])[0]

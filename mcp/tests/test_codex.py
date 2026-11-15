@@ -17,8 +17,9 @@ def test_paquet_codex_sans_hooks_ni_mcp_implicites():
     manifest = json.loads((ROOT / "plugin.json").read_text())
     assert manifest["extensions"]["com.openai"]["hooks"] == []
     assert json.loads((ROOT / "mcp.json").read_text())["mcpServers"] == {}
-    # Claude garde son serveur et ses confirmations.
-    assert "genealogiste" in json.loads((ROOT / ".mcp.json").read_text())["mcpServers"]
+    # Claude garde son serveur (déclaré dans son manifeste, pas en portée projet) et ses confirmations.
+    assert "genealogiste" in json.loads((ROOT / ".claude-plugin/plugin.json").read_text())["mcpServers"]
+    assert not (ROOT / ".mcp.json").exists()
     assert json.loads((ROOT / "hooks/hooks.json").read_text())["hooks"]["PreToolUse"]
 
 
