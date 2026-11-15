@@ -48,7 +48,9 @@ class Config:
     sosa_racine: str = ""  # personne n° 1 de la numérotation Sosa des notes
     cog_mvt_url: str = "https://www.insee.fr/fr/statistiques/fichier/7766585/v_mvt_commune_2024.csv"
     cog_communes_url: str = "https://www.insee.fr/fr/statistiques/fichier/7766585/v_commune_depuis_1943.csv"
-    http_timeout: float = 30.0
+    http_timeout: float = 30.0  # GENEALOGISTE_HTTP_TIMEOUT : délai d'un essai (secondes)
+    http_tentatives: int = 5  # GENEALOGISTE_HTTP_TENTATIVES : essais au plus pour une requête idempotente
+    http_duree_max: float = 60.0  # GENEALOGISTE_HTTP_DUREE_MAX : plafond d'un appel, attentes comprises
     media_dir_conf: Path | None = None  # GENEALOGISTE_MEDIA_DIR (ex. <vault>/documents) ; défaut <données>/medias
     rapports_dir_conf: Path | None = None  # GENEALOGISTE_RAPPORTS_DIR ; défaut <données>/rapports
     exports_dir_conf: Path | None = None  # GENEALOGISTE_EXPORTS_DIR ; défaut <données>/exports
@@ -159,6 +161,18 @@ def secondes(value: str | None, default: float, variable: str) -> float:
     return v
 
 
+def entier_positif(value: str | None, default: int, variable: str) -> int:
+    if value is None or value.strip() == "":
+        return default
+    try:
+        v = int(value)
+    except ValueError:
+        v = 0
+    if v < 1:
+        raise ValueError(f"{variable}={value!r} : entier supérieur ou égal à 1 attendu")
+    return v
+
+
 def debits_par_hote(value: str | None) -> dict[str, float]:
     """« hote=secondes,hote2=secondes » -> {hote: secondes}."""
     out: dict[str, float] = {}
@@ -216,6 +230,9 @@ def load_config() -> Config:
         notes_auto=_bool(env("GENEALOGISTE_NOTES_AUTO"), True),
         sosa_racine=env("GENEALOGISTE_SOSA_RACINE", ""),
         hotes_autorises=[h for h in env("GENEALOGISTE_HOTES_AUTORISES", "").split(",") if h.strip()],
+        http_timeout=secondes(env("GENEALOGISTE_HTTP_TIMEOUT"), 30.0, "GENEALOGISTE_HTTP_TIMEOUT") or 30.0,
+        http_tentatives=entier_positif(env("GENEALOGISTE_HTTP_TENTATIVES"), 5, "GENEALOGISTE_HTTP_TENTATIVES"),
+        http_duree_max=secondes(env("GENEALOGISTE_HTTP_DUREE_MAX"), 60.0, "GENEALOGISTE_HTTP_DUREE_MAX") or 60.0,
         debit_defaut=secondes(env("GENEALOGISTE_DEBIT_DEFAUT"), 1.5, "GENEALOGISTE_DEBIT_DEFAUT"),
         debits=debits_par_hote(env("GENEALOGISTE_DEBITS")),
         media_dir_conf=_dir(env("GENEALOGISTE_MEDIA_DIR")),
