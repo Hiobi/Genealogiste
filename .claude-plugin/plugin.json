@@ -5,6 +5,6 @@
   "author": { "name": "hiobi" },
   "homepage": "https://github.com/Hiobi/Genealogiste",
   "repository": "https://github.com/Hiobi/Genealogiste",
-  "license": "MIT",
+  "license": "GPL-3.0-or-later",
   "keywords": ["genealogie", "gedcom", "etat-civil", "archives", "france", "mcp"]
 }
