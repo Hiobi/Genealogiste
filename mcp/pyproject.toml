@@ -36,7 +36,8 @@ packages = ["src/genealogiste_mcp"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
-markers = ["gramps_live: intégration sur un Gramps Web jetable (make test-gramps)"]
+markers = ["gramps_live: intégration sur un Gramps Web jetable (make test-gramps)",
+           "archives_live: recette de contrat contre les services d'archives réels (make test-archives)"]
 
 [tool.ruff]
 line-length = 110

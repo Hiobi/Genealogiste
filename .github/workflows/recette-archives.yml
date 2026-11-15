@@ -1,0 +1,77 @@
+name: Recette archives
+
+# Recette de contrat hebdomadaire contre les services d'archives réels (#143) : quelques requêtes par
+# service, débit du plugin respecté, arrêt à toute protection anti-robot (jamais de contournement).
+# En cas d'échec de contrat, ouvre ou complète l'issue « Recette archives en échec ».
+
+on:
+  schedule:
+    - cron: '41 5 * * 2'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: recette-archives
+  cancel-in-progress: false
+
+jobs:
+  recette:
+    name: Recette de contrat
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: '0.11.14'
+          python-version: '3.11'
+      - name: Installer
+        run: make install
+      - name: Recette
+        id: recette
+        shell: bash
+        run: |
+          set -o pipefail
+          make test-archives 2>&1 | tee "$RUNNER_TEMP/recette.log"
+      - name: Résumé
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Recette archives"
+            echo '```'
+            grep -E "passed|failed|skipped|SKIPPED|FAILED" "$RUNNER_TEMP/recette.log" || true
+            echo '```'
+            echo '```json'
+            cat mcp/src/genealogiste_mcp/referentiels/recettes_archives.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Conserver les résultats
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: recettes-archives
+          path: |
+            mcp/src/genealogiste_mcp/referentiels/recettes_archives.json
+            ${{ runner.temp }}/recette.log
+      - name: Ouvrir ou compléter l'issue
+        if: failure() && steps.recette.outcome == 'failure'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          titre="Recette archives en échec"
+          corps=$(printf 'Recette du %s : contrat rompu pour au moins un service.\n\n```\n%s\n```\n\nJournal complet : %s\n' \
+            "$(date -u +%F)" "$(grep -E 'FAILED|passed|failed' "$RUNNER_TEMP/recette.log" | tail -20)" "$RUN_URL")
+          numero=$(gh issue list --state open --search "\"$titre\" in:title" --json number --jq '.[0].number')
+          if [ -n "$numero" ]; then
+            gh issue comment "$numero" --body "$corps"
+          else
+            gh issue create --title "$titre" --body "$corps"
+          fi

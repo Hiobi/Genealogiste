@@ -37,6 +37,27 @@ Il lance `make test-gramps` sur Docker avec un arbre fictif jetable, puis détru
 et volumes, y compris après un échec. Il reprend l'image du compose de test (épinglée par empreinte) :
 il ne certifie pas une version Gramps de production.
 
+## Recette archives planifiée (#143)
+
+`.github/workflows/recette-archives.yml`, chaque mardi et à la demande. `make test-archives` lance
+`tests/test_archives_live.py` (marqueur `archives_live`, jamais exécuté par `make test`) : pour chaque service
+du référentiel doté d'un champ `recette` (`source` : ARK ou URL de registre de référence, `page`), l'ARK est
+résolu sans requête, une fenêtre de 3 vues est listée et une vue téléchargée en 400 px. Quelques requêtes
+par service, débit réel du plugin.
+
+| Résultat | Sens | Effet |
+|---|---|---|
+| `ok` | contrat respecté | `derniere_reussite` mise à jour |
+| `protection` | défi anti-robot, coupe-circuit, accès refusé : recette arrêtée, **aucun contournement** | test ignoré (pas un échec de contrat) |
+| `echec` | réponse inattendue : le site a changé | test en échec ; le workflow ouvre ou complète l'issue « Recette archives en échec » |
+
+Le résultat de chaque service est inscrit dans `mcp/src/genealogiste_mcp/referentiels/recettes_archives.json`
+(`ECRIRE=0` pour ne rien écrire) et exposé par `archives_service` (champ `recette`). Le workflow ne pousse
+rien : il publie le fichier en artefact ; le mettre à jour dans le dépôt reste un commit relu.
+
+Lancer la même recette depuis le VPS (`make test-archives ECRIRE=0`) distingue « site changé » (`echec`
+partout) de « adresse bloquée » (`protection` depuis le VPS, `ok` ailleurs).
+
 ## Reproduire localement
 
 Depuis la racine, avec Python, uv, Git et la CLI Claude installés :

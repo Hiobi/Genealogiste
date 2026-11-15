@@ -20,6 +20,8 @@ from . import ark, couverture_archives
 from .normalize.places import DEPARTEMENTS, normalize_place
 
 PATH = Path(__file__).parent / "referentiels" / "archives_fr.json"
+RECETTES = Path(__file__).parent / "referentiels" / "recettes_archives.json"  # make test-archives (#143)
+RESULTATS_RECETTE = ("ok", "echec", "protection")
 STALE_DAYS = 365
 TYPES = ("departementales", "communales", "nationales", "militaires", "notariales", "diocesaines", "autre")
 DOCUMENTS = ("naissance", "mariage", "deces", "tables_decennales", "recensement", "notaire", "matricule",
@@ -51,6 +53,41 @@ def intervalles() -> dict[str, float]:
             if hote:
                 out[hote.lower()] = float(v)
     return out
+
+
+def services_recette() -> list[dict]:
+    """Services dotés d'un adaptateur et d'une ressource de référence pour la recette réelle (#143)."""
+    return [s for s in services() if s.get("recette")]
+
+
+def recettes() -> dict:
+    try:
+        data = json.loads(RECETTES.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def recette(code: str) -> dict | None:
+    return recettes().get(code)
+
+
+def enregistrer_recette(code: str, resultat: str, detail: str = "", jour: date | None = None) -> dict:
+    """Inscrit le dernier essai de recette réelle d'un service (ok, echec ou protection)."""
+    from .fichiers import ecrire_atomique
+
+    if resultat not in RESULTATS_RECETTE:
+        raise ValueError(f"résultat de recette inconnu : {resultat!r}")
+    data = recettes()
+    jour_iso = (jour or date.today()).isoformat()
+    entree = {"dernier_essai": jour_iso, "resultat": resultat, "detail": detail[:300]}
+    precedente = data.get(code) or {}
+    reussite = jour_iso if resultat == "ok" else precedente.get("derniere_reussite")
+    if reussite:
+        entree["derniere_reussite"] = reussite
+    data[code] = entree
+    ecrire_atomique(RECETTES, json.dumps(dict(sorted(data.items())), ensure_ascii=False, indent=2) + "\n")
+    return entree
 
 
 def validate() -> list[str]:
@@ -92,6 +129,11 @@ def validate() -> list[str]:
                                            or isinstance(s["intervalle_requetes"], bool)
                                            or s["intervalle_requetes"] <= 0):
             errs.append(f"{c} : intervalle_requetes doit être un nombre de secondes positif")
+        if "recette" in s:
+            r = s["recette"]
+            if not isinstance(r, dict) or not isinstance(r.get("source"), str) or not r.get("source") \
+                    or not isinstance(r.get("page", 0), int):
+                errs.append(f"{c} : recette = {{source: ARK ou URL de registre, page: entier}} attendu")
         if s.get("verifie_le"):
             try:
                 date.fromisoformat(s["verifie_le"])
@@ -145,6 +187,8 @@ def view(s: dict, document: str = "", annee: int | None = None, lieu: str = "") 
             links = {r['lien'] for r in coverage['regles'] if r.get('lien')}
             if len(links) == 1:
                 out['lien'] = links.pop()
+    if s.get("recette"):
+        out["recette"] = recette(s["code"]) or {"resultat": None, "detail": "aucune recette réelle enregistrée"}
     if w := staleness(s):
         out["avertissement"] = w
     return out
