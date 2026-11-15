@@ -33,6 +33,7 @@ APPELS: dict[str, dict] = {
     "archives_naviguer": {"source": "https://iiif.example/iiif/registre/manifest.json"},
     "gramps_recherche": {"texte": "Durand"},
     "gramps_personne": {"handle": "h1"},
+    "diagnostic": {},
 }
 # Hors périmètre : lit un fichier local avant tout appel réseau (couvert par test_sources).
 SANS_APPEL = {"matchid_appariement_csv"}

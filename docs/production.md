@@ -58,6 +58,15 @@ de données hors du dépôt du plugin et inscriptible. Une erreur est écrite su
   expliquer la panne. Causes : `configuration`, `donnees_dans_le_plugin`, `droits`, `git_absent`,
   `gramps_web`, `git`, `interne`.
 
+## Diagnostic et santé
+
+- Outil `diagnostic` / commande `/genealogiste:diagnostic` (`local` : sans requête externe) : version du
+  serveur et du plugin sur disque, configuration effective sans secret, git, uv, droits, espace disque,
+  caches, OCR, propositions en attente ou expirées, joignabilité de chaque source (verdict `joignable`,
+  `protection`, `injoignable`) et de Gramps Web. Chaque contrôle en échec donne un remède.
+- `GET /health` sur le transport HTTP, **sans authentification** : `{"statut": "ok"|"degrade", "version"}`
+  (503 si dégradé), aucune donnée de l'arbre ni de configuration. Le healthcheck Docker l'utilise.
+
 ## Sauvegarde et restauration
 
 Arrêter les écritures pendant une sauvegarde cohérente. Sauvegarder le répertoire des données complet

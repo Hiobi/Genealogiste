@@ -46,6 +46,7 @@ OUTILS: dict[str, tuple[str, str]] = {
     "archives_service": (LECTURE, DEFAUT),
     "archives_naviguer": (RESEAU, ALLOW),
     "source_collee": (JOURNAL, ALLOW),
+    "diagnostic": (RESEAU, ALLOW),  # contrôles locaux + une requête GET par source, sans donnée de personne
     "familysearch_exporter": (IDENTIFIANTS, ASK),
     # analyse
     "normaliser_nom": (LECTURE, ALLOW),

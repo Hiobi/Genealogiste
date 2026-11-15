@@ -46,7 +46,7 @@ Demandez ensuite :
 > Utilise l’outil arbre_info de Genealogiste et indique le backend et le nombre de personnes.
 
 Un arbre neuf doit indiquer le mode `fichier` et **0 personne**. Dans `/mcp`, vérifiez que le serveur
-`genealogiste` est connecté. Si une erreur apparaît, suivez le [dépannage](https://github.com/Hiobi/Genealogiste/wiki/Depannage).
+`genealogiste` est connecté. Si une erreur apparaît, lancez `/genealogiste:diagnostic` (contrôle, état, remède) puis suivez le [dépannage](https://github.com/Hiobi/Genealogiste/wiki/Depannage).
 
 **Vous aviez installé `genealogiste@sosa` ?** Suivez la [migration](https://github.com/Hiobi/Genealogiste/wiki/Migration) avant de changer de marketplace.
 Pour un autre dossier de données, Gramps Web ou Docker : [installation détaillée](https://github.com/Hiobi/Genealogiste/wiki/Installation).

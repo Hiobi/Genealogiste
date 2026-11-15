@@ -13,7 +13,7 @@ import uvicorn
 from mcp import ClientSession, StdioServerParameters, stdio_client
 
 from genealogiste_mcp import outils, server
-from genealogiste_mcp.auth import BearerAuth
+from genealogiste_mcp.auth import BearerAuth, Sante
 
 
 @pytest.mark.parametrize('transport', ['streamable-http', 'sse'])
@@ -30,8 +30,10 @@ def test_demarrage_http_et_protections(monkeypatch, transport, host):
         server.main()
     finally:
         os.umask(original_umask)
-    asgi, settings = launches[0]
+    sante, settings = launches[0]
     assert settings == {'host': host, 'port': 9876, 'log_level': 'warning'}
+    assert isinstance(sante, Sante)  # /health hors authentification (#147), tout le reste derrière le jeton
+    asgi = sante.app
     assert isinstance(asgi, BearerAuth)
     path = '/mcp' if transport == 'streamable-http' else '/sse'
 
