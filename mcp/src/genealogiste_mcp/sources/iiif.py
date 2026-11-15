@@ -400,7 +400,9 @@ def fetch(ctx: SourceContext, media_dir: Path, source: str, page: int = 0, regio
 # ---------------------------------------------------------------------------- sortie d'archive_image
 
 CHAMPS_MINIMAUX = ("chemin_absolu", "vue", "nb_vues", "ark_vue", "dimensions_originales", "dimensions_demandees",
-                   "cout_estime_tokens", "avertissement")
+                   "cout_estime_tokens", "avertissement", "depuis_cache")
+# Page d'un PDF local (repli vision de pdf_markdown) : fichier, page rendue et conseil de coût.
+CHAMPS_PDF = ("pdf", "page_pdf", "original", "conseil")
 CHAMPS_REGISTRE = ("titre_registre", "cote", "commune", "periode")
 
 
@@ -412,7 +414,8 @@ def sortie_minimale(ctx: SourceContext, out: dict, details: bool = False) -> dic
     ``details``) ; la licence n'est jamais renvoyée ici, ``piece_archiver`` la conserve."""
     if "erreur" in out:
         return out
-    res = {k: out[k] for k in CHAMPS_MINIMAUX if out.get(k) not in (None, "", [])}
+    champs = CHAMPS_MINIMAUX + (CHAMPS_PDF if out.get("pdf") else ())
+    res = {k: out[k] for k in champs if out.get(k) not in (None, "", [])}
     registre = out.get("ark_ressource") or ""
     if registre:
         res["registre"] = registre

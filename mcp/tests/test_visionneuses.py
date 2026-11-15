@@ -377,7 +377,7 @@ def test_sortie_minimale_archive_image_figee_sans_licence(app_famille, routes):
     suivant = server.archive_image(VIEW)
     detaille = server.archive_image(VIEW, details=True)
     minimal = {"chemin_absolu", "vue", "nb_vues", "ark_vue", "dimensions_originales", "dimensions_demandees",
-               "cout_estime_tokens", "registre"}
+               "cout_estime_tokens", "registre", "depuis_cache"}
     assert set(suivant) == minimal
     assert minimal < set(premier) <= minimal | {"titre_registre", "cote", "commune", "periode"}
     assert premier["cote"] == "2 E FICTIF" and premier["commune"] == "VILLERS-EN-CAUCHIES"
