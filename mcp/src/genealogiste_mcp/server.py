@@ -80,6 +80,7 @@ class App:
         self.journal = Journal(self.config.journal_path)
         self.proposals = Proposals(self.store, self.config.proposals_dir, self.config.exiger_source)
         self.tokens = TokenStore(self.config.proposals_dir)
+        self.tokens.purger_expirees()
         self.sctx = SourceContext(self.http, self.journal, self.config)
         self.notes = Notes(self.config.notes_dir, self.config.notes_vivants, self.config.strict_evidence,
                            self.config.sosa_racine, self.journal, data_dir=self.config.data_dir)

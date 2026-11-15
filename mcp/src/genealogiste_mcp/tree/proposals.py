@@ -88,12 +88,37 @@ class TokenStore:
             return True
         return False
 
-    def pending(self) -> list[dict]:
+    def _lire_tous(self) -> list[tuple[Path, dict]]:
         if not self.dir.exists():
             return []
         out = []
         for p in sorted(self.dir.glob("*.json")):
-            r = json.loads(p.read_text(encoding="utf-8"))
+            try:
+                out.append((p, json.loads(p.read_text(encoding="utf-8"))))
+            except (OSError, ValueError):
+                continue  # pris par un autre appel entre-temps, ou illisible
+        return out
+
+    def expirees(self) -> list[str]:
+        """Jetons expirés, sans rien supprimer (lecture seule)."""
+        maintenant = time.time()
+        return [r["jeton"] for _, r in self._lire_tous() if maintenant - r.get("cree", 0) > TTL_SECONDS]
+
+    def purger_expirees(self) -> int:
+        """Supprime les propositions expirées : elles ne sont plus applicables (#151)."""
+        n = 0
+        maintenant = time.time()
+        for p, r in self._lire_tous():
+            if maintenant - r.get("cree", 0) > TTL_SECONDS:
+                p.unlink(missing_ok=True)
+                n += 1
+        return n
+
+    def pending(self) -> list[dict]:
+        """Propositions encore applicables ; les expirées sont purgées au passage."""
+        self.purger_expirees()
+        out = []
+        for _, r in self._lire_tous():
             out.append({"jeton": r["jeton"], "type": r.get("type", "modification"), "resume": r.get("resume", []),
                         "age_minutes": round((time.time() - r["cree"]) / 60, 1)})
         return out
