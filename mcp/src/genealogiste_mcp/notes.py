@@ -765,8 +765,8 @@ class Notes:
     def git_warning(self) -> str:
         root = self._require()
         try:
-            out = subprocess.run(["git", "-C", str(root), "remote", "-v"], capture_output=True, text=True,
-                                 timeout=10).stdout.strip()
+            from .tree.store import git_non_interactif
+            out = git_non_interactif(["-C", str(root), "remote", "-v"], 10).stdout.strip()
         except (OSError, subprocess.SubprocessError):
             return ""
         if out:
