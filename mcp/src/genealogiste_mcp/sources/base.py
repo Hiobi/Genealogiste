@@ -93,6 +93,10 @@ def error_envelope(ctx: SourceContext, source: str, operation: str, params: dict
                           resume=resume, personne=personne)
     out = {"source": source, "requete": params, "erreur": str(exc), "journal": jid,
            "conseil": "Réessayer plus tard, vérifier la configuration, ou utiliser la recherche manuelle (liens_recherche)."}
+    if getattr(exc, "echec_memorise", False):
+        out.update(echec_memorise=True, depuis_cache=True)
+    if getattr(exc, "coupe_circuit", False):
+        out["coupe_circuit"] = True
     if apres is not None:
         out["reessayer_apres"] = apres
         out["conseil"] = (f"Service saturé ou indisponible : réessayer dans {round(apres)} s au plus tôt, passer à une "

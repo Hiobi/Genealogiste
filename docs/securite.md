@@ -134,6 +134,22 @@ tracée au journal : passer à une autre source et revenir plus tard, sans relan
 | `GENEALOGISTE_HTTP_TENTATIVES` | 5 | essais au plus (requête rejouable) |
 | `GENEALOGISTE_HTTP_DUREE_MAX` | 60 | plafond d'un appel d'outil (s) |
 
+## Échecs mémorisés, coupe-circuit, caches bornés
+
+`http.py`, `cache.py`, `menage.py` (#142).
+
+- **Cache négatif** : un 403, 404 ou 429 d'une requête rejouable est mémorisé par URL
+  (`GENEALOGISTE_CACHE_ECHEC`, 900 s ; pour un 429, la durée du `Retry-After`). L'appel suivant échoue sans
+  requête ; l'enveloppe porte `echec_memorise: true`, `depuis_cache: true` et `reessayer_apres`.
+  `cache_purger(<source>)` oublie aussi les échecs de cette source. Une erreur 5xx n'est pas mémorisée.
+- **Coupe-circuit** : après un blocage anti-robot (403 Cloudflare), l'hôte entier est mis en pause
+  (`GENEALOGISTE_COUPE_CIRCUIT`, 1800 s) : les appels suivants échouent aussitôt avec la raison, l'heure de
+  reprise et `coupe_circuit: true`, sans retenter le site. `cache_purger("coupe_circuit")` lève la pause.
+  Aucun contournement n'est tenté.
+- **Taille** : entrées expirées purgées au démarrage et à chaque `cache_purger` ; cache SQLite plafonné à
+  `GENEALOGISTE_CACHE_MAX_MO` (500) et `cache-images` à `GENEALOGISTE_CACHE_IMAGES_MAX_MO` (2000), les plus
+  anciennes d'abord (0 = aucun plafond). Les pièces archivées (répertoire des médias) ne sont jamais touchées.
+
 ## Transport HTTP du serveur MCP : jeton
 
 Module `auth.py` (#52). En `stdio` (plugin Claude Code), rien ne change. En HTTP (`--transport

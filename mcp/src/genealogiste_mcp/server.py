@@ -10,7 +10,7 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from . import archivage, archives, ark, coherence, evidence, matching, pieces, privacy
+from . import archivage, archives, ark, coherence, evidence, matching, menage, pieces, privacy
 from . import pdf_markdown as pdf_md
 from .archives import communicability_online
 from .auth import BearerAuth, bind_problem
@@ -64,14 +64,17 @@ RATE = {"deces.matchid.io": 1.0, "api.wikitree.com": 1.0, "gallica.bnf.fr": 1.0,
 class App:
     def __init__(self, config: Config | None = None, transport=None, sleeper=None, gramps_transport=None):
         self.config = config or load_config()
-        self.cache = Cache(self.config.cache_path)
+        self.cache = Cache(self.config.cache_path, max_octets=int(self.config.cache_max_mo * menage.MO))
+        self.cache.borner()
+        menage.borner_images(self.config)
         kw = {"sleeper": sleeper} if sleeper else {}
         intervalles = {**RATE, **archives.intervalles(), **self.config.debits}  # env > référentiel > code
         self.http = HttpClient(self.cache, self.config.user_agent, self.config.http_timeout, intervalles,
                                offline=self.config.offline, transport=transport,
                                policy=NetworkPolicy(self.config.hotes_autorises),
                                default_interval=self.config.debit_defaut,
-                               max_retries=self.config.http_tentatives, duree_max=self.config.http_duree_max, **kw)
+                               max_retries=self.config.http_tentatives, duree_max=self.config.http_duree_max,
+                               echec_ttl=self.config.cache_echec, coupe_circuit_ttl=self.config.coupe_circuit, **kw)
         self.store = TreeStore(self.config.data_dir, self.config.git_remote)
         self.store.ensure()
         self.journal = Journal(self.config.journal_path)
@@ -1224,8 +1227,15 @@ def notes_ajouter(id: str, texte: str, section: str = "note") -> dict:
 
 @mcp.tool()
 def cache_purger(source: str = "") -> dict:
-    """Vide le cache SQLite (toutes sources ou une source : matchid, wikitree, gallica, wikidata, geo, cog)."""
-    return {"supprimes": app().cache.purge(source or None), "restant": app().cache.stats()}
+    """Vide le cache SQLite (tout, ou une catégorie). Catégories : matchid, wikitree, gallica, wikidata, geo,
+    cog, archives, ark, iiif, visionneuse ; echec (échecs mémorisés sans source) ; coupe_circuit (lève la pause
+    d'un hôte après blocage anti-robot). Les échecs mémorisés d'une source partent avec elle. Purge aussi les
+    entrées expirées et applique les plafonds de taille (GENEALOGISTE_CACHE_MAX_MO, _CACHE_IMAGES_MAX_MO)."""
+    a = app()
+    supprimes = a.cache.purge(source or None)
+    a.cache.borner()
+    return {"supprimes": supprimes, "images_supprimees": menage.borner_images(a.config),
+            "restant": a.cache.stats()}
 
 
 # ============================================================================ Gramps Web
