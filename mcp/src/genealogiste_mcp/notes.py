@@ -158,6 +158,14 @@ class Notes:
 
     def _existing(self, kind: str, oid: str) -> Path | None:
         folder = self._require() / FOLDERS[kind]
+        cache = getattr(self, "_cache_fiches", None)
+        if cache is not None:  # pendant une génération : un seul listage par dossier (#151)
+            if kind not in cache:
+                index: dict[str, Path] = {}
+                for p in sorted(folder.glob("* - *.md")) if folder.exists() else []:
+                    index.setdefault(p.name.split(" - ", 1)[0], p)
+                cache[kind] = index
+            return cache[kind].get(oid)
         hits = sorted(folder.glob(f"{oid} - *.md")) if folder.exists() else []
         return hits[0] if hits else None
 
@@ -630,23 +638,40 @@ class Notes:
             old.unlink()
         return [str(path.relative_to(root)) for path in [*renames.values(), *(p for p, _ in written)]]
 
-    def generate(self, tree: Tree, target: str = "tout") -> dict:
+    def generate(self, tree: Tree, target: str | list[str] = "tout") -> dict:
+        """Génère « tout », un objet, ou un lot d'objets (une seule passe : calculs de l'arbre, patronymes
+        concernés et index faits une fois). Dans un lot, un identifiant inconnu est signalé dans « erreurs »."""
         with verrou(self._require()):
-            return self._generate(tree, target)
+            try:
+                return self._generate(tree, target)
+            finally:
+                self._cache_fiches = None
 
-    def _generate(self, tree: Tree, target: str) -> dict:
+    def _generate(self, tree: Tree, target: str | list[str]) -> dict:
         root = self._require()
+        self._cache_fiches = None
+        cibles = [target] if isinstance(target, str) else list(dict.fromkeys(target))
         sosa = self._sosa(tree)
         porteurs = self._porteurs(tree)
-        ids = self._targets(tree, target, porteurs)
+        ids, erreurs = [], []
+        for cible in cibles:
+            try:
+                ids += self._targets(tree, cible, porteurs)
+            except NotesError as exc:
+                if isinstance(target, str):
+                    raise
+                erreurs.append(f"{cible} : {exc}")
         surname_ids, existants = self._prepare_surnames(tree, porteurs)
-        ids = [(kind, oid) for kind, oid in ids if kind != 'patronyme'] + surname_ids
+        if cibles != ["tout"]:
+            surname_ids = [x for x in surname_ids if x[1] in self._patronymes_concernes(ids, existants)]
+        ids = list(dict.fromkeys([(kind, oid) for kind, oid in ids if kind != 'patronyme'] + surname_ids))
         private_paths = self._private_media_paths(tree)
         renames = self._person_renames(tree, ids)
         try:
             written = self._rename_people(renames)
         except OSError as exc:
             raise NotesError(f"Renommage des fiches impossible : {exc}") from exc
+        self._cache_fiches = {}
         unchanged, alertes = 0, []
         extra = {"personne": (sosa, private_paths), "patronyme": (porteurs, private_paths)}
         for kind, oid in ids:
@@ -663,6 +688,8 @@ class Notes:
         if target == "tout" or (root / 'index.md').exists():
             self._index(tree, porteurs)
         out = {"repertoire": str(root), "ecrites": list(dict.fromkeys(written)), "inchangees": unchanged}
+        if erreurs:
+            out["erreurs"] = erreurs
         if renames:
             out["renommees"] = [{"ancien": str(old.relative_to(root.resolve())),
                                  "nouveau": str(new.relative_to(root.resolve()))} for old, new in renames.items()]
@@ -696,6 +723,22 @@ class Notes:
         if _manual_text(path):
             out.append(f"{rel} : texte ou propriétés saisis à la main conservés ; vérifier qu'ils ne contiennent "
                        "pas de données sur la personne masquée.")
+        return out
+
+    def _patronymes_concernes(self, ids: list[tuple[str, str]], existants: dict[Path, str]) -> set[str]:
+        """Patronymes à régénérer pour un lot : ceux des personnes visées, et ceux dont la page cite déjà l'une
+        d'elles (changement de nom de famille, retrait d'un porteur)."""
+        out = {oid for kind, oid in ids if kind == "patronyme"}
+        personnes = [oid for kind, oid in ids if kind == "personne"]
+        if personnes:
+            marques = [f"[[{oid} - " for oid in personnes]
+            for path, key in existants.items():
+                try:
+                    texte = path.read_text(encoding="utf-8")
+                except OSError:
+                    continue
+                if any(m in texte for m in marques):
+                    out.add(key)
         return out
 
     def _targets(self, tree: Tree, target: str, porteurs: dict | None = None) -> list[tuple[str, str]]:
