@@ -8,11 +8,12 @@ contenu : un PDF inchangé, même renommé ou déplacé, n'est jamais reconverti
 
 from __future__ import annotations
 
-import functools
 import hashlib
 import json
+import platform
 import re
 import statistics
+import threading
 from pathlib import Path
 
 from .fichiers import ecrire_atomique
@@ -33,26 +34,111 @@ class PdfErreur(ValueError):
     pass
 
 
-@functools.lru_cache(maxsize=1)
-def _tesseract_langues() -> frozenset[str] | None:
-    """Langues Tesseract installées, ou None si le binaire est absent."""
-    try:
-        import pytesseract
-
-        pytesseract.get_tesseract_version()
-        return frozenset(pytesseract.get_languages(config=""))
-    except Exception:  # binaire absent, PATH incomplet, tessdata illisible
-        return None
+TESSERACT_DEFAUT = "tesseract"
+_LANGUES: dict[str, frozenset[str]] = {}  # seules les détections réussies sont mémorisées
+_VERROU = threading.Lock()
+MOTIFS_INSTALLATION = ("tesseract_absent", "langue_tesseract_absente")
 
 
-def ocr_disponible(langue: str) -> tuple[bool, str]:
-    langues = _tesseract_langues()
+def _commande(tesseract: str = "") -> str:
+    """Fixe le binaire utilisé par pytesseract (GENEALOGISTE_TESSERACT : chemin, ou shim Docker)."""
+    import pytesseract
+
+    cmd = tesseract or TESSERACT_DEFAUT
+    pytesseract.pytesseract.tesseract_cmd = cmd
+    return cmd
+
+
+def _tesseract_langues(tesseract: str = "") -> frozenset[str] | None:
+    """Langues Tesseract installées, ou None si le binaire est absent. Une absence n'est pas mémorisée :
+    Tesseract installé en cours de session est pris en compte sans recharger le serveur."""
+    with _VERROU:
+        cmd = _commande(tesseract)
+        if cmd in _LANGUES:
+            return _LANGUES[cmd]
+        try:
+            import pytesseract
+
+            pytesseract.get_tesseract_version()
+            langues = frozenset(pytesseract.get_languages(config=""))
+        except Exception:  # binaire absent, PATH incomplet, tessdata illisible
+            return None
+        if langues:
+            _LANGUES[cmd] = langues
+        return langues
+
+
+def oublier_detection() -> None:
+    with _VERROU:
+        _LANGUES.clear()
+
+
+def ocr_disponible(langue: str, tesseract: str = "") -> tuple[bool, str]:
+    langues = _tesseract_langues(tesseract)
     if langues is None:
         return False, "tesseract_absent"
     manquantes = [x for x in langue.split("+") if x not in langues]
     if manquantes:
+        oublier_detection()  # langue installée ensuite : revérifiée au prochain appel
         return False, f"langue_tesseract_absente:{'+'.join(manquantes)}"
     return True, ""
+
+
+def _os_release() -> dict[str, str]:
+    try:
+        lignes = Path("/etc/os-release").read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return {}
+    out = {}
+    for ligne in lignes:
+        if "=" in ligne:
+            k, v = ligne.split("=", 1)
+            out[k] = v.strip().strip('"')
+    return out
+
+
+def commande_installation(langues: list[str], binaire: bool = True,
+                          systeme: str | None = None, os_release: dict[str, str] | None = None) -> dict:
+    """Commande d'installation de Tesseract et des langues, adaptée au système (à proposer, jamais exécutée)."""
+    systeme = systeme or platform.system()
+    if systeme == "Darwin":
+        # tesseract-lang contient toutes les langues
+        return {"systeme": "macOS", "commande": "brew install " + ("tesseract tesseract-lang" if binaire else "tesseract-lang")}
+    if systeme == "Windows":
+        return {"systeme": "Windows", "commande": "winget install UB-Mannheim.TesseractOCR",
+                "note": "Cocher les langues (French, Latin) dans l'installateur et ajouter Tesseract au PATH, "
+                        "ou indiquer son chemin dans GENEALOGISTE_TESSERACT."}
+    rel = _os_release() if os_release is None else os_release
+    familles = {rel.get("ID", ""), *rel.get("ID_LIKE", "").split()}
+    if familles & {"debian", "ubuntu"}:
+        paquets = (["tesseract-ocr"] if binaire else []) + [f"tesseract-ocr-{x}" for x in langues]
+        return {"systeme": rel.get("PRETTY_NAME") or "Debian/Ubuntu", "commande": "sudo apt install -y " + " ".join(paquets)}
+    if familles & {"arch"}:
+        paquets = (["tesseract"] if binaire else []) + [f"tesseract-data-{x}" for x in langues]
+        return {"systeme": rel.get("PRETTY_NAME") or "Arch", "commande": "sudo pacman -S --needed " + " ".join(paquets)}
+    if familles & {"fedora", "rhel", "centos"}:
+        paquets = (["tesseract"] if binaire else []) + [f"tesseract-langpack-{x}" for x in langues]
+        return {"systeme": rel.get("PRETTY_NAME") or "Fedora", "commande": "sudo dnf install -y " + " ".join(paquets)}
+    return {"systeme": rel.get("PRETTY_NAME") or systeme or "inconnu",
+            "commande": "", "note": "Installer Tesseract OCR et les langues "
+                                    + ", ".join(langues) + " avec le gestionnaire de paquets du système."}
+
+
+def conseil_installation(langue: str, motif: str, pages: list[int], surcout_tokens: int) -> dict:
+    manquantes = motif.split(":", 1)[1].split("+") if ":" in motif else langue.split("+")
+    cmd = commande_installation(manquantes, binaire=motif == "tesseract_absent")
+    return {
+        **cmd,
+        "motif": motif,
+        "pages_concernees": pages,
+        "surcout_vision_tokens": surcout_tokens,
+        "consigne": (f"Avant de lire {len(pages)} page(s) en image (~{surcout_tokens} tokens), proposer à "
+                     "l'utilisateur d'installer l'OCR"
+                     + (f" ({cmd['commande']}, à lancer lui-même : ! {cmd['commande']})" if cmd.get("commande") else "")
+                     + ", puis relancer pdf_markdown : la détection est refaite sans recharger le plugin."),
+        "alternatives": ["Image Docker du serveur (Tesseract fra+lat inclus) : voir docs/pieces.md",
+                         "GENEALOGISTE_TESSERACT : chemin d'un binaire hors du PATH ou d'un shim Docker"],
+    }
 
 
 # --- texte natif -----------------------------------------------------------------------------------------
@@ -260,7 +346,7 @@ def _chemins(cache_dir: Path, sha: str, langue: str, forcer_ocr: bool) -> tuple[
 
 
 def convertir(chemin: str, cache_dir: Path, langue: str = "fra", forcer_ocr: bool = False,
-              reconvertir: bool = False) -> dict:
+              reconvertir: bool = False, tesseract: str = "") -> dict:
     """Convertit un PDF en Markdown (une section par page) dans le cache ; renvoie chemin et statistiques."""
     import pdfplumber
 
@@ -276,14 +362,18 @@ def convertir(chemin: str, cache_dir: Path, langue: str = "fra", forcer_ocr: boo
     sha = hashlib.sha256(data).hexdigest()
     cache_dir = Path(cache_dir)
     md_path, meta_path = _chemins(cache_dir, sha, langue, forcer_ocr)
+    ok_ocr, motif_ocr = ocr_disponible(langue, tesseract)
     if not reconvertir and md_path.is_file() and meta_path.is_file():
         try:
             meta = json.loads(meta_path.read_text(encoding="utf-8"))
-            return {**meta, "chemin_absolu": str(md_path), "source": str(pdf), "deja_converti": True}
         except (OSError, ValueError):
-            pass
+            meta = None
+        # pages restées en vision faute d'OCR : reconvertir dès que Tesseract (ou la langue) est installé
+        attendait_ocr = meta and any(str(p.get("motif", "")).startswith(MOTIFS_INSTALLATION)
+                                     for p in meta.get("pages", []))
+        if meta and not (attendait_ocr and ok_ocr):
+            return {**meta, "chemin_absolu": str(md_path), "source": str(pdf), "deja_converti": True}
 
-    ok_ocr, motif_ocr = ocr_disponible(langue)
     sections: list[str] = []
     pages_info: list[dict] = []
     tokens_images = 0
@@ -293,7 +383,8 @@ def convertir(chemin: str, cache_dir: Path, langue: str = "fra", forcer_ocr: boo
             n = len(doc.pages)
             for i, page in enumerate(doc.pages):
                 num = i + 1
-                tokens_images += _tokens_image(float(page.width), float(page.height))
+                tokens_page = _tokens_image(float(page.width), float(page.height))
+                tokens_images += tokens_page
                 texte_natif = "" if forcer_ocr else (page.extract_text() or "")
                 nb = len(texte_natif.strip())
                 scan = nb < SEUIL_TEXTE or (nb < SEUIL_IMAGE_TEXTE and _couverture_images(page) >= COUVERTURE_IMAGE)
@@ -317,7 +408,7 @@ def convertir(chemin: str, cache_dir: Path, langue: str = "fra", forcer_ocr: boo
                 if motif:
                     sections.append(f"<!-- page {num}/{n} · à lire en image ({motif}) -->\n\n"
                                     f"_Page non convertie : lire l'image (archive_image, page={num})._")
-                    pages_info.append({"page": num, "mode": "vision", "motif": motif,
+                    pages_info.append({"page": num, "mode": "vision", "motif": motif, "tokens_image": tokens_page,
                                        **({"confiance_ocr": round(conf)} if conf is not None else {})})
                 else:
                     sections.append(f"<!-- page {num}/{n} · OCR {langue}, confiance {round(conf)} -->\n\n{texte}")
@@ -340,6 +431,10 @@ def convertir(chemin: str, cache_dir: Path, langue: str = "fra", forcer_ocr: boo
         "economie_estimee": (f"{round(100 * (1 - tokens_md / tokens_images))} %" if tokens_images else None),
         "ocr": "disponible" if ok_ocr else motif_ocr,
     }
+    sans_ocr = [p for p in pages_info if str(p.get("motif", "")).startswith(MOTIFS_INSTALLATION)]
+    if sans_ocr:
+        meta["installation"] = conseil_installation(langue, sans_ocr[0]["motif"], [p["page"] for p in sans_ocr],
+                                                    sum(p["tokens_image"] for p in sans_ocr))
     ecrire_atomique(md_path, markdown)
     ecrire_atomique(meta_path, json.dumps(meta, ensure_ascii=False, indent=1))
     return {**meta, "chemin_absolu": str(md_path), "source": str(pdf), "deja_converti": False}

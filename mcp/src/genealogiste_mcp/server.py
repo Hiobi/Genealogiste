@@ -271,9 +271,11 @@ def pdf_markdown(chemin: str, langue: str = "fra", forcer_ocr: bool = False, rec
     titres et tableaux conservés : bien moins de tokens que les pages en images. Texte natif extrait sans OCR ;
     scan : OCR Tesseract (langue='fra' par défaut, 'fra+lat'…). Résultat en cache (clé = empreinte du PDF) :
     jamais reconverti s'il n'a pas changé. Lire ensuite le fichier chemin_absolu. Les pages listées dans
-    pages_a_lire_en_image (manuscrit, OCR absent ou peu fiable) se lisent avec archive_image(chemin, page=n)."""
+    pages_a_lire_en_image (manuscrit, OCR absent ou peu fiable) se lisent avec archive_image(chemin, page=n).
+    Si « installation » est présent (Tesseract ou langue absents), proposer d'abord la commande à l'utilisateur."""
     try:
-        return pdf_md.convertir(chemin, app().config.cache_pdf_dir, langue, forcer_ocr, reconvertir)
+        return pdf_md.convertir(chemin, app().config.cache_pdf_dir, langue, forcer_ocr, reconvertir,
+                                app().config.tesseract)
     except pdf_md.PdfErreur as e:
         return {"erreur": str(e)}
 
@@ -1383,6 +1385,14 @@ def main() -> None:
         a = app()
         print(json.dumps(arbre_info(), ensure_ascii=False, indent=2, default=str))
         print("WikiTree appId :", "défini" if a.config.wikitree_app_id else "ABSENT")
+        langues = pdf_md._tesseract_langues(a.config.tesseract)
+        if langues is None:
+            cmd = pdf_md.commande_installation(["fra"]).get("commande") or "voir docs/pieces.md"
+            print("OCR (Tesseract) : ABSENT — PDF scannés lus en image ; installer :", cmd)
+        else:
+            utiles = [x for x in ("fra", "lat") if x in langues]
+            print("OCR (Tesseract) : présent, langues", ", ".join(utiles) or "fra/lat ABSENTES",
+                  f"({len(langues)} installées)")
         return
     if args.transport == "stdio":
         mcp.run(transport="stdio")

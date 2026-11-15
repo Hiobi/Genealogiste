@@ -118,6 +118,7 @@ Grave) :
 | `GENEALOGISTE_EXPORTS_DIR` | `<données>/exports` | exports GEDCOM, GeneWeb, Gramps XML… |
 | `GENEALOGISTE_CACHE_IMAGES_DIR` | `<données>/cache-images` | aperçus et recadrages de lecture (`archive_image`), jamais dans le vault ni dans Git |
 | `GENEALOGISTE_CACHE_PDF_DIR` | `<données>/cache-pdf` | Markdown extrait des PDF (`pdf_markdown`), jamais dans le vault ni dans Git |
+| `GENEALOGISTE_TESSERACT` | `tesseract` (PATH) | binaire Tesseract utilisé pour l'OCR des PDF scannés |
 
 Quand le répertoire des médias s'appelle `documents` (ex. `<vault>/documents`), l'arborescence des pièces
 (`documents/`, `photographies/`, `archives/`, `_À trier/`) part de son dossier parent, le vault : une pièce classée
@@ -257,6 +258,11 @@ imprimée ou un relevé coûtent alors quelques centaines de tokens au lieu de 1
 - **Repli vision** : une page dont l'OCR est vide, peu fiable (confiance < 60, typiquement un manuscrit) ou
   impossible (Tesseract absent) n'est pas devinée : elle est listée dans `pages_a_lire_en_image` et se lit avec
   `archive_image(chemin, page=n)`, qui rend désormais une page de PDF en image.
+- **Tesseract ou langue absents** : la réponse contient `installation` (commande adaptée au système détecté :
+  apt, pacman, dnf, brew, winget ; pages concernées ; surcoût estimé de la lecture en image). Le modèle propose
+  la commande à l'utilisateur **avant** de lire ces pages en image ; il ne l'exécute jamais lui-même. L'absence
+  n'est pas mémorisée : après installation, relancer `pdf_markdown` suffit, sans recharger le plugin, et les
+  pages restées en vision sont reconverties malgré le cache. `make check` indique l'état de l'OCR.
 - **Une section par page** : `<!-- page 2/5 · texte natif -->`, `<!-- page 3/5 · OCR fra, confiance 87 -->`.
 - **Cache** : `<données>/cache-pdf/<empreinte>-<langue>-v<version>.md`. La clé est l'empreinte SHA-256 du
   contenu : un PDF inchangé, même renommé ou déplacé, n'est jamais reconverti ; un PDF modifié l'est. Le
@@ -273,5 +279,7 @@ brew install tesseract tesseract-lang                 # macOS
 ```
 
 Ajouter `tesseract-ocr-lat` (ou `tesseract-data-lat`) pour le latin. L'image Docker inclut Tesseract avec le
-français et le latin. Bibliothèques Python, toutes sous licence permissive : pdfplumber (MIT), pypdfium2
+français et le latin. Binaire hors du PATH, ou machine sans droits d'administration : indiquer son chemin dans
+`GENEALOGISTE_TESSERACT` (par exemple un script qui appelle `tesseract` dans un conteneur en montant `/tmp` au
+même chemin avec l'utilisateur courant). Aucun moteur d'OCR n'est téléchargé ni embarqué par le plugin. Bibliothèques Python, toutes sous licence permissive : pdfplumber (MIT), pypdfium2
 (Apache-2.0/BSD), pytesseract (Apache-2.0).

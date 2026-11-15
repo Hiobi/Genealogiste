@@ -8,8 +8,10 @@ Applique la skill `paleographie`.
 0. **PDF local** : appeler d'abord `pdf_markdown(chemin)` (texte natif extrait, scans passés à l'OCR Tesseract,
    `langue='fra'` par défaut, `'fra+lat'` pour un document latin imprimé). Lire le `.md` renvoyé
    (`chemin_absolu`) plutôt que les pages en images : une transcription dactylographiée ou imprimée coûte
-   bien moins de tokens. Les pages de `pages_a_lire_en_image` (manuscrit, OCR absent ou peu fiable) suivent
-   l'étape 1 avec `archive_image(chemin, page=n)`. Le texte OCR reste à vérifier sur l'image pour les
+   bien moins de tokens. Si la réponse contient `installation` (Tesseract ou langue absents), proposer
+   d'abord sa commande à l'utilisateur (`! <commande>`), puis relancer `pdf_markdown`. Les pages de
+   `pages_a_lire_en_image` (manuscrit, OCR peu fiable, ou installation refusée) suivent l'étape 1 avec
+   `archive_image(chemin, page=n)`. Le texte OCR reste à vérifier sur l'image pour les
    noms, dates et chiffres décisifs.
 1. Obtenir un aperçu avec `archive_image(source)` : fichier local, lien IIIF international, ARK Gallica
    ou lien de visionneuse qualifiée (AD59). Laisser le serveur résoudre le téléchargement ; ne pas ouvrir
