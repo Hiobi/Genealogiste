@@ -41,9 +41,11 @@ class HttpClient:
         offline: bool = False,
         transport: httpx.BaseTransport | None = None,
         policy: NetworkPolicy | None = None,
+        default_interval: float = 0.0,
     ):
         self.cache = cache
         self.min_intervals = min_intervals or {}
+        self.default_interval = default_interval  # tout hôte non listé (archives, IIIF…) : jamais en rafale
         self.sleep = sleeper
         self.max_retries = max_retries
         self.offline = offline
@@ -58,14 +60,18 @@ class HttpClient:
         )
 
     def _throttle(self, host: str) -> None:
-        interval = self.min_intervals.get(host, 0.0)
+        """Réserve le prochain créneau de l'hôte sous le verrou, puis attend hors du verrou : les requêtes vers
+        un même hôte restent espacées, celles vers les autres hôtes ne sont pas retardées."""
+        name = (urlparse(f"//{host}").hostname or host).lower()
+        interval = self.min_intervals.get(host, self.min_intervals.get(name, self.default_interval))
         if not interval:
             return
         with self._lock:
-            wait = self._last.get(host, 0.0) + interval - time.monotonic()
-            if wait > 0:
-                self.sleep(wait)
-            self._last[host] = time.monotonic()
+            now = time.monotonic()
+            slot = max(now, self._last.get(name, float("-inf")) + interval)
+            self._last[name] = slot
+        if slot > now:
+            self.sleep(slot - now)
 
     def _send(self, method: str, url: str, *, params, data, json, files, headers) -> httpx.Response:
         """Requête avec redirections suivies manuellement ; chaque URL passe la politique réseau."""

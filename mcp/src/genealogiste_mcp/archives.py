@@ -14,6 +14,7 @@ import json
 from datetime import date
 from functools import lru_cache
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from . import ark, couverture_archives
 from .normalize.places import DEPARTEMENTS, normalize_place
@@ -34,6 +35,21 @@ def services() -> tuple[dict, ...]:
         if s.get("ark_naan") and s["ark_naan"] not in ark.NAANS:
             ark.NAANS[s["ark_naan"]] = {"code": s["code"], "nom": s["nom"],
                                         "hote": s.get("visionneuse") or s.get("site", "")}
+    return out
+
+
+def intervalles() -> dict[str, float]:
+    """Intervalle minimal entre deux requêtes (secondes) déclaré par service (``intervalle_requetes``), par hôte
+    du site et de la visionneuse ; prioritaire sur la valeur par défaut, pas sur GENEALOGISTE_DEBITS."""
+    out: dict[str, float] = {}
+    for s in services():
+        v = s.get("intervalle_requetes")
+        if not isinstance(v, (int, float)) or isinstance(v, bool) or v <= 0:
+            continue
+        for url in (s.get("site"), s.get("visionneuse")):
+            hote = urlsplit(url or "").hostname
+            if hote:
+                out[hote.lower()] = float(v)
     return out
 
 
@@ -72,6 +88,10 @@ def validate() -> list[str]:
                 errs.append(f"{c} : visionneuse_acces.famille inconnue (valeurs : {', '.join(FAMILLES_VISIONNEUSE)})")
             if visionneuse.get("iiif") not in (True, False, None):
                 errs.append(f"{c} : visionneuse_acces.iiif invalide")
+        if "intervalle_requetes" in s and (not isinstance(s["intervalle_requetes"], (int, float))
+                                           or isinstance(s["intervalle_requetes"], bool)
+                                           or s["intervalle_requetes"] <= 0):
+            errs.append(f"{c} : intervalle_requetes doit être un nombre de secondes positif")
         if s.get("verifie_le"):
             try:
                 date.fromisoformat(s["verifie_le"])

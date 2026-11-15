@@ -95,6 +95,21 @@ GENEALOGISTE_HOTES_AUTORISES=iiif.local,localhost:8182   # hôte ou hôte:port, 
 Le client Gramps Web n'est pas soumis à cette politique : son URL (`GENEALOGISTE_GRAMPS_URL`) vient de la
 configuration, pas d'une donnée externe.
 
+## Débit : jamais de requêtes en rafale
+
+`http.py` (#140). Chaque hôte a un intervalle minimal entre deux requêtes, y compris un service d'archives
+absent de toute liste : un feuilletage vue après vue (`archives_naviguer` puis `archive_image`) reste espacé.
+Ordre de priorité, du plus fort au plus faible :
+
+1. `GENEALOGISTE_DEBITS=hote=secondes,hote2=secondes` (configuration de l'utilisateur) ;
+2. `intervalle_requetes` (secondes) d'un service du référentiel `archives_fr.json`, appliqué aux hôtes de
+   son `site` et de sa `visionneuse` ;
+3. valeurs codées pour les API (matchID, WikiTree, Gallica, Wikidata : 1 s ; API Géo : 0,1 s) ;
+4. `GENEALOGISTE_DEBIT_DEFAUT` pour tout autre hôte (1,5 s par défaut ; 0 désactive).
+
+Le créneau est réservé sous un verrou court puis l'attente se fait hors verrou : un hôte lent ne retarde
+pas les requêtes vers les autres. Une valeur invalide arrête le démarrage avec un message nommant la variable.
+
 ## Reprises automatiques : jamais de doublon
 
 `http.py` (#50). Une requête est rejouée (backoff exponentiel, `Retry-After` respecté) :

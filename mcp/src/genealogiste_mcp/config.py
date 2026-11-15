@@ -56,6 +56,8 @@ class Config:
     cache_pdf_dir_conf: Path | None = None  # GENEALOGISTE_CACHE_PDF_DIR ; défaut <données>/cache-pdf
     tesseract: str = ""  # GENEALOGISTE_TESSERACT : binaire Tesseract hors du PATH (ou shim Docker)
     hotes_autorises: list[str] = field(default_factory=list)  # exceptions à la politique réseau (hôte[:port])
+    debit_defaut: float = 1.5  # GENEALOGISTE_DEBIT_DEFAUT : secondes minimum entre deux requêtes vers un même hôte
+    debits: dict[str, float] = field(default_factory=dict)  # GENEALOGISTE_DEBITS : hote=secondes,… (priorité)
     offline: bool = False
     extra: dict = field(default_factory=dict)
 
@@ -145,6 +147,31 @@ def notes_vivants_mode(value: str | None) -> str:
     return v
 
 
+def secondes(value: str | None, default: float, variable: str) -> float:
+    if value is None or value.strip() == "":
+        return default
+    try:
+        v = float(value)
+    except ValueError:
+        v = -1.0
+    if not v >= 0:
+        raise ValueError(f"{variable}={value!r} : nombre de secondes positif ou nul attendu (ex. 1.5)")
+    return v
+
+
+def debits_par_hote(value: str | None) -> dict[str, float]:
+    """« hote=secondes,hote2=secondes » -> {hote: secondes}."""
+    out: dict[str, float] = {}
+    for item in (value or "").split(","):
+        if not item.strip():
+            continue
+        hote, sep, val = item.partition("=")
+        if not sep or not hote.strip():
+            raise ValueError(f"GENEALOGISTE_DEBITS={value!r} : format attendu hote=secondes,hote2=secondes")
+        out[hote.strip().lower()] = secondes(val, 0.0, "GENEALOGISTE_DEBITS")
+    return out
+
+
 def _bool(value: str | None, default: bool = False) -> bool:
     if value is None or value == "":
         return default
@@ -189,6 +216,8 @@ def load_config() -> Config:
         notes_auto=_bool(env("GENEALOGISTE_NOTES_AUTO"), True),
         sosa_racine=env("GENEALOGISTE_SOSA_RACINE", ""),
         hotes_autorises=[h for h in env("GENEALOGISTE_HOTES_AUTORISES", "").split(",") if h.strip()],
+        debit_defaut=secondes(env("GENEALOGISTE_DEBIT_DEFAUT"), 1.5, "GENEALOGISTE_DEBIT_DEFAUT"),
+        debits=debits_par_hote(env("GENEALOGISTE_DEBITS")),
         media_dir_conf=_dir(env("GENEALOGISTE_MEDIA_DIR")),
         rapports_dir_conf=_dir(env("GENEALOGISTE_RAPPORTS_DIR")),
         exports_dir_conf=_dir(env("GENEALOGISTE_EXPORTS_DIR")),
