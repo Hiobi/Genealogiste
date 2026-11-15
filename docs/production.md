@@ -67,6 +67,15 @@ de données hors du dépôt du plugin et inscriptible. Une erreur est écrite su
 - `GET /health` sur le transport HTTP, **sans authentification** : `{"statut": "ok"|"degrade", "version"}`
   (503 si dégradé), aucune donnée de l'arbre ni de configuration. Le healthcheck Docker l'utilise.
 
+## Journal d'exploitation
+
+`<données>/logs/serveur.log` (`GENEALOGISTE_LOG_FICHIER`), rotatif 5 × 5 Mo, ignoré par le dépôt Git des
+données : une ligne JSON par appel d'outil (`ts`, `outil`, `duree_ms`, `statut` ok/erreur/exception,
+`exception`, `erreur`, `hotes`). Aucun argument n'est écrit ; les messages d'erreur sont nettoyés (requêtes
+d'URL retirées, valeurs des arguments masquées en `‹param›`). `GENEALOGISTE_LOG_NIVEAU=WARNING` ne garde que
+les échecs, `AUCUN` désactive. `diagnostic` résume les dernières erreurs. Le journal de recherche
+(`journal.jsonl`) reste distinct : il trace les requêtes aux sources, pas le fonctionnement du serveur.
+
 ## Sauvegarde et restauration
 
 Arrêter les écritures pendant une sauvegarde cohérente. Sauvegarder le répertoire des données complet

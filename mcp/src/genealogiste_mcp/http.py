@@ -74,6 +74,7 @@ class HttpClient:
         coupe_circuit_ttl: float = 1800.0,
     ):
         self.cache = cache
+        self.hotes_contactes: list[str] = []  # relevé par le journal d'exploitation, remis à zéro par appel
         self.echec_ttl = echec_ttl
         self.coupe_circuit_ttl = coupe_circuit_ttl
         self.timeout = timeout
@@ -173,6 +174,7 @@ class HttpClient:
         if self.offline:
             raise SourceError(f"Mode hors-ligne et pas de cache pour {url}")
         host = urlparse(url).netloc
+        self.hotes_contactes.append(self._hote(host))
         self._verifier_coupe_circuit(host)
         memorisable = files is None and (method.upper() in IDEMPOTENT if idempotent is None else idempotent)
         cle_echec = Cache.key("echec", method.upper(), url, params) if memorisable else ""
