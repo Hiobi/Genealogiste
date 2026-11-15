@@ -18,6 +18,9 @@ MAX_REDIRECTS = 5
 IDEMPOTENT = frozenset({"GET", "HEAD", "OPTIONS"})
 
 
+MAX_IMAGE_BYTES = 150 * 1024 * 1024  # plafond d'une vue téléchargée (un TIFF de registre dépasse rarement 80 Mo)
+
+
 class SourceError(Exception):
     """Erreur lisible renvoyée à l'agent (accès refusé, quota, format inattendu...)."""
 
@@ -112,7 +115,7 @@ class HttpClient:
         use_cache: bool = True,
         idempotent: bool | None = None,
     ) -> tuple[Any, bool]:
-        """Renvoie (contenu, depuis_cache). parse = json | text | bytes.
+        """Renvoie (contenu, depuis_cache). parse = json | text | bytes | image (bytes contrôlés : type, taille).
         idempotent : par défaut selon la méthode (GET, HEAD, OPTIONS) ; True pour un POST de pure lecture.
         Une requête non idempotente n'est rejouée que si elle n'a certainement pas été traitée
         (connexion impossible, 429) ; sinon le résultat est signalé indéterminé, sans nouvel envoi."""
@@ -171,12 +174,27 @@ class HttpClient:
                     raise SourceError(f"{host} : réponse non JSON : {resp.text[:200]}") from exc
             elif parse == "bytes":
                 content = resp.content.decode("latin-1")
+            elif parse == "image":
+                content = self._image(host, resp).decode("latin-1")
             else:
                 content = resp.text
             if cacheable and "no-store" not in resp.headers.get("Cache-Control", "").lower():
                 self.cache.set(key, content, ttl, source)
             return content, False
         raise SourceError(f"{host} : échec après {self.max_retries} tentatives ({last_exc})")
+
+    @staticmethod
+    def _image(host: str, resp: httpx.Response) -> bytes:
+        """Corps d'une réponse annoncée comme image : refuse une page (HTML, JSON, XML, texte) servie en 200,
+        typiquement une page d'erreur ou un défi anti-robot, et un corps au-delà de MAX_IMAGE_BYTES."""
+        ctype = resp.headers.get("Content-Type", "").split(";")[0].strip().lower()
+        if ctype.startswith("text/") or any(t in ctype for t in ("html", "json", "xml")):
+            raise SourceError(f"{host} : réponse {ctype} au lieu d'une image (page d'erreur ou défi anti-robot ?)",
+                              resp.status_code)
+        if len(resp.content) > MAX_IMAGE_BYTES:
+            raise SourceError(f"{host} : image trop volumineuse ({len(resp.content)} octets, plafond "
+                              f"{MAX_IMAGE_BYTES}) : demander une zone ou une taille réduite.", resp.status_code)
+        return resp.content
 
     @staticmethod
     def _indetermine(host: str, cause: str) -> str:

@@ -12,6 +12,7 @@ Une image n'est téléchargée qu'une fois (``medias/``) ; une requête = une im
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import math
 import re
@@ -298,18 +299,23 @@ def local(ctx: SourceContext, media_dir: Path, source: str, region: str = "full"
     key = hashlib.sha256(f"{path.resolve()}|{region}|{largeur}|{gris}".encode()).hexdigest()[:16]
     dest = media_dir / "iiif" / f"{key}.jpg"
     cached = dest.exists()
-    with Image.open(path) as im:
-        w, h = im.size
-        box = _crop_box(region, w, h)
-        if not cached:
-            out = im.crop(box)
-            out = out.convert("L") if gris else out.convert("RGB")
-            if out.width > largeur:
-                out = out.resize((largeur, max(1, round(out.height * largeur / out.width))), Image.LANCZOS)
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            out.save(dest, "JPEG", quality=85)
-    with Image.open(dest) as im:
-        dw, dh = im.size
+    try:
+        with Image.open(path) as im:
+            w, h = im.size
+            box = _crop_box(region, w, h)
+            if not cached:
+                out = im.crop(box)
+                out = out.convert("L") if gris else out.convert("RGB")
+                if out.width > largeur:
+                    out = out.resize((largeur, max(1, round(out.height * largeur / out.width))), Image.LANCZOS)
+                buf = io.BytesIO()
+                out.save(buf, "JPEG", quality=85)
+                ecrire_atomique(dest, buf.getvalue())
+        with Image.open(dest) as im:
+            dw, dh = im.size
+    except Image.DecompressionBombError as exc:
+        raise IiifError(f"Image trop grande pour être décodée sans risque ({exc}). Demander une zone ou une "
+                        "taille réduite au service, ou réduire l'image avant de la fournir.") from exc
     return {"fichier": ctx.config.media_ref(dest), "chemin_absolu": str(dest), "depuis_cache": cached,
             "original": str(path), "original_telecharge": downloaded, "dimensions_originales": [w, h],
             **({"pdf": str(pdf), "page_pdf": max(1, int(page or 1)),
@@ -355,17 +361,18 @@ def fetch(ctx: SourceContext, media_dir: Path, source: str, page: int = 0, regio
         url = image_url(loc["service"], region, largeur, gris)
         key = hashlib.sha256(url.encode()).hexdigest()[:16]
         dest = media_dir / "iiif" / f"{key}.jpg"
-        cached = dest.exists()
+        cached = _cache_valide(dest, pdf=False)
         if not cached:
             try:
-                raw, _ = ctx.http.get(url, parse="bytes", use_cache=False, source="iiif")
+                raw, _ = ctx.http.get(url, parse="image", use_cache=False, source="iiif")
             except SourceError as exc:
                 if not gris or exc.status != 400:
                     raise
                 url = image_url(loc["service"], region, largeur, False)  # serveur sans niveau de gris
-                raw, _ = ctx.http.get(url, parse="bytes", use_cache=False, source="iiif")
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            dest.write_bytes(raw.encode("latin-1"))
+                raw, _ = ctx.http.get(url, parse="image", use_cache=False, source="iiif")
+            data = raw.encode("latin-1")
+            controler_image(data, pdf=False)
+            ecrire_atomique(dest, data)
     except (IiifError, SourceError, OSError) as exc:
         failure = error_envelope(ctx, "iiif", "image", {"source": source, "page": page, "region": region}, exc)
         return {"erreur": str(exc), "source": source, "journal": failure["journal"]}
@@ -400,6 +407,43 @@ def extension_of(data: bytes) -> str:
     return next((ext for magic, ext in _MAGIC if data.startswith(magic)), "")
 
 
+def _tronquee(data: bytes, ext: str) -> bool:
+    """Fin de fichier absente (téléchargement interrompu) pour les formats qui en ont une."""
+    fin = data.rstrip(b"\x00\r\n\t ")
+    if ext == ".jpg":
+        return not fin.endswith(b"\xff\xd9")
+    if ext == ".png":
+        return b"IEND" not in data[-16:]
+    if ext == ".pdf":
+        return b"%%EOF" not in data[-2048:]
+    if ext == ".gif":
+        return not fin.endswith(b";")
+    return False
+
+
+def controler_image(data: bytes, pdf: bool = True) -> str:
+    """Extension d'une image (ou d'un PDF si pdf) complète ; IiifError sinon : rien ne doit entrer en cache."""
+    ext = extension_of(data)
+    if not ext or (ext == ".pdf" and not pdf):
+        raise IiifError("Le téléchargement n'est pas une image (page d'erreur, défi anti-robot ou accès refusé ?). "
+                        + CONSIGNE_AD)
+    if _tronquee(data, ext):
+        raise IiifError("Image tronquée (téléchargement interrompu ?) : non mise en cache. Réessayer.")
+    return ext
+
+
+def _cache_valide(path: Path, pdf: bool = True) -> bool:
+    """Fichier en cache encore exploitable ; un fichier invalide (version antérieure) est supprimé."""
+    if not path.is_file():
+        return False
+    try:
+        controler_image(path.read_bytes(), pdf)
+    except IiifError:
+        path.unlink(missing_ok=True)
+        return False
+    return True
+
+
 def _cle(loc: dict) -> str:
     if loc.get("fichier_source"):
         return "fichier:" + hashlib.sha256(Path(loc["fichier_source"]).read_bytes()).hexdigest()
@@ -427,7 +471,7 @@ def _originale(ctx: SourceContext, loc: dict) -> tuple[Path, bool, str]:
         metadata = path.with_suffix(".json")
         if metadata.is_symlink():
             raise IiifError("Métadonnées du cache liées : accès refusé.")
-        if path.is_file():
+        if path.is_file() and _cache_valide(path):
             try:
                 saved = json.loads(metadata.read_text(encoding="utf-8")) if metadata.is_file() else {}
             except ValueError:
@@ -437,11 +481,9 @@ def _originale(ctx: SourceContext, loc: dict) -> tuple[Path, bool, str]:
                 if loc.get("service") else [loc["url_image"]])
         for index, url in enumerate(urls):
             try:
-                raw, _ = ctx.http.get(url, parse="bytes", use_cache=False, source="iiif")
+                raw, _ = ctx.http.get(url, parse="image", use_cache=False, source="iiif")
                 data = raw.encode("latin-1")
-                if not extension_of(data):
-                    raise IiifError("Le téléchargement n'est pas une image ni un PDF (connexion ou accès refusé ?). "
-                                    + CONSIGNE_AD)
+                controler_image(data)
                 ecrire_atomique(path, data)
                 ecrire_atomique(metadata, json.dumps({"url_image": url}))
                 return path, True, url
