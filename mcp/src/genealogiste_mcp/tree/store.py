@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import subprocess
 from pathlib import Path
@@ -63,16 +64,41 @@ def remote_problem(url: str) -> str:
     return ""
 
 
+GIT_DELAI = 60.0
+
+
+def environnement_git() -> dict:
+    """Git jamais interactif : pas d'invite de terminal ni de fenêtre d'identifiants, SSH en mode lot."""
+    env = dict(os.environ)
+    env.update(GIT_TERMINAL_PROMPT="0", GCM_INTERACTIVE="never", GIT_ASKPASS="", SSH_ASKPASS="")
+    if "BatchMode" not in env.get("GIT_SSH_COMMAND", ""):
+        env["GIT_SSH_COMMAND"] = (env.get("GIT_SSH_COMMAND") or "ssh") + " -o BatchMode=yes -o ConnectTimeout=15"
+    return env
+
+
+def git_non_interactif(args: list[str], delai: float = GIT_DELAI) -> subprocess.CompletedProcess:
+    """subprocess.run pour git : stdin fermé (le stdin du serveur stdio est le flux MCP), délai, invites coupées,
+    transfert HTTP abandonné s'il stagne. subprocess.TimeoutExpired si le délai est dépassé."""
+    cmd = ["git", "-c", "http.lowSpeedLimit=1", "-c", f"http.lowSpeedTime={max(5, int(delai))}", *args]
+    return subprocess.run(cmd, capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=delai,
+                          env=environnement_git())
+
+
 class TreeStore:
-    def __init__(self, data_dir: Path, remote: str = ""):
+    def __init__(self, data_dir: Path, remote: str = "", delai: float = GIT_DELAI):
         self.dir = Path(data_dir)
         self.path = self.dir / "arbre.ged"
         self.remote = remote
+        self.delai = delai
         self.last_push = ""
 
     # ------------------------------------------------------------------ git
     def _git(self, *args: str, check: bool = True) -> str:
-        r = subprocess.run(["git", "-C", str(self.dir), *args], capture_output=True, text=True)
+        try:
+            r = git_non_interactif(["-C", str(self.dir), *args], self.delai)
+        except subprocess.TimeoutExpired as exc:
+            raise GitError(f"git {' '.join(args[:2])} : délai de {self.delai:g} s dépassé "
+                           "(GENEALOGISTE_GIT_DELAI)") from exc
         if check and r.returncode != 0:
             raise GitError(f"git {' '.join(args)} : {r.stderr.strip() or r.stdout.strip()}")
         return r.stdout
@@ -141,8 +167,13 @@ class TreeStore:
         if problem:
             self.last_push = problem
             return problem
-        r = subprocess.run(["git", "-C", str(self.dir), "push", "--quiet", self.remote, "HEAD"],
-                           capture_output=True, text=True)
+        try:
+            r = git_non_interactif(["-C", str(self.dir), "push", "--quiet", self.remote, "HEAD"], self.delai)
+        except subprocess.TimeoutExpired:
+            self.last_push = (f"échec du push : délai de {self.delai:g} s dépassé (miroir injoignable ou qui "
+                              "attend des identifiants) ; l'écriture locale est faite, le push sera retenté au "
+                              "prochain commit")
+            return self.last_push
         self.last_push = "ok" if r.returncode == 0 else f"échec du push : {r.stderr.strip()[:200]}"
         return self.last_push
 

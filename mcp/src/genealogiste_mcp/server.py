@@ -75,7 +75,7 @@ class App:
                                default_interval=self.config.debit_defaut,
                                max_retries=self.config.http_tentatives, duree_max=self.config.http_duree_max,
                                echec_ttl=self.config.cache_echec, coupe_circuit_ttl=self.config.coupe_circuit, **kw)
-        self.store = TreeStore(self.config.data_dir, self.config.git_remote)
+        self.store = TreeStore(self.config.data_dir, self.config.git_remote, self.config.git_delai)
         self.store.ensure()
         self.journal = Journal(self.config.journal_path)
         self.proposals = Proposals(self.store, self.config.proposals_dir, self.config.exiger_source)
