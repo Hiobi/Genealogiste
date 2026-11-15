@@ -38,7 +38,8 @@ Elles restent masquées par défaut dans les exports publics (`arbre_exporter`).
   sont calculées localement.
 - **Proposition** : l'arbre est relu, les opérations appliquées sur une copie, puis réécrites en objets
   Gramps **par-dessus** l'état lu ; seuls les objets réellement modifiés entrent dans la transaction. Le
-  diff montré est le diff GEDCOM 7 de l'arbre (lisible), avec le bilan des objets Gramps.
+  bilan des objets Gramps (`transaction_gramps`) vient en premier, puis le diff GEDCOM 7 de l'arbre (lisible,
+  concis : voir `docs/securite.md`, « Diff concis »).
 - **Accord** : nouvelle relecture ; si un objet de la transaction a été modifié dans l'interface depuis la
   proposition, **refus** (le serveur compare aussi `old` à la base). L'arbre est rechargé : reformuler la
   proposition (nouveau diff, nouvel accord). `force` n'est jamais utilisé.
