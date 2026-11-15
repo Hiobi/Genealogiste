@@ -89,6 +89,7 @@ les échecs, `AUCUN` désactive. `diagnostic` résume les dernières erreurs. Le
 
 ## Sauvegarde et restauration
 
+Outillage : `make sauvegarde` / `make restauration` (voir [installation sur un serveur](serveur.md)).
 Arrêter les écritures pendant une sauvegarde cohérente. Sauvegarder le répertoire des données complet
 (y compris `.git`), les médias/notes externes, les volumes Gramps, et les secrets nécessaires à la
 restauration. Chiffrer les sauvegardes et conserver une copie indépendante à accès restreint.

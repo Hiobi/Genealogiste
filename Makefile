@@ -2,7 +2,7 @@
 MCP := mcp
 UV  := uv --directory $(MCP)
 
-.PHONY: version help install test test-archives test-gramps test-codex lint format check run run-http docker-build docker-up docker-gramps docker-down validate clean verifier-archives verifier-telechargements
+.PHONY: version help install test sauvegarde restauration test-archives test-gramps test-codex lint format check run run-http docker-build docker-up docker-gramps docker-down validate clean verifier-archives verifier-telechargements
 
 help: ## Liste des cibles
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-14s %s\n", $$1, $$2}'
@@ -27,6 +27,12 @@ test-gramps: ## Tests d'intégration sur un Gramps Web jetable (Docker, données
 
 test-archives: ## Recette de contrat sur les services d'archives réels (réseau, quelques requêtes par service)
 	GENEALOGISTE_TEST_ARCHIVES=1 GENEALOGISTE_RECETTE_ECRIRE=$(or $(ECRIRE),1) $(UV) run pytest -m archives_live tests/test_archives_live.py -rs
+
+sauvegarde: ## Archive datée des données, médias et notes (SORTIE=dossier ; secrets exclus, droits 600)
+	$(UV) run python -m genealogiste_mcp.sauvegarde sauvegarder --sortie $(or $(SORTIE),$(HOME)/sauvegardes-genealogiste)
+
+restauration: ## Restaure une archive dans un dossier vide et la vérifie (ARCHIVE=… VERS=…)
+	$(UV) run python -m genealogiste_mcp.sauvegarde restaurer $(ARCHIVE) --vers $(VERS)
 
 lint: ## Vérifie le style (ruff)
 	$(UV) run ruff check src tests scripts ../scripts

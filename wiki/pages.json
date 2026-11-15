@@ -48,6 +48,12 @@
     "groupe": "Commencer"
   },
   {
+    "slug": "Serveur",
+    "source": "docs/serveur.md",
+    "titre": "Installation sur un serveur",
+    "groupe": "Commencer"
+  },
+  {
     "slug": "Migration",
     "source": "docs/renommage-genealogiste.md",
     "titre": "Migration depuis Sosa",
