@@ -989,7 +989,7 @@ def piece_archiver(source: str, page: int = 0, personnes: list[str] | None = Non
         try:
             with Image.open(io.BytesIO(data)) as image:
                 dimensions = list(image.size)
-        except OSError:
+        except (OSError, Image.DecompressionBombError):
             pass
     cout_tokens = round(dimensions[0] * dimensions[1] * iiif.TOKENS_PER_PIXEL) if dimensions else None
     localisation = {k: v for k, v in loc.items() if k not in {"service", "fichier_source"}}
