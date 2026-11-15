@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "genealogiste": {
-      "command": "uv",
-      "args": ["run", "--quiet", "--locked", "--directory", "${CLAUDE_PLUGIN_ROOT}/mcp", "genealogiste-mcp"]
-    }
-  }
-}

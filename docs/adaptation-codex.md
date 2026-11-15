@@ -100,8 +100,8 @@ dans le dossier privé ; cette recette Codex ne valide pas un serveur Gramps ré
 
 Le manifeste portable `plugin.json` déclare explicitement `hooks: []`, et `mcp.json` ne contient aucun
 serveur. Cela empêche la découverte automatique de `hooks/hooks.json` et de la connexion Claude pour Codex.
-La connexion Codex est définie séparément par le profil. Claude continue d’utiliser `.claude-plugin/`,
-`.mcp.json`, ses commandes et ses confirmations.
+La connexion Codex est définie séparément par le profil. Claude continue d’utiliser `.claude-plugin/`
+(serveur MCP déclaré dans `.claude-plugin/plugin.json`), ses commandes et ses confirmations.
 
 Le serveur MCP est un processus de confiance : ses fichiers ne sont pas confinés par le sandbox des
 commandes shell Codex. Les protections du moteur (confinement, vivants, jetons, exports) restent nécessaires.

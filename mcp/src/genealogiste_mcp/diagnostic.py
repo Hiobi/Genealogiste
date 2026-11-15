@@ -36,6 +36,15 @@ def version_serveur() -> str:
         return "inconnue"
 
 
+def ecart_version() -> str:
+    """Avertissement si le serveur en cours n'a pas la version du plugin installé sur disque, sinon ''."""
+    vs, (vp, chemin) = version_serveur(), version_plugin()
+    if vp and vp != vs:
+        return (f"Serveur MCP en version {vs}, plugin sur disque en {vp} ({chemin}) : reconnecter le serveur MCP "
+                "(/mcp dans Claude Code, ou nouvelle session) pour charger la version installée.")
+    return ""
+
+
 def version_plugin() -> tuple[str, str]:
     """Version du plugin sur disque (CLAUDE_PLUGIN_ROOT, sinon le dépôt contenant ce paquet)."""
     racines = [os.environ.get("CLAUDE_PLUGIN_ROOT", ""), str(Path(__file__).resolve().parents[3])]

@@ -6,7 +6,9 @@ Les contrôles ci-dessous évitent de réinstaller une autre copie ou de créer 
 | Symptôme | Vérification utile |
 |---|---|
 | Les commandes n’apparaissent pas | `claude plugin list`, portée d’installation, nouvelle session ; utiliser `/genealogiste:…`, pas `/gen:…` |
-| Le serveur MCP est déconnecté | Dans `/mcp`, lire l’erreur ; vérifier que `uv` et `git` sont accessibles au processus Claude |
+| Le serveur MCP est déconnecté | Dans `/mcp`, lire l’erreur ; vérifier que `uv` et `git` sont accessibles au processus Claude ; `/genealogiste:diagnostic` donne contrôle, état et remède |
+| Deux serveurs `genealogiste` dans `/mcp`, dont un en échec (`CONNECTION_CLOSED`, `No such file or directory`) | Jusqu’à 0.21, le dépôt du plugin ouvert comme dossier de travail déclarait aussi le serveur en portée projet ; travailler depuis un dossier privé distinct, ou mettre à jour le checkout (la déclaration est désormais dans le manifeste du plugin) |
+| Outils manquants ou avertissement « reconnecter le serveur MCP » | La session utilise encore le serveur d’une version antérieure ; reconnecter le serveur (voir [Mises à jour](Mises-a-jour.md)) |
 | Premier lancement très long | Python/dépendances peuvent être téléchargés ; vérifier la connexion et l’erreur affichée |
 | Un arbre vide apparaît à la place du vôtre | Arrêter les écritures ; vérifier `GENEALOGISTE_DATA_DIR`, `GENEALOGISTE_BACKEND`, le fichier `.env` et les volumes |
 | « Répertoire de données dans le dépôt du plugin » | Choisir un dossier privé distinct ; ne pas désactiver cette protection |
