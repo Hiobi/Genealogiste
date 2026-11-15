@@ -2,7 +2,7 @@
 MCP := mcp
 UV  := uv --directory $(MCP)
 
-.PHONY: version help install test test-gramps test-codex lint format check run run-http docker-build docker-up docker-gramps docker-down validate clean verifier-archives verifier-telechargements
+.PHONY: version help install test test-archives test-gramps test-codex lint format check run run-http docker-build docker-up docker-gramps docker-down validate clean verifier-archives verifier-telechargements
 
 help: ## Liste des cibles
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-14s %s\n", $$1, $$2}'
@@ -24,6 +24,9 @@ test-gramps: ## Tests d'intégration sur un Gramps Web jetable (Docker, données
 	$(GW_TEST) exec -T grampsweb python3 -m gramps_webapi user add sosa-test sosa-test --role 3 || true
 	GENEALOGISTE_TEST_GRAMPS_URL=http://127.0.0.1:$(GW_PORT) $(UV) run pytest -m gramps_live tests/test_gramps_live.py; \
 	  status=$$?; $(GW_TEST) down -v; exit $$status
+
+test-archives: ## Recette de contrat sur les services d'archives réels (réseau, quelques requêtes par service)
+	GENEALOGISTE_TEST_ARCHIVES=1 GENEALOGISTE_RECETTE_ECRIRE=$(or $(ECRIRE),1) $(UV) run pytest -m archives_live tests/test_archives_live.py -rs
 
 lint: ## Vérifie le style (ruff)
 	$(UV) run ruff check src tests scripts ../scripts
