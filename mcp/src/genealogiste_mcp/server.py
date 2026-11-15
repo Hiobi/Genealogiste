@@ -115,18 +115,17 @@ class App:
             return None
         tree = self.tree()
         out: dict = {"ecrites": [], "erreurs": []}
-        for oid in dict.fromkeys(ids):
-            try:
-                r = self.notes.generate(tree, oid)
-                out["ecrites"] += r["ecrites"]
-                if r.get("renommees"):
-                    out.setdefault("renommees", []).extend(r["renommees"])
-                if r.get('alertes'):
-                    out.setdefault('alertes', []).extend(r['alertes'])
-            except (NotesError, KeyError, OSError) as exc:
-                out["erreurs"].append(f"{oid} : {exc}")
-        if 'alertes' in out:
-            out['alertes'] = list(dict.fromkeys(out['alertes']))
+        try:  # un seul lot : coût linéaire en nombre de fiches touchées (#151)
+            r = self.notes.generate(tree, list(dict.fromkeys(ids)))
+        except (NotesError, KeyError, OSError) as exc:
+            out["erreurs"].append(str(exc))
+            return out
+        out["ecrites"] = r["ecrites"]
+        out["erreurs"] = r.get("erreurs", [])
+        if r.get("renommees"):
+            out["renommees"] = r["renommees"]
+        if r.get('alertes'):
+            out['alertes'] = list(dict.fromkeys(r['alertes']))
         return out
 
 
