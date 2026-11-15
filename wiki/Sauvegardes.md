@@ -15,6 +15,11 @@ suppression ou la perte d’un disque peut toucher simultanément l’arbre et s
 Pour retrouver les chemins, vérifier votre configuration et `arbre_info`. Les détails des volumes et
 de l’exploitation figurent dans le [guide de production](../docs/production.md).
 
+## Outil fourni
+
+`make sauvegarde SORTIE=…` crée une archive datée (droits 600, secrets exclus) ; `make restauration
+ARCHIVE=… VERS=<dossier vide>` la restaure et la vérifie. Détails : [installation sur un serveur](../docs/serveur.md#sauvegarde-et-restauration).
+
 ## Avant une sauvegarde
 
 Arrêter les écritures et les sessions pour obtenir un ensemble cohérent. Utiliser des copies chiffrées,

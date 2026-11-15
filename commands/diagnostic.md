@@ -11,4 +11,5 @@ Diagnostic : **$ARGUMENTS**
 3. Pour une source au verdict **protection** : le dire tel quel (blocage anti-robot de cette adresse) et
    proposer la consultation dans le navigateur ; aucun contournement.
 4. Si la version du serveur diffère de celle du plugin, conseiller de redémarrer le serveur MCP (`/mcp`).
-5. Terminer par la liste `a_corriger`, dans l'ordre, avec la commande ou la variable à modifier.
+5. Terminer par la liste `a_corriger`, dans l'ordre, avec la commande ou la variable à modifier, et le lien `guide`
+   (installation et exploitation sur un serveur).

@@ -17,6 +17,7 @@ from urllib.parse import urlsplit, urlunsplit
 from . import erreurs, menage
 
 GO = 1024**3
+GUIDE = "https://github.com/Hiobi/Genealogiste/wiki/Serveur"  # installation et exploitation sur un serveur
 ESPACE_MIN = 1 * GO
 # Points d'entrée publics des sources interrogées par le plugin (une requête GET chacun).
 SOURCES = {
@@ -240,5 +241,5 @@ def executer(app_ou_exc, probleme: dict | None, reseau: bool = True) -> dict:
         controles += controles_reseau(a)
     etats = {c["etat"] for c in controles}
     etat = "erreur" if "erreur" in etats else "attention" if "attention" in etats else "ok"
-    return {"etat": etat, "version": version_serveur(), "controles": controles,
+    return {"etat": etat, "version": version_serveur(), "guide": GUIDE, "controles": controles,
             "a_corriger": [f"{c['controle']} : {c['remede']}" for c in controles if c["etat"] != "ok"]}
