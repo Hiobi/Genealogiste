@@ -3,7 +3,7 @@
 Chaque entrée : code, nom, type, département, site, visionneuse, NAAN ARK, mise en ligne par type de document
 (``{"naissance": {"de": 1792, "a": 1922}}`` ; absent = inconnu), inscription, demande à distance, date de
 vérification, et ``visionneuse_acces`` (famille de visionneuse : iiif_natif, editeur_ad, visionneuse_maison,
-images_statiques, authentifie ; éditeur, IIIF oui/non, protection captcha/Cloudflare, date de relevé). Les
+images_statiques, authentifie ; éditeur, logiciel et version si exposée, IIIF oui/non, protection captcha/Cloudflare, date de relevé). Les
 sources et relevés sont documentés ; un relevé automatisé ne remplace pas la validation humaine
 (docs/archives.md et docs/couvertures-archives.md).
 """
@@ -25,7 +25,7 @@ RESULTATS_RECETTE = ("ok", "echec", "protection")
 STALE_DAYS = 365
 TYPES = ("departementales", "communales", "nationales", "militaires", "notariales", "diocesaines", "autre")
 DOCUMENTS = ("naissance", "mariage", "deces", "tables_decennales", "recensement", "notaire", "matricule",
-             "cadastre", "paroissiaux")
+             "cadastre", "paroissiaux", "enregistrement")
 FAMILLES_VISIONNEUSE = ("iiif_natif", "editeur_ad", "visionneuse_maison", "images_statiques", "authentifie")
 
 
@@ -173,10 +173,15 @@ def online(s: dict | None, document: str, annee: int | None, lieu: str = "",
 def view(s: dict, document: str = "", annee: int | None = None, lieu: str = "") -> dict:
     out = {k: v for k, v in s.items() if v not in ("", None, {}, [])}
     resolution = s.get("resolution_image") or {}
+    adaptateur = resolution.get("type") == "visualizer_api"
     out["telechargement"] = {"type": resolution.get("type"), "iiif": resolution.get("iiif"),
-                             "adaptateur_disponible": resolution.get("type") == "visualizer_api",
-                             "etat": "automatique" if resolution.get("type") == "visualizer_api"
+                             "adaptateur_disponible": adaptateur,
+                             "etat": ("automatique" if s.get("recette") else "automatique_non_eprouve") if adaptateur
                              else "lien_iiif_ou_fichier_a_fournir"}
+    if adaptateur and not s.get("recette"):
+        out["telechargement"]["note"] = ("Adaptateur générique de l'éditeur ; aucun registre de ce service n'a encore "
+                                         "passé de recette réelle : vérifier la première vue, repli lien IIIF ou "
+                                         "fichier téléchargé.")
     out["lien"] = s.get("visionneuse") or s.get("site") or (
         f"https://francearchives.gouv.fr/fr/search?q={s['nom'].replace(' ', '+')}")
     if document:

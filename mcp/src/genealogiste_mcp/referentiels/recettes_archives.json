@@ -1,1 +1,25 @@
-{}
+{
+  "AD25": {
+    "dernier_essai": "2026-11-15",
+    "resultat": "ok",
+    "detail": "",
+    "derniere_reussite": "2026-11-15"
+  },
+  "AD39": {
+    "dernier_essai": "2026-11-15",
+    "resultat": "ok",
+    "detail": "",
+    "derniere_reussite": "2026-11-15"
+  },
+  "AD59": {
+    "dernier_essai": "2026-11-15",
+    "resultat": "ok",
+    "detail": "",
+    "derniere_reussite": "2026-11-15"
+  },
+  "BnF": {
+    "dernier_essai": "2026-11-15",
+    "resultat": "protection",
+    "detail": "archives_naviguer : gallica.bnf.fr bloque cette adresse IP (protection Cloudflare). Réessayer depuis une connexion résidentielle ou consulter le site dans le navigateur."
+  }
+}
