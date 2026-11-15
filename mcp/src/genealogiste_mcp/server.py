@@ -13,7 +13,7 @@ from typing import Any
 from . import archivage, archives, ark, coherence, erreurs, evidence, matching, menage, pieces, privacy
 from . import pdf_markdown as pdf_md
 from .archives import communicability_online
-from .auth import BearerAuth, bind_problem
+from .auth import BearerAuth, Sante, bind_problem
 from .cache import Cache
 from .chemins import CheminRefuse, nom_simple, sous
 from .config import Config, load_config
@@ -397,6 +397,22 @@ def archives_naviguer(source: str, page: int = 0, pas: int = 20) -> dict:
         out["conseil"] = ("Vérifier l'ARK ou l'URL du registre (archives_service pour la visionneuse du service) ; "
                           "sinon ouvrir le registre dans le navigateur (liens_recherche, cotes_a_consulter).")
         return out
+
+
+@mcp.tool()
+def diagnostic(reseau: bool = True) -> dict:
+    """Diagnostic d'exploitation : tableau « contrôle, état (ok/attention/erreur), détail, remède » —
+    version du serveur et du plugin sur disque, configuration effective (sans secret), git, uv, droits,
+    espace disque, taille des caches, OCR, propositions en attente/expirées, et si reseau=True la
+    joignabilité de chaque source (verdict joignable/protection/injoignable, une requête par source, tracée
+    au journal) et de Gramps Web. Fonctionne même si la configuration est invalide."""
+    from . import diagnostic as diag
+
+    try:
+        a = app()
+    except Exception as exc:  # noqa: BLE001 — rapporté comme contrôle « configuration »
+        return diag.executer(exc, verifier_demarrage(), reseau)
+    return diag.executer(a, verifier_demarrage(a.config), reseau)
 
 
 @mcp.tool()
@@ -1380,14 +1396,14 @@ def gramps_synchroniser() -> dict:
 
 # ============================================================================ point d'entrée
 
-def verifier_demarrage() -> dict | None:
+def verifier_demarrage(cfg: Config | None = None) -> dict | None:
     """Validation légère au démarrage (#146) : configuration lisible, git présent, répertoire de données hors
     du plugin et inscriptible. Sans réseau ni chargement de l'arbre (le client laisse peu de temps à la
     connexion). Renvoie la description de la première erreur, ou None."""
     import os
 
     try:
-        cfg = load_config()
+        cfg = cfg or load_config()
         if shutil.which("git") is None:
             raise FileNotFoundError(2, "No such file or directory: 'git'", "git")
         TreeStore(cfg.data_dir, cfg.git_remote).verifier_emplacement()
@@ -1455,6 +1471,8 @@ def main() -> None:
     asgi = mcp.streamable_http_app() if args.transport == "streamable-http" else mcp.sse_app()
     if token:
         asgi = BearerAuth(asgi, token)
+    from .diagnostic import version_serveur
+    asgi = Sante(asgi, "degrade" if probleme else "ok", version_serveur())
     uvicorn.run(asgi, host=args.host, port=args.port, log_level=mcp.settings.log_level.lower())
 
 

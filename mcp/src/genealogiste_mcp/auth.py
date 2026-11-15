@@ -27,6 +27,24 @@ def bind_problem(host: str, token: str, sans_auth: str = "") -> str:
             "ou une publication limitée à 127.0.0.1 protège déjà l'accès, poser MCP_SANS_AUTH=1.")
 
 
+class Sante:
+    """Middleware ASGI : GET /health répond sans authentification avec un état minimal (statut, version), sans
+    aucune donnée de l'arbre ni de configuration ; toute autre requête passe à l'application protégée."""
+
+    def __init__(self, app, statut: str, version: str):
+        self.app = app
+        self.corps = json.dumps({"statut": statut, "version": version}).encode()
+        self.code = 200 if statut == "ok" else 503
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http" and scope.get("path") == "/health" and scope.get("method") in ("GET", "HEAD"):
+            await send({"type": "http.response.start", "status": self.code,
+                        "headers": [(b"content-type", b"application/json"), (b"cache-control", b"no-store")]})
+            await send({"type": "http.response.body", "body": b"" if scope["method"] == "HEAD" else self.corps})
+            return
+        await self.app(scope, receive, send)
+
+
 class BearerAuth:
     """Middleware ASGI : toute requête HTTP doit porter le jeton ; le cycle de vie (lifespan) passe."""
 
