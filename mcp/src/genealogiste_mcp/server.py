@@ -10,7 +10,19 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from . import archivage, archives, ark, coherence, erreurs, evidence, matching, menage, pieces, privacy
+from . import (
+    archivage,
+    archives,
+    ark,
+    coherence,
+    erreurs,
+    evidence,
+    matching,
+    menage,
+    outils,
+    pieces,
+    privacy,
+)
 from . import pdf_markdown as pdf_md
 from .archives import communicability_online
 from .auth import BearerAuth, Sante, bind_problem
@@ -80,6 +92,11 @@ class App:
         self.journal = Journal(self.config.journal_path)
         self.proposals = Proposals(self.store, self.config.proposals_dir, self.config.exiger_source)
         self.tokens = TokenStore(self.config.proposals_dir)
+        import threading
+        self._verrou_gramps = threading.RLock()
+        self._executeur_notes = None
+        self._notes_futurs: list = []
+        self.notes_etats: dict[str, dict] = {}  # jeton -> état de la régénération différée des notes
         self.tokens.purger_expirees()
         self.sctx = SourceContext(self.http, self.journal, self.config)
         self.notes = Notes(self.config.notes_dir, self.config.notes_vivants, self.config.strict_evidence,
@@ -107,7 +124,50 @@ class App:
         return self._client
 
     def tree(self):
-        return self.backend.load() if self.config.backend == "gramps" else self.store.load()
+        if self.config.backend == "gramps":
+            with self._verrou_gramps:  # instantané partagé : lectures parallèles sans écriture concurrente
+                return self.backend.load()
+        return self.store.load()
+
+    def regenerer_notes_differe(self, jeton: str, ids: list[str]) -> dict:
+        """Régénération des notes dans un fil dédié (une à la fois), après une écriture : l'outil répond dès la
+        transaction validée. Attend au plus GENEALOGISTE_NOTES_ATTENTE ; au-delà, état « en_cours » consultable
+        par arbre_statut_transaction(jeton)."""
+        import time
+        from concurrent.futures import ThreadPoolExecutor
+        from concurrent.futures import TimeoutError as Delai
+
+        etat = {"etat": "en_cours", "objets": len(dict.fromkeys(ids)), "debut": time.strftime("%Y-%m-%dT%H:%M:%S")}
+        self.notes_etats[jeton] = etat
+        if self._executeur_notes is None:
+            self._executeur_notes = ThreadPoolExecutor(max_workers=1, thread_name_prefix="notes")
+
+        def travail():
+            try:
+                r = self.refresh_notes(ids) or {"ecrites": [], "erreurs": []}
+                etat.update(r, etat="terminee" if not r.get("erreurs") else "terminee_avec_erreurs")
+            except Exception as exc:  # noqa: BLE001 — l'écriture est faite ; seul l'état des notes échoue
+                etat.update(etat="echec", erreurs=[str(exc)])
+            etat["fin"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+            return etat
+
+        futur = self._executeur_notes.submit(travail)
+        self._notes_futurs.append(futur)
+        try:
+            futur.result(timeout=self.config.notes_attente)
+        except Delai:
+            pass
+        out = dict(etat)
+        if out["etat"] == "en_cours":
+            out["suivi"] = (f"Régénération des notes en arrière-plan ({out['objets']} objets) ; l'écriture est faite. "
+                            f"Suivre avec arbre_statut_transaction(\"{jeton}\").")
+        return out
+
+    def attendre_notes(self, delai: float | None = None) -> None:
+        """Attend la fin des régénérations en cours (tests, arrêt propre)."""
+        for futur in list(self._notes_futurs):
+            futur.result(timeout=delai)
+        self._notes_futurs.clear()
 
     def refresh_notes(self, ids: list[str]) -> dict | None:
         """Hook : fiches de notes régénérées après une écriture ou une entrée de journal (jamais bloquant)."""
@@ -132,10 +192,15 @@ class App:
 _APP: App | None = None
 
 
+_INIT = __import__("threading").Lock()
+
+
 def app() -> App:
     global _APP
     if _APP is None:
-        _APP = App()
+        with _INIT:  # des outils de lecture peuvent arriver en parallèle au premier appel
+            if _APP is None:
+                _APP = App()
     return _APP
 
 
@@ -156,10 +221,12 @@ class _Observateur:
     """Journal d'exploitation (#149) : n'initialise jamais l'App ; les appels faits avant une App valide ne sont
     tracés que sur stderr (interception #146)."""
 
-    def avant(self):
+    def avant(self, outil: str = ""):
         import time
 
-        if _APP is not None:
+        # Les outils sans verrou (lecture, sans réseau) tournent en parallèle : ne pas vider le relevé d'hôtes
+        # d'un appel sérialisé en cours.
+        if _APP is not None and outil not in mcp.sans_verrou:
             _APP.http.hotes_contactes.clear()
         return time.monotonic()
 
@@ -187,10 +254,12 @@ class _Observateur:
                 if not erreur and resultat.content:
                     erreur = getattr(resultat.content[0], "text", "")
         exploitation.enregistrer(_APP.config, outil, debut, statut, arguments, erreur, exception,
-                                 list(_APP.http.hotes_contactes))
+                                 [] if outil in mcp.sans_verrou else list(_APP.http.hotes_contactes))
 
 
 mcp.observateur = _Observateur()
+# Outils de lecture pure (catalogue) : servis sans attendre une écriture en cours (#151).
+mcp.sans_verrou = {nom for nom, (effet, _) in outils.OUTILS.items() if effet == outils.LECTURE}
 
 
 @mcp.tool()
@@ -765,9 +834,36 @@ def arbre_appliquer(jeton: str) -> dict:
     except ProposalError as exc:
         return {"erreur": str(exc)}
     if before is not None and "erreur" not in res:
-        if notes := a.refresh_notes(touched(before, a.tree())):
-            res["notes"] = notes
+        if ids := touched(before, a.tree()):
+            res["notes"] = a.regenerer_notes_differe(jeton, ids)
     return res
+
+
+@mcp.tool()
+def arbre_statut_transaction(jeton: str) -> dict:
+    """État d'une écriture par son jeton, utilisable même pendant une écriture longue : en_attente (proposition
+    non appliquée), appliquee (commit, ou transaction Gramps Web terminée), en_cours / echec côté Gramps, ou
+    inconnue (jeton expiré, annulé ou erroné) ; plus l'état de la régénération différée des notes. À consulter
+    après un délai dépassé sur arbre_appliquer avant toute nouvelle tentative."""
+    a = app()
+    out: dict = {"jeton": jeton}
+    if a.config.backend == "gramps":
+        etapes = [e for e in a.backend.transactions(10_000) if e.get("id") == jeton]
+        if etapes:
+            dernier = etapes[-1].get("etat", "")
+            out["etat"] = {"terminee": "appliquee", "complements_en_echec": "appliquee",
+                           "envoyee": "en_cours", "intention": "en_cours", "refusee": "echec",
+                           "indeterminee": "indeterminee"}.get(dernier, dernier)
+            out["transaction"] = etapes[-1]
+    else:
+        commits = [c for c in a.store.log(200) if f"(proposition {jeton})" in c.get("message", "")]
+        if commits:
+            out.update(etat="appliquee", commit=commits[0]["commit"], date=commits[0]["date"])
+    if "etat" not in out:
+        out["etat"] = "en_attente" if a.tokens._path(jeton).exists() else "inconnue"
+    if jeton in a.notes_etats:
+        out["notes"] = dict(a.notes_etats[jeton])
+    return out
 
 
 @mcp.tool()
