@@ -45,15 +45,16 @@ def ecrire_atomique(path: Path, text: str | bytes) -> None:
 
 
 @contextlib.contextmanager
-def verrou(directory: Path) -> Iterator[None]:
-    """Verrou exclusif sur le répertoire de données, entre processus (flock) et entre fils d'exécution."""
+def verrou(directory: Path, nom: str = LOCK_NAME) -> Iterator[None]:
+    """Verrou exclusif sur le répertoire de données, entre processus (flock) et entre fils d'exécution.
+    nom : fichier de verrou (un verrou distinct par ressource, ex. le journal, n'attend pas l'arbre)."""
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
-    key = str(directory.resolve())
+    key = f"{directory.resolve()}/{nom}"
     with _GUARD:
         rlock = _THREADS.setdefault(key, threading.RLock())
     with rlock:
-        fh = open(directory / LOCK_NAME, "a+b")  # noqa: SIM115
+        fh = open(directory / nom, "a+b")  # noqa: SIM115
         try:
             if fcntl:
                 fcntl.flock(fh.fileno(), fcntl.LOCK_EX)
