@@ -46,11 +46,16 @@ def _positions(de: int, a: int, pas: int) -> tuple[list[int], str]:
 def _miniature(ctx: SourceContext, url: str) -> bytes:
     dest = ctx.config.cache_images_dir / "miniatures" / (hashlib.sha256(url.encode()).hexdigest() + ".jpg")
     if dest.is_file() and not dest.is_symlink():
-        return dest.read_bytes()
-    raw, _ = ctx.http.get(url, parse="bytes", use_cache=False, source="visionneuse")
+        data = dest.read_bytes()
+        try:
+            iiif.controler_image(data, pdf=False)
+            return data
+        except iiif.IiifError:
+            dest.unlink(missing_ok=True)  # cache hérité invalide : retélécharger
+    # Même contrôle que les vues (#139) : type annoncé, octets magiques, fin de fichier, taille.
+    raw, _ = ctx.http.get(url, parse="image", use_cache=False, source="visionneuse")
     data = raw.encode("latin-1")
-    if not iiif.extension_of(data):
-        raise iiif.IiifError("La miniature n'est pas une image (accès refusé ?) ; aucun contournement.")
+    iiif.controler_image(data, pdf=False)
     ecrire_atomique(dest, data)
     return data
 
@@ -115,6 +120,8 @@ def composer(images: list[tuple[int, bytes]], largeur: int, gris: bool, bandeau:
 def planche(ctx: SourceContext, source: str, de: int, a: int = 0, pas: int = 1, bandeau: str = "",
             largeur: int = LARGEUR_DEFAUT, gris: bool = True, miniatures: bool = False) -> dict:
     """Planche-contact d'un registre AD59 ; renvoie le chemin du JPEG composite, les vues et le coût estimé."""
+    from PIL import Image
+
     params = {"source": source, "de": de, "a": a, "pas": pas, "bandeau": bandeau, "miniatures": miniatures}
     telechargees = 0
     try:
@@ -140,7 +147,7 @@ def planche(ctx: SourceContext, source: str, de: int, a: int = 0, pas: int = 1, 
                              f"{miniatures}".encode()).hexdigest()[:16]
         dest = ctx.config.cache_images_dir / "planches" / f"{cle}.jpg"
         ecrire_atomique(dest, jpeg)
-    except (iiif.IiifError, VisionneuseError, SourceError, OSError) as exc:
+    except (iiif.IiifError, VisionneuseError, SourceError, OSError, Image.DecompressionBombError) as exc:
         failure = error_envelope(ctx, "visionneuse", "planche", params, exc)
         return {"erreur": str(exc), "source": source, "telechargements": telechargees,
                 "journal": failure["journal"]}
