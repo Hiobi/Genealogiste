@@ -34,6 +34,7 @@ OUTILS: dict[str, tuple[str, str]] = {
     "gallica_iiif": (LECTURE, ALLOW),
     "ark_resoudre": (RESEAU, DEFAUT),
     "archive_image": (RESEAU, DEFAUT),
+    "pdf_markdown": (LECTURE, ALLOW),  # fichier local ; écrit seulement dans le cache cache-pdf
     "piece_archiver": (RESEAU, DEFAUT),  # écrit l'image et sa note dans le répertoire des médias
     "wikidata_personne": (RESEAU, ALLOW),
     "wikidata_sparql": (RESEAU, ALLOW),

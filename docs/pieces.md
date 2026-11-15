@@ -117,6 +117,7 @@ Grave) :
 | `GENEALOGISTE_RAPPORTS_DIR` | `<données>/rapports` | rapports de preuve (`rapport_enregistrer`) |
 | `GENEALOGISTE_EXPORTS_DIR` | `<données>/exports` | exports GEDCOM, GeneWeb, Gramps XML… |
 | `GENEALOGISTE_CACHE_IMAGES_DIR` | `<données>/cache-images` | aperçus et recadrages de lecture (`archive_image`), jamais dans le vault ni dans Git |
+| `GENEALOGISTE_CACHE_PDF_DIR` | `<données>/cache-pdf` | Markdown extrait des PDF (`pdf_markdown`), jamais dans le vault ni dans Git |
 
 Quand le répertoire des médias s'appelle `documents` (ex. `<vault>/documents`), l'arborescence des pièces
 (`documents/`, `photographies/`, `archives/`, `_À trier/`) part de son dossier parent, le vault : une pièce classée
@@ -240,3 +241,37 @@ puis exige qu'un nouvel archivage ne fasse aucune requête. Aucune image réelle
 Les quatre cas ont été essayés le 8 novembre 2026 : [résultats et limites](telechargement-international.md).
 Les estimations de tokens sont des ordres de grandeur, pas un décompte de facturation du modèle.
 Voir le [catalogue de compatibilité du wiki](../wiki/Services-archives.md).
+
+## PDF dactylographiés ou imprimés → Markdown
+
+`pdf_markdown(chemin, langue="fra", forcer_ocr=false, reconvertir=false)` convertit un PDF en **un** fichier
+Markdown compact avant lecture par le modèle : un jugement, un extrait d'acte dactylographié, une notice
+imprimée ou un relevé coûtent alors quelques centaines de tokens au lieu de 1 000 à 4 000 par page en image.
+
+- **Texte natif** (PDF produit par un logiciel, ou scan déjà OCRisé) : extraction directe par pdfplumber, sans
+  OCR. Les titres sont déduits de la taille de police (`##`, `###`), les tableaux tracés deviennent des
+  tableaux Markdown, les puces et les césures sont rétablies.
+- **Scan** (page sans texte, ou couverte d'images avec un simple tampon) : rendu à 300 DPI (pypdfium2) puis OCR
+  Tesseract, en français par défaut (`langue="fra+lat"` pour un imprimé latin). La confiance moyenne est notée
+  dans le Markdown.
+- **Repli vision** : une page dont l'OCR est vide, peu fiable (confiance < 60, typiquement un manuscrit) ou
+  impossible (Tesseract absent) n'est pas devinée : elle est listée dans `pages_a_lire_en_image` et se lit avec
+  `archive_image(chemin, page=n)`, qui rend désormais une page de PDF en image.
+- **Une section par page** : `<!-- page 2/5 · texte natif -->`, `<!-- page 3/5 · OCR fra, confiance 87 -->`.
+- **Cache** : `<données>/cache-pdf/<empreinte>-<langue>-v<version>.md`. La clé est l'empreinte SHA-256 du
+  contenu : un PDF inchangé, même renommé ou déplacé, n'est jamais reconverti ; un PDF modifié l'est. Le
+  Markdown n'est pas écrit à côté du PDF : un `.md` voisin d'une pièce est réservé à sa note compagnon.
+- La réponse ne contient pas le texte : seulement `chemin_absolu`, les pages natives/OCR/à lire en image et
+  l'estimation `tokens_estimes_markdown` / `tokens_estimes_images`.
+
+**Installer Tesseract** (OCR des scans ; sans lui, seules les pages à texte natif sont converties) :
+
+```bash
+sudo apt install tesseract-ocr tesseract-ocr-fra      # Debian, Ubuntu
+sudo pacman -S tesseract tesseract-data-fra           # Arch
+brew install tesseract tesseract-lang                 # macOS
+```
+
+Ajouter `tesseract-ocr-lat` (ou `tesseract-data-lat`) pour le latin. L'image Docker inclut Tesseract avec le
+français et le latin. Bibliothèques Python, toutes sous licence permissive : pdfplumber (MIT), pypdfium2
+(Apache-2.0/BSD), pytesseract (Apache-2.0).

@@ -77,6 +77,8 @@ renvois `@N…@`) ; UID en collision réattribués.
   manifeste v2/v3, tous pays), un ARK Gallica, un lien de visionneuse AD59, une image directe ou un fichier.
   Pour AD59 : ARK de vue complet, ou ARK du registre + `page=N` (vues à partir de 1). Les deux outils
   `archive_image` et `piece_archiver` partagent la même résolution ; IIIF est utilisé dès qu'il est annoncé.
+  Un PDF (local ou téléchargé) est rendu page par page (`page=N`, à partir de 1) ; pour un PDF dactylographié
+  ou imprimé, `pdf_markdown(chemin)` est bien plus économe (voir `docs/pieces.md`).
 - Une page HTTP qui déclare un unique manifeste IIIF est inspectée côté Python. Le modèle ne reçoit ni
   HTML/JavaScript, ni manifeste entier, ni liste d'images voisines. Sans lien exploitable ou adaptateur
   qualifié, l'erreur propose « Copier le lien IIIF » ou un téléchargement manuel : **un ARK ne garantit

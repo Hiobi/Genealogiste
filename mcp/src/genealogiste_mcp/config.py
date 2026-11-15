@@ -53,6 +53,7 @@ class Config:
     rapports_dir_conf: Path | None = None  # GENEALOGISTE_RAPPORTS_DIR ; défaut <données>/rapports
     exports_dir_conf: Path | None = None  # GENEALOGISTE_EXPORTS_DIR ; défaut <données>/exports
     cache_images_dir_conf: Path | None = None  # GENEALOGISTE_CACHE_IMAGES_DIR ; défaut <données>/cache-images
+    cache_pdf_dir_conf: Path | None = None  # GENEALOGISTE_CACHE_PDF_DIR ; défaut <données>/cache-pdf
     hotes_autorises: list[str] = field(default_factory=list)  # exceptions à la politique réseau (hôte[:port])
     offline: bool = False
     extra: dict = field(default_factory=dict)
@@ -92,6 +93,11 @@ class Config:
     def cache_images_dir(self) -> Path:
         """Aperçus et recadrages de lecture (archive_image) : hors du vault, jamais versionnés."""
         return self.cache_images_dir_conf or self.data_dir / "cache-images"
+
+    @property
+    def cache_pdf_dir(self) -> Path:
+        """Markdown extrait des PDF (pdf_markdown), clé = empreinte du contenu : hors du vault, jamais versionné."""
+        return self.cache_pdf_dir_conf or self.data_dir / "cache-pdf"
 
     @property
     def pieces_registre(self) -> Path:
@@ -186,6 +192,7 @@ def load_config() -> Config:
         rapports_dir_conf=_dir(env("GENEALOGISTE_RAPPORTS_DIR")),
         exports_dir_conf=_dir(env("GENEALOGISTE_EXPORTS_DIR")),
         cache_images_dir_conf=_dir(env("GENEALOGISTE_CACHE_IMAGES_DIR")),
+        cache_pdf_dir_conf=_dir(env("GENEALOGISTE_CACHE_PDF_DIR")),
     )
     if env("GENEALOGISTE_USER_AGENT"):
         cfg.user_agent = env("GENEALOGISTE_USER_AGENT")
