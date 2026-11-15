@@ -19,7 +19,7 @@ from ..gedcom.mapping import read_gedcom, write_gedcom
 from ..models import Tree
 
 # Toujours présents dans .gitignore, même s'il existait déjà (#48) : secrets, jetons, fichiers techniques.
-GITIGNORE_REQUIS = (".propositions/", ".env", ".env.*", "*.token", "*.key", "*.pem", "exports/", "cache-images/", "logs/", "*.sqlite",
+GITIGNORE_REQUIS = (".propositions/", ".env", ".env.*", "*.token", "*.key", "*.pem", ".journal.lock", "exports/", "cache-images/", "logs/", "*.sqlite", "*.sqlite-wal", "*.sqlite-shm",
                     LOCK_NAME, ".*.tmp")
 GITIGNORE = "\n".join(GITIGNORE_REQUIS) + "\n"
 ARBRE = "arbre.ged"

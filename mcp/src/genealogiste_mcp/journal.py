@@ -8,7 +8,9 @@ import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 
-from .fichiers import ajouter_jsonl, lire_jsonl
+from .fichiers import ajouter_jsonl, lire_jsonl, verrou
+
+VERROU = ".journal.lock"
 
 
 class Journal:
@@ -45,7 +47,7 @@ class Journal:
             "personne": personne,
             "note": note,
         }
-        with self._lock:
+        with self._lock, verrou(self.path.parent, VERROU):  # plusieurs serveurs sur les mêmes données
             ajouter_jsonl(self.path, entry)
         return entry["id"]
 

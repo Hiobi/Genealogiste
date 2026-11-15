@@ -10,6 +10,8 @@ import time
 from pathlib import Path
 from typing import Any
 
+ATTENTE = 30.0  # secondes d'attente d'un verrou SQLite tenu par un autre processus
+
 
 class Cache:
     BORNER_TOUS = 100  # contrôle de taille toutes les N écritures
@@ -21,7 +23,13 @@ class Cache:
         if str(path) != ":memory:":
             self.path.parent.mkdir(parents=True, exist_ok=True)
         self._lock = threading.Lock()
-        self._db = sqlite3.connect(str(path), check_same_thread=False)
+        # Plusieurs serveurs peuvent partager ce cache : WAL (lecteurs et écrivain simultanés) et attente du
+        # verrou plutôt que « database is locked » immédiat.
+        self._db = sqlite3.connect(str(path), check_same_thread=False, timeout=ATTENTE)
+        self._db.execute(f"PRAGMA busy_timeout = {int(ATTENTE * 1000)}")
+        if str(path) != ":memory:":
+            self._db.execute("PRAGMA journal_mode = WAL")
+            self._db.execute("PRAGMA synchronous = NORMAL")
         self._db.execute(
             "CREATE TABLE IF NOT EXISTS cache (cle TEXT PRIMARY KEY, valeur TEXT NOT NULL,"
             " cree REAL NOT NULL, ttl REAL NOT NULL, source TEXT)"
