@@ -20,7 +20,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urljoin, urlsplit
 
-from .. import ark
+from .. import ark, menage
 from ..fichiers import ecrire_atomique, verrou
 from ..http import SourceError
 from .base import DAY, SourceContext, error_envelope
@@ -388,6 +388,8 @@ def fetch(ctx: SourceContext, media_dir: Path, source: str, page: int = 0, regio
         out["dimensions_originales"] = [w, h]
         out["dimensions_demandees"] = [largeur, height]
         out["cout_estime_tokens"] = round(largeur * height * TOKENS_PER_PIXEL)
+    if not cached:
+        menage.borner_images(ctx.config)
     ctx.journal.add(source="iiif", operation="image", parametres={"source": source, "vue": loc.get("vue"),
                                                                     "region": region, "largeur": largeur},
                     statut="positif", resume=out["fichier"], references=[url], cache=cached)
@@ -486,6 +488,7 @@ def _originale(ctx: SourceContext, loc: dict) -> tuple[Path, bool, str]:
                 controler_image(data)
                 ecrire_atomique(path, data)
                 ecrire_atomique(metadata, json.dumps({"url_image": url}))
+                menage.borner_images(ctx.config)
                 return path, True, url
             except SourceError as exc:
                 if exc.status != 400 or index == len(urls) - 1:

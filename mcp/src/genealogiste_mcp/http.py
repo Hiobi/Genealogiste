@@ -26,10 +26,16 @@ MAX_IMAGE_BYTES = 150 * 1024 * 1024  # plafond d'une vue téléchargée (un TIFF
 class SourceError(Exception):
     """Erreur lisible renvoyée à l'agent (accès refusé, quota, format inattendu...)."""
 
-    def __init__(self, message: str, status: int | None = None, reessayer_apres: float | None = None):
+    def __init__(self, message: str, status: int | None = None, reessayer_apres: float | None = None,
+                 echec_memorise: bool = False, coupe_circuit: bool = False):
         super().__init__(message)
         self.status = status
         self.reessayer_apres = reessayer_apres  # secondes avant de réessayer (429/503, plafond atteint)
+        self.echec_memorise = echec_memorise  # échec servi par le cache négatif, sans requête
+        self.coupe_circuit = coupe_circuit  # hôte en pause après un blocage anti-robot
+
+
+MEMORISES = (403, 404, 429)  # échecs mémorisés par URL (cache négatif)
 
 
 def retry_after(value: str | None, now: float | None = None) -> float | None:
@@ -64,8 +70,12 @@ class HttpClient:
         default_interval: float = 0.0,
         duree_max: float = 60.0,
         clock: Callable[[], float] = time.monotonic,
+        echec_ttl: float = 900.0,
+        coupe_circuit_ttl: float = 1800.0,
     ):
         self.cache = cache
+        self.echec_ttl = echec_ttl
+        self.coupe_circuit_ttl = coupe_circuit_ttl
         self.timeout = timeout
         self.duree_max = duree_max  # plafond d'attente totale d'un appel (essais + reprises)
         self.clock = clock
@@ -163,6 +173,50 @@ class HttpClient:
         if self.offline:
             raise SourceError(f"Mode hors-ligne et pas de cache pour {url}")
         host = urlparse(url).netloc
+        self._verifier_coupe_circuit(host)
+        memorisable = files is None and (method.upper() in IDEMPOTENT if idempotent is None else idempotent)
+        cle_echec = Cache.key("echec", method.upper(), url, params) if memorisable else ""
+        if cle_echec:
+            echec = self.cache.get(cle_echec)
+            if echec is not None:
+                reste = max(0.0, echec["jusqu_a"] - time.time())
+                raise SourceError(f"(échec mémorisé, sans nouvelle requête) {echec['message']}", echec["status"],
+                                  reessayer_apres=round(reste, 1), echec_memorise=True)
+        try:
+            return self._request(method, url, host, params=params, data=data, json=json, files=files,
+                                 headers=headers, ttl=ttl, source=source, parse=parse, cacheable=cacheable,
+                                 key=key, idempotent=idempotent)
+        except SourceError as exc:
+            if cle_echec and exc.status in MEMORISES:
+                duree = exc.reessayer_apres if exc.status == 429 and exc.reessayer_apres else self.echec_ttl
+                if duree > 0:
+                    self.cache.set(cle_echec, {"message": str(exc), "status": exc.status,
+                                               "jusqu_a": time.time() + duree}, duree, source or "echec")
+            raise
+
+    def _hote(self, host: str) -> str:
+        return (urlparse(f"//{host}").hostname or host).lower()
+
+    def _verifier_coupe_circuit(self, host: str) -> None:
+        coupe = self.cache.get(Cache.key("coupe_circuit", self._hote(host)))
+        if coupe is None:
+            return
+        reste = max(0.0, coupe["jusqu_a"] - time.time())
+        heure = time.strftime("%H:%M", time.localtime(coupe["jusqu_a"]))
+        raise SourceError(
+            f"{host} : coupe-circuit actif après blocage anti-robot ({coupe['raison']}) ; reprise à {heure} "
+            f"(dans {round(reste)} s). Consulter le site dans le navigateur en attendant ; "
+            "cache_purger('coupe_circuit') pour lever la pause.", 403,
+            reessayer_apres=round(reste, 1), coupe_circuit=True)
+
+    def _couper(self, host: str, raison: str) -> None:
+        if self.coupe_circuit_ttl > 0:
+            self.cache.set(Cache.key("coupe_circuit", self._hote(host)),
+                           {"raison": raison, "jusqu_a": time.time() + self.coupe_circuit_ttl},
+                           self.coupe_circuit_ttl, "coupe_circuit")
+
+    def _request(self, method: str, url: str, host: str, *, params, data, json, files, headers, ttl, source,
+                 parse, cacheable, key, idempotent) -> tuple[Any, bool]:
         replay = method.upper() in IDEMPOTENT if idempotent is None else idempotent
         delay = 1.0
         last_exc: Exception | None = None
@@ -205,7 +259,9 @@ class HttpClient:
                 delay *= 2
                 last_exc = SourceError(f"{host} : HTTP {resp.status_code} (tentative {attempt + 1})", resp.status_code)
                 continue
-            if resp.status_code == 403 and "cloudflare" in resp.text[:3000].lower():
+            if resp.status_code == 403 and ("cloudflare" in resp.text[:3000].lower()
+                                            or resp.headers.get("cf-mitigated", "").lower() == "challenge"):
+                self._couper(host, "HTTP 403, défi Cloudflare")
                 raise SourceError(
                     f"{host} bloque cette adresse IP (protection Cloudflare). "
                     "Réessayer depuis une connexion résidentielle ou consulter le site dans le navigateur.",

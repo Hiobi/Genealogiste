@@ -12,8 +12,12 @@ from typing import Any
 
 
 class Cache:
-    def __init__(self, path: Path | str):
+    BORNER_TOUS = 100  # contrôle de taille toutes les N écritures
+
+    def __init__(self, path: Path | str, max_octets: int = 0):
         self.path = Path(path)
+        self.max_octets = max_octets  # 0 = aucun plafond
+        self._ecritures = 0
         if str(path) != ":memory:":
             self.path.parent.mkdir(parents=True, exist_ok=True)
         self._lock = threading.Lock()
@@ -47,6 +51,39 @@ class Cache:
                 (key, json.dumps(value, ensure_ascii=False), time.time(), ttl, source),
             )
             self._db.commit()
+            self._ecritures += 1
+        if self.max_octets and self._ecritures % self.BORNER_TOUS == 0:
+            self.borner()
+
+    def taille(self) -> int:
+        with self._lock:
+            return self._db.execute("SELECT COALESCE(SUM(LENGTH(valeur)), 0) FROM cache").fetchone()[0]
+
+    def purge_expirees(self) -> int:
+        with self._lock:
+            cur = self._db.execute("DELETE FROM cache WHERE ttl >= 0 AND ? - cree > ttl", (time.time(),))
+            self._db.commit()
+            return cur.rowcount
+
+    def borner(self) -> int:
+        """Purge les entrées expirées puis, au-delà de max_octets, les plus anciennes."""
+        n = self.purge_expirees()
+        if not self.max_octets:
+            return n
+        with self._lock:
+            total = self._db.execute("SELECT COALESCE(SUM(LENGTH(valeur)), 0) FROM cache").fetchone()[0]
+            if total <= self.max_octets:
+                return n
+            rows = self._db.execute("SELECT cle, LENGTH(valeur) FROM cache ORDER BY cree ASC").fetchall()
+            trop = []
+            for cle, taille in rows:
+                if total <= self.max_octets:
+                    break
+                trop.append((cle,))
+                total -= taille
+            self._db.executemany("DELETE FROM cache WHERE cle = ?", trop)
+            self._db.commit()
+        return n + len(trop)
 
     def delete(self, key: str) -> None:
         with self._lock:
