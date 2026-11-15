@@ -28,13 +28,28 @@ class Cache:
         self._db = sqlite3.connect(str(path), check_same_thread=False, timeout=ATTENTE)
         self._db.execute(f"PRAGMA busy_timeout = {int(ATTENTE * 1000)}")
         if str(path) != ":memory:":
-            self._db.execute("PRAGMA journal_mode = WAL")
+            self._passer_en_wal()
             self._db.execute("PRAGMA synchronous = NORMAL")
         self._db.execute(
             "CREATE TABLE IF NOT EXISTS cache (cle TEXT PRIMARY KEY, valeur TEXT NOT NULL,"
             " cree REAL NOT NULL, ttl REAL NOT NULL, source TEXT)"
         )
         self._db.commit()
+
+    def _passer_en_wal(self) -> None:
+        """Le changement de mode de journal n'attend pas le verrou (busy_timeout ignoré) : plusieurs serveurs
+        ouvrant ensemble un cache neuf se le disputent. Réessayer jusqu'à ATTENTE."""
+        fin = time.monotonic() + ATTENTE
+        pause = 0.02
+        while True:
+            try:
+                self._db.execute("PRAGMA journal_mode = WAL")
+                return
+            except sqlite3.OperationalError as exc:
+                if "locked" not in str(exc) or time.monotonic() >= fin:
+                    raise
+                time.sleep(pause)
+                pause = min(pause * 2, 0.5)
 
     @staticmethod
     def key(*parts: Any) -> str:

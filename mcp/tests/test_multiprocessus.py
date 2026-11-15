@@ -58,3 +58,24 @@ def test_quatre_processus_sans_erreur_ni_perte(tmp_path):
     assert [e for r in res for e in r] == []
     j = Journal(tmp_path / "journal.jsonl")
     assert len(j.entries(limite=10**9)) == 4 * N and j.lignes_corrompues == []
+
+
+def _ouvrir(chemin: str, barriere) -> str:
+    barriere.wait()
+    try:
+        Cache(Path(chemin)).set("k", 1, 60, "test")
+    except sqlite3.Error as e:
+        return f"{type(e).__name__}: {e}"
+    return ""
+
+
+def test_ouverture_simultanee_d_un_cache_neuf(tmp_path):
+    """Plusieurs serveurs qui démarrent ensemble sur un cache neuf : le passage en WAL ne doit pas échouer."""
+    ctx = mp.get_context("spawn")
+    erreurs = []
+    with ctx.Manager() as m, ctx.Pool(8) as p:
+        for essai in range(6):
+            barriere = m.Barrier(8)
+            chemin = str(tmp_path / f"cache-{essai}.sqlite")
+            erreurs += [e for e in p.starmap(_ouvrir, [(chemin, barriere)] * 8) if e]
+    assert erreurs == []
