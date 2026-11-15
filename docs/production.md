@@ -46,6 +46,18 @@ Le volume de données par défaut est désormais `genealogiste_data`, au lieu de
 Pour une installation existante, arrêter le service, sauvegarder et copier les données vers le volume
 privé avant de redémarrer. Aucune migration ni suppression automatique n’est effectuée.
 
+## Erreurs de configuration
+
+Au démarrage, le serveur vérifie la configuration sans réseau : variables lisibles, `git` présent, répertoire
+de données hors du dépôt du plugin et inscriptible. Une erreur est écrite sur stderr avec son remède.
+
+- `genealogiste-mcp --check` (`make check`) et les transports HTTP/SSE s'arrêtent avec le code 2 sur une
+  erreur fatale : un superviseur (systemd, Docker) voit l'échec.
+- En stdio, le serveur reste joignable : chaque outil répond `{"erreur", "cause", "remede", "variable"}`
+  (résultat d'outil en erreur) au lieu du message opaque « Error executing tool … », pour que l'agent puisse
+  expliquer la panne. Causes : `configuration`, `donnees_dans_le_plugin`, `droits`, `git_absent`,
+  `gramps_web`, `git`, `interne`.
+
 ## Sauvegarde et restauration
 
 Arrêter les écritures pendant une sauvegarde cohérente. Sauvegarder le répertoire des données complet
