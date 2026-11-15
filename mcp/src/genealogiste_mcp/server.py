@@ -10,7 +10,7 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from . import archivage, archives, ark, coherence, evidence, matching, menage, pieces, privacy
+from . import archivage, archives, ark, coherence, erreurs, evidence, matching, menage, pieces, privacy
 from . import pdf_markdown as pdf_md
 from .archives import communicability_online
 from .auth import BearerAuth, bind_problem
@@ -1380,6 +1380,32 @@ def gramps_synchroniser() -> dict:
 
 # ============================================================================ point d'entrée
 
+def verifier_demarrage() -> dict | None:
+    """Validation légère au démarrage (#146) : configuration lisible, git présent, répertoire de données hors
+    du plugin et inscriptible. Sans réseau ni chargement de l'arbre (le client laisse peu de temps à la
+    connexion). Renvoie la description de la première erreur, ou None."""
+    import os
+
+    try:
+        cfg = load_config()
+        if shutil.which("git") is None:
+            raise FileNotFoundError(2, "No such file or directory: 'git'", "git")
+        TreeStore(cfg.data_dir, cfg.git_remote).verifier_emplacement()
+        cfg.data_dir.mkdir(parents=True, exist_ok=True)
+        if not os.access(cfg.data_dir, os.W_OK | os.X_OK):
+            raise PermissionError(13, "Permission denied", str(cfg.data_dir))
+    except Exception as exc:  # noqa: BLE001 — toute erreur est décrite, jamais avalée
+        return erreurs.decrire(exc)
+    return None
+
+
+def _signaler(desc: dict) -> None:
+    import sys
+
+    print(f"genealogiste : configuration invalide ({desc['cause']}) : {desc['erreur']}\n  remède : {desc['remede']}",
+          file=sys.stderr)
+
+
 def main() -> None:
     import os
 
@@ -1392,8 +1418,17 @@ def main() -> None:
     parser.add_argument("--check", action="store_true", help="Vérifie la configuration et quitte")
     args = parser.parse_args()
     logging.getLogger("httpx").setLevel(logging.WARNING)
+    probleme = verifier_demarrage()
+    if probleme:
+        _signaler(probleme)
     if args.check:
-        a = app()
+        if probleme:
+            raise SystemExit(2)
+        try:
+            a = app()
+        except Exception as exc:  # noqa: BLE001
+            _signaler(erreurs.decrire(exc))
+            raise SystemExit(2) from exc
         print(json.dumps(arbre_info(), ensure_ascii=False, indent=2, default=str))
         print("WikiTree appId :", "défini" if a.config.wikitree_app_id else "ABSENT")
         langues = pdf_md._tesseract_langues(a.config.tesseract)
@@ -1406,8 +1441,12 @@ def main() -> None:
                   f"({len(langues)} installées)")
         return
     if args.transport == "stdio":
+        # Mode dégradé volontaire : le serveur reste joignable et chaque outil renvoie cause et remède au modèle
+        # (sinon Claude Code n'affiche qu'un échec de connexion, sans la cause).
         mcp.run(transport="stdio")
         return
+    if probleme and erreurs.fatale(probleme):
+        raise SystemExit(2)  # service HTTP sous superviseur : refuser de démarrer, cause sur stderr
     import uvicorn
     load_config()  # charge aussi le .env privé avant de lire les réglages du transport
     token = os.environ.get("MCP_TOKEN", "")
