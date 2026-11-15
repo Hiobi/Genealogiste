@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from . import archivage, archives, ark, coherence, evidence, matching, pieces, privacy
+from . import pdf_markdown as pdf_md
 from .archives import communicability_online
 from .auth import BearerAuth, bind_problem
 from .cache import Cache
@@ -262,6 +263,19 @@ def archive_image(source: str, page: int = 0, region: str = "full", largeur: int
     Réutilise le cache d'originale pour recadrer et archiver. Un ARK seul ne garantit pas le téléchargement.
     Pour conserver la pleine résolution : piece_archiver. Pour Gallica, essayer d'abord l'OCR."""
     return iiif.fetch(app().sctx, app().config.cache_images_dir, source, page, region, largeur, gris)
+
+
+@mcp.tool()
+def pdf_markdown(chemin: str, langue: str = "fra", forcer_ocr: bool = False, reconvertir: bool = False) -> dict:
+    """PDF dactylographié ou imprimé (texte natif ou scan) → un fichier Markdown compact, une section par page,
+    titres et tableaux conservés : bien moins de tokens que les pages en images. Texte natif extrait sans OCR ;
+    scan : OCR Tesseract (langue='fra' par défaut, 'fra+lat'…). Résultat en cache (clé = empreinte du PDF) :
+    jamais reconverti s'il n'a pas changé. Lire ensuite le fichier chemin_absolu. Les pages listées dans
+    pages_a_lire_en_image (manuscrit, OCR absent ou peu fiable) se lisent avec archive_image(chemin, page=n)."""
+    try:
+        return pdf_md.convertir(chemin, app().config.cache_pdf_dir, langue, forcer_ocr, reconvertir)
+    except pdf_md.PdfErreur as e:
+        return {"erreur": str(e)}
 
 
 @mcp.tool()

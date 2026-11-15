@@ -261,9 +261,29 @@ def _crop_box(region: str, w: int, h: int) -> tuple[int, int, int, int]:
     return left, top, max(left + 1, min(right, w)), max(top + 1, min(bottom, h))
 
 
+PDF_DPI_VISION = 200  # rendu d'une page de PDF pour la vision (recadrage à 1500-2000 px possible)
+
+
+def _page_pdf(media_dir: Path, path: Path, page: int) -> Path:
+    """Page d'un PDF rendue une fois en PNG (originale de lecture) ; page 0 ou 1 = première page."""
+    from .. import pdf_markdown
+
+    data = path.read_bytes()
+    total = pdf_markdown.nb_pages(path)
+    numero = max(1, int(page or 1))
+    if numero > total:
+        raise IiifError(f"Page {numero} absente : le PDF compte {total} page(s).")
+    dest = media_dir / "iiif" / f"pdf-{hashlib.sha256(data).hexdigest()[:16]}-p{numero}.png"
+    if not dest.exists():
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        pdf_markdown.rendre_page(path, numero - 1, PDF_DPI_VISION, gris=False).save(dest, "PNG")
+    return dest
+
+
 def local(ctx: SourceContext, media_dir: Path, source: str, region: str = "full", largeur: int = PREVIEW_WIDTH,
-          gris: bool = True) -> dict:
-    """Image sans IIIF (fichier local ou URL directe) : originale gardée une fois, zone réduite en local."""
+          gris: bool = True, page: int = 0) -> dict:
+    """Image sans IIIF (fichier local ou URL directe) : originale gardée une fois, zone réduite en local.
+    Un PDF est rendu page par page (page=n) : texte dactylographié → préférer pdf_markdown."""
     from PIL import Image
 
     _valider_region(region)
@@ -271,6 +291,10 @@ def local(ctx: SourceContext, media_dir: Path, source: str, region: str = "full"
     downloaded = False
     if not path.is_file():
         path, downloaded, _ = _originale(ctx, {"mode": "url_directe", "url_image": source})
+    pdf = None
+    with open(path, "rb") as fh:
+        if fh.read(4) == b"%PDF":
+            pdf, path = path, _page_pdf(media_dir, path, page)
     key = hashlib.sha256(f"{path.resolve()}|{region}|{largeur}|{gris}".encode()).hexdigest()[:16]
     dest = media_dir / "iiif" / f"{key}.jpg"
     cached = dest.exists()
@@ -288,6 +312,8 @@ def local(ctx: SourceContext, media_dir: Path, source: str, region: str = "full"
         dw, dh = im.size
     return {"fichier": ctx.config.media_ref(dest), "chemin_absolu": str(dest), "depuis_cache": cached,
             "original": str(path), "original_telecharge": downloaded, "dimensions_originales": [w, h],
+            **({"pdf": str(pdf), "page_pdf": max(1, int(page or 1)),
+                "conseil": "PDF dactylographié ou imprimé : pdf_markdown coûte bien moins de tokens."} if pdf else {}),
             "zone_pixels": list(box), "dimensions_demandees": [dw, dh],
             "cout_estime_tokens": round(dw * dh * TOKENS_PER_PIXEL),
             "largeur_demandee": largeur,
@@ -308,7 +334,7 @@ def fetch(ctx: SourceContext, media_dir: Path, source: str, page: int = 0, regio
             else:
                 original, downloaded, _ = _originale(ctx, loc)
                 local_source = str(original)
-            out = local(ctx, media_dir, local_source, region, largeur, gris)
+            out = local(ctx, media_dir, local_source, region, largeur, gris, page)
             if not loc.get("fichier_source"):
                 out["original_telecharge"] = downloaded
             out.update({k: v for k, v in loc.items() if k not in {"service", "fichier_source"}})

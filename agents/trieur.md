@@ -14,7 +14,9 @@ Un dossier et une liste de chemins relatifs (une vingtaine au plus par lot).
    - image : `archive_image(<chemin absolu>)` en aperçu (`largeur` 800, `gris`), puis lecture du fichier
      renvoyé. Recadrer (`region` `pct:x,y,l,h`, `largeur` 1500) seulement si l'aperçu ne suffit pas à
      identifier. Surveiller `cout_estime_tokens` ;
-   - PDF : lire la première page ; audio et vidéo : ne pas ouvrir, proposer un nom d'après le contexte ou
+   - PDF : `pdf_markdown(<chemin absolu>)` puis lire le début du `.md` renvoyé (dactylographié, imprimé,
+     scan OCRisé) ; si la page 1 figure dans `pages_a_lire_en_image` (manuscrit), `archive_image(<chemin>,
+     page=1)` en aperçu ; audio et vidéo : ne pas ouvrir, proposer un nom d'après le contexte ou
      laisser la pièce en `_À trier/`.
 2. **Identifier** : type de pièce (acte et nature, photo, sépulture, fiche matricule, fiche ANMT,
    recensement, capture d'arbre en ligne…), personnes nommées, commune, dépôt et cote si visibles

@@ -7,7 +7,10 @@ description: Aide à la lecture des actes anciens — paléographie française (
 
 ## Procédure de transcription
 
-0. **Image** : appeler `archive_image(source)` avec le fichier local ou le lien de document/visionneuse.
+0. **PDF dactylographié ou imprimé** : `pdf_markdown(chemin)` avant toute image (texte natif ou OCR
+   Tesseract, Markdown en cache, bien moins de tokens). Seules les pages de `pages_a_lire_en_image`
+   (manuscrits, OCR absent ou peu fiable) passent par la vision : `archive_image(chemin, page=n)`.
+   **Image** : appeler `archive_image(source)` avec le fichier local ou le lien de document/visionneuse.
    Le serveur résout IIIF et les services qualifiés (AD59) côté Python : conserver le HTML, JavaScript et
    les manifestes hors du contexte du modèle. Lire d'abord le `chemin_absolu` de l'aperçu (800 px, gris),
    puis recadrer l'acte seul avec la même source. Suivre les alertes de résolution et le coût indicatif.

@@ -27,6 +27,8 @@ visionneuse AD59 ou un fichier : [lecture et archivage des pièces](https://gith
 
 Il vous faut **Claude Code**, **Git** et **[uv](https://docs.astral.sh/uv/getting-started/installation/)**.
 Le serveur utilise Python **3.11 ou plus** ; uv peut installer une version compatible au premier lancement.
+Facultatif : **Tesseract** avec le français (`tesseract-ocr-fra`) pour convertir les PDF scannés en texte
+(`pdf_markdown`, voir [pièces](docs/pieces.md#pdf-dactylographiés-ou-imprimés--markdown)).
 
 Dans un terminal, installez le plugin pour votre compte :
 

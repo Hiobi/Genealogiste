@@ -10,6 +10,9 @@ dependencies = [
     "httpx>=0.27",
     "pillow>=10",
     "markdown-it-py>=3",
+    "pdfplumber>=0.11",
+    "pypdfium2>=4.30",
+    "pytesseract>=0.3.10",
 ]
 
 [project.scripts]
