@@ -172,12 +172,13 @@ def controles_locaux(a, probleme: dict | None, config) -> list[dict]:
                     if recentes else "", dernieres_erreurs=recentes))
     if a is not None:
         from .tree.proposals import TTL_SECONDS
-        attente = a.tokens.pending()
-        expirees = [p for p in attente if p["age_minutes"] * 60 > TTL_SECONDS]
+        expirees = a.tokens.expirees()  # lecture seule : le diagnostic ne modifie rien
+        valides = [p for p in a.tokens._lire_tous() if p[1].get("jeton") not in expirees]
         out.append(_ctl("propositions", "attention" if expirees else "ok",
-                        f"{len(attente) - len(expirees)} en attente, {len(expirees)} expirée(s)",
-                        "Les propositions expirées ne sont plus applicables : les reformuler (arbre_proposer) ; "
-                        "arbre_annuler_proposition(jeton) les retire." if expirees else ""))
+                        f"{len(valides)} en attente, {len(expirees)} expirée(s) (durée de vie "
+                        f"{TTL_SECONDS // 60} min)",
+                        "Les propositions expirées ne sont plus applicables : elles seront purgées au prochain "
+                        "arbre_info ; reformuler celles à garder (arbre_proposer)." if expirees else ""))
     return out
 
 
