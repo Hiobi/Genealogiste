@@ -18,6 +18,8 @@ from genealogiste_mcp.config import Config
 EXEMPLES = {
     "ad59": "https://archivesdepartementales.lenord.fr/ark:/33518/d31bpqk27xhj/b27563d3-2ef8-4798-832a-d604a4e131dc",
     "ad59_td": "ark:/33518/q0km71zxrv5s",
+    "ad25": "https://archives.doubs.fr/ark:/25993/7rx3d5cm9tzk/0cb0200e-150f-426e-958f-68ce8f04f9a2",
+    "ad39": "https://archives39.fr/ark:/36595/p3rdck27zjbm/6e6facba-b9d7-4672-9c7c-ea86f058a89b",
     "suisse": "https://www.e-manuscripta.ch/i3f/v20/3192957/manifest",
     "loc": "https://tile.loc.gov/image-services/iiif/service:sgp:sgpbatches:batch_dlc_anacostia_ver01:"
            "data:sn84025948:0023728866A:1942081001:0202/info.json",

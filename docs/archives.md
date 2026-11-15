@@ -32,7 +32,8 @@ Pour savoir quelles images le plugin peut résoudre et télécharger, voir le
 - `couvertures` : format recommandé pour les règles sourcées, périodes, communes, exceptions et lacunes ;
   voir [le modèle de disponibilité](couvertures-archives.md).
 - `en_ligne` (compatibilité) : clés `naissance`, `mariage`, `deces`, `tables_decennales`, `recensement`, `notaire`, `matricule`,
-  `cadastre`, `paroissiaux` ; bornes `de` / `a` en années (une borne absente = ouverte). **Clé absente =
+  `cadastre`, `paroissiaux`, `enregistrement` (série 3 Q : tables des successions,
+  mutations par décès) ; bornes `de` / `a` en années (une borne absente = ouverte). **Clé absente =
   inconnu** : l'outil répond alors `null`, jamais « en ligne ». L'exemple ci-dessus montre le format, ses
   valeurs ne sont pas des données. Hors d’une ancienne plage, le résultat est désormais inconnu,
   sans en déduire une absence.
@@ -122,3 +123,11 @@ pour Mayotte. Les anciennes réserves de confirmation ci-dessus sont l’histori
 L’Aude dispose de couvertures `annoncee` (registres jusqu’à 1922, tables sans bornes établies) ; le calcul
 reste inconnu. Aucune plage corse n’est déduite du formulaire et aucune visionneuse mahoraise n’est
 revendiquée. Les références et `releve_le` sont renseignés, sans modification de `verifie_le`.
+
+## Visionneuses par éditeur — #128
+
+Le [relevé du 10 novembre](releves-archives-2026-11-10.md) classe les 101 services par visionneuse
+(sonde `scripts/sonder_visionneuses.py`). L’adaptateur `visualizer_api` (Naoned, logiciel Mnesys Expo) est
+générique : 14 services Mnesys Expo (AD14, AD19, AD25, AD37, AD39, AD51, AD55, AD58, AD59, AD69,
+AD80, AD90, AD91, AD972) sont inscrits après recette réelle, état civil et, quand trouvés, registres
+matricules. Ajouter un service Mnesys Expo = renseigner `resolution_image` après recette, sans code.
