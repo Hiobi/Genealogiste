@@ -11,6 +11,7 @@ référence** : rien n'est écrit dans l'arbre depuis les notes (`arbre_proposer
 | `GENEALOGISTE_NOTES_DIR` | répertoire des notes (vault Obsidian ou sous-dossier) ; vide = fonctionnalité désactivée |
 | `GENEALOGISTE_NOTES_VIVANTS` | `masquer` (défaut) : fiche réduite, sans nom dans le nom de fichier ; `complet` |
 | `GENEALOGISTE_NOTES_AUTO` | `true` (défaut) : après `arbre_appliquer`, fiches des personnes, familles et sources modifiées régénérées ; après `journal_ajouter` avec `personne`, fiche de cette personne |
+| `GENEALOGISTE_NOTES_ATTENTE` | `20` (s) : après `arbre_appliquer`, la régénération tourne en arrière-plan ; l'outil attend au plus ce délai puis répond `notes.etat = en_cours`, consultable par `arbre_statut_transaction(jeton)` |
 | `GENEALOGISTE_SOSA_RACINE` | id de la personne n° 1 : propriété `sosa` des ascendants |
 
 ## Arborescence

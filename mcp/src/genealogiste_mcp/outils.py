@@ -71,6 +71,7 @@ OUTILS: dict[str, tuple[str, str]] = {
     "arbre_cercle": (LECTURE, ALLOW),
     "arbre_vivant": (LECTURE, ALLOW),
     "arbre_historique": (LECTURE, ALLOW),
+    "arbre_statut_transaction": (LECTURE, ALLOW),  # sans verrou : consultable pendant une écriture longue
     "arbre_rapport_preuve": (LECTURE, ALLOW),
     "arbre_proposer": (PROPOSITION, ALLOW),
     "arbre_annuler_proposition": (PROPOSITION, ALLOW),

@@ -73,6 +73,7 @@ class Config:
     cache_images_max_mo: float = 2000.0  # GENEALOGISTE_CACHE_IMAGES_MAX_MO : plafond de cache-images (0 = aucun)
     cache_echec: float = 900.0  # GENEALOGISTE_CACHE_ECHEC : mémoire d'un échec 403/404 (secondes)
     coupe_circuit: float = 1800.0  # GENEALOGISTE_COUPE_CIRCUIT : pause d'un hôte après blocage anti-robot
+    notes_attente: float = 20.0  # GENEALOGISTE_NOTES_ATTENTE : attente max des notes dans arbre_appliquer (s)
     git_delai: float = 60.0  # GENEALOGISTE_GIT_DELAI : délai maximal d'une commande git (push compris)
     log_niveau: str = "INFO"  # GENEALOGISTE_LOG_NIVEAU : DEBUG | INFO | WARNING | ERROR | AUCUN
     log_fichier: Path | None = None  # GENEALOGISTE_LOG_FICHIER ; défaut <données>/logs/serveur.log
@@ -263,6 +264,7 @@ def load_config() -> Config:
                                      "GENEALOGISTE_CACHE_IMAGES_MAX_MO"),
         cache_echec=secondes(env("GENEALOGISTE_CACHE_ECHEC"), 900.0, "GENEALOGISTE_CACHE_ECHEC"),
         coupe_circuit=secondes(env("GENEALOGISTE_COUPE_CIRCUIT"), 1800.0, "GENEALOGISTE_COUPE_CIRCUIT"),
+        notes_attente=secondes(env("GENEALOGISTE_NOTES_ATTENTE"), 20.0, "GENEALOGISTE_NOTES_ATTENTE"),
         git_delai=secondes(env("GENEALOGISTE_GIT_DELAI"), 60.0, "GENEALOGISTE_GIT_DELAI") or 60.0,
         log_niveau=niveau_log(env("GENEALOGISTE_LOG_NIVEAU")),
         log_fichier=_dir(env("GENEALOGISTE_LOG_FICHIER")),

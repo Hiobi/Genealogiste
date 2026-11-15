@@ -76,6 +76,17 @@ d'URL retirées, valeurs des arguments masquées en `‹param›`). `GENEALOGIST
 les échecs, `AUCUN` désactive. `diagnostic` résume les dernières erreurs. Le journal de recherche
 (`journal.jsonl`) reste distinct : il trace les requêtes aux sources, pas le fonctionnement du serveur.
 
+## Appels longs et concurrence
+
+- Les écritures (et les outils réseau) restent exécutées une à une. Les outils de **lecture** du catalogue
+  (`arbre_info`, `arbre_recherche`, `journal_lister`, `arbre_statut_transaction`…) ne les attendent pas : ils
+  restent utilisables pendant une écriture longue.
+- Pendant un appel long, le serveur envoie toutes les 15 s une notification de progression si le client en a
+  demandé : le client ne l'abandonne pas pour inactivité.
+- Après `arbre_appliquer`, les notes sont régénérées en arrière-plan, par lot et seulement pour les objets
+  touchés. Après un délai dépassé côté client, **ne pas relancer l'écriture** : `arbre_statut_transaction(jeton)`
+  dit si elle a eu lieu (`appliquee`, `en_attente`, `inconnue`, état Gramps) et où en sont les notes.
+
 ## Sauvegarde et restauration
 
 Arrêter les écritures pendant une sauvegarde cohérente. Sauvegarder le répertoire des données complet
