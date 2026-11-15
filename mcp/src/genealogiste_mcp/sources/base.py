@@ -87,10 +87,17 @@ def envelope(ctx: SourceContext, source: str, operation: str, params: dict, reco
 
 def error_envelope(ctx: SourceContext, source: str, operation: str, params: dict, exc: Exception,
                    personne: str | None = None) -> dict:
+    apres = getattr(exc, "reessayer_apres", None)
+    resume = str(exc) + (f" [reessayer_apres={apres} s]" if apres is not None else "")
     jid = ctx.journal.add(source=source, operation=operation, parametres=params, statut="erreur",
-                          resume=str(exc), personne=personne)
-    return {"source": source, "requete": params, "erreur": str(exc), "journal": jid,
-            "conseil": "Réessayer plus tard, vérifier la configuration, ou utiliser la recherche manuelle (liens_recherche)."}
+                          resume=resume, personne=personne)
+    out = {"source": source, "requete": params, "erreur": str(exc), "journal": jid,
+           "conseil": "Réessayer plus tard, vérifier la configuration, ou utiliser la recherche manuelle (liens_recherche)."}
+    if apres is not None:
+        out["reessayer_apres"] = apres
+        out["conseil"] = (f"Service saturé ou indisponible : réessayer dans {round(apres)} s au plus tôt, passer à une "
+                          "autre source en attendant ; ne pas relancer en boucle.")
+    return out
 
 
 __all__ = ["SourceContext", "person_record", "rank", "envelope", "error_envelope", "SourceError", "DAY"]

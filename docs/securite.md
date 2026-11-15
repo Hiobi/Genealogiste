@@ -122,6 +122,18 @@ pas les requêtes vers les autres. Une valeur invalide arrête le démarrage ave
 Dans les autres cas (délai de réponse dépassé, 502/503/504), l'outil renvoie une erreur
 « **résultat indéterminé** » : la requête a pu être traitée ; vérifier côté service avant de recommencer.
 
+**Plafond de durée** (#141) : un appel ne bloque jamais au-delà de `GENEALOGISTE_HTTP_DUREE_MAX` (60 s par
+défaut), attentes et essais compris ; le délai de chaque essai est borné par le temps restant. `Retry-After`
+est lu en secondes ou en date HTTP. Si l'attente demandée dépasse le temps restant, ou après le dernier essai
+(aucune attente inutile), l'outil renvoie aussitôt une enveloppe d'erreur avec `reessayer_apres` (secondes),
+tracée au journal : passer à une autre source et revenir plus tard, sans relancer en boucle.
+
+| Variable | Défaut | Rôle |
+|---|---|---|
+| `GENEALOGISTE_HTTP_TIMEOUT` | 30 | délai d'un essai (s) |
+| `GENEALOGISTE_HTTP_TENTATIVES` | 5 | essais au plus (requête rejouable) |
+| `GENEALOGISTE_HTTP_DUREE_MAX` | 60 | plafond d'un appel d'outil (s) |
+
 ## Transport HTTP du serveur MCP : jeton
 
 Module `auth.py` (#52). En `stdio` (plugin Claude Code), rien ne change. En HTTP (`--transport

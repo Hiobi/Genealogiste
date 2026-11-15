@@ -6,6 +6,8 @@ from __future__ import annotations
 import threading
 import time
 from collections.abc import Callable
+from datetime import UTC
+from email.utils import parsedate_to_datetime
 from typing import Any
 from urllib.parse import urljoin, urlparse
 
@@ -24,9 +26,27 @@ MAX_IMAGE_BYTES = 150 * 1024 * 1024  # plafond d'une vue téléchargée (un TIFF
 class SourceError(Exception):
     """Erreur lisible renvoyée à l'agent (accès refusé, quota, format inattendu...)."""
 
-    def __init__(self, message: str, status: int | None = None):
+    def __init__(self, message: str, status: int | None = None, reessayer_apres: float | None = None):
         super().__init__(message)
         self.status = status
+        self.reessayer_apres = reessayer_apres  # secondes avant de réessayer (429/503, plafond atteint)
+
+
+def retry_after(value: str | None, now: float | None = None) -> float | None:
+    """Retry-After en secondes : nombre (« 120 ») ou date HTTP (« Wed, 21 Oct 2026 07:28:00 GMT »)."""
+    if not value or not value.strip():
+        return None
+    try:
+        return max(0.0, float(value))
+    except ValueError:
+        pass
+    try:
+        when = parsedate_to_datetime(value)
+    except (TypeError, ValueError):
+        return None
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=UTC)
+    return max(0.0, when.timestamp() - (time.time() if now is None else now))
 
 
 class HttpClient:
@@ -42,8 +62,13 @@ class HttpClient:
         transport: httpx.BaseTransport | None = None,
         policy: NetworkPolicy | None = None,
         default_interval: float = 0.0,
+        duree_max: float = 60.0,
+        clock: Callable[[], float] = time.monotonic,
     ):
         self.cache = cache
+        self.timeout = timeout
+        self.duree_max = duree_max  # plafond d'attente totale d'un appel (essais + reprises)
+        self.clock = clock
         self.min_intervals = min_intervals or {}
         self.default_interval = default_interval  # tout hôte non listé (archives, IIIF…) : jamais en rafale
         self.sleep = sleeper
@@ -73,7 +98,8 @@ class HttpClient:
         if slot > now:
             self.sleep(slot - now)
 
-    def _send(self, method: str, url: str, *, params, data, json, files, headers) -> httpx.Response:
+    def _send(self, method: str, url: str, *, params, data, json, files, headers,
+              timeout: float | None = None) -> httpx.Response:
         """Requête avec redirections suivies manuellement ; chaque URL passe la politique réseau."""
         sans_secrets = False
         sensibles = {"authorization", "proxy-authorization", "cookie", "x-api-key"}
@@ -82,7 +108,9 @@ class HttpClient:
                 self.policy.check(url)
             except DestinationRefusee as exc:
                 raise SourceError(str(exc)) from exc
-            requete = self.client.build_request(method, url, params=params, data=data, json=json, files=files, headers=headers)
+            requete = self.client.build_request(method, url, params=params, data=data, json=json, files=files,
+                                                headers=headers,
+                                                **({"timeout": timeout} if timeout is not None else {}))
             if sans_secrets:
                 for nom in sensibles:
                     requete.headers.pop(nom, None)
@@ -138,26 +166,42 @@ class HttpClient:
         replay = method.upper() in IDEMPOTENT if idempotent is None else idempotent
         delay = 1.0
         last_exc: Exception | None = None
+        debut = self.clock()
+
+        def attendre(wait: float, attempt: int, cause: str, status: int | None, reessayer: float | None) -> None:
+            """Attente avant l'essai suivant, sans jamais dépasser le plafond ni attendre après le dernier."""
+            restant = self.duree_max - (self.clock() - debut)
+            if attempt + 1 >= self.max_retries or wait >= restant:
+                apres = reessayer if reessayer is not None else wait
+                raise SourceError(
+                    f"{host} : {cause} ; nouvel essai conseillé dans {round(apres)} s "
+                    f"(plafond de {self.duree_max:g} s par appel, {attempt + 1} tentative(s)).", status,
+                    reessayer_apres=round(apres, 1))
+            self.sleep(wait)
+
         for attempt in range(self.max_retries):
             self._throttle(host)
+            restant = self.duree_max - (self.clock() - debut)
+            if restant <= 0:
+                raise SourceError(f"{host} : plafond de {self.duree_max:g} s atteint ({last_exc})",
+                                  reessayer_apres=delay)
             try:
-                resp = self._send(method, url, params=params, data=data, json=json, files=files, headers=headers)
+                resp = self._send(method, url, params=params, data=data, json=json, files=files, headers=headers,
+                                  timeout=min(self.timeout, restant))
             except httpx.TransportError as exc:
                 if not replay and not isinstance(exc, (httpx.ConnectError, httpx.ConnectTimeout)):
                     raise SourceError(self._indetermine(host, type(exc).__name__)) from exc
                 last_exc = exc
-                self.sleep(delay)
+                attendre(delay, attempt, f"{type(exc).__name__} ({exc})", None, None)
                 delay *= 2
                 continue
             if resp.status_code in (502, 503, 504) and not replay:
-                raise SourceError(self._indetermine(host, f"HTTP {resp.status_code}"), resp.status_code)
+                raise SourceError(self._indetermine(host, f"HTTP {resp.status_code}"), resp.status_code,
+                                  reessayer_apres=retry_after(resp.headers.get("Retry-After")))
             if resp.status_code in (429, 502, 503, 504):
-                retry_after = resp.headers.get("Retry-After")
-                try:
-                    wait = float(retry_after) if retry_after else delay
-                except ValueError:
-                    wait = delay
-                self.sleep(min(wait, 60.0))
+                demande = retry_after(resp.headers.get("Retry-After"))
+                attendre(delay if demande is None else demande, attempt, f"HTTP {resp.status_code}",
+                         resp.status_code, demande)
                 delay *= 2
                 last_exc = SourceError(f"{host} : HTTP {resp.status_code} (tentative {attempt + 1})", resp.status_code)
                 continue

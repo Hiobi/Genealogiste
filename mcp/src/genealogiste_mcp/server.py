@@ -70,7 +70,8 @@ class App:
         self.http = HttpClient(self.cache, self.config.user_agent, self.config.http_timeout, intervalles,
                                offline=self.config.offline, transport=transport,
                                policy=NetworkPolicy(self.config.hotes_autorises),
-                               default_interval=self.config.debit_defaut, **kw)
+                               default_interval=self.config.debit_defaut,
+                               max_retries=self.config.http_tentatives, duree_max=self.config.http_duree_max, **kw)
         self.store = TreeStore(self.config.data_dir, self.config.git_remote)
         self.store.ensure()
         self.journal = Journal(self.config.journal_path)
