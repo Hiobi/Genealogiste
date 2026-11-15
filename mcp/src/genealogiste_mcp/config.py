@@ -73,6 +73,8 @@ class Config:
     cache_images_max_mo: float = 2000.0  # GENEALOGISTE_CACHE_IMAGES_MAX_MO : plafond de cache-images (0 = aucun)
     cache_echec: float = 900.0  # GENEALOGISTE_CACHE_ECHEC : mémoire d'un échec 403/404 (secondes)
     coupe_circuit: float = 1800.0  # GENEALOGISTE_COUPE_CIRCUIT : pause d'un hôte après blocage anti-robot
+    log_niveau: str = "INFO"  # GENEALOGISTE_LOG_NIVEAU : DEBUG | INFO | WARNING | ERROR | AUCUN
+    log_fichier: Path | None = None  # GENEALOGISTE_LOG_FICHIER ; défaut <données>/logs/serveur.log
     debit_defaut: float = 1.5  # GENEALOGISTE_DEBIT_DEFAUT : secondes minimum entre deux requêtes vers un même hôte
     debits: dict[str, float] = field(default_factory=dict)  # GENEALOGISTE_DEBITS : hote=secondes,… (priorité)
     offline: bool = False
@@ -176,6 +178,13 @@ def secondes(value: str | None, default: float, variable: str) -> float:
     return v
 
 
+def niveau_log(value: str | None) -> str:
+    v = (value or "INFO").strip().upper()
+    if v not in ("DEBUG", "INFO", "WARNING", "ERROR", "AUCUN"):
+        raise ValueError(f"GENEALOGISTE_LOG_NIVEAU={value!r} : valeurs possibles DEBUG | INFO | WARNING | ERROR | AUCUN")
+    return v
+
+
 def entier_positif(value: str | None, default: int, variable: str) -> int:
     if value is None or value.strip() == "":
         return default
@@ -253,6 +262,8 @@ def load_config() -> Config:
                                      "GENEALOGISTE_CACHE_IMAGES_MAX_MO"),
         cache_echec=secondes(env("GENEALOGISTE_CACHE_ECHEC"), 900.0, "GENEALOGISTE_CACHE_ECHEC"),
         coupe_circuit=secondes(env("GENEALOGISTE_COUPE_CIRCUIT"), 1800.0, "GENEALOGISTE_COUPE_CIRCUIT"),
+        log_niveau=niveau_log(env("GENEALOGISTE_LOG_NIVEAU")),
+        log_fichier=_dir(env("GENEALOGISTE_LOG_FICHIER")),
         debit_defaut=secondes(env("GENEALOGISTE_DEBIT_DEFAUT"), 1.5, "GENEALOGISTE_DEBIT_DEFAUT"),
         debits=debits_par_hote(env("GENEALOGISTE_DEBITS")),
         media_dir_conf=_dir(env("GENEALOGISTE_MEDIA_DIR")),

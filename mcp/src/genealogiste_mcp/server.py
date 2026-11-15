@@ -152,6 +152,47 @@ def _garde(personne: str = "", nom: str = "", prenom: str = "", ne_vers: str = "
 
 # ============================================================================ sources prioritaires
 
+class _Observateur:
+    """Journal d'exploitation (#149) : n'initialise jamais l'App ; les appels faits avant une App valide ne sont
+    tracés que sur stderr (interception #146)."""
+
+    def avant(self):
+        import time
+
+        if _APP is not None:
+            _APP.http.hotes_contactes.clear()
+        return time.monotonic()
+
+    def apres(self, debut, outil: str, arguments: dict, resultat=None, exception=None) -> None:
+        from . import exploitation
+
+        if _APP is None:
+            return
+        statut, erreur = "ok", ""
+        if exception is not None:
+            statut = "exception"
+        elif resultat is not None:
+            contenu = resultat.structured_content if isinstance(resultat.structured_content, dict) else {}
+            if not contenu and resultat.content:
+                try:
+                    contenu = json.loads(getattr(resultat.content[0], "text", "") or "{}")
+                except ValueError:
+                    contenu = {}
+            if not isinstance(contenu, dict):
+                contenu = {}
+            contenu = contenu.get("result", contenu) if isinstance(contenu.get("result"), dict) else contenu
+            if resultat.is_error or "erreur" in contenu or "refus" in contenu:
+                statut = "erreur"
+                erreur = str(contenu.get("erreur") or contenu.get("refus") or "")
+                if not erreur and resultat.content:
+                    erreur = getattr(resultat.content[0], "text", "")
+        exploitation.enregistrer(_APP.config, outil, debut, statut, arguments, erreur, exception,
+                                 list(_APP.http.hotes_contactes))
+
+
+mcp.observateur = _Observateur()
+
+
 @mcp.tool()
 def matchid_recherche(nom: str = "", prenom: str = "", ne_vers: str = "", lieu_naissance: str = "",
                       decede_vers: str = "", lieu_deces: str = "", sexe: str = "", texte: str = "",

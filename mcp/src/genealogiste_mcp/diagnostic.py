@@ -163,6 +163,13 @@ def controles_locaux(a, probleme: dict | None, config) -> list[dict]:
         out.append(_ctl("ocr", "attention" if manquantes else "ok",
                         "langues fra/lat présentes" if not manquantes else f"langues absentes : {', '.join(manquantes)}",
                         (pdf_md.commande_installation(manquantes).get("commande") or "") if manquantes else ""))
+    from . import exploitation
+    recentes = exploitation.dernieres_erreurs(config)
+    out.append(_ctl("journal_exploitation", "attention" if recentes else "ok",
+                    f"{exploitation.chemin_journal(config)} ({config.log_niveau}) ; "
+                    f"{len(recentes)} erreur(s) récente(s)",
+                    "Lire les dernières erreurs ci-dessous (outil, cause) ; corriger puis relancer l'outil concerné."
+                    if recentes else "", dernieres_erreurs=recentes))
     if a is not None:
         from .tree.proposals import TTL_SECONDS
         attente = a.tokens.pending()
