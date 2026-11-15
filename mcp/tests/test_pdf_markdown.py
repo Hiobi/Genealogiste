@@ -112,7 +112,7 @@ def test_cache_par_empreinte(natif, tmp_path, monkeypatch):
 
 
 def test_scan_sans_tesseract_part_en_vision(scan, tmp_path, monkeypatch):
-    monkeypatch.setattr(pm, "_tesseract_langues", lambda: None)
+    monkeypatch.setattr(pm, "_tesseract_langues", lambda *a: None)
     r = pm.convertir(str(scan), tmp_path / "cache")
     assert r["pages_a_lire_en_image"] == [1] and r["ocr"] == "tesseract_absent"
     assert r["pages"][0]["motif"] == "tesseract_absent"
@@ -120,13 +120,13 @@ def test_scan_sans_tesseract_part_en_vision(scan, tmp_path, monkeypatch):
 
 
 def test_langue_tesseract_absente(scan, tmp_path, monkeypatch):
-    monkeypatch.setattr(pm, "_tesseract_langues", lambda: frozenset({"eng", "osd"}))
+    monkeypatch.setattr(pm, "_tesseract_langues", lambda *a: frozenset({"eng", "osd"}))
     r = pm.convertir(str(scan), tmp_path / "cache")
     assert r["pages"][0]["motif"] == "langue_tesseract_absente:fra"
 
 
 def test_scan_ocr_et_confiance(scan, tmp_path, monkeypatch):
-    monkeypatch.setattr(pm, "_tesseract_langues", lambda: frozenset({"fra", "lat"}))
+    monkeypatch.setattr(pm, "_tesseract_langues", lambda *a: frozenset({"fra", "lat"}))
     vus = []
 
     def faux_ocr(image, langue):
@@ -146,7 +146,7 @@ def test_scan_ocr_et_confiance(scan, tmp_path, monkeypatch):
 
 
 def test_forcer_ocr_sur_texte_natif(natif, tmp_path, monkeypatch):
-    monkeypatch.setattr(pm, "_tesseract_langues", lambda: frozenset({"fra"}))
+    monkeypatch.setattr(pm, "_tesseract_langues", lambda *a: frozenset({"fra"}))
     monkeypatch.setattr(pm, "ocr_image", lambda image, langue: ("Texte relu par OCR sur la page.", 88.0))
     r = pm.convertir(str(natif), tmp_path / "cache", forcer_ocr=True)
     assert r["pages_ocr"] == [1, 2] and r["chemin_absolu"].endswith("-ocr.md")
@@ -197,3 +197,90 @@ def test_archive_image_lit_une_page_de_pdf(app, natif):
     assert r["original"].endswith("-p2.png")
     assert server.archive_image(str(natif), page=2, largeur=500)["depuis_cache"] is True
     assert "absente" in str(server.archive_image(str(natif), page=9))
+
+
+@pytest.fixture
+def debian(monkeypatch):
+    monkeypatch.setattr(pm.platform, "system", lambda: "Linux")
+    monkeypatch.setattr(pm, "_os_release", lambda: {"ID": "debian", "PRETTY_NAME": "Debian GNU/Linux 12"})
+
+
+def test_sans_tesseract_propose_installation(scan, tmp_path, monkeypatch, debian):
+    monkeypatch.setattr(pm, "_tesseract_langues", lambda *a: None)
+    r = pm.convertir(str(scan), tmp_path / "cache")
+    inst = r["installation"]
+    assert inst["commande"] == "sudo apt install -y tesseract-ocr tesseract-ocr-fra"
+    assert inst["pages_concernees"] == [1] and inst["surcout_vision_tokens"] == r["tokens_estimes_images"]
+    assert "proposer à l'utilisateur" in inst["consigne"] and "! sudo apt" in inst["consigne"]
+    assert any("GENEALOGISTE_TESSERACT" in x for x in inst["alternatives"])
+
+
+def test_langue_absente_propose_seulement_la_langue(scan, tmp_path, monkeypatch, debian):
+    monkeypatch.setattr(pm, "_tesseract_langues", lambda *a: frozenset({"fra"}))
+    r = pm.convertir(str(scan), tmp_path / "cache", langue="fra+lat")
+    assert r["installation"]["commande"] == "sudo apt install -y tesseract-ocr-lat"
+
+
+def test_pas_de_conseil_quand_ocr_present_ou_texte_natif(natif, scan, tmp_path, monkeypatch):
+    monkeypatch.setattr(pm, "_tesseract_langues", lambda *a: None)
+    assert "installation" not in pm.convertir(str(natif), tmp_path / "cache")
+    monkeypatch.setattr(pm, "_tesseract_langues", lambda *a: frozenset({"fra"}))
+    monkeypatch.setattr(pm, "ocr_image", lambda image, langue: ("Acte de bapteme de Marie Durand.", 90.0))
+    assert "installation" not in pm.convertir(str(scan), tmp_path / "cache")
+
+
+@pytest.mark.parametrize(("systeme", "rel", "attendu"), [
+    ("Linux", {"ID": "arch"}, "sudo pacman -S --needed tesseract tesseract-data-fra"),
+    ("Linux", {"ID": "linuxmint", "ID_LIKE": "ubuntu debian"}, "sudo apt install -y tesseract-ocr tesseract-ocr-fra"),
+    ("Linux", {"ID": "fedora"}, "sudo dnf install -y tesseract tesseract-langpack-fra"),
+    ("Darwin", {}, "brew install tesseract tesseract-lang"),
+    ("Windows", {}, "winget install UB-Mannheim.TesseractOCR"),
+    ("Linux", {"ID": "alpine"}, ""),
+])
+def test_commande_installation_selon_systeme(systeme, rel, attendu):
+    out = pm.commande_installation(["fra"], systeme=systeme, os_release=rel)
+    assert out["commande"] == attendu
+    if not attendu:
+        assert "fra" in out["note"]
+
+
+def test_cache_reconverti_quand_ocr_installe(scan, tmp_path, monkeypatch):
+    cache = tmp_path / "cache"
+    monkeypatch.setattr(pm, "_tesseract_langues", lambda *a: None)
+    assert pm.convertir(str(scan), cache)["pages_a_lire_en_image"] == [1]
+    assert pm.convertir(str(scan), cache)["deja_converti"] is True  # toujours sans OCR : cache
+    monkeypatch.setattr(pm, "_tesseract_langues", lambda *a: frozenset({"fra"}))
+    monkeypatch.setattr(pm, "ocr_image", lambda image, langue: ("Acte de bapteme de Marie Durand.", 90.0))
+    r = pm.convertir(str(scan), cache)
+    assert r["deja_converti"] is False and r["pages_ocr"] == [1] and "installation" not in r
+    assert pm.convertir(str(scan), cache)["deja_converti"] is True
+
+
+def test_absence_de_tesseract_non_memorisee(monkeypatch):
+    import pytesseract
+
+    pm.oublier_detection()
+    etat = {"installe": False}
+
+    def version():
+        if not etat["installe"]:
+            raise pytesseract.TesseractNotFoundError()
+        return "5.3.0"
+
+    monkeypatch.setattr(pytesseract, "get_tesseract_version", version)
+    monkeypatch.setattr(pytesseract, "get_languages", lambda config="": ["eng", "fra"])
+    assert pm.ocr_disponible("fra", "/opt/tess/bin/tesseract") == (False, "tesseract_absent")
+    etat["installe"] = True
+    assert pm.ocr_disponible("fra", "/opt/tess/bin/tesseract") == (True, "")
+    assert pytesseract.pytesseract.tesseract_cmd == "/opt/tess/bin/tesseract"
+    assert pm.ocr_disponible("lat", "/opt/tess/bin/tesseract") == (False, "langue_tesseract_absente:lat")
+    pm.oublier_detection()
+    pm._commande("")
+
+
+def test_outil_transmet_genealogiste_tesseract(app, scan, monkeypatch):
+    vus = []
+    monkeypatch.setattr(pm, "_tesseract_langues", lambda tesseract="": vus.append(tesseract))
+    app.config.tesseract = "/opt/shim/tesseract"
+    server.pdf_markdown(str(scan))
+    assert vus == ["/opt/shim/tesseract"]

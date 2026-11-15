@@ -54,6 +54,7 @@ class Config:
     exports_dir_conf: Path | None = None  # GENEALOGISTE_EXPORTS_DIR ; défaut <données>/exports
     cache_images_dir_conf: Path | None = None  # GENEALOGISTE_CACHE_IMAGES_DIR ; défaut <données>/cache-images
     cache_pdf_dir_conf: Path | None = None  # GENEALOGISTE_CACHE_PDF_DIR ; défaut <données>/cache-pdf
+    tesseract: str = ""  # GENEALOGISTE_TESSERACT : binaire Tesseract hors du PATH (ou shim Docker)
     hotes_autorises: list[str] = field(default_factory=list)  # exceptions à la politique réseau (hôte[:port])
     offline: bool = False
     extra: dict = field(default_factory=dict)
@@ -193,6 +194,7 @@ def load_config() -> Config:
         exports_dir_conf=_dir(env("GENEALOGISTE_EXPORTS_DIR")),
         cache_images_dir_conf=_dir(env("GENEALOGISTE_CACHE_IMAGES_DIR")),
         cache_pdf_dir_conf=_dir(env("GENEALOGISTE_CACHE_PDF_DIR")),
+        tesseract=str(Path(env("GENEALOGISTE_TESSERACT")).expanduser()) if env("GENEALOGISTE_TESSERACT") else "",
     )
     if env("GENEALOGISTE_USER_AGENT"):
         cfg.user_agent = env("GENEALOGISTE_USER_AGENT")
