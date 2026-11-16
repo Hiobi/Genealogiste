@@ -108,6 +108,25 @@ def test_navigation_normalise_image_relative(app, routes):
     assert result["vues"][0]["url_image"] == HOST + "/images/vue.jpg"
 
 
+def test_navigation_accepte_port_https_par_defaut_explicitement(app, routes):
+    image = HOST + ":443/images/vue.jpg"
+    mock_ad59(routes, image=image)
+    result = server.archives_naviguer(REGISTRE, pas=2)
+    assert "erreur" not in result, result
+    assert result["vues"][0]["url_image"] == image
+
+
+@pytest.mark.parametrize("positions", [(0, 2), (1, 2), (0, 1), (2,)])
+def test_navigation_refuse_fenetre_avec_vue_omise(app, routes, positions):
+    mock_ad59(routes, pas=3)
+    routes.get(API, params={**PARAMS, "start": 0, "end": 2, "group": 0}).respond(
+        200, json={str(i): media() for i in positions})
+    result = server.archives_naviguer(REGISTRE, page=1, pas=3)
+    assert "pagination" in result["erreur"].lower(), result
+    assert "fin_de_registre" not in result and "vue_suivante" not in result
+    assert len(app.journal.entries()) == 1
+
+
 def test_navigation_iiif_v2_conserve_les_metadonnees_et_la_fin(app, routes):
     routes.get(MANIFEST).respond(200, json={"label": "Registre fictif", "license": "Licence fictive",
         "sequences": [{"canvases": [{"label": "Vue 1", "images": [{"resource": {

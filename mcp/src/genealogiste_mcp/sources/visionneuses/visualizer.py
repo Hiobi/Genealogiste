@@ -43,7 +43,7 @@ def _url(value, host):
     value = urljoin(host, value)
     try:
         u, h = urlsplit(value), urlsplit(host)
-        ports = u.port, h.port
+        ports = tuple(v.port if v.port is not None else {"https": 443, "http": 80}.get(v.scheme) for v in (u, h))
     except ValueError as exc:
         raise VisionneuseError("URL technique invalide.") from exc
     if (u.scheme, u.hostname, ports[0]) != (h.scheme, h.hostname, ports[1]) or u.username or u.password:
@@ -110,8 +110,9 @@ def naviguer(ctx, a: ark.Ark, service: dict, page: int, pas: int) -> dict:
         raise VisionneuseError("Nombre de vues incohérent : navigation refusée.")
     if page < 0 or page > nb_vues:
         raise VisionneuseError(f"Vue {page} hors du registre : bornes valides de 1 à {nb_vues} (0 = début).")
-    if not items or any(not debut <= idx <= min(fin, nb_vues - 1) for idx, _ in items):
-        raise VisionneuseError("Réponse de pagination incohérente : navigation refusée.")
+    attendues = list(range(debut, min(fin, nb_vues - 1) + 1))
+    if [idx for idx, _ in items] != attendues:
+        raise VisionneuseError("Réponse de pagination incomplète ou incohérente : navigation refusée.")
     registre: dict = {}
     vues: list[dict] = []
     for idx, media in items:
