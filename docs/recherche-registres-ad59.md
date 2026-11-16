@@ -89,3 +89,8 @@ Saint-Vaast-en-Cambrésis. Elle s'arrête à la première protection, sans tél�
 exécutée le 16 novembre 2026 a passé ces trois cas par le véritable outil MCP Python (`1 passed`, 4,90 s),
 avec l'ARK et la cote ci-dessus, sans défi bloquant. Le fichier JSON de preuve reste dans le dossier
 temporaire de pytest, hors du dépôt.
+
+La recette native Codex 0.166.0 (`make test-codex`) vérifie aussi que le refus d'approbation
+d'`archives_registres` laisse le journal de recherche intact, puis qu'un appel approuvé visant le
+vivant fictif `I9` est refusé par la garde locale. Cette recette utilise le fournisseur déterministe
+local et le mode hors ligne ; elle ne recherche aucune personne réelle.
