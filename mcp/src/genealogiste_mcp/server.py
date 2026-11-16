@@ -52,6 +52,7 @@ from .sources import (
     iiif,
     liens,
     matchid,
+    planche,
     visionneuses,
     wikidata,
     wikitree,
@@ -371,13 +372,23 @@ def ark_resoudre(ark: str, verifier: bool = True, titre: str = "") -> dict:
 
 
 @mcp.tool()
-def archive_image(source: str, page: int = 0, region: str = "full", largeur: int = 800, gris: bool = True) -> dict:
+def archive_image(source: str, page: int = 0, region: str = "full", largeur: int = 800, gris: bool = True,
+                  details: bool = False) -> dict:
     """Aperçu économe d'une vue : lien IIIF (tous pays), ARK Gallica ou visionneuse AD59, image directe,
     fichier local. Les pages qui déclarent un manifeste IIIF sont résolues côté Python, sans HTML envoyé
     au modèle. D'abord largeur 800/gris, puis region='pct:x,y,l,h' pour l'acte seul ; coût indicatif renvoyé.
     Réutilise le cache d'originale pour recadrer et archiver. Un ARK seul ne garantit pas le téléchargement.
-    Pour conserver la pleine résolution : piece_archiver. Pour Gallica, essayer d'abord l'OCR."""
-    return iiif.fetch(app().sctx, app().config.cache_images_dir, source, page, region, largeur, gris)
+    Pour conserver la pleine résolution : piece_archiver. Pour Gallica, essayer d'abord l'OCR.
+
+    Sortie minimale : chemin_absolu (à lire avec l'outil de lecture de fichiers), vue, nb_vues, ark_vue,
+    dimensions et coût estimé, registre. Cote, titre, commune et période du registre ne sont donnés qu'au
+    premier aperçu de ce registre dans la session, ou avec details=true. La licence et les conditions de
+    réutilisation ne sont jamais renvoyées ici : elles sont conservées par piece_archiver (note compagnon).
+    Consigne : aperçu d'abord (≈ 800 px, gris) pour repérer l'acte, puis recadrer l'acte seul
+    (region pct:x,y,l,h, largeur 1500-2000). Transcription produite par le modèle : à marquer comme telle
+    et à faire vérifier."""
+    out = iiif.fetch(app().sctx, app().config.cache_images_dir, source, page, region, largeur, gris)
+    return iiif.sortie_minimale(app().sctx, out, details)
 
 
 @mcp.tool()
@@ -393,6 +404,21 @@ def pdf_markdown(chemin: str, langue: str = "fra", forcer_ocr: bool = False, rec
                                 app().config.tesseract)
     except pdf_md.PdfErreur as e:
         return {"erreur": str(e)}
+
+
+@mcp.tool()
+def archives_planche(source: str, de: int, a: int = 0, pas: int = 1, bandeau: str = "", largeur: int = 1200,
+                     gris: bool = True, miniatures: bool = False) -> dict:
+    """Planche-contact d'un registre AD59 : UNE image composite de 4 à 12 vues (numéro de vue incrusté) pour
+    repérer l'acte sans lire une image par vue. source : ARK de registre ou de vue AD59. de/a : première et
+    dernière vue (a = 0 : six vues) ; pas : une vue sur N (sondage large, puis planche fine). bandeau : ne garder
+    que le haut de chaque vue (ex. pct:0,0,100,35) pour lire date et numéro d'acte dans la grille.
+    Limites : 12 vues et 1 600 px par planche ; une requête et un téléchargement par vue (originales en cache,
+    partagé avec archive_image et piece_archiver), arrêt à la première erreur ou protection, aucun
+    contournement. miniatures=true : miniatures du service (100 px), pour la mise en page seulement.
+    Renvoie chemin_absolu (à lire avec l'outil de lecture de fichiers), vues, grille et cout_estime_tokens.
+    Repérée la vue, lire l'acte avec archive_image (region), puis piece_archiver."""
+    return planche.planche(app().sctx, source, de, a, pas, bandeau, largeur, gris, miniatures)
 
 
 @mcp.tool()

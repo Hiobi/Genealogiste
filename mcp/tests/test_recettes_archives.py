@@ -42,3 +42,11 @@ def test_archives_service_expose_la_recette(app, tmp_path, monkeypatch):
     r = server.archives_service(code="AD59")
     vue = r if "recette" in r else r["services"][0]
     assert vue["recette"]["derniere_reussite"] == "2026-11-15"
+
+
+def test_adaptateur_sans_recette_signale_non_eprouve():
+    eprouve = archives.service(code="AD25")["telechargement"]
+    assert eprouve["etat"] == "automatique"
+    for code in ("AD14", "AD91", "AD972"):
+        t = archives.service(code=code)["telechargement"]
+        assert t["adaptateur_disponible"] and t["etat"] == "automatique_non_eprouve" and t["note"]

@@ -466,3 +466,10 @@ def test_date_modifiee_gramps_renomme_les_notes_apres_accord(gapp, tmp_path):
     assert "av 1925" in nouvelle.name and not ancienne.exists()
     assert "Hypothèse à conserver." in nouvelle.read_text(encoding="utf-8")
     assert ancienne.stem not in (vault / "index.md").read_text(encoding="utf-8")
+
+
+def test_bilan_de_transaction_avant_le_diff(gapp):
+    p = server.arbre_proposer(CIT_DEATH, "Acte de décès", "Acte lu sur le registre.")
+    cles = list(p)
+    assert cles.index("transaction_gramps") < cles.index("diff")
+    assert "@@ @I1@ INDI @@" in p["diff"] and "@I2@" not in p["diff"]

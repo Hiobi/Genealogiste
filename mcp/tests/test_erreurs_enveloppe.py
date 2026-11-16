@@ -34,6 +34,7 @@ APPELS: dict[str, dict] = {
     "gramps_recherche": {"texte": "Durand"},
     "gramps_personne": {"handle": "h1"},
     "diagnostic": {},
+    "archives_planche": {"source": "ark:/33518/registrefictif", "de": 1},
 }
 # Hors périmètre : lit un fichier local avant tout appel réseau (couvert par test_sources).
 SANS_APPEL = {"matchid_appariement_csv"}
