@@ -4,9 +4,32 @@
 document. Un ARK identifie une ressource ; il ne garantit ni sa numérisation, ni l’accès à son image.
 Le pays ne détermine pas la compatibilité : un lien IIIF exploitable peut fonctionner sans adaptateur national.
 
-Ce catalogue décrit **Genealogiste 0.19.1**, avec un état de qualification au **8 novembre 2026**.
+Les tableaux historiques de ce catalogue décrivent **Genealogiste 0.19.1**, avec un état de qualification
+au **8 novembre 2026**. La recherche de registres AD59 ci-dessous complète ce périmètre.
 Il complète le [référentiel des services français](../docs/archives.md), qui indique les lieux et fonds
 à rechercher : être dans ce référentiel ne signifie pas disposer d’un téléchargement automatisé.
+
+## Trouver un registre AD59 sans ARK
+
+Avec une commune et une année précises, demander par exemple :
+
+> Cherche les registres de naissance de Saint-Vaast-en-Cambrésis pour 1860 aux archives du Nord.
+
+L'outil `archives_registres(service="AD59", commune="Saint-Vaast-en-Cambrésis", annee=1860,
+type_acte="N")` renvoie les références lues dans la page officielle : titre, cote, ARK, période et,
+si affiché, nombre de vues. Pour une personne de l'arbre, ajouter son identifiant local dans `personne` :
+la garde des vivants est appliquée avant toute requête ; cet identifiant n'est pas transmis aux archives.
+
+Types pris en charge : `N` (naissances), `M` (mariages), `D` (décès). `NMD` ou vide recherche sans filtre
+de type. Les tables décennales et les autres services conservent la recherche manuelle.
+Chaque appel lit une seule page ; `page_suivante` indique comment continuer explicitement.
+
+Choisir un registre, puis utiliser `archives_naviguer(ark_registre)` pour chercher la vue et
+`archive_image` / `piece_archiver` pour la consulter et la conserver. Un registre trouvé ne prouve pas
+que l'acte y figure. Une recherche vide est journalisée pour ce périmètre uniquement ; une modification
+du format de la page est signalée comme erreur. En cas de protection, conserver la tâche manuelle et
+poursuivre les autres pistes. Le [contrat et le relevé technique](../docs/recherche-registres-ad59.md)
+précisent les limites observées.
 
 ## Choisir le lien à fournir
 

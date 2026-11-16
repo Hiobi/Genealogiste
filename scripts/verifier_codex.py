@@ -274,6 +274,14 @@ requires_openai_auth = false
             arbre.write_bytes(original)
             living = outil("matchid_recherche", {"personne": "I9", "nom": "MARTIN", "prenom": "Lucas"})
             assert "vivant" in json.dumps(living).lower(), living
+            # Le nouvel outil réseau garde la confirmation native, même si le hook Claude autorise la lecture.
+            journal = data / "journal.jsonl"
+            trace = journal.read_bytes() if journal.exists() else b""
+            recherche = {"service": "AD59", "commune": "Commune-Fictive", "annee": 1860}
+            outil("archives_registres", recherche, action="decline")
+            assert (journal.read_bytes() if journal.exists() else b"") == trace
+            vivant = outil("archives_registres", {**recherche, "personne": "I9"})
+            assert "refus" in vivant and "vivant" in json.dumps(vivant).lower(), vivant
             export = outil("arbre_exporter")
             public = Path(export["fichier"]).read_text()
             assert "Lucas" not in public and "Vivant" in public

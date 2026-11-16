@@ -14,9 +14,16 @@ Applique les skills `methodologie-gps`, `sources-francaises`, `droit-communicabi
    déclarée ne prouve pas l'existence de l'acte.
 3. **Trouver le registre** (cote + ARK) :
    - Si une source `S…` de l'arbre porte déjà un ARK de registre ou de vue, le réutiliser.
-   - Sinon, orienter vers la recherche du service (`liens_recherche`, `cotes_a_consulter` pour la cote
+   - Pour AD59, appeler `archives_registres(service="AD59", commune=…, annee=…, type_acte="N"|"M"|"D",
+     personne=id)` : les cotes et ARK viennent du résultat officiel. Consulter les pages suivantes
+     explicitement si nécessaire ; ne pas confondre registre trouvé et acte trouvé. `NMD` ou le type vide
+     recherche sans filtre de type ; les tables décennales ne sont pas qualifiées dans ce formulaire.
+     Un résultat vide est une recherche négative sur ce périmètre, pas une preuve d'absence de l'acte.
+   - Pour les autres services ou fonds non pris en charge, orienter vers la recherche du service
+     (`liens_recherche`, `cotes_a_consulter` pour la cote
      typique), relever l'ARK du registre ou la cote + commune + années, puis tracer avec `source_collee`.
      Ne jamais deviner une cote ni contourner un captcha.
+   - En cas de `bloque_antirobot`, garder la tâche manuelle au journal et poursuivre les autres pistes.
 4. **Localiser la vue de l'acte** : `archives_naviguer(ark_registre, page=…)` pour parcourir les vues
    (ou la table décennale pour retrouver année et n° d'acte avant d'aller à l'acte). Pour un registre AD59
    chronologique, `archives_planche(ark_registre, de, a, pas, bandeau="pct:0,0,100,35")` : une seule image de

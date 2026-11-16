@@ -158,3 +158,14 @@ Un défi reconnu renvoie `statut: bloque_antirobot`, le service, le type de prot
 avec `source_collee` ou le téléchargement autorisé à `piece_archiver` en fichier local. Aucun
 navigateur n'est requis sur le serveur pour conserver cette attente. Les signaux et la décision sur le
 proxy sortant sont décrits dans [Sécurité](securite.md#échecs-mémorisés-coupe-circuit-caches-bornés).
+
+## Localisation des registres AD59 — #121
+
+`archives_registres(service="AD59", commune="Saint-Vaast-en-Cambrésis", annee=1860, type_acte="N")`
+interroge la recherche publique pour obtenir la cote et l'ARK du registre, sans navigateur ni ARK initial.
+Une seule page par appel, avec cache ; les pages suivantes sont demandées explicitement. Le serveur
+ne cherche pas encore la vue contenant l'acte : poursuivre avec `archives_naviguer`.
+
+Le [guide utilisateur](../wiki/Services-archives.md#trouver-un-registre-ad59-sans-ark) décrit les types,
+la garde des vivants et les replis. Le [contrat observé](recherche-registres-ad59.md) documente le HTML,
+les fixtures et la recette réseau explicite. Les autres services ne sont pas qualifiés par ce lot.

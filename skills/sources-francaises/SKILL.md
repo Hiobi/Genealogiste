@@ -8,6 +8,11 @@ description: Connaissance des sources généalogiques françaises et de leur loc
 Toujours préciser : **type de source** (originale/dérivée), **service** (AD, mairie, SHD…),
 **cote typique** (cadre de classement, à vérifier dans l'inventaire), **communicabilité**, **accès en ligne**.
 Outils : `cotes_a_consulter`, `prochaine_source`, `liens_recherche`, `communicabilite`, `archives_service` (service réel : site, mise en ligne, NAAN ; docs/archives.md), `ark_resoudre`.
+Pour AD59, `archives_registres(service="AD59", commune=…, annee=…, type_acte="N"|"M"|"D", personne=id)`
+localise les registres depuis le résultat officiel. Une page par appel ; poursuivre explicitement avec
+`page_suivante`. `NMD` ou le type vide ne filtre pas le type ; tables décennales non qualifiées ici.
+Ensuite `archives_naviguer` parcourt les vues, `archive_image` les lit et `piece_archiver` conserve l'original.
+Un résultat vide ne démontre pas que l'acte n'existe pas ; un blocage conserve une tâche manuelle au journal.
 
 | Source | Période | Série AD typique | Apporte | Remarques |
 |---|---|---|---|---|

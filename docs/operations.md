@@ -74,6 +74,11 @@ renvois `@N…@`) ; UID en collision réattribués.
 - `ark_resoudre(ark)` : service, URL canonique, repli `n2t.net`, disponibilité (HEAD ; repli GET sans lire le
   corps si HEAD renvoie 405 ou 501), manifeste IIIF, citation
   suggérée. NAAN inconnu : registre public de l'ARK Alliance (cache 30 jours).
+- `archives_registres(service, commune, annee, type_acte, page, personne)` localise un registre AD59
+  sans ARK initial : cote, ARK, titre, bornes et nombre de vues seulement lorsqu'ils sont affichés par
+  le service. Types `N`, `M`, `D` ; `NMD` ou vide = aucun filtre. Une page de résultats par appel,
+  puis `page_suivante` pour poursuivre explicitement. Un résultat vide est journalisé sans en déduire
+  l'absence de l'acte. Les autres services et les tables décennales gardent le parcours manuel.
 - `archive_image(source, page, region, largeur, gris, details)` accepte un lien IIIF (Image API, `info.json`,
   manifeste v2/v3, tous pays), un ARK Gallica, un lien de visionneuse AD59, une image directe ou un fichier.
   Pour AD59 : ARK de vue complet, ou ARK du registre + `page=N` (vues à partir de 1). Les deux outils

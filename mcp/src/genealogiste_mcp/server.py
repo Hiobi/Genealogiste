@@ -53,6 +53,7 @@ from .sources import (
     liens,
     matchid,
     planche,
+    registres,
     visionneuses,
     wikidata,
     wikitree,
@@ -512,6 +513,25 @@ def archives_service(lieu: str = "", departement: str = "", code: str = "", docu
     matricule… ; préciser lieu pour les exceptions communales et annee ; None = inconnu), inscription,
     date de vérification et couverture sourcée. Un accès déclaré ne prouve pas l'existence d'un acte."""
     return archives.service(lieu, departement, code, document, annee or None)
+
+
+@mcp.tool()
+def archives_registres(service: str, commune: str, annee: int, type_acte: str = "", page: int = 1,
+                      personne: str = "") -> dict:
+    """Localiser un registre par commune et année, sans connaître son ARK : service=AD59 uniquement.
+    type_acte : N (naissance), M (mariage), D (décès), NMD ou vide (tous). Une seule page de résultats
+    par appel ; page_suivante permet de poursuivre explicitement. Cote, ARK et période proviennent du
+    résultat officiel ; une recherche vide ne prouve pas l'absence de l'acte. personne désigne seulement
+    la cible locale, pour la garde des vivants et le journal ; cet identifiant n'est pas envoyé au service."""
+    if refus := _garde(personne=personne, texte=commune):
+        return refus
+    a = app()
+    try:
+        return registres.rechercher(a.sctx, service, commune, annee, type_acte, page, personne)
+    except (SourceError, ValueError) as exc:
+        return error_envelope(a.sctx, "archives", "registres",
+                              {"service": service, "commune": commune, "annee": annee,
+                               "type_acte": type_acte, "page": page}, exc, personne=personne or None)
 
 
 @mcp.tool()
