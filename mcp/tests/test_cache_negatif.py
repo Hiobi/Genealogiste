@@ -12,7 +12,7 @@ import respx
 from genealogiste_mcp import menage, server
 from genealogiste_mcp.cache import Cache
 from genealogiste_mcp.config import load_config
-from genealogiste_mcp.http import SourceError
+from genealogiste_mcp.http import SourceError, _protection
 
 URL = "https://archives.exemple.fr/api/vue/1"
 AUTRE = "https://archives.exemple.fr/api/vue/2"
@@ -56,7 +56,7 @@ def test_echec_memorise_visible_dans_enveloppe(app):
 
 @respx.mock
 def test_coupe_circuit_apres_blocage_anti_robot(app):
-    respx.get(URL).mock(return_value=httpx.Response(403, text=CF))
+    respx.get(URL).mock(return_value=httpx.Response(403, text=CF, headers={"Content-Type": "text/html"}))
     autre = respx.get(AUTRE).mock(return_value=httpx.Response(200, json={}))
     ailleurs = respx.get("https://autre-service.fr/x").mock(return_value=httpx.Response(200, json={}))
     with pytest.raises(SourceError):
@@ -123,7 +123,8 @@ def test_docstring_cache_purger():
 @pytest.mark.parametrize("statut", [200, 403, 503])
 @pytest.mark.parametrize(("corps", "protection"), [
     (CF, "Cloudflare"),
-    ('<html><div class="h-captcha" data-sitekey="synthetique"></div>'
+    ('<html><title>Security verification</title><h1>Verify you are human</h1>'
+     '<div class="h-captcha" data-sitekey="synthetique"></div>'
      '<script src="https://js.hcaptcha.com/1/api.js"></script></html>', "hCaptcha"),
     ('<html><script src="https://geo.captcha-delivery.com/captcha/">'
      '</script><iframe src="https://geo.captcha-delivery.com/captcha/"></iframe></html>', "DataDome"),
@@ -131,7 +132,7 @@ def test_docstring_cache_purger():
      'Checking your browser before accessing</div></html>', "attente"),
 ])
 def test_defi_avant_reprise_cache_et_analyse(app, statut, corps, protection):
-    route = respx.get(URL).mock(return_value=httpx.Response(statut, text=corps))
+    route = respx.get(URL).mock(return_value=httpx.Response(statut, text=corps, headers={"Content-Type": "text/html"}))
     with pytest.raises(SourceError) as erreur:
         app.http.get(URL, parse="text")
     assert erreur.value.bloque_antirobot is True
@@ -173,10 +174,68 @@ def test_defi_sur_ecriture_non_rejoue_et_url_redirigee(app):
     respx.get(AUTRE).mock(return_value=httpx.Response(302, headers={"Location": destination}))
     # Lever la pause pour suivre la redirection puis vérifier l'URL effective.
     app.http.cache.purge("coupe_circuit")
-    respx.get(destination).mock(return_value=httpx.Response(200, text=CF))
+    respx.get(destination).mock(return_value=httpx.Response(200, text=CF, headers={"Content-Type": "text/html"}))
     with pytest.raises(SourceError) as redirection:
         app.http.get(AUTRE)
     assert redirection.value.url == destination
     with pytest.raises(SourceError) as coupe:
         app.http.get("https://autre-service.fr/autre")
     assert coupe.value.url == destination and coupe.value.coupe_circuit
+
+
+@respx.mock
+def test_redirection_vers_hote_en_pause_sans_recontact(app):
+    destination = "https://autre-service.fr/defi"
+    cible = respx.get(destination).mock(return_value=httpx.Response(403, text=CF, headers={"Content-Type": "text/html"}))
+    respx.get(URL).mock(return_value=httpx.Response(302, headers={"Location": destination}))
+    with pytest.raises(SourceError):
+        app.http.get(destination)
+    with pytest.raises(SourceError) as erreur:
+        app.http.get(URL)
+    assert erreur.value.coupe_circuit and erreur.value.url == destination
+    assert cible.call_count == 1
+
+
+@respx.mock
+def test_formulaire_legitime_hcaptcha_accepte(app):
+    corps = ('<html><form action="/inscription"><input name="email"><p>Verify you are human</p>'
+             '<div class="h-captcha" data-sitekey="synthetique"></div>'
+             '<script src="https://js.hcaptcha.com/1/api.js"></script>'
+             '<button>Inscription</button></form></html>')
+    respx.get(URL).mock(return_value=httpx.Response(200, text=corps))
+    assert app.http.get(URL, parse="text")[0] == corps
+
+
+@respx.mock
+@pytest.mark.parametrize(("content_type", "corps"), [
+    ("application/json", '{"exemple":"/cdn-cgi/challenge-platform/ ou cf-chl-example"}'),
+    ("application/pdf", "%PDF-1.4 documentation cf-chl-example"),
+    ("text/plain", "documentation /cdn-cgi/challenge-platform/"),
+])
+def test_signature_dans_document_non_html_acceptee(app, content_type, corps):
+    respx.get(URL).mock(return_value=httpx.Response(200, content=corps, headers={"Content-Type": content_type}))
+    assert app.http.get(URL, parse="text")[0] == corps
+
+
+@respx.mock
+def test_html_sans_type_et_403_ordinaire(app):
+    respx.get(URL).mock(return_value=httpx.Response(200, content=CF.encode()))
+    with pytest.raises(SourceError) as erreur:
+        app.http.get(URL)
+    assert erreur.value.protection == "Cloudflare"
+    app.http.cache.purge("coupe_circuit")
+    respx.get(AUTRE).mock(return_value=httpx.Response(403, text="Accès refusé"))
+    with pytest.raises(SourceError) as ordinaire:
+        app.http.get(AUTRE)
+    assert not ordinaire.value.bloque_antirobot and ordinaire.value.status == 403
+
+
+def test_reponse_en_stream_ne_lit_pas_le_corps():
+    class Flux(httpx.SyncByteStream):
+        def __iter__(self):
+            raise AssertionError("Le corps ne doit pas être lu")
+
+    resp = httpx.Response(503, stream=Flux(), headers={"Content-Type": "text/html"})
+    assert _protection(resp) is None
+    resp.headers["cf-mitigated"] = "challenge"
+    assert _protection(resp) == "Cloudflare"

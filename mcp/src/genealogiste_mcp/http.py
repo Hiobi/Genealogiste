@@ -51,12 +51,21 @@ def _protection(resp: httpx.Response) -> str | None:
         return None
     if resp.headers.get("cf-mitigated", "").lower() == "challenge":
         return "Cloudflare"
+    if not resp.is_stream_consumed:
+        return None
     corps = resp.content[:65536].decode("utf-8", errors="ignore").lower()
+    ctype = resp.headers.get("content-type", "").split(";", 1)[0].strip().lower()
+    if ctype not in ("text/html", "application/xhtml+xml"):
+        if ctype or not corps.lstrip().startswith(("<!doctype html", "<html")):
+            return None
     if ("/cdn-cgi/challenge-platform/" in corps or "cf-chl-" in corps
             or (resp.status_code == 403 and "cloudflare" in corps
                 and any(s in corps for s in ("accès refusé", "attention required")))):
         return "Cloudflare"
-    if "js.hcaptcha.com/1/api.js" in corps and "h-captcha" in corps:
+    if ("js.hcaptcha.com/1/api.js" in corps and "h-captcha" in corps
+            and any(s in corps for s in ("<title>security verification</title>",
+                                         "<title>verify you are human</title>",
+                                         "<title>vérification de sécurité</title>"))):
         return "hCaptcha"
     if "geo.captcha-delivery.com/captcha/" in corps or "datadome.co/captcha/" in corps:
         return "DataDome"
@@ -145,6 +154,7 @@ class HttpClient:
         sans_secrets = False
         sensibles = {"authorization", "proxy-authorization", "cookie", "x-api-key"}
         for _ in range(MAX_REDIRECTS + 1):
+            self._verifier_coupe_circuit(urlparse(url).netloc)
             try:
                 self.policy.check(url)
             except DestinationRefusee as exc:

@@ -74,7 +74,7 @@ def test_error_is_logged(app):
 @respx.mock
 def test_cloudflare_block_message(app):
     respx.get("https://gallica.bnf.fr/SRU").mock(return_value=httpx.Response(
-        403, text="<html>Attention Required! | Cloudflare</html>"))
+        403, text="<html>Attention Required! | Cloudflare</html>", headers={"Content-Type": "text/html"}))
     r = server.gallica_recherche("jean martin")
     assert "Cloudflare" in r["erreur"]
 

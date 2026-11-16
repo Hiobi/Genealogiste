@@ -136,7 +136,8 @@ def test_reponse_incoherente_refusee_avant_image(app, routes, defaut):
 
 
 def test_vue_absente_connexion_et_repli(app, routes):
-    routes.get(API, params=PARAMS).respond(403, text="Cloudflare accès refusé")
+    routes.get(API, params=PARAMS).respond(403, text="<html>Cloudflare accès refusé</html>",
+                                           headers={"Content-Type": "text/html"})
     assert "Télécharger" in server.archive_image(VIEW)["erreur"]
     assert "page=N" in server.archive_image("ark:/33518/registrefictif")["erreur"]
 
