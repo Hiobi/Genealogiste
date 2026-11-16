@@ -6,7 +6,7 @@ from __future__ import annotations
 import threading
 import time
 from collections.abc import Callable
-from datetime import UTC
+from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
 from typing import Any
 from urllib.parse import urljoin, urlparse
@@ -27,12 +27,42 @@ class SourceError(Exception):
     """Erreur lisible renvoyée à l'agent (accès refusé, quota, format inattendu...)."""
 
     def __init__(self, message: str, status: int | None = None, reessayer_apres: float | None = None,
-                 echec_memorise: bool = False, coupe_circuit: bool = False):
+                 echec_memorise: bool = False, coupe_circuit: bool = False, *,
+                 bloque_antirobot: bool = False, protection: str | None = None,
+                 url: str | None = None, date_detection: str | None = None):
         super().__init__(message)
         self.status = status
         self.reessayer_apres = reessayer_apres  # secondes avant de réessayer (429/503, plafond atteint)
         self.echec_memorise = echec_memorise  # échec servi par le cache négatif, sans requête
         self.coupe_circuit = coupe_circuit  # hôte en pause après un blocage anti-robot
+        self.bloque_antirobot = bloque_antirobot
+        self.protection = protection
+        self.url = url
+        self.date_detection = date_detection
+
+
+def _metadonnees(exc: SourceError) -> dict:
+    return {nom: getattr(exc, nom) for nom in ("bloque_antirobot", "protection", "url", "date_detection")}
+
+
+def _protection(resp: httpx.Response) -> str | None:
+    """Signatures de défis, sans assimiler une mention de fournisseur à un blocage."""
+    if resp.status_code not in (200, 403, 503):
+        return None
+    if resp.headers.get("cf-mitigated", "").lower() == "challenge":
+        return "Cloudflare"
+    corps = resp.content[:65536].decode("utf-8", errors="ignore").lower()
+    if ("/cdn-cgi/challenge-platform/" in corps or "cf-chl-" in corps
+            or (resp.status_code == 403 and "cloudflare" in corps
+                and any(s in corps for s in ("accès refusé", "attention required")))):
+        return "Cloudflare"
+    if "js.hcaptcha.com/1/api.js" in corps and "h-captcha" in corps:
+        return "hCaptcha"
+    if "geo.captcha-delivery.com/captcha/" in corps or "datadome.co/captcha/" in corps:
+        return "DataDome"
+    if "challenge-running" in corps and "checking your browser" in corps:
+        return "attente"
+    return None
 
 
 MEMORISES = (403, 404, 429)  # échecs mémorisés par URL (cache négatif)
@@ -185,17 +215,19 @@ class HttpClient:
             if echec is not None:
                 reste = max(0.0, echec["jusqu_a"] - time.time())
                 raise SourceError(f"(échec mémorisé, sans nouvelle requête) {echec['message']}", echec["status"],
-                                  reessayer_apres=round(reste, 1), echec_memorise=True)
+                                  reessayer_apres=round(reste, 1), echec_memorise=True,
+                                  **echec.get("antirobot", {}))
         try:
             return self._request(method, url, host, params=params, data=data, json=json, files=files,
                                  headers=headers, ttl=ttl, source=source, parse=parse, cacheable=cacheable,
                                  key=key, idempotent=idempotent)
         except SourceError as exc:
-            if cle_echec and exc.status in MEMORISES:
+            if cle_echec and (exc.status in MEMORISES or exc.bloque_antirobot):
                 duree = exc.reessayer_apres if exc.status == 429 and exc.reessayer_apres else self.echec_ttl
                 if duree > 0:
                     self.cache.set(cle_echec, {"message": str(exc), "status": exc.status,
-                                               "jusqu_a": time.time() + duree}, duree, source or "echec")
+                                               "jusqu_a": time.time() + duree,
+                                               "antirobot": _metadonnees(exc)}, duree, source or "echec")
             raise
 
     def _hote(self, host: str) -> str:
@@ -211,12 +243,13 @@ class HttpClient:
             f"{host} : coupe-circuit actif après blocage anti-robot ({coupe['raison']}) ; reprise à {heure} "
             f"(dans {round(reste)} s). Consulter le site dans le navigateur en attendant ; "
             "cache_purger('coupe_circuit') pour lever la pause.", 403,
-            reessayer_apres=round(reste, 1), coupe_circuit=True)
+            reessayer_apres=round(reste, 1), coupe_circuit=True, **coupe.get("antirobot", {}))
 
-    def _couper(self, host: str, raison: str) -> None:
+    def _couper(self, host: str, raison: str, exc: SourceError) -> None:
         if self.coupe_circuit_ttl > 0:
             self.cache.set(Cache.key("coupe_circuit", self._hote(host)),
-                           {"raison": raison, "jusqu_a": time.time() + self.coupe_circuit_ttl},
+                           {"raison": raison, "jusqu_a": time.time() + self.coupe_circuit_ttl,
+                            "antirobot": _metadonnees(exc)},
                            self.coupe_circuit_ttl, "coupe_circuit")
 
     def _request(self, method: str, url: str, host: str, *, params, data, json, files, headers, ttl, source,
@@ -255,6 +288,17 @@ class HttpClient:
                 continue
             if parse == "status":
                 resp.close()  # disponibilité : ne jamais consommer le corps
+            protection = _protection(resp)
+            if protection:
+                url_blocage = str(resp.url)
+                hote_blocage = urlparse(url_blocage).netloc
+                exc = SourceError(
+                    f"{hote_blocage} : blocage anti-robot ({protection}, HTTP {resp.status_code}). "
+                    f"Consulter manuellement {url_blocage} ; aucune tentative de contournement.",
+                    resp.status_code, bloque_antirobot=True, protection=protection, url=url_blocage,
+                    date_detection=datetime.now(UTC).isoformat())
+                self._couper(hote_blocage, f"HTTP {resp.status_code}, {protection}", exc)
+                raise exc
             if resp.status_code in (502, 503, 504) and not replay:
                 raise SourceError(self._indetermine(host, f"HTTP {resp.status_code}"), resp.status_code,
                                   reessayer_apres=retry_after(resp.headers.get("Retry-After")))
@@ -265,14 +309,6 @@ class HttpClient:
                 delay *= 2
                 last_exc = SourceError(f"{host} : HTTP {resp.status_code} (tentative {attempt + 1})", resp.status_code)
                 continue
-            if resp.status_code == 403 and ((parse != "status" and "cloudflare" in resp.text[:3000].lower())
-                                            or resp.headers.get("cf-mitigated", "").lower() == "challenge"):
-                self._couper(host, "HTTP 403, défi Cloudflare")
-                raise SourceError(
-                    f"{host} bloque cette adresse IP (protection Cloudflare). "
-                    "Réessayer depuis une connexion résidentielle ou consulter le site dans le navigateur.",
-                    403,
-                )
             if resp.status_code in (401, 403):
                 raise SourceError(f"{host} : accès refusé (HTTP {resp.status_code}) — identifiants requis ?", resp.status_code)
             if resp.status_code == 404:

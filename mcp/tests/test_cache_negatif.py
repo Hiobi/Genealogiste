@@ -16,6 +16,7 @@ from genealogiste_mcp.http import SourceError
 
 URL = "https://archives.exemple.fr/api/vue/1"
 AUTRE = "https://archives.exemple.fr/api/vue/2"
+# Pages synthétiques construites pour exercer les signatures, sans capture de service réel.
 CF = "<html><title>Just a moment...</title><script src='/cdn-cgi/challenge-platform/cloudflare'></script></html>"
 
 
@@ -116,3 +117,66 @@ def test_docstring_cache_purger():
     doc = server.cache_purger.__doc__
     for categorie in ("iiif", "visionneuse", "ark", "archives", "coupe_circuit"):
         assert categorie in doc
+
+
+@respx.mock
+@pytest.mark.parametrize("statut", [200, 403, 503])
+@pytest.mark.parametrize(("corps", "protection"), [
+    (CF, "Cloudflare"),
+    ('<html><div class="h-captcha" data-sitekey="synthetique"></div>'
+     '<script src="https://js.hcaptcha.com/1/api.js"></script></html>', "hCaptcha"),
+    ('<html><script src="https://geo.captcha-delivery.com/captcha/">'
+     '</script><iframe src="https://geo.captcha-delivery.com/captcha/"></iframe></html>', "DataDome"),
+    ('<html><title>Just a moment...</title><div id="challenge-running">'
+     'Checking your browser before accessing</div></html>', "attente"),
+])
+def test_defi_avant_reprise_cache_et_analyse(app, statut, corps, protection):
+    route = respx.get(URL).mock(return_value=httpx.Response(statut, text=corps))
+    with pytest.raises(SourceError) as erreur:
+        app.http.get(URL, parse="text")
+    assert erreur.value.bloque_antirobot is True
+    assert erreur.value.protection == protection
+    assert erreur.value.url == URL
+    assert erreur.value.date_detection.endswith("+00:00")
+    assert route.call_count == 1
+    with pytest.raises(SourceError) as coupe:
+        app.http.get(AUTRE)
+    assert coupe.value.coupe_circuit and coupe.value.url == URL
+    assert coupe.value.date_detection == erreur.value.date_detection
+    app.http.cache.purge("coupe_circuit")
+    with pytest.raises(SourceError) as cache:
+        app.http.get(URL, parse="text")
+    assert cache.value.echec_memorise and cache.value.protection == protection
+    assert cache.value.url == URL and cache.value.date_detection == erreur.value.date_detection
+    assert route.call_count == 1
+
+
+@respx.mock
+@pytest.mark.parametrize("corps", [
+    "<html>Documentation Cloudflare et hCaptcha pour les archives</html>",
+    '<html><script src="https://js.hcaptcha.com/1/api.js"></script> formulaire</html>',
+    "<html>Checking your browser: documentation du service</html>",
+])
+def test_mentions_ordinaires_ne_sont_pas_un_defi(app, corps):
+    respx.get(URL).mock(return_value=httpx.Response(200, text=corps))
+    assert app.http.get(URL, parse="text")[0] == corps
+
+
+@respx.mock
+def test_defi_sur_ecriture_non_rejoue_et_url_redirigee(app):
+    destination = "https://autre-service.fr/defi?vue=1"
+    route = respx.post(URL).mock(return_value=httpx.Response(
+        503, headers={"cf-mitigated": "challenge"}, text="attendez"))
+    with pytest.raises(SourceError) as erreur:
+        app.http.post(URL, json={"donnee": "fictive"})
+    assert erreur.value.bloque_antirobot and route.call_count == 1
+    respx.get(AUTRE).mock(return_value=httpx.Response(302, headers={"Location": destination}))
+    # Lever la pause pour suivre la redirection puis vérifier l'URL effective.
+    app.http.cache.purge("coupe_circuit")
+    respx.get(destination).mock(return_value=httpx.Response(200, text=CF))
+    with pytest.raises(SourceError) as redirection:
+        app.http.get(AUTRE)
+    assert redirection.value.url == destination
+    with pytest.raises(SourceError) as coupe:
+        app.http.get("https://autre-service.fr/autre")
+    assert coupe.value.url == destination and coupe.value.coupe_circuit
