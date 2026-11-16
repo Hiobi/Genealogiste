@@ -21,6 +21,20 @@ CF = "<html><title>Just a moment...</title><script src='/cdn-cgi/challenge-platf
 
 
 @respx.mock
+@pytest.mark.parametrize("script", ["/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=fictif",
+                                   "/cdn-cgi/challenge-platform/scripts/jsd/autre.js"])
+def test_recherche_html_avec_instrumentation_cloudflare_passive(app, script):
+    # Structure synthétique représentative de la recherche AD59, sans contenu réel.
+    html = ('<html data-captcha="hcaptcha"><head><title>Recherche des archives</title></head>'
+            '<body><main><h1>Résultats de recherche</h1><p>Registre fictif</p></main>'
+            f'<footer><script src="{script}"></script></footer></body></html>')
+    route = respx.get(URL).mock(return_value=httpx.Response(200, text=html, headers={"Content-Type": "text/html"}))
+    assert app.http.get(URL, parse="text") == (html, False)
+    assert app.http.get(URL, parse="text") == (html, True)
+    assert route.call_count == 1
+
+
+@respx.mock
 @pytest.mark.parametrize("statut", [403, 404, 429])
 def test_echec_memorise(app, statut):
     route = respx.get(URL).mock(return_value=httpx.Response(statut, headers={"Retry-After": "600"}))
@@ -123,6 +137,7 @@ def test_docstring_cache_purger():
 @pytest.mark.parametrize("statut", [200, 403, 503])
 @pytest.mark.parametrize(("corps", "protection"), [
     (CF, "Cloudflare"),
+    ("<html><script>window._cf_chl_opt = {cType: 'managed'}</script></html>", "Cloudflare"),
     ('<html><title>Security verification</title><h1>Verify you are human</h1>'
      '<div class="h-captcha" data-sitekey="synthetique"></div>'
      '<script src="https://js.hcaptcha.com/1/api.js"></script></html>', "hCaptcha"),

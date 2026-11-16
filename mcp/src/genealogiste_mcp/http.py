@@ -58,7 +58,10 @@ def _protection(resp: httpx.Response) -> str | None:
     if ctype not in ("text/html", "application/xhtml+xml"):
         if ctype or not corps.lstrip().startswith(("<!doctype html", "<html")):
             return None
-    if ("/cdn-cgi/challenge-platform/" in corps or "cf-chl-" in corps
+    if ("window._cf_chl_opt" in corps
+            or ("/cdn-cgi/challenge-platform/" in corps
+                and any(titre in corps for titre in ("<title>just a moment", "<title>attention required",
+                                                     "<title>vérification en cours")))
             or (resp.status_code == 403 and "cloudflare" in corps
                 and any(s in corps for s in ("accès refusé", "attention required")))):
         return "Cloudflare"
