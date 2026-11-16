@@ -31,6 +31,7 @@ APPELS: dict[str, dict] = {
     "geo_historique": {"nom": "Lille"},
     "recherche_multi": {"nom": "Durand", "prenom": "Jean"},
     "archives_naviguer": {"source": "https://iiif.example/iiif/registre/manifest.json"},
+    "archives_registres": {"service": "AD59", "commune": "Somain", "annee": 1860},
     "gramps_recherche": {"texte": "Durand"},
     "gramps_personne": {"handle": "h1"},
     "diagnostic": {},

@@ -45,6 +45,7 @@ OUTILS: dict[str, tuple[str, str]] = {
     "cotes_a_consulter": (LECTURE, ALLOW),
     "archives_service": (LECTURE, DEFAUT),
     "archives_naviguer": (RESEAU, ALLOW),
+    "archives_registres": (RESEAU, ALLOW),
     "archives_planche": (RESEAU, DEFAUT),  # écrit une planche dans le cache d'images, comme archive_image
     "source_collee": (JOURNAL, ALLOW),
     "diagnostic": (RESEAU, ALLOW),  # contrôles locaux + une requête GET par source, sans donnée de personne
@@ -107,7 +108,8 @@ OUTILS: dict[str, tuple[str, str]] = {
 
 # Outils réseau qui envoient des noms, un texte libre ou un identifiant de personne : garde « vivants » obligatoire.
 GARDE_VIVANTS = {"matchid_recherche", "matchid_appariement_csv", "wikitree_recherche", "gallica_recherche",
-                 "gallica_recherche_document", "wikidata_personne", "wikidata_sparql", "recherche_multi"}
+                 "gallica_recherche_document", "wikidata_personne", "wikidata_sparql", "recherche_multi",
+                 "archives_registres"}
 
 # Paramètres qui désignent une personne ; exemptions justifiées (outil réseau, paramètre sans rapport).
 PARAMS_PERSONNE = {"nom", "prenom", "texte", "personne", "requete", "chemin_csv"}
