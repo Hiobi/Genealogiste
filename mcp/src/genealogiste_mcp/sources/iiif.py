@@ -115,8 +115,10 @@ def _resolution_ttl(url: str, default: float) -> float:
     return 0 if urlsplit(url).hostname == "catalog.archives.gov" else default
 
 
-def _json(ctx: SourceContext, url: str) -> dict:
-    data, _ = ctx.http.get(url, ttl=_resolution_ttl(url, 30 * DAY), source="iiif", headers={"Accept": "application/json"})
+def _json(ctx: SourceContext, url: str, *, caches: list[bool] | None = None) -> dict:
+    data, cached = ctx.http.get(url, ttl=_resolution_ttl(url, 30 * DAY), source="iiif", headers={"Accept": "application/json"})
+    if caches is not None:
+        caches.append(cached)
     if not isinstance(data, dict):
         raise IiifError(f"Réponse IIIF inattendue : {url}")
     return data
@@ -136,9 +138,11 @@ class _ManifestLinks(HTMLParser):
             self.links.add(href)
 
 
-def _document(ctx: SourceContext, url: str) -> dict:
+def _document(ctx: SourceContext, url: str, *, caches: list[bool] | None = None) -> dict:
     # Une page HTML au plus : le code filtre les liens déclarés, aucun HTML/JS n'est envoyé au modèle.
-    text, _ = ctx.http.get(url, parse="text", ttl=_resolution_ttl(url, 7 * DAY), source="iiif")
+    text, cached = ctx.http.get(url, parse="text", ttl=_resolution_ttl(url, 7 * DAY), source="iiif")
+    if caches is not None:
+        caches.append(cached)
     if len(text) > 5_000_000:
         raise IiifError("Document de résolution trop volumineux : fournir le lien IIIF direct.")
     try:
@@ -149,7 +153,7 @@ def _document(ctx: SourceContext, url: str) -> dict:
         links = {urljoin(url, link) for link in parser.links}
         if len(links) != 1:
             raise IiifError("Plusieurs manifestes possibles : fournir le lien IIIF voulu." if links else CONSIGNE_AD) from None
-        return _json(ctx, links.pop())
+        return _json(ctx, links.pop(), caches=caches)
     if not isinstance(data, dict):
         raise IiifError("Document IIIF inattendu : fournir une image ou un manifeste de document.")
     return data
@@ -228,10 +232,13 @@ def locate(ctx: SourceContext, source: str, page: int = 0) -> dict:
 
 def naviguer(ctx: SourceContext, source: str, page: int = 0, pas: int = 20) -> dict:
     """Fenêtre de vues d'un manifeste IIIF (v2/v3) : métadonnées du document et liste des vues."""
-    data = _document(ctx, source)
+    caches: list[bool] = []
+    data = _document(ctx, source, caches=caches)
     views = canvases(data)
     if not views:
         raise IiifError("Document sans vue IIIF exploitable. " + CONSIGNE_AD)
+    if page < 0 or page > len(views):
+        raise IiifError(f"Vue {page} hors du manifeste : bornes valides de 1 à {len(views)} (0 = début).")
     debut = max(0, page - 1) if page else 0
     fin = min(len(views), debut + max(1, min(int(pas or 20), 100)))
     fenetre = []
@@ -241,7 +248,9 @@ def naviguer(ctx: SourceContext, source: str, page: int = 0, pas: int = 20) -> d
                         "url_image": v.get("url_image", "")})
     return {"mode": "iiif:manifeste", "registre": {"titre": _label(data.get("label")), "nb_vues": len(views),
             "licence": _label(data.get("rights") or data.get("license") or data.get("attribution"))},
-            "vues": fenetre, "fenetre": {"de": debut + 1, "a": fin},
+            "vues": fenetre, "fenetre": {"de": debut + 1, "a": fin}, "nb_vues": len(views),
+            "fin_de_registre": fin == len(views), "vue_suivante": fin + 1 if fin < len(views) else None,
+            "depuis_cache": all(caches),
             "suite": "archive_image(<service_iiif>) ou archive_image(source, page=N) pour lire/archiver une vue."}
 
 

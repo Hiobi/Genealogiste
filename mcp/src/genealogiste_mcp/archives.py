@@ -173,8 +173,10 @@ def online(s: dict | None, document: str, annee: int | None, lieu: str = "",
 def view(s: dict, document: str = "", annee: int | None = None, lieu: str = "") -> dict:
     out = {k: v for k, v in s.items() if v not in ("", None, {}, [])}
     resolution = s.get("resolution_image") or {}
-    adaptateur = resolution.get("type") == "visualizer_api"
-    out["telechargement"] = {"type": resolution.get("type"), "iiif": resolution.get("iiif"),
+    gallica = s.get("ark_naan") == "12148"
+    adaptateur = resolution.get("type") == "visualizer_api" or gallica
+    out["telechargement"] = {"type": "iiif_gallica" if gallica else resolution.get("type"),
+                             "iiif": True if gallica else resolution.get("iiif"),
                              "adaptateur_disponible": adaptateur,
                              "etat": ("automatique" if s.get("recette") else "automatique_non_eprouve") if adaptateur
                              else "lien_iiif_ou_fichier_a_fournir"}
