@@ -368,7 +368,11 @@ def ark_resoudre(ark: str, verifier: bool = True, titre: str = "") -> dict:
     """Identifiant pérenne ARK (seul ou dans une URL d'archives / Gallica) : service qui l'a attribué (NAAN),
     URL canonique et repli n2t.net, disponibilité (requête HEAD, aucun téléchargement), manifeste IIIF éventuel
     et citation suggérée (source = ressource ARK sans qualificatif, citation = ARK complet, vue)."""
-    return ark_resolver.resolve(app().sctx, ark, verifier, titre)
+    a = app()
+    try:
+        return ark_resolver.resolve(a.sctx, ark, verifier, titre)
+    except SourceError as exc:
+        return error_envelope(a.sctx, "ark", "resoudre", {"ark": ark, "verifier": verifier}, exc)
 
 
 @mcp.tool()
@@ -537,8 +541,9 @@ def archives_naviguer(source: str, page: int = 0, pas: int = 20) -> dict:
         return res
     except (SourceError, ValueError) as exc:  # VisionneuseError et IiifError sont des ValueError
         out = error_envelope(a.sctx, "archives", "naviguer", params, exc)
-        out["conseil"] = ("Vérifier l'ARK ou l'URL du registre (archives_service pour la visionneuse du service) ; "
-                          "sinon ouvrir le registre dans le navigateur (liens_recherche, cotes_a_consulter).")
+        if out.get("statut") != "bloque_antirobot":
+            out["conseil"] = ("Vérifier l'ARK ou l'URL du registre (archives_service pour la visionneuse du service) ; "
+                              "sinon ouvrir le registre dans le navigateur (liens_recherche, cotes_a_consulter).")
         return out
 
 
@@ -1151,7 +1156,7 @@ def piece_archiver(source: str, page: int = 0, personnes: list[str] | None = Non
             ecrire_atomique(dest, data)
     except (iiif.IiifError, SourceError, KeyError, CheminRefuse, pieces.PieceError, OSError) as exc:
         failure = error_envelope(a.sctx, "archives", "piece_archiver", {"source": source, "page": page}, exc)
-        return {"erreur": str(exc), "source": source, "journal": failure["journal"]}
+        return {**failure, "source": source}
     from . import ark as _ark
     source_obj = t.sources.get(source_arbre)
     arbre_ark = (source_obj.ark or source_obj.url) if source_obj else ""

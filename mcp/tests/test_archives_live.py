@@ -20,23 +20,20 @@ from genealogiste_mcp.http import SourceError
 
 ACTIVE = os.environ.get("GENEALOGISTE_TEST_ARCHIVES") == "1"
 ECRIRE = os.environ.get("GENEALOGISTE_RECETTE_ECRIRE") == "1"
+ENVIRONNEMENT = os.environ.get("GENEALOGISTE_RECETTE_ENVIRONNEMENT", "inconnu")
 pytestmark = [pytest.mark.archives_live,
               pytest.mark.skipif(not ACTIVE, reason="GENEALOGISTE_TEST_ARCHIVES=1 non défini (make test-archives)")]
-
-PROTECTION = ("anti-robot", "cloudflare", "captcha", "coupe-circuit", "accès refusé")
-
 
 def _appel(outil, *args, **kw) -> dict:
     """Une exception d'outil (avant #138) est traitée comme une enveloppe d'erreur."""
     try:
         return outil(*args, **kw)
     except SourceError as exc:
-        return {"erreur": str(exc), "coupe_circuit": getattr(exc, "coupe_circuit", False)}
+        return {"erreur": str(exc), "statut": "bloque_antirobot" if exc.bloque_antirobot else "erreur"}
 
 
 def _protection(res: dict) -> bool:
-    texte = str(res.get("erreur", "")).lower()
-    return bool(res.get("coupe_circuit")) or any(m in texte for m in PROTECTION)
+    return res.get("statut") == "bloque_antirobot"
 
 
 @pytest.fixture(autouse=True)
@@ -65,17 +62,18 @@ def test_recette_reelle(service, tmp_path):
             res = _appel(server.archive_image, ref["source"], page=ref.get("page", 0), largeur=400)
         if _protection(res):
             if ECRIRE:
-                archives.enregistrer_recette(service["code"], "protection", f"{etape} : {res['erreur']}")
+                archives.enregistrer_recette(service["code"], "protection", f"{etape} : {res['erreur']}",
+                                             environnement=ENVIRONNEMENT)
             pytest.skip(f"{service['code']} : protection à l'étape {etape}, recette arrêtée ({res['erreur'][:200]})")
         assert "erreur" not in res, res
         assert Path(res["chemin_absolu"]).is_file()
     except AssertionError as exc:
         if ECRIRE:
-            archives.enregistrer_recette(service["code"], "echec", f"{etape} : {exc}")
+            archives.enregistrer_recette(service["code"], "echec", f"{etape} : {exc}", environnement=ENVIRONNEMENT)
         raise
     else:
         if ECRIRE:
-            archives.enregistrer_recette(service["code"], "ok", "")
+            archives.enregistrer_recette(service["code"], "ok", "", environnement=ENVIRONNEMENT)
     finally:
         server.set_app(None)
         app.http.client.close()

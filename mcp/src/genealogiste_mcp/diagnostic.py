@@ -198,8 +198,7 @@ def controles_reseau(a) -> list[dict]:
                 client.get(url, parse="text", use_cache=False, ttl=0, source="diagnostic")
                 ctl = _ctl(f"source:{nom}", "ok", f"{urlsplit(url).hostname} joignable", verdict="joignable")
             except SourceError as exc:
-                texte = str(exc).lower()
-                if exc.coupe_circuit or "cloudflare" in texte or "anti-robot" in texte or "captcha" in texte:
+                if exc.bloque_antirobot or exc.coupe_circuit:
                     ctl = _ctl(f"source:{nom}", "attention", str(exc),
                                "Protection anti-robot sur cette adresse : consulter le site dans le navigateur ; "
                                "aucun contournement n'est tenté.", verdict="protection")

@@ -68,7 +68,8 @@ def test_sources_et_protection(app, monkeypatch):
                                                 "archives_cf": "https://archives.exemple.fr/"})
     respx.get("https://api.exemple.fr/").mock(return_value=httpx.Response(200, text="ok"))
     respx.get("https://archives.exemple.fr/").mock(
-        return_value=httpx.Response(403, text="<title>Just a moment...</title> cloudflare"))
+        return_value=httpx.Response(403, headers={"cf-mitigated": "challenge"},
+                                   text="<title>Just a moment...</title> cloudflare"))
     res = server.diagnostic()
     assert _controle(res, "source:api_ok")["etat"] == "ok"
     cf = _controle(res, "source:archives_cf")
