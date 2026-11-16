@@ -30,6 +30,8 @@ def _status(ctx: SourceContext, url: str) -> dict:
             ctx.http.get(url, parse="status", headers={"Range": "bytes=0-0"}, ttl=DAY, source="ark")
         return {"accessible": True}
     except SourceError as exc:
+        if exc.bloque_antirobot:
+            raise  # l'enveloppe publique doit conserver le défi et sa tâche manuelle
         return {"accessible": False, "statut_http": exc.status, "erreur": str(exc)}
 
 

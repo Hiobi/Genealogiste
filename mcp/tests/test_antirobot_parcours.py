@@ -13,6 +13,7 @@ from genealogiste_mcp.sources.base import error_envelope
 
 
 @pytest.mark.parametrize("outil,params", [
+    ("ark_resoudre", {"ark": "ark:/33518/registre"}),
     ("archives_naviguer", {"source": "ark:/33518/registre"}),
     ("archives_naviguer", {"source": "https://iiif.example/registre/manifest.json"}),
     ("archive_image", {"source": "ark:/33518/registre", "page": 1}),
@@ -30,6 +31,7 @@ def test_blocage_conserve_tache_et_trace(app, monkeypatch, outil, params):
         raise exc
 
     monkeypatch.setattr(app.http, "get", bloquer)
+    monkeypatch.setattr(app.http, "request", bloquer)
     res = getattr(server, outil)(**params)
     assert res["statut"] == "bloque_antirobot"
     assert res["protection"] == "hCaptcha"

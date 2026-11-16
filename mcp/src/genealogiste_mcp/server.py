@@ -368,7 +368,11 @@ def ark_resoudre(ark: str, verifier: bool = True, titre: str = "") -> dict:
     """Identifiant pérenne ARK (seul ou dans une URL d'archives / Gallica) : service qui l'a attribué (NAAN),
     URL canonique et repli n2t.net, disponibilité (requête HEAD, aucun téléchargement), manifeste IIIF éventuel
     et citation suggérée (source = ressource ARK sans qualificatif, citation = ARK complet, vue)."""
-    return ark_resolver.resolve(app().sctx, ark, verifier, titre)
+    a = app()
+    try:
+        return ark_resolver.resolve(a.sctx, ark, verifier, titre)
+    except SourceError as exc:
+        return error_envelope(a.sctx, "ark", "resoudre", {"ark": ark, "verifier": verifier}, exc)
 
 
 @mcp.tool()
