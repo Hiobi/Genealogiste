@@ -13,7 +13,7 @@ from . import VisionneuseError, VueResolue
 REPLI = "Télécharger la vue dans la visionneuse, puis fournir le fichier local ; aucun contournement d'accès."
 
 
-def _json(ctx, host, params):
+def _json(ctx, host, params, *, caches=None):
     try:
         data, cached = ctx.http.get(host + "/visualizer/api", params=params, ttl=7 * DAY,
                                source="visionneuse", headers={"Accept": "application/json"})
@@ -22,11 +22,15 @@ def _json(ctx, host, params):
         # Distinguer une protection (Cloudflare/captcha) d'un simple échec technique, sans contournement.
         if exc.status in (401, 403) or "cloudflare" in cause.lower() or "captcha" in cause.lower():
             cause = "accès protégé (Cloudflare/captcha) : le service refuse ce client."
-        ctx.journal.add(source="visionneuse", operation="resolution_api", parametres=params,
-                        statut="negatif", references=[host + "/visualizer/api"], resume=cause[:500])
+        if caches is None:
+            ctx.journal.add(source="visionneuse", operation="resolution_api", parametres=params,
+                            statut="negatif", references=[host + "/visualizer/api"], resume=cause[:500])
         raise VisionneuseError(f"Visionneuse indisponible : {cause} {REPLI}") from exc
-    ctx.journal.add(source="visionneuse", operation="resolution_api", parametres=params,
-                    statut="positif", references=[host + "/visualizer/api"], cache=cached)
+    if caches is None:
+        ctx.journal.add(source="visionneuse", operation="resolution_api", parametres=params,
+                        statut="positif", references=[host + "/visualizer/api"], cache=cached)
+    else:
+        caches.append(cached)
     if not isinstance(data, (dict, list)):
         raise VisionneuseError(f"Réponse de visionneuse inattendue. {REPLI}")
     return data
@@ -39,7 +43,7 @@ def _url(value, host):
     value = urljoin(host, value)
     try:
         u, h = urlsplit(value), urlsplit(host)
-        ports = u.port, h.port
+        ports = tuple(v.port if v.port is not None else {"https": 443, "http": 80}.get(v.scheme) for v in (u, h))
     except ValueError as exc:
         raise VisionneuseError("URL technique invalide.") from exc
     if (u.scheme, u.hostname, ports[0]) != (h.scheme, h.hostname, ports[1]) or u.username or u.password:
@@ -84,15 +88,31 @@ def naviguer(ctx, a: ark.Ark, service: dict, page: int, pas: int) -> dict:
     (`counts.media`), sans inventer de borne."""
     host = service["site"].rstrip("/")
     params = {"naan": a.naan, "arkName": a.nom}
-    if page < 0:
-        raise VisionneuseError("page : numéro de vue à partir de 1 (0 = début du registre).")
+    caches = []
     debut = max(0, page - 1) if page else 0
     fin = debut + max(1, min(int(pas or 20), 100)) - 1
-    batch = _json(ctx, host, {**params, "start": debut, "end": fin, "group": 0})
+    batch = _json(ctx, host, {**params, "start": debut, "end": fin, "group": 0}, caches=caches)
     positions = _par_position(batch, debut)
     if positions is None:
         raise VisionneuseError(f"Réponse de pagination inattendue. {REPLI}")
     items = sorted(positions.items())
+    premiere = items[0][1] if items else None
+    if premiere is None:
+        # Une plage hors bornes ne fournit pas counts.media : consulter seulement la première vue.
+        debut_registre = _par_position(_json(ctx, host, {**params, "start": 0, "end": 0, "group": 0},
+                                           caches=caches))
+        premiere = (debut_registre or {}).get(0)
+    if premiere is None:
+        raise VisionneuseError(f"Registre sans vue exploitable ; nombre de vues inconnu. {REPLI}")
+    data = _json(ctx, host, {**params, "uuid": _uuid(premiere.get("uuid"))}, caches=caches)
+    nb_vues = _objet(data, "counts").get("media")
+    if type(nb_vues) is not int or nb_vues < 1:
+        raise VisionneuseError("Nombre de vues incohérent : navigation refusée.")
+    if page < 0 or page > nb_vues:
+        raise VisionneuseError(f"Vue {page} hors du registre : bornes valides de 1 à {nb_vues} (0 = début).")
+    attendues = list(range(debut, min(fin, nb_vues - 1) + 1))
+    if [idx for idx, _ in items] != attendues:
+        raise VisionneuseError("Réponse de pagination incomplète ou incohérente : navigation refusée.")
     registre: dict = {}
     vues: list[dict] = []
     for idx, media in items:
@@ -107,16 +127,13 @@ def naviguer(ctx, a: ark.Ark, service: dict, page: int, pas: int) -> dict:
             }
         link = ark.find(media.get("url", ""))
         vues.append({"vue": idx + 1, "ark_vue": link.id if link else "",
-                     "url_image": _objet(media, "location").get("original", "")})
-    nb_vues = None
-    if items:
-        uuid = _uuid(items[0][1].get("uuid"))
-        data = _json(ctx, host, {**params, "uuid": uuid})
-        nb_vues = _objet(data, "counts").get("media") if isinstance(data, dict) else None
+                     "url_image": _url(_objet(media, "location").get("original"), host)})
     registre["nb_vues"] = nb_vues
+    derniere = items[-1][0] + 1
     return {"mode": "visionneuse:visualizer_api", "depot": service["code"], "registre": registre,
-            "vues": vues, "fenetre": {"de": (items[0][0] + 1) if items else debut + 1,
-                                      "a": (items[-1][0] + 1) if items else fin + 1},
+            "nb_vues": nb_vues, "fin_de_registre": derniere == nb_vues,
+            "vue_suivante": derniere + 1 if derniere < nb_vues else None, "depuis_cache": all(caches),
+            "vues": vues, "fenetre": {"de": items[0][0] + 1, "a": derniere},
             "suite": ("archive_image(<ark_vue>) pour lire une vue, piece_archiver(<ark_vue>) pour l'archiver. "
                       "page=N pour une autre fenêtre.")}
 

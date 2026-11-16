@@ -71,7 +71,8 @@ renvois `@N…@`) ; UID en collision réattribués.
   source porte déjà le même ARK, elle est **réutilisée** (avertissement) au lieu d'être doublée.
 - Citation avec un `ark` (ou une `page` contenant un ARK) : ARK complet de l'image enregistré ; `source`
   facultative (retrouvée par l'ARK de la ressource) ; `page` déduite de la vue Gallica (`f12` → « vue 12 »).
-- `ark_resoudre(ark)` : service, URL canonique, repli `n2t.net`, disponibilité (HEAD), manifeste IIIF, citation
+- `ark_resoudre(ark)` : service, URL canonique, repli `n2t.net`, disponibilité (HEAD ; repli GET sans lire le
+  corps si HEAD renvoie 405 ou 501), manifeste IIIF, citation
   suggérée. NAAN inconnu : registre public de l'ARK Alliance (cache 30 jours).
 - `archive_image(source, page, region, largeur, gris, details)` accepte un lien IIIF (Image API, `info.json`,
   manifeste v2/v3, tous pays), un ARK Gallica, un lien de visionneuse AD59, une image directe ou un fichier.

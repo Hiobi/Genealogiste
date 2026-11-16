@@ -110,7 +110,7 @@ class HttpClient:
             self.sleep(slot - now)
 
     def _send(self, method: str, url: str, *, params, data, json, files, headers,
-              timeout: float | None = None) -> httpx.Response:
+              timeout: float | None = None, stream: bool = False) -> httpx.Response:
         """Requête avec redirections suivies manuellement ; chaque URL passe la politique réseau."""
         sans_secrets = False
         sensibles = {"authorization", "proxy-authorization", "cookie", "x-api-key"}
@@ -125,10 +125,11 @@ class HttpClient:
             if sans_secrets:
                 for nom in sensibles:
                     requete.headers.pop(nom, None)
-            resp = self.client.send(requete)
+            resp = self.client.send(requete, stream=stream)
             location = resp.headers.get("Location")
             if resp.status_code not in (301, 302, 303, 307, 308) or not location:
                 return resp
+            resp.close()  # le corps des redirections ne sert jamais à la résolution
             destination = urljoin(str(resp.url), location)
             origine = httpx.URL(str(resp.url))
             cible = httpx.URL(destination)
@@ -160,7 +161,8 @@ class HttpClient:
         use_cache: bool = True,
         idempotent: bool | None = None,
     ) -> tuple[Any, bool]:
-        """Renvoie (contenu, depuis_cache). parse = json | text | bytes | image (bytes contrôlés : type, taille).
+        """Renvoie (contenu, depuis_cache). parse = json | text | bytes | image (bytes contrôlés : type, taille)
+        | status (en-têtes seuls, corps jamais lu, y compris lors des redirections).
         idempotent : par défaut selon la méthode (GET, HEAD, OPTIONS) ; True pour un POST de pure lecture.
         Une requête non idempotente n'est rejouée que si elle n'a certainement pas été traitée
         (connexion impossible, 429) ; sinon le résultat est signalé indéterminé, sans nouvel envoi."""
@@ -243,7 +245,7 @@ class HttpClient:
                                   reessayer_apres=delay)
             try:
                 resp = self._send(method, url, params=params, data=data, json=json, files=files, headers=headers,
-                                  timeout=min(self.timeout, restant))
+                                  timeout=min(self.timeout, restant), stream=parse == "status")
             except httpx.TransportError as exc:
                 if not replay and not isinstance(exc, (httpx.ConnectError, httpx.ConnectTimeout)):
                     raise SourceError(self._indetermine(host, type(exc).__name__)) from exc
@@ -251,6 +253,8 @@ class HttpClient:
                 attendre(delay, attempt, f"{type(exc).__name__} ({exc})", None, None)
                 delay *= 2
                 continue
+            if parse == "status":
+                resp.close()  # disponibilité : ne jamais consommer le corps
             if resp.status_code in (502, 503, 504) and not replay:
                 raise SourceError(self._indetermine(host, f"HTTP {resp.status_code}"), resp.status_code,
                                   reessayer_apres=retry_after(resp.headers.get("Retry-After")))
@@ -261,7 +265,7 @@ class HttpClient:
                 delay *= 2
                 last_exc = SourceError(f"{host} : HTTP {resp.status_code} (tentative {attempt + 1})", resp.status_code)
                 continue
-            if resp.status_code == 403 and ("cloudflare" in resp.text[:3000].lower()
+            if resp.status_code == 403 and ((parse != "status" and "cloudflare" in resp.text[:3000].lower())
                                             or resp.headers.get("cf-mitigated", "").lower() == "challenge"):
                 self._couper(host, "HTTP 403, défi Cloudflare")
                 raise SourceError(
@@ -274,8 +278,11 @@ class HttpClient:
             if resp.status_code == 404:
                 raise SourceError(f"{host} : ressource introuvable (404) : {resp.url}", 404)
             if resp.status_code >= 400:
-                raise SourceError(f"{host} : HTTP {resp.status_code} : {resp.text[:300]}", resp.status_code)
-            if parse == "json":
+                detail = "" if parse == "status" else resp.text[:300]
+                raise SourceError(f"{host} : HTTP {resp.status_code} : {detail}", resp.status_code)
+            if parse == "status":
+                content = resp.status_code
+            elif parse == "json":
                 try:
                     content = resp.json()
                 except ValueError as exc:

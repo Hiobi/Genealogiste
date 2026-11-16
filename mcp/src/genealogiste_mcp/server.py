@@ -516,18 +516,25 @@ def archives_naviguer(source: str, page: int = 0, pas: int = 20) -> dict:
     vues (numéro, ARK de vue, image) et les métadonnées du registre (titre, cote, commune, période, nombre
     de vues). source : ARK de registre ou de vue AD59 (visionneuse reconnue), ARK Gallica ou manifeste IIIF.
     page : première vue à lister (1 = début) ; pas : taille de fenêtre (1-100). Ensuite archive_image ou
-    piece_archiver sur une vue choisie. Ne localise pas un acte à partir d'un nom (voir la recherche du
+    piece_archiver sur une vue choisie. nb_vues indique le total ; fin_de_registre signale la dernière fenêtre
+    et vue_suivante son prochain début (None en fin). Hors bornes : erreur avec les numéros valides.
+    Une navigation produit une entrée au journal, y compris depuis le cache.
+    Ne localise pas un acte à partir d'un nom (voir la recherche du
     service, liens_recherche/cotes_a_consulter pour trouver le registre)."""
     a = app()
     params = {"source": source, "page": page, "pas": pas}
     try:
         res = visionneuses.naviguer(a.sctx, source, page, pas)
-        if res is not None:
-            return res
-        ark_obj = ark.find(source)
-        manifeste = (f"https://gallica.bnf.fr/iiif/{ark_obj.base}/manifest.json"
-                     if ark_obj and ark_obj.naan == "12148" else source)
-        return iiif.naviguer(a.sctx, manifeste, page, pas)
+        if res is None:
+            ark_obj = ark.find(source)
+            manifeste = (f"https://gallica.bnf.fr/iiif/{ark_obj.base}/manifest.json"
+                         if ark_obj and ark_obj.naan == "12148" else source)
+            res = iiif.naviguer(a.sctx, manifeste, page, pas)
+        res["journal"] = a.journal.add(source="archives", operation="naviguer", parametres=params,
+                                       statut="positif", nb_resultats=len(res["vues"]),
+                                       resume=res["registre"].get("titre", ""), references=[source],
+                                       cache=res["depuis_cache"])
+        return res
     except (SourceError, ValueError) as exc:  # VisionneuseError et IiifError sont des ValueError
         out = error_envelope(a.sctx, "archives", "naviguer", params, exc)
         out["conseil"] = ("Vérifier l'ARK ou l'URL du registre (archives_service pour la visionneuse du service) ; "
