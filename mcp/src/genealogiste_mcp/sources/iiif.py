@@ -361,7 +361,11 @@ def fetch(ctx: SourceContext, media_dir: Path, source: str, page: int = 0, regio
         info = {}
         try:
             info = _json(ctx, _service_url(loc["service"], "info.json"))
-        except (SourceError, IiifError):
+        except SourceError as exc:
+            if exc.bloque_antirobot:
+                raise
+            # Dimensions inconnues : pas d'estimation de coût.
+        except IiifError:
             pass  # dimensions inconnues : pas d'estimation de coût
         demandee = largeur
         if info.get("width") and info.get("height"):
@@ -384,7 +388,7 @@ def fetch(ctx: SourceContext, media_dir: Path, source: str, page: int = 0, regio
             ecrire_atomique(dest, data)
     except (IiifError, SourceError, OSError) as exc:
         failure = error_envelope(ctx, "iiif", "image", {"source": source, "page": page, "region": region}, exc)
-        return {"erreur": str(exc), "source": source, "journal": failure["journal"]}
+        return {**failure, "source": source}
     out = {"fichier": ctx.config.media_ref(dest), "chemin_absolu": str(dest), "url_image": url,
            "depuis_cache": cached, **{k: v for k, v in loc.items() if k not in {"service", "url_image"}}, "service_iiif": loc["service"], "dimensions_originales": None,
            "dimensions_demandees": None, "cout_estime_tokens": None, "largeur_demandee": demandee}

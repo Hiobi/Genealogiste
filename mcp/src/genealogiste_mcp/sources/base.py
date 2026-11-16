@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from datetime import date
+from urllib.parse import urlsplit
 
 from ..config import Config
 from ..http import HttpClient, SourceError
@@ -88,20 +90,52 @@ def envelope(ctx: SourceContext, source: str, operation: str, params: dict, reco
 
 def error_envelope(ctx: SourceContext, source: str, operation: str, params: dict, exc: Exception,
                    personne: str | None = None) -> dict:
-    apres = getattr(exc, "reessayer_apres", None)
+    # Les adaptateurs gardent la cause HTTP avec « raise … from exc ».
+    cause = exc
+    vues = set()
+    while not getattr(cause, "bloque_antirobot", False) and cause.__cause__ is not None and id(cause) not in vues:
+        vues.add(id(cause))
+        cause = cause.__cause__
+    bloque = getattr(cause, "bloque_antirobot", False)
+    if not bloque:
+        cause = exc
+    url = getattr(cause, "url", "") or ""
+    tache = ({"statut": "a_faire", "url": url,
+              "action": "Relever la cote, le registre, la vue et la provenance depuis un accès autorisé ; "
+                        "fournir le résultat avec source_collee ou le fichier local avec piece_archiver."}
+             if bloque else None)
+    apres = getattr(cause, "reessayer_apres", None)
     resume = str(exc) + (f" [reessayer_apres={apres} s]" if apres is not None else "")
-    jid = ctx.journal.add(source=source, operation=operation, parametres=params, statut="erreur",
-                          resume=resume, personne=personne)
+    details = ({"protection": cause.protection, "date_detection": cause.date_detection,
+                "tache_manuelle": tache} if bloque else {})
+    jid = ctx.journal.add(source=source, operation=operation, parametres=params,
+                          statut="bloque_antirobot" if bloque else "erreur",
+                          resume=resume, personne=personne, references=[url] if url else [],
+                          note=json.dumps(details, ensure_ascii=False) if details else "",
+                          cache=bool(getattr(cause, "echec_memorise", False) or getattr(cause, "coupe_circuit", False)))
     out = {"source": source, "requete": params, "erreur": str(exc), "journal": jid,
            "conseil": "Réessayer plus tard, vérifier la configuration, ou utiliser la recherche manuelle (liens_recherche)."}
-    if getattr(exc, "echec_memorise", False):
+    if getattr(cause, "echec_memorise", False):
         out.update(echec_memorise=True, depuis_cache=True)
-    if getattr(exc, "coupe_circuit", False):
+    if getattr(cause, "coupe_circuit", False):
         out["coupe_circuit"] = True
     if apres is not None:
         out["reessayer_apres"] = apres
         out["conseil"] = (f"Service saturé ou indisponible : réessayer dans {round(apres)} s au plus tôt, passer à une "
                           "autre source en attendant ; ne pas relancer en boucle.")
+    if bloque:
+        from .. import archives, ark
+        hote = urlsplit(url).hostname or source
+        candidats = [s for s in archives.services()
+                     if hote in {urlsplit(s.get(k) or "").hostname for k in ("site", "visionneuse")}]
+        identifiant = ark.find(url) or ark.find(params.get("source") or "")
+        matches = [s for s in candidats if identifiant and s.get("ark_naan") == identifiant.naan]
+        service = matches[0]["code"] if len(matches) == 1 else candidats[0]["code"] if len(candidats) == 1 else hote
+        out.update(statut="bloque_antirobot", service=service, protection=cause.protection,
+                   date_detection=cause.date_detection, url=url, tache_manuelle=tache)
+        out["conseil"] = ("Conserver cette tâche au journal et poursuivre les autres pistes. "
+                          "Quand un accès autorisé est disponible, reprendre avec source_collee ou fournir "
+                          "un fichier local à piece_archiver ; ne pas relancer en boucle ni contourner le défi.")
     return out
 
 

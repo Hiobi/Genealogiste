@@ -142,10 +142,24 @@ tracée au journal : passer à une autre source et revenir plus tard, sans relan
   (`GENEALOGISTE_CACHE_ECHEC`, 900 s ; pour un 429, la durée du `Retry-After`). L'appel suivant échoue sans
   requête ; l'enveloppe porte `echec_memorise: true`, `depuis_cache: true` et `reessayer_apres`.
   `cache_purger(<source>)` oublie aussi les échecs de cette source. Une erreur 5xx n'est pas mémorisée.
-- **Coupe-circuit** : après un blocage anti-robot (403 Cloudflare), l'hôte entier est mis en pause
-  (`GENEALOGISTE_COUPE_CIRCUIT`, 1800 s) : les appels suivants échouent aussitôt avec la raison, l'heure de
+- **Coupe-circuit** : après un défi reconnu (Cloudflare, hCaptcha, DataDome ou page d'attente), même
+  servi en HTTP 200 ou 503, l'hôte entier est mis en pause. La détection précède le décodage, la mise
+  en cache du contenu et les reprises HTTP ; un défi 503 ne déclenche donc aucune nouvelle tentative.
+  La pause dure `GENEALOGISTE_COUPE_CIRCUIT` secondes (1800 par défaut) : les appels suivants échouent
+  aussitôt avec la raison, l'heure de
   reprise et `coupe_circuit: true`, sans retenter le site. `cache_purger("coupe_circuit")` lève la pause.
   Aucun contournement n'est tenté.
+- **Suite sans navigateur** : les enveloppes portent `statut: bloque_antirobot`, `service`, `protection`,
+  `date_detection` (UTC), l'URL effective et une `tache_manuelle`. Cette tâche et la provenance du défi
+  sont conservées au journal (`journal_lister(statut="bloque_antirobot")`), y compris après passage dans
+  un adaptateur ou réutilisation du coupe-circuit. L'agent poursuit les autres pistes, puis reprend avec
+  `source_collee` ou `piece_archiver` sur un fichier local fourni depuis un accès autorisé. Il n'a pas
+  besoin d'un navigateur sur le serveur pour consigner ce travail restant. Il ne s'agit pas encore de
+  l'état d'enquête persistant prévu par #155.
+- **Proxy sortant** : aucun nouveau mécanisme de proxy résidentiel, rotation d'adresse ou reprise via
+  une autre identité n'est ajouté. Les variables proxy standard du transport restent des paramètres de
+  déploiement réseau ; elles ne doivent pas servir à contourner un refus. Une éventuelle sortie vers
+  la connexion de l'utilisateur reste un chantier distinct, à examiner avec les conditions du service.
 - **Taille** : entrées expirées purgées au démarrage et à chaque `cache_purger` ; cache SQLite plafonné à
   `GENEALOGISTE_CACHE_MAX_MO` (500) et `cache-images` à `GENEALOGISTE_CACHE_IMAGES_MAX_MO` (2000), les plus
   anciennes d'abord (0 = aucun plafond). Les pièces archivées (répertoire des médias) ne sont jamais touchées.
