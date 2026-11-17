@@ -19,19 +19,20 @@ from ..gedcom.mapping import read_gedcom, write_gedcom
 from ..models import Tree
 
 # Toujours présents dans .gitignore, même s'il existait déjà (#48) : secrets, jetons, fichiers techniques.
-GITIGNORE_REQUIS = (".propositions/", ".env", ".env.*", "*.token", "*.key", "*.pem", ".journal.lock", "exports/", "cache-images/", "logs/", "*.sqlite", "*.sqlite-wal", "*.sqlite-shm",
+GITIGNORE_REQUIS = (".propositions/", ".env", ".env.*", "*.token", "*.key", "*.pem", ".journal.lock", ".enquetes.lock", "exports/", "cache-images/", "logs/", "*.sqlite", "*.sqlite-wal", "*.sqlite-shm",
                     LOCK_NAME, ".*.tmp")
 GITIGNORE = "\n".join(GITIGNORE_REQUIS) + "\n"
 ARBRE = "arbre.ged"
 # Fichiers internes versionnés à part (jamais dans le commit d'une modification d'arbre : une annulation ne
 # doit pas effacer d'entrées du journal).
-INTERNES = ("journal.jsonl", "gramps-transactions.jsonl")
+INTERNES = ("journal.jsonl", "gramps-transactions.jsonl", "enquetes")
 README = """# Données généalogiques (plugin genealogiste)
 
 - `arbre.ged` : arbre de travail, GEDCOM 7 (source de vérité en mode fichier ; miroir de Gramps Web en mode
   gramps si GENEALOGISTE_GIT_MIRROR=true). Ne pas éditer à la main pendant une session.
 - `journal.jsonl` : journal de recherche (toutes les requêtes, résultats positifs et négatifs).
 - `gramps-transactions.jsonl` : transactions écrites dans Gramps Web (mode gramps, pour l'annulation).
+- `enquetes/` : état de recherche de chaque enquête (JSON lisible : pistes, registres, tâches manuelles).
 - `medias/` : images d'actes et documents liés.
 
 Chaque modification de l'arbre est un commit dont le message contient la justification et les sources.

@@ -95,6 +95,10 @@ OUTILS: dict[str, tuple[str, str]] = {
     "pieces_appliquer": (ECRITURE, ASK),
     "journal_lister": (LECTURE, ALLOW),
     "journal_ajouter": (JOURNAL, ALLOW),
+    "enquete_ouvrir": (JOURNAL, ALLOW),  # état d'enquête (#155) : fichier local hors arbre, entrées de journal
+    "enquete_noter": (JOURNAL, ALLOW),
+    "enquete_etat": (LECTURE, ALLOW),
+    "enquete_reprendre": (LECTURE, ALLOW),
     "notes_generer": (ECRITURE, DEFAUT),
     "notes_lire": (ECRITURE, DEFAUT),
     "notes_ajouter": (ECRITURE, DEFAUT),
