@@ -34,6 +34,7 @@ est refusé, sauf `"non_source": true` + `"motif": "…"` (la mention « Non sou
 | `ajouter_citation` | `cible` `{type: evenement(uid) | nom(id, index) | filiation(famille, enfant) | personne | famille | media (id)}`, `citation` |
 | | Citation : `source`, `page`, `texte`, `qualite`, `type_source`, `information`, `preuve`, `consultation`, `ark`, `medias` (ids ou `$ref` d'`ajouter_media` : images de l'acte), `note` |
 | `ajouter_media` | `fichier`* (voir « Fichier d'un média »), `format`, `titre`, `citations`, `lier_a` `[ids]` (personnes `I…` et familles `F…`, ou `$ref` : un acte de mariage se lie à la famille), `ref` |
+| `modifier_media` | `id`, `champs` `{fichier, titre, format}` (`fichier` contrôlé comme pour `ajouter_media` ; `date` refusée : un `OBJE` GEDCOM 7 ne porte pas de date, dater l'acte dans sa citation ou son événement), `citations_ajout` |
 | `fusionner_personnes` | `conserver`, `absorber`, `justification`*, `forcer` |
 | `scinder_personne` | `id`, `evenements` `[uid]`, `familles_parents`, `familles_conjoint`, `noms`, `sexe`, `justification`*, `ref` |
 | `definir_statut` | `cible` `{type: evenement | nom | filiation …}`, `statut` (`refute` \| `contradictoire` \| `""`), `justification`* |
@@ -53,6 +54,29 @@ est refusé, sauf `"non_source": true` + `"motif": "…"` (la mention « Non sou
 - la proposition est **refusée** si le fichier local est introuvable (l'enregistrer d'abord par
   `media_enregistrer` ou `piece_archiver`) ou si le chemin sort de ces racines (absolu ailleurs, `..`, lien
   symbolique sortant).
+
+### Modifier ou relocaliser un média (`modifier_media`, #193)
+
+- `modifier_media` remplace le fichier (version HD d'un acte, pièce déplacée), corrige le titre ou le format et
+  ajoute des citations ; le résumé indique `ancien → nouveau` pour chaque champ et le diff montre le `FILE`.
+  Un nouveau `fichier` est résolu et contrôlé exactement comme pour `ajouter_media` ; si son extension change
+  sans `format` explicite, le format est déduit de la nouvelle extension.
+- En mode gramps, un média dont le fichier a déjà été reçu par Gramps Web garde le chemin et la somme attribués
+  par le serveur ; seul l'attribut `Sosa-Fichier` (et le titre, le format) change. Si le nouveau fichier a un
+  MD5 différent, il apparaît dans `fichiers_a_envoyer` et est envoyé après la transaction ; s'il est identique
+  (simple déplacement), rien n'est renvoyé.
+- `gramps_relocaliser_medias(ancien_prefixe, nouveau_prefixe)` (changement de machine ou de point de montage)
+  remplace le préfixe des fichiers de médias qui commencent par `ancien_prefixe` (comparaison de chaînes : finir
+  le préfixe par `/`). Chaque nouveau chemin doit exister sous les racines autorisées et, si Gramps Web connaît
+  la somme du fichier, avoir le même MD5 ; les autres sont listés à part (`introuvables`, `md5_differents`,
+  `refuses`) et laissés intacts. Le résultat est une proposition ordinaire (`modifier_media` en lot : diff,
+  jeton) : une seule écriture par `arbre_appliquer` après accord, journalisée et annulable
+  (`arbre_annuler_modification`). L'outil fonctionne aussi en mode fichier (existence seule, sans MD5).
+- Chemins relatifs à `GENEALOGISTE_MEDIA_DIR` : non retenus pour l'instant. La référence stockée reste relative
+  aux données (`medias/…`) ou absolue ; un chemin relatif au répertoire des médias serait ambigu (le même
+  chemin relatif est d'abord cherché sous les données) et n'est pas encore relu par tous les consommateurs
+  (notes, organisation des pièces). Après un changement de machine, `gramps_relocaliser_medias` corrige les
+  chemins absolus.
 
 ### Intégrité (contrôlée à chaque proposition)
 

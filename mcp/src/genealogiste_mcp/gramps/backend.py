@@ -406,6 +406,11 @@ class GrampsBackend:
                 db.put(obj)
         self._tree = None
 
+    def media_checksums(self) -> dict[str, str]:
+        """Somme MD5 connue de Gramps Web par identifiant de média (même règle d'identifiant que la lecture)."""
+        return {o.get("gramps_id") or f"O{h}": o.get("checksum") or ""
+                for h, o in self.snapshot(fresh=True).all("Media").items()}
+
     def media_status(self) -> dict:
         todo, missing = media_pending(self.snapshot(fresh=True), self.data_dir, None, self.media_dir)
         return {"a_envoyer": [f"{t['id']} : {t['fichier']} ({t['taille_octets']} octets)" for t in todo],

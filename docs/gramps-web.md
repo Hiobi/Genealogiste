@@ -155,6 +155,13 @@ Le dépôt est local par défaut. `GENEALOGISTE_GIT_REMOTE` ajoute un push aprè
   des données est cherché dans le répertoire des médias / l'arborescence des pièces (médias créés avant #192). Après accord, la transaction crée l'objet, puis chaque fichier est envoyé par
   `PUT /api/media/{handle}/file` (`If-Match` = somme MD5 lue) ; le serveur attribue chemin et somme.
 - Le chemin local est gardé dans l'attribut `Sosa-Fichier` : le chemin du serveur n'est jamais réécrit.
+- `modifier_media` (`arbre_proposer`) change le fichier, le titre ou le format d'un média : le chemin et la
+  somme du serveur sont conservés, `Sosa-Fichier` est réécrit, et un nouveau contenu (MD5 différent) est envoyé
+  après la transaction (`fichiers_a_envoyer`) ; un simple déplacement n'envoie rien.
+- `gramps_relocaliser_medias(ancien_prefixe, nouveau_prefixe)` : après un changement de machine, propose en une
+  transaction la réécriture des `Sosa-Fichier` qui commencent par l'ancien préfixe ; existence et MD5 vérifiés,
+  médias introuvables ou au contenu différent listés à part et non modifiés. Application par `arbre_appliquer`,
+  annulation par `arbre_annuler_modification` (voir `docs/operations.md`).
 - `gramps_envoyer_medias` : liste des fichiers absents ou différents dans Gramps Web (médias créés avant cette
   version, bascule), puis envoi avec `appliquer=true` après accord. La bascule envoie aussi les fichiers.
 

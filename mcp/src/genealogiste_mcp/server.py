@@ -874,7 +874,7 @@ def arbre_proposer(operations: list[dict], titre: str, justification: str, sourc
     """Prépare une modification SANS l'écrire : renvoie le diff GEDCOM, les alertes de cohérence nouvelles et un
     jeton. Opérations : ajouter_personne, modifier_personne, supprimer_personne, ajouter_nom, ajouter_evenement,
     modifier_evenement, supprimer_evenement, ajouter_famille, lier_enfant, delier_enfant, lier_conjoint,
-    ajouter_source, modifier_source, ajouter_depot, ajouter_citation, ajouter_media, ajouter_association,
+    ajouter_source, modifier_source, ajouter_depot, ajouter_citation, ajouter_media, modifier_media, ajouter_association,
     supprimer_association, fusionner_personnes, scinder_personne, definir_statut, marquer_vivant.
     Règle de métier : tout événement ou filiation exige une citation, sauf non_source=true + motif.
     Citation : préciser 'consultation' (original | image | transcription | index | non_vu). Référencer un objet créé dans la même proposition par
@@ -1588,6 +1588,63 @@ def gramps_envoyer_medias(appliquer: bool = False) -> dict:
     if app().config.backend != "gramps":
         return {"erreur": "Disponible en mode gramps (GENEALOGISTE_BACKEND=gramps)."}
     return _gramps_guard(app().backend.media_send if appliquer else app().backend.media_status)
+
+
+@mcp.tool()
+def gramps_relocaliser_medias(ancien_prefixe: str, nouveau_prefixe: str) -> dict:
+    """Après un changement de machine ou de point de montage : prépare la réécriture du fichier local des médias
+    (attribut Sosa-Fichier en mode gramps, FILE en mode fichier) dont le chemin commence par ancien_prefixe, en
+    remplaçant ce préfixe par nouveau_prefixe. Chaque nouveau chemin doit exister sous les répertoires autorisés et,
+    si Gramps Web connaît la somme du fichier, avoir le même MD5 ; les autres sont listés à part (introuvables,
+    md5_differents, refuses) et laissés intacts. Renvoie une proposition (diff, jeton) : une seule transaction,
+    écrite par arbre_appliquer après accord explicite, annulable par arbre_annuler_modification."""
+    import hashlib
+
+    from .chemins import localiser
+
+    if not ancien_prefixe:
+        return {"erreur": "ancien_prefixe requis (ex. « /ancienne/racine/vault/ »)."}
+    a = app()
+
+    def run():
+        sommes = a.backend.media_checksums() if a.config.backend == "gramps" else {}
+        cfg = a.config
+        out: dict[str, list[str]] = {"a_relocaliser": [], "introuvables": [], "md5_differents": [], "refuses": []}
+        ops = []
+        for mid, m in a.tree().medias.items():
+            if not m.fichier.startswith(ancien_prefixe):
+                continue
+            neuf = nouveau_prefixe + m.fichier[len(ancien_prefixe):]
+            if "://" not in neuf:
+                try:
+                    p = localiser(cfg.media_racines, neuf)
+                except CheminRefuse as exc:
+                    out["refuses"].append(f"{mid} : {neuf} ({exc})")
+                    continue
+                if not p.is_file():
+                    out["introuvables"].append(f"{mid} : {neuf}")
+                    continue
+                somme = sommes.get(mid, "")
+                if somme and hashlib.md5(p.read_bytes()).hexdigest() != somme:
+                    out["md5_differents"].append(f"{mid} : {neuf} (MD5 différent de celui de Gramps Web)")
+                    continue
+                neuf = cfg.media_ref(p)
+            if neuf == m.fichier:
+                continue
+            out["a_relocaliser"].append(f"{mid} : {m.fichier} → {neuf}")
+            ops.append({"op": "modifier_media", "id": mid, "champs": {"fichier": neuf}})
+        if not ops:
+            return {**out, "note": f"Aucun média à relocaliser (préfixe « {ancien_prefixe} »)."}
+        prop = a.backend.propose(ops, f"Relocalisation de {len(ops)} média(s)",
+                                 f"Fichiers des médias déplacés de « {ancien_prefixe} » vers « {nouveau_prefixe} » "
+                                 "(changement de machine ou de point de montage) ; existence"
+                                 + (" et MD5 vérifiés." if sommes else " vérifiée."))
+        return {**out, **prop}
+
+    try:
+        return _gramps_guard(run)
+    except ProposalError as exc:
+        return {"erreur": str(exc)}
 
 
 @mcp.tool()
