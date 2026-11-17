@@ -537,3 +537,23 @@ def test_url_archivee_deplacee_reconnue_sans_reseau(app, tmp_path, monkeypatch):
     hit = server.piece_archiver(source)
     assert hit["deja_archivee"] and Path(hit["chemin_absolu"]).name == nom
     assert len(respx.calls) == 1
+
+
+def test_config_ignore_configuration_reelle(configuration_isolee):
+    """Un `.env` du dossier de données par défaut est lu dans la maison factice, jamais chez l'utilisateur,
+    et ses valeurs ne fuient pas hors du test (os.environ restauré par la fixture)."""
+    import os
+
+    from genealogiste_mcp.config import load_config
+    defaut = configuration_isolee / ".local/share/genealogiste"
+    defaut.mkdir(parents=True)
+    (defaut / ".env").write_text(f"GENEALOGISTE_RAPPORTS_DIR={configuration_isolee / 'r'}\n", encoding="utf-8")
+    c = load_config()
+    assert c.data_dir == defaut and c.rapports_dir == configuration_isolee / "r"
+    assert str(c.data_dir).startswith(str(configuration_isolee))
+    assert os.environ["HOME"] == str(configuration_isolee)
+
+
+def test_config_sans_fuite_du_test_precedent():
+    import os
+    assert "GENEALOGISTE_RAPPORTS_DIR" not in os.environ

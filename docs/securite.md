@@ -307,7 +307,7 @@ départs entre processus). Elle est consignée pour une éventuelle parallélisa
 nommé et des hôtes surchargés, avec la provenance de chaque valeur, les défauts par catégorie et la
 consommation du jour ; `archives_service` ajoute `politique_acces` pour le site et la visionneuse du service.
 
-## Plafond journalier par hôte d'archives et budget d'enquête
+## Plafond journalier par hôte et budget d'enquête
 
 `budget.py`, `http.py`, `cache.py` (#157, étendu à tous les hôtes par #211).
 

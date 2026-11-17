@@ -214,7 +214,7 @@ requêtes par jour (1000 par défaut, 0 = aucun plafond), même sans enquête. L
 IIIF tiers) ont leur propre plafond, `GENEALOGISTE_PLAFOND_JOUR_DEFAUT`, et un hôte précis se règle par
 `GENEALOGISTE_PLAFONDS_JOUR` ([politique d'accès par service](securite.md#politique-daccès-par-service), #211). Le compteur est persistant (cache
 SQLite) ; au plafond, aucune requête ne part et l'outil renvoie une erreur avec `reessayer_apres` (minuit).
-Choix et justification du défaut : [securite.md](securite.md#plafond-journalier-par-hôte-darchives-et-budget-denquête).
+Choix et justification du défaut : [securite.md](securite.md#plafond-journalier-par-hôte-et-budget-denquête).
 Pour une enquête, le budget (`docs/enquetes.md`) borne en plus les requêtes par hôte et les images lues, sur
 tous les outils de collecte appelés avec `enquete=<id>`.
 
