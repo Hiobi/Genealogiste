@@ -58,7 +58,7 @@ Cas tranchés d'après le code :
 La collecte est bornée par les **limites de débit par hôte**, le **coupe-circuit** anti-robot, le
 **plafond journalier par hôte d'archives** (`GENEALOGISTE_PLAFOND_JOUR_ARCHIVES`, toujours actif) et, pour
 un appel lié à une enquête, son **budget** (requêtes par hôte, images, durée d'activité, coût estimé ;
-refus avant l'envoi) — sections ci-dessous et [enquetes.md](enquetes.md#budget-et-arret-propre) (#157).
+refus avant l'envoi) — sections ci-dessous et [enquetes.md](enquetes.md#budget-et-arrêt-propre) (#157).
 
 `hooks/hooks.json` est **généré** depuis ce catalogue (`make hooks`, `scripts/generer_hooks.py`) : un motif
 par classe, puis un motif par outil en deux temps. Les motifs `mcp__.*genealogiste.*__…` couvrent le plugin
@@ -168,7 +168,7 @@ pas les requêtes vers les autres. Une valeur invalide arrête le démarrage ave
   représentent au moins 25 minutes de requêtes continues.
 - **Budget d'enquête** : avec `enquete=<id>`, `recherche_multi` (et ses sources), `archives_naviguer` et
   `archive_image` sont mesurés côté serveur ; une requête qui dépasserait le budget de l'hôte ou la durée est
-  refusée **avant l'envoi** (voir [enquetes.md](enquetes.md#budget-et-arret-propre)).
+  refusée **avant l'envoi** (voir [enquetes.md](enquetes.md#budget-et-arrêt-propre)).
 
 ## Reprises automatiques : jamais de doublon
 
