@@ -34,6 +34,12 @@ class Cache:
             "CREATE TABLE IF NOT EXISTS cache (cle TEXT PRIMARY KEY, valeur TEXT NOT NULL,"
             " cree REAL NOT NULL, ttl REAL NOT NULL, source TEXT)"
         )
+        # Compteurs de requêtes par hôte et par jour (plafond journalier, #157) : hors du cache des réponses,
+        # jamais vidés par purge() ni borner().
+        self._db.execute(
+            "CREATE TABLE IF NOT EXISTS compteurs_jour (hote TEXT NOT NULL, jour TEXT NOT NULL,"
+            " n INTEGER NOT NULL, PRIMARY KEY (hote, jour))"
+        )
         self._db.commit()
 
     def _passer_en_wal(self) -> None:
@@ -121,6 +127,33 @@ class Cache:
                 cur = self._db.execute("DELETE FROM cache")
             self._db.commit()
             return cur.rowcount
+
+    def incrementer_jour(self, hote: str, jour: str, plafond: int) -> int | None:
+        """Compte une requête de ``hote`` le ``jour`` ; None (rien compté) si le plafond est déjà atteint.
+        Lecture et écriture dans une même transaction : sûr entre plusieurs serveurs."""
+        with self._lock:
+            try:
+                self._db.execute("BEGIN IMMEDIATE")
+                self._db.execute("DELETE FROM compteurs_jour WHERE jour < ?", (jour,))
+                row = self._db.execute("SELECT n FROM compteurs_jour WHERE hote = ? AND jour = ?",
+                                       (hote, jour)).fetchone()
+                n = row[0] if row else 0
+                if plafond and n >= plafond:
+                    self._db.commit()
+                    return None
+                self._db.execute("INSERT OR REPLACE INTO compteurs_jour (hote, jour, n) VALUES (?, ?, ?)",
+                                 (hote, jour, n + 1))
+                self._db.commit()
+                return n + 1
+            except BaseException:
+                self._db.rollback()
+                raise
+
+    def compteurs_jour(self, jour: str) -> dict[str, int]:
+        with self._lock:
+            rows = self._db.execute("SELECT hote, n FROM compteurs_jour WHERE jour = ? ORDER BY hote",
+                                    (jour,)).fetchall()
+        return dict(rows)
 
     def stats(self) -> dict:
         with self._lock:

@@ -80,8 +80,18 @@ class Config:
     log_fichier: Path | None = None  # GENEALOGISTE_LOG_FICHIER ; défaut <données>/logs/serveur.log
     debit_defaut: float = 1.5  # GENEALOGISTE_DEBIT_DEFAUT : secondes minimum entre deux requêtes vers un même hôte
     debits: dict[str, float] = field(default_factory=dict)  # GENEALOGISTE_DEBITS : hote=secondes,… (priorité)
+    # Budget par défaut d'une enquête (#157 ; 0 = illimité), réglable à enquete_ouvrir / enquete_noter.
+    budget_requetes_hote: int = 200  # GENEALOGISTE_BUDGET_REQUETES_HOTE : requêtes émises vers un même hôte
+    budget_images: int = 40  # GENEALOGISTE_BUDGET_IMAGES : images lues (archive_image)
+    budget_duree_min: float = 30.0  # GENEALOGISTE_BUDGET_DUREE_MIN : minutes d'activité cumulée des outils
+    budget_cout_tokens: int = 100_000  # GENEALOGISTE_BUDGET_COUT_TOKENS : coût estimé (images + réponses)
+    plafond_jour_archives: int = 1000  # GENEALOGISTE_PLAFOND_JOUR_ARCHIVES : requêtes/hôte/jour (0 = aucun)
     offline: bool = False
     extra: dict = field(default_factory=dict)
+
+    def budget_defaut(self) -> dict:
+        return {"requetes_par_hote": self.budget_requetes_hote, "images": self.budget_images,
+                "duree_min": self.budget_duree_min, "cout_tokens": self.budget_cout_tokens}
 
     @property
     def tree_path(self) -> Path:
@@ -222,6 +232,18 @@ def entier_positif(value: str | None, default: int, variable: str) -> int:
     return v
 
 
+def entier_positif_ou_nul(value: str | None, default: int, variable: str) -> int:
+    if value is None or value.strip() == "":
+        return default
+    try:
+        v = int(value)
+    except ValueError:
+        v = -1
+    if v < 0:
+        raise ValueError(f"{variable}={value!r} : entier positif ou nul attendu (0 = illimité)")
+    return v
+
+
 def debits_par_hote(value: str | None) -> dict[str, float]:
     """« hote=secondes,hote2=secondes » -> {hote: secondes}."""
     out: dict[str, float] = {}
@@ -294,6 +316,14 @@ def load_config() -> Config:
         log_fichier=_dir(env("GENEALOGISTE_LOG_FICHIER")),
         debit_defaut=secondes(env("GENEALOGISTE_DEBIT_DEFAUT"), 1.5, "GENEALOGISTE_DEBIT_DEFAUT"),
         debits=debits_par_hote(env("GENEALOGISTE_DEBITS")),
+        budget_requetes_hote=entier_positif_ou_nul(env("GENEALOGISTE_BUDGET_REQUETES_HOTE"), 200,
+                                                   "GENEALOGISTE_BUDGET_REQUETES_HOTE"),
+        budget_images=entier_positif_ou_nul(env("GENEALOGISTE_BUDGET_IMAGES"), 40, "GENEALOGISTE_BUDGET_IMAGES"),
+        budget_duree_min=secondes(env("GENEALOGISTE_BUDGET_DUREE_MIN"), 30.0, "GENEALOGISTE_BUDGET_DUREE_MIN"),
+        budget_cout_tokens=entier_positif_ou_nul(env("GENEALOGISTE_BUDGET_COUT_TOKENS"), 100_000,
+                                                 "GENEALOGISTE_BUDGET_COUT_TOKENS"),
+        plafond_jour_archives=entier_positif_ou_nul(env("GENEALOGISTE_PLAFOND_JOUR_ARCHIVES"), 1000,
+                                                    "GENEALOGISTE_PLAFOND_JOUR_ARCHIVES"),
         media_dir_conf=_dir(env("GENEALOGISTE_MEDIA_DIR")),
         rapports_dir_conf=_dir(env("GENEALOGISTE_RAPPORTS_DIR")),
         exports_dir_conf=_dir(env("GENEALOGISTE_EXPORTS_DIR")),

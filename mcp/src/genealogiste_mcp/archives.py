@@ -55,6 +55,22 @@ def intervalles() -> dict[str, float]:
     return out
 
 
+@lru_cache(maxsize=1)
+def hotes() -> frozenset[str]:
+    """Hôtes (site et visionneuse) des services d'archives du référentiel : soumis au plafond journalier de
+    requêtes (GENEALOGISTE_PLAFOND_JOUR_ARCHIVES, #157), sous-domaines compris. Les services de type « autre »
+    (index et bibliothèques : matchID, Gallica, RetroNews, FranceArchives) n'en font pas partie."""
+    out = set()
+    for s in services():
+        if s.get("type") == "autre":
+            continue
+        for url in (s.get("site"), s.get("visionneuse")):
+            hote = urlsplit(url or "").hostname
+            if hote:
+                out.add(hote.lower())
+    return frozenset(out)
+
+
 def services_recette() -> list[dict]:
     """Services dotés d'un adaptateur et d'une ressource de référence pour la recette réelle (#143)."""
     return [s for s in services() if s.get("recette")]

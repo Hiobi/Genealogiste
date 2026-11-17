@@ -7,7 +7,8 @@ contient :
 - les **pistes** : question, hypothèses, sources à consulter dans l'ordre, statut ;
 - la **progression par registre** : service, ARK ou cote, vues lues et ce qu'on y a lu, bornes, verdict ;
 - les **tâches manuelles** pour l'utilisateur ;
-- les **requêtes faites** (outil, paramètres normalisés, date, résultat, entrées du journal).
+- les **requêtes faites** (outil, paramètres normalisés, date, résultat, entrées du journal) ;
+- le **budget** (#157) : limites, consommation mesurée côté serveur, blocage et reste à faire à l'épuisement.
 
 Le journal reste la trace exhaustive ; l'état dit où en est la recherche. Toute entrée négative de l'état
 référence une entrée du journal (créée si besoin). Rien ici ne part sur le réseau.
@@ -21,6 +22,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from . import ark
+from .budget import LIMITES, BudgetEpuise
 from .fichiers import ecrire_atomique, verrou
 from .journal import Journal
 from .normalize.names import strip_accents
@@ -28,7 +30,9 @@ from .normalize.names import strip_accents
 VERROU = ".enquetes.lock"
 STATUTS_PISTE = ("a_faire", "en_cours", "trouve", "negatif", "bloque", "manuel")
 STATUTS_TACHE = ("a_faire", "faite", "abandonnee")
-STATUTS_ENQUETE = ("ouverte", "close")
+STATUTS_ENQUETE = ("ouverte", "bloque", "close")
+LIBELLES_LIMITES = {"requetes_par_hote": "requêtes par hôte", "images": "images lues",
+                    "duree_min": "durée d'activité cumulée (minutes)", "cout_tokens": "coût estimé (tokens)"}
 RESULTATS = ("positif", "negatif", "erreur", "manuel")
 TERMINES = ("trouve", "negatif")  # piste ou registre sans action restante
 OUTILS_SUIVIS = ("recherche_multi", "archives_naviguer", "archive_image")
@@ -116,8 +120,33 @@ def _soustraire(borne: list[int], lus: list[list[int]]) -> list[list[int]]:
 
 # ---------------------------------------------------------------------------- stockage
 
+def consomme_vide() -> dict:
+    return {"requetes": {}, "images": 0, "duree_s": 0.0, "cout_tokens": 0}
+
+
+def valider_budget(d) -> dict:
+    """Limites partielles d'un budget : nombres positifs ou nuls (0 = illimité)."""
+    if d is None:
+        return {}
+    if not isinstance(d, dict):
+        raise EnqueteError(f"budget : objet {{{', '.join(LIMITES)}}} attendu (0 = illimité).")
+    out = {}
+    for k, v in d.items():
+        if k not in LIMITES:
+            raise EnqueteError(f"budget : clé {k!r} inconnue ({', '.join(LIMITES)} ; 0 = illimité).")
+        if isinstance(v, bool) or not isinstance(v, int | float) or v < 0:
+            raise EnqueteError(f"budget.{k} : nombre positif ou nul attendu (0 = illimité), reçu {v!r}.")
+        out[k] = float(v) if k == "duree_min" else int(v)
+    return out
+
+
+def _depasse(consomme: float, prevu: float, limite: float) -> bool:
+    return bool(limite) and (consomme >= limite or consomme + prevu > limite)
+
+
 class Enquetes:
-    def __init__(self, data_dir: Path, journal: Journal):
+    def __init__(self, data_dir: Path, journal: Journal, budget_defaut: dict | None = None):
+        self.budget_defaut = {k: 0 for k in LIMITES} | dict(budget_defaut or {})
         self.data_dir = Path(data_dir)
         self.dir = self.data_dir / "enquetes"
         self.journal = journal
@@ -158,9 +187,11 @@ class Enquetes:
             return False
 
     # -- création, lecture
-    def ouvrir(self, sujet: str, personnes: list[str] | None = None, eid: str = "") -> dict:
+    def ouvrir(self, sujet: str, personnes: list[str] | None = None, eid: str = "",
+               budget: dict | None = None) -> dict:
         if not (sujet or "").strip():
             raise EnqueteError("sujet requis (ex. « naissance de Jean Dupont vers 1860 »).")
+        limites = {**self.budget_defaut, **valider_budget(budget)}
         with verrou(self.data_dir, VERROU):
             if eid:
                 if self._chemin(eid).exists():
@@ -172,7 +203,8 @@ class Enquetes:
                     eid, n = f"{base}-{n}", n + 1
             e = {"id": eid, "sujet": sujet.strip(), "personnes": list(dict.fromkeys(personnes or [])),
                  "statut": "ouverte", "creee": maintenant(), "mise_a_jour": "", "pistes": [], "registres": [],
-                 "taches_manuelles": [], "requetes": []}
+                 "taches_manuelles": [], "requetes": [], "budget": limites, "consomme": consomme_vide(),
+                 "reste_a_faire": []}
             self._ecrire(e)
         return e
 
@@ -209,9 +241,11 @@ class Enquetes:
 
     # -- notation
     def noter(self, eid: str, piste: dict | None = None, registre: dict | None = None, tache: dict | None = None,
-              requete: dict | None = None, statut: str = "", personnes: list[str] | None = None) -> dict:
+              requete: dict | None = None, statut: str = "", personnes: list[str] | None = None,
+              budget: dict | None = None) -> dict:
         if statut and statut not in STATUTS_ENQUETE:
             raise EnqueteError(f"statut d'enquête : {' | '.join(STATUTS_ENQUETE)}")
+        limites = valider_budget(budget)
         with verrou(self.data_dir, VERROU):
             e = self._charger(eid)
             out: dict = {"enquete": eid, "modifie": [], "journal_cree": []}
@@ -233,6 +267,18 @@ class Enquetes:
             if statut:
                 e["statut"] = statut
                 out["modifie"].append(f"statut {statut}")
+                if statut != "bloque":
+                    e.pop("blocage", None)
+            if limites:
+                self._budget(e)
+                e["budget"].update(limites)
+                out["modifie"].append("budget")
+                if e.get("statut") == "bloque" and (e.get("blocage") or {}).get("motif") == "budget" \
+                        and not self._epuise(e):
+                    e["statut"] = "ouverte"
+                    e.pop("blocage", None)
+                    out["modifie"].append("statut ouverte (budget relevé)")
+                out["budget"] = self.etat_budget(e)
             self._ecrire(e)
             self._crees = []
         return out
@@ -407,12 +453,16 @@ class Enquetes:
     # -- appels des outils réseau (paramètre enquete=…)
     def enregistrer(self, eid: str, outil: str, parametres: dict, resultat: str, journal: list[str] | None = None,
                     fenetre: list[int] | None = None, nb_vues: int | None = None, vue_lue: int | None = None,
-                    registre: str = "", titre: str = "", cote: str = "") -> None:
-        """Note une demande faite par un outil réseau (et, pour une image, la vue consultée)."""
+                    registre: str = "", titre: str = "", cote: str = "", appel: dict | None = None) -> None:
+        """Note une demande faite par un outil réseau (et, pour une image, la vue consultée). appel : paramètres
+        de l'appel tels que reçus ; une demande refusée faute de budget et désormais faite sort du reste à faire."""
         with verrou(self.data_dir, VERROU):
             self._crees = []
             e = self._charger(eid)
-            self._requete(e, outil, parametres, resultat, journal, fenetre=fenetre)
+            r = self._requete(e, outil, parametres, resultat, journal, fenetre=fenetre)
+            faites = [r["cle"]] + ([cle_requete(outil, appel)] if appel is not None else [])
+            e["reste_a_faire"] = [x for x in e.get("reste_a_faire", [])
+                                  if not (x.get("outil") == outil and x.get("cle") in faites)]
             if registre:
                 d = {"source": registre, "titre": titre, "cote": cote, "nb_vues": nb_vues}
                 if vue_lue:
@@ -510,12 +560,140 @@ class Enquetes:
                 a = de + PAS_DEFAUT - 1
             a_faire.append(self._action_registre(e, r, de, a, faites))
         taches = [t for t in e.get("taches_manuelles", []) if t.get("statut") == "a_faire"]
-        return {"enquete": eid, "sujet": e["sujet"], "personnes": e.get("personnes", []), "statut": e["statut"],
-                "mise_a_jour": e.get("mise_a_jour"), "a_faire": a_faire, "pistes_ouvertes": pistes,
-                "registres_en_cours": registres, "taches_manuelles": taches, "deja_fait": deja,
-                "consigne": ("Reprendre par a_faire, dans l'ordre. Ne pas relancer les demandes de deja_fait ; "
-                             "passer enquete=<id> aux outils réseau pour noter la suite, et enquete_noter pour les "
-                             "lectures, verdicts et tâches manuelles.")}
+        refusees = [{"type": "budget", "outil": x["outil"], "parametres": x["parametres"],
+                     "motif": f"Refusé faute de budget ({LIBELLES_LIMITES.get(x.get('limite'), x.get('limite'))}) "
+                              f"le {x.get('date', '')[:10]}."} for x in e.get("reste_a_faire", [])]
+        consigne = ("Reprendre par a_faire, dans l'ordre. Ne pas relancer les demandes de deja_fait ; "
+                    "passer enquete=<id> aux outils réseau pour noter la suite, et enquete_noter pour les "
+                    "lectures, verdicts et tâches manuelles.")
+        if e.get("statut") == "bloque":
+            consigne = (f"Enquête bloquée ({(e.get('blocage') or {}).get('message', 'budget épuisé')}). Faire le point "
+                        "avec l'utilisateur ; ne reprendre qu'après accord, en relevant le budget avec "
+                        f"enquete_noter({eid!r}, budget={{...}}). " + consigne)
+        out = {"enquete": eid, "sujet": e["sujet"], "personnes": e.get("personnes", []), "statut": e["statut"],
+               "mise_a_jour": e.get("mise_a_jour"), "a_faire": refusees + a_faire, "pistes_ouvertes": pistes,
+               "registres_en_cours": registres, "taches_manuelles": taches, "deja_fait": deja,
+               "budget": self.etat_budget(e), "consigne": consigne}
+        if e.get("blocage"):
+            out["blocage"] = e["blocage"]
+        return out
+
+    # -- budget (#157)
+    def _budget(self, e: dict) -> tuple[dict, dict]:
+        """Limites et consommation (un fichier antérieur au budget reçoit les valeurs par défaut)."""
+        e["budget"] = {**self.budget_defaut, **(e.get("budget") or {})}
+        e["consomme"] = {**consomme_vide(), **(e.get("consomme") or {})}
+        e.setdefault("reste_a_faire", [])
+        return e["budget"], e["consomme"]
+
+    def etat_budget(self, e: dict) -> dict:
+        lim, c = self._budget(e)
+        illimite = "illimite"
+        rq = lim["requetes_par_hote"]
+        reste = {
+            "requetes_par_hote": ({h: max(0, rq - n) for h, n in sorted(c["requetes"].items())} if rq else illimite),
+            "requetes_autre_hote": rq or illimite,
+            "images": max(0, lim["images"] - c["images"]) if lim["images"] else illimite,
+            "duree_min": (round(max(0.0, lim["duree_min"] - c["duree_s"] / 60), 1) if lim["duree_min"]
+                          else illimite),
+            "cout_tokens": max(0, lim["cout_tokens"] - c["cout_tokens"]) if lim["cout_tokens"] else illimite,
+        }
+        return {"limites": dict(lim), "consomme": {**c, "duree_s": round(c["duree_s"], 1)}, "reste": reste}
+
+    def _epuise(self, e: dict, images: int = 0, cout: int = 0, hotes: bool = True) -> str:
+        """Première limite atteinte ou que l'appel prévu dépasserait ("" sinon). hotes : compter aussi un hôte
+        dont le budget est atteint (le contrôle avant appel ne connaît pas encore les hôtes visés)."""
+        lim, c = self._budget(e)
+        if lim["duree_min"] and c["duree_s"] >= lim["duree_min"] * 60:
+            return "duree_min"
+        if images and _depasse(c["images"], images, lim["images"]):
+            return "images"
+        if _depasse(c["cout_tokens"], cout, lim["cout_tokens"]):
+            return "cout_tokens"
+        if hotes and lim["requetes_par_hote"] and any(n >= lim["requetes_par_hote"] for n in c["requetes"].values()):
+            return "requetes_par_hote"
+        return ""
+
+    def garde(self, eid: str):
+        """Contrôle appelé par le client HTTP avant chaque requête émise pendant un appel lié à l'enquête."""
+        e = self._charger(eid)
+        lim, c = self._budget(e)
+
+        def controler(hote: str, mesure) -> None:
+            rq = lim["requetes_par_hote"]
+            if rq and c["requetes"].get(hote, 0) + mesure.requetes[hote] >= rq:
+                raise BudgetEpuise(f"{hote} : budget de l'enquête {eid} atteint ({rq} requêtes par hôte) ; "
+                                   "requête non envoyée.", "requetes_par_hote", hote)
+            if lim["duree_min"] and c["duree_s"] + mesure.duree() >= lim["duree_min"] * 60:
+                raise BudgetEpuise(f"Budget de durée de l'enquête {eid} atteint ({lim['duree_min']:g} min "
+                                   "d'activité cumulée) ; requête non envoyée.", "duree_min", hote)
+        return controler
+
+    def controler(self, eid: str, outil: str, appel: dict, images: int = 0, cout: int = 0) -> dict | None:
+        """Avant un appel de collecte : refus (et état bloqué, reste à faire consigné) si l'enquête est bloquée
+        faute de budget ou si l'appel dépasserait une limite ; None sinon."""
+        with verrou(self.data_dir, VERROU):
+            e = self._charger(eid)
+            blocage = e.get("blocage") or {}
+            if e.get("statut") == "bloque" and blocage.get("motif") == "budget":
+                limite, message = blocage.get("limite", ""), blocage.get("message", "")
+            else:
+                limite, message = self._epuise(e, images, cout, hotes=False), ""
+            if not limite:
+                return None
+            refus = self._bloquer(e, outil, appel, limite, message)
+            self._ecrire(e)
+        return refus
+
+    def apres_collecte(self, eid: str, requetes: dict, images: int, cout: int, duree_s: float,
+                       refus: BudgetEpuise | None = None, outil: str = "", appel: dict | None = None) -> dict:
+        """Ajoute la consommation mesurée d'un appel ; en cas de refus pendant l'appel, bloque l'enquête et
+        consigne l'appel (ou sa partie non faite) au reste à faire. Renvoie les champs à ajouter à la réponse."""
+        with verrou(self.data_dir, VERROU):
+            e = self._charger(eid)
+            _, c = self._budget(e)
+            for h, n in requetes.items():
+                c["requetes"][h] = c["requetes"].get(h, 0) + n
+            c["images"] += images
+            c["cout_tokens"] += cout
+            c["duree_s"] = round(c["duree_s"] + duree_s, 3)
+            out = self._bloquer(e, outil, appel or {}, refus.limite, str(refus)) if refus else {}
+            out["budget"] = self.etat_budget(e)
+            self._ecrire(e)
+        return out
+
+    def _bloquer(self, e: dict, outil: str, appel: dict, limite: str, detail: str = "") -> dict:
+        self._budget(e)
+        libelle = LIBELLES_LIMITES.get(limite, limite)
+        message = detail or f"budget épuisé : {libelle}"
+        if not message.startswith("Budget"):
+            message = f"Budget de l'enquête épuisé ({libelle}) : {message}"
+        e["statut"] = "bloque"
+        e["blocage"] = {"motif": "budget", "limite": limite, "date": maintenant(), "message": message}
+        cle = cle_requete(outil, appel)
+        if not any(x.get("outil") == outil and x.get("cle") == cle for x in e["reste_a_faire"]):
+            e["reste_a_faire"].append({"outil": outil, "parametres": dict(appel), "cle": cle, "date": maintenant(),
+                                       "limite": limite})
+        return {"refus": f"{outil} non exécuté pour l'enquête {e['id']} : {message} Aucune requête envoyée.",
+                "enquete": e["id"], "statut": "bloque", "motif": "budget", "limite": limite,
+                "budget": self.etat_budget(e), "reste_a_faire": e["reste_a_faire"],
+                "compte_rendu": self.compte_rendu(e),
+                "consigne": ("Arrêt propre : ne pas relancer ni contourner. Rendre compte à l'utilisateur (compte_rendu) ; "
+                             "pour continuer, avec son accord, relever le budget par enquete_noter(id, budget={...}) "
+                             "puis enquete_reprendre(id), qui place le reste à faire en tête.")}
+
+    @staticmethod
+    def compte_rendu(e: dict) -> dict:
+        """Compte rendu partiel : ce qui est fait, ce qui reste ouvert (repris par enquete_reprendre)."""
+        requetes = e.get("requetes", [])
+        return {"requetes_faites": len(requetes),
+                "positives": sum(r.get("resultat") == "positif" for r in requetes),
+                "negatives": sum(r.get("resultat") == "negatif" for r in requetes),
+                "pistes_ouvertes": [p["id"] for p in e.get("pistes", []) if p.get("statut") not in TERMINES],
+                "registres_en_cours": [{"id": r["id"], "cote": r.get("cote") or r.get("source"),
+                                        "vues_lues": r.get("vues_lues", [])}
+                                       for r in e.get("registres", []) if r.get("statut") not in TERMINES],
+                "taches_manuelles": sum(t.get("statut") == "a_faire" for t in e.get("taches_manuelles", []))}
 
     @staticmethod
     def _action_registre(e: dict, r: dict, de: int, a: int, faites: dict) -> dict:
