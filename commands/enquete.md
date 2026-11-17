@@ -15,7 +15,9 @@ conclusions déposées dans la file de propositions, compte rendu à format fixe
    sinon `enquete_ouvrir(sujet, personnes)` et garder l'`id`. Budget (requêtes par hôte, images, durée
    d'activité, coût estimé) : défauts `GENEALOGISTE_BUDGET_*` ; si l'utilisateur en indique un dans
    $ARGUMENTS (ex. « budget images=20 duree=15 »), le passer à `enquete_ouvrir(..., budget={"images": 20,
-   "duree_min": 15})` : c'est le seul accord demandé, au lancement, avant toute collecte. Chaque réponse de
+   "duree_min": 15})` : l'accord est demandé au lancement, avant toute collecte, donc seulement si
+   l'utilisateur est présent ; un lancement sans surveillance n'indique pas de budget (défauts de la
+   configuration ou enquête ouverte au préalable par l'utilisateur). Chaque réponse de
    collecte donne `budget.reste`. Au refus `motif: "budget"` (enquête `bloque`) : s'arrêter proprement, rendre
    le `compte_rendu` partiel ; en mode interactif, demander à l'utilisateur s'il relève le budget
    (`enquete_noter(id, budget={...})`) avant `enquete_reprendre(id)` ; en mode autonome, ne rien relever.

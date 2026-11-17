@@ -72,8 +72,8 @@ l'utilisateur. Une réponse `deja_fait` d'un outil signale une demande déjà fa
 Ne **jamais poser de question** ni attendre de réponse : personne n'est là. Tout ce qui suit est autorisé sans
 confirmation (classes lecture, collecte, proposition).
 1. **Reprendre** : `enquete_reprendre(<id>)` si l'enquête existe ; sinon `enquete_ouvrir(sujet, personnes,
-   id=<id>)` **sans `budget`** (le lanceur fixe le budget en ouvrant l'enquête, avec l'accord de
-   l'utilisateur ; ouverte ici, elle prend les défauts). Ne jamais passer `budget` ni `statut: "ouverte"` à
+   id=<id>)` **sans `budget`** : le budget vient des défauts `GENEALOGISTE_BUDGET_*` de la configuration ou de
+   l'enquête ouverte au préalable par l'utilisateur ; une ligne `budget:` de la consigne est informative. Ne jamais passer `budget` ni `statut: "ouverte"` à
    `enquete_noter` : relever sa propre limite ou rouvrir une enquête bloquée exige l'utilisateur.
 2. **Établir chaque fait** : d'abord `a_faire`, puis les lacunes (`arbre_lacunes`) ; suivre le parcours
    d'archives ci-dessus : `archives_service`, `archives_registres` ou `ark_resoudre`, `archives_naviguer` ou

@@ -145,10 +145,18 @@ Le chercheur travaille sans personne présente (#158) **seulement sur demande ex
 [budget]` (la commande de campagne s'appuie sur le même mode). Sans `--autonome`, le mode interactif reste
 inchangé : questions permises, `arbre_proposer` présenté en diff.
 
-**Lancement.** La commande ouvre ou reprend l'enquête. Un budget indiqué est passé à
-`enquete_ouvrir(..., budget={...})` : c'est le seul accord demandé, au lancement, avant toute collecte (une
-boucle autonome ne fixe ni ne relève sa propre limite, voir [securite.md](securite.md)) ; sans budget, les
-défauts `GENEALOGISTE_BUDGET_*` s'appliquent sans confirmation. L'agent `chercheur` reçoit une consigne qui
+**Lancement et budget.** `enquete_ouvrir` et `enquete_noter` sont des outils conditionnels (#157) : fixer ou
+modifier un `budget`, ou rouvrir une enquête (`statut: "ouverte"`), demande l'accord de l'utilisateur ; une
+note ordinaire reste autorisée. Le budget d'une enquête autonome vient donc :
+
+- des défauts `GENEALOGISTE_BUDGET_*`, fixés par l'utilisateur dans la configuration (aucune confirmation) ;
+- ou d'une enquête ouverte au préalable par l'utilisateur (son id est repris) ;
+- ou de l'argument `[budget]` de la commande, **seulement quand l'utilisateur est présent au lancement** :
+  la commande le passe à `enquete_ouvrir(..., budget={...})`, l'accord est demandé avant toute collecte, puis
+  plus aucune question. Un lancement sans surveillance (campagne, tâche planifiée) ne passe jamais `budget`.
+
+Une boucle autonome ne fixe ni ne relève sa propre limite ([securite.md](securite.md)) : budget épuisé =
+arrêt et compte rendu, jamais de relèvement ni de réouverture. L'agent `chercheur` reçoit une consigne qui
 commence par :
 
 ```text

@@ -220,3 +220,19 @@ def test_recette_enquete_autonome_jusqu_au_depot(app_famille, routes):
     assert {d["outil"] for d in reprise["deja_fait"]} >= {"recherche_multi", "archives_naviguer", "archive_image"}
     assert any("table décennale" in t["description"] for t in reprise["taches_manuelles"])
     assert reprise["budget"]["reste"]["images"] == 4
+
+
+def test_branche_conditionnelle_du_hook_en_mode_autonome(app_famille):
+    """enquete_ouvrir / enquete_noter sont conditionnels (#157) : la branche utilisée par le chercheur autonome
+    (sans budget, sans réouverture) est autorisée ; celle qui fixe un budget ou rouvre demande l'accord."""
+    autonome = section(CHERCHEUR.read_text(encoding="utf-8"), "Mode autonome")
+    for appel in re.findall(r"`(enquete_(?:ouvrir|noter)\([^`]*)`", autonome):
+        assert "budget=" not in appel and "ouverte" not in appel, appel
+    outil = Chercheur()
+    eid = outil("enquete_ouvrir", sujet="Naissance de Pierre MARTIN", personnes=["I3"])["id"]
+    outil("enquete_noter", enquete=eid, piste={"question": "Naissance", "statut": "manuel"},
+          tache={"description": "Homonymes à départager sur place"})
+    for prefixe in PREFIXES:
+        assert "ask" in _decisions_hook(prefixe + "enquete_ouvrir", {"sujet": "x", "budget": {"images": 5}})
+        assert "ask" in _decisions_hook(prefixe + "enquete_noter", {"enquete": eid, "budget": {"images": 50}})
+        assert "ask" in _decisions_hook(prefixe + "enquete_noter", {"enquete": eid, "statut": "ouverte"})

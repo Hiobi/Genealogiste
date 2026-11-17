@@ -12,7 +12,8 @@ Applique les skills `methodologie-gps`, `sources-francaises`, `droit-communicabi
 
 **Mode autonome** (`--autonome` dans `$ARGUMENTS`, `docs/enquetes.md`) : après l'étape 1, ouvrir ou reprendre
 l'enquête de l'acte (`enquete_reprendre()`, sinon `enquete_ouvrir(sujet, personnes=[id], budget=…)` si un budget
-est indiqué : seul accord demandé, au lancement), puis confier les étapes 2 à 6 à l'agent **`chercheur`** avec une
+est indiqué : accord demandé au lancement, donc seulement avec l'utilisateur présent ; sans surveillance,
+pas de budget : défauts de la configuration ou enquête ouverte au préalable), puis confier les étapes 2 à 6 à l'agent **`chercheur`** avec une
 consigne commençant par `MODE AUTONOME`, `enquete: <id>`, `budget: …`, suivie de la personne et de l'acte
 cherché. Aucune question : ce qui demande l'utilisateur (cote ou ARK à relever, anti-robot, capture, archives
 hors ligne) devient une tâche manuelle (`enquete_noter`), la conclusion est déposée par
