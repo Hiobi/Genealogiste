@@ -5,6 +5,9 @@ un usage personnel ou familial de confiance, avec une instance et des données d
 Un client MCP autorisé peut lire l’arbre et appeler les outils d’écriture : le jeton de proposition
 n’est pas une preuve de consentement humain. Utiliser les hooks Claude et une politique d’approbation
 du client. Le serveur HTTP n’est pas un service public multi-utilisateur.
+Pour toute session sans surveillance (tâche planifiée, `claude -p`, mode sans confirmation), fixer
+`GENEALOGISTE_ECRITURE=interdite` : le serveur refuse alors lui-même toute écriture, quel que soit le client
+([modes d’exécution](securite.md#modes-dexécution-et-garde-fou-décriture), [campagne planifiée](campagne.md)).
 
 ## Installation reproductible
 

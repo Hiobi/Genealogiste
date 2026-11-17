@@ -80,6 +80,9 @@ détaille ce parcours et le résultat attendu.
 - Une enquête a un budget (requêtes par site, images lues, durée, coût estimé) et s’arrête proprement à
   l’épuisement ; chaque service d’archives reçoit au plus 1000 requêtes par jour. Réglages :
   `GENEALOGISTE_BUDGET_*` et `GENEALOGISTE_PLAFOND_JOUR_ARCHIVES` (`.env.example`).
+- Pour une recherche sans surveillance (`/genealogiste:campagne`, tâche planifiée), `GENEALOGISTE_ECRITURE=interdite`
+  fait refuser par le serveur lui-même toute écriture, quel que soit le mode de permission du client ; les
+  conclusions attendent dans la file de propositions ([campagne sans surveillance](docs/campagne.md)).
 - Des gardes limitent les recherches externes sur les personnes présumées vivantes ; les exports masquent
   les vivants et les objets privés par défaut. Relisez toujours ce que vous comptez partager.
 

@@ -220,6 +220,19 @@ def hooks_texte() -> str:
     return json.dumps(hooks_json(), ensure_ascii=False, indent=2) + "\n"
 
 
+PREFIXE_PLUGIN = "mcp__plugin_genealogiste_genealogiste__"  # plugin stdio ; serveur HTTP : mcp__genealogiste__
+
+
+def profil_sans_surveillance(prefixe: str = PREFIXE_PLUGIN) -> dict:
+    """Profil de permissions Claude Code minimal d'une campagne sans surveillance (#159, docs/campagne.md) :
+    allow = lecture, collecte, proposition et outils conditionnels (leur branche écriture reste refusée par le
+    serveur avec GENEALOGISTE_ECRITURE=interdite) ; deny = tout autre outil de classe « ecriture » ; dontAsk :
+    tout ce qui demanderait un accord est refusé."""
+    allow = sorted(prefixe + n for n, (_, c) in OUTILS.items() if c != ECRITURE or n in CONDITIONS)
+    deny = sorted(prefixe + n for n, (_, c) in OUTILS.items() if c == ECRITURE and n not in CONDITIONS)
+    return {"permissions": {"defaultMode": "dontAsk", "allow": ["Agent", *allow], "deny": deny}}
+
+
 # Outils réseau qui envoient des noms, un texte libre ou un identifiant de personne : garde « vivants » obligatoire.
 GARDE_VIVANTS = {"matchid_recherche", "matchid_appariement_csv", "wikitree_recherche", "gallica_recherche",
                  "gallica_recherche_document", "wikidata_personne", "wikidata_sparql", "recherche_multi",

@@ -236,3 +236,21 @@ def test_budget_et_reouverture_refuses_note_permise(interdite):
     assert "refus" not in server.enquete_noter("sans-budget", tache={"description": "Voir AD59"})
     assert "refus" not in server.enquete_noter("sans-budget", statut="close")
     assert server.gramps_envoyer_medias(appliquer=True)["refus"] == "ecriture_interdite"
+
+
+def test_profil_sans_surveillance():
+    """Profil minimal : aucun outil d'écriture autorisé hors outils conditionnels (refusés côté serveur pour leur
+    branche écriture), toutes les écritures restantes en deny, dontAsk."""
+    p = outils.profil_sans_surveillance()["permissions"]
+    pre = outils.PREFIXE_PLUGIN
+    allow = {x.removeprefix(pre) for x in p["allow"] if x.startswith(pre)}
+    deny = {x.removeprefix(pre) for x in p["deny"]}
+    assert p["defaultMode"] == "dontAsk"
+    assert allow | deny == set(outils.OUTILS) and not allow & deny
+    assert {"arbre_appliquer", "pieces_appliquer", "gramps_bascule_appliquer", "gramps_tirer",
+            "rapport_enregistrer", "cache_purger"} <= deny
+    assert {"rapport_campagne_enregistrer", "propositions_deposer", "enquete_ouvrir", "enquete_noter",
+            "arbre_lacunes"} <= allow
+    assert {n for n in allow if outils.OUTILS[n][1] == outils.ECRITURE} == set(outils.CONDITIONS)
+    autre = outils.profil_sans_surveillance("mcp__genealogiste__")["permissions"]["deny"]
+    assert all(x.startswith("mcp__genealogiste__") for x in autre)

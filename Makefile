@@ -2,7 +2,7 @@
 MCP := mcp
 UV  := uv --directory $(MCP)
 
-.PHONY: version help install hooks test sauvegarde restauration test-archives test-gramps test-codex lint format check run run-http docker-build docker-up docker-gramps docker-down validate clean verifier-archives verifier-telechargements
+.PHONY: version help install hooks profil-campagnetest sauvegarde restauration test-archives test-gramps test-codex lint format check run run-http docker-build docker-up docker-gramps docker-down validate clean verifier-archives verifier-telechargements
 
 help: ## Liste des cibles
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-14s %s\n", $$1, $$2}'
@@ -36,6 +36,9 @@ restauration: ## Restaure une archive dans un dossier vide et la vérifie (ARCHI
 
 hooks: ## Régénère hooks/hooks.json depuis le catalogue des outils (outils.py)
 	$(UV) run python ../scripts/generer_hooks.py
+
+profil-campagne: ## Affiche le profil de permissions d'une campagne sans surveillance (PREFIXE=… pour le serveur HTTP)
+	@$(UV) run python ../scripts/generer_hooks.py --profil-campagne $(if $(PREFIXE),--prefixe $(PREFIXE),)
 
 lint: ## Vérifie le style (ruff)
 	$(UV) run ruff check src tests scripts ../scripts
