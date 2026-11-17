@@ -172,6 +172,7 @@ def controles_locaux(a, probleme: dict | None, config) -> list[dict]:
                     "Lire les dernières erreurs ci-dessous (outil, cause) ; corriger puis relancer l'outil concerné."
                     if recentes else "", dernieres_erreurs=recentes))
     if a is not None:
+        out.append(_controle_debit(a))
         from .tree.proposals import TTL_SECONDS
         expirees = a.tokens.expirees()  # lecture seule : le diagnostic ne modifie rien
         valides = [p for p in a.tokens._lire_tous() if p[1].get("jeton") not in expirees]
@@ -183,13 +184,31 @@ def controles_locaux(a, probleme: dict | None, config) -> list[dict]:
     return out
 
 
+def _controle_debit(a) -> dict:
+    """Hôtes ralentis pour la journée après 429/502/503/504 (#211), partagés par tous les serveurs du cache."""
+    jour = a.http.jour().isoformat()
+    try:
+        lents = a.cache.ralentissements(jour)
+    except Exception as exc:  # noqa: BLE001
+        return _ctl("debit", "attention", f"ralentissements illisibles : {exc}")
+    details = {h: {**r, "intervalle": a.http.intervalle(h)} for h, r in lents.items()}
+    if not details:
+        return _ctl("debit", "ok", "aucun hôte ralenti aujourd'hui", ralentissements={})
+    resume = ", ".join(f"{h} ({d['intervalle']:g} s, {d['incidents']} incident(s), dernier HTTP "
+                       f"{d['dernier_statut']})" for h, d in details.items())
+    return _ctl("debit", "attention", f"hôte(s) ralenti(s) jusqu'à minuit : {resume}",
+                "Le service a signalé une surcharge (429/5xx) : le rythme est réduit pour la journée. "
+                "cache_purger('ralentissement') rétablit le rythme normal si la cause est levée.",
+                ralentissements=details)
+
+
 def controles_reseau(a) -> list[dict]:
     from .http import HttpClient, SourceError
 
     client = HttpClient(a.cache, a.config.user_agent, timeout=8.0, min_intervals=a.http.min_intervals,
                         offline=False, policy=a.http.policy, default_interval=a.http.default_interval,
                         max_retries=1, duree_max=15.0, echec_ttl=0, coupe_circuit_ttl=a.config.coupe_circuit,
-                        sleeper=a.http.sleep)
+                        sleeper=a.http.sleep, jour=a.http.jour, ralentissement_max=a.http.ralentissement_max)
     out = []
     try:
         for nom, url in SOURCES.items():

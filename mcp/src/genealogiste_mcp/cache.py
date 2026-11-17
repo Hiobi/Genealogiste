@@ -11,10 +11,14 @@ from pathlib import Path
 from typing import Any
 
 ATTENTE = 30.0  # secondes d'attente d'un verrou SQLite tenu par un autre processus
+ATTENTE_CRENEAU = 5.0  # attente maximale du verrou pour réserver un créneau ; au-delà, repli en mémoire
+DERIVE_MAX = 3600.0  # créneau enregistré plus loin dans le futur : horloge reculée, ignoré
+RALENTISSEMENT = "ralentissement"  # catégorie de cache_purger qui lève les ralentissements du jour
 
 
 class Cache:
     BORNER_TOUS = 100  # contrôle de taille toutes les N écritures
+    attente_creneau = ATTENTE_CRENEAU
 
     def __init__(self, path: Path | str, max_octets: int = 0):
         self.path = Path(path)
@@ -39,6 +43,14 @@ class Cache:
         self._db.execute(
             "CREATE TABLE IF NOT EXISTS compteurs_jour (hote TEXT NOT NULL, jour TEXT NOT NULL,"
             " n INTEGER NOT NULL, PRIMARY KEY (hote, jour))"
+        )
+        # Débit partagé entre processus (#211) : dernier créneau réservé par hôte (horloge murale) et
+        # ralentissement du jour après 429/502/503/504. Hors du cache des réponses ; seul
+        # purge("ralentissement") lève les ralentissements.
+        self._db.execute("CREATE TABLE IF NOT EXISTS creneaux (hote TEXT PRIMARY KEY, dernier REAL NOT NULL)")
+        self._db.execute(
+            "CREATE TABLE IF NOT EXISTS ralentissements (hote TEXT PRIMARY KEY, jour TEXT NOT NULL,"
+            " facteur REAL NOT NULL, incidents INTEGER NOT NULL, statut INTEGER, maj REAL NOT NULL)"
         )
         self._db.commit()
 
@@ -120,7 +132,13 @@ class Cache:
             self._db.commit()
 
     def purge(self, source: str | None = None) -> int:
+        """Vide le cache des réponses (tout ou une catégorie). ``"ralentissement"`` lève les ralentissements
+        d'hôtes ; une purge complète ne les lève pas, ni les compteurs journaliers."""
         with self._lock:
+            if source == RALENTISSEMENT:
+                cur = self._db.execute("DELETE FROM ralentissements")
+                self._db.commit()
+                return cur.rowcount
             if source:
                 cur = self._db.execute("DELETE FROM cache WHERE source = ?", (source,))
             else:
@@ -148,6 +166,70 @@ class Cache:
             except BaseException:
                 self._db.rollback()
                 raise
+
+    def _transaction(self, attente: float):
+        """BEGIN IMMEDIATE avec une attente de verrou bornée (``attente`` s) ; à appeler sous self._lock."""
+        self._db.execute(f"PRAGMA busy_timeout = {int(attente * 1000)}")
+        try:
+            self._db.execute("BEGIN IMMEDIATE")
+        finally:
+            self._db.execute(f"PRAGMA busy_timeout = {int(ATTENTE * 1000)}")
+
+    def reserver_creneau(self, hote: str, intervalle: float, maintenant: float) -> float:
+        """Réserve le prochain créneau d'envoi vers ``hote`` : ``max(maintenant, dernier + intervalle)``, lu et
+        écrit dans une même transaction (sûr entre processus partageant ce fichier). ``maintenant`` est une
+        horloge murale (time.time). Lève sqlite3.OperationalError si le verrou n'est pas obtenu à temps."""
+        with self._lock:
+            try:
+                self._transaction(self.attente_creneau)
+                row = self._db.execute("SELECT dernier FROM creneaux WHERE hote = ?", (hote,)).fetchone()
+                dernier = row[0] if row else None
+                if dernier is None or dernier - maintenant > DERIVE_MAX:
+                    slot = maintenant
+                else:
+                    slot = max(maintenant, dernier + intervalle)
+                self._db.execute("INSERT OR REPLACE INTO creneaux (hote, dernier) VALUES (?, ?)", (hote, slot))
+                self._db.commit()
+                return slot
+            except BaseException:
+                if self._db.in_transaction:
+                    self._db.rollback()
+                raise
+
+    def ralentir(self, hote: str, jour: str, facteur_max: float, statut: int | None = None,
+                 maintenant: float | None = None) -> float:
+        """Double le facteur de ralentissement de ``hote`` pour ``jour`` (plafonné à ``facteur_max``) ;
+        un ralentissement d'un jour précédent repart de 1. Renvoie le nouveau facteur."""
+        with self._lock:
+            try:
+                self._transaction(self.attente_creneau)
+                row = self._db.execute("SELECT jour, facteur, incidents FROM ralentissements WHERE hote = ?",
+                                       (hote,)).fetchone()
+                facteur, incidents = (row[1], row[2]) if row and row[0] == jour else (1.0, 0)
+                facteur = min(max(1.0, facteur_max), facteur * 2)
+                self._db.execute(
+                    "INSERT OR REPLACE INTO ralentissements (hote, jour, facteur, incidents, statut, maj)"
+                    " VALUES (?, ?, ?, ?, ?, ?)",
+                    (hote, jour, facteur, incidents + 1, statut, time.time() if maintenant is None else maintenant))
+                self._db.commit()
+                return facteur
+            except BaseException:
+                if self._db.in_transaction:
+                    self._db.rollback()
+                raise
+
+    def ralentissement(self, hote: str, jour: str) -> float:
+        """Facteur de ralentissement de ``hote`` pour ``jour`` (1.0 sans incident ce jour-là)."""
+        with self._lock:
+            row = self._db.execute("SELECT facteur FROM ralentissements WHERE hote = ? AND jour = ?",
+                                   (hote, jour)).fetchone()
+        return row[0] if row else 1.0
+
+    def ralentissements(self, jour: str) -> dict[str, dict]:
+        with self._lock:
+            rows = self._db.execute("SELECT hote, facteur, incidents, statut, maj FROM ralentissements"
+                                    " WHERE jour = ? ORDER BY hote", (jour,)).fetchall()
+        return {h: {"facteur": f, "incidents": n, "dernier_statut": s, "depuis": m} for h, f, n, s, m in rows}
 
     def compteurs_jour(self, jour: str) -> dict[str, int]:
         with self._lock:

@@ -128,6 +128,8 @@ def error_envelope(ctx: SourceContext, source: str, operation: str, params: dict
         out.update(echec_memorise=True, depuis_cache=True)
     if getattr(cause, "coupe_circuit", False):
         out["coupe_circuit"] = True
+    if getattr(cause, "intervalle", None):
+        out["intervalle_actuel"] = cause.intervalle  # hôte ralenti pour la journée (#211)
     if apres is not None:
         out["reessayer_apres"] = apres
         out["conseil"] = (f"Service saturé ou indisponible : réessayer dans {round(apres)} s au plus tôt, passer à une "

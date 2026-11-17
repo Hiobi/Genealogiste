@@ -95,6 +95,7 @@ class App:
                                max_retries=self.config.http_tentatives, duree_max=self.config.http_duree_max,
                                echec_ttl=self.config.cache_echec, coupe_circuit_ttl=self.config.coupe_circuit,
                                plafond=PlafondJour(self.cache, self.config.plafond_jour_archives, archives.hotes()),
+                               ralentissement_max=self.config.ralentissement_max,
                                **kw)
         self.store = TreeStore(self.config.data_dir, self.config.git_remote, self.config.git_delai)
         self.store.ensure()
@@ -2010,8 +2011,9 @@ def cache_purger(source: str = "") -> dict:
     """Vide le cache SQLite des réponses (tout si source est vide, sinon une catégorie). Catégories : matchid,
     wikitree, gallica, wikidata, geo, cog, archives, ark, iiif, visionneuse ; echec (échecs mémorisés sans
     source) ; coupe_circuit (lève la pause de tous les hôtes mis en pause après un défi anti-robot, durée
-    GENEALOGISTE_COUPE_CIRCUIT, pour permettre un nouvel essai explicite). Les échecs mémorisés d'une source
-    partent avec elle ; un nom inconnu ne supprime rien. Purge aussi les entrées expirées et applique les plafonds
+    GENEALOGISTE_COUPE_CIRCUIT, pour permettre un nouvel essai explicite) ; ralentissement (rétablit le rythme
+    normal des hôtes ralentis pour la journée après 429/502/503/504 ; jamais levé par une purge complète). Les
+    échecs mémorisés d'une source partent avec elle ; un nom inconnu ne supprime rien. Purge aussi les entrées expirées et applique les plafonds
     de taille : GENEALOGISTE_CACHE_MAX_MO au cache SQLite (plus anciennes entrées d'abord) et
     GENEALOGISTE_CACHE_IMAGES_MAX_MO au dossier cache-images (plus anciennes images d'abord), qui n'est jamais
     vidé par catégorie. Les médias archivés et l'arbre ne sont pas touchés.

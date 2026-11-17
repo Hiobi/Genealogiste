@@ -1,12 +1,14 @@
-"""Client HTTP commun : cache SQLite, limitation de débit par hôte, backoff sur 429/503,
-politique réseau revalidée à chaque redirection (#42), reprises réservées aux requêtes idempotentes (#50)."""
+"""Client HTTP commun : cache SQLite, limitation de débit par hôte partagée entre processus et ralentissement
+durable après 429/502/503/504 (#211), backoff sur 429/503, politique réseau revalidée à chaque redirection (#42),
+reprises réservées aux requêtes idempotentes (#50)."""
 
 from __future__ import annotations
 
+import sqlite3
 import threading
 import time
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from email.utils import parsedate_to_datetime
 from typing import Any
 from urllib.parse import urljoin, urlparse
@@ -18,6 +20,8 @@ from .reseau import DestinationRefusee, NetworkPolicy
 
 MAX_REDIRECTS = 5
 IDEMPOTENT = frozenset({"GET", "HEAD", "OPTIONS"})
+SURCHARGE = frozenset({429, 502, 503, 504})  # réponses qui ralentissent l'hôte pour la journée (#211)
+FACTEUR_MAX = 64.0  # doublements cumulés au plus ; l'intervalle effectif reste borné par ralentissement_max
 
 
 MAX_IMAGE_BYTES = 150 * 1024 * 1024  # plafond d'une vue téléchargée (un TIFF de registre dépasse rarement 80 Mo)
@@ -29,8 +33,9 @@ class SourceError(Exception):
     def __init__(self, message: str, status: int | None = None, reessayer_apres: float | None = None,
                  echec_memorise: bool = False, coupe_circuit: bool = False, *,
                  bloque_antirobot: bool = False, protection: str | None = None,
-                 url: str | None = None, date_detection: str | None = None):
+                 url: str | None = None, date_detection: str | None = None, intervalle: float | None = None):
         super().__init__(message)
+        self.intervalle = intervalle  # intervalle courant (s) entre deux requêtes vers l'hôte, s'il est ralenti
         self.status = status
         self.reessayer_apres = reessayer_apres  # secondes avant de réessayer (429/503, plafond atteint)
         self.echec_memorise = echec_memorise  # échec servi par le cache négatif, sans requête
@@ -129,6 +134,9 @@ class HttpClient:
         echec_ttl: float = 900.0,
         coupe_circuit_ttl: float = 1800.0,
         plafond=None,
+        horloge_murale: Callable[[], float] = time.time,
+        jour: Callable[[], date] = date.today,
+        ralentissement_max: float = 60.0,
     ):
         self.cache = cache
         self.plafond = plafond  # budget.PlafondJour : plafond journalier par hôte d'archives (#157)
@@ -144,7 +152,10 @@ class HttpClient:
         self.max_retries = max_retries
         self.offline = offline
         self.policy = policy or NetworkPolicy()
-        self._last: dict[str, float] = {}
+        self.horloge_murale = horloge_murale  # créneaux partagés entre processus : horloge murale, pas monotone
+        self.jour = jour  # date locale : un ralentissement dure jusqu'à minuit
+        self.ralentissement_max = ralentissement_max  # plafond (s) de l'intervalle ralenti ; 0 = pas de ralentissement
+        self._last: dict[str, float] = {}  # repli en mémoire si le cache SQLite est absent ou verrouillé
         self._lock = threading.Lock()
         self.client = httpx.Client(
             timeout=timeout,
@@ -153,17 +164,62 @@ class HttpClient:
             transport=transport,
         )
 
+    def _intervalle_base(self, host: str) -> float:
+        name = self._hote(host)
+        return self.min_intervals.get(host, self.min_intervals.get(name, self.default_interval))
+
+    def _facteur(self, name: str) -> float:
+        if self.cache is None or not self.ralentissement_max:
+            return 1.0
+        try:
+            return self.cache.ralentissement(name, self.jour().isoformat())
+        except sqlite3.Error:
+            return 1.0
+
+    def intervalle(self, host: str) -> float:
+        """Intervalle effectif (s) entre deux requêtes vers ``host`` : celui de la configuration, multiplié par
+        le ralentissement du jour (#211) sans dépasser ``ralentissement_max`` (ni descendre sous la base)."""
+        base = self._intervalle_base(host)
+        if not base:
+            return 0.0
+        facteur = self._facteur(self._hote(host))
+        if facteur <= 1.0:
+            return base
+        return max(base, min(base * facteur, self.ralentissement_max))
+
+    def _ralentir(self, host: str, status: int) -> float | None:
+        """Après une réponse de surcharge : double le facteur de l'hôte pour la journée (persistant, partagé).
+        Renvoie l'intervalle effectif s'il est ralenti, sinon None."""
+        if self.cache is None or not self.ralentissement_max or not self._intervalle_base(host):
+            return None
+        try:
+            self.cache.ralentir(self._hote(host), self.jour().isoformat(), FACTEUR_MAX, status,
+                                self.horloge_murale())
+        except sqlite3.Error:
+            return None
+        return self.intervalle(host)
+
     def _throttle(self, host: str) -> None:
-        """Réserve le prochain créneau de l'hôte sous le verrou, puis attend hors du verrou : les requêtes vers
-        un même hôte restent espacées, celles vers les autres hôtes ne sont pas retardées."""
-        name = (urlparse(f"//{host}").hostname or host).lower()
-        interval = self.min_intervals.get(host, self.min_intervals.get(name, self.default_interval))
+        """Réserve le prochain créneau de l'hôte, puis attend hors de tout verrou : les requêtes vers un même
+        hôte restent espacées, celles vers les autres hôtes ne sont pas retardées. La réservation est atomique
+        dans le cache SQLite (transaction BEGIN IMMEDIATE, horloge murale) : plusieurs processus ou conteneurs
+        partageant le cache respectent ensemble l'intervalle (#211). Cache absent ou verrouillé au-delà de
+        quelques secondes : repli sur le créneau en mémoire de ce processus."""
+        name = self._hote(host)
+        interval = self.intervalle(host)
         if not interval:
             return
+        now = self.horloge_murale()
+        slot = None
+        if self.cache is not None:
+            try:
+                slot = self.cache.reserver_creneau(name, interval, now)
+            except sqlite3.Error:
+                slot = None
         with self._lock:
-            now = time.monotonic()
-            slot = max(now, self._last.get(name, float("-inf")) + interval)
-            self._last[name] = slot
+            if slot is None:
+                slot = max(now, self._last.get(name, float("-inf")) + interval)
+            self._last[name] = max(slot, self._last.get(name, float("-inf")))
         if slot > now:
             self.sleep(slot - now)
 
@@ -300,15 +356,17 @@ class HttpClient:
         last_exc: Exception | None = None
         debut = self.clock()
 
-        def attendre(wait: float, attempt: int, cause: str, status: int | None, reessayer: float | None) -> None:
+        def attendre(wait: float, attempt: int, cause: str, status: int | None, reessayer: float | None,
+                     ralenti: float | None = None) -> None:
             """Attente avant l'essai suivant, sans jamais dépasser le plafond ni attendre après le dernier."""
             restant = self.duree_max - (self.clock() - debut)
             if attempt + 1 >= self.max_retries or wait >= restant:
-                apres = reessayer if reessayer is not None else wait
+                apres = reessayer if reessayer is not None else max(wait, ralenti or 0.0)
                 raise SourceError(
                     f"{host} : {cause} ; nouvel essai conseillé dans {round(apres)} s "
-                    f"(plafond de {self.duree_max:g} s par appel, {attempt + 1} tentative(s)).", status,
-                    reessayer_apres=round(apres, 1))
+                    f"(plafond de {self.duree_max:g} s par appel, {attempt + 1} tentative(s))."
+                    + self._note_ralenti(ralenti), status,
+                    reessayer_apres=round(apres, 1), intervalle=ralenti)
             self.sleep(wait)
 
         for attempt in range(self.max_retries):
@@ -340,13 +398,15 @@ class HttpClient:
                     date_detection=datetime.now(UTC).isoformat())
                 self._couper(hote_blocage, f"HTTP {resp.status_code}, {protection}", exc)
                 raise exc
+            ralenti = self._ralentir(host, resp.status_code) if resp.status_code in SURCHARGE else None
             if resp.status_code in (502, 503, 504) and not replay:
-                raise SourceError(self._indetermine(host, f"HTTP {resp.status_code}"), resp.status_code,
-                                  reessayer_apres=retry_after(resp.headers.get("Retry-After")))
-            if resp.status_code in (429, 502, 503, 504):
+                raise SourceError(self._indetermine(host, f"HTTP {resp.status_code}") + self._note_ralenti(ralenti),
+                                  resp.status_code, reessayer_apres=retry_after(resp.headers.get("Retry-After")),
+                                  intervalle=ralenti)
+            if resp.status_code in SURCHARGE:
                 demande = retry_after(resp.headers.get("Retry-After"))
                 attendre(delay if demande is None else demande, attempt, f"HTTP {resp.status_code}",
-                         resp.status_code, demande)
+                         resp.status_code, demande, ralenti)
                 delay *= 2
                 last_exc = SourceError(f"{host} : HTTP {resp.status_code} (tentative {attempt + 1})", resp.status_code)
                 continue
@@ -387,6 +447,13 @@ class HttpClient:
             raise SourceError(f"{host} : image trop volumineuse ({len(resp.content)} octets, plafond "
                               f"{MAX_IMAGE_BYTES}) : demander une zone ou une taille réduite.", resp.status_code)
         return resp.content
+
+    @staticmethod
+    def _note_ralenti(intervalle: float | None) -> str:
+        if not intervalle:
+            return ""
+        return (f" Hôte ralenti jusqu'à minuit : {intervalle:g} s entre deux requêtes "
+                "(cache_purger('ralentissement') pour revenir au rythme normal).")
 
     @staticmethod
     def _indetermine(host: str, cause: str) -> str:
