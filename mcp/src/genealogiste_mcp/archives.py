@@ -16,7 +16,7 @@ from functools import lru_cache
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from . import ark, capacites_archives, couverture_archives
+from . import acces_archives, ark, capacites_archives, couverture_archives
 from .normalize.places import DEPARTEMENTS, normalize_place
 from .types_documents import DOCUMENTS, normaliser
 
@@ -26,7 +26,7 @@ RESULTATS_RECETTE = ("ok", "echec", "protection")
 STALE_DAYS = 365
 TYPES = ("departementales", "communales", "nationales", "militaires", "notariales", "diocesaines", "autre")
 
-FAMILLES_VISIONNEUSE = ("iiif_natif", "editeur_ad", "visionneuse_maison", "images_statiques", "authentifie")
+FAMILLES_VISIONNEUSE = acces_archives.FAMILLES
 
 
 @lru_cache(maxsize=1)
@@ -131,12 +131,8 @@ def validate() -> list[str]:
                 errs.append(f"{c} : résolution d'image inconnue ou mal formée")
             elif resolution.get("iiif") not in (True, False, None):
                 errs.append(f"{c} : état IIIF invalide")
-        visionneuse = s.get("visionneuse_acces")
-        if visionneuse is not None:
-            if not isinstance(visionneuse, dict) or visionneuse.get("famille") not in FAMILLES_VISIONNEUSE:
-                errs.append(f"{c} : visionneuse_acces.famille inconnue (valeurs : {', '.join(FAMILLES_VISIONNEUSE)})")
-            if visionneuse.get("iiif") not in (True, False, None):
-                errs.append(f"{c} : visionneuse_acces.iiif invalide")
+        if "visionneuse_acces" in s:
+            errs.extend(f"{c} : visionneuse_acces.{e}" for e in acces_archives.valider(s["visionneuse_acces"]))
         if "intervalle_requetes" in s and (not isinstance(s["intervalle_requetes"], (int, float))
                                            or isinstance(s["intervalle_requetes"], bool)
                                            or s["intervalle_requetes"] <= 0):
@@ -185,6 +181,8 @@ def online(s: dict | None, document: str, annee: int | None, lieu: str = "",
 def view(s: dict, document: str = "", annee: int | None = None, lieu: str = "") -> dict:
     document = normaliser(document)
     out = {k: v for k, v in s.items() if v not in ("", None, {}, [])}
+    acces = acces_archives.selectionner(s, document)
+    out["visionneuse_pour_la_demande"] = acces
     resolution = s.get("resolution_image") or {}
     gallica = s.get("ark_naan") == "12148"
     adaptateur = resolution.get("type") == "visualizer_api" or gallica
@@ -212,6 +210,11 @@ def view(s: dict, document: str = "", annee: int | None = None, lieu: str = "") 
     out["acces_vps"] = ((recette(s["code"]) or {}).get("mesures") or {}).get("vps") or {
         "verdict": "inconnu", "detail": "Aucune mesure identifiée depuis le VPS ; une réussite locale ne suffit pas."}
     out["couverture_technique"] = capacites_archives.couverture(s, recette(s["code"]) or {}, document)
+    if acces_archives.ecarte_adaptateur_service(s, document):
+        out["telechargement"]["etat"] = "a_qualifier_pour_ce_type"
+        out["telechargement"]["applicable_au_type"] = None
+        out["telechargement"]["note"] = ("L'accès propre à ce type diffère de l'accès général (ou est invalide) : "
+                                         "l'adaptateur et la recette du service ne s'appliquent pas à ce fonds.")
     if w := staleness(s):
         out["avertissement"] = w
     return out
