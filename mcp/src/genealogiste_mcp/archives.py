@@ -18,14 +18,14 @@ from urllib.parse import urlsplit
 
 from . import ark, capacites_archives, couverture_archives
 from .normalize.places import DEPARTEMENTS, normalize_place
+from .types_documents import DOCUMENTS, normaliser
 
 PATH = Path(__file__).parent / "referentiels" / "archives_fr.json"
 RECETTES = Path(__file__).parent / "referentiels" / "recettes_archives.json"  # make test-archives (#143)
 RESULTATS_RECETTE = ("ok", "echec", "protection")
 STALE_DAYS = 365
 TYPES = ("departementales", "communales", "nationales", "militaires", "notariales", "diocesaines", "autre")
-DOCUMENTS = ("naissance", "mariage", "deces", "tables_decennales", "recensement", "notaire", "matricule",
-             "cadastre", "paroissiaux", "enregistrement")
+
 FAMILLES_VISIONNEUSE = ("iiif_natif", "editeur_ad", "visionneuse_maison", "images_statiques", "authentifie")
 
 
@@ -179,10 +179,11 @@ def staleness(s: dict, today: date | None = None) -> str:
 def online(s: dict | None, document: str, annee: int | None, lieu: str = "",
            today: date | None = None) -> bool | None:
     """Disponibilité déclarée du fonds ; hors périmètre ou lacune = inconnu, jamais preuve d'un acte."""
-    return couverture_archives.evaluate(s, document, annee, lieu, today)['en_ligne']
+    return couverture_archives.evaluate(s, normaliser(document), annee, lieu, today)['en_ligne']
 
 
 def view(s: dict, document: str = "", annee: int | None = None, lieu: str = "") -> dict:
+    document = normaliser(document)
     out = {k: v for k, v in s.items() if v not in ("", None, {}, [])}
     resolution = s.get("resolution_image") or {}
     gallica = s.get("ark_naan") == "12148"
@@ -282,7 +283,7 @@ def communicability_online(document: str, date_document: str = "", date_naissanc
     res = communicability(document, date_document, date_naissance, date_deces)
     if not lieu or "erreur" in res:
         return res
-    key = document.lower().replace("é", "e").replace("è", "e").replace(" ", "_")
+    key = normaliser(document)
     svc = service(lieu=lieu, document=key, annee=_year(date_document))
     res["service_archives"] = svc
     res["en_ligne"] = svc.get("en_ligne_pour_la_demande")

@@ -649,7 +649,9 @@ def comparer_profils(profil1: dict, profil2: dict) -> dict:
 def communicabilite(document: str, date_document: str = "", date_naissance: str = "", date_deces: str = "",
                     lieu: str = "", personne: str = "") -> dict:
     """Délai de communicabilité (Code du patrimoine) : naissance, mariage, deces, recensement, notaire, matricule,
-    judiciaire, vie_privee, medical, cadastre, hypotheques, tables_decennales. Avec lieu : distingue
+    judiciaire (alias justice), vie_privee, medical, cadastre, hypotheques, tables_decennales.
+    Paroissiaux, enregistrement et insinuation : régime à préciser, réponse inconnue sans délai inventé.
+    Les pluriels recensements, notaires et matricules sont acceptés. Avec lieu : distingue
     « communicable » et « en ligne » (référentiel des archives) et propose sinon une demande avec modèle de courrier."""
     return communicability_online(document, date_document, date_naissance, date_deces, lieu, personne)
 
