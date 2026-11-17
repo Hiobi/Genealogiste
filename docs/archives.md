@@ -42,6 +42,25 @@ Pour savoir quelles images le plugin peut résoudre et télécharger, voir le
   et ne remplacent pas `verifie_le` ; ils ne valident pas les autres champs hérités, notamment le NAAN.
 - `visionneuse` : point d’accès à la recherche ou à la sélection des fonds conduisant à la consultation ;
   il ne désigne pas nécessairement une image directement ouverte.
+- `visionneuse_acces` : accès de visionneuse relevé pour le service (`famille` parmi `iiif_natif`, `editeur_ad`,
+  `visionneuse_maison`, `images_statiques`, `authentifie` ; `editeur`, `logiciel`, `iiif`, `protection`,
+  `reference`, `releve_le` facultatifs). `par_type` décrit un accès propre à un type de document quand il
+  diffère (ex. matricules sur une autre application que l'état civil) :
+
+  ```json
+  "visionneuse_acces": {"famille": "editeur_ad", "editeur": "naoned", "iiif": false,
+    "par_type": {"matricule": {"famille": "iiif_natif", "iiif": true,
+      "reference": "https://…/matricules", "releve_le": "2026-11-17"}}}
+  ```
+
+  Clés de `par_type` : clés canoniques de type (`matricule`, pas `matricules`). Chaque entrée exige une
+  `reference` HTTP(S) sans identifiants et une date `releve_le` ; aucun `par_type` imbriqué. Un objet ne
+  contenant que `par_type` n'annonce aucun accès général. La fiche expose `visionneuse_pour_la_demande`
+  (`origine` : `document`, `service` ou `inconnu`) : l'entrée du type prime, sans fusion de champs ;
+  sinon repli sur l'accès général. Une entrée de type invalide donne `inconnu`, jamais un repli.
+  Un adaptateur étant propre à un éditeur, l'accès typé **du même éditeur** que l'accès général conserve
+  l'adaptateur et la recette du service ; un éditeur différent ou inconnu les écarte pour ce type
+  (`telechargement.etat` = `a_qualifier_pour_ce_type`, couverture technique inconnue).
 - `verifie_le` : date à laquelle **une personne** a vérifié l'entrée sur le site du service. Absente ou de plus
   de 12 mois : avertissement dans les réponses.
 - Entrées importées : `wikidata` (identifiant de l'élément), `origine` (« import : … »), `site_repond_le` (date
@@ -210,6 +229,6 @@ Sources consultées le 17 novembre 2026. Les autres règles indicatives préexis
 lot harmonise les noms sans constituer une revue juridique exhaustive des délais.
 
 Naturalisations et hospitalier restent hors du catalogue de ce lot : ils demandent une description de
-sous-types, séries et régimes sourcés avant ajout. L'accès de visionneuse distinct par type reste à
-implémenter dans #129. Aucun service, fonds, délai de mise en ligne ni capacité réseau n'est ajouté par
+sous-types, séries et régimes sourcés avant ajout. L'accès de visionneuse distinct par type est décrit
+ci-dessous (`visionneuse_acces.par_type`). Aucun service, fonds, délai de mise en ligne ni capacité réseau n'est ajouté par
 l'élargissement du vocabulaire.

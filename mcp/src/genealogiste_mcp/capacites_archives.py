@@ -1,11 +1,17 @@
 """Couverture technique constatée, distincte de la disponibilité déclarée des fonds (#145)."""
 from __future__ import annotations
 
+from .acces_archives import ecarte_adaptateur_service
+
 CAPACITES = ("resolution_ark", "navigation", "telechargement", "recherche", "archivage")
 
 
 def couverture(service: dict, recette: dict, document: str = "") -> dict:
     """Ne propage jamais une recette de ressource à tous les fonds d'un service."""
+    if ecarte_adaptateur_service(service, document):
+        # Un accès typé d'un autre éditeur n'hérite ni du routage d'adaptateur ni de la recette.
+        service = {k: v for k, v in service.items() if k not in ("resolution_image", "ark_naan", "recette")}
+        recette = {}
     reference = service.get("recette") or {}
     fonds = reference.get("document", "inconnu")
     applicable = not document or document == fonds
