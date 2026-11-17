@@ -1121,7 +1121,7 @@ def piece_archiver(source: str, page: int = 0, personnes: list[str] | None = Non
     extensions_images = set(archivage.MIME) | {".jpeg", ".tiff"}
     if extension_demandee and extension_demandee not in extensions_images and not extension_demandee[1:].isdigit():
         return {"erreur": "nom_fichier : extension d'image ou PDF attendue ; .md est réservé à la note compagnon."}
-    if type_piece and type_piece.upper() not in pieces.TYPES:
+    if type_piece.strip() and type_piece.split()[0].upper() not in pieces.TYPES:  # « NOT testament » : code + libellé
         return {"erreur": "type_piece inconnu : utiliser un code de la convention de classement."}
     if custom_name and " -- " not in custom_name:
         return {"erreur": "nom_fichier désigne le nom complet selon la convention (avec ' -- '), pas le patronyme. "
@@ -1294,7 +1294,8 @@ def piece_nommer(personnes: list[str], commune: str = "", depot: str = "", type_
     """Nom de fichier d'une pièce selon la convention (docs/pieces.md) :
     NOM Prénom[ + NOM Prénom] -- COMMUNE - DÉPÔT - TYPE [AAAA-AAAA] - cote - p.vue n.acte.ext
     personnes : « NOM Prénom » ou identifiants de l'arbre (I12). type_piece : N, B, M, D, S, NMD, BMS, TD, RM,
-    ANMT, REC, SIGN, PHOTO… source (S3) : complète dépôt (sigle) et cote depuis l'arbre. Ne renomme rien."""
+    ANMT, PM, NOT (acte notarié ; libellé libre après le code : « NOT testament »), CNI, COUR (courrier), REC,
+    SIGN, PHOTO… source (S3) : complète dépôt (sigle) et cote depuis l'arbre. Ne renomme rien."""
     try:
         noms = [_person_label(p) for p in personnes]
         if source:
@@ -1335,9 +1336,10 @@ def pieces_proposer(dossier: str, renommages: list[dict] | None = None, annuler:
     """Plan de classement d'un dossier de pièces (rien n'est déplacé) : documents/<type>/<PATRONYME>/,
     photographies/…, archives/ (GeneWeb, GEDCOM, INSEE, Doublons), _À trier/. Jamais de suppression ; les
     notes Markdown ordinaires, dossiers cachés et personnes/ familles/ sources/ sont protégés ; les médias liés à
-    l'arbre ne sont pas déplacés. renommages : [{actuel, propose}] (agent trieur, piece_nommer) ; le fichier est
-    reclassé d'après son nouveau nom. Les chemins actuel sont relatifs à dossier ; l'aperçu est relatif à
-    racine (configuration médias ou vault .obsidian). seulement_renommages limite le plan aux fichiers
+    l'arbre ne sont pas déplacés. renommages : [{actuel, propose, dossier?}] (agent trieur, piece_nommer) ; le
+    fichier est reclassé d'après son nouveau nom, ou dans dossier s'il est donné (relatif à la racine, sous
+    documents/, photographies/ ou courriers/ uniquement ; tout autre dossier refuse le plan). Les chemins
+    actuel sont relatifs à dossier ; l'aperçu est relatif à racine (configuration médias ou vault .obsidian). seulement_renommages limite le plan aux fichiers
     nommés, sans isoler les doublons. Les notes type: piece suivent leur média, avec fichier et embed mis à
     jour ; leur texte libre est conservé. annuler : nom d'un journal _organisation/*.tsv à défaire. Renvoie un jeton
     pour pieces_appliquer, à n'utiliser qu'après accord explicite de l'utilisateur sur le plan."""

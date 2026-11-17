@@ -112,7 +112,7 @@ def lire_nom(nom: str) -> dict:
         return out
     tete, reste = stem.split(" -- ", 1)
     out["personnes"] = [p.strip() for p in tete.split(" + ") if p.strip()]
-    m = re.match(r"([A-ZÀ-Ü][A-ZÀ-Ü'\- ]*[A-ZÀ-Ü])(?:\s|$)", out["personnes"][0]) if out["personnes"] else None
+    m = re.match(r"([A-ZÀ-Ü](?:[A-ZÀ-Ü'\- ]*[A-ZÀ-Ü])?)(?:\s|$)", out["personnes"][0]) if out["personnes"] else None
     out["patronyme"] = m.group(1).strip() if m else ""
     segs = [s.strip() for s in reste.split(" - ")]
     if segs and re.match(r"^(p\.\S+)?\s*(n\.\S+)?$", segs[-1]) and segs[-1]:
@@ -153,6 +153,9 @@ TYPES = {
     "D": ("décès", "État civil"), "S": ("sépulture", "État civil"), "NMD": ("registre NMD", "État civil"),
     "BMS": ("registre BMS", "État civil"), "TD": ("tables décennales", "État civil"),
     "RM": ("registre matricule", "Militaire"), "ANMT": ("fiche de mineur (ANMT)", "Mines (ANMT)"),
+    "PM": ("dossier du personnel des mines", "Mines (ANMT)"),
+    "NOT": ("acte notarié", "Notaires"), "CNI": ("carte d'identité", "Divers"),
+    "COUR": ("courrier ou démarche administrative", "Divers"),
     "REC": ("recensement", "Divers"), "SIGN": ("signature", "Signatures"),
     "AUDIO": ("témoignage oral", "Témoignages oraux"), "PHOTO": ("photographie", None),
     "TOMBE": ("sépulture (photo)", None), "LIEU": ("lieu (photo)", None), "CAPTURE": ("capture d'arbre en ligne", "Divers"),
@@ -160,23 +163,33 @@ TYPES = {
 }
 
 _MOTS = [  # (motif sur nom normalisé, code) — le premier qui correspond l'emporte
+    # une demande d'acte est un courrier, pas l'acte demandé
+    (r"\b(demandes? (d )?actes?|courriers?|service public)\b", "COUR"),
     (r"\b(nmd)\b", "NMD"), (r"\b(bms)\b", "BMS"),
     (r"\b(td|tables? decennales?)\b", "TD"),
     (r"\b(registre matricule|fiche matricule|matricule|recrutement)\b", "RM"),
+    (r"\b(personnel des mines)\b", "PM"),
     (r"\b(anmt|mineur|houilleres?)\b", "ANMT"),
+    (r"\b(cni|cartes? (nationales? )?d identite)\b", "CNI"),
     (r"\b(recensements?)\b", "REC"),
     (r"\b(signatures?)\b", "SIGN"),
     (r"\b(capture d ecran|screenshot|capture|geneanet|filae|myheritage|familysearch)\b", "CAPTURE"),
     (r"\b(tombe|tombes|sepultures? photo|cimetiere|findagrave|find a grave|grave)\b", "TOMBE"),
+    # avant N, M, D : « attestation immobilière après décès », « contrat de mariage » sont notariés
+    (r"\b(notaires?|notaries?|notoriete|testaments?|contrats? de mariage|partages?|successions?"
+     r"|attestations? immobilieres?|hypotheques?)\b", "NOT"),
     (r"\b(naissances?|nais|naiss)\b", "N"), (r"\b(baptemes?|bapt)\b", "B"),
     (r"\b(mariages?)\b", "M"), (r"\b(deces|dc)\b", "D"), (r"\b(sepultures?|inhumations?)\b", "S"),
+    # après les actes : une « lettre » ou une « réponse » ne l'emporte pas sur le type d'acte
+    (r"\b(lettres?|reponses?)\b", "COUR"),
     (r"\b(photos?|portraits?|photographies?)\b", "PHOTO"),
 ]
 _CODES_CONVENTION = {c for c in TYPES} | {"NM", "ND", "MD"}
 _PAS_PATRONYME = {*TYPES, "AD", "AM", "AN", "SHD", "ANMT", "NMD", "BMS", "TD", "IMG", "DSC", "DCIM", "SCAN",
                   "PDF", "JPG", "PNG", "COPIE", "COPY", "PXL", "WA", "VID", "PAGE", "VUE", "ACTE", "NOUVEAU"}
 _PROTEGES = {"personnes", "familles", "sources", "patronymes", "_organisation"}
-CLASSES = ("documents", "photographies", "archives")
+CLASSES = ("documents", "photographies", "archives", "courriers")
+DOSSIERS_EXPLICITES = ("documents", "photographies", "courriers")  # seules racines d'un dossier imposé
 A_TRIER = "_À trier"
 
 
@@ -190,7 +203,9 @@ def _patronyme(nom: str) -> str:
     lu = lire_nom(nom)
     if lu["patronyme"]:
         return lu["patronyme"]
-    for tok in re.split(r"[\s_\-.,()\[\]]+", os.path.splitext(nom)[0]):
+    stem = os.path.splitext(nom)[0]
+    # nom à la convention : seules les personnes (avant « -- ») peuvent donner le patronyme, jamais la commune
+    for tok in re.split(r"[\s_\-.,()\[\]]+", stem.split(" -- ", 1)[0]):
         if (len(tok) >= 2 and tok.isalpha() and tok.isupper() and tok not in _PAS_PATRONYME
                 and not re.fullmatch(r"[NBMDS]+", tok) and not any(re.search(m, _norm(tok)) for m, _ in _MOTS)):
             return tok
@@ -390,11 +405,42 @@ def _actualiser_note(texte: str, ancien: Path, nouveau: Path) -> str:
     return entete + genere + libre
 
 
+def dossier_explicite(racine: Path, dossier) -> Path:
+    """Dossier imposé par un renommage, relatif à la racine : seulement sous documents/, photographies/ ou
+    courriers/, sans « .. », chemin absolu, composant caché, nom incompatible ni lien symbolique sortant."""
+    def refus(motif: str) -> PieceError:
+        return PieceError(f"Dossier explicite refusé ({dossier!r}) : {motif}.")
+    if not isinstance(dossier, str) or not dossier.strip():
+        raise refus("chemin relatif attendu")
+    if "\\" in dossier or "\0" in dossier:
+        raise refus("séparateur « / » attendu")
+    rel = Path(dossier.strip())
+    if rel.is_absolute() or not rel.parts:
+        raise refus("chemin relatif attendu")
+    for part in rel.parts:
+        if part in (".", "..") or part.startswith(".") or part != _part(part) or INTERDITS.search(part):
+            raise refus(f"composant « {part} » invalide (pas de « .. », de dossier caché ni de caractère interdit)")
+        if part.split(".")[0].upper() in RESERVES_WINDOWS:
+            raise refus(f"nom réservé « {part} »")
+    if rel.parts[0] not in DOSSIERS_EXPLICITES:
+        raise refus("uniquement sous " + ", ".join(f"{d}/" for d in DOSSIERS_EXPLICITES))
+    racine = Path(racine).resolve()
+    try:
+        cible = sous(racine, rel)
+    except CheminRefuse as exc:
+        raise refus("hors de la racine") from exc
+    resolu = cible.relative_to(racine)
+    if not resolu.parts or resolu.parts[0] not in DOSSIERS_EXPLICITES or resolu != rel:
+        raise refus("lien symbolique vers un autre dossier")
+    return rel
+
+
 def planifier(racine: Path, renommages: list[dict] | None = None, references: set[Path] | None = None,
               perimetre: Path | None = None, seulement_renommages: bool = False) -> dict:
     """Plan de déplacements {de, vers, motif} ; ne modifie rien.
-    renommages : [{actuel: chemin relatif, propose: nouveau nom de fichier}] (agent trieur, piece_nommer) ;
-    le fichier est ensuite classé d'après son nouveau nom.
+    renommages : [{actuel: chemin relatif, propose: nouveau nom de fichier, dossier: facultatif}] (agent
+    trieur, piece_nommer) ; le fichier est ensuite classé d'après son nouveau nom, ou dans dossier
+    (relatif à la racine, contrôlé par dossier_explicite).
     references : chemins absolus de médias liés à l'arbre (jamais déplacés)."""
     racine = Path(racine).resolve()
     perimetre = Path(perimetre or racine).resolve()
@@ -404,6 +450,7 @@ def planifier(racine: Path, renommages: list[dict] | None = None, references: se
     fichiers = [f for f in tous if (racine / f.rel).is_relative_to(perimetre)]
     par_rel = {f.rel: f for f in fichiers}
     noms: dict[Path, str] = {}
+    imposes: dict[Path, Path] = {}
     erreurs = []
     for r in renommages or []:
         relatif = Path(r.get("actuel", ""))
@@ -416,6 +463,8 @@ def planifier(racine: Path, renommages: list[dict] | None = None, references: se
             propose += rel.suffix.lower()
         if Path(propose).suffix.lower() != rel.suffix.lower():
             raise PieceError("Un renommage ne convertit pas le contenu : conserver son extension.")
+        if r.get("dossier") not in (None, ""):
+            imposes[rel] = dossier_explicite(racine, r["dossier"])
         noms[rel] = propose
         par_rel[rel].info = detecter(rel.with_name(propose))
     references = {Path(p).resolve() for p in references or ()}
@@ -444,6 +493,9 @@ def planifier(racine: Path, renommages: list[dict] | None = None, references: se
         nom = noms.get(f.rel, nom_compatible(f.rel.name))
         if f.rel in doublons:
             cible_dir, motif = Path("archives/Doublons") / f.rel.parent, "doublon (même SHA-256)"
+        elif f.rel in imposes:
+            cible_dir = imposes[f.rel]
+            motif = (TYPES[f.info["type"]][0] + " " if f.info["type"] in TYPES else "") + "(renommée, dossier explicite)"
         elif f.classe and f.rel not in noms:
             if nom == f.rel.name:
                 continue  # déjà classé : on n'y touche pas
