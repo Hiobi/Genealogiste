@@ -85,5 +85,5 @@ le paquet fournit les skills ; un profil séparé active le MCP avec confirmatio
 Le mode fichier fonctionne sans Gramps Web ni Obsidian. L’ancien exporteur FamilySearch est désactivé ;
 un GEDCOM obtenu séparément peut être importé.
 
-Pour contribuer : [CONTRIBUTING.md](CONTRIBUTING.md), [architecture et conventions](CLAUDE.md),
+Pour contribuer : [CONTRIBUTING.md](CONTRIBUTING.md), [architecture et conventions](.claude/CLAUDE.md),
 [tests et CI](docs/integration-continue.md). Licence : [GPL-3.0](LICENSE).

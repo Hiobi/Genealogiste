@@ -45,4 +45,4 @@ For documentation changes, validate wiki links with `uv --directory mcp run pyth
 
 Keep family data, credentials, and production exports outside the plugin checkout; contribute synthetic fixtures only. Tree mutations require proposal, displayed diff, explicit approval, then application. Guard external person lookups against disclosing living people.
 
-Read `CLAUDE.md` for tool-registration invariants, `docs/securite.md` for network changes, and `docs/adaptation-codex.md` before changing Codex packaging or permissions.
+Read `.claude/CLAUDE.md` for tool-registration invariants, `docs/securite.md` for network changes, and `docs/adaptation-codex.md` before changing Codex packaging or permissions.
