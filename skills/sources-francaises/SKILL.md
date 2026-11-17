@@ -41,6 +41,10 @@ Pour `archives_service` et `communicabilite`, utiliser les clés canoniques déc
 pour la justice. Les types larges `paroissiaux`, `enregistrement` et `insinuation` demandent de préciser
 le fonds et son régime : une réponse `communicable: null` appelle une vérification auprès du service.
 Les types naturalisations et hospitalier restent à qualifier. Une clé reconnue n'annonce aucun accès en ligne.
+Avec `document`, `archives_service` renvoie `visionneuse_pour_la_demande` : l'accès propre au type
+(`origine: document`, ex. matricules sur une autre application que l'état civil), sinon celui du service
+(`service`), sinon `inconnu`. Si `telechargement.etat` vaut `a_qualifier_pour_ce_type`, l'adaptateur du
+service ne s'applique pas à ce fonds : passer par le lien de consultation, un lien IIIF ou un fichier téléchargé.
 
 ## Stratégies
 

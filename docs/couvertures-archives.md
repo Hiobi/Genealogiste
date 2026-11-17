@@ -95,3 +95,9 @@ Les clés canoniques des règles proviennent de `types_documents.DOCUMENTS` ; vo
 `matricules`, `notaires`, `recensements` et `justice`, normalisés avant le calcul. Les règles stockées
 emploient `matricule`, `notaire`, `recensement` et `judiciaire`. Une clé reconnue ne prouve aucune
 couverture : sans règle sourcée pour le service, la disponibilité reste inconnue.
+
+La disponibilité d'un fonds et son accès de visionneuse sont deux informations distinctes. Une règle
+`couvertures` ne dit rien de l'application qui affiche le registre ; inversement,
+`visionneuse_acces.par_type` (voir [archives.md](archives.md)) décrit l'accès propre à un type sans
+annoncer de couverture. La fiche expose les deux séparément (`couverture_pour_la_demande`,
+`visionneuse_pour_la_demande`) ; un renvoi `autre_service` garde la priorité pour le lien affiché.
