@@ -60,6 +60,11 @@ Trois réglages, tous fixés par l'humain avant la tâche :
    proposition et les outils en deux temps (leur branche écriture reste refusée par le serveur), `deny` pour
    toutes les autres écritures. Serveur HTTP Docker : `make profil-campagne PREFIXE=mcp__genealogiste__`.
 
+Campagne et session interactive peuvent tourner **en même temps** sans doubler le débit vers un site,
+pourvu qu'elles partagent le même cache (`GENEALOGISTE_CACHE`, par défaut dans le répertoire de données) :
+le créneau de chaque hôte est réservé dans ce cache commun, et un hôte ralenti après un 429 ou un 5xx l'est
+pour les deux jusqu'à minuit ([débit partagé](securite.md#débit-partagé-entre-processus)).
+
 ```bash
 mkdir -p ~/.config/genealogiste ~/.local/state/genealogiste
 make profil-campagne > ~/.config/genealogiste/campagne-settings.json

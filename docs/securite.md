@@ -213,6 +213,38 @@ Ordre de priorité, du plus fort au plus faible :
 Le créneau est réservé sous un verrou court puis l'attente se fait hors verrou : un hôte lent ne retarde
 pas les requêtes vers les autres. Une valeur invalide arrête le démarrage avec un message nommant la variable.
 
+### Débit partagé entre processus
+
+`http.py`, `cache.py` (#211). Le créneau de chaque hôte est réservé dans le cache SQLite (table `creneaux`),
+pas seulement en mémoire : une transaction `BEGIN IMMEDIATE` lit le dernier créneau de l'hôte, calcule
+`max(maintenant, dernier + intervalle)` et l'enregistre ; le client attend ensuite son créneau hors de toute
+transaction. L'horloge est l'heure murale (`time.time`), commune aux processus d'une même machine et aux
+conteneurs d'un même hôte. Tous les serveurs qui partagent le fichier cache (`GENEALOGISTE_CACHE` : session
+interactive et campagne `claude -p`, plusieurs conteneurs Docker sur le même volume) respectent donc
+**ensemble** l'intervalle de chaque hôte, au lieu de le multiplier par le nombre de processus.
+
+- Verrou SQLite tenu par un autre processus : attente bornée à 5 s, puis repli sur le créneau en mémoire de
+  ce processus (l'espacement local est conservé, aucune requête n'est bloquée indéfiniment).
+- Créneau enregistré à plus d'une heure dans le futur (horloge reculée) : ignoré.
+- Caches distincts (fichiers différents, machines différentes) : aucun partage ; utiliser le même
+  `GENEALOGISTE_CACHE` pour que plusieurs serveurs se coordonnent.
+
+### Ralentissement durable après surcharge
+
+Une réponse 429, 502, 503 ou 504 d'un hôte **double** son intervalle pour le reste de la journée (date
+locale : jusqu'à minuit, comme le plafond journalier), dans la limite de `GENEALOGISTE_RALENTISSEMENT_MAX`
+secondes (60 par défaut ; 0 désactive). Les incidents se cumulent (×2, ×4, ×8…) jusqu'au plafond ; l'état
+est persistant (table `ralentissements` du cache SQLite) et partagé entre processus. Un hôte dont
+l'intervalle de base est nul (`GENEALOGISTE_DEBITS=hote=0`) n'est pas ralenti.
+
+- `Retry-After` continue de primer pour l'attente immédiate ; le ralentissement règle le rythme des
+  requêtes suivantes.
+- L'enveloppe d'erreur indique l'intervalle courant (`intervalle_actuel`, et dans le message) en plus de
+  `reessayer_apres`.
+- `diagnostic` liste les hôtes ralentis (contrôle `debit` : intervalle, nombre d'incidents, dernier statut).
+- `cache_purger("ralentissement")` rétablit le rythme normal de tous les hôtes (écriture, confirmée) ; une
+  purge complète `cache_purger()` ne le lève pas. Le lendemain, le rythme normal revient de lui-même.
+
 ## Plafond journalier par hôte d'archives et budget d'enquête
 
 `budget.py`, `http.py`, `cache.py` (#157).
@@ -258,6 +290,7 @@ tracée au journal : passer à une autre source et revenir plus tard, sans relan
 | `GENEALOGISTE_HTTP_TIMEOUT` | 30 | délai d'un essai (s) |
 | `GENEALOGISTE_HTTP_TENTATIVES` | 5 | essais au plus (requête rejouable) |
 | `GENEALOGISTE_HTTP_DUREE_MAX` | 60 | plafond d'un appel d'outil (s) |
+| `GENEALOGISTE_RALENTISSEMENT_MAX` | 60 | intervalle maximal (s) d'un hôte ralenti après 429/5xx ; 0 désactive |
 
 ## Échecs mémorisés, coupe-circuit, caches bornés
 

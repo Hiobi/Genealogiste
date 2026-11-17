@@ -234,6 +234,30 @@ def test_diagnostic_signale_le_ralentissement(app):
     assert ctl["ralentissements"][HOTE]["intervalle"] > app.http.default_interval
 
 
+@respx.mock
+def test_enveloppe_porte_l_intervalle_courant(app):
+    from genealogiste_mcp.sources.base import error_envelope
+
+    respx.get(URL).mock(return_value=httpx.Response(429, headers={"Retry-After": "3600"}))
+    with pytest.raises(SourceError) as exc:
+        app.http.get(URL, use_cache=False)
+    out = error_envelope(app.sctx, "archives", "test", {}, exc.value)
+    assert out["reessayer_apres"] == 3600
+    assert out["intervalle_actuel"] == app.http.intervalle(HOTE) > app.http.default_interval
+
+
+def test_config_ralentissement_max(tmp_path, monkeypatch):
+    from genealogiste_mcp.config import load_config
+
+    monkeypatch.setenv("GENEALOGISTE_DATA_DIR", str(tmp_path))
+    assert load_config().ralentissement_max == 60.0
+    monkeypatch.setenv("GENEALOGISTE_RALENTISSEMENT_MAX", "0")
+    assert load_config().ralentissement_max == 0.0
+    monkeypatch.setenv("GENEALOGISTE_RALENTISSEMENT_MAX", "-3")
+    with pytest.raises(ValueError, match="GENEALOGISTE_RALENTISSEMENT_MAX"):
+        load_config()
+
+
 def test_diagnostic_sans_ralentissement(app):
     ctl = next(c for c in diagnostic.controles_locaux(app, None, app.config) if c["controle"] == "debit")
     assert ctl["etat"] == "ok"
