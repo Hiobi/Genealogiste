@@ -17,6 +17,43 @@ des données fictives. Toute régression corrigée doit être vérifiée au nive
 Avant publication, synchroniser les versions avec `make version V=x.y.z`, vérifier les manifestes et
 les contrôles GitHub. Pour les changements de déploiement, suivre [docs/production.md](docs/production.md).
 
+## Lots archives : contribution et revue
+
+Les lots de la [milestone M2](https://github.com/Hiobi/Genealogiste/milestone/2) doivent rester
+traçables par service et par fonds, même lorsque plusieurs sites partagent un adaptateur.
+Chaque commit nomme les services concernés et référence l'issue précise du lot, par exemple :
+
+```text
+feat(archives): adapter la recherche de registres AD25 et AD39
+
+Refs #<issue-du-lot>
+```
+
+Chaque PR liste les sites et fonds concernés, les capacités ajoutées (recherche, navigation,
+téléchargement, archivage), les tests exécutés et les limites restantes. Utiliser `Closes #…`
+uniquement lorsque toute l'issue est satisfaite. La revue vérifie cette traçabilité et la concordance
+du référentiel, du tableau de couverture et de la documentation ; cette règle n'est pas encore
+un contrôle automatique.
+
+Après chaque lot, publier un bilan dans les issues concernées, avec un détail pour chaque site.
+Le commentaire contient la date et le fuseau, les liens vers les issues, la PR et les commits,
+la révision testée et l'environnement (local, VPS ou CI). Pour chaque service, préciser :
+
+- le code, le nom, l'URL officielle et le logiciel observé ;
+- le fonds testé et une référence reproductible (commune, période, cote ou ARK) ;
+- les formulaires, paramètres, API et règles de pagination observés ;
+- l'adaptateur ou la configuration modifiés, les capacités ajoutées et les limites ;
+- les commandes et résultats des tests simulés, puis les paramètres et résultats des essais réels
+  de recherche, navigation, téléchargement et archivage, ainsi que des cas négatifs et de pagination ;
+  indiquer explicitement chaque vérification non testée ;
+- le verdict (`testé`, `partiel`, `bloqué` ou `inconnu`), les preuves et liens, et la prochaine action.
+
+Un développement vérifié uniquement sur données simulées porte la mention **« implémenté, non éprouvé »**.
+Chaque essai réel indique sa date, son environnement et la révision testée : un essai local ne valide
+pas le VPS. Garder visibles les protections, erreurs et tâches manuelles. Un résultat vide ou un
+blocage ne constitue jamais une preuve d'absence d'acte. L'inventaire des 101 départements ne vaut
+pas automatisation de leurs services ni validation de leurs fonds.
+
 ## Documentation
 
 Le README présente le plugin et le démarrage. Les guides utilisateur sont publiés dans le wiki GitHub

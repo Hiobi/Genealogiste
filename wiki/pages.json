@@ -184,5 +184,11 @@
     "source": "wiki/Maintenance.md",
     "titre": "Maintenir le wiki",
     "groupe": "Entretenir et contribuer"
+  },
+  {
+    "slug": "Couverture-technique-archives",
+    "source": "docs/couverture-archives.md",
+    "titre": "Couverture technique des archives",
+    "groupe": "Utiliser le plugin"
   }
 ]

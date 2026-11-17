@@ -37,7 +37,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          make test-archives 2>&1 | tee "$RUNNER_TEMP/recette.log"
+          GENEALOGISTE_RECETTE_ENVIRONNEMENT=ci make test-archives 2>&1 | tee "$RUNNER_TEMP/recette.log"
       - name: Résumé
         if: always()
         shell: bash

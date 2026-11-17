@@ -1,0 +1,245 @@
+# Couverture technique des archives
+
+Document généré par `uv --directory mcp run python ../scripts/generer_couverture_archives.py`. Ne pas modifier à la main.
+
+## Objectif du prochain lot M2
+
+Pour la version cible 0.23.0 : qualifier trois services avec recette ARK/navigation/image qualifiée (AD25, AD39, AD59 ; date, environnement et révision requis), mesurer les quatre références depuis le VPS, puis qualifier une chaîne recherche → navigation → téléchargement → archivage sur AD59. Ces objectifs restent à valider ; les compteurs ci-dessous décrivent uniquement les preuves enregistrées.
+
+Les niveaux 0 à 4 indiquent la capacité implémentée la plus avancée : 0 lien, 1 ARK, 2 navigation, 3 image, 4 recherche. Le niveau 5 désigne une recette de contrat réussie sur une référence avec date, environnement identifié et révision testée ; il ne garantit ni la recherche ni l'archivage. Les niveaux ne forment pas une chaîne cumulative.
+
+Un fonds inconnu reste inconnu : aucune recette n'est extrapolée aux autres types. Les mesures anciennes sans environnement restent « inconnu ». Une réussite locale ne qualifie pas le VPS. Consulter les dates et refaire les recettes avant usage ; une ancienne réussite ne garantit pas l'accès actuel.
+
+| Service | Fonds testé | Niveau | Recherche | Navigation | Image | Archivage | Mesures (environnement : verdict, date) |
+|---|---|---:|---|---|---|---|---|
+| AD01 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD02 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD03 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD04 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD05 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD06 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD07 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD08 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD09 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD10 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD11 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD12 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD13 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD14 | inconnu | 3 | inconnu | implemente_non_eprouve | implemente_non_eprouve | inconnu | inconnu |
+| AD15 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD16 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD17 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD18 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD19 | inconnu | 3 | inconnu | implemente_non_eprouve | implemente_non_eprouve | inconnu | inconnu |
+| AD21 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD22 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD23 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD24 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD25 | inconnu | 3 | inconnu | teste | teste | inconnu | inconnu : oui, 2026-11-15 |
+| AD26 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD27 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD28 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD29 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD30 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD31 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD32 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD33 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD34 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD35 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD36 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD37 | inconnu | 3 | inconnu | implemente_non_eprouve | implemente_non_eprouve | inconnu | inconnu |
+| AD38 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD39 | inconnu | 3 | inconnu | teste | teste | inconnu | inconnu : oui, 2026-11-15 |
+| AD40 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD41 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD42 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD43 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD44 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD45 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD46 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD47 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD48 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD49 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD50 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD51 | inconnu | 3 | inconnu | implemente_non_eprouve | implemente_non_eprouve | inconnu | inconnu |
+| AD52 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD53 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD54 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD55 | inconnu | 3 | inconnu | implemente_non_eprouve | implemente_non_eprouve | inconnu | inconnu |
+| AD56 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD57 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD58 | inconnu | 3 | inconnu | implemente_non_eprouve | implemente_non_eprouve | inconnu | inconnu |
+| AD59 | inconnu | 4 | implemente_non_eprouve | teste | teste | inconnu | inconnu : oui, 2026-11-15 |
+| AD60 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD61 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD62 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD63 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD64 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD65 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD66 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD67 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD68 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD69 | inconnu | 3 | inconnu | implemente_non_eprouve | implemente_non_eprouve | inconnu | inconnu |
+| AD70 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD71 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD72 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD73 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD74 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD76 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD77 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD78 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD79 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD80 | inconnu | 3 | inconnu | implemente_non_eprouve | implemente_non_eprouve | inconnu | inconnu |
+| AD81 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD82 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD83 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD84 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD85 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD86 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD87 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD88 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD89 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD90 | inconnu | 3 | inconnu | implemente_non_eprouve | implemente_non_eprouve | inconnu | inconnu |
+| AD91 | inconnu | 3 | inconnu | implemente_non_eprouve | implemente_non_eprouve | inconnu | inconnu |
+| AD92 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD93 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD94 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD95 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD2A | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD2B | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD971 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD972 | inconnu | 3 | inconnu | implemente_non_eprouve | implemente_non_eprouve | inconnu | inconnu |
+| AD973 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD974 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AD976 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AP | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| AN | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| LEONORE | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| ANOM | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| SHD | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| MDH | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| FRANCEARCHIVES | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| BnF | inconnu | 3 | inconnu | bloque | bloque | inconnu | inconnu : defi, 2026-11-15 |
+| RETRONEWS | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+| MATCHID | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
+
+Total : 110 services ; 0 recettes de référence qualifiées (niveau 5).
+
+Les URL et pages de référence sont dans `archives_fr.json` ; les verdicts et détails d'échec dans `recettes_archives.json`. `archives_service` expose les mêmes informations sous `couverture_technique`, avec les capacités et mesures séparées.
+
+## Niveaux par type de document
+
+Chaque cellule reprend le niveau de `archives_service(document=...)`. Une recette dont le fonds n'est pas renseigné ne qualifie aucune de ces colonnes. Les niveaux 0–4 sont des capacités implémentées, toujours à éprouver sur le fonds demandé.
+
+| Service | naissance | mariage | deces | tables_decennales | recensement | notaire | matricule | cadastre | paroissiaux | enregistrement |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| AD01 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD02 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD03 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD04 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD05 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD06 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD07 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD08 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD09 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD10 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD11 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD12 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD13 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD14 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 |
+| AD15 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD16 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD17 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD18 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD19 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 |
+| AD21 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD22 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD23 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD24 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD25 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 |
+| AD26 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD27 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD28 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD29 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD30 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD31 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD32 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD33 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD34 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD35 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD36 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD37 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 |
+| AD38 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD39 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 |
+| AD40 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD41 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD42 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD43 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD44 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD45 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD46 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD47 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD48 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD49 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD50 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD51 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 |
+| AD52 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD53 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD54 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD55 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 |
+| AD56 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD57 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD58 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 |
+| AD59 | 4 | 4 | 4 | 3 | 3 | 3 | 3 | 3 | 3 | 3 |
+| AD60 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD61 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD62 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD63 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD64 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD65 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD66 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD67 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD68 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD69 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 |
+| AD70 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD71 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD72 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD73 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD74 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD76 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD77 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD78 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD79 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD80 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 |
+| AD81 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD82 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD83 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD84 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD85 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD86 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD87 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD88 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD89 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD90 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 |
+| AD91 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 |
+| AD92 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD93 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD94 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD95 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD2A | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD2B | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD971 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD972 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 |
+| AD973 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD974 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AD976 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AP | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| AN | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| LEONORE | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| ANOM | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| SHD | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| MDH | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| FRANCEARCHIVES | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| BnF | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 |
+| RETRONEWS | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| MATCHID | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |

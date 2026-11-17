@@ -129,8 +129,7 @@ revendiquée. Les références et `releve_le` sont renseignés, sans modificatio
 Le [relevé du 10 novembre](releves-archives-2026-11-10.md) classe les 101 services par visionneuse
 (sonde `scripts/sonder_visionneuses.py`). L’adaptateur `visualizer_api` (Naoned, logiciel Mnesys Expo) est
 générique : 14 services Mnesys Expo (AD14, AD19, AD25, AD37, AD39, AD51, AD55, AD58, AD59, AD69,
-AD80, AD90, AD91, AD972) sont inscrits après recette réelle, état civil et, quand trouvés, registres
-matricules. Ajouter un service Mnesys Expo = renseigner `resolution_image` après recette, sans code.
+AD80, AD90, AD91, AD972) sont déclarés pour l’adaptateur générique. Seuls AD25, AD39 et AD59 ont une recette de référence réussie enregistrée ; les onze autres restent implémentés, non éprouvés. Aucun fonds supplémentaire n’est qualifié par cette déclaration. Ajouter un service Mnesys Expo = renseigner `resolution_image` après recette, sans code.
 
 ## Recette depuis un VPS et accès protégé — #150
 
@@ -169,3 +168,7 @@ ne cherche pas encore la vue contenant l'acte : poursuivre avec `archives_navigu
 Le [guide utilisateur](../wiki/Services-archives.md#trouver-un-registre-ad59-sans-ark) décrit les types,
 la garde des vivants et les replis. Le [contrat observé](recherche-registres-ad59.md) documente le HTML,
 les fixtures et la recette réseau explicite. Les autres services ne sont pas qualifiés par ce lot.
+
+## Couverture réellement testée
+
+Le [tableau généré](couverture-archives.md) distingue capacités implémentées, recettes de référence et environnements. `archives_service` expose ce bilan sous `couverture_technique`, sans extrapoler une recette aux autres fonds.

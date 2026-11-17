@@ -67,3 +67,12 @@ def test_adaptateur_sans_recette_signale_non_eprouve():
     for code in ("AD14", "AD91", "AD972"):
         t = archives.service(code=code)["telechargement"]
         assert t["adaptateur_disponible"] and t["etat"] == "automatique_non_eprouve" and t["note"]
+
+
+def test_mesure_conserve_reference_meme_sans_revision(tmp_path, monkeypatch):
+    monkeypatch.setattr(archives, "RECETTES", tmp_path / "recettes.json")
+    ref = {"source": "https://archives.example/registre", "document": "naissance"}
+    archives.enregistrer_recette("AD00", "ok", environnement="local", reference=ref)
+    mesure = archives.recette("AD00")["mesures"]["local"]
+    assert mesure["reference"] == ref
+    assert mesure["revision"] == ""

@@ -16,7 +16,7 @@ from functools import lru_cache
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from . import ark, couverture_archives
+from . import ark, capacites_archives, couverture_archives
 from .normalize.places import DEPARTEMENTS, normalize_place
 
 PATH = Path(__file__).parent / "referentiels" / "archives_fr.json"
@@ -73,7 +73,7 @@ def recette(code: str) -> dict | None:
 
 
 def enregistrer_recette(code: str, resultat: str, detail: str = "", jour: date | None = None,
-                       environnement: str = "") -> dict:
+                       environnement: str = "", revision: str = "", reference: dict | None = None) -> dict:
     """Inscrit le dernier essai de recette réelle d'un service (ok, echec ou protection)."""
     from .fichiers import ecrire_atomique
 
@@ -93,6 +93,8 @@ def enregistrer_recette(code: str, resultat: str, detail: str = "", jour: date |
         mesures[environnement] = {"verdict": {"ok": "oui", "protection": "defi", "echec": "echec"}[resultat],
                                   "date_mesure": datetime.now(UTC).isoformat(timespec="seconds"),
                                   "detail": detail[:300]}
+    if environnement and reference:
+        mesures[environnement].update(revision=revision, reference=dict(reference))
     if mesures:
         entree["mesures"] = mesures
     data[code] = entree
@@ -208,6 +210,7 @@ def view(s: dict, document: str = "", annee: int | None = None, lieu: str = "") 
         out["recette"] = recette(s["code"]) or {"resultat": None, "detail": "aucune recette réelle enregistrée"}
     out["acces_vps"] = ((recette(s["code"]) or {}).get("mesures") or {}).get("vps") or {
         "verdict": "inconnu", "detail": "Aucune mesure identifiée depuis le VPS ; une réussite locale ne suffit pas."}
+    out["couverture_technique"] = capacites_archives.couverture(s, recette(s["code"]) or {}, document)
     if w := staleness(s):
         out["avertissement"] = w
     return out
