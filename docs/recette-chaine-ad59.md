@@ -45,7 +45,14 @@ La première vue retournée est `ark:/33518/jq9hpbzxnc72/789fb8c6-4b17-4414-8659
 Son original et la note compagnon ont été archivés dans le dossier jetable ; la répétition a reconnu la
 pièce déjà archivée. Aucun acte nominatif n'a été lu ni identifié.
 
+Second essai à **08:09:32 UTC**, depuis le checkout propre à
+`83c148705043e04b8726ad673ddc522f0469a550` : **`1 passed in 7.50s`**.
+Le rapport confirme `checkout_modifie: false`, `environnement: inconnu`,
+`acte_identifie: false` et `vue_candidate_archivee: true`. La recherche a renvoyé un registre ;
+la même vue 1/954 a été archivée (254 138 octets), avec sa cote, son ARK et sa note compagnon.
+La répétition a renvoyé `deja_archivee: true`. Cette preuve concerne seulement la ressource publique
+indiquée et ne qualifie toujours pas un accès depuis le VPS.
+
 Ce relevé ne qualifie ni les tables décennales, ni les matricules, ni les successions, ni les autres services.
 Il ne clôt pas #112 et ne change pas `chaine_complete` du tableau de couverture : l'identification de l'acte
-et les autres fonds restent à éprouver. Une nouvelle recette complète doit partir d'un checkout propre
-pour rattacher sans ambiguïté sa preuve à une révision publiée.
+et les autres fonds restent à éprouver.
