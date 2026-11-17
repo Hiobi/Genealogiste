@@ -514,7 +514,9 @@ def archives_service(lieu: str = "", departement: str = "", code: str = "", docu
     """Service d'archives réel (référentiel) d'un lieu, d'un département ou d'un code (AD59, AN, SHD, ANOM…) :
     site, visionneuse, NAAN ARK, ce qui est en ligne (document = naissance, mariage, deces, recensement,
     matricule… ; préciser lieu pour les exceptions communales et annee ; None = inconnu), inscription,
-    date de vérification et couverture sourcée. Un accès déclaré ne prouve pas l'existence d'un acte."""
+    date de vérification et couverture sourcée. Un accès déclaré ne prouve pas l'existence d'un acte.
+    consultation_manuelle : protection anti-robot relevée (ex. Anubis) et consigne (vue fournie par
+    l'utilisateur, media_enregistrer) ; un nouvel essai réseau reste possible."""
     return archives.service(lieu, departement, code, document, annee or None)
 
 
