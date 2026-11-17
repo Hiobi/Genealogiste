@@ -21,7 +21,7 @@ def _controle(res: dict, nom: str) -> dict:
 
 
 def test_catalogue_et_hook():
-    assert outils.OUTILS["diagnostic"] == (outils.RESEAU, outils.ALLOW)
+    assert outils.OUTILS["diagnostic"] == (outils.RESEAU, outils.COLLECTE)
 
 
 def test_diagnostic_hors_reseau(app):

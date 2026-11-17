@@ -76,9 +76,10 @@ reviennent au parcours d’édition. Une relecture dans le même contexte ne con
 
 ## Effets des outils
 
-La première intégration conserve `prompt` pour tout le catalogue : aucun classement « lecture » ne
-permet de contourner l’approbation. Les décisions `ALLOW`, `ASK`, `CONDITIONNEL` et `DEFAUT` de `outils.py`
-restent celles des hooks **Claude** ; `DEFAUT` n’est jamais une permission Codex.
+La première intégration conserve `prompt` pour tout le catalogue : aucune classe ne permet de contourner
+l’approbation. Les classes de permission de `outils.py` (lecture, collecte, proposition, écriture, et les
+outils en deux temps de `CONDITIONS`) ne servent qu’à générer les hooks **Claude** (`hooks/hooks.json`) ; le
+profil Codex ne les lit pas, et une classe autorisée côté Claude (collecte comprise) n’est jamais une permission Codex.
 
 | Famille | Effets à prendre en compte |
 |---|---|
@@ -90,7 +91,7 @@ restent celles des hooks **Claude** ; `DEFAUT` n’est jamais une permission Cod
 | `notes_generer`, `notes_ajouter`, **`notes_lire`** | Écritures de notes ; `notes_lire` génère une fiche absente |
 | `piece_archiver` | Téléchargement, image et note locale |
 | `matchid_appariement_statut(sortie=…)` | Requête et écriture conditionnelle d’un fichier |
-| Journal, cache, synchronisations Gramps | Écritures auxiliaires ; même les anciens `ALLOW` Claude demandent confirmation |
+| Journal, cache, synchronisations Gramps | Écritures auxiliaires ; même autorisées par les hooks Claude, elles demandent confirmation |
 | Identifiants | Accès aux services configurés ; l’ancien exporteur FamilySearch demeure désactivé |
 
 Le profil configure le backend fichier par défaut. Pour Gramps Web, utiliser la [configuration du backend](gramps-web.md)

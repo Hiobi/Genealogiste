@@ -23,6 +23,7 @@ make test-gramps    # intégration sur Gramps Web jetable (Docker, docker-compos
 make check          # configuration effective + état de l'arbre
 make run / run-http # serveur MCP stdio / HTTP :8765
 make validate       # claude plugin validate .
+make hooks          # régénère hooks/hooks.json depuis outils.py
 make version V=x.y.z  # publication : voir plus bas
 
 # un seul test
@@ -55,11 +56,12 @@ Le marqueur `gramps_live` n'est exécuté que via `make test-gramps`.
 
 ## Invariants vérifiés par les tests
 
-- `outils.py` est le catalogue unique des outils (effet : lecture/réseau/écriture/identifiants, décision du
-  hook). Ajouter un outil = l'enregistrer dans `server.py`, le déclarer dans `outils.OUTILS`, l'ajouter au
-  bon matcher de `hooks/hooks.json` (allow pour lecture/proposition, ask pour écriture/identifiants), et, s'il
-  envoie des paramètres de personne, l'inscrire dans `GARDE_VIVANTS` et appeler `_garde`
-  (`tests/test_outils.py`, `tests/test_garanties.py`).
+- `outils.py` est le catalogue unique des outils : effet et **classe de permission** (lecture, collecte,
+  proposition, écriture ; `CONDITIONS` pour les outils en deux temps), d'où découle la décision du hook
+  (allow, sauf écriture : ask). Ajouter un outil = l'enregistrer dans `server.py`, le déclarer et le classer
+  dans `outils.OUTILS` d'après ce que fait son code, régénérer `hooks/hooks.json` (`make hooks`, jamais à la
+  main), et, s'il envoie des paramètres de personne, l'inscrire dans `GARDE_VIVANTS` et appeler `_garde`
+  (`tests/test_outils.py`, `tests/test_garanties.py` ; classes décrites dans `docs/securite.md`).
 - Les hooks matchent `mcp__.*genealogiste.*__…` pour couvrir le plugin stdio et le serveur HTTP Docker.
 - Tests : fixtures `app` / `app_famille` (`tests/conftest.py`) créent une `App` isolée en tmp ; DNS simulé
   (aucune résolution réelle) ; HTTP mocké avec `respx` ; faux Gramps Web dans `tests/gramps_fake.py` ;
