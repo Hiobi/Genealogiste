@@ -33,6 +33,15 @@ Un résultat vide ne démontre pas que l'acte n'existe pas ; un blocage conserve
 | Mémoire des hommes | 1914 → | SGA en ligne | morts pour la France, JMO | |
 | Grand Mémorial | 14-18 | culture.gouv.fr | matricules indexés | |
 
+## Types acceptés par les outils
+
+Pour `archives_service` et `communicabilite`, utiliser les clés canoniques décrites dans
+[le référentiel](../../docs/archives.md#types-de-documents-communs--129). `matricules`, `notaires`,
+`recensements` et `justice` sont acceptés comme alias. `judiciaire` est la clé canonique
+pour la justice. Les types larges `paroissiaux`, `enregistrement` et `insinuation` demandent de préciser
+le fonds et son régime : une réponse `communicable: null` appelle une vérification auprès du service.
+Les types naturalisations et hospitalier restent à qualifier. Une clé reconnue n'annonce aucun accès en ligne.
+
 ## Stratégies
 
 - **Remonter une génération** : acte de mariage (filiation des deux époux, âges, domiciles) → naissance de

@@ -9,20 +9,7 @@ from __future__ import annotations
 from datetime import date
 
 from .normalize.dates import parse_date
-
-SERIES = {
-    "etat_civil": "série E / sous-série 4 E ou E-dépôt (collection du greffe) ; mairie pour la collection communale",
-    "paroissiaux": "registres BMS : série E / 4 E (collection du greffe) ou G (clergé séculier), parfois GG en dépôt communal",
-    "tables_decennales": "série E / 4 E (souvent en ligne avec l'état civil), une table par commune et par décennie depuis 1792",
-    "recensements": "série M, sous-série 6 M (listes nominatives quinquennales depuis 1836)",
-    "matricules": "série R, sous-série 1 R (registres matricules, classes 1867 et suivantes ; bureau de recrutement)",
-    "notaires": "série E, sous-série 3 E (minutes notariales, par étude) — répertoires pour localiser l'acte",
-    "enregistrement": "série Q, sous-série 3 Q (bureaux de l'enregistrement : tables des successions et absences, mutations par décès)",
-    "hypotheques": "série Q, sous-série 4 Q (conservation des hypothèques : transcriptions, inscriptions)",
-    "cadastre": "série P, sous-série 3 P (cadastre napoléonien : plans, états de sections, matrices)",
-    "justice": "série U (tribunaux civils, justices de paix : tutelles, émancipations, actes de notoriété)",
-    "insinuation": "série C (contrôle des actes, insinuations, centième denier — avant 1790)",
-}
+from .types_documents import RULES, SERIES, normaliser
 
 
 def _year(d: str) -> int | None:
@@ -109,34 +96,22 @@ def next_source_hint(fact: str, when: str = "", where: str = "") -> list[dict]:
 
 # ---------------------------------------------------------------------------- communicabilité
 
-RULES = {
-    "naissance": (75, "acte", "Registres de naissance : 75 ans après la clôture du registre (art. L213-2 Code du patrimoine)."),
-    "mariage": (75, "acte", "Registres de mariage : 75 ans après la clôture du registre."),
-    "deces": (0, "acte", "Actes de décès : communicables immédiatement."),
-    "tables_decennales": (75, "acte", "Suivent en pratique le régime des actes qu'elles indexent : vérifier auprès du service."),
-    "recensement": (75, "acte", "Listes nominatives : 75 ans (secret statistique)."),
-    "notaire": (75, "acte", "Minutes et répertoires notariaux : 75 ans à compter de la date de l'acte."),
-    "matricule": (120, "naissance",
-                  "Registres matricules (données médicales) : 120 ans après la naissance ou 25 ans après le décès ; "
-                  "en pratique mis en ligne par classes anciennes."),
-    "judiciaire": (75, "acte", "Dossiers judiciaires : 75 ans (100 ans si mineurs concernés)."),
-    "vie_privee": (50, "acte", "Documents portant atteinte à la vie privée (ex. enregistrement, successions) : 50 ans."),
-    "medical": (120, "naissance", "Secret médical : 120 ans après la naissance ou 25 ans après le décès."),
-    "cadastre": (0, "acte", "Cadastre : communicable immédiatement."),
-    "hypotheques": (0, "acte", "Publicité foncière : en principe communicable ; vérifier les délais propres au service."),
-}
 
 
 def communicability(document: str, date_document: str = "", date_naissance: str = "",
                     date_deces: str = "", today: date | None = None) -> dict:
     today = today or date.today()
-    key = document.lower().replace("é", "e").replace("è", "e").replace(" ", "_")
+    key = normaliser(document)
     if key not in RULES:
         return {"erreur": f"Type inconnu. Types : {', '.join(RULES)}"}
     years, base, text = RULES[key]
+    if years is None:
+        return {"document": document, "type_document": key, "regle": text,
+                "delai_annees": None, "communicable": None,
+                "note": "Régime à préciser auprès du service ; aucune disponibilité en ligne déduite."}
     ref = date_naissance if base == "naissance" else date_document
     y = _year(ref) if ref else None
-    res = {"document": document, "regle": text, "delai_annees": years}
+    res = {"document": document, "type_document": key, "regle": text, "delai_annees": years}
     if base == "naissance" and date_deces:
         yd = _year(date_deces)
         if yd:

@@ -172,3 +172,44 @@ les fixtures et la recette réseau explicite. Les autres services ne sont pas qu
 ## Couverture réellement testée
 
 Le [tableau généré](couverture-archives.md) distingue capacités implémentées, recettes de référence et environnements. `archives_service` expose ce bilan sous `couverture_technique`, sans extrapoler une recette aux autres fonds.
+
+## Types de documents communs — #129
+
+`types_documents.py` est la table commune des types, alias, séries et règles indicatives. Elle alimente
+`archives.DOCUMENTS`, `fr_sources.SERIES` et `fr_sources.RULES`. Les appels `archives_service`,
+`communicabilite` et le calcul de couverture acceptent les alias ci-dessous ; les données du référentiel
+continuent d'utiliser les clés canoniques.
+
+| Clé canonique | Alias acceptés | Portée |
+|---|---|---|
+| naissance, mariage, deces | — | état civil |
+| tables_decennales | — | index d'état civil |
+| recensement | recensements | listes nominatives |
+| matricule | matricules | registres militaires |
+| notaire | notaires | minutes et répertoires |
+| paroissiaux | paroissial | préciser période et statut du fonds |
+| enregistrement | — | préciser table ou déclaration |
+| cadastre | — | plans et matrices |
+| hypotheques | — | ajouté au catalogue, règle historique conservée |
+| judiciaire | justice | ajouté au catalogue, clé publique historique conservée |
+| insinuation | insinuations | ajouté au catalogue, régime à préciser |
+
+Les accents, espaces extérieurs et majuscules sont normalisés. Les clés historiques de `SERIES`, dont
+`etat_civil`, `recensements`, `matricules`, `notaires` et `justice`, restent disponibles.
+`medical` et `vie_privee` restent des régimes transversaux hors catalogue de fonds ; `etat_civil` est
+un regroupement qui exige de choisir naissance, mariage ou décès pour calculer un délai.
+
+`paroissiaux`, `enregistrement` et `insinuation` répondent désormais avec `communicable: null`, un délai
+inconnu et une consigne de précision, au lieu d'une erreur « type inconnu ». Aucun délai unique n'est
+attribué à ces catégories larges. Les archives de l'Eure distinguent explicitement les tables des
+successions, librement communicables, et les déclarations, soumises à un délai de cinquante ans
+([guide officiel](https://archives.eure.fr/page/rechercher-une-declaration-de-succession)). Le statut des
+archives privées dépend notamment du déposant ; le cadre public et ses exceptions sont décrits par le
+[Code du patrimoine](https://www.legifrance.gouv.fr/codes/section_lc/LEGITEXT000006074236/LEGISCTA000006159942/).
+Sources consultées le 17 novembre 2026. Les autres règles indicatives préexistantes sont conservées ; ce
+lot harmonise les noms sans constituer une revue juridique exhaustive des délais.
+
+Naturalisations et hospitalier restent hors du catalogue de ce lot : ils demandent une description de
+sous-types, séries et régimes sourcés avant ajout. L'accès de visionneuse distinct par type reste à
+implémenter dans #129. Aucun service, fonds, délai de mise en ligne ni capacité réseau n'est ajouté par
+l'élargissement du vocabulaire.

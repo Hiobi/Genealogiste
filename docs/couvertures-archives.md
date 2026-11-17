@@ -87,3 +87,11 @@ modifié et aucune consultation humaine n’est revendiquée.
 Le modèle utilise des noms de communes normalisés, sans résoudre les changements historiques de nom,
 les fusions ni les homonymes d’un même département. Les saisies doivent prévoir les variantes nécessaires
 et conserver `null` si le périmètre n’est pas établi.
+
+## Vocabulaire
+
+Les clés canoniques des règles proviennent de `types_documents.DOCUMENTS` ; voir les
+[types et alias](archives.md#types-de-documents-communs--129). Les appels acceptent notamment
+`matricules`, `notaires`, `recensements` et `justice`, normalisés avant le calcul. Les règles stockées
+emploient `matricule`, `notaire`, `recensement` et `judiciaire`. Une clé reconnue ne prouve aucune
+couverture : sans règle sourcée pour le service, la disponibilité reste inconnue.
