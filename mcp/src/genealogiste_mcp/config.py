@@ -48,7 +48,7 @@ class Config:
     gramps_user: str = ""
     gramps_password: str = ""
     gramps_ttl: float = 30.0  # secondes entre deux rafraîchissements en lecture (mode gramps)
-    gramps_notes_auto: str = "true"  # notes de preuve Sosa:auto : true (toute la base) | modifies | false
+    gramps_notes_auto: str = "true"  # notes de preuve Genealogiste:auto : true (toute la base) | modifies | false
     git_mirror: bool = False  # mode gramps : miroir GEDCOM 7 versionné de l'arbre Gramps
     git_remote: str = ""  # dépôt distant optionnel (privé !) du répertoire de données
     strict_evidence: bool = False
