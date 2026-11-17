@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import copy
 from datetime import date
+from pathlib import PurePosixPath
 
 from .. import ark
 from ..models import (
@@ -482,6 +483,55 @@ def op_ajouter_media(ctx: Ctx, o: dict) -> None:
         ctx.refs[o["ref"]] = mid
     lie = f" (liée à {', '.join(x.id for x in liens)})" if liens else ""
     ctx.summary.append(f"Média {mid} : {m.titre or m.fichier}{lie}")
+
+
+MEDIA_CHAMPS = ("fichier", "titre", "format")
+
+
+def op_modifier_media(ctx: Ctx, o: dict) -> None:
+    """Fichier (même contrôle qu'ajouter_media), titre, format d'un média existant ; citations ajoutées (#193)."""
+    mid = ctx.r(o["id"])
+    m = ctx.tree.medias.get(mid)
+    if not m:
+        raise OpError(f"Média inconnu : {mid}")
+    champs = dict(o.get("champs") or {})
+    if "date" in champs:
+        raise OpError("modifier_media : champ « date » non pris en charge (un média GEDCOM 7 OBJE ne porte pas de "
+                      "date) ; dater l'acte dans sa citation ou dans l'événement qu'il prouve")
+    inconnus = sorted(set(champs) - set(MEDIA_CHAMPS))
+    if inconnus:
+        raise OpError(f"modifier_media : champs non modifiables {inconnus} (modifiables : {', '.join(MEDIA_CHAMPS)})")
+    citations = o.get("citations_ajout") or []
+    if not champs and not citations:
+        raise OpError("modifier_media : rien à modifier (champs ou citations_ajout)")
+    changes = []
+    if "fichier" in champs:
+        fichier = champs["fichier"]
+        if not fichier or not isinstance(fichier, str):
+            raise OpError("modifier_media : fichier vide")
+        if ctx.media is not None:
+            try:
+                fichier = ctx.media(fichier)
+            except ValueError as exc:
+                raise OpError(str(exc)) from exc
+        if fichier != m.fichier:
+            changes.append(f"fichier {m.fichier or '(aucun)'} → {fichier}")
+            if "format" not in champs and _suffixe(fichier) != _suffixe(m.fichier):
+                m.format = ""  # format déduit de la nouvelle extension à l'écriture (GEDCOM FORM, mime Gramps)
+            m.fichier = fichier
+    for k in ("titre", "format"):
+        if k in champs and champs[k] != getattr(m, k):
+            changes.append(f"{k} « {getattr(m, k)} » → « {champs[k]} »")
+            setattr(m, k, champs[k])
+    for c in citations:
+        m.citations.append(_citation(ctx, c))
+    if citations:
+        changes.append(f"{len(citations)} citation(s) ajoutée(s)")
+    ctx.summary.append(f"Média {mid} modifié : " + ("; ".join(changes) or "inchangé"))
+
+
+def _suffixe(fichier: str) -> str:
+    return PurePosixPath(fichier).suffix.lower()
 
 
 def _media_owner(ctx: Ctx, ident: str) -> Person | Family:

@@ -13,13 +13,13 @@ Module `chemins.py` (#41, #51). Les chemins sont résolus (liens symboliques com
 | `media_enregistrer(chemin, nom)` | `nom` = nom de fichier simple (ni `/`, ni `\`, ni `..`) ; copie confinée à `<données>/medias/` ; un fichier existant au contenu différent n'est pas écrasé (même contenu : sans effet). `chemin` (fichier source) est libre : l'outil n'est pas en lecture seule et demande confirmation. |
 | `matchid_appariement_statut(job, sortie)` | `sortie` facultative : fichier `.csv` du répertoire de données (chemin relatif à celui-ci, ou absolu à l'intérieur), hors `.git`. `arbre.ged`, `journal.jsonl` et les autres fichiers internes sont donc inatteignables. Contrôle fait avant l'appel réseau. |
 | Envoi des médias vers Gramps Web | Le fichier d'un média est cherché sous le répertoire des données puis, avec `GENEALOGISTE_MEDIA_DIR`, sous l'arborescence des pièces (vault) : un chemin relatif est essayé contre chacune de ces racines, un chemin absolu doit s'y trouver. Un chemin qui sort de toutes (absolu ailleurs, traversant `../`, lien symbolique sortant) n'est jamais lu ; il est listé comme « hors du répertoire de données, refusé ». |
-| `ajouter_media` (proposition) | Même confinement (données, répertoire des médias, arborescence des pièces) : un chemin local hors de ces racines ou introuvable fait refuser la proposition ; une URL distante est gardée sans être lue. |
+| `ajouter_media`, `modifier_media`, `gramps_relocaliser_medias` (propositions) | Même confinement (données, répertoire des médias, arborescence des pièces) : un chemin local hors de ces racines ou introuvable fait refuser la proposition ; une URL distante est gardée sans être lue. |
 
 ## Confirmations (hooks)
 
 | Décision | Outils |
 |---|---|
-| Sans confirmation | recherches, consultations, propositions (`arbre_proposer`, `gramps_bascule_proposer`…), ainsi que `gramps_recalculer_notes` et `gramps_synchroniser` (écritures auxiliaires déclarées au catalogue) |
+| Sans confirmation | recherches, consultations, propositions (`arbre_proposer`, `gramps_bascule_proposer`, `gramps_relocaliser_medias`…), ainsi que `gramps_recalculer_notes` et `gramps_synchroniser` (écritures auxiliaires déclarées au catalogue) |
 | Confirmation demandée | écritures (`arbre_appliquer`, `rapport_enregistrer`, `gramps_bascule_appliquer`, `gramps_tirer`), identifiants (`familysearch_exporter`, `matchid_appariement_csv`) |
 | Selon les paramètres | `matchid_appariement_statut` : sans confirmation pour consulter, confirmation si `sortie` est renseignée (écriture d'un fichier) |
 | Règle par défaut de Claude Code | tout outil absent des listes (ex. `media_enregistrer`) |

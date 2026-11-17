@@ -103,6 +103,7 @@ OUTILS: dict[str, tuple[str, str]] = {
     "gramps_recalculer_notes": (ECRITURE, ALLOW),
     "gramps_structurer_lieux": (ECRITURE, DEFAUT),
     "gramps_envoyer_medias": (ECRITURE, DEFAUT),
+    "gramps_relocaliser_medias": (PROPOSITION, ALLOW),  # proposition seulement : écrite par arbre_appliquer
     "gramps_synchroniser": (ECRITURE, ALLOW),
 }
 

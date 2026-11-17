@@ -9,5 +9,6 @@ Modification : **$ARGUMENTS**
    donnée : ne pas écraser silencieusement — ajouter la nouvelle version avec sa citation et marquer
    l'ancienne `refute` (`definir_statut`, justification obligatoire) si l'analyse le justifie.
 3. Opérations : `modifier_personne`, `modifier_evenement`, `supprimer_evenement`, `modifier_source`,
+   `modifier_media` (fichier, titre, format ; `gramps_relocaliser_medias` pour un changement de machine),
    `ajouter_citation`, `lier_enfant`/`delier_enfant`, `lier_conjoint`, `definir_statut`, `marquer_vivant`.
 4. `arbre_proposer` → diff → accord explicite → `arbre_appliquer(jeton)`.
