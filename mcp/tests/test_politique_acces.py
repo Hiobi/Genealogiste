@@ -196,3 +196,12 @@ def test_archives_service_expose_la_politique(app):
     pol = r["politique_acces"]["archivesdepartementales.lenord.fr"]
     assert pol["categorie"] == "archives" and pol["plafond_jour"] == app.config.plafond_jour_archives
     assert set(pol["provenance"]) == {"intervalle", "plafond_jour", "concurrence"}
+
+
+def test_doc_securite_liste_chaque_service():
+    doc = (Path(__file__).parents[2] / "docs" / "securite.md").read_text(encoding="utf-8")
+    section = doc.split("## Politique d'accès par service", 1)[1].split("\n## ", 1)[0]
+    for hote, e in SERVICES.items():
+        assert f"`{hote}`" in section, hote
+        if e.reference:
+            assert e.reference in section and e.releve_le in section, hote
