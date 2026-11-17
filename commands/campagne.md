@@ -51,9 +51,10 @@ Règles de la campagne :
    `## Trouvé`, `## Négatif`, `## Bloqué`, `## À valider` (id de file en tête de ligne), `## À faire à la main`
    (id de tâche en tête) et une ligne `Budget : cle=valeur … ; statut=ouverte|bloque`. Un compte rendu absent
    ou hors format est consigné sous « Bloqué » pour cette enquête.
-   Seuls `recherche_multi`, `archives_naviguer` et `archive_image` (avec `enquete=<id>`) comptent dans le
-   budget de l'enquête ; les autres outils sont bornés par le débit par hôte, le coupe-circuit anti-robot et le
-   plafond journalier des archives.
+   Tout outil réseau de collecte appelé avec `enquete=<id>` compte dans le budget de l'enquête (images,
+   requêtes par hôte), qui arrête une boucle ; le ménagement des sites (débit par hôte, ralentissement,
+   coupe-circuit anti-robot, plafond journalier) vaut pour tous les appels ; le coût réel est plafonné par
+   `--max-budget-usd` sur la ligne de lancement.
 5. **Vérification** : un sous-agent ne peut pas lancer d'agent ; c'est donc la campagne qui, pour chaque
    conclusion que le chercheur marque « à vérifier » sous `## À valider` (fait passant à « confirmé », nouvelle
    filiation, identité), lance l'agent **`verificateur`** sans lui transmettre les conclusions (au plus 3 par

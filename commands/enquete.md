@@ -12,10 +12,10 @@ conclusions déposées dans la file de propositions, compte rendu à format fixe
 
 0. **État d'enquête** (`docs/enquetes.md`) : `enquete_reprendre()` liste les enquêtes ouvertes. Si l'une
    porte sur ce sujet, `enquete_reprendre(id)` et repartir de `a_faire` (ne jamais relancer `deja_fait`) ;
-   sinon `enquete_ouvrir(sujet, personnes)` et garder l'`id`. Budget (requêtes par hôte, images, durée
-   d'activité, coût estimé) : défauts `GENEALOGISTE_BUDGET_*` ; si l'utilisateur en indique un dans
-   $ARGUMENTS (ex. « budget images=20 duree=15 »), le passer à `enquete_ouvrir(..., budget={"images": 20,
-   "duree_min": 15})` : l'accord est demandé au lancement, avant toute collecte, donc seulement si
+   sinon `enquete_ouvrir(sujet, personnes)` et garder l'`id`. Budget (images lues, requêtes par
+   hôte : il arrête une boucle, il ne plafonne pas le coût) : défauts `GENEALOGISTE_BUDGET_*` ; si
+   l'utilisateur en indique un dans $ARGUMENTS (ex. « budget images=20 requetes=50 »), le passer à
+   `enquete_ouvrir(..., budget={"images": 20, "requetes_par_hote": 50})` : l'accord est demandé au lancement, avant toute collecte, donc seulement si
    l'utilisateur est présent ; un lancement sans surveillance n'indique pas de budget (défauts de la
    configuration ou enquête ouverte au préalable par l'utilisateur). Chaque réponse de
    collecte donne `budget.reste`. Au refus `motif: "budget"` (enquête `bloque`) : s'arrêter proprement, rendre
@@ -26,8 +26,9 @@ conclusions déposées dans la file de propositions, compte rendu à format fixe
    Annoncer en une ligne le périmètre (n personnes) avant de lancer.
 2. **Recherche en parallèle** : lancer un agent **`chercheur`** par personne du cercle (en commençant par
    celles qui ont le plus d'actions urgentes), dans le même message pour qu'ils travaillent en parallèle.
-   Consigne à chacun : id d'enquête (`enquete=<id>` sur `recherche_multi`, `archives_naviguer`,
-   `archive_image` ; pistes, lectures, verdicts et tâches manuelles par `enquete_noter`), id, lien avec le
+   Consigne à chacun : id d'enquête (`enquete=<id>` sur chaque outil réseau de collecte :
+   `recherche_multi`, `archives_registres`, `archives_naviguer`, `archives_planche`, `archive_image`,
+   `piece_archiver`, sources… ; pistes, lectures, verdicts et tâches manuelles par `enquete_noter`), id, lien avec le
    sujet, lacunes (`arbre_lacunes`), sources à interroger et **parcours d'archives** pour chaque fait à établir :
    service et couverture (`archives_service`), registre (`archives_registres` pour AD59, `ark_resoudre` pour un
    ARK déjà connu), sondage (`archives_naviguer`, `archives_planche`), lecture (`archive_image`), transcription,

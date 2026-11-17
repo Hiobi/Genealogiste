@@ -47,7 +47,8 @@ hors ligne) devient une tâche manuelle (`enquete_noter`), la conclusion est dé
    (ou la table décennale pour retrouver année et n° d'acte avant d'aller à l'acte). Pour un registre AD59
    chronologique, `archives_planche(ark_registre, de, a, pas, bandeau="pct:0,0,100,35")` : une seule image de
    4 à 12 vues (sondage large puis fin) au lieu d'un aperçu par vue. Choisir la vue. Avec une enquête, passer
-   `enquete=<id>` à `archives_naviguer` et `archive_image` (budget compté).
+   `enquete=<id>` à chaque outil de collecte (`archives_naviguer`, `archives_planche`, `archive_image`,
+   `piece_archiver`… : budget compté).
 5. **Lire, transcrire, archiver** : suivre `/genealogiste:transcris` — aperçu (`archive_image`, 800 px gris)
    puis recadrage de l'acte, transcription diplomatique (niveau de confiance par champ), `piece_archiver`
    (pleine résolution + note compagnon), puis la citation : source, média, citation (`consultation: image`,

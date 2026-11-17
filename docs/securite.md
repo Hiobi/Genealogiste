@@ -64,8 +64,12 @@ Cas tranchés d'après le code :
 
 La collecte est bornée par les **limites de débit par hôte**, le **coupe-circuit** anti-robot, le
 **plafond journalier par hôte d'archives** (`GENEALOGISTE_PLAFOND_JOUR_ARCHIVES`, toujours actif) et, pour
-un appel lié à une enquête, son **budget** (requêtes par hôte, images, durée d'activité, coût estimé ;
-refus avant l'envoi) — sections ci-dessous et [enquetes.md](enquetes.md#budget-et-arrêt-propre) (#157).
+un appel lié à une enquête, son **budget** (requêtes par hôte, images ; refus avant l'envoi) — sections
+ci-dessous et [enquetes.md](enquetes.md#budget-et-arrêt-propre) (#157, #211). Trois préoccupations
+distinctes : le **ménagement des sites** relève de la couche réseau (intervalle par hôte, ralentissement
+après 429/503, plafond journalier, coupe-circuit), toujours active ; le **budget d'enquête** arrête une boucle
+(images, requêtes par site) ; le **coût réel** se plafonne côté client par `--max-budget-usd`, à fixer pour
+toute campagne ([campagne.md](campagne.md)).
 
 `hooks/hooks.json` est **généré** depuis ce catalogue (`make hooks`, `scripts/generer_hooks.py`) : un motif
 par classe, puis un motif par outil en deux temps. Les motifs `mcp__.*genealogiste.*__…` couvrent le plugin
@@ -127,10 +131,10 @@ doit tourner avec `GENEALOGISTE_ECRITURE=interdite` dans l'environnement du **se
 dans la file (`propositions_deposer`) et sont appliquées plus tard, après accord, par `/genealogiste:valide`
 dans une session surveillée lancée avec `autorisee`. Un budget d'enquête ne peut pas être fixé ni relevé
 dans une telle session (branche écriture d'`enquete_ouvrir` / `enquete_noter`) : il vient des défauts
-`GENEALOGISTE_BUDGET_*` fixés par l'humain dans l'environnement de la tâche. Ce budget ne compte que
-`recherche_multi`, `archives_naviguer` et `archive_image` (avec `enquete=<id>`) ; les autres outils de
-collecte restent bornés, dans tous les modes, par le débit par hôte, le coupe-circuit anti-robot et le plafond
-journalier des archives (côté serveur, indépendants du client). Exemple planifié :
+`GENEALOGISTE_BUDGET_*` fixés par l'humain dans l'environnement de la tâche. Ce budget compte tout outil
+réseau de collecte appelé avec `enquete=<id>` (`outils.BUDGET_ENQUETE`) ; dans tous les modes, la couche
+réseau ménage les sites (débit par hôte, coupe-circuit anti-robot, plafond journalier des archives : côté
+serveur, indépendants du client) et le coût réel se plafonne par `--max-budget-usd`. Exemple planifié :
 [campagne.md](campagne.md).
 
 ## Personnes vivantes : rien vers l'extérieur
@@ -263,9 +267,13 @@ l'intervalle de base est nul (`GENEALOGISTE_DEBITS=hote=0`) n'est pas ralenti.
   dizaines de tuiles par vue. Le plafond ne gêne donc pas l'usage interactif ; il arrête une boucle
   autonome qui feuilletterait un fonds entier. Avec le débit (1,5 s par défaut), 1000 requêtes
   représentent au moins 25 minutes de requêtes continues.
-- **Budget d'enquête** : avec `enquete=<id>`, `recherche_multi` (et ses sources), `archives_naviguer` et
-  `archive_image` sont mesurés côté serveur ; une requête qui dépasserait le budget de l'hôte ou la durée est
-  refusée **avant l'envoi** (voir [enquetes.md](enquetes.md#budget-et-arrêt-propre)).
+- **Budget d'enquête** : avec `enquete=<id>`, tout outil réseau de collecte du catalogue
+  (`outils.BUDGET_ENQUETE`, dérivé de `outils.OUTILS` ; exemptions motivées dans `outils.HORS_BUDGET`) est
+  mesuré côté serveur : l'enveloppe de `serveur_mcp.py` ajoute le paramètre facultatif `enquete` et exécute
+  l'appel sous la mesure (#211). Une requête qui dépasserait le budget de l'hôte est refusée **avant
+  l'envoi** (voir [enquetes.md](enquetes.md#budget-et-arrêt-propre)). Dimensions : `images` et
+  `requetes_par_hote` ; la durée et le coût estimé ne sont plus des limites (le coût réel :
+  `--max-budget-usd` côté client).
 
 ## Reprises automatiques : jamais de doublon
 
