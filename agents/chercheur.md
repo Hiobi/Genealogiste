@@ -42,4 +42,5 @@ l'utilisateur. Une réponse `deja_fait` d'un outil signale une demande déjà fa
 - Homonymes écartés ou à départager, avec l'argument.
 - Prochaines sources à consulter, priorisées (service, cote typique, accès en ligne).
 - **Aucune** écriture dans l'arbre : proposer éventuellement les opérations `arbre_proposer` à soumettre,
-  sans les appliquer.
+  sans les appliquer ; une conclusion d'enquête à valider plus tard se dépose avec
+  `propositions_deposer(..., enquete=<id>)`.

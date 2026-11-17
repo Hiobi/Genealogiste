@@ -30,5 +30,7 @@ Applique les skills `methodologie-gps` et `sources-francaises`.
    - plan de recherche priorisé et regroupé par service d'archives (cotes typiques) ;
    - une **proposition unique** `arbre_proposer` regroupant les ajouts sourcés (citations complètes,
      `consultation` précisée, témoins et parrains en `associations`), présentée en diff.
+     Si la validation est différée, la déposer avec `propositions_deposer(..., enquete=<id>)` (file durable,
+     au lieu d'un jeton d'une heure) : l'enquête d'origine reste liée.
 6. N'appliquer (`arbre_appliquer`) qu'après accord explicite de l'utilisateur ; proposer ensuite
    `/genealogiste:export geneweb` pour publier dans GeneWeb.
