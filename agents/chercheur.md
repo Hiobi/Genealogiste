@@ -63,7 +63,7 @@ demande sa confirmation) ; en mode autonome, tâche manuelle.
 ## État d'enquête (reprise)
 Si un id d'enquête est fourni (sinon `enquete_ouvrir`), commencer par `enquete_reprendre(id)` : suivre
 `a_faire` dans l'ordre et **ne jamais relancer** une demande de `deja_fait`. Passer `enquete=<id>` à
-`recherche_multi`, `archives_naviguer` et `archive_image`. Noter au fil de l'eau avec `enquete_noter` :
+chaque outil réseau de collecte (`recherche_multi`, `archives_naviguer`, `archive_image`, sources…). Noter au fil de l'eau avec `enquete_noter` :
 pistes (question, hypothèses, sources dans l'ordre, statut `a_faire|en_cours|trouve|negatif|bloque|manuel`),
 registres (vues lues, `lectures` {vue, date, type, numero}, bornes, verdict), tâches manuelles pour
 l'utilisateur. Une réponse `deja_fait` d'un outil signale une demande déjà faite : en tenir compte.
