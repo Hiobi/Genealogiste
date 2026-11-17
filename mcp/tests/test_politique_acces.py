@@ -57,6 +57,38 @@ def test_table_complete_pour_chaque_hote_interroge():
     assert not manquants, f"hôtes sans politique déclarée : {manquants}"
 
 
+# Hôtes fixes contactés par chaque outil de collecte du budget d'enquête (#211, lot C). Les hôtes dynamiques
+# (visionneuse ou manifeste IIIF d'un service, résolution ARK) sont couverts par le référentiel et ark.NAANS.
+HOTES_OUTILS = {
+    "archive_image": {"archivesdepartementales.lenord.fr", "gallica.bnf.fr"},
+    "archives_naviguer": {"archivesdepartementales.lenord.fr", "gallica.bnf.fr"},
+    "archives_planche": {"archivesdepartementales.lenord.fr", "gallica.bnf.fr"},
+    "archives_registres": {"archivesdepartementales.lenord.fr"},
+    "piece_archiver": {"archivesdepartementales.lenord.fr", "gallica.bnf.fr"},
+    "ark_resoudre": {"n2t.net"},
+    "gallica_alto": {"gallica.bnf.fr"}, "gallica_recherche": {"gallica.bnf.fr"},
+    "gallica_recherche_document": {"gallica.bnf.fr"}, "gallica_texte": {"gallica.bnf.fr"},
+    "geo_commune": {"geo.api.gouv.fr"}, "geo_historique": {"www.insee.fr"},
+    "matchid_recherche": {"deces.matchid.io"},
+    "recherche_multi": {"deces.matchid.io", "api.wikitree.com", "gallica.bnf.fr", "query.wikidata.org"},
+    "wikidata_personne": {"query.wikidata.org"}, "wikidata_sparql": {"query.wikidata.org"},
+    **{f"wikitree_{n}": {"api.wikitree.com"} for n in ("ascendants", "descendants", "personne", "profil",
+                                                        "recherche")},
+}
+
+
+def test_politique_couvre_les_outils_du_budget_d_enquete():
+    from genealogiste_mcp import ark, outils
+
+    assert set(HOTES_OUTILS) == set(outils.BUDGET_ENQUETE), "outil de collecte ajouté : déclarer ses hôtes"
+    p = PolitiqueAcces.depuis_config(_cfg())
+    archives.services()  # complète ark.NAANS depuis le référentiel
+    hotes = set().union(*HOTES_OUTILS.values()) | {v["hote"] for v in ark.NAANS.values()}
+    assert set().union(*HOTES_OUTILS.values()) <= set(_hotes_sources())
+    manquants = sorted(h for h in hotes if not p.politique(h).service)
+    assert not manquants, f"hôtes sans politique déclarée : {manquants}"
+
+
 def test_hote_inconnu_tombe_sur_un_defaut_explicite():
     p = PolitiqueAcces.depuis_config(_cfg(debit_defaut=1.5, plafond_jour_defaut=1000))
     pol = p.politique("iiif.inconnu.example")
