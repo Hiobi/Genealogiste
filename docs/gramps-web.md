@@ -146,11 +146,13 @@ Le dépôt est local par défaut. `GENEALOGISTE_GIT_REMOTE` ajoute un push aprè
 
 ## Médias (images d'actes)
 
-- `ajouter_media` (`fichier` produit par `piece_archiver` : relatif au répertoire des données, ou absolu
-  dans le vault ; l'envoi accepte le répertoire des médias et l'arborescence des pièces) crée l'objet Media ; une citation le référence par `medias` (`media_list` de la citation
-  Gramps, `OBJE` sous la citation en GEDCOM) : l'image prouve la citation.
+- `ajouter_media` (`fichier` : `reference_media` de `media_enregistrer` ou `fichier` de `piece_archiver`, ou
+  chemin relatif au répertoire des médias ou au vault, résolu et normalisé à la proposition ; un fichier local
+  introuvable est refusé, voir `docs/operations.md`) crée l'objet Media ; une citation le référence par `medias`
+  (`media_list` de la citation Gramps, `OBJE` sous la citation en GEDCOM) : l'image prouve la citation.
 - La proposition annonce les fichiers à envoyer (`transaction_gramps.fichiers_a_envoyer`, ou
-  `fichiers_absents`). Après accord, la transaction crée l'objet, puis chaque fichier est envoyé par
+  `fichiers_absents` pour un média existant dont le fichier a disparu). À l'envoi, un chemin relatif absent
+  des données est cherché dans le répertoire des médias / l'arborescence des pièces (médias créés avant #192). Après accord, la transaction crée l'objet, puis chaque fichier est envoyé par
   `PUT /api/media/{handle}/file` (`If-Match` = somme MD5 lue) ; le serveur attribue chemin et somme.
 - Le chemin local est gardé dans l'attribut `Sosa-Fichier` : le chemin du serveur n'est jamais réécrit.
 - `gramps_envoyer_medias` : liste des fichiers absents ou différents dans Gramps Web (médias créés avant cette

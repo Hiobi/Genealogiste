@@ -33,11 +33,26 @@ est refusé, sauf `"non_source": true` + `"motif": "…"` (la mention « Non sou
 | `lier_conjoint` | `famille`, `personne`, `role` (`epoux`/`epouse`) |
 | `ajouter_citation` | `cible` `{type: evenement(uid) | nom(id, index) | filiation(famille, enfant) | personne | famille | media (id)}`, `citation` |
 | | Citation : `source`, `page`, `texte`, `qualite`, `type_source`, `information`, `preuve`, `consultation`, `ark`, `medias` (ids ou `$ref` d'`ajouter_media` : images de l'acte), `note` |
-| `ajouter_media` | `fichier`*, `format`, `titre`, `citations`, `lier_a` `[ids]` (personnes `I…` et familles `F…`, ou `$ref` : un acte de mariage se lie à la famille), `ref` |
+| `ajouter_media` | `fichier`* (voir « Fichier d'un média »), `format`, `titre`, `citations`, `lier_a` `[ids]` (personnes `I…` et familles `F…`, ou `$ref` : un acte de mariage se lie à la famille), `ref` |
 | `fusionner_personnes` | `conserver`, `absorber`, `justification`*, `forcer` |
 | `scinder_personne` | `id`, `evenements` `[uid]`, `familles_parents`, `familles_conjoint`, `noms`, `sexe`, `justification`*, `ref` |
 | `definir_statut` | `cible` `{type: evenement | nom | filiation …}`, `statut` (`refute` \| `contradictoire` \| `""`), `justification`* |
 | `marquer_vivant` | `id`, `vivant` (`Y` \| `N` \| `""`) |
+
+### Fichier d'un média (`ajouter_media`)
+
+`fichier` est résolu dès la proposition (#192) :
+
+- une URL distante (`https://…`, tout `fichier` contenant `://`) est gardée telle quelle, sans contrôle ;
+- un chemin local est cherché, dans cet ordre, sous le répertoire des données, le répertoire des médias
+  (`GENEALOGISTE_MEDIA_DIR`, ex. `<vault>/documents`) puis l'arborescence des pièces (ex. `<vault>`) ;
+  `documents/État civil/NOM/x.webp` (relatif au vault), `État civil/NOM/x.webp` (relatif aux médias) ou le
+  chemin absolu désignent donc le même fichier ;
+- la référence enregistrée est normalisée comme celle de `media_enregistrer` (`reference_media`) : relative
+  aux données (`medias/…`) quand le fichier s'y trouve, absolue sinon ;
+- la proposition est **refusée** si le fichier local est introuvable (l'enregistrer d'abord par
+  `media_enregistrer` ou `piece_archiver`) ou si le chemin sort de ces racines (absolu ailleurs, `..`, lien
+  symbolique sortant).
 
 ### Intégrité (contrôlée à chaque proposition)
 

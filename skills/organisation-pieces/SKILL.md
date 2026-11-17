@@ -36,7 +36,8 @@ Gros dossiers : présenter le résumé, jamais la liste complète. Le plan compl
 
 ## Rattacher une pièce à l'arbre
 Une fois la pièce rangée et nommée, l'ajouter comme média d'une citation via une proposition `arbre_proposer`
-(opération `ajouter_media`, chemin du fichier). Un fichier référencé par l'arbre ne sera plus déplacé par
+(opération `ajouter_media`, `fichier` = `reference_media` rendu par `media_enregistrer`, ou chemin relatif au
+vault ; un fichier introuvable est refusé). Un fichier référencé par l'arbre ne sera plus déplacé par
 les organisations suivantes.
 
 ## Vault Obsidian

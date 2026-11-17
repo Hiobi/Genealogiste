@@ -85,10 +85,12 @@ def test_apply_uploads_file_and_links_citation(mapp, fake):
     assert "Media" not in p2["transaction_gramps"]["bilan"] and "fichiers_a_envoyer" not in p2["transaction_gramps"]
 
 
-def test_missing_local_file_reported(mapp, fake):
+def test_missing_local_file_refused(mapp, fake):
+    """#192 : un média sans fichier local est refusé dès la proposition (plus de média orphelin)."""
     ops = [dict(OPS[0], fichier="medias/absent.jpg")]
     p = server.arbre_proposer(ops, "Média", "Image annoncée.")
-    assert p["transaction_gramps"]["fichiers_absents"] == ["O1 : medias/absent.jpg"]
+    assert "introuvable" in p["erreur"] and "medias/absent.jpg" in p["erreur"]
+    assert not fake.objects["Media"]
 
 
 def test_send_pending_files_after_the_fact(mapp, fake):

@@ -41,9 +41,10 @@ class OpError(ValueError):
 
 
 class Ctx:
-    def __init__(self, tree: Tree, exiger_source: bool = True):
+    def __init__(self, tree: Tree, exiger_source: bool = True, media=None):
         self.tree = tree
         self.exiger_source = exiger_source
+        self.media = media  # fichier -> référence normalisée (Config.media_reference) ; None : pas de contrôle
         self.refs: dict[str, str] = {}
         self.summary: list[str] = []
         self.sources_cited: set[str] = set()
@@ -463,8 +464,14 @@ def op_ajouter_citation(ctx: Ctx, o: dict) -> None:
 
 
 def op_ajouter_media(ctx: Ctx, o: dict) -> None:
+    fichier = o["fichier"]
+    if ctx.media is not None:
+        try:
+            fichier = ctx.media(fichier)
+        except ValueError as exc:
+            raise OpError(str(exc)) from exc
     mid = ctx.tree.next_id("medias")
-    m = Media(id=mid, fichier=o["fichier"], format=o.get("format", ""), titre=o.get("titre", ""),
+    m = Media(id=mid, fichier=fichier, format=o.get("format", ""), titre=o.get("titre", ""),
               citations=[_citation(ctx, c) for c in o.get("citations", [])])
     ctx.tree.medias[mid] = m
     liens = [_media_owner(ctx, x) for x in o.get("lier_a", [])]
@@ -793,9 +800,10 @@ def op_remplacer_arbre(ctx: Ctx, o: dict) -> None:
 OPS = {name[3:]: fn for name, fn in globals().items() if name.startswith("op_")}
 
 
-def apply_ops(tree: Tree, ops: list[dict], exiger_source: bool = True) -> Ctx:
-    """Applique les opérations sur une COPIE de l'arbre ; lève OpError si l'une échoue."""
-    ctx = Ctx(copy.deepcopy(tree), exiger_source)
+def apply_ops(tree: Tree, ops: list[dict], exiger_source: bool = True, media=None) -> Ctx:
+    """Applique les opérations sur une COPIE de l'arbre ; lève OpError si l'une échoue. media : résolution des
+    fichiers d'ajouter_media (Config.media_reference)."""
+    ctx = Ctx(copy.deepcopy(tree), exiger_source, media)
     for i, o in enumerate(ops, 1):
         name = o.get("op")
         if name not in OPS:
