@@ -467,11 +467,29 @@ def op_ajouter_media(ctx: Ctx, o: dict) -> None:
     m = Media(id=mid, fichier=o["fichier"], format=o.get("format", ""), titre=o.get("titre", ""),
               citations=[_citation(ctx, c) for c in o.get("citations", [])])
     ctx.tree.medias[mid] = m
-    for pid in o.get("lier_a", []):
-        ctx.tree.person(ctx.r(pid)).medias.append(mid)
+    liens = [_media_owner(ctx, x) for x in o.get("lier_a", [])]
+    for owner in liens:
+        if mid not in owner.medias:
+            owner.medias.append(mid)
     if o.get("ref"):
         ctx.refs[o["ref"]] = mid
-    ctx.summary.append(f"Média {mid} : {m.titre or m.fichier}")
+    lie = f" (liée à {', '.join(x.id for x in liens)})" if liens else ""
+    ctx.summary.append(f"Média {mid} : {m.titre or m.fichier}{lie}")
+
+
+def _media_owner(ctx: Ctx, ident: str) -> Person | Family:
+    """Cible de lier_a : personne (I…) ou famille (F…), y compris créée plus tôt dans la proposition ($ref)."""
+    oid = ctx.r(ident)
+    if oid in ctx.tree.personnes:
+        return ctx.tree.personnes[oid]
+    if oid in ctx.tree.familles:
+        return ctx.tree.familles[oid]
+    if isinstance(oid, str) and oid[:1] == "I":
+        raise OpError(f"ajouter_media : lier_a, personne inconnue : {oid}")
+    if isinstance(oid, str) and oid[:1] == "F":
+        raise OpError(f"ajouter_media : lier_a, famille inconnue : {oid}")
+    raise OpError(f"ajouter_media : lier_a accepte des personnes I… et familles F… ({oid!r} non pris en charge ; "
+                  "pour un événement ou une source, lier le média à la citation : citation.medias)")
 
 
 def _all_associations(tree: Tree):
@@ -741,6 +759,7 @@ def op_remplacer_arbre(ctx: Ctx, o: dict) -> None:
         f.epoux, f.epouse = P.get(f.epoux, f.epoux), P.get(f.epouse, f.epouse)
         for c in f.enfants:
             c.enfant = P.get(c.enfant, c.enfant)
+        f.medias = [M.get(m, m) for m in f.medias]
         f.notes = [note_ref(n) for n in f.notes]
         fresh(f)
         for e in f.evenements:

@@ -303,8 +303,10 @@ class Notes:
         p = tree.personnes[pid]
         from .tree.integrite import iter_citations
 
-        ids = list(p.medias)
+        ids = []
         owners = [p, *tree.spouses_families(pid)]
+        for o in owners:  # médias liés directement (personne, union : acte de mariage…) puis ceux des citations
+            ids += o.medias
         for o in owners:
             ids += [m for c in iter_citations(o) for m in c.medias]
         out = []

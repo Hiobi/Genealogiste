@@ -47,6 +47,24 @@ def _private_in(n: Node) -> bool:
 
 def _not_private(c: Node) -> bool:
     return not (c.tag in RESN_TAGS and is_private(c.value))
+
+
+def _media_link(tree: Tree, c: Node, medias: list[str]) -> bool:
+    """OBJE d'un individu ou d'une famille : pointeur, ou OBJE « en ligne » (5.5.1) converti en enregistrement
+    média. Faux si le nœud n'est ni l'un ni l'autre (conservé alors comme non interprété)."""
+    if strip_xref(c.value):
+        medias.append(strip_xref(c.value))
+        return True
+    fn = c.first("FILE")
+    if not fn:
+        return False
+    mid = tree.next_id("medias")
+    tree.medias[mid] = Media(id=mid, fichier=fn.value, format=fn.val("FORM") or c.val("FORM"),
+                             titre=fn.val("TITL") or c.val("TITL"))
+    medias.append(mid)
+    return True
+
+
 INSEE_EXID = "http://id.insee.fr/geo/commune"
 
 # RELA (GEDCOM 5.5.1, vocabulaire GeneWeb) <-> ROLE GEDCOM 7 + détail français
@@ -292,15 +310,8 @@ def read_gedcom(text: str) -> tuple[Tree, dict]:
                         p.associations.append(a)
                     else:
                         p.extra.append(c.to_dict())
-                elif c.tag == "OBJE":
-                    if strip_xref(c.value):
-                        p.medias.append(strip_xref(c.value))
-                    elif c.first("FILE"):  # OBJE « en ligne » (5.5.1) -> enregistrement média
-                        mid = tree.next_id("medias")
-                        fn = c.first("FILE")
-                        tree.medias[mid] = Media(id=mid, fichier=fn.value, format=fn.val("FORM") or c.val("FORM"),
-                                                 titre=fn.val("TITL") or c.val("TITL"))
-                        p.medias.append(mid)
+                elif c.tag == "OBJE" and _media_link(tree, c, p.medias):
+                    continue
                 elif c.tag == "NOTE":
                     p.notes.append(c.value)
                 elif c.tag == "SNOTE":
@@ -330,6 +341,8 @@ def read_gedcom(text: str) -> tuple[Tree, dict]:
                     f.evenements.append(rd.event(c))
                 elif c.tag == "SOUR":
                     f.citations.append(rd.citation(c))
+                elif c.tag == "OBJE" and _media_link(tree, c, f.medias):
+                    continue
                 elif c.tag == "NOTE":
                     f.notes.append(c.value)
                 elif c.tag in ("UID", "_UID", "_STAT") or not _not_private(c):
@@ -603,6 +616,9 @@ def to_nodes(tree: Tree, version: int = 7) -> list[Node]:
             _w_event(r, e, version)
         for c in f.citations:
             _w_citation(r, c)
+        for m in f.medias:
+            if m:
+                r.add("OBJE", f"@{m}@")
         for note in f.notes:
             r.add("NOTE", note)
         _w_statut(r, f.statut_manuel)

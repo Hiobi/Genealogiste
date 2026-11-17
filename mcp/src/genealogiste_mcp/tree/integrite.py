@@ -86,6 +86,8 @@ def dangling(tree: Tree) -> list[str]:
     for fid, f in tree.familles.items():
         for x in [f.epoux, f.epouse] + [c.enfant for c in f.enfants]:
             chk(fid, "personne", x, tree.personnes)
+        for m in f.medias:
+            chk(fid, "média", m, tree.medias)
         for a in (a for e in f.evenements for a in e.associations):
             chk(fid, "personne", a.personne, tree.personnes)
     for sid, s in tree.sources.items():
