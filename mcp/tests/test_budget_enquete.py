@@ -265,7 +265,8 @@ def test_plafond_journalier_applique_aux_services_d_archives(tmp_path, routes):
     server.set_app(a)
     try:
         assert a.http.plafond.concerne("archivesdepartementales.lenord.fr")
-        assert not a.http.plafond.concerne(MATCHID_HOTE)
+        # #211 : les API ont leur propre plafond (GENEALOGISTE_PLAFOND_JOUR_DEFAUT), distinct des archives
+        assert a.http.plafond.limite(MATCHID_HOTE) == (cfg.plafond_jour_defaut, "GENEALOGISTE_PLAFOND_JOUR_DEFAUT")
         fenetres = mock_ad59(routes)
         r = server.archives_naviguer(REGISTRE, page=1, pas=3)  # sans enquête : seul le plafond s'applique
         assert "plafond journalier" in r["erreur"]

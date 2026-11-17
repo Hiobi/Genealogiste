@@ -92,6 +92,8 @@ class Config:
     # signalées par diagnostic.
     variables_retirees: list[str] = field(default_factory=list)
     plafond_jour_archives: int = 1000  # GENEALOGISTE_PLAFOND_JOUR_ARCHIVES : requêtes/hôte/jour (0 = aucun)
+    plafond_jour_defaut: int = 1000  # GENEALOGISTE_PLAFOND_JOUR_DEFAUT : autres hôtes (API…), requêtes/jour (0 = aucun)
+    plafonds_jour: dict[str, int] = field(default_factory=dict)  # GENEALOGISTE_PLAFONDS_JOUR : hote=n,… (priorité)
     offline: bool = False
     extra: dict = field(default_factory=dict)
 
@@ -285,6 +287,19 @@ def debits_par_hote(value: str | None) -> dict[str, float]:
     return out
 
 
+def plafonds_par_hote(value: str | None) -> dict[str, int]:
+    """« hote=n,hote2=n » -> {hote: n} (plafond journalier par hôte, 0 = aucun)."""
+    out: dict[str, int] = {}
+    for item in (value or "").split(","):
+        if not item.strip():
+            continue
+        hote, sep, val = item.partition("=")
+        if not sep or not hote.strip() or not val.strip():
+            raise ValueError(f"GENEALOGISTE_PLAFONDS_JOUR={value!r} : format attendu hote=requetes,hote2=requetes")
+        out[hote.strip().lower()] = entier_positif_ou_nul(val.strip(), 0, "GENEALOGISTE_PLAFONDS_JOUR")
+    return out
+
+
 def _bool(value: str | None, default: bool = False) -> bool:
     if value is None or value == "":
         return default
@@ -359,6 +374,9 @@ def load_config() -> Config:
         variables_retirees=sorted(v for v in VARIABLES_RETIREES if env(v) is not None),
         plafond_jour_archives=entier_positif_ou_nul(env("GENEALOGISTE_PLAFOND_JOUR_ARCHIVES"), 1000,
                                                     "GENEALOGISTE_PLAFOND_JOUR_ARCHIVES"),
+        plafond_jour_defaut=entier_positif_ou_nul(env("GENEALOGISTE_PLAFOND_JOUR_DEFAUT"), 1000,
+                                                  "GENEALOGISTE_PLAFOND_JOUR_DEFAUT"),
+        plafonds_jour=plafonds_par_hote(env("GENEALOGISTE_PLAFONDS_JOUR")),
         media_dir_conf=_dir(env("GENEALOGISTE_MEDIA_DIR")),
         rapports_dir_conf=_dir(env("GENEALOGISTE_RAPPORTS_DIR")),
         exports_dir_conf=_dir(env("GENEALOGISTE_EXPORTS_DIR")),

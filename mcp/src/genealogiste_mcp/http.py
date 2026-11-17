@@ -137,17 +137,24 @@ class HttpClient:
         horloge_murale: Callable[[], float] = time.time,
         jour: Callable[[], date] = date.today,
         ralentissement_max: float = 60.0,
+        politique=None,
     ):
+        from .politique_acces import PolitiqueAcces
+
         self.cache = cache
-        self.plafond = plafond  # budget.PlafondJour : plafond journalier par hôte d'archives (#157)
+        self.plafond = plafond  # budget.PlafondJour : plafond journalier par hôte, selon la politique d'accès (#211)
         self.hotes_contactes: list[str] = []  # relevé par le journal d'exploitation, remis à zéro par appel
         self.echec_ttl = echec_ttl
         self.coupe_circuit_ttl = coupe_circuit_ttl
         self.timeout = timeout
         self.duree_max = duree_max  # plafond d'attente totale d'un appel (essais + reprises)
         self.clock = clock
-        self.min_intervals = min_intervals or {}
-        self.default_interval = default_interval  # tout hôte non listé (archives, IIIF…) : jamais en rafale
+        # Politique d'accès par service (#211) : seule source de l'intervalle de chaque hôte. Sans politique
+        # (clients de test, sondes), elle est construite à partir de min_intervals / default_interval.
+        self.politique = politique or PolitiqueAcces(services={}, debits=min_intervals or {},
+                                                     debit_defaut=default_interval)
+        self.min_intervals = self.politique.intervalles_declares()
+        self.default_interval = self.politique.debit_defaut  # tout hôte non listé : jamais en rafale
         self.sleep = sleeper
         self.max_retries = max_retries
         self.offline = offline
@@ -165,8 +172,7 @@ class HttpClient:
         )
 
     def _intervalle_base(self, host: str) -> float:
-        name = self._hote(host)
-        return self.min_intervals.get(host, self.min_intervals.get(name, self.default_interval))
+        return self.politique.intervalle(host)
 
     def _facteur(self, name: str) -> float:
         if self.cache is None or not self.ralentissement_max:

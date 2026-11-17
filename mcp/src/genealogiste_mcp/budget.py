@@ -90,33 +90,49 @@ def secondes_avant_minuit(maintenant: datetime | None = None) -> float:
 
 
 class PlafondJour:
-    """Plafond de requêtes par hôte et par jour (date locale) pour les hôtes des services d'archives.
+    """Plafond de requêtes émises par hôte et par jour (date locale), pour tous les hôtes externes (#211).
 
-    ``plafond`` = 0 désactive. Un hôte est concerné s'il est (ou est un sous-domaine d') un hôte du
-    référentiel des services d'archives."""
+    Avec ``politique`` (``politique_acces.PolitiqueAcces``) : plafond de chaque hôte selon la politique d'accès
+    (archives : GENEALOGISTE_PLAFOND_JOUR_ARCHIVES ; autres : GENEALOGISTE_PLAFOND_JOUR_DEFAUT ; par hôte :
+    GENEALOGISTE_PLAFONDS_JOUR). Sans politique (compatibilité #157) : ``plafond`` pour les seuls ``hotes`` et
+    leurs sous-domaines. Un plafond de 0 désactive."""
 
-    def __init__(self, cache, plafond: int, hotes: set[str] | frozenset[str],
-                 jour: Callable[[], date] = date.today):
+    def __init__(self, cache, plafond: int = 0, hotes: set[str] | frozenset[str] = frozenset(),
+                 jour: Callable[[], date] = date.today, *, politique=None):
         self.cache = cache
         self.plafond = max(0, int(plafond or 0))
         self.hotes = frozenset(h.lower().removeprefix("www.") for h in hotes if h)
         self.jour = jour
+        self.politique = politique
+
+    def limite(self, hote: str) -> tuple[int, str]:
+        """(plafond du jour, variable qui le règle) pour ``hote`` ; 0 = aucun plafond."""
+        if self.politique is not None:
+            p = self.politique.politique(hote)
+            return p.plafond_jour, p.variable_plafond
+        h = (hote or "").lower().removeprefix("www.")
+        if self.plafond and any(h == x or h.endswith("." + x) for x in self.hotes):
+            return self.plafond, "GENEALOGISTE_PLAFOND_JOUR_ARCHIVES"
+        return 0, ""
 
     def concerne(self, hote: str) -> bool:
-        h = (hote or "").lower().removeprefix("www.")
-        return bool(self.plafond) and any(h == x or h.endswith("." + x) for x in self.hotes)
+        return bool(self.limite(hote)[0])
 
     def consommer(self, hote: str) -> None:
         """Compte une requête vers ``hote`` ; lève PlafondAtteint (sans compter) si le plafond est atteint."""
-        if not self.concerne(hote):
+        plafond, variable = self.limite(hote)
+        if not plafond:
             return
-        n = self.cache.incrementer_jour(hote.lower(), self.jour().isoformat(), self.plafond)
+        n = self.cache.incrementer_jour(hote.lower(), self.jour().isoformat(), plafond)
         if n is None:
             raise PlafondAtteint(
-                f"{hote} : plafond journalier de {self.plafond} requêtes atteint pour ce service d'archives "
-                "(GENEALOGISTE_PLAFOND_JOUR_ARCHIVES) ; aucune requête envoyée. Reprendre demain ou consulter "
-                "le registre dans le navigateur.", reessayer_apres=secondes_avant_minuit())
+                f"{hote} : plafond journalier de {plafond} requêtes atteint pour ce service ({variable}) ; "
+                "aucune requête envoyée. Reprendre demain ou consulter le service dans le navigateur.",
+                reessayer_apres=secondes_avant_minuit())
 
     def etat(self) -> dict:
-        return {"plafond": self.plafond, "jour": self.jour().isoformat(),
+        etat = {"plafond": self.plafond, "jour": self.jour().isoformat(),
                 "consomme": self.cache.compteurs_jour(self.jour().isoformat())}
+        if self.politique is not None:
+            etat["plafond"] = {"archives": self.politique.plafond_archives, "autre": self.politique.plafond_defaut}
+        return etat

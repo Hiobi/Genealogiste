@@ -179,6 +179,7 @@ def controles_locaux(a, probleme: dict | None, config) -> list[dict]:
                     if recentes else "", dernieres_erreurs=recentes))
     if a is not None:
         out.append(_controle_debit(a))
+        out.append(_controle_politique(a))
         from .tree.proposals import TTL_SECONDS
         expirees = a.tokens.expirees()  # lecture seule : le diagnostic ne modifie rien
         valides = [p for p in a.tokens._lire_tous() if p[1].get("jeton") not in expirees]
@@ -208,11 +209,28 @@ def _controle_debit(a) -> dict:
                 ralentissements=details)
 
 
+def _controle_politique(a) -> dict:
+    """Politique d'accès effective par service (#211) : intervalle, plafond/jour, concurrence, référence et
+    provenance de chaque valeur (sourcée / historique / référentiel / environnement / défaut)."""
+    pol = a.http.politique
+    services = pol.table()
+    try:
+        consomme = a.cache.compteurs_jour(a.http.jour().isoformat())
+    except Exception:  # noqa: BLE001
+        consomme = {}
+    for s in services:
+        s["consomme_aujourd_hui"] = consomme.get(s["hote"], 0)
+    resume = ", ".join(f"{s['hote']} ({s['intervalle']:g} s, {s['plafond_jour'] or 'sans'} plafond/j)"
+                       for s in services)
+    return _ctl("politique_acces", "ok", resume, services=services, defauts=pol.defauts(),
+                consomme_aujourd_hui=consomme)
+
+
 def controles_reseau(a) -> list[dict]:
     from .http import HttpClient, SourceError
 
-    client = HttpClient(a.cache, a.config.user_agent, timeout=8.0, min_intervals=a.http.min_intervals,
-                        offline=False, policy=a.http.policy, default_interval=a.http.default_interval,
+    client = HttpClient(a.cache, a.config.user_agent, timeout=8.0, politique=a.http.politique,
+                        offline=False, policy=a.http.policy,
                         max_retries=1, duree_max=15.0, echec_ttl=0, coupe_circuit_ttl=a.config.coupe_circuit,
                         sleeper=a.http.sleep, jour=a.http.jour, ralentissement_max=a.http.ralentissement_max)
     out = []
