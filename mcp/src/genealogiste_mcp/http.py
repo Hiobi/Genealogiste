@@ -45,11 +45,19 @@ def _metadonnees(exc: SourceError) -> dict:
     return {nom: getattr(exc, nom) for nom in ("bloque_antirobot", "protection", "url", "date_detection")}
 
 
+# Défi Anubis (TecharoHQ/anubis, gabarit web/index.templ) : scripts JSON `anubis_challenge` et ressources servies
+# sous /.within.website/x/cmd/anubis/. Les deux sont exigés : une page citant Anubis n'est pas un défi.
+ANUBIS_MARQUEURS = ('id="anubis_challenge"', "/.within.website/x/cmd/anubis/")
+TITRES_VERIFICATION = ("<title>security verification</title>", "<title>verify you are human</title>",
+                       "<title>vérification de sécurité</title>")
+
+
 def _protection(resp: httpx.Response) -> str | None:
-    """Signatures de défis, sans assimiler une mention de fournisseur à un blocage."""
-    if resp.status_code not in (200, 403, 503):
+    """Signatures de défis, sans assimiler une mention de fournisseur à un blocage ; lecture seule du HTML,
+    aucun script exécuté ni preuve de travail calculée."""
+    if resp.status_code < 200 or resp.status_code in (204, 304) or 300 <= resp.status_code < 400:
         return None
-    if resp.headers.get("cf-mitigated", "").lower() == "challenge":
+    if resp.status_code in (200, 403, 503) and resp.headers.get("cf-mitigated", "").lower() == "challenge":
         return "Cloudflare"
     if not resp.is_stream_consumed:
         return None
@@ -58,6 +66,11 @@ def _protection(resp: httpx.Response) -> str | None:
     if ctype not in ("text/html", "application/xhtml+xml"):
         if ctype or not corps.lstrip().startswith(("<!doctype html", "<html")):
             return None
+    # Le statut d'un défi Anubis est configurable (status_codes.CHALLENGE, 200 par défaut).
+    if all(m in corps for m in ANUBIS_MARQUEURS):
+        return "Anubis"
+    if resp.status_code not in (200, 403, 503):
+        return None
     if ("window._cf_chl_opt" in corps
             or ("/cdn-cgi/challenge-platform/" in corps
                 and any(titre in corps for titre in ("<title>just a moment", "<title>attention required",
@@ -66,10 +79,11 @@ def _protection(resp: httpx.Response) -> str | None:
                 and any(s in corps for s in ("accès refusé", "attention required")))):
         return "Cloudflare"
     if ("js.hcaptcha.com/1/api.js" in corps and "h-captcha" in corps
-            and any(s in corps for s in ("<title>security verification</title>",
-                                         "<title>verify you are human</title>",
-                                         "<title>vérification de sécurité</title>"))):
+            and any(s in corps for s in TITRES_VERIFICATION)):
         return "hCaptcha"
+    if (any(s in corps for s in ("www.google.com/recaptcha/api.js", "www.recaptcha.net/recaptcha/api.js"))
+            and "g-recaptcha" in corps and any(s in corps for s in TITRES_VERIFICATION)):
+        return "reCAPTCHA"
     if "geo.captcha-delivery.com/captcha/" in corps or "datadome.co/captcha/" in corps:
         return "DataDome"
     if "challenge-running" in corps and "checking your browser" in corps:

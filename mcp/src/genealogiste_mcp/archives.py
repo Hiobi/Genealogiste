@@ -3,7 +3,7 @@
 Chaque entrée : code, nom, type, département, site, visionneuse, NAAN ARK, mise en ligne par type de document
 (``{"naissance": {"de": 1792, "a": 1922}}`` ; absent = inconnu), inscription, demande à distance, date de
 vérification, et ``visionneuse_acces`` (famille de visionneuse : iiif_natif, editeur_ad, visionneuse_maison,
-images_statiques, authentifie ; éditeur, logiciel et version si exposée, IIIF oui/non, protection captcha/Cloudflare, date de relevé). Les
+images_statiques, authentifie ; éditeur, logiciel et version si exposée, IIIF oui/non, protection anti-robot (acces_archives.PROTECTIONS) et son relevé, date de relevé). Les
 sources et relevés sont documentés ; un relevé automatisé ne remplace pas la validation humaine
 (docs/archives.md et docs/couvertures-archives.md).
 """
@@ -210,6 +210,8 @@ def view(s: dict, document: str = "", annee: int | None = None, lieu: str = "") 
     out["acces_vps"] = ((recette(s["code"]) or {}).get("mesures") or {}).get("vps") or {
         "verdict": "inconnu", "detail": "Aucune mesure identifiée depuis le VPS ; une réussite locale ne suffit pas."}
     out["couverture_technique"] = capacites_archives.couverture(s, recette(s["code"]) or {}, document)
+    if manuel := acces_archives.consultation_manuelle(s, document):
+        out["consultation_manuelle"] = manuel
     if acces_archives.ecarte_adaptateur_service(s, document):
         out["telechargement"]["etat"] = "a_qualifier_pour_ce_type"
         out["telechargement"]["applicable_au_type"] = None

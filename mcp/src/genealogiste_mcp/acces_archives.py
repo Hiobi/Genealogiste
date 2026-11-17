@@ -7,6 +7,24 @@ from urllib.parse import urlsplit
 from .types_documents import DOCUMENTS, normaliser
 
 FAMILLES = ("iiif_natif", "editeur_ad", "visionneuse_maison", "images_statiques", "authentifie")
+# Protections anti-robot relevées sur un service (#196) ; null = aucune protection relevée.
+PROTECTIONS = ("anubis", "cloudflare", "cloudflare_hcaptcha", "hcaptcha", "recaptcha", "datadome", "attente")
+
+
+def _url_valide(reference) -> bool:
+    try:
+        url = urlsplit(reference if isinstance(reference, str) else "")
+        return bool(url.scheme in ("http", "https") and url.hostname and not url.username and not url.password)
+    except ValueError:
+        return False
+
+
+def _date_valide(valeur) -> bool:
+    try:
+        date.fromisoformat(valeur)
+    except (TypeError, ValueError):
+        return False
+    return True
 
 
 def erreurs_acces(acces, *, specifique=False) -> list[str]:
@@ -17,21 +35,19 @@ def erreurs_acces(acces, *, specifique=False) -> list[str]:
         erreurs.append("famille inconnue")
     if acces.get("iiif") is not None and not isinstance(acces["iiif"], bool):
         erreurs.append("iiif doit être un booléen ou null")
-    for champ in ("editeur", "logiciel", "version", "protection", "reference_logiciel"):
+    for champ in ("editeur", "logiciel", "version", "protection", "reference_logiciel", "protection_note"):
         if champ in acces and acces[champ] is not None and not isinstance(acces[champ], str):
             erreurs.append(f"{champ} doit être une chaîne ou null")
+    if isinstance(acces.get("protection"), str) and acces["protection"] not in PROTECTIONS:
+        erreurs.append(f"protection inconnue (valeurs : {', '.join(PROTECTIONS)})")
+    if "protection_releve_le" in acces and not _date_valide(acces["protection_releve_le"]):
+        erreurs.append("protection_releve_le doit être une date ISO")
+    if "protection_reference" in acces and not _url_valide(acces["protection_reference"]):
+        erreurs.append("protection_reference HTTP(S) sans identifiants requise")
     if specifique:
-        reference = acces.get("reference")
-        try:
-            url = urlsplit(reference if isinstance(reference, str) else "")
-            valide = url.scheme in ("http", "https") and url.hostname and not url.username and not url.password
-        except ValueError:
-            valide = False
-        if not valide:
+        if not _url_valide(acces.get("reference")):
             erreurs.append("reference HTTP(S) sans identifiants requise")
-        try:
-            date.fromisoformat(acces.get("releve_le", ""))
-        except (TypeError, ValueError):
+        if not _date_valide(acces.get("releve_le", "")):
             erreurs.append("releve_le doit être une date ISO")
         if "par_type" in acces:
             erreurs.append("par_type imbriqué interdit")
@@ -55,6 +71,28 @@ def valider(acces) -> list[str]:
                     erreurs.append(f"par_type.{document} : clé canonique de document attendue")
                 erreurs.extend(f"par_type.{document} : {e}" for e in erreurs_acces(valeur, specifique=True))
     return erreurs
+
+
+def consultation_manuelle(service: dict, document: str = "") -> dict | None:
+    """Service à protection anti-robot relevée : consultation manuelle conseillée, sans interdire un réessai."""
+    choisi = selectionner(service, document).get("acces") or {}
+    generique = service.get("visionneuse_acces") if isinstance(service.get("visionneuse_acces"), dict) else {}
+    source = choisi if "protection" in choisi else generique
+    protection = source.get("protection")
+    if not isinstance(protection, str) or not protection:
+        return None
+    out = {"protection": protection,
+           "releve_le": source.get("protection_releve_le") or source.get("releve_le"),
+           "reference": source.get("protection_reference") or source.get("reference"),
+           "consigne": ("Consultation manuelle : l'utilisateur ouvre la vue dans son navigateur et fournit une capture "
+                        "ou l'image téléchargée ; l'enregistrer avec media_enregistrer(chemin, nom, classer=true), "
+                        "puis tracer le relevé avec source_collee. Aucun contournement du défi."),
+           "reessai": ("Les outils réseau restent permis : une protection peut être levée. Un défi détecté met l'hôte "
+                       "en pause (coupe-circuit, GENEALOGISTE_COUPE_CIRCUIT) ; cache_purger(\"coupe_circuit\") "
+                       "permet un nouvel essai explicite.")}
+    if source.get("protection_note"):
+        out["note"] = source["protection_note"]
+    return {k: v for k, v in out.items() if v}
 
 
 def selectionner(service: dict, document: str = "") -> dict:

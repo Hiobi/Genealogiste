@@ -44,7 +44,11 @@ Pour savoir quelles images le plugin peut résoudre et télécharger, voir le
   il ne désigne pas nécessairement une image directement ouverte.
 - `visionneuse_acces` : accès de visionneuse relevé pour le service (`famille` parmi `iiif_natif`, `editeur_ad`,
   `visionneuse_maison`, `images_statiques`, `authentifie` ; `editeur`, `logiciel`, `iiif`, `protection`,
-  `reference`, `releve_le` facultatifs). `par_type` décrit un accès propre à un type de document quand il
+  `reference`, `releve_le` facultatifs). `protection` vaut `null` ou l'une des valeurs `anubis`, `cloudflare`,
+  `cloudflare_hcaptcha`, `hcaptcha`, `recaptcha`, `datadome`, `attente` : défi opposé aux requêtes
+  automatisées du plugin et constaté sur une ressource précise, même s'il se résout seul dans un navigateur.
+  `protection_releve_le` (date ISO), `protection_reference` (URL HTTP(S) observée) et `protection_note`
+  documentent ce constat ; `archives.validate()` refuse une autre valeur. `par_type` décrit un accès propre à un type de document quand il
   diffère (ex. matricules sur une autre application que l'état civil) :
 
   ```json
@@ -176,6 +180,32 @@ Un défi reconnu renvoie `statut: bloque_antirobot`, le service, le type de prot
 avec `source_collee` ou le téléchargement autorisé à `piece_archiver` en fichier local. Aucun
 navigateur n'est requis sur le serveur pour conserver cette attente. Les signaux et la décision sur le
 proxy sortant sont décrits dans [Sécurité](securite.md#échecs-mémorisés-coupe-circuit-caches-bornés).
+
+### Défi anti-robot et consultation manuelle — #196
+
+Signatures reconnues par `http._protection`, en lecture seule du HTML (aucun script exécuté, aucune
+preuve de travail calculée) :
+
+- **Anubis** (TecharoHQ/anubis, gabarit public `web/index.templ`) : script JSON `id="anubis_challenge"`
+  **et** ressource sous `/.within.website/x/cmd/anubis/`, dans une réponse HTML, quel que soit le statut
+  HTTP (le statut du défi est configurable, 200 par défaut). Une page qui cite Anubis ou son dépôt n'est
+  pas un défi ;
+- **Cloudflare**, **hCaptcha**, **DataDome**, page d'attente (#150) et **reCAPTCHA** interstitiel :
+  `recaptcha/api.js`, bloc `g-recaptcha` et titre de vérification (« Security verification »,
+  « Verify you are human », « Vérification de sécurité ») ; un formulaire ordinaire avec reCAPTCHA passe.
+
+L'enveloppe d'erreur ajoute alors `bloque: "anti-robot"` et une `consigne` : ne pas relancer ni résoudre
+le défi, demander à l'utilisateur une capture ou l'image téléchargée de la vue, l'enregistrer avec
+`media_enregistrer(chemin, nom, classer=true)` (nom proposé par `piece_nommer`), la lire puis tracer le
+relevé avec `source_collee`. La tentative est journalisée avec le statut `bloque_antirobot`.
+
+Un service dont la protection est connue au référentiel (ex. AD48, Anubis relevé le 2026-11-17 sur
+`https://archives.lozere.fr/`) expose `consultation_manuelle` dans `archives_service` : protection, date et
+référence du relevé, consigne et possibilité de réessai. **Choix** : les appels réseau ne sont pas refusés
+d'avance, car une protection peut être levée ou ne concerner qu'une partie du site. Le premier défi détecté
+met l'hôte en pause (coupe-circuit, `GENEALOGISTE_COUPE_CIRCUIT`, 1800 s) ; `cache_purger("coupe_circuit")`
+permet un nouvel essai explicite. Les autres services classés `anubis` par la sonde passive du
+[relevé du 2026-11-10](releves-archives-2026-11-10.md) ne sont pas reportés sans constat sur leur site.
 
 ## Localisation des registres AD59 — #121
 

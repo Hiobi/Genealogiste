@@ -24,6 +24,8 @@ Applique les skills `methodologie-gps`, `sources-francaises`, `droit-communicabi
      typique), relever l'ARK du registre ou la cote + commune + années, puis tracer avec `source_collee`.
      Ne jamais deviner une cote ni contourner un captcha.
    - En cas de `bloque_antirobot`, garder la tâche manuelle au journal et poursuivre les autres pistes.
+     Suivre la `consigne` : demander à l'utilisateur une capture ou l'image de la vue, l'enregistrer avec
+     `media_enregistrer(chemin, nom, classer=true)`, puis la transcrire (étape 5) sans réessayer le site.
 4. **Localiser la vue de l'acte** : `archives_naviguer(ark_registre, page=…)` pour parcourir les vues
    (ou la table décennale pour retrouver année et n° d'acte avant d'aller à l'acte). Pour un registre AD59
    chronologique, `archives_planche(ark_registre, de, a, pas, bandeau="pct:0,0,100,35")` : une seule image de

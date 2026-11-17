@@ -88,6 +88,15 @@ def envelope(ctx: SourceContext, source: str, operation: str, params: dict, reco
     return out
 
 
+def consigne_antirobot(protection: str | None, url: str = "") -> str:
+    """Marche à suivre quand un service oppose un défi anti-robot : la vue passe par l'utilisateur (#196)."""
+    lien = f" ({url})" if url else ""
+    return (f"Défi anti-robot{f' {protection}' if protection else ''} : ne pas relancer ni tenter de le résoudre. "
+            f"Demander à l'utilisateur d'ouvrir la vue dans son navigateur{lien} et de fournir une capture ou "
+            "l'image téléchargée de la vue ; l'enregistrer avec media_enregistrer(chemin, nom, classer=true) "
+            "(nom proposé par piece_nommer), puis la lire et tracer le relevé avec source_collee.")
+
+
 def error_envelope(ctx: SourceContext, source: str, operation: str, params: dict, exc: Exception,
                    personne: str | None = None) -> dict:
     # Les adaptateurs gardent la cause HTTP avec « raise … from exc ».
@@ -131,12 +140,13 @@ def error_envelope(ctx: SourceContext, source: str, operation: str, params: dict
         identifiant = ark.find(url) or ark.find(params.get("source") or "")
         matches = [s for s in candidats if identifiant and s.get("ark_naan") == identifiant.naan]
         service = matches[0]["code"] if len(matches) == 1 else candidats[0]["code"] if len(candidats) == 1 else hote
-        out.update(statut="bloque_antirobot", service=service, protection=cause.protection,
-                   date_detection=cause.date_detection, url=url, tache_manuelle=tache)
+        out.update(statut="bloque_antirobot", bloque="anti-robot", service=service, protection=cause.protection,
+                   date_detection=cause.date_detection, url=url, tache_manuelle=tache,
+                   consigne=consigne_antirobot(cause.protection, url))
         out["conseil"] = ("Conserver cette tâche au journal et poursuivre les autres pistes. "
                           "Quand un accès autorisé est disponible, reprendre avec source_collee ou fournir "
                           "un fichier local à piece_archiver ; ne pas relancer en boucle ni contourner le défi.")
     return out
 
 
-__all__ = ["SourceContext", "person_record", "rank", "envelope", "error_envelope", "SourceError", "DAY"]
+__all__ = ["SourceContext", "consigne_antirobot", "person_record", "rank", "envelope", "error_envelope", "SourceError", "DAY"]
