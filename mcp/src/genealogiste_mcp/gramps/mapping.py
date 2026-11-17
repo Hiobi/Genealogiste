@@ -1297,10 +1297,10 @@ class _Writer:
             obj = self.start("Media", h, mid)
             obj["private"] = m.prive
             base = self.base.get("Media", h)
-            uploaded = bool(base and base.get("checksum")) and (
-                (_attr_value(base, A_FICHIER) or base.get("path")) == m.fichier)
-            if not uploaded:  # sinon chemin, type et somme de contrôle attribués par le serveur : conservés
+            if not (base and base.get("checksum")):  # fichier pas encore reçu par le serveur
                 obj.update(path=m.fichier, mime=m.format or _mime(m.fichier))
+            elif m.format != (base.get("mime") or ""):  # fichier reçu : chemin et somme du serveur conservés (#193)
+                obj["mime"] = m.format or _mime(m.fichier)  # (nouveau contenu : renvoyé après la transaction)
             obj["desc"] = m.titre
             self.set_attrs(obj, lambda x: x == A_FICHIER, [attribute(A_FICHIER, m.fichier)] if m.fichier else [])
             obj["citation_list"] = _same_list(obj.get("citation_list") or [],
