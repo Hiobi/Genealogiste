@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import shutil
 from pathlib import Path
 
@@ -14,6 +15,29 @@ FIX = Path(__file__).parent / "fixtures"
 
 INTERNES = {"localhost": "127.0.0.1", "interne.example": "10.0.0.5", "metadata.example": "169.254.169.254",
             "rebond.example": "192.168.1.1"}
+
+
+PILOTAGE_TESTS = ("GENEALOGISTE_TEST_", "GENEALOGISTE_RECETTE_")
+
+
+@pytest.fixture(autouse=True)
+def configuration_isolee(monkeypatch, tmp_path_factory):
+    """Aucune configuration réelle : `load_config` ne lit ni le `.env` de l'utilisateur
+    (~/.local/share/genealogiste/.env) ni ses variables GENEALOGISTE_*. Le chargement d'un `.env`
+    écrit dans os.environ (setdefault) : l'environnement est restauré après chaque test pour
+    qu'aucune valeur ne fuie vers le suivant. Les variables de pilotage des recettes sont conservées."""
+    sauvegarde = dict(os.environ)
+    maison = tmp_path_factory.mktemp("maison")
+    for cle in list(os.environ):
+        if cle.startswith("GENEALOGISTE_") and not cle.startswith(PILOTAGE_TESTS):
+            monkeypatch.delenv(cle)
+    monkeypatch.setenv("HOME", str(maison))
+    for var, rel in (("XDG_DATA_HOME", ".local/share"), ("XDG_CACHE_HOME", ".cache"),
+                     ("XDG_CONFIG_HOME", ".config")):
+        monkeypatch.setenv(var, str(maison / rel))
+    yield maison
+    os.environ.clear()
+    os.environ.update(sauvegarde)
 
 
 @pytest.fixture(autouse=True)
