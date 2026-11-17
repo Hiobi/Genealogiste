@@ -34,6 +34,9 @@ de l'appel pour ne demander l'accord qu'au moment de l'écriture :
 
 - `matchid_appariement_statut` : collecte pour consulter, écriture (confirmation) si `sortie` est renseignée ;
 - `gramps_envoyer_medias` : collecte pour lister (`appliquer=false`), écriture (confirmation) avec `appliquer=true`.
+- `enquete_ouvrir` / `enquete_noter` : collecte, écriture (confirmation) quand l'appel fixe ou modifie un
+  `budget` ou rouvre une enquête (`statut: "ouverte"`) : une boucle autonome ne relève pas seule la limite
+  qui l'arrête (#157).
 
 Cas tranchés d'après le code :
 
@@ -52,8 +55,10 @@ Cas tranchés d'après le code :
   les modifications externes constatées sont commitées (ajout à l'historique), comme lors de toute lecture
   rafraîchie de l'arbre en mode gramps.
 
-La collecte n'est bornée aujourd'hui que par les **limites de débit par hôte** et le **coupe-circuit**
-anti-robot (sections ci-dessous) ; un budget de collecte par session est prévu (#157).
+La collecte est bornée par les **limites de débit par hôte**, le **coupe-circuit** anti-robot, le
+**plafond journalier par hôte d'archives** (`GENEALOGISTE_PLAFOND_JOUR_ARCHIVES`, toujours actif) et, pour
+un appel lié à une enquête, son **budget** (requêtes par hôte, images, durée d'activité, coût estimé ;
+refus avant l'envoi) — sections ci-dessous et [enquetes.md](enquetes.md#budget-et-arret-propre) (#157).
 
 `hooks/hooks.json` est **généré** depuis ce catalogue (`make hooks`, `scripts/generer_hooks.py`) : un motif
 par classe, puis un motif par outil en deux temps. Les motifs `mcp__.*genealogiste.*__…` couvrent le plugin
@@ -142,6 +147,28 @@ Ordre de priorité, du plus fort au plus faible :
 
 Le créneau est réservé sous un verrou court puis l'attente se fait hors verrou : un hôte lent ne retarde
 pas les requêtes vers les autres. Une valeur invalide arrête le démarrage avec un message nommant la variable.
+
+## Plafond journalier par hôte d'archives et budget d'enquête
+
+`budget.py`, `http.py`, `cache.py` (#157).
+
+- **Plafond journalier** : au plus `GENEALOGISTE_PLAFOND_JOUR_ARCHIVES` requêtes **émises** par jour (date
+  locale) vers chaque hôte d'un service d'archives du référentiel (`site` et `visionneuse`, sous-domaines
+  compris ; pas les services de type « autre » : matchID, Gallica, RetroNews, FranceArchives). Défaut
+  **1000**, 0 désactive. Indépendant de toute enquête, il s'applique aussi aux appels interactifs.
+  Compteur persistant dans la table `compteurs_jour` du cache SQLite (survit aux redémarrages, partagé
+  entre serveurs, transaction par requête ; jamais vidé par `cache_purger`). Une réponse servie par le cache
+  ne compte pas ; chaque essai et chaque redirection compte. Au plafond, la requête n'est **pas envoyée** :
+  enveloppe d'erreur tracée au journal, `reessayer_apres` = secondes jusqu'à minuit.
+  **Pourquoi 1000** : une vue lue coûte 1 à 3 requêtes (manifeste ou `info.json`, image) et une fenêtre de
+  navigation 1 à 2 ; 1000 requêtes permettent de feuilleter et lire plusieurs centaines de vues dans la
+  journée, plus qu'une séance humaine attentive, alors que la visionneuse du service charge elle-même des
+  dizaines de tuiles par vue. Le plafond ne gêne donc pas l'usage interactif ; il arrête une boucle
+  autonome qui feuilletterait un fonds entier. Avec le débit (1,5 s par défaut), 1000 requêtes
+  représentent au moins 25 minutes de requêtes continues.
+- **Budget d'enquête** : avec `enquete=<id>`, `recherche_multi` (et ses sources), `archives_naviguer` et
+  `archive_image` sont mesurés côté serveur ; une requête qui dépasserait le budget de l'hôte ou la durée est
+  refusée **avant l'envoi** (voir [enquetes.md](enquetes.md#budget-et-arret-propre)).
 
 ## Reprises automatiques : jamais de doublon
 

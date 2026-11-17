@@ -207,6 +207,15 @@ met l'hôte en pause (coupe-circuit, `GENEALOGISTE_COUPE_CIRCUIT`, 1800 s) ; `ca
 permet un nouvel essai explicite. Les autres services classés `anubis` par la sonde passive du
 [relevé du 2026-11-10](releves-archives-2026-11-10.md) ne sont pas reportés sans constat sur leur site.
 
+## Plafond journalier par service — #157
+
+Chaque hôte d'un service d'archives du référentiel reçoit au plus `GENEALOGISTE_PLAFOND_JOUR_ARCHIVES`
+requêtes par jour (1000 par défaut, 0 = aucun plafond), même sans enquête. Le compteur est persistant (cache
+SQLite) ; au plafond, aucune requête ne part et l'outil renvoie une erreur avec `reessayer_apres` (minuit).
+Choix et justification du défaut : [securite.md](securite.md#plafond-journalier-par-hôte-darchives-et-budget-denquête).
+Pour une enquête, le budget (`docs/enquetes.md`) borne en plus les requêtes par hôte, les images lues, la
+durée et le coût estimé.
+
 ## Localisation des registres AD59 — #121
 
 `archives_registres(service="AD59", commune="Saint-Vaast-en-Cambrésis", annee=1860, type_acte="N")`

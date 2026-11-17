@@ -8,7 +8,12 @@ Applique les skills `methodologie-gps` et `sources-francaises`.
 
 0. **État d'enquête** (`docs/enquetes.md`) : `enquete_reprendre()` liste les enquêtes ouvertes. Si l'une
    porte sur ce sujet, `enquete_reprendre(id)` et repartir de `a_faire` (ne jamais relancer `deja_fait`) ;
-   sinon `enquete_ouvrir(sujet, personnes)` et garder l'`id`.
+   sinon `enquete_ouvrir(sujet, personnes)` et garder l'`id`. Budget (requêtes par hôte, images, durée
+   d'activité, coût estimé) : défauts `GENEALOGISTE_BUDGET_*` ; si l'utilisateur en indique un dans
+   $ARGUMENTS (ex. « budget images=20 duree=15 »), le passer à `enquete_ouvrir(..., budget={"images": 20,
+   "duree_min": 15})`. Chaque réponse de collecte donne `budget.reste`. Au refus `motif: "budget"`
+   (enquête `bloque`) : s'arrêter proprement, rendre le `compte_rendu` partiel et demander à l'utilisateur
+   s'il relève le budget (`enquete_noter(id, budget={...})`) avant `enquete_reprendre(id)`.
 1. **Cadrage** : identifier le sujet (`arbre_recherche` si un nom est donné), puis `arbre_cercle(id, cercle)`
    (défaut `famille`). Les personnes présumées vivantes sont exclues de toute recherche externe.
    Annoncer en une ligne le périmètre (n personnes) avant de lancer.

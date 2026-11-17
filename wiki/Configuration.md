@@ -53,6 +53,7 @@ Les identifiants FamilySearch ne doivent plus être configurés : l’ancien exp
 | Kit Obsidian | `GENEALOGISTE_NOTES_KIT=true` par défaut : vues Bases/Dataview, modèles et extrait CSS déposés par `notes_generer("tout")` |
 | Autres emplacements de pièces | `GENEALOGISTE_MEDIA_DIR`, `GENEALOGISTE_RAPPORTS_DIR`, `GENEALOGISTE_EXPORTS_DIR`, `GENEALOGISTE_CACHE_IMAGES_DIR` ; [guide des pièces](../docs/pieces.md) |
 | Serveur HTTP | `MCP_TOKEN`, en-tête `Authorization: Bearer` ; [Docker/Portainer](Docker-et-Portainer.md) |
+| Budget d’enquête et plafond journalier | `GENEALOGISTE_BUDGET_REQUETES_HOTE` (200), `GENEALOGISTE_BUDGET_IMAGES` (40), `GENEALOGISTE_BUDGET_DUREE_MIN` (30), `GENEALOGISTE_BUDGET_COUT_TOKENS` (100000), `GENEALOGISTE_PLAFOND_JOUR_ARCHIVES` (1000 requêtes par service d’archives et par jour) ; 0 = illimité ; [enquêtes](../docs/enquetes.md) |
 | Service de source sur réseau interne | `GENEALOGISTE_HOTES_AUTORISES` ; dérogation ciblée décrite dans la [sécurité technique](../docs/securite.md) |
 
 Le [modèle de configuration](../.env.example) et les guides thématiques donnent les réglages détaillés.
