@@ -8,6 +8,7 @@ Les commandes sont des workflows guidés : elles ne dispensent pas de lire les r
 |---|---|
 | `cherche <nom> [prénom] [né vers] [lieu]` | Rechercher une personne historique dans plusieurs sources |
 | `enquete <id ou nom> [personne ou famille ou etendu] [--autonome] [budget]` | Coordonner une enquête plus large, avec recoupement et vérification ; `--autonome` : sans question, bornée par son budget, conclusions déposées dans la file pour `valide` |
+| `campagne <id ou nom ou arbre> [enquetes=N]` | Lancer sans surveillance (tâche planifiée, `claude -p`) des enquêtes autonomes sur les lacunes prioritaires : rapport daté, propositions en file, rien d’écrit dans l’arbre ; avec `GENEALOGISTE_ECRITURE=interdite` ([campagne](../docs/campagne.md)) |
 | `fiche <id ou nom>` | Lire la fiche, les faits, citations et statuts |
 | `verifie <id> [fait]` | Demander une vérification indépendante |
 | `recoupe <id1> <id2>` | Comparer deux identités et les homonymies possibles |

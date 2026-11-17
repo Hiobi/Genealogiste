@@ -53,6 +53,9 @@ class Config:
     git_remote: str = ""  # dépôt distant optionnel (privé !) du répertoire de données
     strict_evidence: bool = False
     exiger_source: bool = True  # règle de métier : pas de fait sans source sauf motif explicite
+    # GENEALOGISTE_ECRITURE (#159) : interdite = le serveur refuse tout outil de classe « ecriture » (arbre,
+    # Gramps Web, fichiers de l'utilisateur), quel que soit le mode de permission du client.
+    ecriture: str = "autorisee"
     notes_dir: Path | None = None  # notes de recherche Markdown (Obsidian) ; None = désactivées
     notes_vivants: str = "masquer"  # masquer | complet
     notes_auto: bool = True  # régénérer les fiches touchées après arbre_appliquer / journal_ajouter
@@ -195,6 +198,18 @@ def notes_auto_mode(value: str | None) -> str:
     return NOTES_AUTO[v]
 
 
+ECRITURE = {"autorisee": "autorisee", "autorisée": "autorisee", "interdite": "interdite"}
+
+
+def ecriture_mode(value: str | None) -> str:
+    v = (value or "").strip().lower()
+    if not v:
+        return "autorisee"
+    if v not in ECRITURE:
+        raise ValueError(f"GENEALOGISTE_ECRITURE={value!r} : valeurs possibles interdite | autorisee")
+    return ECRITURE[v]
+
+
 def notes_vivants_mode(value: str | None) -> str:
     v = (value or "masquer").strip().lower()
     if v not in ("masquer", "complet"):
@@ -307,6 +322,7 @@ def load_config() -> Config:
         git_remote=env("GENEALOGISTE_GIT_REMOTE", ""),
         strict_evidence=env("GENEALOGISTE_STRICT", "0") in ("1", "true", "oui"),
         exiger_source=env("GENEALOGISTE_EXIGER_SOURCE", "1") not in ("0", "false", "non"),
+        ecriture=ecriture_mode(env("GENEALOGISTE_ECRITURE")),
         offline=env("GENEALOGISTE_OFFLINE", "0") in ("1", "true", "oui"),
         notes_dir=Path(env("GENEALOGISTE_NOTES_DIR")).expanduser() if env("GENEALOGISTE_NOTES_DIR") else None,
         notes_vivants=notes_vivants_mode(env("GENEALOGISTE_NOTES_VIVANTS")),

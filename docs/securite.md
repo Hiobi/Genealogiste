@@ -25,7 +25,7 @@ de Claude Code (#153).
 | Classe | Définition | Décision | Exemples |
 |---|---|---|---|
 | Lecture | aucune écriture hors du cache et du journal internes | sans confirmation | `arbre_*` en lecture, `archives_service`, `liens_recherche`, `journal_ajouter`, `source_collee`, `pdf_markdown` |
-| Collecte | réseau et/ou écriture **additive et réversible** dans un répertoire géré par le plugin (cache, journal, pièce nouvelle archivée avec sa note) ; jamais d'écrasement ni de suppression, jamais l'arbre ni Gramps Web | sans confirmation | sources externes, `ark_resoudre`, `archive_image`, `archives_naviguer`, `archives_planche`, `piece_archiver`, `enquete_ouvrir`, `enquete_noter`, `gramps_synchroniser` |
+| Collecte | réseau et/ou écriture **additive et réversible** dans un répertoire géré par le plugin (cache, journal, pièce nouvelle archivée avec sa note) ; jamais d'écrasement ni de suppression, jamais l'arbre ni Gramps Web | sans confirmation | sources externes, `ark_resoudre`, `archive_image`, `archives_naviguer`, `archives_planche`, `piece_archiver`, `enquete_ouvrir`, `enquete_noter`, `gramps_synchroniser`, `rapport_campagne_enregistrer` |
 | Proposition | prépare une modification sans l'écrire (diff et jeton, file de propositions) | sans confirmation | `arbre_proposer`, `propositions_*`, `pieces_proposer`, `marqueurs_migrer_proposer`, `gramps_bascule_proposer`, `gramps_recalculer_notes`, `gramps_structurer_lieux` |
 | Écriture | arbre, Gramps Web, fichiers de l'utilisateur (notes, pièces existantes, exports), suppression, envoi de ses fichiers à un tiers, identifiants | confirmation demandée | `arbre_appliquer`, `pieces_appliquer`, `marqueurs_migrer_appliquer`, `rapport_enregistrer`, `media_enregistrer`, `arbre_exporter`, `notes_*`, `cache_purger`, `gramps_tirer`, `familysearch_exporter`, `matchid_appariement_csv` |
 
@@ -43,6 +43,11 @@ Cas tranchés d'après le code :
 - `piece_archiver` est une collecte : l'image est écrite sous un nom nouveau (suffixe « (n) » en cas de
   collision, jamais d'écrasement), la note compagnon n'est jamais réécrite, le registre des pièces est en ajout
   seul ; l'arbre n'est touché qu'à la proposition.
+- `rapport_campagne_enregistrer` est une collecte (#159) : fichier **nouveau** daté dans
+  `<données>/rapports/campagnes/` (suffixe `-2`, `-3`… en cas de collision, jamais d'écrasement), toujours dans
+  le répertoire de données (`GENEALOGISTE_RAPPORTS_DIR` ignoré), sans commit, push ni réseau.
+  `rapport_enregistrer` reste une écriture : il remplace un rapport existant, peut viser un dossier hors des
+  données (vault synchronisé) et commite puis pousse vers `GENEALOGISTE_GIT_REMOTE`.
 - `media_enregistrer` reste une écriture : `chemin` désigne n'importe quel fichier lisible, copié dans
   l'arborescence des pièces (souvent synchronisée) ; l'utilisateur fournit d'ailleurs lui-même ce fichier.
   En mode autonome du chercheur (#158), personne ne peut l'approuver : le repli anti-robot devient une tâche
@@ -71,6 +76,62 @@ vérifie aussi que `/genealogiste:acte` se déroule sans demande d'accord jusqu'
 vérifie que les outils cités par le mode autonome du chercheur sont tous autorisés sans confirmation et rejoue
 ce parcours jusqu'à `propositions_deposer` à travers les hooks réels. Ajouter un outil impose donc de le classer
 puis de lancer `make hooks`.
+
+## Modes d'exécution et garde-fou d'écriture
+
+Les hooks ne sont qu'une **demande** faite au client Claude Code : selon le mode de permission, l'accord
+humain exigé pour une écriture peut ne plus être demandé du tout. Le **garde-fou côté serveur** ne dépend
+pas du client (#159) :
+
+- `GENEALOGISTE_ECRITURE=autorisee` (défaut) | `interdite` ; toute autre valeur est une erreur de
+  configuration (`cause: configuration`, `variable: GENEALOGISTE_ECRITURE`).
+- Avec `interdite`, le serveur refuse **avant tout effet** chaque appel de classe *écriture* du catalogue
+  (`outils.OUTILS`) : `arbre_appliquer` (donc aussi les écritures Gramps Web en mode gramps),
+  `pieces_appliquer`, `marqueurs_migrer_appliquer`, `gramps_tirer`, `gramps_bascule_appliquer`,
+  `rapport_enregistrer`, `media_enregistrer`,
+  `arbre_exporter`, `notes_*`, `cache_purger`, `matchid_appariement_csv`, `familysearch_exporter`… et, pour
+  les outils en deux temps (`CONDITIONS`), **seulement la branche écriture** : `gramps_envoyer_medias` avec
+  `appliquer=true`, `matchid_appariement_statut` avec `sortie`, `enquete_ouvrir` / `enquete_noter` qui
+  fixent un `budget` ou rouvrent une enquête. Le motif est celui du hook, appliqué aux arguments de l'appel.
+  Réponse : `{"erreur": …, "refus": "ecriture_interdite", "outil": …, "remede": …}`.
+- La liste n'est écrite nulle part en dur : l'enveloppe est posée par `ServeurMCP.tool` sur **chaque** outil
+  enregistré (aussi quand la fonction est appelée directement, hors protocole MCP) et consulte la classe du
+  catalogue ; un outil d'écriture ajouté plus tard est couvert dès son classement.
+- Lecture, collecte et proposition restent permises : sources, archives, `piece_archiver`, `enquete_*` sans
+  budget, `propositions_deposer`, `arbre_proposer`, `journal_ajouter`, `rapport_campagne_enregistrer`.
+- Tests : `tests/test_ecriture_interdite.py` appelle chaque outil d'écriture directement (sans hooks) et
+  vérifie le refus et l'absence de toute modification de fichier ; il vérifie aussi que les autres classes
+  passent, que le serveur et le hook tranchent la même branche des outils en deux temps, et que l'enveloppe ne
+  change aucun schéma exposé.
+
+**Tableau des modes.** « Vérifié » : établi par les tests du dépôt (sortie réelle des hooks, refus du
+serveur) ou cité de la documentation officielle de Claude Code
+([hooks](https://code.claude.com/docs/en/hooks), [permissions](https://code.claude.com/docs/en/permissions),
+[mode non interactif](https://code.claude.com/docs/en/headless), consultées le 2026-11-17). « Supposé » :
+déduit de cette documentation, **non vérifié en réel** (aucune session `claude` lancée pour ce tableau).
+
+| Mode | Lecture, collecte, proposition | Écriture, sans garde-fou (`autorisee`) | Écriture avec `GENEALOGISTE_ECRITURE=interdite` |
+|---|---|---|---|
+| Interactif (mode Manual par défaut) | permises sans demande : le hook répond `allow` (vérifié : tests ; doc : le hook passe avant l'invite) | **demandée** : le hook répond `ask`, l'utilisateur voit la raison et accepte ou refuse (vérifié : sortie du hook ; doc) | **refusée** par le serveur, même si l'utilisateur accepte (vérifié : tests) |
+| `claude -p` (Manual, sans hôte de permission) | permises (hook `allow`) ; les commandes de plugin `/genealogiste:…` sont développées en `-p` (doc) | **refusée** par le client : en `-p`, un appel qui demande un accord est refusé si rien ne l'approuve (doc) ; qu'un `ask` de hook soit traité ainsi est **supposé** | refusée par le serveur (vérifié) |
+| `claude -p --permission-mode dontAsk` + profil minimal (`make profil-campagne`) | permises par les règles `allow` du profil (doc : `dontAsk` laisse passer ce qui est pré-approuvé) | **refusée** : règles `deny` du profil, évaluées quels que soient les hooks (doc) ; outils en deux temps : branche écriture `ask` → refusée par `dontAsk` (**supposé**) | refusée par le serveur (vérifié) |
+| Sous-agent (`chercheur`, `verificateur`… lancés par une commande) | mêmes décisions : les hooks de plugin s'exécutent aussi dans les sous-agents (doc) | comme la session parente : demandée en interactif, refusée en `-p` (**supposé** : héritage du mode de la session) | refusée par le serveur (vérifié) |
+| Sans confirmation (`--dangerously-skip-permissions`, `bypassPermissions`) | permises | **probablement exécutée sans accord** : le mode saute les invites (doc) ; qu'un `ask` de hook soit lui aussi sauté est **supposé** ; une règle `deny` des réglages devrait encore bloquer (**supposé**) | **refusée** par le serveur : seule garantie dans ce mode (vérifié) |
+| `--bare` (scripts) | les hooks d'un plugin ne s'exécutent pas en mode bare (doc) : il faut des règles `allow` | aucun hook : dépend des seules règles et du mode (en `-p`, refus de ce qui demanderait un accord, **supposé**) | refusée par le serveur (vérifié) |
+| Autre client MCP (serveur HTTP Docker, Codex) | selon la politique du client | **aucun hook Claude** : selon le client (Codex : approbation native de chaque outil, [adaptation-codex.md](adaptation-codex.md)) | refusée par le serveur (vérifié) |
+
+Le mode plan ignore un `allow` de hook pour tout appel qui n'est pas en lecture seule (doc) ; une extension
+(mod) installée peut approuver un appel bloqué par un hook dans certaines configurations (doc). Conséquence :
+**toute session sans surveillance** (`claude -p`, cron, `bypassPermissions`, sous-agent d'une telle session)
+doit tourner avec `GENEALOGISTE_ECRITURE=interdite` dans l'environnement du **serveur** ; les conclusions vont
+dans la file (`propositions_deposer`) et sont appliquées plus tard, après accord, par `/genealogiste:valide`
+dans une session surveillée lancée avec `autorisee`. Un budget d'enquête ne peut pas être fixé ni relevé
+dans une telle session (branche écriture d'`enquete_ouvrir` / `enquete_noter`) : il vient des défauts
+`GENEALOGISTE_BUDGET_*` fixés par l'humain dans l'environnement de la tâche. Ce budget ne compte que
+`recherche_multi`, `archives_naviguer` et `archive_image` (avec `enquete=<id>`) ; les autres outils de
+collecte restent bornés, dans tous les modes, par le débit par hôte, le coupe-circuit anti-robot et le plafond
+journalier des archives (côté serveur, indépendants du client). Exemple planifié :
+[campagne.md](campagne.md).
 
 ## Personnes vivantes : rien vers l'extérieur
 

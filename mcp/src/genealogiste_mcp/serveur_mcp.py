@@ -2,6 +2,8 @@
 déclarés dans sans_verrou, qui ne doivent pas attendre une écriture longue (#151) — et entretient la connexion
 par un battement de progression pendant les appels longs."""
 
+import functools
+import inspect
 import json
 import logging
 from typing import Any
@@ -27,6 +29,36 @@ class ServeurMCP(MCPServer):
         self.intervalle_battement = 15.0
         # Observateur d'appels (journal d'exploitation, #149) : avant() -> jeton, apres(jeton, ...).
         self.observateur = None
+        # Garde-fou d'appel (#159) : garde(nom, fn, args, kwargs) -> réponse de refus ou None, appelé avant la
+        # fonction de l'outil, y compris quand elle est appelée directement (hors protocole MCP).
+        self.garde = None
+
+    def tool(self, name: str | None = None, *args: Any, **kwargs: Any):
+        """Comme MCPServer.tool, en enveloppant la fonction par le garde-fou ; la signature exposée (schéma
+        d'entrée, description) est celle de la fonction d'origine (functools.wraps)."""
+        if callable(name):
+            return super().tool(name)  # usage incorrect : message du SDK
+        enregistrer = super().tool(name, *args, **kwargs)
+
+        def decorer(fn):
+            nom = name or fn.__name__
+            if inspect.iscoroutinefunction(fn):
+                @functools.wraps(fn)
+                async def garde_async(*a, **kw):
+                    if self.garde is not None and (refus := self.garde(nom, fn, a, kw)) is not None:
+                        return refus
+                    return await fn(*a, **kw)
+                enveloppe = garde_async
+            else:
+                @functools.wraps(fn)
+                def garde_sync(*a, **kw):
+                    if self.garde is not None and (refus := self.garde(nom, fn, a, kw)) is not None:
+                        return refus
+                    return fn(*a, **kw)
+                enveloppe = garde_sync
+            enregistrer(enveloppe)
+            return enveloppe
+        return decorer
 
     async def call_tool(self, name: str, arguments: dict[str, Any],
                         context: Context | None = None) -> CallToolResult | InputRequiredResult:
