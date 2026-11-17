@@ -1537,10 +1537,16 @@ def notes_ajouter(id: str, texte: str, section: str = "note") -> dict:
 
 @mcp.tool()
 def cache_purger(source: str = "") -> dict:
-    """Vide le cache SQLite (tout, ou une catégorie). Catégories : matchid, wikitree, gallica, wikidata, geo,
-    cog, archives, ark, iiif, visionneuse ; echec (échecs mémorisés sans source) ; coupe_circuit (lève la pause
-    d'un hôte après blocage anti-robot). Les échecs mémorisés d'une source partent avec elle. Purge aussi les
-    entrées expirées et applique les plafonds de taille (GENEALOGISTE_CACHE_MAX_MO, _CACHE_IMAGES_MAX_MO)."""
+    """Vide le cache SQLite des réponses (tout si source est vide, sinon une catégorie). Catégories : matchid,
+    wikitree, gallica, wikidata, geo, cog, archives, ark, iiif, visionneuse ; echec (échecs mémorisés sans
+    source) ; coupe_circuit (lève la pause de tous les hôtes mis en pause après un défi anti-robot, durée
+    GENEALOGISTE_COUPE_CIRCUIT, pour permettre un nouvel essai explicite). Les échecs mémorisés d'une source
+    partent avec elle ; un nom inconnu ne supprime rien. Purge aussi les entrées expirées et applique les plafonds
+    de taille : GENEALOGISTE_CACHE_MAX_MO au cache SQLite (plus anciennes entrées d'abord) et
+    GENEALOGISTE_CACHE_IMAGES_MAX_MO au dossier cache-images (plus anciennes images d'abord), qui n'est jamais
+    vidé par catégorie. Les médias archivés et l'arbre ne sont pas touchés.
+    Renvoie supprimes (entrées de la catégorie ou de tout le cache), images_supprimees (fichiers retirés de
+    cache-images par le plafond) et restant (entrées par catégorie)."""
     a = app()
     supprimes = a.cache.purge(source or None)
     a.cache.borner()

@@ -19,6 +19,7 @@ Les commandes sont des workflows guidés : elles ne dispensent pas de lire les r
 | `fusionne` | Préparer une fusion après analyse des identités ; jamais automatique |
 | `import <chemin.ged> [ajouter ou remplacer]` | Proposer l’import d’un GEDCOM obtenu séparément |
 | `export <format> [id] [générations] [chemin]` | Produire un [export](Exports.md), masqué par défaut |
+| `acte <id ou nom> [naissance ou mariage ou deces]` | Trouver le registre d’un acte, y repérer la vue, la transcrire et l’archiver ; registre cherché automatiquement pour les AD59 seulement, ailleurs cote ou ARK relevés sur le site du service |
 | `transcris <image>` | Aider à lire un acte et relever les données, avec les incertitudes |
 | `organise <dossier> [triage]` | Proposer le classement et renommage de pièces, sans suppression |
 | `preuve <id> [fait]` | Rédiger un rapport argumenté sur une conclusion |
