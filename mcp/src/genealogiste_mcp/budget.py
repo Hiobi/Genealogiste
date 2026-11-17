@@ -3,14 +3,15 @@
 - **Mesure** : un appel d'outil de collecte lié à une enquête s'exécute dans ``mesurer(garde)``. Le client HTTP
   appelle ``avant_envoi(hote)`` avant chaque requête réellement émise (essais et redirections compris ; une
   réponse servie par le cache n'émet rien et ne compte pas) : la garde lève ``BudgetEpuise`` AVANT l'envoi
-  quand le budget de l'hôte ou la durée est atteint ; sinon la requête est comptée par hôte.
+  quand le budget de l'hôte est atteint ; sinon la requête est comptée par hôte. Tous les outils réseau de
+  collecte du catalogue y passent avec enquete=<id> (#211). Le budget arrête une boucle d'enquête ; il ne mesure
+  ni la durée ni le coût réel, plafonné côté client (--max-budget-usd).
 - **Plafond journalier** (``PlafondJour``) : indépendant des enquêtes, persistant entre redémarrages (table
   ``compteurs_jour`` du cache SQLite, jamais vidée par ``cache_purger``), partagé entre serveurs.
 """
 
 from __future__ import annotations
 
-import time
 from collections import Counter
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
@@ -21,10 +22,9 @@ from datetime import date, datetime, timedelta
 from .http import SourceError
 
 # Dimensions d'un budget d'enquête : 0 = illimité.
-LIMITES = ("requetes_par_hote", "images", "duree_min", "cout_tokens")
-CARACTERES_PAR_TOKEN = 4  # ordre de grandeur du coût d'une réponse texte pour le modèle
-
-horloge: Callable[[], float] = time.monotonic  # remplaçable dans les tests
+LIMITES = ("requetes_par_hote", "images")
+# Retirées (#211) : ignorées dans les enquêtes existantes et dans les budgets reçus.
+RETIREES = ("duree_min", "cout_tokens")
 
 
 class BudgetEpuise(SourceError):
@@ -44,11 +44,7 @@ class PlafondAtteint(SourceError):
 class Mesure:
     garde: Callable[[str, Mesure], None] | None = None
     requetes: Counter = field(default_factory=Counter)
-    debut: float = field(default_factory=lambda: horloge())
     refus: BudgetEpuise | None = None
-
-    def duree(self) -> float:
-        return max(0.0, horloge() - self.debut)
 
 
 _MESURE: ContextVar[Mesure | None] = ContextVar("genealogiste_mesure_budget", default=None)
@@ -83,10 +79,6 @@ def compter(hote: str) -> None:
     m = _MESURE.get()
     if m is not None:
         m.requetes[hote] += 1
-
-
-def tokens_texte(texte: str) -> int:
-    return -(-len(texte) // CARACTERES_PAR_TOKEN)
 
 
 # ---------------------------------------------------------------------------- plafond journalier

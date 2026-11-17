@@ -1,5 +1,6 @@
-"""#157 : budget par enquête (requêtes par hôte, images, durée, coût estimé) avec arrêt propre, et plafond
-journalier par hôte des services d'archives."""
+"""#157, #211 : budget par enquête (requêtes par hôte, images) avec arrêt propre, et plafond journalier par
+hôte des services d'archives. Durée et coût estimé ne sont plus des limites (#211) : le coût réel se plafonne
+côté client (--max-budget-usd)."""
 
 from __future__ import annotations
 
@@ -40,26 +41,45 @@ def _fichier(app, eid):
 def test_defauts_prudents_et_variables_d_environnement(monkeypatch, tmp_path):
     monkeypatch.setenv("GENEALOGISTE_DATA_DIR", str(tmp_path))
     cfg = load_config()
-    assert cfg.budget_defaut() == {"requetes_par_hote": 200, "images": 40, "duree_min": 30.0,
-                                   "cout_tokens": 100_000}
+    assert cfg.budget_defaut() == {"requetes_par_hote": 200, "images": 40}
+    assert cfg.variables_retirees == []
     assert cfg.plafond_jour_archives == 1000
     monkeypatch.setenv("GENEALOGISTE_BUDGET_IMAGES", "5")
     monkeypatch.setenv("GENEALOGISTE_BUDGET_REQUETES_HOTE", "0")
     monkeypatch.setenv("GENEALOGISTE_PLAFOND_JOUR_ARCHIVES", "300")
     cfg = load_config()
     assert cfg.budget_images == 5 and cfg.budget_requetes_hote == 0 and cfg.plafond_jour_archives == 300
-    monkeypatch.setenv("GENEALOGISTE_BUDGET_COUT_TOKENS", "-1")
-    with pytest.raises(ValueError, match="GENEALOGISTE_BUDGET_COUT_TOKENS"):
+    monkeypatch.setenv("GENEALOGISTE_BUDGET_IMAGES", "-1")
+    with pytest.raises(ValueError, match="GENEALOGISTE_BUDGET_IMAGES"):
         load_config()
+
+
+def test_variables_retirees_ignorees_et_signalees(monkeypatch, tmp_path):
+    """#211 : GENEALOGISTE_BUDGET_DUREE_MIN et GENEALOGISTE_BUDGET_COUT_TOKENS sont ignorées, même invalides,
+    et signalées par diagnostic."""
+    from genealogiste_mcp import diagnostic
+
+    monkeypatch.setenv("GENEALOGISTE_DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("GENEALOGISTE_BUDGET_COUT_TOKENS", "-1")
+    monkeypatch.setenv("GENEALOGISTE_BUDGET_DUREE_MIN", "20")
+    cfg = load_config()
+    assert cfg.budget_defaut() == {"requetes_par_hote": 200, "images": 40}
+    assert cfg.variables_retirees == ["GENEALOGISTE_BUDGET_COUT_TOKENS", "GENEALOGISTE_BUDGET_DUREE_MIN"]
+    conf = next(c for c in diagnostic.controles_locaux(None, None, cfg) if c["controle"] == "configuration")
+    assert conf["etat"] == "attention" and "GENEALOGISTE_BUDGET_DUREE_MIN" in conf["detail"]
+    assert "--max-budget-usd" in conf["remede"]
 
 
 def test_budget_declare_a_l_ouverture_et_modifiable(app):
     e = server.enquete_ouvrir("Naissance de Jean", budget={"images": 3})
     assert e["budget"] == {**app.config.budget_defaut(), "images": 3}
-    assert e["consomme"] == {"requetes": {}, "images": 0, "duree_s": 0.0, "cout_tokens": 0}
-    server.enquete_noter(e["id"], budget={"cout_tokens": 5000, "duree_min": 0})
+    assert e["consomme"] == {"requetes": {}, "images": 0}
+    server.enquete_noter(e["id"], budget={"images": 5, "requetes_par_hote": 0})
     etat = server.enquete_etat(e["id"])
-    assert etat["budget"]["cout_tokens"] == 5000 and etat["budget"]["duree_min"] == 0
+    assert etat["budget"] == {"requetes_par_hote": 0, "images": 5}
+    # clés retirées (#211) : ignorées sans erreur
+    assert "erreur" not in server.enquete_noter(e["id"], budget={"cout_tokens": 5000, "duree_min": 1})
+    assert server.enquete_etat(e["id"])["budget"] == {"requetes_par_hote": 0, "images": 5}
     assert "erreur" in server.enquete_noter(e["id"], budget={"inconnu": 1})
     assert "erreur" in server.enquete_noter(e["id"], budget={"images": -2})
     assert "erreur" in server.enquete_ouvrir("x", budget={"images": "beaucoup"})
@@ -73,7 +93,7 @@ def test_reste_du_budget_renvoye_et_cache_non_compte(app, routes):
     r1 = server.recherche_multi("Dupont", "Jean", sources=["matchid"], enquete=eid)
     assert route.call_count == 1
     assert r1["budget"]["reste"]["requetes_par_hote"][MATCHID_HOTE] == 4
-    assert r1["budget"]["reste"]["cout_tokens"] < 100_000  # réponse texte comptée
+    assert set(r1["budget"]["reste"]) == {"requetes_par_hote", "requetes_autre_hote", "images"}
     r2 = server.recherche_multi("Dupont", "Jean", sources=["matchid"], enquete=eid)  # servie par le cache
     assert route.call_count == 1
     assert r2["budget"]["reste"]["requetes_par_hote"][MATCHID_HOTE] == 4
@@ -91,8 +111,9 @@ def test_navigation_et_images_consomment(app, routes):
     img = server.archive_image(MANIFEST, page=1, enquete=eid)
     assert image.call_count == 1
     consomme = server.enquete_etat(eid)["consomme"]
-    assert consomme["images"] == 1 and consomme["cout_tokens"] > 0 and consomme["duree_s"] >= 0
+    assert consomme["images"] == 1 and set(consomme) == {"requetes", "images"}
     assert img["budget"]["reste"]["images"] == 39
+    assert img["cout_estime_tokens"] > 0  # information seulement, aucune limite (#211)
 
 
 # ---------------------------------------------------------------------------- épuisement : arrêt propre
@@ -151,22 +172,33 @@ def test_images_epuisees_refus_avant_telechargement(app, routes):
     assert server.enquete_etat(eid)["reste_a_faire"][0]["parametres"]["page"] == 2
 
 
-def test_cout_estime_refuse_une_image_trop_chere(app, routes):
+def test_cout_estime_n_est_plus_une_limite(app, routes):
     image = mock_iiif(routes)
-    eid = server.enquete_ouvrir("Naissance", budget={"cout_tokens": 50})["id"]
-    r = server.archive_image(MANIFEST, page=1, largeur=1500, enquete=eid)
-    assert r["limite"] == "cout_tokens" and not image.called
-    assert not routes.calls  # même le manifeste n'est pas demandé
+    eid = server.enquete_ouvrir("Naissance", budget={"images": 5})["id"]
+    r = server.archive_image(MANIFEST, page=1, largeur=2000, enquete=eid)
+    assert "refus" not in r and image.call_count == 1 and r["cout_estime_tokens"] > 0
 
 
-def test_duree_cumulee_epuisee(app, routes):
+def test_enquete_existante_avec_cles_retirees(app, routes):
+    """Un fichier d'enquête antérieur (#157) qui contient duree_min, cout_tokens, duree_s ou un blocage sur une
+    limite retirée est lu sans erreur : ces clés sont ignorées."""
     route = mock_matchid(routes)
-    eid = server.enquete_ouvrir("Décès", budget={"duree_min": 1})["id"]
+    eid = server.enquete_ouvrir("Ancienne")["id"]
     e = json.loads(_fichier(app, eid).read_text(encoding="utf-8"))
-    e["consomme"]["duree_s"] = 61.0
+    e["budget"] = {"requetes_par_hote": 5, "images": 3, "duree_min": 1.0, "cout_tokens": 10}
+    e["consomme"] = {"requetes": {}, "images": 1, "duree_s": 600.0, "cout_tokens": 999}
+    e["statut"] = "bloque"
+    e["blocage"] = {"motif": "budget", "limite": "duree_min", "date": "2026-11-01", "message": "durée"}
     _fichier(app, eid).write_text(json.dumps(e), encoding="utf-8")
     r = server.recherche_multi("Dupont", sources=["matchid"], enquete=eid)
-    assert r["limite"] == "duree_min" and not route.called
+    assert "refus" not in r and route.call_count == 1
+    assert r["budget"]["limites"] == {"requetes_par_hote": 5, "images": 3}
+    assert r["budget"]["consomme"] == {"requetes": {MATCHID_HOTE: 1}, "images": 1}
+    etat = server.enquete_etat(eid)
+    assert etat["statut"] == "ouverte" and "blocage" not in etat
+    assert set(etat["budget"]) == {"requetes_par_hote", "images"}
+    assert set(etat["consomme"]) == {"requetes", "images"}
+    assert server.enquete_reprendre(eid)["budget"]["limites"] == {"requetes_par_hote": 5, "images": 3}
 
 
 def test_zero_signifie_illimite(app, routes):

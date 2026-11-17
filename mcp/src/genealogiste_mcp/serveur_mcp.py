@@ -32,6 +32,13 @@ class ServeurMCP(MCPServer):
         # Garde-fou d'appel (#159) : garde(nom, fn, args, kwargs) -> réponse de refus ou None, appelé avant la
         # fonction de l'outil, y compris quand elle est appelée directement (hors protocole MCP).
         self.garde = None
+        # Budget d'enquête (#211) : outils (noms) dont l'enveloppe accepte le paramètre facultatif « enquete »
+        # (ajouté à la signature exposée s'il manque) et, quand il est fourni, délègue l'appel à
+        # mesure(nom, fn, args, kwargs, enquete) qui l'exécute sous la mesure du budget. À fixer AVANT
+        # l'enregistrement des outils ; un outil qui déclare lui-même « enquete » le gère seul.
+        self.avec_enquete: set[str] | frozenset[str] = frozenset()
+        self.mesure = None
+        self.doc_enquete = ""
 
     def tool(self, name: str | None = None, *args: Any, **kwargs: Any):
         """Comme MCPServer.tool, en enveloppant la fonction par le garde-fou ; la signature exposée (schéma
@@ -42,6 +49,9 @@ class ServeurMCP(MCPServer):
 
         def decorer(fn):
             nom = name or fn.__name__
+            enquete = nom in self.avec_enquete and "enquete" not in inspect.signature(fn).parameters
+            if enquete and inspect.iscoroutinefunction(fn):
+                raise TypeError(f"{nom} : paramètre enquete ajouté par l'enveloppe, outil asynchrone non pris en charge")
             if inspect.iscoroutinefunction(fn):
                 @functools.wraps(fn)
                 async def garde_async(*a, **kw):
@@ -52,10 +62,18 @@ class ServeurMCP(MCPServer):
             else:
                 @functools.wraps(fn)
                 def garde_sync(*a, **kw):
+                    eid = kw.pop("enquete", "") if enquete else ""
                     if self.garde is not None and (refus := self.garde(nom, fn, a, kw)) is not None:
                         return refus
+                    if eid and self.mesure is not None:
+                        return self.mesure(nom, fn, a, kw, eid)
                     return fn(*a, **kw)
                 enveloppe = garde_sync
+                if enquete:
+                    sig = inspect.signature(fn, eval_str=True)
+                    param = inspect.Parameter("enquete", inspect.Parameter.KEYWORD_ONLY, default="", annotation=str)
+                    enveloppe.__signature__ = sig.replace(parameters=[*sig.parameters.values(), param])
+                    enveloppe.__doc__ = (fn.__doc__ or "").rstrip() + "\n    " + self.doc_enquete
             enregistrer(enveloppe)
             return enveloppe
         return decorer

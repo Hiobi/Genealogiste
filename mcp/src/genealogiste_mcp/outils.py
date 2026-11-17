@@ -233,6 +233,16 @@ def profil_sans_surveillance(prefixe: str = PREFIXE_PLUGIN) -> dict:
     return {"permissions": {"defaultMode": "dontAsk", "allow": ["Agent", *allow], "deny": deny}}
 
 
+# Budget d'enquête (#157, #211) : tout outil réseau de classe collecte accepte enquete=<id> et ses requêtes émises
+# comptent dans le budget de l'enquête (requêtes par hôte ; images lues). Exemptions motivées :
+HORS_BUDGET = {
+    "diagnostic": "contrôle de santé (une requête par source, sans donnée de personne), hors boucle d'enquête",
+    "gramps_recherche": "serveur Gramps Web de l'utilisateur, client HTTP distinct (requêtes non mesurées)",
+    "gramps_personne": "serveur Gramps Web de l'utilisateur, client HTTP distinct (requêtes non mesurées)",
+}
+BUDGET_ENQUETE = frozenset(n for n, (effet, classe) in OUTILS.items()
+                           if effet == RESEAU and classe == COLLECTE and n not in HORS_BUDGET)
+
 # Outils réseau qui envoient des noms, un texte libre ou un identifiant de personne : garde « vivants » obligatoire.
 GARDE_VIVANTS = {"matchid_recherche", "matchid_appariement_csv", "wikitree_recherche", "gallica_recherche",
                  "gallica_recherche_document", "wikidata_personne", "wikidata_sparql", "recherche_multi",

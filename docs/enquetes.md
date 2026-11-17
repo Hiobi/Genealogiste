@@ -29,7 +29,7 @@ notée.
 | registre | `id` (`r1`…), `source` (ARK, URL de visionneuse ou manifeste), `cle` (ARK du registre sans vue), `service`, `cote`, `titre`, `piste`, `nb_vues`, `bornes` `[de, a]`, `vues_lues` (intervalles fusionnés), `lectures` (`{vue, date, type, numero, note}`), `verdict`, `statut`, `journal` |
 | tâche manuelle | `id` (`t1`…), `description`, `service`, `piste`, `statut` (`a_faire` / `faite` / `abandonnee`) |
 | requête faite | `outil`, `parametres`, `cle` normalisée, `date`, `resultat` (`positif` / `negatif` / `erreur` / `manuel`), `journal` |
-| budget | `budget` (limites), `consomme` (`requetes` par hôte, `images`, `duree_s`, `cout_tokens`), `blocage` (`motif`, `limite`, `date`, `message`), `reste_a_faire` (`outil`, `parametres`, `cle`, `date`, `limite`) |
+| budget | `budget` (limites), `consomme` (`requetes` par hôte, `images`), `blocage` (`motif`, `limite`, `date`, `message`), `reste_a_faire` (`outil`, `parametres`, `cle`, `date`, `limite`) |
 
 Statuts d'une piste ou d'un registre, sans accents comme les outils : `a_faire`, `en_cours`, `trouve`,
 `negatif`, `bloque`, `manuel`. `trouve` et `negatif` ferment l'élément ; `bloque` et `manuel` le gardent
@@ -49,39 +49,53 @@ Ces outils sont locaux : lecture (`enquete_etat`, `enquete_reprendre`) ou trace 
 sans confirmation (voir les classes de permission dans `docs/securite.md`), sauf pour fixer ou modifier un
 `budget` ou rouvrir une enquête (`statut: "ouverte"`) : confirmation demandée par le hook (#157).
 
-`recherche_multi`, `archives_naviguer` et `archive_image` acceptent un paramètre facultatif
-`enquete=<id>` : la demande est notée dans l'état (fenêtre parcourue et nombre de vues pour une navigation,
-vue consultée pour une image, résultat et entrées de journal pour une recherche). Sans ce paramètre, rien ne
-change pour ces outils, sinon l'indication ci-dessous.
+Tous les outils réseau de collecte (catalogue `outils.BUDGET_ENQUETE` : `recherche_multi`,
+`archives_naviguer`, `archives_registres`, `archives_planche`, `archive_image`, `piece_archiver`,
+`ark_resoudre`, `matchid_recherche`, `wikitree_*`, `gallica_*`, `wikidata_*`, `geo_*`) acceptent un paramètre
+facultatif `enquete=<id>` qui les fait compter dans le budget de l'enquête (#211). Exemptés, motif à l'appui
+dans `outils.HORS_BUDGET` : `diagnostic` (contrôle de santé) et `gramps_recherche` / `gramps_personne`
+(serveur Gramps Web de l'utilisateur). En plus, `recherche_multi`, `archives_naviguer` et `archive_image`
+notent la demande dans l'état (fenêtre parcourue et nombre de vues pour une navigation, vue consultée pour
+une image, résultat et entrées de journal pour une recherche). Sans ce paramètre, rien ne change pour ces
+outils, sinon l'indication ci-dessous.
 
 ## Budget et arrêt propre
 
 Chaque enquête porte un budget (#157), déclaré à `enquete_ouvrir(..., budget={...})` et modifiable par
-`enquete_noter(id, budget={...})`. Dimensions (0 = illimité) :
+`enquete_noter(id, budget={...})`. Il **arrête une boucle d'enquête** ; il ne ménage pas les sites et ne
+plafonne pas le coût. Dimensions (0 = illimité) :
 
 | Limite | Défaut | Variable | Compté |
 |---|---|---|---|
 | `requetes_par_hote` | 200 | `GENEALOGISTE_BUDGET_REQUETES_HOTE` | requêtes réellement émises vers chaque hôte |
-| `images` | 40 | `GENEALOGISTE_BUDGET_IMAGES` | `archive_image` réussis (vue ou recadrage lus par le modèle) |
-| `duree_min` | 30 | `GENEALOGISTE_BUDGET_DUREE_MIN` | minutes d'**activité cumulée** des outils de collecte |
-| `cout_tokens` | 100 000 | `GENEALOGISTE_BUDGET_COUT_TOKENS` | `cout_estime_tokens` des images + texte des réponses (≈ 4 caractères par token) |
+| `images` | 40 | `GENEALOGISTE_BUDGET_IMAGES` | `archive_image` réussis (vue ou recadrage lus par le modèle) et `archives_planche` réussies (une planche) |
 
-**Compté côté serveur, pas déclaré** : un appel de `recherche_multi` (et des sources qu'il interroge),
-`archives_naviguer` ou `archive_image` avec `enquete=<id>` s'exécute sous une mesure ; le client HTTP compte
-chaque requête émise par hôte (essais et redirections compris). Une réponse servie par le cache ne consomme
-aucune requête (son texte reste compté dans le coût). Chaque réponse porte `budget` : `limites`, `consomme`
-et `reste` (par hôte contacté, `requetes_autre_hote` pour un hôte encore jamais contacté).
+Trois préoccupations, trois mécanismes (#211) :
 
-**Durée = activité cumulée**, non le temps écoulé depuis l'ouverture : une enquête reprise après une
-interruption (limite d'usage, nuit, redémarrage) ne perd pas son budget pendant l'attente ; seul le temps
-passé dans les outils de collecte (attentes de débit et reprises comprises) est décompté.
+| Préoccupation | Où | Actif |
+|---|---|---|
+| ménager les sites | couche réseau du serveur, tous les outils : intervalle par hôte, ralentissement après 429/503, plafond journalier, coupe-circuit anti-robot ([securite.md](securite.md)) | toujours |
+| arrêter une boucle d'enquête | budget d'enquête : `images`, `requetes_par_hote` | avec `enquete=<id>` |
+| plafonner le coût réel | client : `claude -p … --max-budget-usd` | à fixer pour toute campagne ([campagne.md](campagne.md)) |
+
+Les anciennes limites `duree_min` et `cout_tokens` sont retirées : la durée ne mesurait que le temps passé
+dans les outils, et le coût estimé sous-estimait fortement le coût réel (raisonnement, contexte). Une enquête
+existante qui les contient est lue sans erreur : ces clés (et `duree_s`) sont ignorées, un blocage sur l'une
+d'elles est levé ; un `budget` reçu avec ces clés les ignore. Les variables `GENEALOGISTE_BUDGET_DUREE_MIN` et
+`GENEALOGISTE_BUDGET_COUT_TOKENS` encore définies sont ignorées et signalées par `diagnostic`.
+`cout_estime_tokens` reste une **information** dans les réponses d'`archive_image` et d'`archives_planche`,
+sans limite.
+
+**Compté côté serveur, pas déclaré** : un appel d'outil de collecte avec `enquete=<id>` s'exécute sous une
+mesure ; le client HTTP compte chaque requête émise par hôte (essais et redirections compris). Une réponse
+servie par le cache ne consomme aucune requête. Chaque réponse porte `budget` : `limites`, `consomme` et
+`reste` (par hôte contacté, `requetes_autre_hote` pour un hôte encore jamais contacté).
 
 **Épuisement** :
 
-1. *Avant l'appel* : enquête déjà bloquée, durée atteinte, image de trop (`images`) ou coût prévu dépassé
-   (`archive_image` estime le coût d'après `largeur`) : refus immédiat, aucune requête ;
-2. *pendant l'appel* : la requête qui dépasserait le budget d'un hôte ou la durée est refusée **avant
-   l'envoi** ; `recherche_multi` n'interroge pas les sources suivantes.
+1. *Avant l'appel* : enquête déjà bloquée ou image de trop (`images`) : refus immédiat, aucune requête ;
+2. *pendant l'appel* : la requête qui dépasserait le budget d'un hôte est refusée **avant l'envoi** ;
+   `recherche_multi` n'interroge pas les sources suivantes.
 
 Le refus est explicite (`refus`, `statut: "bloque"`, `motif: "budget"`, `limite`, `budget`), l'enquête passe
 au statut `bloque` avec `blocage`, et l'appel refusé (ou, pour `recherche_multi`, les sources non
@@ -204,7 +218,7 @@ lu par la commande de lancement. Markdown, dans cet ordre :
   - `## À faire à la main` : un élément par tâche manuelle, qui commence par son id (`t1`…), puis la description
     et le service ;
 - une dernière ligne `Budget : ` suivie du reste en `cle=valeur` séparés par des espaces (`images`,
-  `cout_tokens`, `duree_min`, `requetes_autre_hote`, ou `illimite`), puis ` ; statut=ouverte|bloque`.
+  `requetes_autre_hote`, ou `illimite`), puis ` ; statut=ouverte|bloque`.
 
 ```markdown
 Enquête : deces-jean-martin
@@ -220,7 +234,7 @@ Enquête : deces-jean-martin
 ## À faire à la main
 - t1 — table décennale 1883-1892 non numérisée, consultation sur place (AD17)
 
-Budget : images=4 cout_tokens=61200 duree_min=27 requetes_autre_hote=200 ; statut=ouverte
+Budget : images=36 requetes_autre_hote=200 ; statut=ouverte
 ```
 
 Les valeurs du reste viennent de `budget.reste` de la dernière réponse de collecte ou de

@@ -28,7 +28,7 @@ from . import (
 from . import pdf_markdown as pdf_md
 from .archives import communicability_online
 from .auth import BearerAuth, Sante, bind_problem
-from .budget import PlafondJour, mesurer, tokens_texte
+from .budget import PlafondJour, mesurer
 from .cache import Cache
 from .chemins import CheminRefuse, nom_simple, sous
 from .config import Config, load_config
@@ -75,6 +75,10 @@ automatique ; rien sur les personnes vivantes vers l'extérieur ; chaque recherc
 négative) ; toujours indiquer la prochaine source à consulter pour un fait non confirmé."""
 
 mcp = ServeurMCP("genealogiste", instructions=INSTRUCTIONS, log_level="WARNING")
+# Budget d'enquête (#211) : tous les outils réseau de collecte du catalogue acceptent enquete=<id> (enveloppe).
+mcp.avec_enquete = outils.BUDGET_ENQUETE
+mcp.doc_enquete = ("enquete (facultatif) : id d'enquête dont le budget compte les requêtes émises (par hôte) ; "
+                   "budget épuisé : refus avant la requête, enquête bloquée, appel consigné au reste à faire.")
 
 RATE = {"deces.matchid.io": 1.0, "api.wikitree.com": 1.0, "gallica.bnf.fr": 1.0, "query.wikidata.org": 1.0,
         "geo.api.gouv.fr": 0.1}
@@ -249,22 +253,22 @@ def _suivi_enquete(outil: str, parametres: dict, out: dict, enquete: str = "", f
     return out
 
 
-def _budget_avant(enquete: str, outil: str, appel: dict, images: int = 0, cout: int = 0) -> dict | None:
+def _budget_avant(enquete: str, outil: str, appel: dict, images: int = 0) -> dict | None:
     """Budget de l'enquête (#157), avant tout appel réseau : refus explicite (enquête bloquée, appel consigné au
     reste à faire) si elle est déjà bloquée ou si l'appel dépasserait une limite. Enquête inconnue : pas de
     budget (avertissement de _suivi_enquete)."""
     if not enquete:
         return None
     try:
-        return app().enquetes.controler(enquete, outil, appel, images, cout)
+        return app().enquetes.controler(enquete, outil, appel, images)
     except (EnqueteError, OSError, ValueError):
         return None
 
 
 @contextmanager
 def _mesure(enquete: str):
-    """Mesure côté serveur des requêtes émises (par hôte) et de la durée d'un appel lié à une enquête ; la garde
-    refuse une requête avant l'envoi quand le budget est atteint. None sans enquête valide."""
+    """Mesure côté serveur des requêtes émises (par hôte) pendant un appel lié à une enquête ; la garde refuse
+    une requête avant l'envoi quand le budget est atteint. None sans enquête valide."""
     garde = None
     if enquete:
         try:
@@ -278,19 +282,40 @@ def _mesure(enquete: str):
         yield m
 
 
-def _budget_apres(enquete: str, m, outil: str, appel: dict, out: dict, images: int = 0, cout_images: int = 0,
+def _budget_apres(enquete: str, m, outil: str, appel: dict, out: dict, images: int = 0,
                   reste: dict | None = None) -> dict:
-    """Consommation de l'appel (requêtes, images, coût estimé : images + texte de la réponse, durée) et reste
-    du budget dans la réponse ; refus pendant l'appel : enquête bloquée, reste (ou l'appel) consigné."""
+    """Consommation de l'appel (requêtes par hôte, images lues) et reste du budget dans la réponse ; refus
+    pendant l'appel : enquête bloquée, reste (ou l'appel) consigné."""
     if m is None:
         return out
-    cout = cout_images + tokens_texte(json.dumps(out, ensure_ascii=False, default=str))
     try:
-        out.update(app().enquetes.apres_collecte(enquete, dict(m.requetes), images, cout, m.duree(), m.refus,
-                                                 outil, reste if reste is not None else appel))
+        out.update(app().enquetes.apres_collecte(enquete, dict(m.requetes), images, m.refus, outil,
+                                                 reste if reste is not None else appel))
     except (EnqueteError, OSError) as exc:
         out["enquete_avertissement"] = f"Budget non mis à jour : {exc}"
     return out
+
+
+# Images lues par le modèle par appel réussi, pour les outils mesurés par l'enveloppe (archive_image compte les
+# siennes lui-même).
+IMAGES_PAR_APPEL = {"archives_planche": 1}
+
+
+def _mesure_enquete(nom: str, fn, args: tuple, kwargs: dict, enquete: str):
+    """Mesure générique (#211) d'un outil de collecte appelé avec enquete=<id> (enveloppe de ServeurMCP) :
+    contrôle avant appel, requêtes émises comptées par hôte, refus avant l'envoi à l'épuisement."""
+    try:
+        appel = dict(inspect.signature(fn).bind_partial(*args, **kwargs).arguments)
+    except TypeError:
+        appel = dict(kwargs)
+    images = IMAGES_PAR_APPEL.get(nom, 0)
+    if refus := _budget_avant(enquete, nom, appel, images=images):
+        return refus
+    with _mesure(enquete) as m:
+        res = fn(*args, **kwargs)
+    if not isinstance(res, dict):
+        return res
+    return _budget_apres(enquete, m, nom, appel, res, images=images if "erreur" not in res else 0)
 
 
 # ============================================================================ sources prioritaires
@@ -358,6 +383,7 @@ def _garde_ecriture(nom: str, fn, args: tuple, kwargs: dict) -> dict | None:
 
 
 mcp.garde = _garde_ecriture
+mcp.mesure = _mesure_enquete
 mcp.observateur = _Observateur()
 # Outils de lecture pure (catalogue) : servis sans attendre une écriture en cours (#151).
 mcp.sans_verrou = {nom for nom, (effet, _) in outils.OUTILS.items() if effet == outils.LECTURE}
@@ -492,17 +518,16 @@ def archive_image(source: str, page: int = 0, region: str = "full", largeur: int
     (region pct:x,y,l,h, largeur 1500-2000). Transcription produite par le modèle : à marquer comme telle
     et à faire vérifier.
     enquete (facultatif) : id d'enquête où noter la vue consultée ; deja_fait signale une vue déjà lue.
-    Avec enquete, l'appel consomme son budget (une image, coût estimé, requêtes, durée) ; budget renvoie le
-    reste ; budget épuisé : refus avant toute requête, enquête bloquée, appel consigné au reste à faire."""
+    Avec enquete, l'appel consomme son budget (une image, requêtes par hôte) ; budget renvoie le reste ;
+    cout_estime_tokens reste une information (aucune limite) ; budget épuisé : refus avant toute requête, enquête bloquée, appel consigné au reste à faire."""
     appel = {"source": source, "page": page, "region": region, "largeur": largeur, "gris": gris, "details": details}
-    if refus := _budget_avant(enquete, "archive_image", appel, images=1, cout=iiif.cout_prevu(largeur)):
+    if refus := _budget_avant(enquete, "archive_image", appel, images=1):
         return refus
     with _mesure(enquete) as m:
         out = iiif.fetch(app().sctx, app().config.cache_images_dir, source, page, region, largeur, gris)
         res = iiif.sortie_minimale(app().sctx, out, details)
     lue = "erreur" not in res
-    res = _budget_apres(enquete, m, "archive_image", appel, res, images=int(lue),
-                        cout_images=(res.get("cout_estime_tokens") or iiif.cout_prevu(largeur)) if lue else 0)
+    res = _budget_apres(enquete, m, "archive_image", appel, res, images=int(lue))
     if not lue:
         return res
     vue = res.get("vue") if isinstance(res.get("vue"), int) else (page or None)
@@ -1836,10 +1861,10 @@ def enquete_ouvrir(sujet: str, personnes: list[str] | None = None, id: str = "",
     """Ouvre une enquête : état de recherche persistant et reprenable (pistes, progression par registre,
     tâches manuelles, demandes faites), fichier JSON lisible dans <données>/enquetes/<id>.json. id facultatif
     (dérivé du sujet : minuscules, chiffres, tirets), stable : à passer à enquete_noter, enquete_reprendre et
-    au paramètre enquete de recherche_multi, archives_naviguer et archive_image. personnes : ids de l'arbre.
-    budget (facultatif, 0 = illimité ; défauts GENEALOGISTE_BUDGET_*) : {requetes_par_hote, images,
-    duree_min (activité cumulée des outils), cout_tokens (images + réponses)}. Compté côté serveur ; à
-    l'épuisement, refus avant toute requête et enquête « bloque ». Local seulement, rien n'est envoyé au réseau."""
+    au paramètre enquete des outils de collecte réseau (recherche_multi, archives_naviguer, archive_image,
+    sources…). personnes : ids de l'arbre. budget (facultatif, 0 = illimité ; défauts GENEALOGISTE_BUDGET_*) :
+    {requetes_par_hote, images} ; arrête une boucle d'enquête, le coût réel se plafonne côté client
+    (--max-budget-usd). Compté côté serveur ; à l'épuisement, refus avant toute requête et enquête « bloque ». Local seulement, rien n'est envoyé au réseau."""
     return _enquete(lambda: app().enquetes.ouvrir(sujet, personnes, id, budget))
 
 
@@ -1855,8 +1880,7 @@ def enquete_noter(enquete: str, piste: dict | None = None, registre: dict | None
     tache (manuelle, pour l'utilisateur) : {id?, description, service, piste, statut: a_faire|faite|abandonnee}.
     requete (faite hors outil suivi, ex. Geneanet) : {outil, parametres, resultat: positif|negatif|erreur|manuel,
       resume, journal?, piste}.
-    statut : ouverte | bloque | close. budget : limites à modifier ({requetes_par_hote, images, duree_min,
-    cout_tokens}, 0 = illimité) ; relever un budget épuisé débloque l'enquête (avec l'accord de l'utilisateur).
+    statut : ouverte | bloque | close. budget : limites à modifier ({requetes_par_hote, images}, 0 = illimité) ; relever un budget épuisé débloque l'enquête (avec l'accord de l'utilisateur).
     Tout élément négatif référence une entrée du journal : journal=<id> vérifié, sinon une entrée « enquete »
     est créée (journal_cree)."""
     return _enquete(lambda: app().enquetes.noter(enquete, piste, registre, tache, requete, statut, personnes,

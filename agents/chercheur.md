@@ -121,7 +121,7 @@ Enquête : <id>
 ## À faire à la main
 - t1 — AD17 : table décennale 1883-1892 non numérisée, consultation sur place (AD17)
 
-Budget : images=4 cout_tokens=61200 duree_min=27 requetes_autre_hote=200 ; statut=ouverte
+Budget : images=36 requetes_autre_hote=200 ; statut=ouverte
 ```
 
 ## Interdits en mode autonome
