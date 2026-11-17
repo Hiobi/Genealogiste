@@ -26,6 +26,10 @@ def _empreinte(texte: str) -> str:
     return hashlib.sha256(texte.encode("utf-8")).hexdigest()
 
 
+def _lien_symbolique(cible: Path, racine: Path) -> bool:
+    return any(p.is_symlink() for p in cible.parents if p.is_relative_to(racine)) or cible.is_symlink()
+
+
 def vault(notes: Path) -> Path | None:
     """Racine du vault Obsidian (répertoire contenant ``.obsidian``) : le répertoire des notes ou un parent."""
     for d in (notes, *notes.parents):
@@ -42,8 +46,15 @@ def deployer(notes: Path) -> dict:
     notes = notes.resolve()
     kit = notes / DOSSIER
     man_path = kit / MANIFESTE
+    out: dict = {"dossier": str(kit), "ecrits": [], "inchanges": 0, "conserves": [], "refuses": []}
+    if _lien_symbolique(man_path, notes):
+        out["refuses"].append(f"{DOSSIER}/{MANIFESTE} : lien symbolique, lecture et écriture du kit refusées")
+        del out["conserves"]
+        return out
+    ancien_manifeste = None
     try:
-        manifeste = json.loads(man_path.read_text(encoding="utf-8")) if man_path.is_file() else {}
+        ancien_manifeste = man_path.read_text(encoding="utf-8") if man_path.is_file() else None
+        manifeste = json.loads(ancien_manifeste) if ancien_manifeste is not None else {}
     except (OSError, ValueError):
         manifeste = {}
     if not isinstance(manifeste, dict):
@@ -58,14 +69,17 @@ def deployer(notes: Path) -> dict:
         cible_css, cle_css = kit / SNIPPET, SNIPPET
     cibles.append((SNIPPET, cible_css, cle_css))
 
-    out: dict = {"dossier": str(kit), "ecrits": [], "inchanges": 0, "conserves": [], "refuses": []}
     for source, cible, cle in cibles:
         texte = (SOURCE / source).read_text(encoding="utf-8")
-        if cible.is_symlink() or any(p.is_symlink() for p in cible.parents if p.is_relative_to(racine or notes)):
+        if _lien_symbolique(cible, racine or notes):
             out["refuses"].append(f"{cle} : lien symbolique, écriture refusée")
             continue
         if cible.exists():
-            actuel = cible.read_text(encoding="utf-8")
+            try:
+                actuel = cible.read_text(encoding="utf-8")
+            except UnicodeError:
+                out["conserves"].append(f"{cle} : encodage autre qu'UTF-8, copie personnelle conservée")
+                continue
             if actuel == texte:
                 manifeste[cle] = _empreinte(texte)
                 out["inchanges"] += 1
@@ -80,14 +94,15 @@ def deployer(notes: Path) -> dict:
         out["ecrits"].append(cle)
     kit.mkdir(parents=True, exist_ok=True)
     nouveau = json.dumps(manifeste, ensure_ascii=False, indent=1, sort_keys=True) + "\n"
-    if not man_path.is_file() or man_path.read_text(encoding="utf-8") != nouveau:
+    if ancien_manifeste != nouveau:
         ecrire_atomique(man_path, nouveau)
 
     out["extrait_css"] = str(cible_css)
     if racine:
+        chemin_kit = kit.relative_to(racine).as_posix()
         out["consigne"] = ("Activer l'extrait « genealogiste » dans Réglages → Apparence → Extraits CSS. Ouvrir "
-                           f"{DOSSIER}/vues/Genealogiste.base (Bases) ou « Tableau de bord » (Dataview). Modèles : "
-                           f"régler le dossier des modèles sur {DOSSIER}/modeles (extension Modèles).")
+                           f"{chemin_kit}/vues/Genealogiste.base (Bases) ou « Tableau de bord » (Dataview). Modèles : "
+                           f"régler le dossier des modèles sur {chemin_kit}/modeles (extension Modèles).")
     else:
         out["consigne"] = ("Aucun dossier .obsidian trouvé au-dessus des notes : copier "
                            f"{DOSSIER}/{SNIPPET} dans .obsidian/snippets/ du vault puis l'activer dans Réglages → "

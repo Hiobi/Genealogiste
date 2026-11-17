@@ -104,3 +104,45 @@ def test_lien_symbolique_refuse(vault, tmp_path):
     (vault / ".obsidian" / "snippets").symlink_to(ailleurs)
     r = server.notes_generer()["kit"]
     assert any("lien symbolique" in x for x in r["refuses"]) and not list(ailleurs.iterdir())
+
+
+def test_dossier_kit_lie_ne_touche_pas_au_manifeste_externe(vault, tmp_path):
+    ailleurs = tmp_path / "externe"
+    ailleurs.mkdir()
+    manifeste = ailleurs / ".kit.json"
+    manifeste.write_text("contenu externe à préserver", encoding="utf-8")
+    (vault / "Genealogie" / obsidian_kit.DOSSIER).parent.mkdir(parents=True, exist_ok=True)
+    (vault / "Genealogie" / obsidian_kit.DOSSIER).symlink_to(ailleurs, target_is_directory=True)
+    r = server.notes_generer()["kit"]
+    assert manifeste.read_text(encoding="utf-8") == "contenu externe à préserver"
+    assert r["refuses"] and r["ecrits"] == []
+    assert sorted(p.name for p in ailleurs.iterdir()) == [".kit.json"]
+
+
+def test_manifeste_lie_est_conserve(vault, tmp_path):
+    kit = vault / "Genealogie" / obsidian_kit.DOSSIER
+    kit.mkdir(parents=True)
+    externe = tmp_path / "manifeste-externe.json"
+    externe.write_text("{}", encoding="utf-8")
+    manifeste = kit / ".kit.json"
+    manifeste.symlink_to(externe)
+    r = server.notes_generer()["kit"]
+    assert r["refuses"] and manifeste.is_symlink()
+    assert externe.read_text(encoding="utf-8") == "{}"
+    assert sorted(p.name for p in kit.iterdir()) == [".kit.json"]
+
+
+def test_copie_personnelle_non_utf8_conservee(vault):
+    server.notes_generer()
+    perso = vault / "Genealogie" / obsidian_kit.DOSSIER / "modeles" / "Courrier.md"
+    contenu = "mon modèle personnel".encode("latin-1")
+    perso.write_bytes(contenu)
+    r = server.notes_generer()["kit"]
+    assert perso.read_bytes() == contenu
+    assert any("Courrier.md" in x for x in r["conserves"])
+
+
+def test_consigne_chemins_relatifs_au_vault(vault):
+    r = server.notes_generer()["kit"]
+    assert "Genealogie/_genealogiste/modeles" in r["consigne"]
+    assert "Genealogie/_genealogiste/vues/Genealogiste.base" in r["consigne"]

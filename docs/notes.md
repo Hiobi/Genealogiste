@@ -89,10 +89,13 @@ change).
   `<!-- sosa:debut … -->` / `<!-- sosa:fin -->` sont surlignées en mode source et aperçu en direct, pour repérer
   les sections régénérées (tout commentaire HTML seul sur sa ligne l'est aussi).
 - **Modèles** : régler le dossier de l'extension *Modèles* sur `_genealogiste/modeles` (ou le dossier
-  équivalent de Templater).
+  équivalent de Templater). Si les notes sont dans un sous-dossier du vault, préfixer ce chemin par
+  ce sous-dossier, par exemple `Genealogie/_genealogiste/modeles` ; `kit.consigne` donne le chemin adapté.
 - **Mise à jour** : un fichier du kit n'est remplacé que s'il est absent ou identique à la version déposée
   précédemment. Une copie modifiée est conservée et signalée dans `kit.conserves` ; la supprimer pour reprendre
-  la version du plugin. Un lien symbolique sur une cible est refusé (`kit.refuses`).
+  la version du plugin. Une copie personnelle non UTF-8 est également conservée. Un lien symbolique
+  sur une cible est refusé (`kit.refuses`) ; si le dossier du kit ou son manifeste est lié, le dépôt du
+  kit est refusé avant toute lecture du manifeste ou écriture.
 - Une génération ciblée (une personne, un lot) ne touche pas au kit.
 
 ## Patronymes
