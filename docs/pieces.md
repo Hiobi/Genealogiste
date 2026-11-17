@@ -274,7 +274,7 @@ nouveaux emplacements et leur annulation, pour reconnaître une originale conser
 ## Suivre les médias de l'arbre
 
 Une pièce déjà rattachée à l'arbre (média dont le fichier local la désigne, en mode fichier comme en mode
-gramps via `Sosa-Fichier`) peut être rangée en suivant sa référence :
+gramps via `Genealogiste-Fichier`) peut être rangée en suivant sa référence :
 
 1. `pieces_proposer(dossier, suivre_medias=true)` classe ces pièces comme les autres (motif « média de
    l'arbre suivi ») et liste `medias_suivis` (`O3 : ancien → nouveau`). Elles ne sont jamais isolées comme

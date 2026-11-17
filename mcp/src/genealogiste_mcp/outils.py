@@ -120,6 +120,10 @@ OUTILS: dict[str, tuple[str, str]] = {  # nom -> (effet, classe)
     "notes_generer": (ECRITURE, ECRITURE),  # réécrit les sections générées, renomme, retire des fiches
     "notes_lire": (ECRITURE, ECRITURE),  # fiche absente : génération partielle (renommages, index)
     "notes_ajouter": (ECRITURE, ECRITURE),  # modifie le texte libre de l'utilisateur
+    # migration des marqueurs sosa -> genealogiste (#182) : fichiers et objets + diff + jeton, puis écriture
+    # (fiches de notes + commit, transaction Gramps Web journalisée et annulable)
+    "marqueurs_migrer_proposer": (PROPOSITION, PROPOSITION),
+    "marqueurs_migrer_appliquer": (ECRITURE, ECRITURE),
     "cache_purger": (ECRITURE, ECRITURE),  # suppression ; peut lever le coupe-circuit anti-robot
     # Gramps Web
     "gramps_recherche": (RESEAU, COLLECTE),

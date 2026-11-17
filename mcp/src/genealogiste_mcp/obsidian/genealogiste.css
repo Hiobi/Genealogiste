@@ -1,7 +1,7 @@
 /* Genealogiste : extrait CSS pour les notes de recherche (Réglages → Apparence → Extraits CSS).
    Fichier remplacé par les versions suivantes tant qu'il n'est pas modifié ; une copie modifiée est conservée. */
 
-/* Balises <!-- sosa:debut … --> / <!-- sosa:fin --> (et tout commentaire HTML) en mode source et aperçu
+/* Balises <!-- genealogiste:debut … --> / <!-- genealogiste:fin --> (ou sosa:, et tout commentaire HTML) en mode source et aperçu
    en direct : bandeau discret qui signale les sections régénérées, à ne pas modifier à la main. */
 .markdown-source-view.mod-cm6 .cm-line:has(> .cm-comment:only-child) {
   background-color: var(--background-modifier-hover);

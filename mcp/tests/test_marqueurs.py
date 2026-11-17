@@ -35,7 +35,7 @@ def test_load_config_lit_marqueurs(monkeypatch, tmp_path):
     monkeypatch.setenv("GENEALOGISTE_MARQUEURS", "sosa")
     assert load_config().marqueurs == "sosa"
     monkeypatch.setenv("GENEALOGISTE_MARQUEURS", "x")
-    with pytest.raises(ValueError, match="sosa \\| genealogiste"):
+    with pytest.raises(ValueError, match="genealogiste \\| sosa"):
         load_config()
 
 

@@ -4,7 +4,8 @@ Les objets viennent du module de correspondance unique (:mod:`genealogiste_mcp.g
 que celui du mode direct (API Gramps Web) : ce fichier ne fait que sérialiser en XML. Rien du travail de
 recherche ne s'y perd (contrairement à l'import GEDCOM de Gramps, qui ignore les extensions `_…`, les
 ASSO d'événement et les sous-structures de OCCU/RESI) : URL et type des sources, classification des
-citations, témoins et parrains, statut de preuve (notes et étiquettes « Sosa:auto »), lieux.
+citations, témoins et parrains, statut de preuve (notes et étiquettes « Genealogiste:auto », ou « Sosa:auto » avec
+GENEALOGISTE_MARQUEURS=sosa), lieux.
 """
 
 from __future__ import annotations
@@ -232,10 +233,10 @@ def db_to_xml(db: GrampsDb) -> str:
     return "\n".join(out) + "\n"
 
 
-def to_gramps_xml(tree: Tree, strict: bool = False) -> str:
-    return to_gramps_xml_stats(tree, strict)[0]
+def to_gramps_xml(tree: Tree, strict: bool = False, forme: str = "genealogiste") -> str:
+    return to_gramps_xml_stats(tree, strict, forme)[0]
 
 
-def to_gramps_xml_stats(tree: Tree, strict: bool = False) -> tuple[str, dict]:
-    db, stats = tree_to_gramps_stats(tree, None, strict)
+def to_gramps_xml_stats(tree: Tree, strict: bool = False, forme: str = "genealogiste") -> tuple[str, dict]:
+    db, stats = tree_to_gramps_stats(tree, None, strict, forme=forme)
     return db_to_xml(db), stats

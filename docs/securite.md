@@ -26,8 +26,8 @@ de Claude Code (#153).
 |---|---|---|---|
 | Lecture | aucune écriture hors du cache et du journal internes | sans confirmation | `arbre_*` en lecture, `archives_service`, `liens_recherche`, `journal_ajouter`, `source_collee`, `pdf_markdown` |
 | Collecte | réseau et/ou écriture **additive et réversible** dans un répertoire géré par le plugin (cache, journal, pièce nouvelle archivée avec sa note) ; jamais d'écrasement ni de suppression, jamais l'arbre ni Gramps Web | sans confirmation | sources externes, `ark_resoudre`, `archive_image`, `archives_naviguer`, `archives_planche`, `piece_archiver`, `enquete_ouvrir`, `enquete_noter`, `gramps_synchroniser` |
-| Proposition | prépare une modification sans l'écrire (diff et jeton, file de propositions) | sans confirmation | `arbre_proposer`, `propositions_*`, `pieces_proposer`, `gramps_bascule_proposer`, `gramps_recalculer_notes`, `gramps_structurer_lieux` |
-| Écriture | arbre, Gramps Web, fichiers de l'utilisateur (notes, pièces existantes, exports), suppression, envoi de ses fichiers à un tiers, identifiants | confirmation demandée | `arbre_appliquer`, `pieces_appliquer`, `rapport_enregistrer`, `media_enregistrer`, `arbre_exporter`, `notes_*`, `cache_purger`, `gramps_tirer`, `familysearch_exporter`, `matchid_appariement_csv` |
+| Proposition | prépare une modification sans l'écrire (diff et jeton, file de propositions) | sans confirmation | `arbre_proposer`, `propositions_*`, `pieces_proposer`, `marqueurs_migrer_proposer`, `gramps_bascule_proposer`, `gramps_recalculer_notes`, `gramps_structurer_lieux` |
+| Écriture | arbre, Gramps Web, fichiers de l'utilisateur (notes, pièces existantes, exports), suppression, envoi de ses fichiers à un tiers, identifiants | confirmation demandée | `arbre_appliquer`, `pieces_appliquer`, `marqueurs_migrer_appliquer`, `rapport_enregistrer`, `media_enregistrer`, `arbre_exporter`, `notes_*`, `cache_purger`, `gramps_tirer`, `familysearch_exporter`, `matchid_appariement_csv` |
 
 **Outils en deux temps** (table `CONDITIONS`) : classés d'après leur effet maximal, mais le hook lit l'entrée
 de l'appel pour ne demander l'accord qu'au moment de l'écriture :

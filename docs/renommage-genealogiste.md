@@ -61,9 +61,22 @@ dépôt public sous ses deux noms, `Hiobi/Sosa` et `Hiobi/Genealogiste`.
 ## Compatibilité des données historiques
 
 La numérotation **Sosa-Stradonitz** reste un concept généalogique, avec ses champs et paramètres.
-Les marqueurs `Sosa:auto`, `Sosa-*` dans Gramps et `<!-- sosa:debut … -->` / `<!-- sosa:fin -->`
-dans les notes restent reconnus et conservés. Ce sont des identifiants de données persistées ;
-les remplacer provoquerait des doublons ou une perte de reconnaissance des sections gérées.
+Les marqueurs de données persistées suivent la nomenclature `genealogiste` (#182) :
+`<!-- genealogiste:debut … -->` / `<!-- genealogiste:fin -->` dans les notes, attributs `Genealogiste-*` et
+étiquette `Genealogiste:auto` dans Gramps. Les anciennes formes `<!-- sosa:debut … -->` / `<!-- sosa:fin -->`,
+`Sosa-*` et `Sosa:auto` restent **lues sans limite de durée** (anciens exports, sauvegardes) ; aucune
+reconnaissance n'est retirée.
+
+- Ne pas les renommer à la main : `marqueurs_migrer_proposer` liste fiches et objets concernés avec le diff,
+  `marqueurs_migrer_appliquer` les convertit après accord (un commit dans le dépôt des notes, une transaction
+  Gramps Web journalisée et annulable), sans doublon, sans toucher au texte libre ni aux identifiants
+  (handles, `gramps_id`, uid, `_UID` GEDCOM). La migration est idempotente.
+- Sans migration, une fiche de notes est convertie quand elle est régénérée ; dans Gramps, un attribut garde
+  sa forme tant que sa valeur ne change pas.
+- `GENEALOGISTE_MARQUEURS=sosa` garde l'ancienne forme en écriture, pour un vault ou une base Gramps partagés
+  avec une ancienne version.
+
+Détails : [notes](notes.md#marqueurs-historiques-sosa) et [Gramps Web](gramps-web.md#marqueurs-historiques-sosa--sosaauto).
 Les anciens exports et liens de documentation ne sont pas réécrits. Les nouveaux exports utilisent
 la nouvelle URL de documentation GEDCOM.
 

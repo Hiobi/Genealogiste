@@ -49,6 +49,9 @@ Un arbre neuf doit indiquer le mode `fichier` et **0 personne**. Dans `/mcp`, v�
 `genealogiste` est connecté. Si une erreur apparaît, lancez `/genealogiste:diagnostic` (contrôle, état, remède) puis suivez le [dépannage](https://github.com/Hiobi/Genealogiste/wiki/Depannage).
 
 **Vous aviez installé `genealogiste@sosa` ?** Suivez la [migration](https://github.com/Hiobi/Genealogiste/wiki/Migration) avant de changer de marketplace.
+Les anciens marqueurs de vos notes (`<!-- sosa:debut … -->`) et de Gramps Web (`Sosa-*`, `Sosa:auto`) restent lus ;
+`marqueurs_migrer_proposer` puis `marqueurs_migrer_appliquer` les convertissent après accord, et
+`GENEALOGISTE_MARQUEURS=sosa` garde l’ancienne forme en écriture ([détails](docs/renommage-genealogiste.md#compatibilité-des-données-historiques)).
 Pour un autre dossier de données, Gramps Web ou Docker : [installation détaillée](https://github.com/Hiobi/Genealogiste/wiki/Installation). Sur un serveur sans interface (VPS) : [installation sur un serveur](https://github.com/Hiobi/Genealogiste/wiki/Serveur).
 
 ## Un premier parcours

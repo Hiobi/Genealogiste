@@ -14,6 +14,7 @@ référence** : rien n'est écrit dans l'arbre depuis les notes (`arbre_proposer
 | `GENEALOGISTE_NOTES_AUTO` | `true` (défaut) : après `arbre_appliquer`, fiches des personnes, familles et sources modifiées régénérées ; après `journal_ajouter` avec `personne`, fiche de cette personne |
 | `GENEALOGISTE_NOTES_ATTENTE` | `20` (s) : après `arbre_appliquer`, la régénération tourne en arrière-plan ; l'outil attend au plus ce délai puis répond `notes.etat = en_cours`, consultable par `arbre_statut_transaction(jeton)` |
 | `GENEALOGISTE_SOSA_RACINE` | id de la personne n° 1 : propriété `sosa` des ascendants |
+| `GENEALOGISTE_MARQUEURS` | forme écrite des balises des sections générées : `genealogiste` (défaut) ou `sosa` (ancienne forme, pour partager le vault avec une ancienne version) ; les deux formes sont toujours lues |
 
 ## Arborescence
 
@@ -55,14 +56,32 @@ conservant les originaux. Garder la sauvegarde habituelle du vault avant une ré
   `index`), `nom`, `patronyme`, `statut` (statut le plus faible parmi naissance, décès, filiation), `sosa`, `naissance`, `deces`,
   `lieux`, `sources` (liens), `journal` (ids des entrées), `vivant`, `mis_a_jour`. Les propriétés ajoutées à la
   main sont **conservées** (replacées en fin de frontmatter).
-- **Sections générées** entre `<!-- sosa:debut NOM -->` et `<!-- sosa:fin -->` : identité et liens familiaux,
-  faits et statut de preuve, sources, prochaines sources, recherches du journal. Elles sont réécrites à chaque
-  génération : ne pas écrire dedans.
+- **Sections générées** entre `<!-- genealogiste:debut NOM -->` et `<!-- genealogiste:fin -->` : identité et
+  liens familiaux, faits et statut de preuve, sources, prochaines sources, recherches du journal. Elles sont
+  réécrites à chaque génération : ne pas écrire dedans. Voir « Marqueurs historiques » pour la forme
+  `<!-- sosa:debut NOM -->` / `<!-- sosa:fin -->`.
 - **`## Notes libres`** : jamais modifiée par l'outil. `notes_ajouter` y ajoute seulement une entrée datée, sous
   `### Hypothèses`, `### Pistes`, `### Conclusions`, `### Courriers`, `### À faire` ou `### Notes`.
 
 Régénérer sans changement dans l'arbre ne modifie **aucun** fichier (`mis_a_jour` ne bouge que si le contenu
 change).
+
+## Marqueurs historiques (`sosa:`)
+
+Les fiches écrites avant le renommage (#182) portent `<!-- sosa:debut NOM -->` / `<!-- sosa:fin -->`. Les deux
+formes sont **lues sans limite de durée** (sauvegardes, anciens vaults) :
+
+- **Régénération** : une fiche régénérée (`notes_generer`, régénération automatique) est écrite dans la forme
+  de `GENEALOGISTE_MARQUEURS` ; ses anciennes balises sont converties, le texte hors balises n'est jamais touché.
+- **Fiche mixte** (même section sous les deux formes) : un seul bloc en sortie, avec le contenu régénéré ; le
+  texte libre entre ou autour des blocs est conservé.
+- **Migration explicite** : `marqueurs_migrer_proposer` liste les fiches concernées avec le diff (seules les
+  balises changent) et renvoie un jeton ; après accord, `marqueurs_migrer_appliquer` réécrit ces fiches (refus si
+  l'une a changé entre-temps) et fait **un commit** des seuls fichiers migrés si le répertoire des notes est dans
+  un dépôt Git. Une section présente deux fois avec des contenus différents est laissée en l'état et listée dans
+  `a_regenerer` : `notes_generer(id)` la résout. Deuxième exécution : rien à migrer, pas de jeton.
+- **Vault partagé avec une ancienne version** : `GENEALOGISTE_MARQUEURS=sosa` garde l'ancienne forme en écriture
+  (la migration est alors désactivée).
 
 ## Kit Obsidian
 
@@ -86,7 +105,7 @@ change).
 - **Extrait CSS** : déposé dans `.obsidian/snippets/` du vault qui contient les notes (le répertoire des notes ou
   le premier parent qui a un dossier `.obsidian`). Sans vault détecté, il reste dans `_genealogiste/` à copier
   à la main. À activer dans *Réglages → Apparence → Extraits CSS* : les lignes de balises
-  `<!-- sosa:debut … -->` / `<!-- sosa:fin -->` sont surlignées en mode source et aperçu en direct, pour repérer
+  `<!-- genealogiste:debut … -->` / `<!-- genealogiste:fin -->` (ou `sosa:`) sont surlignées en mode source et aperçu en direct, pour repérer
   les sections régénérées (tout commentaire HTML seul sur sa ligne l'est aussi).
 - **Modèles** : régler le dossier de l'extension *Modèles* sur `_genealogiste/modeles` (ou le dossier
   équivalent de Templater). Si les notes sont dans un sous-dossier du vault, préfixer ce chemin par
