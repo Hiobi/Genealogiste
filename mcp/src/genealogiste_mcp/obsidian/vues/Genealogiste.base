@@ -1,0 +1,104 @@
+# Vues Obsidian Bases des notes Genealogiste (déposées par notes_generer « tout »).
+# Filtres sur la propriété « type » : fonctionnent quel que soit le dossier des notes dans le vault.
+# Fichier remplacé par les versions suivantes tant qu'il n'est pas modifié ; une copie modifiée est conservée.
+views:
+  - type: table
+    name: Ascendance (Sosa)
+    filters:
+      and:
+        - 'type == "personne"'
+        - 'sosa > 0'
+    order:
+      - note.sosa
+      - file.name
+      - note.naissance
+      - note.deces
+      - note.statut
+    sort:
+      - property: note.sosa
+        direction: ASC
+  - type: table
+    name: À reprendre (preuve faible)
+    filters:
+      and:
+        - 'type == "personne"'
+        - or:
+            - 'statut == "non_source"'
+            - 'statut == "hypothese"'
+            - 'statut == "contradictoire"'
+            - 'statut == "refute"'
+    groupBy:
+      property: note.statut
+      direction: ASC
+    order:
+      - file.name
+      - note.sosa
+      - note.naissance
+      - note.deces
+      - note.lieux
+  - type: table
+    name: Personnes
+    filters:
+      and:
+        - 'type == "personne"'
+    order:
+      - file.name
+      - note.patronyme
+      - note.naissance
+      - note.deces
+      - note.statut
+      - note.sosa
+    sort:
+      - property: note.patronyme
+        direction: ASC
+  - type: table
+    name: Familles
+    filters:
+      and:
+        - 'type == "famille"'
+    order:
+      - file.name
+      - note.epoux
+      - note.epouse
+      - note.mariage
+  - type: table
+    name: Sources
+    filters:
+      and:
+        - 'type == "source"'
+    order:
+      - file.name
+      - note.nature
+      - note.depot
+      - note.cote
+      - note.url
+    groupBy:
+      property: note.nature
+      direction: ASC
+  - type: table
+    name: Patronymes
+    filters:
+      and:
+        - 'type == "patronyme"'
+    order:
+      - file.name
+      - note.berceau
+      - note.variantes
+  - type: table
+    name: Recherches et courriers
+    filters:
+      and:
+        - '!file.path.contains("_genealogiste/")'
+        - or:
+            - 'type == "recherche"'
+            - 'type == "courrier"'
+    groupBy:
+      property: note.type
+      direction: ASC
+    order:
+      - file.name
+      - note.personne
+      - note.etat
+      - note.date
+      - note.destinataire
+      - note.reponse_le

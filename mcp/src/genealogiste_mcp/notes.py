@@ -21,6 +21,7 @@ from dataclasses import replace
 from datetime import date
 from pathlib import Path
 
+from . import obsidian_kit
 from .evidence import assess_person
 from .export.charts import _years, ancestors
 from .export.fiche import _fmt_date
@@ -134,7 +135,8 @@ def _manual_text(path: Path) -> str:
 
 class Notes:
     def __init__(self, directory: Path | None, vivants: str = "masquer", strict: bool = False,
-                 sosa_racine: str = "", journal=None, today=date.today, data_dir: Path | None = None):
+                 sosa_racine: str = "", journal=None, today=date.today, data_dir: Path | None = None,
+                 kit: bool = True):
         self.dir = Path(directory).expanduser() if directory else None
         self.data_dir = Path(data_dir) if data_dir else None
         self.vivants = vivants
@@ -142,6 +144,7 @@ class Notes:
         self.sosa_racine = sosa_racine
         self.journal = journal
         self.today = today
+        self.kit = kit
 
     # ------------------------------------------------------------------ noms de fichiers et liens
     def enabled(self) -> bool:
@@ -688,6 +691,11 @@ class Notes:
         if target == "tout" or (root / 'index.md').exists():
             self._index(tree, porteurs)
         out = {"repertoire": str(root), "ecrites": list(dict.fromkeys(written)), "inchangees": unchanged}
+        if target == "tout" and self.kit:
+            try:
+                out["kit"] = obsidian_kit.deployer(root)
+            except OSError as exc:
+                out["kit"] = {"erreur": f"Kit Obsidian non déposé : {exc}"}
         if erreurs:
             out["erreurs"] = erreurs
         if renames:

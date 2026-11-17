@@ -50,6 +50,7 @@ Les identifiants FamilySearch ne doivent plus être configurés : l’ancien exp
 | Notes Markdown/Obsidian | `GENEALOGISTE_NOTES_DIR` ; vide = désactivées ; [guide des notes](../docs/notes.md) |
 | Confidentialité des notes | `GENEALOGISTE_NOTES_VIVANTS=masquer` par défaut ; `complet` pour un espace strictement privé |
 | Régénération des notes | `GENEALOGISTE_NOTES_AUTO=true` par défaut ; `GENEALOGISTE_SOSA_RACINE` pour la racine de numérotation |
+| Kit Obsidian | `GENEALOGISTE_NOTES_KIT=true` par défaut : vues Bases/Dataview, modèles et extrait CSS déposés par `notes_generer("tout")` |
 | Autres emplacements de pièces | `GENEALOGISTE_MEDIA_DIR`, `GENEALOGISTE_RAPPORTS_DIR`, `GENEALOGISTE_EXPORTS_DIR`, `GENEALOGISTE_CACHE_IMAGES_DIR` ; [guide des pièces](../docs/pieces.md) |
 | Serveur HTTP | `MCP_TOKEN`, en-tête `Authorization: Bearer` ; [Docker/Portainer](Docker-et-Portainer.md) |
 | Service de source sur réseau interne | `GENEALOGISTE_HOTES_AUTORISES` ; dérogation ciblée décrite dans la [sécurité technique](../docs/securite.md) |

@@ -10,6 +10,7 @@ référence** : rien n'est écrit dans l'arbre depuis les notes (`arbre_proposer
 |---|---|
 | `GENEALOGISTE_NOTES_DIR` | répertoire des notes (vault Obsidian ou sous-dossier) ; vide = fonctionnalité désactivée |
 | `GENEALOGISTE_NOTES_VIVANTS` | `masquer` (défaut) : fiche réduite, sans nom dans le nom de fichier ; `complet` |
+| `GENEALOGISTE_NOTES_KIT` | `true` (défaut) : `notes_generer("tout")` dépose le kit Obsidian (voir « Kit Obsidian ») ; `false` : aucun fichier de kit |
 | `GENEALOGISTE_NOTES_AUTO` | `true` (défaut) : après `arbre_appliquer`, fiches des personnes, familles et sources modifiées régénérées ; après `journal_ajouter` avec `personne`, fiche de cette personne |
 | `GENEALOGISTE_NOTES_ATTENTE` | `20` (s) : après `arbre_appliquer`, la régénération tourne en arrière-plan ; l'outil attend au plus ce délai puis répond `notes.etat = en_cours`, consultable par `arbre_statut_transaction(jeton)` |
 | `GENEALOGISTE_SOSA_RACINE` | id de la personne n° 1 : propriété `sosa` des ascendants |
@@ -62,6 +63,37 @@ conservant les originaux. Garder la sauvegarde habituelle du vault avant une ré
 
 Régénérer sans changement dans l'arbre ne modifie **aucun** fichier (`mis_a_jour` ne bouge que si le contenu
 change).
+
+## Kit Obsidian
+
+`notes_generer("tout")` dépose de quoi exploiter les fiches sans extension à développer :
+
+```
+<NOTES_DIR>/_genealogiste/
+├── vues/Genealogiste.base       # Obsidian Bases (intégré) : Ascendance (Sosa), À reprendre, Personnes,
+│                                #   Familles, Sources, Patronymes, Recherches et courriers
+├── vues/Tableau de bord.md      # mêmes vues en Dataview (extension communautaire) + sans source,
+│                                #   courriers sans réponse, fiches récentes
+├── modeles/Recherche.md         # fiche de recherche (question, sources consultées y compris négatives,
+│                                #   analyse, conclusion, prochaine source) : type: recherche
+├── modeles/Courrier.md          # demande à un service d'archives : type: courrier, envoye_le, reponse_le
+└── .kit.json                    # empreintes des fichiers déposés
+<vault>/.obsidian/snippets/genealogiste.css
+```
+
+- **Filtres sur la propriété `type`** : les vues fonctionnent quel que soit l'emplacement des notes dans le vault.
+  Les modèles (dans `_genealogiste/`) sont exclus des vues de recherches et courriers.
+- **Extrait CSS** : déposé dans `.obsidian/snippets/` du vault qui contient les notes (le répertoire des notes ou
+  le premier parent qui a un dossier `.obsidian`). Sans vault détecté, il reste dans `_genealogiste/` à copier
+  à la main. À activer dans *Réglages → Apparence → Extraits CSS* : les lignes de balises
+  `<!-- sosa:debut … -->` / `<!-- sosa:fin -->` sont surlignées en mode source et aperçu en direct, pour repérer
+  les sections régénérées (tout commentaire HTML seul sur sa ligne l'est aussi).
+- **Modèles** : régler le dossier de l'extension *Modèles* sur `_genealogiste/modeles` (ou le dossier
+  équivalent de Templater).
+- **Mise à jour** : un fichier du kit n'est remplacé que s'il est absent ou identique à la version déposée
+  précédemment. Une copie modifiée est conservée et signalée dans `kit.conserves` ; la supprimer pour reprendre
+  la version du plugin. Un lien symbolique sur une cible est refusé (`kit.refuses`).
+- Une génération ciblée (une personne, un lot) ne touche pas au kit.
 
 ## Patronymes
 
