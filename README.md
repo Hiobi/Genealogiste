@@ -73,7 +73,7 @@ détaille ce parcours et le résultat attendu.
   Les hooks Claude ajoutent la confirmation ; un autre client MCP doit avoir sa propre politique d’approbation.
 - Lecture, collecte (sources, aperçus, archivage d’une pièce nouvelle) et propositions se font sans demande ;
   toute écriture (arbre, Gramps Web, vos fichiers), suppression ou usage d’identifiants demande votre accord
-  ([classes de permission](docs/securite.md#confirmations-hooks--classes-de-permission)).
+  ([classes de permission](docs/securite.md#confirmations-hooks)).
 - Des gardes limitent les recherches externes sur les personnes présumées vivantes ; les exports masquent
   les vivants et les objets privés par défaut. Relisez toujours ce que vous comptez partager.
 

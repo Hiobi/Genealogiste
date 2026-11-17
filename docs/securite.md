@@ -15,7 +15,7 @@ Module `chemins.py` (#41, #51). Les chemins sont résolus (liens symboliques com
 | Envoi des médias vers Gramps Web | Le fichier d'un média est cherché sous le répertoire des données puis, avec `GENEALOGISTE_MEDIA_DIR`, sous l'arborescence des pièces (vault) : un chemin relatif est essayé contre chacune de ces racines, un chemin absolu doit s'y trouver. Un chemin qui sort de toutes (absolu ailleurs, traversant `../`, lien symbolique sortant) n'est jamais lu ; il est listé comme « hors du répertoire de données, refusé ». |
 | `ajouter_media`, `modifier_media`, `gramps_relocaliser_medias` (propositions) | Même confinement (données, répertoire des médias, arborescence des pièces) : un chemin local hors de ces racines ou introuvable fait refuser la proposition ; une URL distante est gardée sans être lue. |
 
-## Confirmations (hooks) : classes de permission
+## Confirmations (hooks)
 
 Chaque outil a une **classe de permission** déclarée une seule fois dans
 `mcp/src/genealogiste_mcp/outils.py`, d'après ce que fait réellement son code (effet maximal). La décision
