@@ -23,7 +23,8 @@ jamais dans Git, un journal ou une issue.
 | `GENEALOGISTE_GRAMPS_URL` | ex. `http://localhost:5055` (`http://grampsweb:5000` dans la stack Docker) |
 | `GENEALOGISTE_GRAMPS_USER` / `_PASSWORD` | compte local dédié, rôle Editor |
 | `GENEALOGISTE_GRAMPS_TTL` | secondes entre deux relectures incrémentales en lecture (défaut 30) |
-| `GENEALOGISTE_GRAMPS_NOTES_AUTO` | notes de preuve `Sosa:auto` : `true` (défaut, recalcul sur toute la base à chaque écriture), `modifies` (recalcul limité aux objets touchés), `false` (aucune note ni étiquette générée ; celles qui existent sont conservées telles quelles) |
+| `GENEALOGISTE_GRAMPS_NOTES_AUTO` | notes de preuve `Genealogiste:auto` : `true` (défaut, recalcul sur toute la base à chaque écriture), `modifies` (recalcul limité aux objets touchés), `false` (aucune note ni étiquette générée ; celles qui existent sont conservées telles quelles) |
+| `GENEALOGISTE_MARQUEURS` | forme écrite des attributs et de l'étiquette gérés : `genealogiste` (défaut, `Genealogiste-*`, `Genealogiste:auto`) ou `sosa` (`Sosa-*`, `Sosa:auto`, pour une base partagée avec une ancienne version) ; les deux formes sont toujours lues (voir « Marqueurs historiques ») |
 | `GENEALOGISTE_GIT_MIRROR` | `true` : miroir GEDCOM 7 versionné de l'arbre Gramps (défaut `false`) |
 | `GENEALOGISTE_GIT_REMOTE` | dépôt distant optionnel du répertoire de données (**privé**) |
 
@@ -73,13 +74,13 @@ Module unique, utilisé par l'export Gramps XML et par le mode direct, testé al
 | Genealogiste | Gramps |
 |---|---|
 | xref `I12`, `F3`, `S7`, `R1`, `O2`, note partagée `N4` | `gramps_id` |
-| uid de personne, famille, événement | attribut `Sosa-UID` (absent si l'objet vient de l'interface : uid dérivé du handle) |
-| uid des noms | attribut de personne `Sosa-UID noms` (dans l'ordre) |
-| statut forcé (réfuté, contradictoire) + justification | attribut `Sosa-Statut` « refute \| justification » (événement, famille), `Sosa-Statut nom N`, `Sosa-Statut filiation I3` |
-| vivant forcé | attribut `Sosa-Vivant` Y/N |
-| témoin, parrain, officier… de l'arbre | référence d'événement sur sa fiche (rôle Witness, Godparent, Celebrant, Informant, ou libellé français) + attribut `Sosa-Association` |
-| intervenant seulement nommé | attribut d'événement `Sosa-Association` « rang \| RÔLE \| précision \| nom \| » avec ses citations |
-| parrain/marraine de niveau individu | `personref` + attribut de personne `Sosa-Association` « … \| xref » |
+| uid de personne, famille, événement | attribut `Genealogiste-UID` (absent si l'objet vient de l'interface : uid dérivé du handle) |
+| uid des noms | attribut de personne `Genealogiste-UID noms` (dans l'ordre) |
+| statut forcé (réfuté, contradictoire) + justification | attribut `Genealogiste-Statut` « refute \| justification » (événement, famille), `Genealogiste-Statut nom N`, `Genealogiste-Statut filiation I3` |
+| vivant forcé | attribut `Genealogiste-Vivant` Y/N |
+| témoin, parrain, officier… de l'arbre | référence d'événement sur sa fiche (rôle Witness, Godparent, Celebrant, Informant, ou libellé français) + attribut `Genealogiste-Association` |
+| intervenant seulement nommé | attribut d'événement `Genealogiste-Association` « rang \| RÔLE \| précision \| nom \| » avec ses citations |
+| parrain/marraine de niveau individu | `personref` + attribut de personne `Genealogiste-Association` « … \| xref » |
 | citation | page, confiance (QUAY ; attribut `QUAY` si 2), notes `Transcript` / `Citation`, attributs Consulté, Type de source, Information, Preuve, Date de consultation, ARK |
 | source | titre, auteur, publication, dépôt + cote, attributs URL, ARK, Type de source, Dérivée de |
 | lieu | titre « Commune, Département, Pays », code INSEE, coordonnées ; paroisse en attribut d'événement |
@@ -87,7 +88,7 @@ Module unique, utilisé par l'export Gramps XML et par le mode direct, testé al
 | cause, précision du type | attributs `Cause`, `Précision` |
 | date GEDCOM 7 | date Gramps (calendrier, qualificatif, qualité) ; la chaîne GEDCOM est gardée dans `text` |
 
-Une personne, un événement ou une note créés dans l'interface Gramps sont lus sans attribut historique `Sosa-*` et
+Une personne, un événement ou une note créés dans l'interface Gramps sont lus sans attribut `Genealogiste-*` et
 réécrits **à l'identique** tant que Genealogiste ne les modifie pas. Ce que Genealogiste ne modélise pas (adresses, URL,
 étiquettes, titres et suffixes de nom, noms alternatifs et dates des lieux, médias d'événements, notes isolées…) est
 conservé tel quel.
@@ -97,10 +98,32 @@ nom `BIRTH` = nom de naissance, filiation `BIRTH` = filiation biologique, un mê
 lieu Gramps (coordonnées et code INSEE mis en commun). Un événement partagé par plusieurs personnes
 (rôle *Primary*) reste partagé tant qu'il n'est pas modifié ; modifié pour l'une d'elles, il est dédoublé.
 
-## Notes de preuve générées (`Sosa:auto`)
+### Marqueurs historiques (`Sosa-*`, `Sosa:auto`)
+
+Les bases écrites avant le renommage (#182) portent `Sosa-UID`, `Sosa-UID noms`, `Sosa-Statut…`,
+`Sosa-Association`, `Sosa-Vivant`, `Sosa-Fichier` et l'étiquette `Sosa:auto`. Ces formes sont **lues sans limite
+de durée**. Seuls ces noms exacts sont reconnus : un attribut personnel commençant par `Sosa` n'est jamais touché.
+
+- **Écriture ordinaire** : un attribut ou l'étiquette existants gardent leur forme tant que leur valeur ne
+  change pas (aucune migration silencieuse, pas de transaction massive) ; un attribut nouveau ou modifié est
+  écrit dans la forme de `GENEALOGISTE_MARQUEURS`.
+- **Objet portant les deux formes** : si les valeurs sont identiques, la lecture n'en voit qu'une ; si elles
+  diffèrent, la nouvelle forme est lue, l'ancienne est conservée intacte et l'écart est **signalé** par la
+  migration (`incoherences`), jamais tranché silencieusement.
+- **Migration explicite** : `marqueurs_migrer_proposer` prépare une transaction (bilan, objets, jeton) ;
+  après accord, `marqueurs_migrer_appliquer` l'écrit comme toute proposition : journalisée dans
+  `gramps-transactions.jsonl`, annulable par `arbre_annuler_modification`. Chaque attribut est renommé en place
+  (valeur, citations, confidentialité et position conservées), un doublon identique est retiré, l'étiquette
+  `Sosa:auto` est renommée sous le **même handle** (ou, si `Genealogiste:auto` existe déjà, les objets sont
+  réétiquetés et l'ancienne étiquette supprimée). Aucun objet n'est créé ni supprimé ; handles, `gramps_id`, uid
+  et `_UID` GEDCOM sont inchangés, le miroir Git et les exports GEDCOM restent identiques. Deuxième exécution :
+  rien à migrer.
+
+## Notes de preuve générées (`Genealogiste:auto`)
 
 Statut de preuve de chaque fait (note *Research* + étiquette « Preuve : … » sur l'événement), fiche de preuve
-de la personne, filiations de la famille, lien cliquable des sources : notes étiquetées **`Sosa:auto`**,
+de la personne, filiations de la famille, lien cliquable des sources : notes étiquetées **`Genealogiste:auto`**
+(ou `Sosa:auto` dans une base non migrée),
 recalculées à chaque écriture et ignorées à la lecture. Après des modifications faites dans l'interface,
 `gramps_recalculer_notes` propose leur recalcul (toute la base, même en mode `modifies` ; refusé en mode
 `false`). Les notes manuelles ne sont **jamais** modifiées.
@@ -117,7 +140,7 @@ moins de 5 opérations (première écriture, recalcul global).
 Les notes de preuve **sans** étiquette (import d'un GEDCOM ou d'un export GeneWeb produit par Genealogiste) sont
 reconnues à leur gabarit : `⛔|🟡|🟢|✅|⚠️|❌ Preuve : …`, `Filiation de … : …`,
 `Fiche de preuve (plugin genealogiste)…`, `Lien : http…`. Elles sont **adoptées** à la première écriture
-(étiquetées `Sosa:auto` et réécrites en place), jamais doublées. Une note manuelle qui commence par l'un de ces
+(étiquetées `Genealogiste:auto` et réécrites en place), jamais doublées. Une note manuelle qui commence par l'un de ces
 gabarits est donc traitée comme générée : la reformuler si elle doit être conservée.
 
 ## Bascule fichier → Gramps Web
@@ -154,12 +177,12 @@ Le dépôt est local par défaut. `GENEALOGISTE_GIT_REMOTE` ajoute un push aprè
   `fichiers_absents` pour un média existant dont le fichier a disparu). À l'envoi, un chemin relatif absent
   des données est cherché dans le répertoire des médias / l'arborescence des pièces (médias créés avant #192). Après accord, la transaction crée l'objet, puis chaque fichier est envoyé par
   `PUT /api/media/{handle}/file` (`If-Match` = somme MD5 lue) ; le serveur attribue chemin et somme.
-- Le chemin local est gardé dans l'attribut `Sosa-Fichier` : le chemin du serveur n'est jamais réécrit.
+- Le chemin local est gardé dans l'attribut `Genealogiste-Fichier` (`Sosa-Fichier` dans une base non migrée) : le chemin du serveur n'est jamais réécrit.
 - `modifier_media` (`arbre_proposer`) change le fichier, le titre ou le format d'un média : le chemin et la
-  somme du serveur sont conservés, `Sosa-Fichier` est réécrit, et un nouveau contenu (MD5 différent) est envoyé
+  somme du serveur sont conservés, `Genealogiste-Fichier` est réécrit, et un nouveau contenu (MD5 différent) est envoyé
   après la transaction (`fichiers_a_envoyer`) ; un simple déplacement n'envoie rien.
 - `gramps_relocaliser_medias(ancien_prefixe, nouveau_prefixe)` : après un changement de machine, propose en une
-  transaction la réécriture des `Sosa-Fichier` qui commencent par l'ancien préfixe ; existence et MD5 vérifiés,
+  transaction la réécriture des `Genealogiste-Fichier` qui commencent par l'ancien préfixe ; existence et MD5 vérifiés,
   médias introuvables ou au contenu différent listés à part et non modifiés. Application par `arbre_appliquer`,
   annulation par `arbre_annuler_modification` (voir `docs/operations.md`).
 - `gramps_envoyer_medias` : liste des fichiers absents ou différents dans Gramps Web (médias créés avant cette

@@ -112,7 +112,7 @@ class App:
         self.sctx = SourceContext(self.http, self.journal, self.config)
         self.notes = Notes(self.config.notes_dir, self.config.notes_vivants, self.config.strict_evidence,
                            self.config.sosa_racine, self.journal, data_dir=self.config.data_dir,
-                           kit=self.config.notes_kit)
+                           kit=self.config.notes_kit, marqueurs=self.config.marqueurs)
         self._gramps_transport = gramps_transport
         self._gramps_sleeper = sleeper
         self._client = None
@@ -125,7 +125,7 @@ class App:
                                          GitMirror(self.store) if self.config.git_mirror else None,
                                          notes_auto=self.config.gramps_notes_auto,
                                          media_dir=self.config.pieces_root if self.config.media_dir_conf else None,
-                                         media=self.config.media_reference)
+                                         media=self.config.media_reference, forme=self.config.marqueurs)
 
     def gramps(self):
         """Client Gramps Web (compte dédié, identifiants de l'environnement)."""
@@ -1265,7 +1265,7 @@ def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", gene
     elif format == "geneweb":
         content, stats = to_geneweb(t, a.config.strict_evidence, temoins_en_personnes)
     elif format == "gramps":
-        content, stats = to_gramps_xml_stats(t, a.config.strict_evidence)
+        content, stats = to_gramps_xml_stats(t, a.config.strict_evidence, a.config.marqueurs)
     elif format == "mermaid_asc":
         content = charts.mermaid_ancestors(t, id, generations, hidden)
     elif format == "mermaid_desc":
@@ -1861,6 +1861,91 @@ def notes_ajouter(id: str, texte: str, section: str = "note") -> dict:
 
 
 @mcp.tool()
+def marqueurs_migrer_proposer() -> dict:
+    """Prépare la migration des marqueurs historiques vers la nomenclature genealogiste (#182), sans rien écrire :
+    balises <!-- sosa:debut/fin --> des notes Markdown -> <!-- genealogiste:debut/fin --> (seules les balises
+    changent, jamais le texte libre) et, en mode gramps, attributs Sosa-* -> Genealogiste-* et étiquette
+    Sosa:auto -> Genealogiste:auto (valeurs, handles et identifiants inchangés). Renvoie fichiers et objets
+    concernés, diff, incohérences (même marqueur sous les deux formes avec des valeurs différentes : laissé
+    intact) et un jeton pour marqueurs_migrer_appliquer, à n'utiliser qu'après accord explicite. Idempotent :
+    sans rien à migrer, pas de jeton. Les deux formes restent lues sans limite de durée."""
+    a = app()
+    if a.config.marqueurs == "sosa":
+        return {"note": "GENEALOGISTE_MARQUEURS=sosa : l'ancienne forme est conservée en écriture, migration "
+                        "désactivée (les deux formes restent lues)."}
+    out: dict = {}
+    record: dict = {"type": "marqueurs"}
+    if a.notes.enabled():
+        try:
+            plan = a.notes.plan_marqueurs()
+        except NotesError as exc:
+            return {"erreur": str(exc)}
+        out["notes"] = {"repertoire": str(a.notes.dir), "fichiers": [f["fichier"] for f in plan["fichiers"]],
+                        "a_regenerer": plan["a_regenerer"], "diff": plan["diff"]}
+        if plan["a_regenerer"]:
+            out["notes"]["a_regenerer_conseil"] = (
+                "Section présente sous les deux formes avec des contenus différents : laissée en l'état ; "
+                "notes_generer(id) la résout en gardant le seul contenu régénéré (texte libre conservé).")
+        if plan["fichiers"]:
+            record["notes"] = plan["fichiers"]
+    if a.config.backend == "gramps":
+        try:
+            g = _gramps_guard(a.backend.propose_marqueurs)
+        except ProposalError as exc:
+            return {"erreur": str(exc)}
+        if "erreur" in g:
+            return g
+        if jeton_g := g.pop("jeton", None):
+            g.pop("expire_dans_minutes", None)
+            record["gramps"] = jeton_g
+        out["gramps"] = g
+    if not out:
+        return {"note": "Rien à migrer : ni notes (GENEALOGISTE_NOTES_DIR) ni Gramps Web (mode gramps)."}
+    if "notes" not in record and "gramps" not in record:
+        out["note"] = "Rien à migrer : marqueurs déjà dans la forme genealogiste."
+        return out
+    record["resume"] = [f"Migration des marqueurs : {len(record.get('notes', []))} fiche(s)"
+                        + (", base Gramps Web" if "gramps" in record else "")]
+    out["jeton"] = a.tokens.create(record)
+    out["consigne"] = ("Présenter fichiers, objets et diff ; n'appeler marqueurs_migrer_appliquer qu'après accord "
+                       "explicite de l'utilisateur.")
+    return out
+
+
+@mcp.tool()
+def marqueurs_migrer_appliquer(jeton: str) -> dict:
+    """Applique une migration de marqueurs_migrer_proposer validée par l'utilisateur : en mode gramps, une
+    transaction Gramps Web (journalisée dans gramps-transactions.jsonl, annulable par arbre_annuler_modification),
+    puis les fiches de notes réécrites (refus si l'une a changé depuis la proposition) et un commit dans le dépôt
+    Git des notes s'il existe. Jeton à usage unique."""
+    a = app()
+    try:
+        rec = a.tokens.take(jeton)
+    except ProposalError as exc:
+        return {"erreur": str(exc)}
+    if rec.get("type") != "marqueurs":
+        return {"erreur": "Ce jeton n'est pas une migration de marqueurs (marqueurs_migrer_proposer)."}
+    out: dict = {}
+    if g := rec.get("gramps"):
+        try:
+            res = _gramps_guard(lambda: a.backend.apply(g))
+        except ProposalError as exc:
+            return {"erreur": f"Gramps Web : {exc} Rien n'a été écrit dans les notes ; relancer "
+                              "marqueurs_migrer_proposer."}
+        if "erreur" in res:
+            return res
+        out["gramps"] = res
+    if fichiers := rec.get("notes"):
+        try:
+            out["notes"] = a.notes.appliquer_marqueurs(
+                fichiers, "Migration des marqueurs sosa → genealogiste (#182)\n\n"
+                          f"{len(fichiers)} fiche(s) : balises <!-- sosa:debut/fin --> renommées, contenu inchangé.")
+        except NotesError as exc:
+            return {**out, "erreur": str(exc)}
+    return out
+
+
+@mcp.tool()
 def cache_purger(source: str = "") -> dict:
     """Vide le cache SQLite des réponses (tout si source est vide, sinon une catégorie). Catégories : matchid,
     wikitree, gallica, wikidata, geo, cog, archives, ark, iiif, visionneuse ; echec (échecs mémorisés sans
@@ -1953,7 +2038,8 @@ def gramps_bascule_proposer() -> dict:
     try:
         return _gramps_guard(lambda: bascule_preview(app().gramps(), app().store, app().tokens,
                                                      app().config.strict_evidence,
-                                                     app().config.gramps_notes_auto != "false"))
+                                                     app().config.gramps_notes_auto != "false",
+                                                     app().config.marqueurs))
     except ProposalError as exc:
         return {"erreur": str(exc)}
 
@@ -1971,7 +2057,7 @@ def gramps_bascule_appliquer(jeton: str) -> dict:
 
 @mcp.tool()
 def gramps_recalculer_notes() -> dict:
-    """Mode gramps : prépare le recalcul des notes et étiquettes de preuve générées (Sosa:auto), par ex. après
+    """Mode gramps : prépare le recalcul des notes et étiquettes de preuve générées (Genealogiste:auto), par ex. après
     des modifications faites dans l'interface. Les notes manuelles ne sont jamais touchées. Jeton à valider."""
     if app().config.backend != "gramps":
         return {"erreur": "Disponible en mode gramps (GENEALOGISTE_BACKEND=gramps)."}
@@ -2008,7 +2094,7 @@ def gramps_envoyer_medias(appliquer: bool = False) -> dict:
 @mcp.tool()
 def gramps_relocaliser_medias(ancien_prefixe: str, nouveau_prefixe: str) -> dict:
     """Après un changement de machine ou de point de montage : prépare la réécriture du fichier local des médias
-    (attribut Sosa-Fichier en mode gramps, FILE en mode fichier) dont le chemin commence par ancien_prefixe, en
+    (attribut Genealogiste-Fichier, ou Sosa-Fichier historique, en mode gramps ; FILE en mode fichier) dont le chemin commence par ancien_prefixe, en
     remplaçant ce préfixe par nouveau_prefixe. Chaque nouveau chemin doit exister sous les répertoires autorisés et,
     si Gramps Web connaît la somme du fichier, avoir le même MD5 ; les autres sont listés à part (introuvables,
     md5_differents, refuses) et laissés intacts. Renvoie une proposition (diff, jeton) : une seule transaction,

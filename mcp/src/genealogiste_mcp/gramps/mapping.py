@@ -8,19 +8,24 @@ Module unique utilisé par l'export Gramps XML et par le mode direct (API) :
 - :func:`diff` calcule les éléments de transaction (add / update / delete) entre deux bases.
 
 Correspondance (voir docs/gramps-web.md) :
-- identifiants : ``gramps_id`` = xref Genealogiste (I12, F3, S7, R1, O2, N4) ; attribut ``Sosa-UID`` sur personnes,
-  familles, événements, ``Sosa-UID noms`` sur la personne (uid des noms dans l'ordre). Un objet créé dans
+- marqueurs (#182, module ``marqueurs``) : noms logiques ``Genealogiste-*`` / ``Genealogiste:auto`` ci-dessous ; la
+  forme historique ``Sosa-*`` / ``Sosa:auto`` est toujours lue (la nouvelle prime si un objet porte les deux).
+  Écriture : un attribut ou l'étiquette existants gardent leur forme tant que leur valeur ne change pas ; un
+  attribut nouveau ou modifié prend la forme ``forme`` (GENEALOGISTE_MARQUEURS) ; migration explicite par
+  :func:`migrer_marqueurs` ;
+- identifiants : ``gramps_id`` = xref Genealogiste (I12, F3, S7, R1, O2, N4) ; attribut ``Genealogiste-UID`` sur
+  personnes, familles, événements, ``Genealogiste-UID noms`` sur la personne (uid des noms dans l'ordre). Un objet créé dans
   l'interface Gramps reçoit un uid dérivé de son handle, non écrit tant qu'il suffit ;
-- statut manuel forcé : attribut ``Sosa-Statut`` (« refute | justification ») sur l'événement / la famille,
-  ``Sosa-Statut nom N`` sur la personne, ``Sosa-Statut filiation I3`` sur la famille ;
-- intervenants (témoins, parrains, officiers…) : attribut structuré ``Sosa-Association``
+- statut manuel forcé : attribut ``Genealogiste-Statut`` (« refute | justification ») sur l'événement / la famille,
+  ``Genealogiste-Statut nom N`` sur la personne, ``Genealogiste-Statut filiation I3`` sur la famille ;
+- intervenants (témoins, parrains, officiers…) : attribut structuré ``Genealogiste-Association``
   « rang | RÔLE | précision | nom | xref », avec ses citations ; s'ils sont dans l'arbre, référence
   d'événement (rôle Witness, Godparent…) sur leur fiche, ou ``personref`` pour un parrain de baptême ;
 - citations : page, confiance (QUAY), notes « Transcript » / « Citation », attributs Consulté, Type de
   source, Information, Preuve, Date de consultation ;
 - sources : attributs URL, Type de source, Dérivée de ; dépôt et cote en référence de dépôt ;
 - lieux : titre « Commune, Département, Pays », code INSEE, coordonnées ; paroisse en attribut d'événement ;
-- notes générées (statut de preuve, fiche de preuve, lien de source) : étiquette ``Sosa:auto``,
+- notes générées (statut de preuve, fiche de preuve, lien de source) : étiquette ``Genealogiste:auto``,
   recalculées à chaque écriture, ignorées à la lecture ; les notes manuelles ne sont jamais réécrites.
 
 Non mappés (perdus à l'aller-retour, voir ``NON_MAPPES``) : nœuds GEDCOM non interprétés (``extra``).
@@ -37,6 +42,7 @@ import re
 import uuid
 from dataclasses import asdict, dataclass, field
 
+from .. import marqueurs
 from ..citations import INFOS, PREUVES, VU
 from ..citations import TYPES as SOURCE_TYPE_LABELS
 from ..models import (
@@ -76,17 +82,18 @@ from .types import (
 NON_MAPPES = ["extra (nœuds GEDCOM non interprétés de chaque objet)", "Tree.header_extra",
               "Tree.extra_records"]
 
-SOSA_AUTO = "Sosa:auto"
-A_UID, A_UID_NOMS, A_STATUT, A_ASSO, A_VIVANT = "Sosa-UID", "Sosa-UID noms", "Sosa-Statut", "Sosa-Association", \
-    "Sosa-Vivant"
-A_STATUT_NOM, A_STATUT_FIL = "Sosa-Statut nom ", "Sosa-Statut filiation "
+# Noms logiques (forme genealogiste) ; la forme écrite est choisie par marqueurs.ecrit(nom, forme).
+SOSA_AUTO = AUTO_TAG = marqueurs.AUTO[marqueurs.GENEALOGISTE]  # SOSA_AUTO : nom historique de la constante
+A_UID, A_UID_NOMS, A_STATUT, A_ASSO, A_VIVANT = "Genealogiste-UID", "Genealogiste-UID noms", "Genealogiste-Statut", \
+    "Genealogiste-Association", "Genealogiste-Vivant"
+A_STATUT_NOM, A_STATUT_FIL = "Genealogiste-Statut nom ", "Genealogiste-Statut filiation "
 A_PRECISION, A_PAROISSE, A_CAUSE, A_AGE = "Précision", "Paroisse", "Cause", "Age"
-A_FICHIER = "Sosa-Fichier"  # chemin du fichier local (medias/…) ; le chemin Gramps est attribué par le serveur
+A_FICHIER = "Genealogiste-Fichier"  # chemin du fichier local (medias/…) ; le chemin Gramps est attribué par le serveur
 CIT_ATTRS = ("Consulté", "Type de source", "Information", "Preuve", "Date de consultation", "QUAY", "ARK")
 SRC_ATTRS = ("URL", "ARK", "Type de source", "Dérivée de")
 STATUS_TAG = "Preuve : "
 # Gabarits des notes générées par Genealogiste (export GEDCOM/GeneWeb, ancien export Gramps) : reconnues comme
-# générées même sans étiquette Sosa:auto, puis adoptées (étiquetées et réécrites en place) au lieu d'être doublées.
+# générées même sans étiquette Genealogiste:auto (ou Sosa:auto), puis adoptées (étiquetées et réécrites en place) au lieu d'être doublées.
 GENERATED_NOTE = re.compile(r"^(?:(?:⛔|🟡|🟢|✅|⚠️|⚠|❌) Preuve : |Filiation de .+ : |"
                             r"Fiche de preuve \(plugin genealogiste\)|Lien : https?://)")
 
@@ -182,8 +189,17 @@ def _attrs(obj: dict) -> list[dict]:
     return obj.get("attribute_list") or []
 
 
+def _atype(a: dict) -> str:
+    """Nom logique du type d'un attribut (forme historique Sosa-* ramenée à Genealogiste-*)."""
+    return marqueurs.canon(tname(a.get("type")))
+
+
 def _attr(obj: dict, typ: str) -> dict | None:
-    return next((a for a in _attrs(obj) if tname(a.get("type")) == typ), None)
+    """Attribut de nom logique ``typ`` ; sous les deux formes, la nouvelle prime (l'écart est signalé par
+    :func:`incoherences_marqueurs`)."""
+    found = [a for a in _attrs(obj) if _atype(a) == typ]
+    return next((a for a in found if marqueurs.forme_de(tname(a.get("type"))) != marqueurs.SOSA), None) or \
+        next(iter(found), None)
 
 
 def _attr_value(obj: dict, typ: str) -> str:
@@ -297,6 +313,88 @@ def _same_list(base: list, new: list) -> list:
 
 # ============================================================================ lecture : Gramps -> Genealogiste
 
+def auto_tags(db: GrampsDb) -> set[str]:
+    """Handles des étiquettes des notes générées, sous les deux formes (Genealogiste:auto, Sosa:auto)."""
+    return {h for h, tg in db.all("Tag").items() if marqueurs.canon(tg.get("name") or "") == AUTO_TAG}
+
+
+def _attr_lists(o, out: list | None = None) -> list[list[dict]]:
+    """Toutes les listes d'attributs d'un objet Gramps, y compris dans ses références (event_ref_list…)."""
+    out = [] if out is None else out
+    if isinstance(o, dict):
+        if isinstance(o.get("attribute_list"), list):
+            out.append(o["attribute_list"])
+        for k, v in o.items():
+            if k != "attribute_list":
+                _attr_lists(v, out)
+    elif isinstance(o, list):
+        for v in o:
+            _attr_lists(v, out)
+    return out
+
+
+def _label_obj(cls: str, o: dict) -> str:
+    return f"{cls} {o.get('gramps_id') or o.get('handle')}"
+
+
+def _migrer_liste(attrs: list[dict]) -> tuple[list[dict], list[str]]:
+    """(liste migrée, incohérences) : ancienne forme renommée en place (valeur, citations, confidentialité et
+    position conservées) ; doublon identique de la nouvelle forme retiré ; valeur divergente laissée intacte."""
+    out, incoherences = [], []
+    nouveaux = [a for a in attrs if marqueurs.forme_de(tname(a.get("type"))) == marqueurs.GENEALOGISTE]
+    for a in attrs:
+        nom = tname(a.get("type"))
+        if marqueurs.forme_de(nom) != marqueurs.SOSA or nom == marqueurs.AUTO[marqueurs.SOSA]:
+            out.append(a)
+            continue
+        typ = marqueurs.canon(nom)
+        freres = [n for n in nouveaux if _atype(n) == typ]
+        same = [n for n in freres if n.get("value") == a.get("value")
+                and (n.get("citation_list") or []) == (a.get("citation_list") or [])]
+        if same:
+            continue  # doublon identique : la nouvelle forme suffit
+        if freres and (typ not in marqueurs.MULTIPLES or any(n.get("value") == a.get("value") for n in freres)):
+            incoherences.append(f"{nom} = {a.get('value')!r} ≠ {typ} = "
+                                f"{' / '.join(repr(n.get('value')) for n in freres)}")
+            out.append(a)
+            continue
+        out.append({**a, "type": gtype(a["type"].get("_class", "AttributeType") if isinstance(a.get("type"), dict)
+                                       else "AttributeType", typ)})
+    return out, incoherences
+
+
+def migrer_marqueurs(db: GrampsDb) -> tuple[list[dict], list[str]]:
+    """Migration explicite des marqueurs vers la forme genealogiste (#182) : (éléments de transaction,
+    incohérences). Handles, gramps_id, valeurs et associations inchangés ; aucun objet créé. Étiquette
+    ``Sosa:auto`` renommée en place (même handle) ; si ``Genealogiste:auto`` existe déjà, les objets sont
+    réétiquetés et l'ancienne étiquette, devenue inutilisée, supprimée. Idempotente."""
+    items: list[dict] = []
+    incoherences: list[str] = []
+    tags = db.all("Tag")
+    ancien = next((h for h, t in tags.items() if t.get("name") == marqueurs.AUTO[marqueurs.SOSA]), "")
+    neuf = next((h for h, t in tags.items() if t.get("name") == AUTO_TAG), "")
+    for cls in ORDER:
+        if cls == "Tag":
+            continue
+        for h, o in db.all(cls).items():
+            new = copy.deepcopy(o)
+            for lst in _attr_lists(new):
+                migre, inc = _migrer_liste(lst)
+                lst[:] = migre
+                incoherences += [f"{_label_obj(cls, o)} : {x}" for x in inc]
+            if ancien and neuf and ancien in (new.get("tag_list") or []):
+                new["tag_list"] = list(dict.fromkeys(neuf if x == ancien else x for x in new["tag_list"]))
+            if _strip_change(new) != _strip_change(o):
+                items.append({"type": "update", "_class": cls, "handle": h, "old": o, "new": new})
+    if ancien and not neuf:
+        tg = tags[ancien]
+        items.insert(0, {"type": "update", "_class": "Tag", "handle": ancien, "old": tg,
+                         "new": {**copy.deepcopy(tg), "name": AUTO_TAG}})
+    elif ancien:
+        items.append({"type": "delete", "_class": "Tag", "handle": ancien, "old": tags[ancien], "new": None})
+    return items, incoherences
+
+
 @dataclass
 class ReadInfo:
     """Index produit par la lecture, réutilisé par l'écriture."""
@@ -311,7 +409,9 @@ class _Reader:
         self.db = db
         self.t = Tree()
         self.info = ReadInfo()
-        self.auto_tag = next((h for h, tg in db.all("Tag").items() if tg.get("name") == SOSA_AUTO), "")
+        autos = auto_tags(db)
+        self.auto_tags = autos
+        self.auto_tag = next((h for h in autos if db.get("Tag", h).get("name") == AUTO_TAG), next(iter(autos), ""))
         self.info.auto_tag = self.auto_tag
         self.status_tags = {h for h, tg in db.all("Tag").items() if (tg.get("name") or "").startswith(STATUS_TAG)}
         self.ids: dict[tuple[str, str], str] = {}
@@ -331,7 +431,7 @@ class _Reader:
 
     # ------------------------------------------------------------------ notes, citations, lieux
     def is_auto(self, note: dict) -> bool:
-        if self.auto_tag and self.auto_tag in (note.get("tag_list") or []):
+        if self.auto_tags & set(note.get("tag_list") or []):
             return True
         return looks_generated(self.note_text(note))
 
@@ -458,7 +558,7 @@ class _Reader:
                   statut_manuel=_statut_read(_attr_value(ev, A_STATUT)), prive=bool(ev.get("private")))
         named = []
         for a in _attrs(ev):
-            if tname(a.get("type")) == A_ASSO:
+            if _atype(a) == A_ASSO:
                 rang, role, det, nom, _ = asso_parse(a.get("value", ""))
                 named.append((rang, Association(personne="", nom=nom, role=role, detail=det,
                                                 citations=self.citations(a.get("citation_list")))))
@@ -512,7 +612,7 @@ class _Reader:
             person.notes = texts + shared
             assos, linked = [], set()
             for a in _attrs(p):
-                if tname(a.get("type")) == A_ASSO:
+                if _atype(a) == A_ASSO:
                     rang, role, det, nom, xref = asso_parse(a.get("value", ""))
                     assos.append((rang, Association(personne=xref, nom=nom, role=role, detail=det,
                                                     citations=self.citations(a.get("citation_list")))))
@@ -690,7 +790,8 @@ def proof_data(tree: Tree, strict: bool = False) -> dict:
 
 class _Writer:
     def __init__(self, tree: Tree, base: GrampsDb | None, strict: bool, generated: bool,
-                 only: set[tuple[str, str]] | None = None):
+                 only: set[tuple[str, str]] | None = None, forme: str = marqueurs.GENEALOGISTE):
+        self.forme = forme  # forme écrite des marqueurs nouveaux ou modifiés (#182)
         self.t = tree
         self.base = base or GrampsDb()
         self.strict = strict
@@ -730,7 +831,11 @@ class _Writer:
         return obj
 
     def tag(self, name: str, color: str, priority: int) -> str:
-        h = self.tags_by_name.get(name)
+        if name == AUTO_TAG:  # étiquette existante réutilisée quelle que soit sa forme (migration explicite)
+            h = self.tags_by_name.get(AUTO_TAG) or self.tags_by_name.get(marqueurs.AUTO[marqueurs.SOSA])
+            name = name if h else marqueurs.ecrit(name, self.forme)
+        else:
+            h = self.tags_by_name.get(name)
         if not h:
             h = det_handle("Tag", name)
             self.tags_by_name[name] = h
@@ -741,13 +846,27 @@ class _Writer:
             self.out.put(tg)
         return h
 
+    def written(self, a: dict, forme: str | None = None) -> dict:
+        """Attribut (type logique) dans la forme écrite."""
+        nom = marqueurs.ecrit(tname(a.get("type")), forme or self.forme)
+        return a if nom == tname(a.get("type")) else {**a, "type": gtype(a["type"].get("_class", "AttributeType"),
+                                                                            nom)}
+
     def set_attrs(self, obj: dict, owned, desired: list[dict]) -> None:
-        """Remplace les attributs gérés par Genealogiste (``owned(type)``), conserve les autres et l'ordre."""
+        """Remplace les attributs gérés par Genealogiste (``owned(type logique)``), conserve les autres et l'ordre.
+        Un attribut inchangé garde sa forme (sosa ou genealogiste). Un attribut à valeur unique porté sous les deux
+        formes : l'ancienne forme est laissée intacte (migration : doublon retiré ou incohérence signalée), la
+        nouvelle est mise à jour."""
         base = obj.get("attribute_list") or []
         keep, pending = [], list(desired)
+        formes: dict[str, set[str]] = {}
         for a in base:
-            typ = tname(a.get("type"))
-            if not owned(typ):
+            formes.setdefault(_atype(a), set()).add(marqueurs.forme_de(tname(a.get("type"))))
+        doubles = {t for t, f in formes.items() if t not in marqueurs.MULTIPLES
+                   and {marqueurs.SOSA, marqueurs.GENEALOGISTE} <= f}
+        for a in base:
+            typ = _atype(a)
+            if not owned(typ) or (typ in doubles and marqueurs.forme_de(tname(a.get("type"))) == marqueurs.SOSA):
                 keep.append(a)
                 continue
             same = next((d for d in pending if tname(d.get("type")) == typ and d.get("value") == a.get("value")
@@ -755,6 +874,8 @@ class _Writer:
             if same is not None:
                 pending.remove(same)
                 keep.append(a)
+        pending = [self.written(d, marqueurs.GENEALOGISTE if tname(d.get("type")) in doubles else None)
+                   for d in pending]
         obj["attribute_list"] = _same_list(base, keep + pending)
 
     def media_refs(self, obj: dict, ids: list[str]) -> None:
@@ -833,7 +954,7 @@ class _Writer:
 
     def notes(self, texts: list[str], base_handles: list[str] | None, typ: str, owner: str,
               auto: list[tuple[str, str]] | None = None, url: str = "", keep: bool = False) -> list[str]:
-        """Notes d'un objet : manuelles réutilisées à l'identique, partagées (@N1@), générées (Sosa:auto)."""
+        """Notes d'un objet : manuelles réutilisées à l'identique, partagées (@N1@), générées (Genealogiste:auto)."""
         base_handles = list(base_handles or [])
         if self.generated:  # note de preuve venue d'un GEDCOM : régénérée, jamais doublée en note manuelle (#15)
             texts = [t for t in texts if not looks_generated(t)]
@@ -1014,7 +1135,7 @@ class _Writer:
             desired.append(attribute(A_PAROISSE, e.lieu.paroisse))
         if e.type != "EVEN" and e.type_detail:
             desired.append(attribute(A_PRECISION, e.type_detail))
-        base_asso = {a.get("value"): a for a in _attrs(obj) if tname(a.get("type")) == A_ASSO}
+        base_asso = {a.get("value"): a for a in _attrs(obj) if _atype(a) == A_ASSO}
         for rang, a in enumerate(e.associations, 1):
             if a.personne and a.personne in self.t.personnes:
                 self.links.append((a.personne, h, rang, a, owner))
@@ -1049,15 +1170,14 @@ class _Writer:
         self.stats["evenements"] += 1
         return h
 
-    @staticmethod
-    def ref_with(base_refs: list[dict], handle: str, role: str, attrs: list[dict], cits: list[str]) -> dict:
+    def ref_with(self, base_refs: list[dict], handle: str, role: str, attrs: list[dict], cits: list[str]) -> dict:
         prev = next((r for r in base_refs if r.get("ref") == handle and tname(r.get("role")) == role), None)
         ref = copy.deepcopy(prev) if prev else event_ref(handle, role)
         owned = {A_AGE, A_ASSO}
-        keep = [a for a in ref.get("attribute_list") or [] if tname(a.get("type")) not in owned]
-        old_owned = [a for a in ref.get("attribute_list") or [] if tname(a.get("type")) in owned]
-        new_owned = [a for a in attrs]
-        if [(tname(a["type"]), a["value"]) for a in old_owned] == [(tname(a["type"]), a["value"]) for a in new_owned]:
+        keep = [a for a in ref.get("attribute_list") or [] if _atype(a) not in owned]
+        old_owned = [a for a in ref.get("attribute_list") or [] if _atype(a) in owned]
+        new_owned = [self.written(a) for a in attrs]
+        if [(_atype(a), a["value"]) for a in old_owned] == [(_atype(a), a["value"]) for a in new_owned]:
             new_owned = old_owned
         ref["attribute_list"] = keep + new_owned
         ref["citation_list"] = _same_list(ref.get("citation_list") or [], cits)
@@ -1185,7 +1305,7 @@ class _Writer:
                                               self.citations(p.citations, obj.get("citation_list"), h))
             self.media_refs(obj, p.medias)
             # associations de niveau individu (parrains…) : attribut structuré + personref navigable
-            base_attr = {a.get("value"): a for a in _attrs(obj) if tname(a.get("type")) == A_ASSO}
+            base_attr = {a.get("value"): a for a in _attrs(obj) if _atype(a) == A_ASSO}
             desired, prefs = [], []
             base_prefs = obj.get("person_ref_list") or []
             for rang, a in enumerate(p.associations, 1):
@@ -1319,11 +1439,12 @@ class _Writer:
 
 def tree_to_gramps(tree: Tree, base: GrampsDb | None = None, strict: bool = False,
                    generated: bool = True, only: set[tuple[str, str]] | None = None,
-                   structure: bool = False) -> GrampsDb:
-    """Arbre Sosa -> base Gramps (par-dessus ``base`` si fournie). ``generated`` : notes Sosa:auto ; ``only`` :
+                   structure: bool = False, forme: str = marqueurs.GENEALOGISTE) -> GrampsDb:
+    """Arbre Genealogiste -> base Gramps (par-dessus ``base`` si fournie). ``generated`` : notes générées
+    (Genealogiste:auto) ; ``forme`` : forme écrite des marqueurs nouveaux ou modifiés (#182) ; ``only`` :
     les recalculer seulement pour ces objets (cls, clé Genealogiste), celles des autres sont conservées telles quelles ;
     ``structure`` : rattacher aussi les lieux à plat de la base à une hiérarchie."""
-    w = _Writer(tree, base, strict, generated, only)
+    w = _Writer(tree, base, strict, generated, only, forme)
     out = w.build()
     if structure:
         w.structure_places()
@@ -1367,7 +1488,7 @@ def proof_only(item: dict, auto_tags: set[str]) -> bool:
             ((obj.get("text") or {}).get("string")) or "")
     if cls == "Tag":
         name = obj.get("name") or ""
-        return name == SOSA_AUTO or name.startswith(STATUS_TAG)
+        return marqueurs.canon(name) == AUTO_TAG or name.startswith(STATUS_TAG)
     if item["type"] != "update":
         return False
     old, new = _strip_change(item["old"]), _strip_change(item["new"])
@@ -1376,8 +1497,8 @@ def proof_only(item: dict, auto_tags: set[str]) -> bool:
 
 
 def tree_to_gramps_stats(tree: Tree, base: GrampsDb | None = None, strict: bool = False,
-                         generated: bool = True) -> tuple[GrampsDb, dict]:
-    w = _Writer(tree, base, strict, generated)
+                         generated: bool = True, forme: str = marqueurs.GENEALOGISTE) -> tuple[GrampsDb, dict]:
+    w = _Writer(tree, base, strict, generated, forme=forme)
     db = w.build()
     return db, w.stats
 

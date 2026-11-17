@@ -62,7 +62,7 @@ est refusé, sauf `"non_source": true` + `"motif": "…"` (la mention « Non sou
   Un nouveau `fichier` est résolu et contrôlé exactement comme pour `ajouter_media` ; si son extension change
   sans `format` explicite, le format est déduit de la nouvelle extension.
 - En mode gramps, un média dont le fichier a déjà été reçu par Gramps Web garde le chemin et la somme attribués
-  par le serveur ; seul l'attribut `Sosa-Fichier` (et le titre, le format) change. Si le nouveau fichier a un
+  par le serveur ; seul l'attribut `Genealogiste-Fichier` (et le titre, le format) change. Si le nouveau fichier a un
   MD5 différent, il apparaît dans `fichiers_a_envoyer` et est envoyé après la transaction ; s'il est identique
   (simple déplacement), rien n'est renvoyé.
 - `gramps_relocaliser_medias(ancien_prefixe, nouveau_prefixe)` (changement de machine ou de point de montage)

@@ -48,7 +48,7 @@ class Config:
     gramps_user: str = ""
     gramps_password: str = ""
     gramps_ttl: float = 30.0  # secondes entre deux rafraîchissements en lecture (mode gramps)
-    gramps_notes_auto: str = "true"  # notes de preuve Sosa:auto : true (toute la base) | modifies | false
+    gramps_notes_auto: str = "true"  # notes de preuve Genealogiste:auto : true (toute la base) | modifies | false
     git_mirror: bool = False  # mode gramps : miroir GEDCOM 7 versionné de l'arbre Gramps
     git_remote: str = ""  # dépôt distant optionnel (privé !) du répertoire de données
     strict_evidence: bool = False
@@ -57,6 +57,7 @@ class Config:
     notes_vivants: str = "masquer"  # masquer | complet
     notes_auto: bool = True  # régénérer les fiches touchées après arbre_appliquer / journal_ajouter
     notes_kit: bool = True  # kit Obsidian (vues, modèles, extrait CSS) déposé par notes_generer « tout »
+    marqueurs: str = "genealogiste"  # forme écrite des marqueurs (notes, Gramps) : genealogiste | sosa (#182)
     sosa_racine: str = ""  # personne n° 1 de la numérotation Sosa des notes
     cog_mvt_url: str = "https://www.insee.fr/fr/statistiques/fichier/7766585/v_mvt_commune_2024.csv"
     cog_communes_url: str = "https://www.insee.fr/fr/statistiques/fichier/7766585/v_commune_depuis_1943.csv"
@@ -201,6 +202,17 @@ def notes_vivants_mode(value: str | None) -> str:
     return v
 
 
+def marqueurs_mode(value: str | None) -> str:
+    """GENEALOGISTE_MARQUEURS (#182) : forme écrite des marqueurs ; les deux formes restent toujours lues."""
+    v = (value or "").strip().lower()
+    if not v:
+        return "genealogiste"
+    if v not in ("genealogiste", "sosa"):
+        raise ValueError(f"GENEALOGISTE_MARQUEURS={value!r} : valeurs possibles genealogiste | sosa "
+                         "(sosa : ancienne forme, pour partager notes ou base Gramps avec une ancienne version)")
+    return v
+
+
 def secondes(value: str | None, default: float, variable: str) -> float:
     if value is None or value.strip() == "":
         return default
@@ -300,6 +312,7 @@ def load_config() -> Config:
         notes_vivants=notes_vivants_mode(env("GENEALOGISTE_NOTES_VIVANTS")),
         notes_auto=_bool(env("GENEALOGISTE_NOTES_AUTO"), True),
         notes_kit=_bool(env("GENEALOGISTE_NOTES_KIT"), True),
+        marqueurs=marqueurs_mode(env("GENEALOGISTE_MARQUEURS")),
         sosa_racine=env("GENEALOGISTE_SOSA_RACINE", ""),
         hotes_autorises=[h for h in env("GENEALOGISTE_HOTES_AUTORISES", "").split(",") if h.strip()],
         http_timeout=secondes(env("GENEALOGISTE_HTTP_TIMEOUT"), 30.0, "GENEALOGISTE_HTTP_TIMEOUT") or 30.0,

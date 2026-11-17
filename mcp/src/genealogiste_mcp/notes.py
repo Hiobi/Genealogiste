@@ -2,7 +2,9 @@
 
 Une fiche par personne, famille, source et patronyme (#61), plus ``index.md``. Chaque fiche a :
 - un frontmatter YAML typé (Dataview / Bases) ; les clés ajoutées à la main sont conservées ;
-- des sections générées entre ``<!-- sosa:debut NOM -->`` et ``<!-- sosa:fin -->``, régénérables ;
+- des sections générées entre ``<!-- genealogiste:debut NOM -->`` et ``<!-- genealogiste:fin -->``, régénérables
+  (forme historique ``<!-- sosa:debut NOM -->`` / ``<!-- sosa:fin -->`` toujours lue, convertie à la régénération
+  ou par ``marqueurs_migrer_proposer`` ; écriture selon GENEALOGISTE_MARQUEURS, #182) ;
 - une section « Notes libres » que l'outil ne modifie jamais (sauf ``notes_ajouter``, sur demande).
 
 Les notes restent un espace de travail : rien n'est écrit dans l'arbre depuis les notes.
@@ -21,7 +23,7 @@ from dataclasses import replace
 from datetime import date
 from pathlib import Path
 
-from . import obsidian_kit
+from . import marqueurs, obsidian_kit
 from .evidence import assess_person
 from .export.charts import _years, ancestors
 from .export.fiche import _fmt_date
@@ -36,8 +38,6 @@ from .privacy import identifying_patterns, is_living, private_resources
 from .statuts import GRAVITE, ICONS
 from .statuts import LABELS as LABEL
 
-START = "<!-- sosa:debut {} -->"
-END = "<!-- sosa:fin -->"
 FREE = "## Notes libres"
 FREE_HINT = "<!-- Texte libre : jamais modifié par l'outil (hypothèses, réflexions, à faire). -->"
 FOLDERS = {"personne": "personnes", "famille": "familles", "source": "sources", "patronyme": "patronymes"}
@@ -46,7 +46,7 @@ SECTIONS = {"hypothese": "Hypothèses", "piste": "Pistes", "conclusion": "Conclu
             "a_faire": "À faire", "note": "Notes"}
 RANK = GRAVITE
 _BAD = re.compile(r'[\\/:*?"<>|#^\[\]]+')
-_BLOCK = re.compile(r"<!-- sosa:debut (?P<name>[\w-]+) -->\n.*?<!-- sosa:fin -->", re.S)
+_BLOCK = marqueurs.BLOCK  # les deux formes (sosa | genealogiste)
 
 
 # Clés de frontmatter produites par le générateur (toutes catégories) : toujours remplacées ou retirées, jamais
@@ -136,7 +136,8 @@ def _manual_text(path: Path) -> str:
 class Notes:
     def __init__(self, directory: Path | None, vivants: str = "masquer", strict: bool = False,
                  sosa_racine: str = "", journal=None, today=date.today, data_dir: Path | None = None,
-                 kit: bool = True):
+                 kit: bool = True, marqueurs: str = "genealogiste"):
+        self.forme = marqueurs  # forme écrite des balises (#182) ; les deux formes sont lues
         self.dir = Path(directory).expanduser() if directory else None
         self.data_dir = Path(data_dir) if data_dir else None
         self.vivants = vivants
@@ -472,22 +473,24 @@ class Notes:
         old_fm, body = _split(old)
         keep = _manual_keys(old_fm, set(fm) | GENERATED_KEYS)
         if not old:
-            parts = [f"# {title}", ""] + [f"{START.format(k)}\n{v}\n{END}\n" for k, v in blocks.items()]
+            parts = [f"# {title}", ""] + [marqueurs.bloc(k, v, self.forme) + "\n" for k, v in blocks.items()]
             body = "\n".join(parts) + f"\n{FREE}\n\n{FREE_HINT}\n"
         else:
             seen = set()
 
             def repl(m):
                 k = m.group("name")
+                if k in seen:  # même section sous les deux formes (fiche mixte) : un seul bloc, régénéré
+                    return ""
                 seen.add(k)
                 # bloc généré absent du nouveau contenu (ex. fiche remasquée) : retiré, jamais conservé
-                return f"{START.format(k)}\n{blocks[k]}\n{END}" if k in blocks else ""
+                return marqueurs.bloc(k, blocks[k], self.forme) if k in blocks else ""
 
             body = re.sub(r"\n{3,}", "\n\n", _BLOCK.sub(repl, body))
             body = re.sub(r"\A(\s*)# [^\n]*", lambda m: f"{m.group(1)}# {title}", body, count=1)  # titre généré
             missing = [k for k in blocks if k not in seen]
             if missing:
-                add = "\n".join(f"{START.format(k)}\n{blocks[k]}\n{END}\n" for k in missing)
+                add = "\n".join(marqueurs.bloc(k, blocks[k], self.forme) + "\n" for k in missing)
                 i = body.find(FREE)
                 body = body[:i] + add + "\n" + body[i:] if i != -1 else body.rstrip("\n") + "\n\n" + add
         prev = next((ln.split(":", 1)[1].strip().strip('"') for ln in old_fm if ln.startswith("mis_a_jour:")), "")
@@ -814,6 +817,72 @@ class Notes:
             free = free.rstrip("\n") + f"\n\n{heading}\n\n{entry}\n"
         path.write_text(head + free, encoding="utf-8")
         return {"fichier": str(path), "ajoute": entry, "section": SECTIONS[section]}
+
+    # ------------------------------------------------------------------ migration des marqueurs (#182)
+    def _fiches_md(self) -> list[Path]:
+        root = self._require()
+        out = []
+        for path in sorted(root.rglob("*.md")):
+            rel = path.relative_to(root)
+            if any(part.startswith(".") for part in rel.parts) or path.is_symlink() or not path.is_file():
+                continue
+            if path.resolve().is_relative_to(root.resolve()):
+                out.append(path)
+        return out
+
+    def plan_marqueurs(self, forme: str = "genealogiste") -> dict:
+        """Fiches dont les balises générées ne sont pas dans la forme cible : nouveau texte, empreinte, diff.
+        Seules les balises changent ; une section en double divergente est signalée (à régénérer)."""
+        import difflib
+        root = self._require()
+        fichiers, a_regenerer, diffs = [], [], []
+        for path in self._fiches_md():
+            old = path.read_text(encoding="utf-8")
+            if "sosa:" not in old and "genealogiste:" not in old:
+                continue
+            new, divergents = marqueurs.migrer_texte_notes(old, forme)
+            rel = str(path.relative_to(root))
+            if divergents:
+                a_regenerer.append(rel)
+            if new != old:
+                fichiers.append({"fichier": rel, "empreinte": hashlib.sha256(old.encode()).hexdigest(),
+                                 "texte": new})
+                diffs.append("".join(difflib.unified_diff(old.splitlines(True), new.splitlines(True),
+                                                          f"a/{rel}", f"b/{rel}", n=0)))
+        return {"fichiers": fichiers, "a_regenerer": a_regenerer, "diff": "\n".join(diffs)}
+
+    def appliquer_marqueurs(self, fichiers: list[dict], message: str) -> dict:
+        """Écrit les fiches migrées (refus si une fiche a changé depuis la proposition), puis un commit des seuls
+        fichiers migrés si le répertoire des notes est dans un dépôt Git."""
+        root = self._require()
+        with verrou(root):
+            for f in fichiers:
+                path = root / f["fichier"]
+                if path.is_symlink() or not path.resolve().is_relative_to(root.resolve()):
+                    raise NotesError(f"{f['fichier']} : hors du répertoire des notes ou lien symbolique.")
+                cur = path.read_bytes() if path.is_file() else b""
+                if hashlib.sha256(cur).hexdigest() != f["empreinte"]:
+                    raise NotesError(f"{f['fichier']} a été modifiée depuis la proposition : rien n'a été écrit ; "
+                                     "relancer marqueurs_migrer_proposer.")
+            for f in fichiers:
+                ecrire_atomique(root / f["fichier"], f["texte"])
+        out = {"ecrites": [f["fichier"] for f in fichiers], "commit": None}
+        from .tree.store import git_non_interactif
+        try:
+            if git_non_interactif(["-C", str(root), "rev-parse", "--is-inside-work-tree"], 10).returncode != 0:
+                out["avertissement"] = "Répertoire des notes hors d'un dépôt Git : fiches migrées sans commit."
+                return out
+            noms = [f["fichier"] for f in fichiers]
+            add = git_non_interactif(["-C", str(root), "add", "--", *noms], 30)
+            com = git_non_interactif(["-C", str(root), "commit", "-q", "-m", message, "--", *noms], 30)
+            if add.returncode or com.returncode:
+                out["avertissement"] = ("Fiches migrées, mais commit impossible : "
+                                        f"{(add.stderr or com.stderr or com.stdout).strip()[:300]}")
+                return out
+            out["commit"] = git_non_interactif(["-C", str(root), "rev-parse", "HEAD"], 10).stdout.strip()
+        except (OSError, subprocess.SubprocessError) as exc:
+            out["avertissement"] = f"Fiches migrées, mais commit impossible : {exc}"
+        return out
 
     def git_warning(self) -> str:
         root = self._require()

@@ -41,7 +41,7 @@ def test_generate_person_note_with_facts_and_links(napp):
     text = jean.read_text(encoding="utf-8")
     assert text.startswith("---\nid: \"I1\"\ntype: \"personne\"\n")
     assert "sosa: 2" in text  # père de la racine I3
-    assert "<!-- sosa:debut faits -->" in text and "| Naissance |" in text and "Preuve" not in text.split("---")[1]
+    assert "<!-- genealogiste:debut faits -->" in text and "| Naissance |" in text and "Preuve" not in text.split("---")[1]
     assert "## Notes libres" in text
     # tous les wikilinks pointent vers un fichier existant
     names = {p.stem for p in vault.rglob("*.md")}

@@ -8,7 +8,9 @@ Même contrat qu'en mode fichier : proposition -> diff -> accord explicite -> é
 - Conflit (objet modifié dans l'interface depuis la proposition) : refus, rechargement, nouveau diff,
   nouvel accord ; jamais ``force``.
 - Annulation : transaction inverse (``undo``) de la transaction enregistrée, après accord.
-- Notes de preuve ``Sosa:auto`` recalculées à chaque écriture (et sur demande).
+- Notes de preuve ``Genealogiste:auto`` (historique ``Sosa:auto``) recalculées à chaque écriture (et sur demande).
+- Marqueurs ``Sosa-*`` / ``Sosa:auto`` migrés vers ``Genealogiste-*`` / ``Genealogiste:auto`` par une transaction
+  explicite (:meth:`GrampsBackend.propose_marqueurs`, #182).
 - Journal local ``gramps-transactions.jsonl`` (pour l'annulation) ; miroir Git optionnel de l'arbre.
 """
 
@@ -39,13 +41,14 @@ from ..tree.store import TreeStore
 from .client import ConflictError, GrampsClient, GrampsError
 from .mapping import (
     A_FICHIER,
-    SOSA_AUTO,
     GrampsDb,
     _attr_value,
     _strip_change,
     apply_items,
+    auto_tags,
     diff,
     gramps_to_tree,
+    migrer_marqueurs,
     proof_only,
     summarize,
     touched_keys,
@@ -160,7 +163,8 @@ class GrampsBackend:
     def __init__(self, client: GrampsClient, data_dir: Path, proposals_dir: Path, exiger_source: bool = True,
                  strict: bool = False, ttl: float = 30.0, mirror: GitMirror | None = None,
                  clock=time.monotonic, notes_auto: str = "true", media_dir: Path | None = None,
-                 media=None):
+                 media=None, forme: str = "genealogiste"):
+        self.forme = forme  # forme écrite des marqueurs (GENEALOGISTE_MARQUEURS, #182)
         self.client = client
         self.media = media  # résolution des fichiers d'ajouter_media (Config.media_reference)
         self.media_dir = Path(media_dir) if media_dir else None
@@ -221,8 +225,8 @@ class GrampsBackend:
         out = {"bilan": summarize(items), "objets": [_label(i) for i in items[:MAX_PREVIEW_OBJECTS]]
                + ([f"… {len(items) - MAX_PREVIEW_OBJECTS} autre(s)"] if len(items) > MAX_PREVIEW_OBJECTS else [])}
         if db is not None:
-            auto_tags = {h for h, t in db.all("Tag").items() if t.get("name") == SOSA_AUTO}
-            out["dont_notes_de_preuve_seules"] = sum(proof_only(i, auto_tags) for i in items)
+            autos = auto_tags(db)
+            out["dont_notes_de_preuve_seules"] = sum(proof_only(i, autos) for i in items)
         return out
 
     def _massive(self, items: list[dict], preview: dict, n_ops: int) -> str:
@@ -230,7 +234,7 @@ class GrampsBackend:
             return ""
         proof = preview.get("dont_notes_de_preuve_seules", 0)
         return (f"Transaction massive : {len(items)} objets Gramps pour {n_ops} opération(s), dont {proof} portant "
-                f"seulement sur des notes de preuve générées (Sosa:auto) et {len(items) - proof} réellement modifiés. "
+                f"seulement sur des notes de preuve générées (Genealogiste:auto) et {len(items) - proof} réellement modifiés. "
                 "Cause probable : première écriture sur cette base ou recalcul global des notes de preuve. "
                 "Pour l'éviter : GENEALOGISTE_GRAMPS_NOTES_AUTO=modifies (recalcul limité aux objets touchés) "
                 "ou false (aucune note générée).")
@@ -243,7 +247,7 @@ class GrampsBackend:
                                       self.media)
         only = touched_keys(tree, ctx.tree) if self.notes_auto == "modifies" and not all_notes else None
         new = tree_to_gramps(ctx.tree, base=db, strict=self.strict, generated=self.notes_auto != "false", only=only,
-                             structure=structure)
+                             structure=structure, forme=self.forme)
         items = diff(db, new)
         if not items:
             raise ProposalError("La proposition ne modifie rien.")
@@ -275,12 +279,33 @@ class GrampsBackend:
                             structure=True)
 
     def propose_notes(self) -> dict:
-        """Recalcul des notes de preuve Sosa:auto (après des modifications faites dans l'interface)."""
+        """Recalcul des notes de preuve générées (après des modifications faites dans l'interface)."""
         if self.notes_auto == "false":
             raise ProposalError("Notes de preuve générées désactivées (GENEALOGISTE_GRAMPS_NOTES_AUTO=false).")
-        return self.propose([], "Recalcul des notes de preuve (Sosa:auto)",
+        return self.propose([], "Recalcul des notes de preuve (Genealogiste:auto)",
                             "Notes et étiquettes de preuve générées recalculées sur l'état actuel de l'arbre ; "
                             "les notes manuelles ne sont pas touchées.", all_notes=True)
+
+    def propose_marqueurs(self) -> dict:
+        """Migration des marqueurs Sosa-* / Sosa:auto vers Genealogiste-* / Genealogiste:auto (#182) : une
+        transaction (jeton, accord explicite, journalisée et annulable), sans changement d'identifiant ni de
+        valeur. Renvoie {jeton?, bilan, objets, incoherences}."""
+        db = self.snapshot(fresh=True)
+        items, incoherences = migrer_marqueurs(db)
+        out: dict = {"incoherences": incoherences}
+        if incoherences:
+            out["incoherences_conseil"] = ("Objets portant le même marqueur sous les deux formes avec des valeurs "
+                                           "différentes : la nouvelle forme est lue, l'ancienne est conservée "
+                                           "intacte. Corriger à la main dans Gramps Web (garder la bonne valeur).")
+        if not items:
+            return out
+        message = ("Migration des marqueurs Sosa → Genealogiste (#182)\n\nAttributs Sosa-* renommés en "
+                   "Genealogiste-* et étiquette Sosa:auto en Genealogiste:auto ; valeurs, handles et identifiants "
+                   "inchangés.")
+        token = self.tokens.create({"type": "transaction", "marqueurs": True, "items": items, "message": message,
+                                    "operations": [], "resume": ["Migration des marqueurs Sosa → Genealogiste"],
+                                    "references": {}})
+        return {**out, "jeton": token, "expire_dans_minutes": TTL_SECONDS // 60, **self._preview(items)}
 
     def _check(self, db: GrampsDb, items: list[dict], side: str = "old") -> None:
         """Conflit si un objet a changé depuis la proposition (comparaison locale, puis par le serveur)."""
@@ -476,7 +501,7 @@ class GrampsBackend:
 # ============================================================================ bascule fichier -> Gramps Web
 
 def bascule_preview(client: GrampsClient, store: TreeStore, tokens: TokenStore, strict: bool,
-                    generated: bool = True) -> dict:
+                    generated: bool = True, forme: str = "genealogiste") -> dict:
     """Prépare l'envoi de l'arbre local complet dans un arbre Gramps Web vide (vivants inclus : instance
     privée). Après accord, Gramps Web devient la référence et arbre.ged est figé."""
     if store.frozen():
@@ -488,7 +513,7 @@ def bascule_preview(client: GrampsClient, store: TreeStore, tokens: TokenStore, 
         raise ProposalError(f"L'arbre Gramps Web n'est pas vide ({occupied}) : la bascule exige un arbre vide "
                             "(pas de synchronisation bidirectionnelle).")
     tree = store.load()
-    new = tree_to_gramps(tree, base=remote, strict=strict, generated=generated)
+    new = tree_to_gramps(tree, base=remote, strict=strict, generated=generated, forme=forme)
     items = diff(remote, new)
     if not items:
         raise ProposalError("Arbre local vide : rien à basculer.")
