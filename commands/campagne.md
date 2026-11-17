@@ -26,7 +26,7 @@ Règles de la campagne :
   personnes par leur id d'arbre et ne rien recopier d'un vivant.
 
 1. **Arguments** : cible = id, nom (`arbre_recherche`, premier résultat sans ambiguïté, sinon consigner
-   « cible ambiguë » et s'arrêter à l'étape 5 avec un rapport court) ou `arbre`. `enquetes=N` : nombre
+   « cible ambiguë » et s'arrêter à l'étape 6 avec un rapport court) ou `arbre`. `enquetes=N` : nombre
    maximal d'enquêtes de la campagne (défaut 3, maximum 6).
 2. **Lacunes prioritaires** : `arbre` → `arbre_lacunes()` (classement de l'arbre, vivants exclus) ; id →
    `arbre_cercle(id, "famille")` puis `arbre_lacunes(pid)` pour le sujet et chaque proche non vivant. Retenir
@@ -47,17 +47,27 @@ Règles de la campagne :
 
    suivie de l'id de la personne, des lacunes retenues et des actions `a_faire` de l'enquête. Le chercheur ne
    pose aucune question, dépose ses conclusions par `propositions_deposer(..., enquete=<id>)` et rend un compte
-   rendu à format fixe (`docs/enquetes.md`, « Compte rendu autonome ») : `## Trouvé`, `## Négatif`,
-   `## Bloqué`, `## À valider`, `## À faire à la main` et une ligne `Budget : …`. Un compte rendu absent ou
-   hors format est consigné sous « Bloqué » pour cette enquête.
-5. **Rapport** : agréger les comptes rendus en un seul document Markdown, puis
+   rendu à format fixe (`docs/enquetes.md`, « Compte rendu autonome ») : ligne `Enquête : <id>`, puis
+   `## Trouvé`, `## Négatif`, `## Bloqué`, `## À valider` (id de file en tête de ligne), `## À faire à la main`
+   (id de tâche en tête) et une ligne `Budget : cle=valeur … ; statut=ouverte|bloque`. Un compte rendu absent
+   ou hors format est consigné sous « Bloqué » pour cette enquête.
+   Seuls `recherche_multi`, `archives_naviguer` et `archive_image` (avec `enquete=<id>`) comptent dans le
+   budget de l'enquête ; les autres outils sont bornés par le débit par hôte, le coupe-circuit anti-robot et le
+   plafond journalier des archives.
+5. **Vérification** : un sous-agent ne peut pas lancer d'agent ; c'est donc la campagne qui, pour chaque
+   conclusion que le chercheur marque « à vérifier » sous `## À valider` (fait passant à « confirmé », nouvelle
+   filiation, identité), lance l'agent **`verificateur`** sans lui transmettre les conclusions (au plus 3 par
+   campagne). Son verdict est ajouté à l'élément dans le rapport ; au-delà, ou s'il échoue, consigner
+   l'élément sous « À valider » avec la mention « vérification indépendante à faire ».
+6. **Rapport** : agréger les comptes rendus en un seul document Markdown, puis
    `rapport_campagne_enregistrer(titre="Campagne <cible>", contenu, enquetes=[ids])` (fichier nouveau daté
    dans `<données>/rapports/campagnes/`, jamais d'écrasement). Contenu :
    - `# Campagne <cible> — <date>` puis une ligne de périmètre (personnes, enquêtes, N demandé) ;
    - les cinq sections `## Trouvé`, `## Négatif`, `## Bloqué`, `## À valider`, `## À faire à la main`,
-     chaque élément préfixé de `[<id d'enquête>]` ;
+     chaque élément préfixé de `[<id d'enquête>]` (en gardant l'id de file ou de tâche en tête) ; sous
+     « À valider », le verdict du `verificateur` ou « vérification indépendante à faire » ;
    - `## Propositions en file` : id, titre et personnes de chaque dépôt (`propositions_lister()`) ;
    - `## Budget` : la ligne `Budget : …` de chaque enquête.
-6. **Fin, sans question** : afficher le chemin du rapport, le nombre de propositions déposées et rappeler
+7. **Fin, sans question** : afficher le chemin du rapport, le nombre de propositions déposées et rappeler
    qu'elles attendent une revue : **`/genealogiste:valide`** (rien n'a été écrit dans l'arbre). Rappeler les
    enquêtes bloquées (relever leur budget se fait dans une session surveillée : `/genealogiste:enquete`).

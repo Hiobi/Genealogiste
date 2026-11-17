@@ -21,7 +21,10 @@ Rien n'est écrit dans l'arbre pendant la campagne.
    (`propositions_deposer(..., enquete=<id>)`) et rend un compte rendu à format fixe (`## Trouvé`,
    `## Négatif`, `## Bloqué`, `## À valider`, `## À faire à la main`, ligne `Budget : …` ; voir
    [enquetes.md](enquetes.md)).
-4. Les comptes rendus sont agrégés en un rapport enregistré par `rapport_campagne_enregistrer`.
+4. Un sous-agent ne pouvant pas lancer d'agent, la commande soumet elle-même les conclusions marquées « à
+   vérifier » à l'agent `verificateur` (au plus 3) ; les autres restent dans le rapport avec la mention
+   « vérification indépendante à faire ».
+5. Les comptes rendus sont agrégés en un rapport enregistré par `rapport_campagne_enregistrer`.
 
 ## Rapport de campagne
 
@@ -49,7 +52,9 @@ Trois réglages, tous fixés par l'humain avant la tâche :
    ([tableau des modes](securite.md#modes-dexécution-et-garde-fou-décriture)).
 2. **Budget** : les défauts `GENEALOGISTE_BUDGET_*` de cet environnement. La campagne ne passe jamais de
    `budget` (fixer ou relever un budget est une écriture : refusée par le serveur en mode `interdite` et par
-   le client en `-p`). Le plafond journalier `GENEALOGISTE_PLAFOND_JOUR_ARCHIVES` s'applique en plus.
+   le client en `-p`). Seuls `recherche_multi`, `archives_naviguer` et `archive_image` comptent dans ce
+   budget ; les autres outils réseau sont bornés par le débit par hôte, le coupe-circuit anti-robot et le
+   plafond journalier `GENEALOGISTE_PLAFOND_JOUR_ARCHIVES`, qui s'applique à tous.
 3. **Profil de permissions minimal** : `make profil-campagne` affiche un fichier de réglages Claude Code
    dérivé du catalogue des outils : `defaultMode: dontAsk`, `allow` pour la lecture, la collecte, la
    proposition et les outils en deux temps (leur branche écriture reste refusée par le serveur), `deny` pour

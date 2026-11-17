@@ -127,7 +127,10 @@ doit tourner avec `GENEALOGISTE_ECRITURE=interdite` dans l'environnement du **se
 dans la file (`propositions_deposer`) et sont appliquées plus tard, après accord, par `/genealogiste:valide`
 dans une session surveillée lancée avec `autorisee`. Un budget d'enquête ne peut pas être fixé ni relevé
 dans une telle session (branche écriture d'`enquete_ouvrir` / `enquete_noter`) : il vient des défauts
-`GENEALOGISTE_BUDGET_*` fixés par l'humain dans l'environnement de la tâche. Exemple planifié :
+`GENEALOGISTE_BUDGET_*` fixés par l'humain dans l'environnement de la tâche. Ce budget ne compte que
+`recherche_multi`, `archives_naviguer` et `archive_image` (avec `enquete=<id>`) ; les autres outils de
+collecte restent bornés, dans tous les modes, par le débit par hôte, le coupe-circuit anti-robot et le plafond
+journalier des archives (côté serveur, indépendants du client). Exemple planifié :
 [campagne.md](campagne.md).
 
 ## Personnes vivantes : rien vers l'extérieur
