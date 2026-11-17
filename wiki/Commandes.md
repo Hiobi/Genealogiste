@@ -7,7 +7,7 @@ Les commandes sont des workflows guidés : elles ne dispensent pas de lire les r
 | Commande | Quand l’utiliser |
 |---|---|
 | `cherche <nom> [prénom] [né vers] [lieu]` | Rechercher une personne historique dans plusieurs sources |
-| `enquete <id ou nom> [personne ou famille ou etendu]` | Coordonner une enquête plus large, avec recoupement et vérification |
+| `enquete <id ou nom> [personne ou famille ou etendu] [--autonome] [budget]` | Coordonner une enquête plus large, avec recoupement et vérification ; `--autonome` : sans question, bornée par son budget, conclusions déposées dans la file pour `valide` |
 | `fiche <id ou nom>` | Lire la fiche, les faits, citations et statuts |
 | `verifie <id> [fait]` | Demander une vérification indépendante |
 | `recoupe <id1> <id2>` | Comparer deux identités et les homonymies possibles |
@@ -20,7 +20,7 @@ Les commandes sont des workflows guidés : elles ne dispensent pas de lire les r
 | `fusionne` | Préparer une fusion après analyse des identités ; jamais automatique |
 | `import <chemin.ged> [ajouter ou remplacer]` | Proposer l’import d’un GEDCOM obtenu séparément |
 | `export <format> [id] [générations] [chemin]` | Produire un [export](Exports.md), masqué par défaut |
-| `acte <id ou nom> [naissance ou mariage ou deces]` | Trouver le registre d’un acte, y repérer la vue, la transcrire et l’archiver ; registre cherché automatiquement pour les AD59 seulement, ailleurs cote ou ARK relevés sur le site du service |
+| `acte <id ou nom> [naissance ou mariage ou deces] [--autonome]` | Trouver le registre d’un acte, y repérer la vue, la transcrire et l’archiver ; registre cherché automatiquement pour les AD59 seulement, ailleurs cote ou ARK relevés sur le site du service ; `--autonome` : sans question, ce qui demande une personne devient une tâche manuelle |
 | `transcris <image>` | Aider à lire un acte et relever les données, avec les incertitudes |
 | `organise <dossier> [triage]` | Proposer le classement et renommage de pièces, sans suppression |
 | `preuve <id> [fait]` | Rédiger un rapport argumenté sur une conclusion |
