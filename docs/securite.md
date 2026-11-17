@@ -45,6 +45,8 @@ Cas tranchés d'après le code :
   seul ; l'arbre n'est touché qu'à la proposition.
 - `media_enregistrer` reste une écriture : `chemin` désigne n'importe quel fichier lisible, copié dans
   l'arborescence des pièces (souvent synchronisée) ; l'utilisateur fournit d'ailleurs lui-même ce fichier.
+  En mode autonome du chercheur (#158), personne ne peut l'approuver : le repli anti-robot devient une tâche
+  manuelle de l'enquête ([enquetes.md](enquetes.md#mode-autonome)).
 - `notes_lire` est une écriture : une fiche absente est générée, ce qui peut renommer des fiches de personnes,
   retirer des fiches de patronymes et réécrire l'index.
 - `cache_purger` est une écriture : suppression, et `coupe_circuit` lève la pause anti-robot qui borne la collecte.
@@ -65,7 +67,9 @@ par classe, puis un motif par outil en deux temps. Les motifs `mcp__.*genealogis
 stdio et le serveur HTTP Docker. `tests/test_outils.py` refuse un outil enregistré mais non déclaré ou sans
 classe, un `hooks.json` différent du rendu du catalogue, et exécute réellement la commande de chaque hook ; il
 vérifie aussi que `/genealogiste:acte` se déroule sans demande d'accord jusqu'à `arbre_proposer` (seuls
-`arbre_appliquer` et le repli manuel `media_enregistrer` en demandent). Ajouter un outil impose donc de le classer
+`arbre_appliquer` et le repli manuel `media_enregistrer` en demandent). `tests/test_chercheur_autonome.py`
+vérifie que les outils cités par le mode autonome du chercheur sont tous autorisés sans confirmation et rejoue
+ce parcours jusqu'à `propositions_deposer` à travers les hooks réels. Ajouter un outil impose donc de le classer
 puis de lancer `make hooks`.
 
 ## Personnes vivantes : rien vers l'extérieur

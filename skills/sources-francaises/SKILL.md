@@ -7,7 +7,8 @@ description: Connaissance des sources généalogiques françaises et de leur loc
 
 Toujours préciser : **type de source** (originale/dérivée), **service** (AD, mairie, SHD…),
 **cote typique** (cadre de classement, à vérifier dans l'inventaire), **communicabilité**, **accès en ligne**.
-Outils : `cotes_a_consulter`, `prochaine_source`, `liens_recherche`, `communicabilite`, `archives_service` (service réel : site, mise en ligne, NAAN ; docs/archives.md), `ark_resoudre`.
+Outils : `cotes_a_consulter`, `prochaine_source`, `liens_recherche`, `communicabilite`, `archives_service` (service réel : site, mise en ligne, NAAN ; docs/archives.md), `ark_resoudre`, `archives_registres`,
+`archives_naviguer` (vues d'un registre), `archive_image` (lecture d'une vue), `piece_archiver` (conservation).
 Pour AD59, `archives_registres(service="AD59", commune=…, annee=…, type_acte="N"|"M"|"D", personne=id)`
 localise les registres depuis le résultat officiel. Une page par appel ; poursuivre explicitement avec
 `page_suivante`. `NMD` ou le type vide ne filtre pas le type ; tables décennales non qualifiées ici.
@@ -16,6 +17,7 @@ Un résultat vide ne démontre pas que l'acte n'existe pas ; un blocage conserve
 Défi anti-robot (`bloque: "anti-robot"`, ex. Anubis aux AD de la Lozère) ou `consultation_manuelle` dans
 `archives_service` : ne pas relancer ni contourner ; demander à l'utilisateur une capture ou l'image de la vue,
 l'enregistrer avec `media_enregistrer(chemin, nom, classer=true)`, la lire, puis tracer avec `source_collee`.
+En mode autonome (aucune personne présente), ce blocage devient une tâche manuelle de l'enquête (`enquete_noter`).
 
 | Source | Période | Série AD typique | Apporte | Remarques |
 |---|---|---|---|---|

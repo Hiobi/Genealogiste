@@ -11,11 +11,17 @@ description: Rechercher une personne, importer un GEDCOM, préparer une édition
      Appliquer `methodologie-gps`, `sources-francaises` et `droit-communicabilite`.
      Conserver les références, distinguer homonymes, hypothèses et faits cités.
    - **Import** : `arbre_importer_gedcom` produit un bilan et un diff ; un import reste non vérifié.
-   - **Acte** : pour retrouver un acte depuis une personne, suivre le parcours `archives_service` →
-     recherche du registre (`archives_registres` pour AD59 avec commune, année, type d'acte et identifiant
-     local `personne` ; sinon `liens_recherche`, `cotes_a_consulter`) → `archives_naviguer` (parcourir
-     les vues) → `archive_image`/`piece_archiver`. Appliquer `paleographie` pour la transcription et
-     `organisation-pieces` pour le classement. La commande `/genealogiste:acte` détaille ce parcours.
+   - **Acte** : pour retrouver un acte depuis une personne, suivre le parcours `archives_service` (service et
+     couverture) → recherche du registre (`ark_resoudre` pour un ARK déjà cité ; `archives_registres` pour
+     AD59 avec commune, année, type d'acte et identifiant local `personne` ; sinon `liens_recherche`,
+     `cotes_a_consulter`) → `archives_naviguer` (sonder, parcourir les vues) → `archive_image` (lire) →
+     transcription → `piece_archiver` (archiver) → citation. Appliquer `paleographie` pour la transcription
+     et `organisation-pieces` pour le classement. La commande `/genealogiste:acte` et l'agent `chercheur`
+     détaillent ce même parcours.
+   - **Enquête sans surveillance** : seulement à la demande explicite (`--autonome`), suivre le mode
+     autonome de [docs/enquetes.md](../../docs/enquetes.md) : enquête ouverte ou reprise, `enquete=<id>` sur
+     la collecte, aucune question (tâches manuelles par `enquete_noter`), arrêt sur budget, conclusions par
+     `propositions_deposer`, compte rendu à format fixe. Dans Codex, chaque outil garde son approbation native.
    - **Édition** : `arbre_proposer` prépare les opérations et renvoie diff, alertes et jeton.
 3. Présenter le diff, les sources, les incertitudes et les alertes avant de demander l’application.
    Un diff tronqué exige une inspection complète avant l’accord. Faire valider séparément une fusion
