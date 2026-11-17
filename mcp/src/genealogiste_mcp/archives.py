@@ -11,7 +11,7 @@ sources et relevés sont documentés ; un relevé automatisé ne remplace pas la
 from __future__ import annotations
 
 import json
-from datetime import date
+from datetime import UTC, date, datetime
 from functools import lru_cache
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -72,12 +72,15 @@ def recette(code: str) -> dict | None:
     return recettes().get(code)
 
 
-def enregistrer_recette(code: str, resultat: str, detail: str = "", jour: date | None = None) -> dict:
+def enregistrer_recette(code: str, resultat: str, detail: str = "", jour: date | None = None,
+                       environnement: str = "") -> dict:
     """Inscrit le dernier essai de recette réelle d'un service (ok, echec ou protection)."""
     from .fichiers import ecrire_atomique
 
     if resultat not in RESULTATS_RECETTE:
         raise ValueError(f"résultat de recette inconnu : {resultat!r}")
+    if environnement not in ("", "vps", "local", "ci", "inconnu"):
+        raise ValueError("environnement de recette : vps, local, ci ou inconnu")
     data = recettes()
     jour_iso = (jour or date.today()).isoformat()
     entree = {"dernier_essai": jour_iso, "resultat": resultat, "detail": detail[:300]}
@@ -85,6 +88,13 @@ def enregistrer_recette(code: str, resultat: str, detail: str = "", jour: date |
     reussite = jour_iso if resultat == "ok" else precedente.get("derniere_reussite")
     if reussite:
         entree["derniere_reussite"] = reussite
+    mesures = dict(precedente.get("mesures") or {})
+    if environnement:
+        mesures[environnement] = {"verdict": {"ok": "oui", "protection": "defi", "echec": "echec"}[resultat],
+                                  "date_mesure": datetime.now(UTC).isoformat(timespec="seconds"),
+                                  "detail": detail[:300]}
+    if mesures:
+        entree["mesures"] = mesures
     data[code] = entree
     ecrire_atomique(RECETTES, json.dumps(dict(sorted(data.items())), ensure_ascii=False, indent=2) + "\n")
     return entree
@@ -173,8 +183,10 @@ def online(s: dict | None, document: str, annee: int | None, lieu: str = "",
 def view(s: dict, document: str = "", annee: int | None = None, lieu: str = "") -> dict:
     out = {k: v for k, v in s.items() if v not in ("", None, {}, [])}
     resolution = s.get("resolution_image") or {}
-    adaptateur = resolution.get("type") == "visualizer_api"
-    out["telechargement"] = {"type": resolution.get("type"), "iiif": resolution.get("iiif"),
+    gallica = s.get("ark_naan") == "12148"
+    adaptateur = resolution.get("type") == "visualizer_api" or gallica
+    out["telechargement"] = {"type": "iiif_gallica" if gallica else resolution.get("type"),
+                             "iiif": True if gallica else resolution.get("iiif"),
                              "adaptateur_disponible": adaptateur,
                              "etat": ("automatique" if s.get("recette") else "automatique_non_eprouve") if adaptateur
                              else "lien_iiif_ou_fichier_a_fournir"}
@@ -194,6 +206,8 @@ def view(s: dict, document: str = "", annee: int | None = None, lieu: str = "") 
                 out['lien'] = links.pop()
     if s.get("recette"):
         out["recette"] = recette(s["code"]) or {"resultat": None, "detail": "aucune recette réelle enregistrée"}
+    out["acces_vps"] = ((recette(s["code"]) or {}).get("mesures") or {}).get("vps") or {
+        "verdict": "inconnu", "detail": "Aucune mesure identifiée depuis le VPS ; une réussite locale ne suffit pas."}
     if w := staleness(s):
         out["avertissement"] = w
     return out

@@ -53,6 +53,7 @@ from .sources import (
     liens,
     matchid,
     planche,
+    registres,
     visionneuses,
     wikidata,
     wikitree,
@@ -369,7 +370,11 @@ def ark_resoudre(ark: str, verifier: bool = True, titre: str = "") -> dict:
     """Identifiant pérenne ARK (seul ou dans une URL d'archives / Gallica) : service qui l'a attribué (NAAN),
     URL canonique et repli n2t.net, disponibilité (requête HEAD, aucun téléchargement), manifeste IIIF éventuel
     et citation suggérée (source = ressource ARK sans qualificatif, citation = ARK complet, vue)."""
-    return ark_resolver.resolve(app().sctx, ark, verifier, titre)
+    a = app()
+    try:
+        return ark_resolver.resolve(a.sctx, ark, verifier, titre)
+    except SourceError as exc:
+        return error_envelope(a.sctx, "ark", "resoudre", {"ark": ark, "verifier": verifier}, exc)
 
 
 @mcp.tool()
@@ -512,27 +517,54 @@ def archives_service(lieu: str = "", departement: str = "", code: str = "", docu
 
 
 @mcp.tool()
+def archives_registres(service: str, commune: str, annee: int, type_acte: str = "", page: int = 1,
+                      personne: str = "") -> dict:
+    """Localiser un registre par commune et année, sans connaître son ARK : service=AD59 uniquement.
+    type_acte : N (naissance), M (mariage), D (décès), NMD ou vide (tous). Une seule page de résultats
+    par appel ; page_suivante permet de poursuivre explicitement. Cote, ARK et période proviennent du
+    résultat officiel ; une recherche vide ne prouve pas l'absence de l'acte. personne désigne seulement
+    la cible locale, pour la garde des vivants et le journal ; cet identifiant n'est pas envoyé au service."""
+    if refus := _garde(personne=personne, texte=commune):
+        return refus
+    a = app()
+    try:
+        return registres.rechercher(a.sctx, service, commune, annee, type_acte, page, personne)
+    except (SourceError, ValueError) as exc:
+        return error_envelope(a.sctx, "archives", "registres",
+                              {"service": service, "commune": commune, "annee": annee,
+                               "type_acte": type_acte, "page": page}, exc, personne=personne or None)
+
+
+@mcp.tool()
 def archives_naviguer(source: str, page: int = 0, pas: int = 20) -> dict:
     """Parcourir les vues d'un registre d'archives sans connaître la vue à l'avance : renvoie une fenêtre de
     vues (numéro, ARK de vue, image) et les métadonnées du registre (titre, cote, commune, période, nombre
     de vues). source : ARK de registre ou de vue AD59 (visionneuse reconnue), ARK Gallica ou manifeste IIIF.
     page : première vue à lister (1 = début) ; pas : taille de fenêtre (1-100). Ensuite archive_image ou
-    piece_archiver sur une vue choisie. Ne localise pas un acte à partir d'un nom (voir la recherche du
+    piece_archiver sur une vue choisie. nb_vues indique le total ; fin_de_registre signale la dernière fenêtre
+    et vue_suivante son prochain début (None en fin). Hors bornes : erreur avec les numéros valides.
+    Une navigation produit une entrée au journal, y compris depuis le cache.
+    Ne localise pas un acte à partir d'un nom (voir la recherche du
     service, liens_recherche/cotes_a_consulter pour trouver le registre)."""
     a = app()
     params = {"source": source, "page": page, "pas": pas}
     try:
         res = visionneuses.naviguer(a.sctx, source, page, pas)
-        if res is not None:
-            return res
-        ark_obj = ark.find(source)
-        manifeste = (f"https://gallica.bnf.fr/iiif/{ark_obj.base}/manifest.json"
-                     if ark_obj and ark_obj.naan == "12148" else source)
-        return iiif.naviguer(a.sctx, manifeste, page, pas)
+        if res is None:
+            ark_obj = ark.find(source)
+            manifeste = (f"https://gallica.bnf.fr/iiif/{ark_obj.base}/manifest.json"
+                         if ark_obj and ark_obj.naan == "12148" else source)
+            res = iiif.naviguer(a.sctx, manifeste, page, pas)
+        res["journal"] = a.journal.add(source="archives", operation="naviguer", parametres=params,
+                                       statut="positif", nb_resultats=len(res["vues"]),
+                                       resume=res["registre"].get("titre", ""), references=[source],
+                                       cache=res["depuis_cache"])
+        return res
     except (SourceError, ValueError) as exc:  # VisionneuseError et IiifError sont des ValueError
         out = error_envelope(a.sctx, "archives", "naviguer", params, exc)
-        out["conseil"] = ("Vérifier l'ARK ou l'URL du registre (archives_service pour la visionneuse du service) ; "
-                          "sinon ouvrir le registre dans le navigateur (liens_recherche, cotes_a_consulter).")
+        if out.get("statut") != "bloque_antirobot":
+            out["conseil"] = ("Vérifier l'ARK ou l'URL du registre (archives_service pour la visionneuse du service) ; "
+                              "sinon ouvrir le registre dans le navigateur (liens_recherche, cotes_a_consulter).")
         return out
 
 
@@ -1145,7 +1177,7 @@ def piece_archiver(source: str, page: int = 0, personnes: list[str] | None = Non
             ecrire_atomique(dest, data)
     except (iiif.IiifError, SourceError, KeyError, CheminRefuse, pieces.PieceError, OSError) as exc:
         failure = error_envelope(a.sctx, "archives", "piece_archiver", {"source": source, "page": page}, exc)
-        return {"erreur": str(exc), "source": source, "journal": failure["journal"]}
+        return {**failure, "source": source}
     from . import ark as _ark
     source_obj = t.sources.get(source_arbre)
     arbre_ark = (source_obj.ark or source_obj.url) if source_obj else ""

@@ -136,7 +136,8 @@ def test_reponse_incoherente_refusee_avant_image(app, routes, defaut):
 
 
 def test_vue_absente_connexion_et_repli(app, routes):
-    routes.get(API, params=PARAMS).respond(403, text="Cloudflare accès refusé")
+    routes.get(API, params=PARAMS).respond(403, text="<html>Cloudflare accès refusé</html>",
+                                           headers={"Content-Type": "text/html"})
     assert "Télécharger" in server.archive_image(VIEW)["erreur"]
     assert "page=N" in server.archive_image("ark:/33518/registrefictif")["erreur"]
 
@@ -316,7 +317,9 @@ def test_navigation_fenetre_milieu_de_registre_dictionnaire(app, routes):
     """Fenêtre qui ne commence pas à 0 : dictionnaire indexé par position (non-régression)."""
     routes.get(API, params={"naan": "33518", "arkName": "registrefictif", "start": 2, "end": 3,
                             "group": 0}).respond(200, json=_fenetre(2, 2, "dict"))
-    routes.get(API, params=PARAMS).respond(200, json=metadata())
+    data = metadata()
+    data["counts"]["media"] = 4
+    routes.get(API, params=PARAMS).respond(200, json=data)
     r = server.archives_naviguer("ark:/33518/registrefictif", page=3, pas=2)
     assert "erreur" not in r, r
     assert [v["vue"] for v in r["vues"]] == [3, 4] and r["fenetre"] == {"de": 3, "a": 4}

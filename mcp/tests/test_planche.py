@@ -135,7 +135,7 @@ def test_originales_partagees_avec_archive_image(app, routes):
 
 
 def test_protection_arret_explicite_sans_telechargement(app, routes):
-    routes.get(API).respond(403, text="Cloudflare accès refusé")
+    routes.get(API).respond(403, text="<html>Cloudflare accès refusé</html>", headers={"Content-Type": "text/html"})
     image = routes.get(url__regex=HOST + "/images/.*").respond(200, content=jpeg())
     sortie = server.archives_planche(REGISTRE, de=1, a=4)
     assert "erreur" in sortie and "protégé" in sortie["erreur"] and sortie["telechargements"] == 0

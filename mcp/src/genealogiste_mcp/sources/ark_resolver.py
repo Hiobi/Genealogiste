@@ -1,4 +1,4 @@
-"""Résolution d'un ARK : service, URL canonique, disponibilité (HEAD, sans téléchargement), manifeste IIIF."""
+"""Résolution d'un ARK : service, URL canonique, disponibilité sans téléchargement, manifeste IIIF."""
 
 from __future__ import annotations
 
@@ -20,9 +20,18 @@ def registry(ctx: SourceContext) -> dict[str, dict]:
 
 def _status(ctx: SourceContext, url: str) -> dict:
     try:
-        ctx.http.request("HEAD", url, parse="text", ttl=DAY, source="ark")
+        try:
+            ctx.http.request("HEAD", url, parse="status", ttl=DAY, source="ark")
+        except SourceError as exc:
+            if exc.status not in (405, 501):
+                raise
+            # Certains services n'implémentent pas HEAD. Ne lire que les en-têtes GET,
+            # même si le serveur ignore Range ou annonce une image de plusieurs Go.
+            ctx.http.get(url, parse="status", headers={"Range": "bytes=0-0"}, ttl=DAY, source="ark")
         return {"accessible": True}
     except SourceError as exc:
+        if exc.bloque_antirobot:
+            raise  # l'enveloppe publique doit conserver le défi et sa tâche manuelle
         return {"accessible": False, "statut_http": exc.status, "erreur": str(exc)}
 
 

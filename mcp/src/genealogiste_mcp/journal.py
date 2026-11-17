@@ -32,7 +32,7 @@ class Journal:
         personne: str | None = None,
         note: str = "",
     ) -> str:
-        """statut : positif | negatif | erreur | manuel."""
+        """statut : positif | negatif | erreur | manuel | bloque_antirobot."""
         entry = {
             "id": uuid.uuid4().hex[:12],
             "date": datetime.now(UTC).isoformat(timespec="seconds"),

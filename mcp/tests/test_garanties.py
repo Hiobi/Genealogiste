@@ -21,7 +21,7 @@ from genealogiste_mcp.privacy import hidden_ids, identifying_patterns, residues
 VIVANT = {"nom": "Lucas MARTIN", "prenom": "Lucas", "texte": "Lucas MARTIN", "requete": 'SELECT ?p { ?p ?l "Lucas Martin" }',
           "personne": "I9"}
 FACTICES = {"ark": "bpt6k1", "cle": "Martin-1", "job": "1", "texte": "registre", "nom": "Durand",
-            "requete": "SELECT ?p {}"}
+            "requete": "SELECT ?p {}", "service": "AD59", "commune": "Somain", "annee": 1860}
 
 
 def _appels():

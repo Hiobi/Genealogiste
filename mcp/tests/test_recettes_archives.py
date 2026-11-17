@@ -44,6 +44,23 @@ def test_archives_service_expose_la_recette(app, tmp_path, monkeypatch):
     assert vue["recette"]["derniere_reussite"] == "2026-11-15"
 
 
+def test_recette_vps_distincte_des_autres_adresses(tmp_path, monkeypatch):
+    monkeypatch.setattr(archives, "RECETTES", tmp_path / "recettes.json")
+    archives.enregistrer_recette("AD59", "protection", "hCaptcha", environnement="vps")
+    archives.enregistrer_recette("AD59", "ok", environnement="local")
+    acces = archives.service(code="AD59")["acces_vps"]
+    assert acces["verdict"] == "defi"
+    assert acces["detail"] == "hCaptcha"
+    assert acces["date_mesure"]
+    assert archives.recette("AD59")["mesures"]["local"]["verdict"] == "oui"
+
+
+def test_acces_vps_inconnu_sans_mesure(tmp_path, monkeypatch):
+    monkeypatch.setattr(archives, "RECETTES", tmp_path / "recettes.json")
+    archives.enregistrer_recette("AD59", "ok")
+    assert archives.service(code="AD59")["acces_vps"]["verdict"] == "inconnu"
+
+
 def test_adaptateur_sans_recette_signale_non_eprouve():
     eprouve = archives.service(code="AD25")["telechargement"]
     assert eprouve["etat"] == "automatique"

@@ -149,8 +149,7 @@ def planche(ctx: SourceContext, source: str, de: int, a: int = 0, pas: int = 1, 
         ecrire_atomique(dest, jpeg)
     except (iiif.IiifError, VisionneuseError, SourceError, OSError, Image.DecompressionBombError) as exc:
         failure = error_envelope(ctx, "visionneuse", "planche", params, exc)
-        return {"erreur": str(exc), "source": source, "telechargements": telechargees,
-                "journal": failure["journal"]}
+        return {**failure, "source": source, "telechargements": telechargees}
     manquantes = list(info["absentes"])
     out = {"chemin_absolu": str(dest), "vues": [v for v, _ in images], "grille": grille,
            "dimensions_demandees": dimensions,

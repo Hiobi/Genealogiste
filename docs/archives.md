@@ -131,3 +131,41 @@ Le [relevé du 10 novembre](releves-archives-2026-11-10.md) classe les 101 servi
 générique : 14 services Mnesys Expo (AD14, AD19, AD25, AD37, AD39, AD51, AD55, AD58, AD59, AD69,
 AD80, AD90, AD91, AD972) sont inscrits après recette réelle, état civil et, quand trouvés, registres
 matricules. Ajouter un service Mnesys Expo = renseigner `resolution_image` après recette, sans code.
+
+## Recette depuis un VPS et accès protégé — #150
+
+Un essai réussi depuis une connexion ne garantit pas l'accès depuis une autre. Les résultats peuvent
+être enregistrés séparément par environnement :
+
+```bash
+GENEALOGISTE_RECETTE_ENVIRONNEMENT=vps make test-archives
+```
+
+Exécuter cette commande sur le VPS cible, avec les fixtures publiques de référence et aucun fichier
+familial. Pour un essai ailleurs, utiliser `local`, `ci` ou `inconnu` (défaut). Ne pas étiqueter un
+environnement déduit de son seul système d'exploitation. Les mesures sont conservées dans
+`referentiels/recettes_archives.json`, sous `mesures`, sans adresse IP ni secret.
+
+`archives_service` expose `acces_vps` : `verdict` vaut `oui` (recette complète réussie), `defi`
+(protection rencontrée), `echec` (échec technique ou de contrat, sans conclure à sa cause), ou `inconnu`
+(aucun essai identifié depuis le VPS). `date_mesure` est en UTC et `detail` indique la limite observée.
+Une nouvelle recette locale ne remplace pas la mesure VPS. Chaque mesure concerne seulement la
+ressource de référence et le moment de l'essai, pas tout le fonds ni toutes les adresses de VPS.
+
+Un défi reconnu renvoie `statut: bloque_antirobot`, le service, le type de protection, l'heure et une
+`tache_manuelle` avec l'URL effective. Le journal conserve la tâche :
+`journal_lister(statut="bloque_antirobot")`. Continuer les autres pistes ; fournir ensuite les résultats
+avec `source_collee` ou le téléchargement autorisé à `piece_archiver` en fichier local. Aucun
+navigateur n'est requis sur le serveur pour conserver cette attente. Les signaux et la décision sur le
+proxy sortant sont décrits dans [Sécurité](securite.md#échecs-mémorisés-coupe-circuit-caches-bornés).
+
+## Localisation des registres AD59 — #121
+
+`archives_registres(service="AD59", commune="Saint-Vaast-en-Cambrésis", annee=1860, type_acte="N")`
+interroge la recherche publique pour obtenir la cote et l'ARK du registre, sans navigateur ni ARK initial.
+Une seule page par appel, avec cache ; les pages suivantes sont demandées explicitement. Le serveur
+ne cherche pas encore la vue contenant l'acte : poursuivre avec `archives_naviguer`.
+
+Le [guide utilisateur](../wiki/Services-archives.md#trouver-un-registre-ad59-sans-ark) décrit les types,
+la garde des vivants et les replis. Le [contrat observé](recherche-registres-ad59.md) documente le HTML,
+les fixtures et la recette réseau explicite. Les autres services ne sont pas qualifiés par ce lot.
