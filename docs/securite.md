@@ -63,7 +63,9 @@ Cas tranchés d'après le code :
   rafraîchie de l'arbre en mode gramps.
 
 La collecte est bornée par les **limites de débit par hôte**, le **coupe-circuit** anti-robot, le
-**plafond journalier par hôte d'archives** (`GENEALOGISTE_PLAFOND_JOUR_ARCHIVES`, toujours actif) et, pour
+**plafond journalier par hôte** ([politique d'accès par service](#politique-daccès-par-service) :
+`GENEALOGISTE_PLAFOND_JOUR_ARCHIVES` pour les archives, `GENEALOGISTE_PLAFOND_JOUR_DEFAUT` pour les API et
+tout autre hôte, toujours actif) et, pour
 un appel lié à une enquête, son **budget** (requêtes par hôte, images ; refus avant l'envoi) — sections
 ci-dessous et [enquetes.md](enquetes.md#budget-et-arrêt-propre) (#157, #211). Trois préoccupations
 distinctes : le **ménagement des sites** relève de la couche réseau (intervalle par hôte, ralentissement
@@ -211,7 +213,8 @@ Ordre de priorité, du plus fort au plus faible :
 1. `GENEALOGISTE_DEBITS=hote=secondes,hote2=secondes` (configuration de l'utilisateur) ;
 2. `intervalle_requetes` (secondes) d'un service du référentiel `archives_fr.json`, appliqué aux hôtes de
    son `site` et de sa `visionneuse` ;
-3. valeurs codées pour les API (matchID, WikiTree, Gallica, Wikidata : 1 s ; API Géo : 0,1 s) ;
+3. table des services de `politique_acces.py` (matchID, WikiTree, Gallica, Wikidata : 1 s ; API Géo : 0,1 s ;
+   voir [politique d'accès par service](#politique-daccès-par-service)) ;
 4. `GENEALOGISTE_DEBIT_DEFAUT` pour tout autre hôte (1,5 s par défaut ; 0 désactive).
 
 Le créneau est réservé sous un verrou court puis l'attente se fait hors verrou : un hôte lent ne retarde
@@ -249,13 +252,70 @@ l'intervalle de base est nul (`GENEALOGISTE_DEBITS=hote=0`) n'est pas ralenti.
 - `cache_purger("ralentissement")` rétablit le rythme normal de tous les hôtes (écriture, confirmée) ; une
   purge complète `cache_purger()` ne le lève pas. Le lendemain, le rythme normal revient de lui-même.
 
+## Politique d'accès par service
+
+`politique_acces.py` (#211, lot B). Une seule table donne, pour chaque hôte externe, l'**intervalle** minimal
+entre deux requêtes, le **plafond** de requêtes émises par jour, la **concurrence** (requêtes simultanées) et
+la **référence** (CGU ou documentation d'API, avec sa date de relevé). Le client HTTP (intervalle) et le
+plafond journalier la lisent tous deux : aucune autre valeur n'est codée ailleurs. Le référentiel
+`archives_fr.json` reste la source de `intervalle_requetes` des services d'archives (validation inchangée).
+
+Chaque valeur porte sa **provenance** :
+
+| Provenance | Sens |
+|---|---|
+| `sourcee` | valeur prise dans la référence citée (`reference` + `releve_le` obligatoires, sinon refus au chargement) |
+| `historique` | valeur historique du plugin, reprise telle quelle (ancienne table `RATE` de `server.py`) |
+| `referentiel` | `intervalle_requetes` d'un service du référentiel des archives |
+| `environnement` | surcharge par `GENEALOGISTE_DEBITS` ou `GENEALOGISTE_PLAFONDS_JOUR` |
+| `defaut` | défaut prudent du plugin (`GENEALOGISTE_DEBIT_DEFAUT`, `GENEALOGISTE_PLAFOND_JOUR_ARCHIVES`, `GENEALOGISTE_PLAFOND_JOUR_DEFAUT`) |
+
+Aucune valeur n'est présentée comme officielle sans référence vérifiée. Quand la documentation d'un service
+publie des limites, elles sont relevées dans `limites_documentees` à titre d'information : la valeur
+appliquée reste la valeur historique, plus prudente. Les valeurs sourcées complètes viendront de #119.
+
+Table au 2026-11-17 (défauts de configuration : intervalle 1,5 s, plafond 1000 requêtes/jour) :
+
+| Hôte | Service | Intervalle | Plafond/jour | Concurrence | Référence (relevé) |
+|---|---|---|---|---|---|
+| `deces.matchid.io` | matchID | 1 s (historique) | 1000 (défaut) | 1 (défaut) | — |
+| `api.wikitree.com` | WikiTree API | 1 s (historique) | 1000 (défaut) | 1 (défaut) | [README de l'API](https://github.com/wikitree/wikitree-api/blob/main/README.md) (2026-11-17) : limites strictes sans `appId`, aucun chiffre publié |
+| `gallica.bnf.fr` | Gallica (BnF) | 1 s (historique) | 1000 (défaut) | 1 (défaut) | — (aucune limite chiffrée trouvée sur [api.bnf.fr](https://api.bnf.fr/fr/api-gallica-de-recherche)) |
+| `query.wikidata.org` | Wikidata Query Service | 1 s (historique) | 1000 (défaut) | 1 (défaut) | [User Manual, Query limits](https://www.mediawiki.org/wiki/Wikidata_Query_Service/User_Manual#Query_limits) (2026-11-17) : 60 s de calcul/min, 30 erreurs/min, 5 requêtes parallèles par IP |
+| `geo.api.gouv.fr` | API Géo | 0,1 s (historique) | 1000 (défaut) | 1 (défaut) | [data.gouv.fr](https://www.data.gouv.fr/dataservices/672cf6946a8456f417812b0f) (2026-11-17) : 50 appels/s par IP |
+| `www.insee.fr` | INSEE (fichiers du COG) | 1,5 s (défaut) | 1000 (défaut) | 1 (défaut) | — |
+| `n2t.net` | N2T (registre des NAAN ARK) | 1,5 s (défaut) | 1000 (défaut) | 1 (défaut) | — |
+| hôtes du référentiel des archives (sous-domaines compris, hors type « autre ») | service du référentiel | `intervalle_requetes` (référentiel) sinon 1,5 s (défaut) | `GENEALOGISTE_PLAFOND_JOUR_ARCHIVES` (1000) | 1 (défaut) | référentiel ([archives.md](archives.md)) |
+| tout autre hôte (IIIF, visionneuses…) | — | `GENEALOGISTE_DEBIT_DEFAUT` (1,5 s) | `GENEALOGISTE_PLAFOND_JOUR_DEFAUT` (1000) | 1 (défaut) | — |
+
+Un test dérive des modules `sources/` (et des URL COG de la configuration) la liste des hôtes réellement
+interrogés et exige qu'ils soient tous déclarés (table ou référentiel) ; un hôte dynamique (manifeste IIIF
+d'un tiers) tombe sur le défaut explicite.
+
+**Surcharges** (priorité décroissante) :
+
+- intervalle : `GENEALOGISTE_DEBITS=hote=secondes,…` > `intervalle_requetes` du référentiel > table >
+  `GENEALOGISTE_DEBIT_DEFAUT` ;
+- plafond/jour : `GENEALOGISTE_PLAFONDS_JOUR=hote=requetes,…` > table > `GENEALOGISTE_PLAFOND_JOUR_ARCHIVES`
+  (hôtes d'archives) > `GENEALOGISTE_PLAFOND_JOUR_DEFAUT` (tout autre hôte) ; 0 désactive.
+
+**Concurrence** : le serveur sérialise les appels d'outils et le client n'émet jamais deux requêtes en
+parallèle ; la valeur 1 est donc la contrainte effective par processus (et l'intervalle partagé espace les
+départs entre processus). Elle est consignée pour une éventuelle parallélisation, sans sémaphore aujourd'hui.
+
+**Visibilité** : `diagnostic` (contrôle `politique_acces`) liste la politique effective de chaque service
+nommé et des hôtes surchargés, avec la provenance de chaque valeur, les défauts par catégorie et la
+consommation du jour ; `archives_service` ajoute `politique_acces` pour le site et la visionneuse du service.
+
 ## Plafond journalier par hôte d'archives et budget d'enquête
 
-`budget.py`, `http.py`, `cache.py` (#157).
+`budget.py`, `http.py`, `cache.py` (#157, étendu à tous les hôtes par #211).
 
 - **Plafond journalier** : au plus `GENEALOGISTE_PLAFOND_JOUR_ARCHIVES` requêtes **émises** par jour (date
   locale) vers chaque hôte d'un service d'archives du référentiel (`site` et `visionneuse`, sous-domaines
-  compris ; pas les services de type « autre » : matchID, Gallica, RetroNews, FranceArchives). Défaut
+  compris ; pas les services de type « autre » : matchID, Gallica, RetroNews, FranceArchives), et au plus
+  `GENEALOGISTE_PLAFOND_JOUR_DEFAUT` vers tout autre hôte (API comprises) ; `GENEALOGISTE_PLAFONDS_JOUR`
+  règle un hôte précis ([politique d'accès par service](#politique-daccès-par-service)). Défauts
   **1000**, 0 désactive. Indépendant de toute enquête, il s'applique aussi aux appels interactifs.
   Compteur persistant dans la table `compteurs_jour` du cache SQLite (survit aux redémarrages, partagé
   entre serveurs, transaction par requête ; jamais vidé par `cache_purger`). Une réponse servie par le cache
@@ -267,6 +327,13 @@ l'intervalle de base est nul (`GENEALOGISTE_DEBITS=hote=0`) n'est pas ralenti.
   dizaines de tuiles par vue. Le plafond ne gêne donc pas l'usage interactif ; il arrête une boucle
   autonome qui feuilletterait un fonds entier. Avec le débit (1,5 s par défaut), 1000 requêtes
   représentent au moins 25 minutes de requêtes continues.
+  **Pourquoi 1000 pour les API** : une recherche multi-sources émet une requête par source, une fiche
+  WikiTree ou une requête Wikidata une ou deux ; le budget d'une enquête est de 200 requêtes par hôte. 1000
+  requêtes par jour couvrent donc plusieurs enquêtes complètes, et bien davantage en usage interactif,
+  puisque les réponses servies par le cache (30 à 365 jours selon la source) ne comptent pas. Le plafond
+  borne en revanche une boucle autonome : à 1 s d'intervalle, 1000 requêtes représentent au moins
+  17 minutes de requêtes continues vers le même service. Un usage légitime plus intense (structuration de
+  milliers de lieux par l'API Géo) se règle par `GENEALOGISTE_PLAFONDS_JOUR=geo.api.gouv.fr=5000`.
 - **Budget d'enquête** : avec `enquete=<id>`, tout outil réseau de collecte du catalogue
   (`outils.BUDGET_ENQUETE`, dérivé de `outils.OUTILS` ; exemptions motivées dans `outils.HORS_BUDGET`) est
   mesuré côté serveur : l'enveloppe de `serveur_mcp.py` ajoute le paramètre facultatif `enquete` et exécute

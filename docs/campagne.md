@@ -54,8 +54,8 @@ Quatre réglages, tous fixés par l'humain avant la tâche :
    `budget` (fixer ou relever un budget est une écriture : refusée par le serveur en mode `interdite` et par
    le client en `-p`). Tout outil réseau de collecte appelé avec `enquete=<id>` compte dans ce
    budget (images, requêtes par hôte) : il **arrête une boucle**. Le ménagement des sites relève de la couche
-   réseau (débit par hôte, ralentissement, plafond journalier `GENEALOGISTE_PLAFOND_JOUR_ARCHIVES`,
-   coupe-circuit anti-robot), qui s'applique à tous les appels.
+   réseau (débit par hôte, ralentissement, plafond journalier par hôte `GENEALOGISTE_PLAFOND_JOUR_ARCHIVES` /
+   `GENEALOGISTE_PLAFOND_JOUR_DEFAUT`, coupe-circuit anti-robot), qui s'applique à tous les appels.
 3. **Coût** : `--max-budget-usd` sur la ligne `claude -p`, **à fixer pour toute campagne** : c'est le seul
    plafond du coût réel (le budget d'enquête ne mesure ni durée ni tokens).
 4. **Profil de permissions minimal** : `make profil-campagne` affiche un fichier de réglages Claude Code

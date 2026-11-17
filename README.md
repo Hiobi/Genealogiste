@@ -78,8 +78,11 @@ détaille ce parcours et le résultat attendu.
   toute écriture (arbre, Gramps Web, vos fichiers), suppression ou usage d’identifiants demande votre accord
   ([classes de permission](docs/securite.md#confirmations-hooks)).
 - Une enquête a un budget (requêtes par site, images lues), compté sur tous les outils de collecte, et
-  s’arrête proprement à l’épuisement ; le coût réel se plafonne côté client (`--max-budget-usd`) ; chaque service d’archives reçoit au plus 1000 requêtes par jour. Réglages :
-  `GENEALOGISTE_BUDGET_*` et `GENEALOGISTE_PLAFOND_JOUR_ARCHIVES` (`.env.example`).
+  s’arrête proprement à l’épuisement ; le coût réel se plafonne côté client (`--max-budget-usd`) ; chaque
+  service d’archives, et chaque API, reçoit au plus 1000 requêtes par jour
+  ([politique d’accès par service](docs/securite.md#politique-daccès-par-service)). Réglages :
+  `GENEALOGISTE_BUDGET_*`, `GENEALOGISTE_PLAFOND_JOUR_ARCHIVES`, `GENEALOGISTE_PLAFOND_JOUR_DEFAUT` et
+  `GENEALOGISTE_PLAFONDS_JOUR` (`.env.example`).
 - Pour une recherche sans surveillance (`/genealogiste:campagne`, tâche planifiée), `GENEALOGISTE_ECRITURE=interdite`
   fait refuser par le serveur lui-même toute écriture, quel que soit le mode de permission du client ; les
   conclusions attendent dans la file de propositions ([campagne sans surveillance](docs/campagne.md)).

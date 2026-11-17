@@ -210,7 +210,9 @@ permet un nouvel essai explicite. Les autres services classés `anubis` par la s
 ## Plafond journalier par service — #157
 
 Chaque hôte d'un service d'archives du référentiel reçoit au plus `GENEALOGISTE_PLAFOND_JOUR_ARCHIVES`
-requêtes par jour (1000 par défaut, 0 = aucun plafond), même sans enquête. Le compteur est persistant (cache
+requêtes par jour (1000 par défaut, 0 = aucun plafond), même sans enquête. Les autres hôtes (API,
+IIIF tiers) ont leur propre plafond, `GENEALOGISTE_PLAFOND_JOUR_DEFAUT`, et un hôte précis se règle par
+`GENEALOGISTE_PLAFONDS_JOUR` ([politique d'accès par service](securite.md#politique-daccès-par-service), #211). Le compteur est persistant (cache
 SQLite) ; au plafond, aucune requête ne part et l'outil renvoie une erreur avec `reessayer_apres` (minuit).
 Choix et justification du défaut : [securite.md](securite.md#plafond-journalier-par-hôte-darchives-et-budget-denquête).
 Pour une enquête, le budget (`docs/enquetes.md`) borne en plus les requêtes par hôte et les images lues, sur

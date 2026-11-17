@@ -46,6 +46,7 @@ from .normalize import dates as d
 from .normalize.names import normalize_name, surname_similarity
 from .normalize.places import normalize_place
 from .notes import Notes, NotesError, touched
+from .politique_acces import PolitiqueAcces, normaliser_hote
 from .reseau import NetworkPolicy
 from .serveur_mcp import ServeurMCP
 from .sources import (
@@ -80,10 +81,6 @@ mcp.avec_enquete = outils.BUDGET_ENQUETE
 mcp.doc_enquete = ("enquete (facultatif) : id d'enquête dont le budget compte les requêtes émises (par hôte) ; "
                    "budget épuisé : refus avant la requête, enquête bloquée, appel consigné au reste à faire.")
 
-RATE = {"deces.matchid.io": 1.0, "api.wikitree.com": 1.0, "gallica.bnf.fr": 1.0, "query.wikidata.org": 1.0,
-        "geo.api.gouv.fr": 0.1}
-
-
 class App:
     def __init__(self, config: Config | None = None, transport=None, sleeper=None, gramps_transport=None):
         self.config = config or load_config()
@@ -91,14 +88,13 @@ class App:
         self.cache.borner()
         menage.borner_images(self.config)
         kw = {"sleeper": sleeper} if sleeper else {}
-        intervalles = {**RATE, **archives.intervalles(), **self.config.debits}  # env > référentiel > code
-        self.http = HttpClient(self.cache, self.config.user_agent, self.config.http_timeout, intervalles,
+        politique = PolitiqueAcces.depuis_config(self.config)  # intervalle et plafond par hôte (#211)
+        self.http = HttpClient(self.cache, self.config.user_agent, self.config.http_timeout,
                                offline=self.config.offline, transport=transport,
-                               policy=NetworkPolicy(self.config.hotes_autorises),
-                               default_interval=self.config.debit_defaut,
+                               policy=NetworkPolicy(self.config.hotes_autorises), politique=politique,
                                max_retries=self.config.http_tentatives, duree_max=self.config.http_duree_max,
                                echec_ttl=self.config.cache_echec, coupe_circuit_ttl=self.config.coupe_circuit,
-                               plafond=PlafondJour(self.cache, self.config.plafond_jour_archives, archives.hotes()),
+                               plafond=PlafondJour(self.cache, politique=politique),
                                ralentissement_max=self.config.ralentissement_max,
                                **kw)
         self.store = TreeStore(self.config.data_dir, self.config.git_remote, self.config.git_delai)
@@ -682,7 +678,11 @@ def archives_service(lieu: str = "", departement: str = "", code: str = "", docu
     date de vérification et couverture sourcée. Un accès déclaré ne prouve pas l'existence d'un acte.
     consultation_manuelle : protection anti-robot relevée (ex. Anubis) et consigne (vue fournie par
     l'utilisateur, media_enregistrer) ; un nouvel essai réseau reste possible."""
-    return archives.service(lieu, departement, code, document, annee or None)
+    res = archives.service(lieu, departement, code, document, annee or None)
+    hotes = [normaliser_hote(res.get(k) or "") for k in ("site", "visionneuse")] if "erreur" not in res else []
+    if any(hotes):  # politique d'accès effective (intervalle, plafond/jour, provenance) de ses hôtes (#211)
+        res["politique_acces"] = {h: app().http.politique.politique(h).en_dict() for h in hotes if h}
+    return res
 
 
 @mcp.tool()
