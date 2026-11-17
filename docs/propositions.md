@@ -34,7 +34,7 @@ l'entrée reste `en_attente`, reprendre à nouveau.
 ## Stockage
 
 Un fichier JSON lisible par entrée dans `<données>/.propositions/file/<id>.json` (exclu de Git comme les
-jetons, exclu des sauvegardes de la même façon), écrit atomiquement sous verrou. Champs : `id`, `titre`,
+jetons, mais inclus dans `make sauvegarde`, contrairement aux jetons), écrit atomiquement sous verrou. Champs : `id`, `titre`,
 `justification`, `operations`, `sources`, `pieces`, `personnes`, `enquete`, `depose`, `statut`, `raison`,
 `jeton` (dernière reprise), `commit` ou `transaction`, `historique` (changements de statut datés). Le même
 répertoire sert aux deux backends (`fichier`, `gramps`).
