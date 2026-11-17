@@ -189,3 +189,9 @@ Exemple :
    "citations": [{"source": "$ec", "page": "acte n° 45", "information": "primaire"}]}
 ]
 ```
+
+## Validation différée
+
+Les mêmes opérations peuvent être déposées dans une file durable (`propositions_deposer`) au lieu d'un jeton
+d'une heure, puis reprises sur l'arbre courant (`propositions_reprendre`, diff frais) et appliquées après
+accord : voir [la file de propositions](propositions.md) et `/genealogiste:valide`.

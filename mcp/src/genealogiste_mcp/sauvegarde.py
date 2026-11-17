@@ -26,6 +26,8 @@ from .fichiers import verrou
 EXCLUS = (".env", ".env.*", "*.token", "*.key", "*.pem", "*.sqlite", "*.sqlite-wal", "*.sqlite-shm", ".*.lock",
           ".*.tmp", ".genealogiste.lock")
 DOSSIERS_EXCLUS = ("cache-images", "cache-pdf", "exports", "logs", ".propositions")
+# File de propositions durable (#154) : conservée, contrairement aux jetons d'une heure de .propositions/.
+CONSERVES = (PurePosixPath(".propositions/file"),)
 
 
 class SauvegardeError(RuntimeError):
@@ -33,6 +35,8 @@ class SauvegardeError(RuntimeError):
 
 
 def _exclu(rel: PurePosixPath) -> bool:
+    if any(rel == c or c in rel.parents for c in CONSERVES):
+        return any(fnmatch.fnmatch(rel.name, m) for m in EXCLUS)
     if rel.parts and rel.parts[0] in DOSSIERS_EXCLUS:
         return True
     return any(fnmatch.fnmatch(rel.name, m) for m in EXCLUS)

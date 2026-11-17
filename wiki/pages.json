@@ -162,6 +162,12 @@
     "groupe": "Entretenir et contribuer"
   },
   {
+    "slug": "File-de-propositions",
+    "source": "docs/propositions.md",
+    "titre": "File de propositions",
+    "groupe": "Entretenir et contribuer"
+  },
+  {
     "slug": "Extensions-GEDCOM",
     "source": "docs/gedcom-extensions.md",
     "titre": "Extensions GEDCOM",

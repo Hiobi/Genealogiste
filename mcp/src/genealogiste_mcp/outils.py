@@ -81,6 +81,11 @@ OUTILS: dict[str, tuple[str, str]] = {
     "arbre_importer_gedcom": (PROPOSITION, ALLOW),
     "arbre_appliquer": (ECRITURE, ASK),
     "arbre_exporter": (ECRITURE, DEFAUT),
+    # file de propositions (#154) : locale, aucune écriture de l'arbre (arbre_appliquer reste l'écriture)
+    "propositions_deposer": (PROPOSITION, ALLOW),
+    "propositions_lister": (LECTURE, ALLOW),
+    "propositions_reprendre": (PROPOSITION, ALLOW),
+    "propositions_abandonner": (PROPOSITION, ALLOW),
     # fichiers
     "rapport_enregistrer": (ECRITURE, ASK),
     "media_enregistrer": (ECRITURE, DEFAUT),

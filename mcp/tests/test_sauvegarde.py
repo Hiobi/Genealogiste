@@ -87,3 +87,16 @@ def test_cli(app_famille, tmp_path, monkeypatch, capsys):
 def test_diagnostic_renvoie_au_guide_serveur(app):
     from genealogiste_mcp import server
     assert server.diagnostic(reseau=False)["guide"].endswith("/wiki/Serveur")
+
+
+def test_file_propositions_sauvegardee_jetons_exclus(app_famille, tmp_path):
+    """#154 : la file durable survit à une restauration ; les jetons d'une heure n'y figurent pas."""
+    d = app_famille.config.data_dir / ".propositions"
+    (d / "file").mkdir(parents=True, exist_ok=True)
+    (d / "file" / "20261117T000000000000-x.json").write_text("{}", encoding="utf-8")
+    (d / "jeton-abc.json").write_text("{}", encoding="utf-8")
+    archive = sauvegarde.sauvegarder(app_famille.config, tmp_path / "sauvegardes")
+    with tarfile.open(archive) as tar:
+        noms = tar.getnames()
+    assert "donnees/.propositions/file/20261117T000000000000-x.json" in noms
+    assert not any("jeton-abc" in n for n in noms)
