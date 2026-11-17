@@ -102,7 +102,8 @@ class App:
         self.tokens.purger_expirees()
         self.sctx = SourceContext(self.http, self.journal, self.config)
         self.notes = Notes(self.config.notes_dir, self.config.notes_vivants, self.config.strict_evidence,
-                           self.config.sosa_racine, self.journal, data_dir=self.config.data_dir)
+                           self.config.sosa_racine, self.journal, data_dir=self.config.data_dir,
+                           kit=self.config.notes_kit)
         self._gramps_transport = gramps_transport
         self._gramps_sleeper = sleeper
         self._client = None
@@ -1424,7 +1425,8 @@ def _notes(fn):
 @mcp.tool()
 def notes_generer(id: str = "tout") -> dict:
     """Crée ou met à jour les fiches Markdown (Obsidian) dans GENEALOGISTE_NOTES_DIR : personne, famille, source,
-    patronyme (NOM) ou « tout » (+ patronymes/ et index.md). Seules les sections générées et le frontmatter sont réécrits ; le texte libre et les
+    patronyme (NOM) ou « tout » (+ patronymes/, index.md et kit Obsidian : vues Bases/Dataview, modèles, extrait
+    CSS, sauf GENEALOGISTE_NOTES_KIT=false ; un fichier du kit modifié à la main est conservé). Seules les sections générées et le frontmatter sont réécrits ; le texte libre et les
     propriétés ajoutées à la main sont conservés ; régénérer sans changement ne modifie aucun fichier."""
     return _notes(lambda: app().notes.generate(app().tree(), id))
 

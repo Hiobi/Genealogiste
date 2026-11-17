@@ -56,6 +56,7 @@ class Config:
     notes_dir: Path | None = None  # notes de recherche Markdown (Obsidian) ; None = désactivées
     notes_vivants: str = "masquer"  # masquer | complet
     notes_auto: bool = True  # régénérer les fiches touchées après arbre_appliquer / journal_ajouter
+    notes_kit: bool = True  # kit Obsidian (vues, modèles, extrait CSS) déposé par notes_generer « tout »
     sosa_racine: str = ""  # personne n° 1 de la numérotation Sosa des notes
     cog_mvt_url: str = "https://www.insee.fr/fr/statistiques/fichier/7766585/v_mvt_commune_2024.csv"
     cog_communes_url: str = "https://www.insee.fr/fr/statistiques/fichier/7766585/v_commune_depuis_1943.csv"
@@ -254,6 +255,7 @@ def load_config() -> Config:
         notes_dir=Path(env("GENEALOGISTE_NOTES_DIR")).expanduser() if env("GENEALOGISTE_NOTES_DIR") else None,
         notes_vivants=notes_vivants_mode(env("GENEALOGISTE_NOTES_VIVANTS")),
         notes_auto=_bool(env("GENEALOGISTE_NOTES_AUTO"), True),
+        notes_kit=_bool(env("GENEALOGISTE_NOTES_KIT"), True),
         sosa_racine=env("GENEALOGISTE_SOSA_RACINE", ""),
         hotes_autorises=[h for h in env("GENEALOGISTE_HOTES_AUTORISES", "").split(",") if h.strip()],
         http_timeout=secondes(env("GENEALOGISTE_HTTP_TIMEOUT"), 30.0, "GENEALOGISTE_HTTP_TIMEOUT") or 30.0,
