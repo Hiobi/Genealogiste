@@ -45,17 +45,20 @@ Rien n'est écrit dans l'arbre pendant la campagne.
 
 ## Exécution planifiée
 
-Trois réglages, tous fixés par l'humain avant la tâche :
+Quatre réglages, tous fixés par l'humain avant la tâche :
 
 1. **Garde-fou serveur** : `GENEALOGISTE_ECRITURE=interdite` dans l'environnement du serveur MCP. C'est la
    seule protection qui ne dépend pas du mode de permission du client
    ([tableau des modes](securite.md#modes-dexécution-et-garde-fou-décriture)).
 2. **Budget** : les défauts `GENEALOGISTE_BUDGET_*` de cet environnement. La campagne ne passe jamais de
    `budget` (fixer ou relever un budget est une écriture : refusée par le serveur en mode `interdite` et par
-   le client en `-p`). Seuls `recherche_multi`, `archives_naviguer` et `archive_image` comptent dans ce
-   budget ; les autres outils réseau sont bornés par le débit par hôte, le coupe-circuit anti-robot et le
-   plafond journalier `GENEALOGISTE_PLAFOND_JOUR_ARCHIVES`, qui s'applique à tous.
-3. **Profil de permissions minimal** : `make profil-campagne` affiche un fichier de réglages Claude Code
+   le client en `-p`). Tout outil réseau de collecte appelé avec `enquete=<id>` compte dans ce
+   budget (images, requêtes par hôte) : il **arrête une boucle**. Le ménagement des sites relève de la couche
+   réseau (débit par hôte, ralentissement, plafond journalier `GENEALOGISTE_PLAFOND_JOUR_ARCHIVES`,
+   coupe-circuit anti-robot), qui s'applique à tous les appels.
+3. **Coût** : `--max-budget-usd` sur la ligne `claude -p`, **à fixer pour toute campagne** : c'est le seul
+   plafond du coût réel (le budget d'enquête ne mesure ni durée ni tokens).
+4. **Profil de permissions minimal** : `make profil-campagne` affiche un fichier de réglages Claude Code
    dérivé du catalogue des outils : `defaultMode: dontAsk`, `allow` pour la lecture, la collecte, la
    proposition et les outils en deux temps (leur branche écriture reste refusée par le serveur), `deny` pour
    toutes les autres écritures. Serveur HTTP Docker : `make profil-campagne PREFIXE=mcp__genealogiste__`.
@@ -80,9 +83,8 @@ export PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin"  # cron fournit un P
 export GENEALOGISTE_ECRITURE=interdite        # garde-fou serveur (hérité par le serveur MCP stdio)
 export GENEALOGISTE_BUDGET_REQUETES_HOTE=100  # budget de chaque enquête, fixé ici par l'humain
 export GENEALOGISTE_BUDGET_IMAGES=20
-export GENEALOGISTE_BUDGET_DUREE_MIN=20
-export GENEALOGISTE_BUDGET_COUT_TOKENS=60000
 cd "$HOME/genealogie-campagne"                # dossier de travail sans secrets ni code
+# --max-budget-usd : plafond du coût réel de la session, à fixer pour toute campagne
 exec claude -p "/genealogiste:campagne arbre enquetes=3" \
   --settings "$HOME/.config/genealogiste/campagne-settings.json" \
   --permission-mode dontAsk --permission-prompts none \

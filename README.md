@@ -77,8 +77,8 @@ détaille ce parcours et le résultat attendu.
 - Lecture, collecte (sources, aperçus, archivage d’une pièce nouvelle) et propositions se font sans demande ;
   toute écriture (arbre, Gramps Web, vos fichiers), suppression ou usage d’identifiants demande votre accord
   ([classes de permission](docs/securite.md#confirmations-hooks)).
-- Une enquête a un budget (requêtes par site, images lues, durée, coût estimé) et s’arrête proprement à
-  l’épuisement ; chaque service d’archives reçoit au plus 1000 requêtes par jour. Réglages :
+- Une enquête a un budget (requêtes par site, images lues), compté sur tous les outils de collecte, et
+  s’arrête proprement à l’épuisement ; le coût réel se plafonne côté client (`--max-budget-usd`) ; chaque service d’archives reçoit au plus 1000 requêtes par jour. Réglages :
   `GENEALOGISTE_BUDGET_*` et `GENEALOGISTE_PLAFOND_JOUR_ARCHIVES` (`.env.example`).
 - Pour une recherche sans surveillance (`/genealogiste:campagne`, tâche planifiée), `GENEALOGISTE_ECRITURE=interdite`
   fait refuser par le serveur lui-même toute écriture, quel que soit le mode de permission du client ; les

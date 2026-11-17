@@ -88,15 +88,15 @@ class Config:
     # Budget par défaut d'une enquête (#157 ; 0 = illimité), réglable à enquete_ouvrir / enquete_noter.
     budget_requetes_hote: int = 200  # GENEALOGISTE_BUDGET_REQUETES_HOTE : requêtes émises vers un même hôte
     budget_images: int = 40  # GENEALOGISTE_BUDGET_IMAGES : images lues (archive_image)
-    budget_duree_min: float = 30.0  # GENEALOGISTE_BUDGET_DUREE_MIN : minutes d'activité cumulée des outils
-    budget_cout_tokens: int = 100_000  # GENEALOGISTE_BUDGET_COUT_TOKENS : coût estimé (images + réponses)
+    # Variables retirées encore définies (#211 : durée et coût estimé ne sont plus des limites) : ignorées,
+    # signalées par diagnostic.
+    variables_retirees: list[str] = field(default_factory=list)
     plafond_jour_archives: int = 1000  # GENEALOGISTE_PLAFOND_JOUR_ARCHIVES : requêtes/hôte/jour (0 = aucun)
     offline: bool = False
     extra: dict = field(default_factory=dict)
 
     def budget_defaut(self) -> dict:
-        return {"requetes_par_hote": self.budget_requetes_hote, "images": self.budget_images,
-                "duree_min": self.budget_duree_min, "cout_tokens": self.budget_cout_tokens}
+        return {"requetes_par_hote": self.budget_requetes_hote, "images": self.budget_images}
 
     @property
     def tree_path(self) -> Path:
@@ -295,6 +295,11 @@ def _dir(value: str | None) -> Path | None:
     return Path(value).expanduser() if value else None
 
 
+# Retirées (#211) : le budget d'enquête ne limite plus la durée ni le coût estimé ; le coût réel se plafonne côté
+# client (--max-budget-usd). Encore définies : ignorées, signalées par diagnostic.
+VARIABLES_RETIREES = ("GENEALOGISTE_BUDGET_DUREE_MIN", "GENEALOGISTE_BUDGET_COUT_TOKENS")
+
+
 def load_config() -> Config:
     env_file = os.environ.get("GENEALOGISTE_ENV_FILE")
     if env_file:
@@ -351,9 +356,7 @@ def load_config() -> Config:
         budget_requetes_hote=entier_positif_ou_nul(env("GENEALOGISTE_BUDGET_REQUETES_HOTE"), 200,
                                                    "GENEALOGISTE_BUDGET_REQUETES_HOTE"),
         budget_images=entier_positif_ou_nul(env("GENEALOGISTE_BUDGET_IMAGES"), 40, "GENEALOGISTE_BUDGET_IMAGES"),
-        budget_duree_min=secondes(env("GENEALOGISTE_BUDGET_DUREE_MIN"), 30.0, "GENEALOGISTE_BUDGET_DUREE_MIN"),
-        budget_cout_tokens=entier_positif_ou_nul(env("GENEALOGISTE_BUDGET_COUT_TOKENS"), 100_000,
-                                                 "GENEALOGISTE_BUDGET_COUT_TOKENS"),
+        variables_retirees=sorted(v for v in VARIABLES_RETIREES if env(v) is not None),
         plafond_jour_archives=entier_positif_ou_nul(env("GENEALOGISTE_PLAFOND_JOUR_ARCHIVES"), 1000,
                                                     "GENEALOGISTE_PLAFOND_JOUR_ARCHIVES"),
         media_dir_conf=_dir(env("GENEALOGISTE_MEDIA_DIR")),

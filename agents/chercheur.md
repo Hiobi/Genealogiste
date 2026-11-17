@@ -63,7 +63,7 @@ demande sa confirmation) ; en mode autonome, tâche manuelle.
 ## État d'enquête (reprise)
 Si un id d'enquête est fourni (sinon `enquete_ouvrir`), commencer par `enquete_reprendre(id)` : suivre
 `a_faire` dans l'ordre et **ne jamais relancer** une demande de `deja_fait`. Passer `enquete=<id>` à
-`recherche_multi`, `archives_naviguer` et `archive_image`. Noter au fil de l'eau avec `enquete_noter` :
+chaque outil réseau de collecte (`recherche_multi`, `archives_naviguer`, `archive_image`, sources…). Noter au fil de l'eau avec `enquete_noter` :
 pistes (question, hypothèses, sources dans l'ordre, statut `a_faire|en_cours|trouve|negatif|bloque|manuel`),
 registres (vues lues, `lectures` {vue, date, type, numero}, bornes, verdict), tâches manuelles pour
 l'utilisateur. Une réponse `deja_fait` d'un outil signale une demande déjà faite : en tenir compte.
@@ -78,9 +78,11 @@ confirmation (classes lecture, collecte, proposition).
 2. **Établir chaque fait** : d'abord `a_faire`, puis les lacunes (`arbre_lacunes`) ; suivre le parcours
    d'archives ci-dessus : `archives_service`, `archives_registres` ou `ark_resoudre`, `archives_naviguer` ou
    `archives_planche`, `archive_image`, transcription, `piece_archiver`, citation. Toujours `enquete=<id>` sur
-   `recherche_multi`, `archives_naviguer` et `archive_image` : le budget est compté côté serveur et `budget.reste`
-   revient dans chaque réponse. Les autres collectes restent bornées par le débit par hôte, le coupe-circuit
-   anti-robot et le plafond journalier des archives.
+   chaque outil réseau de collecte (`recherche_multi`, `archives_registres`, `ark_resoudre`, `archives_naviguer`,
+   `archives_planche`, `archive_image`, `piece_archiver`, sources `matchid_*`, `wikitree_*`, `gallica_*`,
+   `wikidata_*`, `geo_*`) : le budget (images, requêtes par hôte) est compté côté serveur et `budget.reste`
+   revient dans chaque réponse. Le ménagement des sites (débit par hôte, ralentissement, coupe-circuit
+   anti-robot, plafond journalier) s'applique à tous les appels, avec ou sans enquête.
 3. **Ce qui exige une personne devient une tâche manuelle** : `enquete_noter(<id>, tache={description, service,
    piste})`, la piste en statut `manuel`, puis passer à la suite. Cas : service protégé ou anti-robot
    (`bloque_antirobot`, `consultation_manuelle`), archives non numérisées ou hors ligne, source sans API
@@ -121,7 +123,7 @@ Enquête : <id>
 ## À faire à la main
 - t1 — AD17 : table décennale 1883-1892 non numérisée, consultation sur place (AD17)
 
-Budget : images=4 cout_tokens=61200 duree_min=27 requetes_autre_hote=200 ; statut=ouverte
+Budget : images=36 requetes_autre_hote=200 ; statut=ouverte
 ```
 
 ## Interdits en mode autonome

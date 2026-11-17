@@ -213,8 +213,8 @@ Chaque hôte d'un service d'archives du référentiel reçoit au plus `GENEALOGI
 requêtes par jour (1000 par défaut, 0 = aucun plafond), même sans enquête. Le compteur est persistant (cache
 SQLite) ; au plafond, aucune requête ne part et l'outil renvoie une erreur avec `reessayer_apres` (minuit).
 Choix et justification du défaut : [securite.md](securite.md#plafond-journalier-par-hôte-darchives-et-budget-denquête).
-Pour une enquête, le budget (`docs/enquetes.md`) borne en plus les requêtes par hôte, les images lues, la
-durée et le coût estimé.
+Pour une enquête, le budget (`docs/enquetes.md`) borne en plus les requêtes par hôte et les images lues, sur
+tous les outils de collecte appelés avec `enquete=<id>`.
 
 ## Localisation des registres AD59 — #121
 

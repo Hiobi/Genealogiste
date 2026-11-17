@@ -124,7 +124,13 @@ def controles_locaux(a, probleme: dict | None, config) -> list[dict]:
             "wikitree_app_id": "défini" if config.wikitree_app_id else "absent",
             "mcp_token": "défini" if os.environ.get("MCP_TOKEN") else "absent",
         }
-        out.append(_ctl("configuration", "ok", f"backend {config.backend}", valeurs=valeurs))
+        retirees = getattr(config, "variables_retirees", [])
+        out.append(_ctl("configuration", "attention", f"backend {config.backend} ; variable(s) retirée(s) "
+                        f"ignorée(s) : {', '.join(retirees)}",
+                        "Les retirer de l'environnement ou du .env : le budget d'enquête ne limite plus la durée ni "
+                        "le coût estimé ; plafonner le coût réel côté client (--max-budget-usd).",
+                        valeurs=valeurs) if retirees
+                   else _ctl("configuration", "ok", f"backend {config.backend}", valeurs=valeurs))
     git = _version_outil(["git", "--version"])
     out.append(_ctl("git", "ok", git) if git else _ctl(
         "git", "erreur", "git introuvable", "Installer git (ex. sudo apt install git) dans le PATH du serveur."))

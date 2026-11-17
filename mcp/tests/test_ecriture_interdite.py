@@ -229,6 +229,15 @@ def test_schemas_inchanges_par_l_enveloppe():
     attendus = {t.name: (t.description, t.input_schema, t.output_schema) for t in asyncio.run(temoin.list_tools())}
     obtenus = {t.name: (t.description, t.input_schema, t.output_schema)
                for t in asyncio.run(server.mcp.list_tools())}
+    # #211 : l'enveloppe ajoute seulement le paramètre facultatif « enquete » (et sa phrase de description) aux
+    # outils de collecte réseau qui ne l'ont pas déjà.
+    ajoutes = {n for n in outils.BUDGET_ENQUETE if n in obtenus and "enquete" not in attendus[n][1]["properties"]}
+    assert ajoutes
+    for nom in ajoutes:
+        description, schema, sortie = obtenus[nom]
+        assert schema["properties"].pop("enquete") == {"default": "", "title": "Enquete", "type": "string"}, nom
+        assert description.startswith(attendus[nom][0]) and description != attendus[nom][0], nom
+        obtenus[nom] = (attendus[nom][0], schema, sortie)
     assert obtenus == attendus
 
 

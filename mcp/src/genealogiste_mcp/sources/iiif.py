@@ -45,13 +45,6 @@ class IiifError(ValueError):
     pass
 
 
-def cout_prevu(largeur: int = PREVIEW_WIDTH) -> int:
-    """Coût estimé d'une image avant de la demander (budget d'enquête, #157) : largeur bornée comme fetch, page
-    de registre en portrait (hauteur ≈ 1,4 × largeur) ; le coût réel (cout_estime_tokens) le remplace ensuite."""
-    largeur = max(100, min(int(largeur or PREVIEW_WIDTH), MAX_WIDTH))
-    return round(largeur * largeur * 1.4 * TOKENS_PER_PIXEL)
-
-
 def _id(o) -> str:
     if isinstance(o, list):
         o = o[0] if o else {}
