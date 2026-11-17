@@ -94,3 +94,7 @@ La recette native Codex 0.166.0 (`make test-codex`) vérifie aussi que le refus 
 d'`archives_registres` laisse le journal de recherche intact, puis qu'un appel approuvé visant le
 vivant fictif `I9` est refusé par la garde locale. Cette recette utilise le fournisseur déterministe
 local et le mode hors ligne ; elle ne recherche aucune personne réelle.
+
+## De la recherche à l’archivage
+
+La [recette de chaîne AD59](recette-chaine-ad59.md) prolonge la recherche jusqu’à l’archivage d’une vue candidate avec sa provenance. Elle ne prétend pas identifier un acte.
