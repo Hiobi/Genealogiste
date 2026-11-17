@@ -59,7 +59,8 @@ from .sources import (
     wikitree,
 )
 from .sources.base import SourceContext, error_envelope
-from .tree.proposals import ProposalError, Proposals, TokenStore
+from .tree import file_propositions as fp
+from .tree.proposals import ProposalError, Proposals, TokenStore, new_alerts, prepare, targets
 from .tree.store import TreeStore, remote_problem
 
 INSTRUCTIONS = """Assistant généalogique (méthode du Genealogical Proof Standard, sources françaises).
@@ -95,6 +96,7 @@ class App:
         self.proposals = Proposals(self.store, self.config.proposals_dir, self.config.exiger_source,
                                    self.config.media_reference)
         self.tokens = TokenStore(self.config.proposals_dir)
+        self.file = fp.FilePropositions(self.config.proposals_dir / "file")  # file durable (#154)
         import threading
         self._verrou_gramps = threading.RLock()
         self._executeur_notes = None
@@ -898,6 +900,10 @@ def arbre_appliquer(jeton: str) -> dict:
         res = _gramps_guard(lambda: a.backend.apply(jeton))
     except ProposalError as exc:
         return {"erreur": str(exc)}
+    if "erreur" not in res and (entree := a.file.par_jeton(jeton)):  # reprise d'une proposition de la file
+        ref = {k: res[k] for k in ("commit", "transaction") if res.get(k)}
+        a.file.maj(entree["id"], fp.APPLIQUEE, f"appliquée (jeton {jeton})", **ref)
+        res["proposition_file"] = entree["id"]
     if before is not None and "erreur" not in res:
         if ids := touched(before, a.tree()):
             res["notes"] = a.regenerer_notes_differe(jeton, ids)
@@ -978,6 +984,124 @@ def arbre_importer_gedcom(chemin: str, mode: str = "ajouter") -> dict:
     if len(prop["diff"]) > 8000:
         prop["diff"] = prop["diff"][:8000] + "\n… (diff tronqué : import volumineux)"
     return prop
+
+
+# ============================================================================ file de propositions (#154)
+
+def _personnes_visees(ctx, operations: list[dict]) -> list[str]:
+    """Personnes existantes visées : ids cités, propriétaires des événements visés, époux des familles visées."""
+    cibles = (targets(ctx, operations) or set()) - {v.strip("@") for v in ctx.refs.values()}
+    out: set[str] = set()
+    for pid, p in ctx.tree.personnes.items():
+        if pid in cibles or {e.uid for e in p.evenements} & cibles:
+            out.add(pid)
+    for fid, f in ctx.tree.familles.items():
+        if fid in cibles or {e.uid for e in f.evenements} & cibles:
+            out.update(x for x in (f.epoux, f.epouse) if x)
+    return sorted(out)
+
+
+def _resume_entree(e: dict) -> dict:
+    out = {k: e[k] for k in ("id", "titre", "statut", "raison", "depose", "personnes", "enquete", "jeton",
+                             "commit", "transaction") if e.get(k) or k in ("id", "statut")}
+    out.update(nb_operations=len(e.get("operations", [])), nb_pieces=len(e.get("pieces", [])))
+    return out
+
+
+@mcp.tool()
+def propositions_deposer(operations: list[dict], titre: str, justification: str, sources: list[str] | None = None,
+                         pieces: list[str] | None = None, personnes: list[str] | None = None,
+                         enquete: str = "") -> dict:
+    """Range une proposition dans la file durable pour une validation différée (enquête sans surveillance).
+    Rien n'est écrit dans l'arbre. Les opérations (celles d'arbre_proposer, docs/operations.md) sont validées à
+    sec sur l'arbre courant, règle EXIGER_SOURCE comprise : un dépôt invalide est refusé. pieces : chemins ou
+    références des pièces à l'appui ; personnes : ids visés (complétés d'après les opérations) ; enquete : origine
+    (texte libre). Revue : /genealogiste:valide, propositions_reprendre(id) puis arbre_appliquer après accord."""
+    a = app()
+
+    def valider() -> dict:
+        tree = a.tree()
+        ctx = prepare(tree, operations, titre, justification, sources, a.config.exiger_source,
+                      a.config.media_reference)[0]
+        if write_gedcom(ctx.tree) == write_gedcom(tree):
+            raise ProposalError("La proposition ne modifie rien.")
+        return {"ctx": ctx, "tree": tree}
+
+    try:
+        v = _gramps_guard(valider)
+    except ProposalError as exc:
+        return {"erreur": str(exc)}
+    if "erreur" in v:
+        return v
+    ctx = v["ctx"]
+    visees = sorted(set(personnes or []) | set(_personnes_visees(ctx, operations)))
+    e = a.file.deposer({"titre": titre, "justification": justification, "operations": operations,
+                        "sources": list(sources or []), "pieces": list(pieces or []), "personnes": visees,
+                        "enquete": enquete})
+    return {"id": e["id"], "statut": e["statut"], "resume": ctx.summary, "personnes": visees,
+            "alertes_coherence_a_sec": new_alerts(v["tree"], ctx.tree), "avertissements": ctx.warnings,
+            "consigne": "Rien n'est écrit. Revue : /genealogiste:valide ou propositions_reprendre(id), puis "
+                        "arbre_appliquer après accord explicite."}
+
+
+@mcp.tool()
+def propositions_lister(statut: str = "") -> dict:
+    """File des propositions déposées. statut : '' (en_attente et a_revoir), en_attente, a_revoir, appliquee,
+    abandonnee ou tous. Résumé sans les opérations (voir propositions_reprendre)."""
+    if statut and statut != "tous" and statut not in fp.STATUTS:
+        return {"erreur": f"statut inconnu : {statut} ({', '.join(fp.STATUTS)}, tous)"}
+    filtre = None if statut == "tous" else (statut,) if statut else fp.OUVERTS
+    entrees = app().file.lister(filtre)
+    compte: dict[str, int] = {}
+    for e in entrees:
+        compte[e["statut"]] = compte.get(e["statut"], 0) + 1
+    return {"propositions": [_resume_entree(e) for e in entrees], "compte": compte}
+
+
+@mcp.tool()
+def propositions_reprendre(id: str) -> dict:
+    """Rejoue une proposition de la file sur l'arbre courant : diff frais, alertes de cohérence nouvelles et jeton
+    neuf (le jeton précédent de l'entrée est annulé), avec justification, sources et pièces à l'appui. Si les
+    opérations ne s'appliquent plus (personne modifiée, conflit, EXIGER_SOURCE), l'entrée passe « a_revoir » avec
+    la raison. Rien n'est écrit : arbre_appliquer(jeton) seulement après accord explicite."""
+    a = app()
+    try:
+        e = a.file.lire(id)
+    except fp.FileError as exc:
+        return {"erreur": str(exc)}
+    if e["statut"] not in fp.OUVERTS:
+        return {"erreur": f"Proposition {id} {e['statut']} : rien à reprendre.", "statut": e["statut"]}
+    if e.get("jeton"):
+        a.backend.cancel(e["jeton"])
+    try:
+        r = _gramps_guard(lambda: a.backend.propose(e["operations"], e["titre"], e["justification"],
+                                                    e.get("sources")))
+    except ProposalError as exc:
+        a.file.maj(id, fp.A_REVOIR, "reprise impossible", raison=str(exc), jeton="")
+        return {"erreur": str(exc), "id": id, "statut": fp.A_REVOIR, "raison": str(exc)}
+    if "erreur" in r:  # Gramps Web injoignable : entrée inchangée
+        return r
+    e = a.file.maj(id, fp.EN_ATTENTE if e["statut"] == fp.A_REVOIR else None, "reprise", jeton=r["jeton"])
+    r["proposition"] = {k: e.get(k) for k in ("id", "titre", "justification", "sources", "pieces", "personnes",
+                                              "enquete", "depose", "statut")}
+    return r
+
+
+@mcp.tool()
+def propositions_abandonner(id: str, motif: str = "") -> dict:
+    """Abandonne une proposition de la file (conservée pour mémoire, statut « abandonnee ») et annule son jeton
+    en cours. Rien n'est écrit dans l'arbre."""
+    a = app()
+    try:
+        e = a.file.lire(id)
+    except fp.FileError as exc:
+        return {"erreur": str(exc)}
+    if e["statut"] not in fp.OUVERTS:
+        return {"erreur": f"Proposition {id} déjà {e['statut']}.", "statut": e["statut"]}
+    if e.get("jeton"):
+        a.backend.cancel(e["jeton"])
+    e = a.file.maj(id, fp.ABANDONNEE, motif or "abandon", jeton="", motif_abandon=motif)
+    return {"id": id, "statut": e["statut"]}
 
 
 @mcp.tool()

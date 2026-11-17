@@ -16,6 +16,7 @@ Les commandes sont des workflows guidés : elles ne dispensent pas de lire les r
 | `descendance <id> [n]` | Produire un arbre de descendance |
 | `ajoute` | Préparer l’ajout d’une personne, d’un fait ou d’une citation |
 | `modifie` | Préparer une modification d’un élément existant |
+| `valide [id ou a_revoir ou tous]` | Revoir une à une les propositions déposées dans la [file](../docs/propositions.md) et les appliquer après accord |
 | `fusionne` | Préparer une fusion après analyse des identités ; jamais automatique |
 | `import <chemin.ged> [ajouter ou remplacer]` | Proposer l’import d’un GEDCOM obtenu séparément |
 | `export <format> [id] [générations] [chemin]` | Produire un [export](Exports.md), masqué par défaut |
