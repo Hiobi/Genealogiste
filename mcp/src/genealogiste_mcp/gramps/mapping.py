@@ -549,6 +549,7 @@ class _Reader:
                         fam.evenements.append(e)
                         owned.setdefault(ref.get("ref"), e)
             fam.citations = self.citations(f.get("citation_list"))
+            fam.medias = [x for x in (self.xid("Media", m.get("ref")) for m in f.get("media_list") or []) if x]
             texts, shared = self.notes(f.get("note_list"), ("Family Note",))
             fam.notes = texts + shared
             t.familles[fid] = fam
@@ -755,6 +756,18 @@ class _Writer:
                 pending.remove(same)
                 keep.append(a)
         obj["attribute_list"] = _same_list(base, keep + pending)
+
+    def media_refs(self, obj: dict, ids: list[str]) -> None:
+        """media_list d'une personne ou d'une famille : références existantes conservées (cadrage, citations)."""
+        base_media = {m.get("ref"): m for m in obj.get("media_list") or []}
+        medias = []
+        for mid in ids:
+            if mid in self.t.medias:
+                mh = self.handle("Media", mid)
+                medias.append(copy.deepcopy(base_media.get(mh)) or {
+                    "_class": "MediaRef", "private": False, "citation_list": [], "note_list": [],
+                    "ref": mh, "attribute_list": [], "rect": None})
+        obj["media_list"] = _same_list(obj.get("media_list") or [], medias)
 
     def citations(self, cits: list[Citation], base_handles: list[str] | None, owner: str) -> list[str]:
         """Citations d'un emplacement : réutilise une citation de la base de même contenu."""
@@ -1121,6 +1134,7 @@ class _Writer:
             self.set_attrs(obj, lambda x: x in (A_UID, A_STATUT) or x.startswith(A_STATUT_FIL), desired + statut_attrs)
             obj["citation_list"] = _same_list(obj.get("citation_list") or [],
                                               self.citations(f.citations, obj.get("citation_list"), h))
+            self.media_refs(obj, f.medias)
             obj["note_list"] = self.notes(f.notes, obj.get("note_list"), "Family Note", h, self.auto("Family", fid),
                                           keep=not self.regen("Family", fid))
             fams[fid] = obj
@@ -1169,15 +1183,7 @@ class _Writer:
                                                    [self.handle("Family", f) for f in p.famc if f in t.familles])
             obj["citation_list"] = _same_list(obj.get("citation_list") or [],
                                               self.citations(p.citations, obj.get("citation_list"), h))
-            base_media = {m.get("ref"): m for m in obj.get("media_list") or []}
-            medias = []
-            for mid in p.medias:
-                if mid in t.medias:
-                    mh = self.handle("Media", mid)
-                    medias.append(copy.deepcopy(base_media.get(mh)) or {
-                        "_class": "MediaRef", "private": False, "citation_list": [], "note_list": [],
-                        "ref": mh, "attribute_list": [], "rect": None})
-            obj["media_list"] = _same_list(obj.get("media_list") or [], medias)
+            self.media_refs(obj, p.medias)
             # associations de niveau individu (parrains…) : attribut structuré + personref navigable
             base_attr = {a.get("value"): a for a in _attrs(obj) if tname(a.get("type")) == A_ASSO}
             desired, prefs = [], []

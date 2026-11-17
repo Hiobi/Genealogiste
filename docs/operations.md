@@ -33,7 +33,7 @@ est refusé, sauf `"non_source": true` + `"motif": "…"` (la mention « Non sou
 | `lier_conjoint` | `famille`, `personne`, `role` (`epoux`/`epouse`) |
 | `ajouter_citation` | `cible` `{type: evenement(uid) | nom(id, index) | filiation(famille, enfant) | personne | famille | media (id)}`, `citation` |
 | | Citation : `source`, `page`, `texte`, `qualite`, `type_source`, `information`, `preuve`, `consultation`, `ark`, `medias` (ids ou `$ref` d'`ajouter_media` : images de l'acte), `note` |
-| `ajouter_media` | `fichier`*, `format`, `titre`, `citations`, `lier_a` `[ids]`, `ref` |
+| `ajouter_media` | `fichier`*, `format`, `titre`, `citations`, `lier_a` `[ids]` (personnes `I…` et familles `F…`, ou `$ref` : un acte de mariage se lie à la famille), `ref` |
 | `fusionner_personnes` | `conserver`, `absorber`, `justification`*, `forcer` |
 | `scinder_personne` | `id`, `evenements` `[uid]`, `familles_parents`, `familles_conjoint`, `noms`, `sexe`, `justification`*, `ref` |
 | `definir_statut` | `cible` `{type: evenement | nom | filiation …}`, `statut` (`refute` \| `contradictoire` \| `""`), `justification`* |
@@ -63,6 +63,14 @@ renvois `@N…@`) ; UID en collision réattribués.
 - extensions GEDCOM (`extra`) des deux fiches conservées ;
 - événements identiques : citations, associations, notes, cause, âge, valeur et statut manuel fusionnés ; une
   valeur divergente est reportée en note, le statut le plus grave (`refute`, puis `contradictoire`) est retenu.
+
+**Médias** (`ajouter_media`, `lier_a`) : un média se lie à des personnes (`I…`) et à des familles (`F…`),
+mélangeables (`["I1", "I2", "F3"]` pour un acte de mariage) ; le lien famille s'écrit `1 OBJE @O…@` sous le
+`FAM` (GEDCOM 7) ou dans la `media_list` de la famille (Gramps Web), apparaît dans le diff et le résumé, et la
+pièce figure dans la section « Pièces » des notes des deux conjoints. Un identifiant absent est refusé avec
+son type (« personne inconnue : I… », « famille inconnue : F… ») ; tout autre identifiant (source `S…`, uid
+d'événement) est refusé : pour rattacher l'image à une source ou à un événement, la passer dans
+`citation.medias` de la citation correspondante.
 
 ### ARK (liens pérennes des archives)
 

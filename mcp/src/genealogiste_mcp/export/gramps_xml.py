@@ -161,6 +161,7 @@ def db_to_xml(db: GrampsDb) -> str:
         if f.get("mother_handle"):
             x.append(f"<mother hlink={_h(f['mother_handle'])}/>")
         x += [_eventref(r) for r in f.get("event_ref_list") or []]
+        x += [f"<objref hlink={_h(m['ref'])}/>" for m in f.get("media_list") or []]  # ordre du DTD Gramps
         for c in f.get("child_ref_list") or []:
             rel = ""
             for k in ("mrel", "frel"):

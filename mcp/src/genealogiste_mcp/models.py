@@ -211,6 +211,7 @@ class Family(_Base):
     enfants: list[ChildLink] = field(default_factory=list)
     evenements: list[Event] = field(default_factory=list)
     citations: list[Citation] = field(default_factory=list)  # preuve de l'union
+    medias: list[str] = field(default_factory=list)  # pièces de l'union (acte de mariage…)
     notes: list[str] = field(default_factory=list)
     uid: str = field(default_factory=new_uid)
     statut_manuel: Assertion | None = None
