@@ -18,7 +18,20 @@ def _op(lier_a):
              "titre": "Acte de mariage MARTIN × DUPUIS", "lier_a": lier_a}]
 
 
+def _image(app):
+    """Le fichier du média doit exister : ajouter_media refuse un fichier local introuvable (#192)."""
+    f = app.config.data_dir / "medias" / "mariage-1845.jpg"
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_bytes(b"\xff\xd8image-fictive\xff\xd9")
+    return app
+
+
 # --- backend fichier ---------------------------------------------------------
+
+@pytest.fixture
+def app_famille(app_famille):
+    return _image(app_famille)
+
 
 def test_famille_acceptee_et_diff(app_famille):
     p = server.arbre_proposer(_op(["F1"]), "Acte de mariage", "Image de l'acte de mariage.")
@@ -106,7 +119,7 @@ def fake():
 @pytest.fixture
 def gapp(tmp_path, fake, tree):
     seed(fake, tree)
-    a = make_app(tmp_path)
+    a = _image(make_app(tmp_path))
     yield a
     server.set_app(None)
 
