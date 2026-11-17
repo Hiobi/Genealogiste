@@ -18,9 +18,13 @@ Un dossier et une liste de chemins relatifs (une vingtaine au plus par lot).
      scan OCRisé) ; si la page 1 figure dans `pages_a_lire_en_image` (manuscrit), `archive_image(<chemin>,
      page=1)` en aperçu ; audio et vidéo : ne pas ouvrir, proposer un nom d'après le contexte ou
      laisser la pièce en `_À trier/`.
-2. **Identifier** : type de pièce (acte et nature, photo, sépulture, fiche matricule, fiche ANMT,
-   recensement, capture d'arbre en ligne…), personnes nommées, commune, dépôt et cote si visibles
-   (en-tête, tampon, filigrane de visionneuse), années, numéro d'acte.
+2. **Identifier** : type de pièce (acte et nature, photo, sépulture, fiche matricule, fiche ANMT ou dossier
+   du personnel des mines `PM`, recensement, capture d'arbre en ligne, acte notarié `NOT`, carte d'identité
+   `CNI`, courrier ou démarche `COUR`…), personnes nommées, commune, dépôt et cote si visibles
+   (en-tête, tampon, filigrane de visionneuse), années, numéro d'acte. Acte notarié : code `NOT` suivi de
+   sa nature (`type_piece="NOT partage"`), l'étude du notaire en dépôt (`Étude Leroy`) ; une attestation
+   immobilière après décès ou une déclaration de succession reste `NOT`, même si elle mentionne un décès.
+   Une demande d'acte (récapitulatif service-public, lettre à une mairie) est `COUR`, pas l'acte demandé.
 3. **Nommer** avec `piece_nommer` (identifiants de l'arbre si les personnes y sont : `arbre_recherche`).
    Ne jamais inventer un segment : un segment non lu est omis.
 4. **Confiance** :
@@ -39,6 +43,8 @@ Ne lancer aucune recherche externe sur une personne présumée vivante.
 
 ## Rendu
 Tableau `actuel → proposé | confiance | résumé (1 ligne)`. Puis la liste `renommages` prête pour
-`pieces_proposer` (confiance haute et moyenne seulement), les vivants signalés et les faits nouveaux. Les
+`pieces_proposer` (confiance haute et moyenne seulement ; `propose` est un nom de fichier, jamais un chemin ;
+ajouter `dossier`, sous `documents/`, `photographies/` ou `courriers/`, seulement si aucun code ne classe
+la pièce), les vivants signalés et les faits nouveaux. Les
 pièces illisibles reçoivent un nom descriptif (`illisible - acte manuscrit XVIIIe - 1.jpg`) et restent dans
 `_À trier/`.

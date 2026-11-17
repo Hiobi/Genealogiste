@@ -46,6 +46,10 @@ personnes (`I12`) et une source (`S3`), dont il reprend le sigle du dépôt et l
 | `NMD` `BMS` `TD` | registres, tables décennales | `documents/État civil/<NOM>/` |
 | `RM` | registre ou fiche matricule | `documents/Militaire/<NOM>/` |
 | `ANMT` | fiche de mineur (Archives nationales du monde du travail) | `documents/Mines (ANMT)/<NOM>/` |
+| `PM` | dossier du personnel des mines (houillères) | `documents/Mines (ANMT)/<NOM>/` |
+| `NOT` | acte notarié : contrat de mariage, testament, acte de notoriété, partage, inventaire, déclaration de succession, attestation immobilière… | `documents/Notaires/<NOM>/` |
+| `CNI` | carte d'identité | `documents/Divers/<NOM>/` |
+| `COUR` | courrier ou démarche : demande d'acte (récapitulatif service-public, lettre à une mairie), réponse d'un service, lettre | `documents/Divers/<NOM>/` |
 | `REC` | recensement | `documents/Divers/<NOM>/` |
 | `CAPTURE` | capture d'arbre en ligne (Geneanet, Filae…) : une piste, pas une source | `documents/Divers/<NOM>/` |
 | `SIGN` | signature | `documents/Signatures/<NOM>/` |
@@ -57,12 +61,33 @@ personnes (`I12`) et une source (`S3`), dont il reprend le sigle du dépôt et l
 
 Sans patronyme ou sans type reconnu, la pièce va dans `_À trier/` en attendant le triage.
 
+**Actes notariés : un seul code.** La nature précise s'écrit en libellé libre après le code, dans le même
+segment : `type_piece="NOT testament"` donne `DUPONT Jean -- ERRE - Étude Leroy - NOT TESTAMENT [1850].pdf`
+(le segment type est en capitales), l'étude se place dans le segment dépôt. Le classement ne lit que le code.
+
+**Détection depuis un nom libre** (premier motif trouvé). Un nom à la convention est lu par son code ;
+sinon les mots du nom sont essayés dans cet ordre :
+
+1. `COUR` : « demande d'acte », « courrier », « service-public » (une demande d'acte de naissance est un
+   courrier, pas l'acte) ;
+2. registres, matricules, `PM` (« personnel des mines »), `ANMT`, `CNI` (« carte d'identité »), recensement,
+   signature, capture, tombe ;
+3. `NOT` : notaire, notarié, notoriété, testament, contrat de mariage, partage, succession, attestation
+   immobilière, hypothèque(s). Placé **avant** `N`, `M`, `D` : « attestation immobilière après décès »
+   ou « contrat de mariage » est notarié ; « acte de mariage » reste `M` ;
+4. `N`, `B`, `M`, `D`, `S` ;
+5. `COUR` : « lettre », « réponse », seulement si aucun type d'acte n'a été reconnu ;
+6. `PHOTO`.
+
+Le code `PM` n'est pas déduit du sigle seul (trop ambigu dans un nom libre) : l'écrire dans le segment type.
+
 ## Arborescence produite
 
 ```
-documents/{État civil,Militaire,Mines (ANMT),Signatures,Témoignages oraux,Divers}/<NOM>/
+documents/{État civil,Militaire,Mines (ANMT),Notaires,Signatures,Témoignages oraux,Divers}/<NOM>/
 photographies/<NOM>/ · photographies/Sépultures/<NOM>/ · photographies/Lieux/
 archives/{GeneWeb,GEDCOM,INSEE,Doublons}/
+courriers/                seulement par dossier explicite (jamais déduit du type)
 _À trier/
 _organisation/            journaux TSV des déplacements
 ```
@@ -108,6 +133,22 @@ Grave) :
    XVIIIe - 1.jpg`) ;
 5. il passe les renommages à `pieces_proposer(dossier, renommages=[{actuel, propose}], seulement_renommages=true)`. Chaque pièce est
    reclassée d'après son nouveau nom.
+
+### Dossier explicite
+
+Quand aucun code ne couvre la pièce, un renommage peut imposer son dossier :
+`{"actuel": "_À trier/scan.pdf", "propose": "DUPONT Jean -- demande acte D [1995].pdf", "dossier": "courriers/DUPONT"}`.
+`propose` reste un **nom de fichier** : un chemin écrit dans `propose` est réduit à son nom et ne change pas le
+dossier. `dossier` est contrôlé avant tout plan :
+
+- relatif à la racine affichée, sous `documents/`, `photographies/` ou `courriers/` uniquement ;
+- jamais `personnes/`, `familles/`, `sources/`, `patronymes/`, `archives/` ni `_À trier/` ;
+- ni `..`, ni chemin absolu, ni `\`, ni dossier caché, ni caractère ou nom interdit sous Windows ;
+- un lien symbolique qui mène hors de la racine ou vers un autre dossier est refusé.
+
+Un dossier refusé rejette tout le plan (`erreur`), sans rien déplacer. Le plan se présente et s'applique
+ensuite comme les autres (`pieces_appliquer` après accord). `courriers/` compte désormais parmi les dossiers
+classés : une organisation suivante n'en déplace plus les pièces, comme `documents/` ou `photographies/`.
 
 ## Médias et rapports dans le vault
 
