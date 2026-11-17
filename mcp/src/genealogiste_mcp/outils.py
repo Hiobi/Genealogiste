@@ -8,6 +8,7 @@ un nom, un texte ou un identifiant de personne passe par la politique « vivants
 from __future__ import annotations
 
 import json
+import re
 
 # Effets (ce que fait l'outil : verrou de lecture, gardes, tests d'enveloppe)
 LECTURE = "lecture"  # local, sans écriture
@@ -103,7 +104,10 @@ OUTILS: dict[str, tuple[str, str]] = {  # nom -> (effet, classe)
     "propositions_reprendre": (PROPOSITION, PROPOSITION),
     "propositions_abandonner": (PROPOSITION, PROPOSITION),
     # fichiers
-    "rapport_enregistrer": (ECRITURE, ECRITURE),
+    "rapport_enregistrer": (ECRITURE, ECRITURE),  # écrase, peut viser GENEALOGISTE_RAPPORTS_DIR, commit et push
+    # rapport de campagne (#159) : fichier nouveau daté dans <données>/rapports/campagnes/, suffixe « -n » en cas
+    # de collision, jamais d'écrasement ; ni commit, ni push, ni réseau
+    "rapport_campagne_enregistrer": (ECRITURE, COLLECTE),
     "media_enregistrer": (ECRITURE, ECRITURE),  # copie un fichier quelconque (chemin libre) dans le vault
     "piece_nommer": (LECTURE, LECTURE),
     "pieces_inventaire": (LECTURE, LECTURE),
@@ -155,6 +159,18 @@ CONDITIONS: dict[str, tuple[str, str, str]] = {
 def decision(nom: str) -> str:
     """Décision du hook pour l'effet maximal de l'outil."""
     return DECISIONS[OUTILS[nom][1]]
+
+
+def branche_ecriture(nom: str, arguments: dict) -> bool:
+    """Vrai si l'appel relève de la classe « ecriture » : outil de cette classe, et pour un outil conditionnel,
+    arguments (JSON, comme l'entrée que reçoit le hook) qui correspondent au motif de CONDITIONS. Sert au
+    garde-fou côté serveur (GENEALOGISTE_ECRITURE=interdite, #159), qui tranche ainsi comme le hook."""
+    if nom not in OUTILS or OUTILS[nom][1] != ECRITURE:
+        return False
+    if nom not in CONDITIONS:
+        return True
+    motif = CONDITIONS[nom][0].replace("[[:space:]]", r"\s")  # classe POSIX (grep -E) -> re
+    return re.search(motif, json.dumps(arguments, ensure_ascii=False, default=str)) is not None
 
 
 # ---------------------------------------------------------------- hooks/hooks.json (généré)

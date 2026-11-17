@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import inspect
 import json
 import logging
 import shutil
@@ -333,6 +334,29 @@ class _Observateur:
                                  [] if outil in mcp.sans_verrou else list(_APP.http.hotes_contactes))
 
 
+def _garde_ecriture(nom: str, fn, args: tuple, kwargs: dict) -> dict | None:
+    """Garde-fou côté serveur (#159) : avec GENEALOGISTE_ECRITURE=interdite, tout appel de classe « ecriture »
+    du catalogue (outils.OUTILS ; pour un outil de CONDITIONS, seulement la branche écriture) est refusé avant
+    tout effet, quel que soit le mode de permission du client (hooks contournés, sans confirmation…)."""
+    if nom not in outils.OUTILS or outils.OUTILS[nom][1] != outils.ECRITURE:
+        return None  # lecture, collecte, proposition : jamais concernées (et sans initialiser l'App)
+    if app().config.ecriture != "interdite":
+        return None
+    try:
+        arguments = dict(inspect.signature(fn).bind_partial(*args, **kwargs).arguments)
+    except TypeError:
+        arguments = dict(kwargs)
+    if not outils.branche_ecriture(nom, arguments):
+        return None
+    libelle = outils.CONDITIONS[nom][2] if nom in outils.CONDITIONS else "écriture"
+    return {"erreur": f"{nom} refusé par le serveur : GENEALOGISTE_ECRITURE=interdite ({libelle} ; arbre, Gramps "
+                      "Web ou fichiers de l'utilisateur). Session sans surveillance : déposer plutôt la conclusion "
+                      "dans la file (propositions_deposer) pour validation ultérieure (/genealogiste:valide).",
+            "refus": "ecriture_interdite", "outil": nom,
+            "remede": "Relancer dans une session surveillée avec GENEALOGISTE_ECRITURE=autorisee (défaut)."}
+
+
+mcp.garde = _garde_ecriture
 mcp.observateur = _Observateur()
 # Outils de lecture pure (catalogue) : servis sans attendre une écriture en cours (#151).
 mcp.sans_verrou = {nom for nom, (effet, _) in outils.OUTILS.items() if effet == outils.LECTURE}
@@ -1321,6 +1345,42 @@ def rapport_enregistrer(id: str, titre: str, contenu: str) -> dict:
     rel = path.resolve().relative_to(a.config.data_dir.resolve()).as_posix()
     commit = a.store.commit(f"Rapport de preuve : {titre} ({id})", [rel])
     return {"fichier": str(path), "commit": commit}
+
+
+RAPPORT_CAMPAGNE_MAX = 1_000_000  # caractères
+
+
+@mcp.tool()
+def rapport_campagne_enregistrer(titre: str, contenu: str, enquetes: list[str] | None = None) -> dict:
+    """Enregistre le rapport d'une campagne (/genealogiste:campagne) dans un fichier NOUVEAU daté
+    <données>/rapports/campagnes/AAAA-MM-JJ-<titre>.md (suffixe -2, -3… si le nom existe : jamais d'écrasement).
+    Toujours dans le répertoire de données (GENEALOGISTE_RAPPORTS_DIR ignoré), ni commit, ni push, ni réseau :
+    collecte, permise sans accord et avec GENEALOGISTE_ECRITURE=interdite. enquetes : ids des enquêtes couvertes
+    (en-tête du rapport). Désigner les personnes par leur id d'arbre ; ne rien y copier d'une personne vivante
+    qui ne soit déjà dans l'arbre."""
+    import re as _re
+    if len(contenu) > RAPPORT_CAMPAGNE_MAX:
+        return {"erreur": f"Rapport trop long ({len(contenu)} caractères, maximum {RAPPORT_CAMPAGNE_MAX})."}
+    a = app()
+    jour = date.today().isoformat()
+    slug = _re.sub(r"[^a-z0-9]+", "-", titre.lower()).strip("-")[:60] or "campagne"
+    dossier = a.config.data_dir / "rapports" / "campagnes"
+    dossier.mkdir(parents=True, exist_ok=True)
+    entete = (f"---\ntitre: {json.dumps(titre, ensure_ascii=False)}\ndate: {jour}\n"
+              f"enquetes: {json.dumps(list(enquetes or []), ensure_ascii=False)}\n---\n\n")
+    texte = entete + contenu + ("" if contenu.endswith("\n") else "\n")
+    n = 1
+    while True:
+        path = dossier / f"{jour}-{slug}{'' if n == 1 else f'-{n}'}.md"
+        try:
+            with path.open("x", encoding="utf-8") as f:  # création exclusive : jamais d'écrasement
+                f.write(texte)
+            break
+        except FileExistsError:
+            n += 1
+    return {"fichier": str(path), "date": jour, "enquetes": list(enquetes or []), "commit": None,
+            "note": "Rapport local, non versionné ni poussé : il reste dans le répertoire de données. "
+                    "Propositions en file : /genealogiste:valide."}
 
 
 @mcp.tool()
