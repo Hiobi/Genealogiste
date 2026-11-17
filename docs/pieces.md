@@ -111,8 +111,10 @@ _organisation/            journaux TSV des déplacements
   de même nom de base que la pièce et portant `type: piece` suit celle-ci ; `fichier` et son image
   incorporée sont actualisés. La section `## Notes` et les autres propriétés sont préservées. Une note
   modifiée depuis le plan bloque l’application avant tout déplacement.
-- **Médias de l'arbre** : un fichier référencé par un média de l'arbre n'est pas déplacé (la référence
-  casserait) ; il est listé dans `references_arbre_non_deplacees`.
+- **Médias de l'arbre** : par défaut, un fichier référencé par un média de l'arbre n'est pas déplacé (la
+  référence casserait) ; il est listé dans `references_arbre_non_deplacees`. Avec `suivre_medias=true`, il
+  est rangé comme les autres pièces et sa référence est mise à jour (voir
+  [Suivre les médias de l'arbre](#suivre-les-médias-de-larbre)).
 - Tous les déplacements restent **dans la racine affichée** (chemins résolus et confinés, voir
   [securite.md](securite.md)) : un nom proposé comme `../x.jpg` se réduit à `x.jpg`. La racine du disque et
   le dossier personnel sont refusés.
@@ -228,8 +230,8 @@ personne masquée.
 | Outil | Effet | Confirmation |
 |---|---|---|
 | `pieces_inventaire(dossier)` | comptes par type, patronymes, doublons, fichiers ignorés | non |
-| `pieces_proposer(dossier, renommages, annuler, seulement_renommages)` | plan complet (TSV), aperçu, résumé par dossier, jeton | non |
-| `pieces_appliquer(jeton)` | déplacements, journal, contrôle | **oui** |
+| `pieces_proposer(dossier, renommages, annuler, seulement_renommages, suivre_medias)` | plan complet (TSV), aperçu, résumé par dossier, médias suivis, jeton | non |
+| `pieces_appliquer(jeton)` | déplacements, journal, contrôle ; proposition d'arbre pour les médias déplacés | **oui** |
 | `piece_nommer(personnes, …)` | nom selon la convention et dossier de destination | non |
 | `piece_archiver(source, page, personnes, …)` | vue téléchargée en pleine résolution, nommée, rangée, avec sa note | règle par défaut |
 | `media_enregistrer(chemin, nom, classer)` | copie d'une pièce dans le répertoire des médias | règle par défaut |
@@ -268,6 +270,44 @@ Pour annuler, fournir le nom du journal à `pieces_proposer`, depuis la racine o
 Les anciens journaux restent lisibles en désignant leur racine d’origine. Le registre d’archivage suit les
 nouveaux emplacements et leur annulation, pour reconnaître une originale conservée sans la télécharger
 à nouveau. Les médias déjà référencés dans l’arbre restent protégés ; le rattachement se fait après rangement.
+
+## Suivre les médias de l'arbre
+
+Une pièce déjà rattachée à l'arbre (média dont le fichier local la désigne, en mode fichier comme en mode
+gramps via `Sosa-Fichier`) peut être rangée en suivant sa référence :
+
+1. `pieces_proposer(dossier, suivre_medias=true)` classe ces pièces comme les autres (motif « média de
+   l'arbre suivi ») et liste `medias_suivis` (`O3 : ancien → nouveau`). Elles ne sont jamais isolées comme
+   doublons : c'est leur exemplaire qui est gardé. Rien n'est écrit, ni dans le dossier ni dans l'arbre.
+   L'option est ignorée (`medias_conseil`) si la racine d'organisation est hors des répertoires des médias
+   (données, `GENEALOGISTE_MEDIA_DIR`, arborescence des pièces) : le nouveau chemin serait refusé par
+   `modifier_media`. Une note compagnon elle-même référencée par l'arbre bloque toujours sa pièce.
+2. `pieces_appliquer(jeton)`, après accord, déplace les fichiers **puis** prépare une proposition d'arbre :
+   une opération `modifier_media` par média concerné (référence au format `media_ref` : relative aux données
+   quand elle s'y trouve, absolue sinon), avec diff et jeton (`proposition_arbre`). Le nouveau fichier existe
+   déjà, donc la proposition est contrôlée comme toute autre ; en mode gramps, le contenu étant identique,
+   rien n'est renvoyé à Gramps Web.
+3. `arbre_appliquer(proposition_arbre.jeton)` après un second accord explicite : une seule modification,
+   annulable par `arbre_annuler_modification`.
+
+L'ordre est voulu : la proposition d'arbre ne peut être validée qu'une fois le nouveau fichier présent, et
+l'arbre n'est jamais modifié pour des fichiers qui n'auraient pas bougé (un déplacement en échec est ignoré).
+Si l'arbre est illisible au moment d'appliquer, rien n'est déplacé.
+
+**État intermédiaire** : entre `pieces_appliquer` et `arbre_appliquer`, les médias listés dans
+`medias_a_mettre_a_jour` désignent leurs anciens chemins, désormais absents. Pour en sortir :
+
+- appliquer `proposition_arbre` (cas normal) ;
+- si la proposition n'a pas pu être préparée (arbre verrouillé, Gramps Web injoignable), le résultat donne
+  `operations_medias` et `avertissement_medias` : reproposer `arbre_proposer(operations_medias, …)` ;
+- si le jeton a expiré ou a été refusé : reproposer les mêmes `modifier_media` (lignes
+  `medias_a_mettre_a_jour`), ou `gramps_relocaliser_medias(ancien_dossier, nouveau_dossier)` pour un dossier
+  entier ;
+- ou annuler le rangement (`pieces_proposer(dossier, annuler="<journal>.tsv")` puis `pieces_appliquer`) :
+  les fichiers reviennent et, si l'arbre avait déjà été mis à jour, une proposition inverse est préparée.
+
+Toute application d'un plan (annulation comprise) prépare ainsi la proposition pour les fichiers référencés
+qu'elle a effectivement déplacés.
 
 ## Vérifier le téléchargement sur des ressources publiques
 

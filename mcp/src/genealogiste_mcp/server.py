@@ -1266,19 +1266,65 @@ def piece_archiver(source: str, page: int = 0, personnes: list[str] | None = Non
 
 # ============================================================================ pièces (dossier existant, #60)
 
-def _tree_media_paths() -> set[Path]:
-    """Fichiers référencés par les médias de l'arbre (jamais déplacés par l'organisation)."""
+def _tree_media_refs(strict: bool = False) -> dict[Path, list[tuple[str, str]]]:
+    """Fichiers locaux référencés par les médias de l'arbre : chemin absolu -> [(id, référence)]. Un chemin
+    relatif est cherché comme ajouter_media le fait (données, médias, arborescence des pièces : #192).
+    strict : une erreur de lecture de l'arbre est propagée (sinon : aucune référence connue)."""
+    from .chemins import localiser
+
     a = app()
     try:
-        medias = a.tree().medias.values()
+        medias = a.tree().medias
     except Exception:  # noqa: BLE001 — arbre indisponible : aucune référence connue
-        return set()
-    out = set()
-    for m in medias:
-        if m.fichier:
+        if strict:
+            raise
+        return {}
+    out: dict[Path, list[tuple[str, str]]] = {}
+    for mid, m in medias.items():
+        if not m.fichier or "://" in m.fichier:
+            continue
+        try:
+            p = localiser(a.config.media_racines, m.fichier)
+        except CheminRefuse:
             p = Path(m.fichier).expanduser()
-            out.add((p if p.is_absolute() else a.config.data_dir / p).resolve())
+            p = p if p.is_absolute() else a.config.data_dir / p
+        out.setdefault(p.resolve(), []).append((mid, m.fichier))
     return out
+
+
+def _proposer_suivi_medias(racine: Path, realises: list[dict], refs: dict[Path, list[tuple[str, str]]]) -> dict:
+    """Après un rangement réussi (#193) : proposition d'arbre (modifier_media en lot, diff + jeton) pour les
+    médias dont le fichier vient d'être déplacé. refs est relevé AVANT les déplacements (un chemin relatif ne se
+    localise plus une fois son fichier parti). Rien n'est écrit dans l'arbre ici."""
+    a = app()
+    ops, lignes = [], []
+    for m in realises:
+        if "contenu_apres" in m:  # note compagnon
+            continue
+        for mid, ancien in refs.get((racine / m["de"]).resolve(), ()):
+            neuf = a.config.media_ref(racine / m["vers"])
+            ops.append({"op": "modifier_media", "id": mid, "champs": {"fichier": neuf}})
+            lignes.append(f"{mid} : {ancien} → {neuf}")
+    if not ops:
+        return {}
+    out = {"medias_a_mettre_a_jour": lignes}
+    try:
+        prop = _gramps_guard(lambda: a.backend.propose(
+            ops, f"Suivi de {len(ops)} média(s) rangé(s)",
+            "Fichiers des médias déplacés par pieces_appliquer (organisation des pièces) ; même contenu."))
+    except ProposalError as exc:
+        prop = {"erreur": str(exc)}
+    if "erreur" in prop:
+        return {**out, "operations_medias": ops,
+                "avertissement_medias": f"Pièces déplacées, mais proposition d'arbre impossible ({prop['erreur']}) : "
+                                        "ces médias pointent vers des fichiers absents. Reproposer "
+                                        "arbre_proposer(operations_medias) puis arbre_appliquer après accord, ou "
+                                        "annuler le rangement (pieces_proposer(dossier, annuler=journal))."}
+    return {**out, "proposition_arbre": prop,
+            "consigne_medias": "Fichiers déplacés : ces médias pointent vers leurs anciens chemins (absents) tant que "
+                               "la proposition n'est pas appliquée. Présenter le diff et appeler "
+                               "arbre_appliquer(proposition_arbre.jeton) après accord explicite ; à défaut (refus, "
+                               "jeton expiré), annuler le rangement ou reproposer les modifier_media."}
 
 
 def _person_label(ref: str) -> str:
@@ -1334,11 +1380,13 @@ def pieces_inventaire(dossier: str) -> dict:
 
 @mcp.tool()
 def pieces_proposer(dossier: str, renommages: list[dict] | None = None, annuler: str = "",
-                    apercu: int = 60, seulement_renommages: bool = False) -> dict:
+                    apercu: int = 60, seulement_renommages: bool = False, suivre_medias: bool = False) -> dict:
     """Plan de classement d'un dossier de pièces (rien n'est déplacé) : documents/<type>/<PATRONYME>/,
     photographies/…, archives/ (GeneWeb, GEDCOM, INSEE, Doublons), _À trier/. Jamais de suppression ; les
     notes Markdown ordinaires, dossiers cachés et personnes/ familles/ sources/ sont protégés ; les médias liés à
-    l'arbre ne sont pas déplacés. renommages : [{actuel, propose, dossier?}] (agent trieur, piece_nommer) ; le
+    l'arbre ne sont pas déplacés, sauf suivre_medias=true (racine sous les répertoires des médias) : ils sont
+    alors rangés (jamais comme doublons, liste medias_suivis) et pieces_appliquer renvoie, après le déplacement,
+    une proposition d'arbre (modifier_media) à valider par arbre_appliquer. renommages : [{actuel, propose, dossier?}] (agent trieur, piece_nommer) ; le
     fichier est reclassé d'après son nouveau nom, ou dans dossier s'il est donné (relatif à la racine, sous
     documents/, photographies/ ou courriers/ uniquement ; tout autre dossier refuse le plan). Les chemins
     actuel sont relatifs à dossier ; l'aperçu est relatif à racine (configuration médias ou vault .obsidian). seulement_renommages limite le plan aux fichiers
@@ -1346,14 +1394,35 @@ def pieces_proposer(dossier: str, renommages: list[dict] | None = None, annuler:
     jour ; leur texte libre est conservé. annuler : nom d'un journal _organisation/*.tsv à défaire. Renvoie un jeton
     pour pieces_appliquer, à n'utiliser qu'après accord explicite de l'utilisateur sur le plan."""
     a = app()
+    conseil = ""
     try:
         perimetre = _dossier(dossier)
         racine = _dossier(str(pieces.racine_organisation(perimetre, a.config.pieces_root)))
+        try:
+            refs = {} if annuler else _tree_media_refs(strict=suivre_medias)
+        except Exception as exc:  # noqa: BLE001 — arbre illisible : rien à suivre de façon sûre
+            return {"erreur": f"Arbre illisible, médias de l'arbre impossibles à suivre : {exc}"}
+        # Le nouveau chemin doit rester sous les racines des médias, sinon modifier_media le refuserait.
+        suivre = suivre_medias and any(racine.is_relative_to(Path(r).resolve()) for r in a.config.media_racines)
+        if suivre_medias and not suivre:
+            conseil = ("suivre_medias ignoré : la racine d'organisation est hors des répertoires des médias "
+                       "(données, GENEALOGISTE_MEDIA_DIR) ; les médias de l'arbre restent en place.")
         plan = (pieces.plan_annulation(racine, annuler) if annuler
-                else pieces.planifier(racine, renommages, _tree_media_paths(), perimetre, seulement_renommages))
+                else pieces.planifier(racine, renommages, set(refs), perimetre, seulement_renommages, suivre))
     except pieces.PieceError as exc:
         return {"erreur": str(exc)}
     plan.setdefault("perimetre", str(perimetre))
+    suivis = [f"{mid} : {ancien} → {a.config.media_ref(racine / m['vers'])}"
+              for m in plan["deplacements"] if m.get("media_arbre")
+              for mid, ancien in refs.get((racine / m["de"]).resolve(), ())]
+    if suivis:
+        plan["medias_suivis"] = suivis
+    if plan.get("references_arbre_non_deplacees") and not conseil:
+        conseil = ("Pièces référencées par un média de l'arbre laissées en place : pieces_proposer(…, "
+                   "suivre_medias=true) les range et met à jour les médias (proposition d'arbre après le "
+                   "déplacement, à valider).")
+    if conseil:
+        plan["medias_conseil"] = conseil
     moves = plan["deplacements"]
     if not moves:
         return {**{k: v for k, v in plan.items() if k not in ("empreintes", "deplacements")},
@@ -1374,17 +1443,28 @@ def pieces_proposer(dossier: str, renommages: list[dict] | None = None, annuler:
 @mcp.tool()
 def pieces_appliquer(jeton: str) -> dict:
     """Applique un plan de pieces_proposer validé par l'utilisateur : déplacements (jamais de suppression),
-    journal TSV _organisation/<date>.tsv pour annuler, contrôle du nombre de fichiers et des empreintes."""
+    journal TSV _organisation/<date>.tsv pour annuler, contrôle du nombre de fichiers et des empreintes. Si des
+    fichiers référencés par des médias de l'arbre ont été déplacés (suivre_medias, annulation), renvoie une
+    proposition_arbre (modifier_media, diff + jeton) : rien n'est écrit dans l'arbre sans arbre_appliquer."""
     a = app()
     store = TokenStore(a.config.proposals_dir)
     try:
         rec = store.take(jeton)
         if rec.get("type") != "organisation":
             return {"erreur": "Ce jeton n'est pas un plan d'organisation de pièces."}
+        # Relevé avant les déplacements (localisation des chemins relatifs) ; obligatoire si le plan suit des médias.
+        suivi = any(m.get("media_arbre") for m in rec["plan"]["deplacements"])
+        try:
+            refs = _tree_media_refs(strict=suivi)
+        except Exception as exc:  # noqa: BLE001 — sans l'arbre, les médias suivis ne pourraient être mis à jour
+            return {"erreur": f"Arbre illisible ({exc}) : rangement non effectué, rien n'a été déplacé ; "
+                              "reformuler le plan (pieces_proposer)."}
         out = pieces.appliquer(Path(rec["dossier"]), rec["plan"])
     except (ProposalError, pieces.PieceError) as exc:
         return {"erreur": str(exc)}
     realises = out.pop("deplacements_realises", [])
+    # Médias de l'arbre dont le fichier a bougé (suivre_medias, annulation) : proposition, jamais écriture.
+    out.update(_proposer_suivi_medias(Path(rec["dossier"]), realises, refs))
     # Préserver la reconnaissance des originales archivées, sans retéléchargement après rangement/annulation.
     try:
         archivage.relocaliser(a.config.pieces_registre, Path(rec["dossier"]), realises, a.config.media_ref)
