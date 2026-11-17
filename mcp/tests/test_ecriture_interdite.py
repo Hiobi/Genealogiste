@@ -101,6 +101,13 @@ def test_branches_conditionnelles_toutes_couvertes():
     assert set(BRANCHES) == set(outils.CONDITIONS)
 
 
+def test_ecritures_attendues_derivees_du_catalogue():
+    """Les écritures citées par #159 (et celles ajoutées depuis) sont bien couvertes par le catalogue."""
+    ecritures = {n for n, (_, c) in outils.OUTILS.items() if c == outils.ECRITURE and n not in outils.CONDITIONS}
+    assert {"arbre_appliquer", "pieces_appliquer", "marqueurs_migrer_appliquer", "gramps_tirer",
+            "gramps_bascule_appliquer"} <= ecritures
+
+
 @pytest.mark.parametrize("nom", sorted(n for n, (_, c) in outils.OUTILS.items()
                                        if c == outils.ECRITURE and n not in outils.CONDITIONS))
 def test_outil_d_ecriture_refuse_sans_effet(interdite, tmp_path, nom):
@@ -247,8 +254,8 @@ def test_profil_sans_surveillance():
     deny = {x.removeprefix(pre) for x in p["deny"]}
     assert p["defaultMode"] == "dontAsk"
     assert allow | deny == set(outils.OUTILS) and not allow & deny
-    assert {"arbre_appliquer", "pieces_appliquer", "gramps_bascule_appliquer", "gramps_tirer",
-            "rapport_enregistrer", "cache_purger"} <= deny
+    assert {"arbre_appliquer", "pieces_appliquer", "marqueurs_migrer_appliquer", "gramps_bascule_appliquer",
+            "gramps_tirer", "rapport_enregistrer", "cache_purger"} <= deny
     assert {"rapport_campagne_enregistrer", "propositions_deposer", "enquete_ouvrir", "enquete_noter",
             "arbre_lacunes"} <= allow
     assert {n for n in allow if outils.OUTILS[n][1] == outils.ECRITURE} == set(outils.CONDITIONS)
