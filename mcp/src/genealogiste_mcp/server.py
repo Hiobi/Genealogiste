@@ -29,6 +29,7 @@ from .auth import BearerAuth, Sante, bind_problem
 from .cache import Cache
 from .chemins import CheminRefuse, nom_simple, sous
 from .config import Config, load_config
+from .enquetes import EnqueteError, Enquetes
 from .export import charts
 from .export.fiche import fiche_markdown, gaps, tree_gaps
 from .export.geneweb import to_geneweb
@@ -93,6 +94,7 @@ class App:
         self.store = TreeStore(self.config.data_dir, self.config.git_remote, self.config.git_delai)
         self.store.ensure()
         self.journal = Journal(self.config.journal_path)
+        self.enquetes = Enquetes(self.config.data_dir, self.journal)
         self.proposals = Proposals(self.store, self.config.proposals_dir, self.config.exiger_source,
                                    self.config.media_reference)
         self.tokens = TokenStore(self.config.proposals_dir)
@@ -220,6 +222,25 @@ def _garde(personne: str = "", nom: str = "", prenom: str = "", ne_vers: str = "
     """Politique de sortie réseau (privacy.external_guard) : appelée par TOUT outil qui envoie des noms ou un
     identifiant de personne à un service externe (vérifié par test_outils)."""
     return privacy.external_guard(app().tree(), personne, nom, prenom, ne_vers, texte)
+
+
+def _suivi_enquete(outil: str, parametres: dict, out: dict, enquete: str = "", fenetre: list[int] | None = None,
+                   **noter) -> dict:
+    """« Déjà fait le … » (même demande notée dans une enquête) et, avec enquete=<id>, notation de la demande
+    dans l'état de cette enquête (#155). Local seulement ; n'empêche jamais l'appel ni ne modifie son résultat."""
+    a = app()
+    try:
+        if deja := a.enquetes.deja_fait(outil, parametres, fenetre):
+            out["deja_fait"] = deja
+    except (OSError, ValueError):
+        pass  # état illisible : l'appel reste valable
+    if enquete:
+        try:
+            a.enquetes.enregistrer(enquete, outil, parametres, fenetre=fenetre, **noter)
+            out["enquete"] = enquete
+        except (EnqueteError, OSError) as exc:
+            out["enquete_avertissement"] = f"Demande non notée dans l'enquête : {exc}"
+    return out
 
 
 # ============================================================================ sources prioritaires
@@ -383,7 +404,7 @@ def ark_resoudre(ark: str, verifier: bool = True, titre: str = "") -> dict:
 
 @mcp.tool()
 def archive_image(source: str, page: int = 0, region: str = "full", largeur: int = 800, gris: bool = True,
-                  details: bool = False) -> dict:
+                  details: bool = False, enquete: str = "") -> dict:
     """Aperçu économe d'une vue : lien IIIF (tous pays), ARK Gallica ou visionneuse AD59, image directe,
     fichier local. Les pages qui déclarent un manifeste IIIF sont résolues côté Python, sans HTML envoyé
     au modèle. D'abord largeur 800/gris, puis region='pct:x,y,l,h' pour l'acte seul ; coût indicatif renvoyé.
@@ -396,9 +417,17 @@ def archive_image(source: str, page: int = 0, region: str = "full", largeur: int
     réutilisation ne sont jamais renvoyées ici : elles sont conservées par piece_archiver (note compagnon).
     Consigne : aperçu d'abord (≈ 800 px, gris) pour repérer l'acte, puis recadrer l'acte seul
     (region pct:x,y,l,h, largeur 1500-2000). Transcription produite par le modèle : à marquer comme telle
-    et à faire vérifier."""
+    et à faire vérifier.
+    enquete (facultatif) : id d'enquête où noter la vue consultée ; deja_fait signale une vue déjà lue."""
     out = iiif.fetch(app().sctx, app().config.cache_images_dir, source, page, region, largeur, gris)
-    return iiif.sortie_minimale(app().sctx, out, details)
+    res = iiif.sortie_minimale(app().sctx, out, details)
+    if "erreur" in res:
+        return res
+    vue = res.get("vue") if isinstance(res.get("vue"), int) else (page or None)
+    registre = res.get("registre") or source
+    params = {"source": source, "page": page, "vue": vue, "registre": registre}
+    return _suivi_enquete("archive_image", params, res, enquete, resultat="positif", registre=registre,
+                          vue_lue=vue, nb_vues=res.get("nb_vues") if isinstance(res.get("nb_vues"), int) else None)
 
 
 @mcp.tool()
@@ -460,9 +489,10 @@ def geo_historique(nom: str = "", code_insee: str = "", departement: str = "") -
 
 @mcp.tool()
 def recherche_multi(nom: str, prenom: str = "", ne_vers: str = "", lieu: str = "", decede_vers: str = "",
-                    sources: list[str] | None = None, personne: str = "") -> dict:
+                    sources: list[str] | None = None, personne: str = "", enquete: str = "") -> dict:
     """Recherche multi-sources (matchID, WikiTree, Wikidata, Gallica) + liens des sources secondaires.
-    Résultats fusionnés et classés par score de correspondance explicite."""
+    Résultats fusionnés et classés par score de correspondance explicite.
+    enquete (facultatif) : id d'enquête où noter la demande ; deja_fait signale la même requête déjà notée."""
     refus = _garde(personne, nom, prenom, ne_vers)
     if refus:
         return refus
@@ -489,12 +519,16 @@ def recherche_multi(nom: str, prenom: str = "", ne_vers: str = "", lieu: str = "
         for r in res.get("resultats", []):
             (persons if "score" in r else docs).append(r)
     persons.sort(key=lambda r: -r.get("score", 0))
-    return {
+    out = {
         "requete": {"nom": nom, "prenom": prenom, "ne_vers": ne_vers, "lieu": lieu, "decede_vers": decede_vers},
         "personnes": persons[:40], "documents": docs[:20], "sources_negatives": negatives, "erreurs": errors,
         "sources_secondaires": liens.search_links(nom, prenom, ne_vers, lieu, decede_vers)["liens"],
         "rappel": "Score = indice de correspondance, pas une preuve. Index et arbres en ligne : remonter à l'original.",
     }
+    params = {**out["requete"], "sources": sources}
+    journal = [r["journal"] for r in by_source.values() if isinstance(r, dict) and r.get("journal")]
+    resultat = "positif" if persons or docs else ("erreur" if errors else "negatif")
+    return _suivi_enquete("recherche_multi", params, out, enquete, resultat=resultat, journal=journal)
 
 
 @mcp.tool()
@@ -542,7 +576,7 @@ def archives_registres(service: str, commune: str, annee: int, type_acte: str = 
 
 
 @mcp.tool()
-def archives_naviguer(source: str, page: int = 0, pas: int = 20) -> dict:
+def archives_naviguer(source: str, page: int = 0, pas: int = 20, enquete: str = "") -> dict:
     """Parcourir les vues d'un registre d'archives sans connaître la vue à l'avance : renvoie une fenêtre de
     vues (numéro, ARK de vue, image) et les métadonnées du registre (titre, cote, commune, période, nombre
     de vues). source : ARK de registre ou de vue AD59 (visionneuse reconnue), ARK Gallica ou manifeste IIIF.
@@ -551,7 +585,9 @@ def archives_naviguer(source: str, page: int = 0, pas: int = 20) -> dict:
     et vue_suivante son prochain début (None en fin). Hors bornes : erreur avec les numéros valides.
     Une navigation produit une entrée au journal, y compris depuis le cache.
     Ne localise pas un acte à partir d'un nom (voir la recherche du
-    service, liens_recherche/cotes_a_consulter pour trouver le registre)."""
+    service, liens_recherche/cotes_a_consulter pour trouver le registre).
+    enquete (facultatif) : id d'enquête où noter la fenêtre parcourue ; deja_fait signale la même fenêtre
+    déjà notée ou des vues déjà lues."""
     a = app()
     params = {"source": source, "page": page, "pas": pas}
     try:
@@ -565,13 +601,18 @@ def archives_naviguer(source: str, page: int = 0, pas: int = 20) -> dict:
                                        statut="positif", nb_resultats=len(res["vues"]),
                                        resume=res["registre"].get("titre", ""), references=[source],
                                        cache=res["depuis_cache"])
-        return res
     except (SourceError, ValueError) as exc:  # VisionneuseError et IiifError sont des ValueError
         out = error_envelope(a.sctx, "archives", "naviguer", params, exc)
         if out.get("statut") != "bloque_antirobot":
             out["conseil"] = ("Vérifier l'ARK ou l'URL du registre (archives_service pour la visionneuse du service) ; "
                               "sinon ouvrir le registre dans le navigateur (liens_recherche, cotes_a_consulter).")
         return out
+    fen = res.get("fenetre") or {}
+    fenetre = [fen["de"], fen["a"]] if fen.get("de") and fen.get("a") else None
+    reg = res.get("registre") or {}
+    return _suivi_enquete("archives_naviguer", params, res, enquete, fenetre, resultat="positif",
+                          journal=[res["journal"]], registre=source, nb_vues=res.get("nb_vues"),
+                          titre=reg.get("titre") or "", cote=reg.get("cote") or "")
 
 
 @mcp.tool()
@@ -1625,6 +1666,66 @@ def journal_ajouter(source: str, operation: str, statut: str, resume: str, param
     if personne and (notes := app().refresh_notes([personne])):
         out["notes"] = notes
     return out
+
+
+# ============================================================================ état d'enquête (#155)
+
+def _enquete(fn):
+    try:
+        return fn()
+    except EnqueteError as exc:
+        return {"erreur": str(exc)}
+
+
+@mcp.tool()
+def enquete_ouvrir(sujet: str, personnes: list[str] | None = None, id: str = "") -> dict:
+    """Ouvre une enquête : état de recherche persistant et reprenable (pistes, progression par registre,
+    tâches manuelles, demandes faites), fichier JSON lisible dans <données>/enquetes/<id>.json. id facultatif
+    (dérivé du sujet : minuscules, chiffres, tirets), stable : à passer à enquete_noter, enquete_reprendre et
+    au paramètre enquete de recherche_multi, archives_naviguer et archive_image. personnes : ids de l'arbre.
+    Local seulement, rien n'est envoyé au réseau."""
+    return _enquete(lambda: app().enquetes.ouvrir(sujet, personnes, id))
+
+
+@mcp.tool()
+def enquete_noter(enquete: str, piste: dict | None = None, registre: dict | None = None, tache: dict | None = None,
+                  requete: dict | None = None, statut: str = "", personnes: list[str] | None = None) -> dict:
+    """Note l'avancement d'une enquête (un ou plusieurs éléments par appel ; mise à jour si id existe).
+    piste : {id?, question, hypotheses: [..], sources: [texte | {libelle, outil, parametres}] dans l'ordre,
+      sources_faites: [libelle], statut: a_faire|en_cours|trouve|negatif|bloque|manuel, note, journal?}.
+    registre : {id? | source (ARK, URL de visionneuse ou manifeste) | cote, service, titre, piste, nb_vues,
+      bornes: [de, a], vues_lues: [n | [de, a]], lectures: [{vue, date, type, numero, note}], verdict, statut}.
+    tache (manuelle, pour l'utilisateur) : {id?, description, service, piste, statut: a_faire|faite|abandonnee}.
+    requete (faite hors outil suivi, ex. Geneanet) : {outil, parametres, resultat: positif|negatif|erreur|manuel,
+      resume, journal?, piste}.
+    statut : ouverte | close. Tout élément négatif référence une entrée du journal : journal=<id> vérifié,
+    sinon une entrée « enquete » est créée (journal_cree)."""
+    return _enquete(lambda: app().enquetes.noter(enquete, piste, registre, tache, requete, statut, personnes))
+
+
+@mcp.tool()
+def enquete_etat(enquete: str = "") -> dict:
+    """État complet d'une enquête (fichier JSON), avec le contrôle de cohérence avec le journal ; sans
+    enquete, liste des enquêtes (id, sujet, statut, pistes ouvertes, tâches en attente)."""
+    def run():
+        e = app().enquetes
+        if not enquete:
+            return {"enquetes": e.lister()}
+        return {**e.lire(enquete), "coherence_journal": e.coherence(enquete) or "ok"}
+    return _enquete(run)
+
+
+@mcp.tool()
+def enquete_reprendre(enquete: str = "") -> dict:
+    """Reprise après interruption, sans relire le journal : actions restantes dans l'ordre (a_faire : outil et
+    paramètres prêts), pistes ouvertes, registres en cours (vues restantes), tâches manuelles en attente, et
+    demandes déjà faites à ne pas relancer (deja_fait). Sans enquete : liste des enquêtes ouvertes."""
+    def run():
+        e = app().enquetes
+        if not enquete:
+            return {"enquetes": [x for x in e.lister() if x["statut"] == "ouverte"]}
+        return e.reprendre(enquete)
+    return _enquete(run)
 
 
 # ============================================================================ notes de recherche Markdown

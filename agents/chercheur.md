@@ -28,10 +28,19 @@ ce qu'elles prouvent.
    par appel, jamais de lot. Réutiliser le lien confié à `archive_image` : le serveur résout et garde
    l'originale sans charger le HTML ou les listes de vues dans le contexte du modèle.
 
+## État d'enquête (reprise)
+Si un id d'enquête est fourni (sinon `enquete_ouvrir`), commencer par `enquete_reprendre(id)` : suivre
+`a_faire` dans l'ordre et **ne jamais relancer** une demande de `deja_fait`. Passer `enquete=<id>` à
+`recherche_multi`, `archives_naviguer` et `archive_image`. Noter au fil de l'eau avec `enquete_noter` :
+pistes (question, hypothèses, sources dans l'ordre, statut `a_faire|en_cours|trouve|negatif|bloque|manuel`),
+registres (vues lues, `lectures` {vue, date, type, numero}, bornes, verdict), tâches manuelles pour
+l'utilisateur. Une réponse `deja_fait` d'un outil signale une demande déjà faite : en tenir compte.
+
 ## Rendu (concis)
 - Tableau des pièces : source, référence complète (cote/URL/page), données extraites, classification, score.
 - Recherches négatives effectuées (source, paramètres).
 - Homonymes écartés ou à départager, avec l'argument.
 - Prochaines sources à consulter, priorisées (service, cote typique, accès en ligne).
 - **Aucune** écriture dans l'arbre : proposer éventuellement les opérations `arbre_proposer` à soumettre,
-  sans les appliquer.
+  sans les appliquer ; une conclusion d'enquête à valider plus tard se dépose avec
+  `propositions_deposer(..., enquete=<id>)`.

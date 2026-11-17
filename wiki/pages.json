@@ -108,6 +108,12 @@
     "groupe": "Utiliser le plugin"
   },
   {
+    "slug": "Enquetes",
+    "source": "docs/enquetes.md",
+    "titre": "État d'enquête",
+    "groupe": "Utiliser le plugin"
+  },
+  {
     "slug": "Exports",
     "source": "wiki/Exports.md",
     "titre": "Exports",
