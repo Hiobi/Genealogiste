@@ -436,12 +436,14 @@ def dossier_explicite(racine: Path, dossier) -> Path:
 
 
 def planifier(racine: Path, renommages: list[dict] | None = None, references: set[Path] | None = None,
-              perimetre: Path | None = None, seulement_renommages: bool = False) -> dict:
+              perimetre: Path | None = None, seulement_renommages: bool = False, suivre: bool = False) -> dict:
     """Plan de déplacements {de, vers, motif} ; ne modifie rien.
     renommages : [{actuel: chemin relatif, propose: nouveau nom de fichier, dossier: facultatif}] (agent
     trieur, piece_nommer) ; le fichier est ensuite classé d'après son nouveau nom, ou dans dossier
     (relatif à la racine, contrôlé par dossier_explicite).
-    references : chemins absolus de médias liés à l'arbre (jamais déplacés)."""
+    references : chemins absolus de médias liés à l'arbre : jamais déplacés, sauf avec suivre (#193), où ils sont
+    classés comme les autres (déplacement marqué media_arbre, référence mise à jour ensuite par une proposition
+    d'arbre) mais jamais isolés comme doublons."""
     racine = Path(racine).resolve()
     perimetre = Path(perimetre or racine).resolve()
     if not perimetre.is_relative_to(racine):
@@ -486,7 +488,8 @@ def planifier(racine: Path, renommages: list[dict] | None = None, references: se
     for f in sorted(fichiers, key=lambda f: str(f.rel)):
         if seulement_renommages and f.rel not in noms:
             continue
-        if (racine / f.rel).resolve() in references:
+        reference = (racine / f.rel).resolve() in references
+        if reference and not suivre:
             if f.rel in noms or f.rel in doublons or not f.classe:
                 protegees.append(str(f.rel))
             continue
@@ -513,6 +516,8 @@ def planifier(racine: Path, renommages: list[dict] | None = None, references: se
                 motif = TYPES[f.info["type"]][0]
             if f.rel in noms:
                 motif += " (renommée)"
+        if reference:
+            motif += " (média de l'arbre suivi)"
         cible = cible_dir / nom
         if cible == f.rel:
             continue
@@ -538,7 +543,8 @@ def planifier(racine: Path, renommages: list[dict] | None = None, references: se
             moves.append({"de": str(note_rel), "vers": str(note_cible), "motif": "note compagnon",
                           "sha256": notes[note_rel], "sha256_apres": hashlib.sha256(apres.encode()).hexdigest(),
                           "contenu_avant": avant, "contenu_apres": apres, "piece": str(f.rel)})
-        moves.append({"de": str(f.rel), "vers": str(cible), "motif": motif, "sha256": f.sha256})
+        moves.append({"de": str(f.rel), "vers": str(cible), "motif": motif, "sha256": f.sha256,
+                      **({"media_arbre": True} if reference else {})})
     resume = Counter(str(Path(m["vers"]).parent) for m in moves)
     return {
         "dossier": str(racine), "racine": str(racine), "perimetre": str(perimetre),
