@@ -20,7 +20,7 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
-from ..chemins import CheminRefuse, sous
+from ..chemins import CheminRefuse, localiser
 from ..fichiers import ajouter_jsonl, lire_jsonl
 from ..gedcom.mapping import write_gedcom
 from ..models import Tree
@@ -56,13 +56,9 @@ MAX_PREVIEW_OBJECTS = 40
 
 
 def _local_media(local: str, data_dir: Path, media_dir: Path | None) -> Path:
-    """Fichier d'un média : confiné au répertoire de données ou au répertoire des médias configuré."""
-    try:
-        return sous(data_dir, local)
-    except CheminRefuse:
-        if media_dir is None:
-            raise
-        return sous(media_dir, local)
+    """Fichier d'un média : confiné au répertoire de données ou au répertoire des médias configuré ; un chemin
+    relatif absent des données est cherché dans le répertoire des médias (vault hors des données, #192)."""
+    return localiser((data_dir, media_dir), local)
 
 
 def media_pending(db: GrampsDb, data_dir: Path, handles: set[str] | None = None,
@@ -163,8 +159,10 @@ class GrampsBackend:
 
     def __init__(self, client: GrampsClient, data_dir: Path, proposals_dir: Path, exiger_source: bool = True,
                  strict: bool = False, ttl: float = 30.0, mirror: GitMirror | None = None,
-                 clock=time.monotonic, notes_auto: str = "true", media_dir: Path | None = None):
+                 clock=time.monotonic, notes_auto: str = "true", media_dir: Path | None = None,
+                 media=None):
         self.client = client
+        self.media = media  # résolution des fichiers d'ajouter_media (Config.media_reference)
         self.media_dir = Path(media_dir) if media_dir else None
         self.tokens = TokenStore(proposals_dir)
         self.data_dir = Path(data_dir)
@@ -241,7 +239,8 @@ class GrampsBackend:
                 sources: list[str] | None = None, all_notes: bool = False, structure: bool = False) -> dict:
         db = self.snapshot(fresh=True)
         tree = self.load()
-        ctx, token, message = prepare(tree, operations, titre, justification, sources, self.exiger_source)
+        ctx, token, message = prepare(tree, operations, titre, justification, sources, self.exiger_source,
+                                      self.media)
         only = touched_keys(tree, ctx.tree) if self.notes_auto == "modifies" and not all_notes else None
         new = tree_to_gramps(ctx.tree, base=db, strict=self.strict, generated=self.notes_auto != "false", only=only,
                              structure=structure)

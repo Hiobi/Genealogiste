@@ -12,7 +12,8 @@ Module `chemins.py` (#41, #51). Les chemins sont résolus (liens symboliques com
 |---|---|
 | `media_enregistrer(chemin, nom)` | `nom` = nom de fichier simple (ni `/`, ni `\`, ni `..`) ; copie confinée à `<données>/medias/` ; un fichier existant au contenu différent n'est pas écrasé (même contenu : sans effet). `chemin` (fichier source) est libre : l'outil n'est pas en lecture seule et demande confirmation. |
 | `matchid_appariement_statut(job, sortie)` | `sortie` facultative : fichier `.csv` du répertoire de données (chemin relatif à celui-ci, ou absolu à l'intérieur), hors `.git`. `arbre.ged`, `journal.jsonl` et les autres fichiers internes sont donc inatteignables. Contrôle fait avant l'appel réseau. |
-| Envoi des médias vers Gramps Web | Un média dont le chemin est absolu, traversant (`../`) ou un lien symbolique sortant n'est jamais lu ; il est listé comme « hors du répertoire de données, refusé ». |
+| Envoi des médias vers Gramps Web | Le fichier d'un média est cherché sous le répertoire des données puis, avec `GENEALOGISTE_MEDIA_DIR`, sous l'arborescence des pièces (vault) : un chemin relatif est essayé contre chacune de ces racines, un chemin absolu doit s'y trouver. Un chemin qui sort de toutes (absolu ailleurs, traversant `../`, lien symbolique sortant) n'est jamais lu ; il est listé comme « hors du répertoire de données, refusé ». |
+| `ajouter_media` (proposition) | Même confinement (données, répertoire des médias, arborescence des pièces) : un chemin local hors de ces racines ou introuvable fait refuser la proposition ; une URL distante est gardée sans être lue. |
 
 ## Confirmations (hooks)
 

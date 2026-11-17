@@ -92,7 +92,8 @@ class App:
         self.store = TreeStore(self.config.data_dir, self.config.git_remote, self.config.git_delai)
         self.store.ensure()
         self.journal = Journal(self.config.journal_path)
-        self.proposals = Proposals(self.store, self.config.proposals_dir, self.config.exiger_source)
+        self.proposals = Proposals(self.store, self.config.proposals_dir, self.config.exiger_source,
+                                   self.config.media_reference)
         self.tokens = TokenStore(self.config.proposals_dir)
         import threading
         self._verrou_gramps = threading.RLock()
@@ -115,7 +116,8 @@ class App:
                                          self.config.gramps_ttl,
                                          GitMirror(self.store) if self.config.git_mirror else None,
                                          notes_auto=self.config.gramps_notes_auto,
-                                         media_dir=self.config.pieces_root if self.config.media_dir_conf else None)
+                                         media_dir=self.config.pieces_root if self.config.media_dir_conf else None,
+                                         media=self.config.media_reference)
 
     def gramps(self):
         """Client Gramps Web (compte dédié, identifiants de l'environnement)."""
@@ -1067,7 +1069,8 @@ def media_enregistrer(chemin: str, nom: str = "", classer: bool = False) -> dict
     """Copie une image/un PDF d'acte dans le répertoire des médias (<données>/medias/ ou GENEALOGISTE_MEDIA_DIR),
     à lier ensuite via ajouter_media. nom : nom de fichier simple, sans répertoire (convention : piece_nommer),
     rendu compatible Windows/Nextcloud ; un fichier existant au contenu différent n'est pas écrasé.
-    classer=True : rangé selon la convention (documents/<type>/<PATRONYME>/, photographies/…, _À trier/)."""
+    classer=True : rangé selon la convention (documents/<type>/<PATRONYME>/, photographies/…, _À trier/).
+    reference_media : valeur exacte à passer à ajouter_media (fichier)."""
     src = Path(chemin).expanduser()
     if not src.is_file():
         return {"erreur": f"Fichier introuvable : {src}"}
@@ -1084,7 +1087,8 @@ def media_enregistrer(chemin: str, nom: str = "", classer: bool = False) -> dict
         return {"erreur": f"{cfg.media_ref(dest)} existe déjà avec un autre contenu : choisir un autre nom"}
     dest.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(src, dest)
-    return {"fichier": cfg.media_ref(dest), "chemin_absolu": str(dest)}
+    ref = cfg.media_ref(dest)
+    return {"fichier": ref, "chemin_absolu": str(dest), "reference_media": ref}
 
 
 @mcp.tool()

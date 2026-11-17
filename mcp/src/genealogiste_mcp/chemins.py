@@ -27,6 +27,24 @@ def sous(base: Path, chemin: str | Path) -> Path:
     return cible
 
 
+def localiser(racines, chemin: str | Path) -> Path:
+    """Fichier désigné par chemin sous l'une des racines autorisées (relatif : essayé contre chacune, dans l'ordre).
+    Renvoie le premier fichier existant ; à défaut, le chemin sous la première racine qui l'admet (absent).
+    CheminRefuse si aucune racine ne l'admet (absolu ailleurs, traversée « .. » ou lien symbolique sortants)."""
+    admis: list[Path] = []
+    for racine in dict.fromkeys(Path(r).resolve() for r in racines if r is not None):
+        try:
+            p = sous(racine, chemin)
+        except CheminRefuse:
+            continue
+        if p.is_file():
+            return p
+        admis.append(p)
+    if admis:
+        return admis[0]
+    raise CheminRefuse(f"Chemin hors des répertoires autorisés (données, médias) : {chemin}")
+
+
 def sortie_donnees(data_dir: Path, chemin: str, suffixe: str) -> Path:
     """Fichier de sortie d'un outil : dans le répertoire de données, hors .git, avec l'extension attendue
     (ce qui exclut arbre.ged, journal.jsonl et les autres fichiers internes)."""

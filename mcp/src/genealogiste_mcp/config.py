@@ -136,6 +136,28 @@ class Config:
         base = Path(self.data_dir).resolve()
         return p.relative_to(base).as_posix() if p.is_relative_to(base) else str(p)
 
+    @property
+    def media_racines(self) -> tuple[Path, ...]:
+        """Racines où un média local peut se trouver, dans l'ordre d'essai d'un chemin relatif : données,
+        répertoire des médias, arborescence des pièces (ex. <vault>/documents puis <vault>)."""
+        return self.data_dir, self.media_dir, self.pieces_root
+
+    def media_reference(self, fichier: str) -> str:
+        """Référence normalisée d'un média désigné par ajouter_media (#192) : une URL distante est gardée telle
+        quelle ; un chemin local (relatif aux données, au répertoire des médias ou à l'arborescence des pièces, ou
+        absolu sous l'une d'elles) doit désigner un fichier existant et devient media_ref. Lève CheminRefuse
+        (ValueError) pour un chemin hors de ces racines ou un fichier introuvable."""
+        from .chemins import CheminRefuse, localiser
+
+        if "://" in fichier:
+            return fichier
+        p = localiser(self.media_racines, fichier)
+        if not p.is_file():
+            raise CheminRefuse(f"Fichier de média introuvable : {fichier} (cherché dans "
+                               + ", ".join(dict.fromkeys(str(r) for r in self.media_racines))
+                               + ") ; l'enregistrer d'abord (media_enregistrer, piece_archiver)")
+        return self.media_ref(p)
+
 
 BACKENDS = {"fichier": "fichier", "file": "fichier", "gedcom": "fichier", "": "fichier",
             "gramps": "gramps", "grampsweb": "gramps", "gramps-web": "gramps"}
