@@ -46,7 +46,9 @@ class FilePropositions:
         ecrire_atomique(self._path(entree["id"]), json.dumps(entree, ensure_ascii=False, indent=2) + "\n")
 
     def deposer(self, contenu: dict) -> dict:
-        ident = time.strftime("%Y%m%d-%H%M%S-") + secrets.token_hex(3)
+        ns = time.time_ns()  # microsecondes dans l'id : l'ordre de dépôt reste l'ordre lexical
+        ident = (time.strftime("%Y%m%d-%H%M%S-", time.localtime(ns / 1e9)) + f"{ns % 10**9 // 1000:06d}-"
+                 + secrets.token_hex(2))
         date = _maintenant()
         entree = {"id": ident, "statut": EN_ATTENTE, "raison": "", "depose": date, **contenu,
                   "jeton": "", "historique": [{"date": date, "statut": EN_ATTENTE, "detail": "dépôt"}]}
@@ -71,7 +73,7 @@ class FilePropositions:
                 continue
             if statuts is None or e.get("statut") in statuts:
                 out.append(e)
-        return sorted(out, key=lambda e: (e.get("depose", ""), e.get("id", "")))
+        return sorted(out, key=lambda e: e.get("id", ""))
 
     def maj(self, ident: str, statut: str | None = None, detail: str = "", **champs) -> dict:
         """Mise à jour sous verrou ; un changement de statut est tracé dans l'historique de l'entrée."""
