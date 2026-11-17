@@ -21,7 +21,9 @@ IDENTIFIANTS = "identifiants"  # usage d'identifiants de l'utilisateur
 # - lecture : aucune écriture hors du cache et du journal internes ;
 # - collecte : réseau et/ou écriture additive et réversible dans un répertoire géré par le plugin (cache, journal,
 #   pièce nouvelle archivée avec sa note) ; jamais d'écrasement ni de suppression, jamais l'arbre ni Gramps Web.
-#   Bornée aujourd'hui par les limites de débit par hôte et le coupe-circuit anti-robot (budget de collecte : #157) ;
+#   Bornée par les limites de débit par hôte, le coupe-circuit anti-robot, le plafond journalier par hôte
+#   d'archives et, avec enquete=<id>, le budget de l'enquête (#157) ; fixer ou relever ce budget, ou rouvrir une
+#   enquête bloquée, demande l'accord de l'utilisateur (CONDITIONS) ;
 # - proposition : prépare une modification sans l'écrire (diff + jeton, file de propositions) ;
 # - ecriture : arbre, Gramps Web, fichiers de l'utilisateur, suppression, envoi de ses fichiers, identifiants.
 COLLECTE = "collecte"
@@ -111,8 +113,8 @@ OUTILS: dict[str, tuple[str, str]] = {  # nom -> (effet, classe)
     "journal_ajouter": (JOURNAL, LECTURE),
     # état d'enquête (#155) : <données>/enquetes/<id>.json, géré par le plugin, hors arbre ; ouverture sans
     # écrasement (id existant refusé), notes ajoutées à l'état et au journal
-    "enquete_ouvrir": (JOURNAL, COLLECTE),
-    "enquete_noter": (JOURNAL, COLLECTE),
+    "enquete_ouvrir": (ECRITURE, ECRITURE),  # état local ; CONDITIONS : collecte sans « budget »
+    "enquete_noter": (ECRITURE, ECRITURE),  # état local ; CONDITIONS : collecte sans « budget » ni réouverture
     "enquete_etat": (LECTURE, LECTURE),
     "enquete_reprendre": (LECTURE, LECTURE),
     "notes_generer": (ECRITURE, ECRITURE),  # réécrit les sections générées, renomme, retire des fiches
@@ -139,6 +141,10 @@ CONDITIONS: dict[str, tuple[str, str, str]] = {
     "matchid_appariement_statut": ('"sortie"[[:space:]]*:[[:space:]]*"[^"]', COLLECTE, "écrit un fichier (sortie)"),
     "gramps_envoyer_medias": ('"appliquer"[[:space:]]*:[[:space:]]*true', COLLECTE,
                               "envoie des fichiers à Gramps Web (appliquer)"),
+    # Budget d'enquête (#157) : une boucle autonome ne relève pas seule la limite qui l'arrête.
+    "enquete_ouvrir": ('"budget"[[:space:]]*:[[:space:]]*[{]', COLLECTE, "fixe un budget de collecte (budget)"),
+    "enquete_noter": ('"budget"[[:space:]]*:[[:space:]]*[{]|"statut"[[:space:]]*:[[:space:]]*"ouverte"', COLLECTE,
+                      "modifie le budget ou rouvre une enquête (budget, statut ouverte)"),
 }
 
 

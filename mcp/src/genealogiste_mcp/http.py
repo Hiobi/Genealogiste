@@ -128,8 +128,10 @@ class HttpClient:
         clock: Callable[[], float] = time.monotonic,
         echec_ttl: float = 900.0,
         coupe_circuit_ttl: float = 1800.0,
+        plafond=None,
     ):
         self.cache = cache
+        self.plafond = plafond  # budget.PlafondJour : plafond journalier par hôte d'archives (#157)
         self.hotes_contactes: list[str] = []  # relevé par le journal d'exploitation, remis à zéro par appel
         self.echec_ttl = echec_ttl
         self.coupe_circuit_ttl = coupe_circuit_ttl
@@ -182,6 +184,7 @@ class HttpClient:
             if sans_secrets:
                 for nom in sensibles:
                     requete.headers.pop(nom, None)
+            self._autoriser_envoi(urlparse(url).netloc)
             resp = self.client.send(requete, stream=stream)
             location = resp.headers.get("Location")
             if resp.status_code not in (301, 302, 303, 307, 308) or not location:
@@ -278,6 +281,17 @@ class HttpClient:
                            {"raison": raison, "jusqu_a": time.time() + self.coupe_circuit_ttl,
                             "antirobot": _metadonnees(exc)},
                            self.coupe_circuit_ttl, "coupe_circuit")
+
+    def _autoriser_envoi(self, host: str) -> None:
+        """Juste avant une requête réellement émise (#157) : budget de l'enquête en cours puis plafond journalier
+        de l'hôte ; un refus lève une SourceError sans rien envoyer. Sinon la requête est comptée."""
+        from . import budget
+
+        hote = self._hote(host)
+        budget.avant_envoi(hote)
+        if self.plafond is not None:
+            self.plafond.consommer(hote)
+        budget.compter(hote)
 
     def _request(self, method: str, url: str, host: str, *, params, data, json, files, headers, ttl, source,
                  parse, cacheable, key, idempotent) -> tuple[Any, bool]:

@@ -6,6 +6,7 @@ import argparse
 import json
 import logging
 import shutil
+from contextlib import contextmanager
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -26,6 +27,7 @@ from . import (
 from . import pdf_markdown as pdf_md
 from .archives import communicability_online
 from .auth import BearerAuth, Sante, bind_problem
+from .budget import PlafondJour, mesurer, tokens_texte
 from .cache import Cache
 from .chemins import CheminRefuse, nom_simple, sous
 from .config import Config, load_config
@@ -90,11 +92,13 @@ class App:
                                policy=NetworkPolicy(self.config.hotes_autorises),
                                default_interval=self.config.debit_defaut,
                                max_retries=self.config.http_tentatives, duree_max=self.config.http_duree_max,
-                               echec_ttl=self.config.cache_echec, coupe_circuit_ttl=self.config.coupe_circuit, **kw)
+                               echec_ttl=self.config.cache_echec, coupe_circuit_ttl=self.config.coupe_circuit,
+                               plafond=PlafondJour(self.cache, self.config.plafond_jour_archives, archives.hotes()),
+                               **kw)
         self.store = TreeStore(self.config.data_dir, self.config.git_remote, self.config.git_delai)
         self.store.ensure()
         self.journal = Journal(self.config.journal_path)
-        self.enquetes = Enquetes(self.config.data_dir, self.journal)
+        self.enquetes = Enquetes(self.config.data_dir, self.journal, self.config.budget_defaut())
         self.proposals = Proposals(self.store, self.config.proposals_dir, self.config.exiger_source,
                                    self.config.media_reference)
         self.tokens = TokenStore(self.config.proposals_dir)
@@ -240,6 +244,50 @@ def _suivi_enquete(outil: str, parametres: dict, out: dict, enquete: str = "", f
             out["enquete"] = enquete
         except (EnqueteError, OSError) as exc:
             out["enquete_avertissement"] = f"Demande non notée dans l'enquête : {exc}"
+    return out
+
+
+def _budget_avant(enquete: str, outil: str, appel: dict, images: int = 0, cout: int = 0) -> dict | None:
+    """Budget de l'enquête (#157), avant tout appel réseau : refus explicite (enquête bloquée, appel consigné au
+    reste à faire) si elle est déjà bloquée ou si l'appel dépasserait une limite. Enquête inconnue : pas de
+    budget (avertissement de _suivi_enquete)."""
+    if not enquete:
+        return None
+    try:
+        return app().enquetes.controler(enquete, outil, appel, images, cout)
+    except (EnqueteError, OSError, ValueError):
+        return None
+
+
+@contextmanager
+def _mesure(enquete: str):
+    """Mesure côté serveur des requêtes émises (par hôte) et de la durée d'un appel lié à une enquête ; la garde
+    refuse une requête avant l'envoi quand le budget est atteint. None sans enquête valide."""
+    garde = None
+    if enquete:
+        try:
+            garde = app().enquetes.garde(enquete)
+        except (EnqueteError, OSError, ValueError):
+            garde = None
+    if garde is None:
+        yield None
+        return
+    with mesurer(garde) as m:
+        yield m
+
+
+def _budget_apres(enquete: str, m, outil: str, appel: dict, out: dict, images: int = 0, cout_images: int = 0,
+                  reste: dict | None = None) -> dict:
+    """Consommation de l'appel (requêtes, images, coût estimé : images + texte de la réponse, durée) et reste
+    du budget dans la réponse ; refus pendant l'appel : enquête bloquée, reste (ou l'appel) consigné."""
+    if m is None:
+        return out
+    cout = cout_images + tokens_texte(json.dumps(out, ensure_ascii=False, default=str))
+    try:
+        out.update(app().enquetes.apres_collecte(enquete, dict(m.requetes), images, cout, m.duree(), m.refus,
+                                                 outil, reste if reste is not None else appel))
+    except (EnqueteError, OSError) as exc:
+        out["enquete_avertissement"] = f"Budget non mis à jour : {exc}"
     return out
 
 
@@ -418,16 +466,26 @@ def archive_image(source: str, page: int = 0, region: str = "full", largeur: int
     Consigne : aperçu d'abord (≈ 800 px, gris) pour repérer l'acte, puis recadrer l'acte seul
     (region pct:x,y,l,h, largeur 1500-2000). Transcription produite par le modèle : à marquer comme telle
     et à faire vérifier.
-    enquete (facultatif) : id d'enquête où noter la vue consultée ; deja_fait signale une vue déjà lue."""
-    out = iiif.fetch(app().sctx, app().config.cache_images_dir, source, page, region, largeur, gris)
-    res = iiif.sortie_minimale(app().sctx, out, details)
-    if "erreur" in res:
+    enquete (facultatif) : id d'enquête où noter la vue consultée ; deja_fait signale une vue déjà lue.
+    Avec enquete, l'appel consomme son budget (une image, coût estimé, requêtes, durée) ; budget renvoie le
+    reste ; budget épuisé : refus avant toute requête, enquête bloquée, appel consigné au reste à faire."""
+    appel = {"source": source, "page": page, "region": region, "largeur": largeur, "gris": gris, "details": details}
+    if refus := _budget_avant(enquete, "archive_image", appel, images=1, cout=iiif.cout_prevu(largeur)):
+        return refus
+    with _mesure(enquete) as m:
+        out = iiif.fetch(app().sctx, app().config.cache_images_dir, source, page, region, largeur, gris)
+        res = iiif.sortie_minimale(app().sctx, out, details)
+    lue = "erreur" not in res
+    res = _budget_apres(enquete, m, "archive_image", appel, res, images=int(lue),
+                        cout_images=(res.get("cout_estime_tokens") or iiif.cout_prevu(largeur)) if lue else 0)
+    if not lue:
         return res
     vue = res.get("vue") if isinstance(res.get("vue"), int) else (page or None)
     registre = res.get("registre") or source
     params = {"source": source, "page": page, "vue": vue, "registre": registre}
     return _suivi_enquete("archive_image", params, res, enquete, resultat="positif", registre=registre,
-                          vue_lue=vue, nb_vues=res.get("nb_vues") if isinstance(res.get("nb_vues"), int) else None)
+                          vue_lue=vue, nb_vues=res.get("nb_vues") if isinstance(res.get("nb_vues"), int) else None,
+                          appel=appel)
 
 
 @mcp.tool()
@@ -492,23 +550,38 @@ def recherche_multi(nom: str, prenom: str = "", ne_vers: str = "", lieu: str = "
                     sources: list[str] | None = None, personne: str = "", enquete: str = "") -> dict:
     """Recherche multi-sources (matchID, WikiTree, Wikidata, Gallica) + liens des sources secondaires.
     Résultats fusionnés et classés par score de correspondance explicite.
-    enquete (facultatif) : id d'enquête où noter la demande ; deja_fait signale la même requête déjà notée."""
+    enquete (facultatif) : id d'enquête où noter la demande ; deja_fait signale la même requête déjà notée.
+    Avec enquete, les requêtes émises par les sources consomment le budget de l'enquête (budget = reste) ;
+    budget épuisé : refus avant la requête, sources restantes consignées au reste à faire, enquête bloquée."""
     refus = _garde(personne, nom, prenom, ne_vers)
     if refus:
         return refus
     a = app()
     wanted = sources or ["matchid", "wikitree", "wikidata", "gallica"]
     pid = personne or None
+    appel = {"nom": nom, "prenom": prenom, "ne_vers": ne_vers, "lieu": lieu, "decede_vers": decede_vers,
+             "sources": sources, "personne": personne}
+    if refus := _budget_avant(enquete, "recherche_multi", appel):
+        return refus
+    appels = {
+        "matchid": lambda: matchid.search(a.sctx, nom, prenom, ne_vers, lieu, decede_vers, personne=pid),
+        "wikitree": lambda: (wikitree.search(a.sctx, nom, prenom, ne_vers, lieu, decede_vers, personne=pid)
+                             if a.config.wikitree_app_id else {"erreur": "GENEALOGISTE_WIKITREE_APPID non défini"}),
+        "wikidata": lambda: wikidata.search_person(a.sctx, nom, prenom, ne_vers, lieu, personne=pid),
+        "gallica": lambda: gallica.search(a.sctx, f"{prenom} {nom}".strip(), personne=pid, nombre=10),
+    }
     by_source: dict[str, Any] = {}
-    if "matchid" in wanted:
-        by_source["matchid"] = matchid.search(a.sctx, nom, prenom, ne_vers, lieu, decede_vers, personne=pid)
-    if "wikitree" in wanted:
-        by_source["wikitree"] = (wikitree.search(a.sctx, nom, prenom, ne_vers, lieu, decede_vers, personne=pid)
-                                 if a.config.wikitree_app_id else {"erreur": "GENEALOGISTE_WIKITREE_APPID non défini"})
-    if "wikidata" in wanted:
-        by_source["wikidata"] = wikidata.search_person(a.sctx, nom, prenom, ne_vers, lieu, personne=pid)
-    if "gallica" in wanted:
-        by_source["gallica"] = gallica.search(a.sctx, f"{prenom} {nom}".strip(), personne=pid, nombre=10)
+    restantes: list[str] = []  # sources non interrogées faute de budget : reste à faire
+    with _mesure(enquete) as m:
+        for s in [x for x in appels if x in wanted]:
+            if m is not None and m.refus:
+                restantes.append(s)
+                continue
+            res = appels[s]()
+            if m is not None and m.refus:  # refusée avant l'envoi : à refaire, pas une erreur de la source
+                restantes.append(s)
+                continue
+            by_source[s] = res
     persons, docs, errors, negatives = [], [], {}, []
     for s, res in by_source.items():
         if "erreur" in res:
@@ -525,10 +598,16 @@ def recherche_multi(nom: str, prenom: str = "", ne_vers: str = "", lieu: str = "
         "sources_secondaires": liens.search_links(nom, prenom, ne_vers, lieu, decede_vers)["liens"],
         "rappel": "Score = indice de correspondance, pas une preuve. Index et arbres en ligne : remonter à l'original.",
     }
-    params = {**out["requete"], "sources": sources}
+    out = _budget_apres(enquete, m, "recherche_multi", appel, out,
+                        reste={**appel, "sources": restantes} if restantes else None)
+    faites = sources if not restantes else list(by_source)
+    if not faites and restantes:
+        return out  # rien d'interrogé : rien à noter comme fait
+    params = {**out["requete"], "sources": faites}
     journal = [r["journal"] for r in by_source.values() if isinstance(r, dict) and r.get("journal")]
     resultat = "positif" if persons or docs else ("erreur" if errors else "negatif")
-    return _suivi_enquete("recherche_multi", params, out, enquete, resultat=resultat, journal=journal)
+    return _suivi_enquete("recherche_multi", params, out, enquete, resultat=resultat, journal=journal,
+                          appel={**appel, "sources": faites})
 
 
 @mcp.tool()
@@ -587,9 +666,27 @@ def archives_naviguer(source: str, page: int = 0, pas: int = 20, enquete: str = 
     Ne localise pas un acte à partir d'un nom (voir la recherche du
     service, liens_recherche/cotes_a_consulter pour trouver le registre).
     enquete (facultatif) : id d'enquête où noter la fenêtre parcourue ; deja_fait signale la même fenêtre
-    déjà notée ou des vues déjà lues."""
+    déjà notée ou des vues déjà lues. Avec enquete, les requêtes émises consomment le budget de l'enquête
+    (budget = reste) ; budget épuisé : refus avant la requête, enquête bloquée, appel consigné."""
     a = app()
     params = {"source": source, "page": page, "pas": pas}
+    if refus := _budget_avant(enquete, "archives_naviguer", params):
+        return refus
+    with _mesure(enquete) as m:
+        res, out = _naviguer(a, source, page, pas, params)
+    if out is not None:
+        return _budget_apres(enquete, m, "archives_naviguer", params, out)
+    res = _budget_apres(enquete, m, "archives_naviguer", params, res)
+    fen = res.get("fenetre") or {}
+    fenetre = [fen["de"], fen["a"]] if fen.get("de") and fen.get("a") else None
+    reg = res.get("registre") or {}
+    return _suivi_enquete("archives_naviguer", params, res, enquete, fenetre, resultat="positif",
+                          journal=[res["journal"]], registre=source, nb_vues=res.get("nb_vues"),
+                          titre=reg.get("titre") or "", cote=reg.get("cote") or "", appel=params)
+
+
+def _naviguer(a: App, source: str, page: int, pas: int, params: dict) -> tuple[dict | None, dict | None]:
+    """(résultat, None) ou (None, enveloppe d'erreur)."""
     try:
         res = visionneuses.naviguer(a.sctx, source, page, pas)
         if res is None:
@@ -606,13 +703,8 @@ def archives_naviguer(source: str, page: int = 0, pas: int = 20, enquete: str = 
         if out.get("statut") != "bloque_antirobot":
             out["conseil"] = ("Vérifier l'ARK ou l'URL du registre (archives_service pour la visionneuse du service) ; "
                               "sinon ouvrir le registre dans le navigateur (liens_recherche, cotes_a_consulter).")
-        return out
-    fen = res.get("fenetre") or {}
-    fenetre = [fen["de"], fen["a"]] if fen.get("de") and fen.get("a") else None
-    reg = res.get("registre") or {}
-    return _suivi_enquete("archives_naviguer", params, res, enquete, fenetre, resultat="positif",
-                          journal=[res["journal"]], registre=source, nb_vues=res.get("nb_vues"),
-                          titre=reg.get("titre") or "", cote=reg.get("cote") or "")
+        return None, out
+    return res, None
 
 
 @mcp.tool()
@@ -1678,18 +1770,22 @@ def _enquete(fn):
 
 
 @mcp.tool()
-def enquete_ouvrir(sujet: str, personnes: list[str] | None = None, id: str = "") -> dict:
+def enquete_ouvrir(sujet: str, personnes: list[str] | None = None, id: str = "",
+                   budget: dict | None = None) -> dict:
     """Ouvre une enquête : état de recherche persistant et reprenable (pistes, progression par registre,
     tâches manuelles, demandes faites), fichier JSON lisible dans <données>/enquetes/<id>.json. id facultatif
     (dérivé du sujet : minuscules, chiffres, tirets), stable : à passer à enquete_noter, enquete_reprendre et
     au paramètre enquete de recherche_multi, archives_naviguer et archive_image. personnes : ids de l'arbre.
-    Local seulement, rien n'est envoyé au réseau."""
-    return _enquete(lambda: app().enquetes.ouvrir(sujet, personnes, id))
+    budget (facultatif, 0 = illimité ; défauts GENEALOGISTE_BUDGET_*) : {requetes_par_hote, images,
+    duree_min (activité cumulée des outils), cout_tokens (images + réponses)}. Compté côté serveur ; à
+    l'épuisement, refus avant toute requête et enquête « bloque ». Local seulement, rien n'est envoyé au réseau."""
+    return _enquete(lambda: app().enquetes.ouvrir(sujet, personnes, id, budget))
 
 
 @mcp.tool()
 def enquete_noter(enquete: str, piste: dict | None = None, registre: dict | None = None, tache: dict | None = None,
-                  requete: dict | None = None, statut: str = "", personnes: list[str] | None = None) -> dict:
+                  requete: dict | None = None, statut: str = "", personnes: list[str] | None = None,
+                  budget: dict | None = None) -> dict:
     """Note l'avancement d'une enquête (un ou plusieurs éléments par appel ; mise à jour si id existe).
     piste : {id?, question, hypotheses: [..], sources: [texte | {libelle, outil, parametres}] dans l'ordre,
       sources_faites: [libelle], statut: a_faire|en_cours|trouve|negatif|bloque|manuel, note, journal?}.
@@ -1698,9 +1794,12 @@ def enquete_noter(enquete: str, piste: dict | None = None, registre: dict | None
     tache (manuelle, pour l'utilisateur) : {id?, description, service, piste, statut: a_faire|faite|abandonnee}.
     requete (faite hors outil suivi, ex. Geneanet) : {outil, parametres, resultat: positif|negatif|erreur|manuel,
       resume, journal?, piste}.
-    statut : ouverte | close. Tout élément négatif référence une entrée du journal : journal=<id> vérifié,
-    sinon une entrée « enquete » est créée (journal_cree)."""
-    return _enquete(lambda: app().enquetes.noter(enquete, piste, registre, tache, requete, statut, personnes))
+    statut : ouverte | bloque | close. budget : limites à modifier ({requetes_par_hote, images, duree_min,
+    cout_tokens}, 0 = illimité) ; relever un budget épuisé débloque l'enquête (avec l'accord de l'utilisateur).
+    Tout élément négatif référence une entrée du journal : journal=<id> vérifié, sinon une entrée « enquete »
+    est créée (journal_cree)."""
+    return _enquete(lambda: app().enquetes.noter(enquete, piste, registre, tache, requete, statut, personnes,
+                                                 budget))
 
 
 @mcp.tool()
@@ -1718,12 +1817,13 @@ def enquete_etat(enquete: str = "") -> dict:
 @mcp.tool()
 def enquete_reprendre(enquete: str = "") -> dict:
     """Reprise après interruption, sans relire le journal : actions restantes dans l'ordre (a_faire : outil et
-    paramètres prêts), pistes ouvertes, registres en cours (vues restantes), tâches manuelles en attente, et
-    demandes déjà faites à ne pas relancer (deja_fait). Sans enquete : liste des enquêtes ouvertes."""
+    paramètres prêts ; d'abord les appels refusés faute de budget), pistes ouvertes, registres en cours (vues
+    restantes), tâches manuelles en attente, demandes déjà faites à ne pas relancer (deja_fait), budget
+    restant et blocage éventuel. Sans enquete : liste des enquêtes ouvertes ou bloquées."""
     def run():
         e = app().enquetes
         if not enquete:
-            return {"enquetes": [x for x in e.lister() if x["statut"] == "ouverte"]}
+            return {"enquetes": [x for x in e.lister() if x["statut"] in ("ouverte", "bloque")]}
         return e.reprendre(enquete)
     return _enquete(run)
 

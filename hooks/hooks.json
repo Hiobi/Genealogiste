@@ -12,7 +12,7 @@
         ]
       },
       {
-        "matcher": "mcp__.*genealogiste.*__(archive_image|archives_naviguer|archives_planche|archives_registres|ark_resoudre|diagnostic|enquete_noter|enquete_ouvrir|gallica_alto|gallica_recherche|gallica_recherche_document|gallica_texte|geo_commune|geo_historique|gramps_personne|gramps_recherche|gramps_synchroniser|matchid_recherche|piece_archiver|recherche_multi|wikidata_personne|wikidata_sparql|wikitree_ascendants|wikitree_descendants|wikitree_personne|wikitree_profil|wikitree_recherche)$",
+        "matcher": "mcp__.*genealogiste.*__(archive_image|archives_naviguer|archives_planche|archives_registres|ark_resoudre|diagnostic|gallica_alto|gallica_recherche|gallica_recherche_document|gallica_texte|geo_commune|geo_historique|gramps_personne|gramps_recherche|gramps_synchroniser|matchid_recherche|piece_archiver|recherche_multi|wikidata_personne|wikidata_sparql|wikitree_ascendants|wikitree_descendants|wikitree_personne|wikitree_profil|wikitree_recherche)$",
         "hooks": [
           {
             "type": "command",
@@ -35,6 +35,24 @@
           {
             "type": "command",
             "command": "printf '%s' '{\"hookSpecificOutput\": {\"hookEventName\": \"PreToolUse\", \"permissionDecision\": \"ask\", \"permissionDecisionReason\": \"genealogiste : ecriture : arbre, Gramps Web, fichiers de l’utilisateur, suppression ou identifiants : validation explicite requise (vérifiez le diff présenté)\"}}'"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__.*genealogiste.*__(enquete_noter)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if grep -Eq '\"budget\"[[:space:]]*:[[:space:]]*[{]|\"statut\"[[:space:]]*:[[:space:]]*\"ouverte\"'; then printf '%s' '{\"hookSpecificOutput\": {\"hookEventName\": \"PreToolUse\", \"permissionDecision\": \"ask\", \"permissionDecisionReason\": \"genealogiste : enquete_noter modifie le budget ou rouvre une enquête (budget, statut ouverte) : validation explicite requise\"}}'; else printf '%s' '{\"hookSpecificOutput\": {\"hookEventName\": \"PreToolUse\", \"permissionDecision\": \"allow\", \"permissionDecisionReason\": \"genealogiste : enquete_noter : collecte, réseau, cache, journal ou pièce nouvelle archivée, sans écriture dans l’arbre\"}}'; fi"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__.*genealogiste.*__(enquete_ouvrir)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if grep -Eq '\"budget\"[[:space:]]*:[[:space:]]*[{]'; then printf '%s' '{\"hookSpecificOutput\": {\"hookEventName\": \"PreToolUse\", \"permissionDecision\": \"ask\", \"permissionDecisionReason\": \"genealogiste : enquete_ouvrir fixe un budget de collecte (budget) : validation explicite requise\"}}'; else printf '%s' '{\"hookSpecificOutput\": {\"hookEventName\": \"PreToolUse\", \"permissionDecision\": \"allow\", \"permissionDecisionReason\": \"genealogiste : enquete_ouvrir : collecte, réseau, cache, journal ou pièce nouvelle archivée, sans écriture dans l’arbre\"}}'; fi"
           }
         ]
       },
