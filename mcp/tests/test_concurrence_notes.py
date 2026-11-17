@@ -41,7 +41,7 @@ def _proposer(a) -> str:
 
 
 def test_outil_de_statut_au_catalogue():
-    assert outils.OUTILS["arbre_statut_transaction"] == (outils.LECTURE, outils.ALLOW)
+    assert outils.OUTILS["arbre_statut_transaction"] == (outils.LECTURE, outils.LECTURE)
 
 
 def test_lecture_non_bloquee_par_une_ecriture(napp, monkeypatch):

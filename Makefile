@@ -2,7 +2,7 @@
 MCP := mcp
 UV  := uv --directory $(MCP)
 
-.PHONY: version help install test sauvegarde restauration test-archives test-gramps test-codex lint format check run run-http docker-build docker-up docker-gramps docker-down validate clean verifier-archives verifier-telechargements
+.PHONY: version help install hooks test sauvegarde restauration test-archives test-gramps test-codex lint format check run run-http docker-build docker-up docker-gramps docker-down validate clean verifier-archives verifier-telechargements
 
 help: ## Liste des cibles
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-14s %s\n", $$1, $$2}'
@@ -33,6 +33,9 @@ sauvegarde: ## Archive datée des données, médias et notes (SORTIE=dossier ; s
 
 restauration: ## Restaure une archive dans un dossier vide et la vérifie (ARCHIVE=… VERS=…)
 	$(UV) run python -m genealogiste_mcp.sauvegarde restaurer $(ARCHIVE) --vers $(VERS)
+
+hooks: ## Régénère hooks/hooks.json depuis le catalogue des outils (outils.py)
+	$(UV) run python ../scripts/generer_hooks.py
 
 lint: ## Vérifie le style (ruff)
 	$(UV) run ruff check src tests scripts ../scripts

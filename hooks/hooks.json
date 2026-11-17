@@ -1,31 +1,58 @@
 {
-  "description": "Lecture des sources sans approbation ; toute écriture (arbre, Gramps Web) ou usage d'identifiants exige l'accord explicite de l'utilisateur.",
+  "description": "Généré depuis mcp/src/genealogiste_mcp/outils.py (make hooks) : lecture, collecte et proposition sans approbation ; écriture (arbre, Gramps Web, fichiers de l'utilisateur), suppression ou identifiants : accord explicite.",
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "mcp__.*genealogiste.*__(matchid_recherche|wikitree_.*|gallica_.*|wikidata_.*|geo_.*|recherche_multi|liens_recherche|pdf_markdown|cotes_a_consulter|archives_naviguer|archives_registres|source_collee|diagnostic|normaliser_.*|comparer_.*|convertir_date|naissance_depuis_age|communicabilite|prochaine_source|journal_lister|piece_nommer|pieces_inventaire|pieces_proposer|journal_ajouter|enquete_(ouvrir|noter|etat|reprendre)|arbre_(info|recherche|personne|fiche|statut_preuve|coherence|comparer|ascendance|descendance|lacunes|vivant|historique|statut_transaction|rapport_preuve|cercle|proposer|annuler_proposition|annuler_modification|importer_gedcom)|propositions_(deposer|lister|reprendre|abandonner)|gramps_recherche|gramps_personne|gramps_bascule_proposer|gramps_relocaliser_medias|gramps_recalculer_notes|gramps_synchroniser)$",
+        "matcher": "mcp__.*genealogiste.*__(arbre_ascendance|arbre_cercle|arbre_coherence|arbre_comparer|arbre_descendance|arbre_fiche|arbre_historique|arbre_info|arbre_lacunes|arbre_personne|arbre_rapport_preuve|arbre_recherche|arbre_statut_preuve|arbre_statut_transaction|arbre_vivant|archives_service|communicabilite|comparer_noms|comparer_profils|convertir_date|cotes_a_consulter|enquete_etat|enquete_reprendre|gallica_iiif|journal_ajouter|journal_lister|liens_recherche|naissance_depuis_age|normaliser_lieu|normaliser_nom|pdf_markdown|piece_nommer|pieces_inventaire|prochaine_source|propositions_lister|source_collee)$",
         "hooks": [
           {
             "type": "command",
-            "command": "printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\",\"permissionDecisionReason\":\"genealogiste : lecture seule ou proposition sans écriture\"}}'"
+            "command": "printf '%s' '{\"hookSpecificOutput\": {\"hookEventName\": \"PreToolUse\", \"permissionDecision\": \"allow\", \"permissionDecisionReason\": \"genealogiste : lecture : sans écriture\"}}'"
           }
         ]
       },
       {
-        "matcher": "mcp__.*genealogiste.*__matchid_appariement_statut$",
+        "matcher": "mcp__.*genealogiste.*__(archive_image|archives_naviguer|archives_planche|archives_registres|ark_resoudre|diagnostic|enquete_noter|enquete_ouvrir|gallica_alto|gallica_recherche|gallica_recherche_document|gallica_texte|geo_commune|geo_historique|gramps_personne|gramps_recherche|gramps_synchroniser|matchid_recherche|piece_archiver|recherche_multi|wikidata_personne|wikidata_sparql|wikitree_ascendants|wikitree_descendants|wikitree_personne|wikitree_profil|wikitree_recherche)$",
         "hooks": [
           {
             "type": "command",
-            "command": "if grep -Eq '\"sortie\"[[:space:]]*:[[:space:]]*\"[^\"]'; then printf '%s' '{\"hookSpecificOutput\": {\"hookEventName\": \"PreToolUse\", \"permissionDecision\": \"ask\", \"permissionDecisionReason\": \"genealogiste : matchid_appariement_statut écrit un fichier (sortie) — validation explicite requise\"}}'; else printf '%s' '{\"hookSpecificOutput\": {\"hookEventName\": \"PreToolUse\", \"permissionDecision\": \"allow\", \"permissionDecisionReason\": \"genealogiste : consultation du statut sans écriture\"}}'; fi"
+            "command": "printf '%s' '{\"hookSpecificOutput\": {\"hookEventName\": \"PreToolUse\", \"permissionDecision\": \"allow\", \"permissionDecisionReason\": \"genealogiste : collecte : réseau, cache, journal ou pièce nouvelle archivée, sans écriture dans l’arbre\"}}'"
           }
         ]
       },
       {
-        "matcher": "mcp__.*genealogiste.*__(arbre_appliquer|pieces_appliquer|rapport_enregistrer|gramps_bascule_appliquer|gramps_tirer|familysearch_exporter|matchid_appariement_csv)$",
+        "matcher": "mcp__.*genealogiste.*__(arbre_annuler_modification|arbre_annuler_proposition|arbre_importer_gedcom|arbre_proposer|gramps_bascule_proposer|gramps_recalculer_notes|gramps_relocaliser_medias|gramps_structurer_lieux|pieces_proposer|propositions_abandonner|propositions_deposer|propositions_reprendre)$",
         "hooks": [
           {
             "type": "command",
-            "command": "printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"ask\",\"permissionDecisionReason\":\"genealogiste : écriture ou identifiants — validation explicite requise (vérifiez le diff présenté)\"}}'"
+            "command": "printf '%s' '{\"hookSpecificOutput\": {\"hookEventName\": \"PreToolUse\", \"permissionDecision\": \"allow\", \"permissionDecisionReason\": \"genealogiste : proposition : modification préparée sans écriture (diff et jeton à valider)\"}}'"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__.*genealogiste.*__(arbre_appliquer|arbre_exporter|cache_purger|familysearch_exporter|gramps_bascule_appliquer|gramps_tirer|matchid_appariement_csv|media_enregistrer|notes_ajouter|notes_generer|notes_lire|pieces_appliquer|rapport_enregistrer)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "printf '%s' '{\"hookSpecificOutput\": {\"hookEventName\": \"PreToolUse\", \"permissionDecision\": \"ask\", \"permissionDecisionReason\": \"genealogiste : ecriture : arbre, Gramps Web, fichiers de l’utilisateur, suppression ou identifiants : validation explicite requise (vérifiez le diff présenté)\"}}'"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__.*genealogiste.*__(gramps_envoyer_medias)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if grep -Eq '\"appliquer\"[[:space:]]*:[[:space:]]*true'; then printf '%s' '{\"hookSpecificOutput\": {\"hookEventName\": \"PreToolUse\", \"permissionDecision\": \"ask\", \"permissionDecisionReason\": \"genealogiste : gramps_envoyer_medias envoie des fichiers à Gramps Web (appliquer) : validation explicite requise\"}}'; else printf '%s' '{\"hookSpecificOutput\": {\"hookEventName\": \"PreToolUse\", \"permissionDecision\": \"allow\", \"permissionDecisionReason\": \"genealogiste : gramps_envoyer_medias : collecte, réseau, cache, journal ou pièce nouvelle archivée, sans écriture dans l’arbre\"}}'; fi"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__.*genealogiste.*__(matchid_appariement_statut)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if grep -Eq '\"sortie\"[[:space:]]*:[[:space:]]*\"[^\"]'; then printf '%s' '{\"hookSpecificOutput\": {\"hookEventName\": \"PreToolUse\", \"permissionDecision\": \"ask\", \"permissionDecisionReason\": \"genealogiste : matchid_appariement_statut écrit un fichier (sortie) : validation explicite requise\"}}'; else printf '%s' '{\"hookSpecificOutput\": {\"hookEventName\": \"PreToolUse\", \"permissionDecision\": \"allow\", \"permissionDecisionReason\": \"genealogiste : matchid_appariement_statut : collecte, réseau, cache, journal ou pièce nouvelle archivée, sans écriture dans l’arbre\"}}'; fi"
           }
         ]
       }

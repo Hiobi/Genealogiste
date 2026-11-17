@@ -44,7 +44,8 @@ ouvert sans action automatique.
 | `enquete_reprendre(enquete)` | `a_faire` (outil et paramètres prêts, dans l'ordre), pistes ouvertes, registres en cours avec `vues_restantes`, tâches manuelles, `deja_fait` |
 
 Ces outils sont locaux : lecture (`enquete_etat`, `enquete_reprendre`) ou trace au journal
-(`enquete_ouvrir`, `enquete_noter`), autorisés sans confirmation comme `journal_ajouter`.
+(`enquete_ouvrir`, `enquete_noter` : classe collecte, état géré par le plugin, ouverture sans écrasement), autorisés
+sans confirmation (voir les classes de permission dans `docs/securite.md`).
 
 `recherche_multi`, `archives_naviguer` et `archive_image` acceptent un paramètre facultatif
 `enquete=<id>` : la demande est notée dans l'état (fenêtre parcourue et nombre de vues pour une navigation,

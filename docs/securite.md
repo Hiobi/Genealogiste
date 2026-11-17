@@ -17,19 +17,51 @@ Module `chemins.py` (#41, #51). Les chemins sont résolus (liens symboliques com
 
 ## Confirmations (hooks)
 
-| Décision | Outils |
-|---|---|
-| Sans confirmation | recherches, consultations, propositions (`arbre_proposer`, `gramps_bascule_proposer`, `gramps_relocaliser_medias`…), ainsi que `gramps_recalculer_notes` et `gramps_synchroniser` (écritures auxiliaires déclarées au catalogue) |
-| Confirmation demandée | écritures (`arbre_appliquer`, `rapport_enregistrer`, `gramps_bascule_appliquer`, `gramps_tirer`), identifiants (`familysearch_exporter`, `matchid_appariement_csv`) |
-| Selon les paramètres | `matchid_appariement_statut` : sans confirmation pour consulter, confirmation si `sortie` est renseignée (écriture d'un fichier) |
-| Règle par défaut de Claude Code | tout outil absent des listes (ex. `media_enregistrer`) |
+Chaque outil a une **classe de permission** déclarée une seule fois dans
+`mcp/src/genealogiste_mcp/outils.py`, d'après ce que fait réellement son code (effet maximal). La décision
+du hook Claude **découle de la classe** (table `DECISIONS`) ; aucun outil n'est laissé à la règle par défaut
+de Claude Code (#153).
 
-Le test `tests/test_chemins.py::test_hook_statut_matchid` exécute réellement la commande du hook.
+| Classe | Définition | Décision | Exemples |
+|---|---|---|---|
+| Lecture | aucune écriture hors du cache et du journal internes | sans confirmation | `arbre_*` en lecture, `archives_service`, `liens_recherche`, `journal_ajouter`, `source_collee`, `pdf_markdown` |
+| Collecte | réseau et/ou écriture **additive et réversible** dans un répertoire géré par le plugin (cache, journal, pièce nouvelle archivée avec sa note) ; jamais d'écrasement ni de suppression, jamais l'arbre ni Gramps Web | sans confirmation | sources externes, `ark_resoudre`, `archive_image`, `archives_naviguer`, `archives_planche`, `piece_archiver`, `enquete_ouvrir`, `enquete_noter`, `gramps_synchroniser` |
+| Proposition | prépare une modification sans l'écrire (diff et jeton, file de propositions) | sans confirmation | `arbre_proposer`, `propositions_*`, `pieces_proposer`, `gramps_bascule_proposer`, `gramps_recalculer_notes`, `gramps_structurer_lieux` |
+| Écriture | arbre, Gramps Web, fichiers de l'utilisateur (notes, pièces existantes, exports), suppression, envoi de ses fichiers à un tiers, identifiants | confirmation demandée | `arbre_appliquer`, `pieces_appliquer`, `rapport_enregistrer`, `media_enregistrer`, `arbre_exporter`, `notes_*`, `cache_purger`, `gramps_tirer`, `familysearch_exporter`, `matchid_appariement_csv` |
 
-Ces décisions sont déclarées une seule fois, outil par outil, dans `mcp/src/genealogiste_mcp/outils.py` (effet :
-lecture, réseau, journal, proposition, écriture, identifiants ; décision du hook). `tests/test_outils.py` refuse
-un outil enregistré mais non déclaré, et tout écart entre ce catalogue et `hooks/hooks.json`. Ajouter un outil
-impose donc de le classer.
+**Outils en deux temps** (table `CONDITIONS`) : classés d'après leur effet maximal, mais le hook lit l'entrée
+de l'appel pour ne demander l'accord qu'au moment de l'écriture :
+
+- `matchid_appariement_statut` : collecte pour consulter, écriture (confirmation) si `sortie` est renseignée ;
+- `gramps_envoyer_medias` : collecte pour lister (`appliquer=false`), écriture (confirmation) avec `appliquer=true`.
+
+Cas tranchés d'après le code :
+
+- `piece_archiver` est une collecte : l'image est écrite sous un nom nouveau (suffixe « (n) » en cas de
+  collision, jamais d'écrasement), la note compagnon n'est jamais réécrite, le registre des pièces est en ajout
+  seul ; l'arbre n'est touché qu'à la proposition.
+- `media_enregistrer` reste une écriture : `chemin` désigne n'importe quel fichier lisible, copié dans
+  l'arborescence des pièces (souvent synchronisée) ; l'utilisateur fournit d'ailleurs lui-même ce fichier.
+- `notes_lire` est une écriture : une fiche absente est générée, ce qui peut renommer des fiches de personnes,
+  retirer des fiches de patronymes et réécrire l'index.
+- `cache_purger` est une écriture : suppression, et `coupe_circuit` lève la pause anti-robot qui borne la collecte.
+- `arbre_exporter` est une écriture : `chemin` libre, un fichier existant est remplacé.
+- `gramps_recalculer_notes` et `gramps_structurer_lieux` ne font que préparer un diff et un jeton (proposition) ;
+  l'écriture passe par `arbre_appliquer`.
+- `gramps_synchroniser` est une collecte : relecture de Gramps Web, sans écriture vers lui ; avec le miroir Git,
+  les modifications externes constatées sont commitées (ajout à l'historique), comme lors de toute lecture
+  rafraîchie de l'arbre en mode gramps.
+
+La collecte n'est bornée aujourd'hui que par les **limites de débit par hôte** et le **coupe-circuit**
+anti-robot (sections ci-dessous) ; un budget de collecte par session est prévu (#157).
+
+`hooks/hooks.json` est **généré** depuis ce catalogue (`make hooks`, `scripts/generer_hooks.py`) : un motif
+par classe, puis un motif par outil en deux temps. Les motifs `mcp__.*genealogiste.*__…` couvrent le plugin
+stdio et le serveur HTTP Docker. `tests/test_outils.py` refuse un outil enregistré mais non déclaré ou sans
+classe, un `hooks.json` différent du rendu du catalogue, et exécute réellement la commande de chaque hook ; il
+vérifie aussi que `/genealogiste:acte` se déroule sans demande d'accord jusqu'à `arbre_proposer` (seuls
+`arbre_appliquer` et le repli manuel `media_enregistrer` en demandent). Ajouter un outil impose donc de le classer
+puis de lancer `make hooks`.
 
 ## Personnes vivantes : rien vers l'extérieur
 
