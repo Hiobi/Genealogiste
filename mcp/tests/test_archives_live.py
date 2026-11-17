@@ -10,6 +10,7 @@ résultat est inscrit dans referentiels/recettes_archives.json (lu par archives_
 from __future__ import annotations
 
 import os
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -42,11 +43,24 @@ def dns_fictif():
     yield
 
 
+@pytest.fixture(scope="module")
+def revision_recette():
+    """Capturer avant que les recettes ne modifient leur fichier de résultats."""
+    racine = Path(__file__).resolve().parents[2]
+    options = dict(cwd=racine, capture_output=True, text=True, timeout=5,
+                   stdin=subprocess.DEVNULL, check=True)
+    propre = subprocess.run(["git", "status", "--porcelain", "--untracked-files=normal"], **options).stdout
+    if propre:
+        return ""
+    return subprocess.run(["git", "rev-parse", "HEAD"], **options).stdout.strip()
+
+
 @pytest.mark.parametrize("service", archives.services_recette(), ids=lambda s: s["code"])
-def test_recette_reelle(service, tmp_path):
+def test_recette_reelle(service, tmp_path, revision_recette):
     ref = service["recette"]
+    revision = revision_recette
     config = Config(data_dir=tmp_path / "donnees", cache_path=tmp_path / "cache.sqlite", http_timeout=20)
-    app = server.App(config)  # attente réelle : le débit du plugin s'applique
+    app = server.App(config)
     app.http.max_retries = 2
     server.set_app(app)
     etape = "ark_resoudre"
@@ -63,17 +77,17 @@ def test_recette_reelle(service, tmp_path):
         if _protection(res):
             if ECRIRE:
                 archives.enregistrer_recette(service["code"], "protection", f"{etape} : {res['erreur']}",
-                                             environnement=ENVIRONNEMENT)
+                                             environnement=ENVIRONNEMENT, revision=revision, reference=ref)
             pytest.skip(f"{service['code']} : protection à l'étape {etape}, recette arrêtée ({res['erreur'][:200]})")
         assert "erreur" not in res, res
         assert Path(res["chemin_absolu"]).is_file()
     except AssertionError as exc:
         if ECRIRE:
-            archives.enregistrer_recette(service["code"], "echec", f"{etape} : {exc}", environnement=ENVIRONNEMENT)
+            archives.enregistrer_recette(service["code"], "echec", f"{etape} : {exc}", environnement=ENVIRONNEMENT, revision=revision, reference=ref)
         raise
     else:
         if ECRIRE:
-            archives.enregistrer_recette(service["code"], "ok", "", environnement=ENVIRONNEMENT)
+            archives.enregistrer_recette(service["code"], "ok", "", environnement=ENVIRONNEMENT, revision=revision, reference=ref)
     finally:
         server.set_app(None)
         app.http.client.close()
