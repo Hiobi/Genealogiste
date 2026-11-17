@@ -1,8 +1,12 @@
 ---
-description: Rechercher, transcrire et télécharger l'acte d'un individu (naissance, mariage, décès) depuis les archives
+description: Trouver le registre d'un acte (naissance, mariage, décès ; recherche automatisée AD59, guidée ailleurs), y repérer la vue, transcrire et archiver
 argument-hint: <id|nom> [naissance|mariage|deces]
 ---
 Recherche d'acte : **$ARGUMENTS**
+
+La recherche du registre n'est automatisée que pour AD59 ; ailleurs, l'utilisateur relève la cote ou l'ARK
+sur le site du service. La vue de l'acte se repère en parcourant le registre (aucun index nominatif). Le
+téléchargement dépend du service (IIIF, visionneuse qualifiée) ; sinon, partir d'une capture fournie.
 
 Applique les skills `methodologie-gps`, `sources-francaises`, `droit-communicabilite` et `paleographie`.
 

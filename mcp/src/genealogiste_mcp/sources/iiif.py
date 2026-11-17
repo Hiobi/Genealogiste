@@ -6,7 +6,9 @@ n'est envoyé au modèle. Les autres interfaces nécessitent un adaptateur quali
 Les originales sans IIIF sont partagées entre aperçus, recadrages et archivage ; les vues voisines ne sont
 jamais téléchargées. Les contraintes de cache restent propres au fournisseur (notamment NARA).
 
-Une image n'est téléchargée qu'une fois (``medias/``) ; une requête = une image, jamais de lot (CGU).
+Une image n'est téléchargée qu'une fois, dans le cache ``cache-images/`` (aperçus et recadrages sous ``iiif/``,
+originales sous ``originaux/``, borné par GENEALOGISTE_CACHE_IMAGES_MAX_MO) ; l'archivage d'une pièce copie ensuite
+l'original dans le répertoire des médias. Une requête = une image, jamais de lot (CGU).
 """
 
 from __future__ import annotations

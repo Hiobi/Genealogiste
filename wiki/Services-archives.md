@@ -4,8 +4,8 @@
 document. Un ARK identifie une ressource ; il ne garantit ni sa numérisation, ni l’accès à son image.
 Le pays ne détermine pas la compatibilité : un lien IIIF exploitable peut fonctionner sans adaptateur national.
 
-Les tableaux historiques de ce catalogue décrivent **Genealogiste 0.19.1**, avec un état de qualification
-au **8 novembre 2026**. La recherche de registres AD59 ci-dessous complète ce périmètre.
+Ce catalogue décrit la version de Genealogiste indiquée en pied de page ; chaque qualification réseau est
+datée (recettes du **8 novembre 2026**). La recherche de registres AD59 ci-dessous complète ce périmètre.
 Il complète le [référentiel des services français](../docs/archives.md), qui indique les lieux et fonds
 à rechercher : être dans ce référentiel ne signifie pas disposer d’un téléchargement automatisé.
 
@@ -28,7 +28,9 @@ Choisir un registre, puis utiliser `archives_naviguer(ark_registre)` pour cherch
 `archive_image` / `piece_archiver` pour la consulter et la conserver. Un registre trouvé ne prouve pas
 que l'acte y figure. Une recherche vide est journalisée pour ce périmètre uniquement ; une modification
 du format de la page est signalée comme erreur. En cas de protection, conserver la tâche manuelle et
-poursuivre les autres pistes. Le [contrat et le relevé technique](../docs/recherche-registres-ad59.md)
+poursuivre les autres pistes : un défi anti-robot détecté renvoie une consigne (ouvrir la vue dans le
+navigateur, fournir une capture ou l'image téléchargée) et met l'hôte en pause (coupe-circuit,
+`GENEALOGISTE_COUPE_CIRCUIT`) ; `cache_purger("coupe_circuit")` autorise un nouvel essai explicite. Le [contrat et le relevé technique](../docs/recherche-registres-ad59.md)
 précisent les limites observées.
 
 ## Choisir le lien à fournir
@@ -50,7 +52,7 @@ n’est pas reconnue comme image directe : télécharger le PDF manuellement pui
 ## Comprendre les niveaux de prise en charge
 
 - **Documenté** : capacité décrite par une institution ; ce n’est pas une intégration livrée.
-- **Implémenté** : chemin présent dans la version indiquée du plugin.
+- **Implémenté** : chemin présent dans la version du plugin indiquée en pied de page.
 - **Simulé** : contrat exercé avec des réponses et images synthétiques, sans réseau.
 - **Éprouvé** : recette réseau réussie sur une ressource datée, avec résultat décrit ci-dessous.
 - **Manuel / non qualifié** : pas d’adaptateur livré ou de contrat exploitable confirmé ; fournir un
@@ -64,7 +66,7 @@ pas tous les fonds du portail. Aucun contrôle humain des entrées n’est ajout
 | Pays et service | Documents ou périmètre | Mécanisme livré et lien attendu | Fonctions et limites | Preuves |
 |---|---|---|---|---|
 | France — [AD59, Archives départementales du Nord](https://archivesdepartementales.lenord.fr/) | Vues de registres et tables ; deux ressources qualifiées | Adaptateur `visualizer_api` : ARK de vue avec UUID, ou registre + `page` | Résolution d’une vue, aperçu, recadrage local, original et archivage. IIIF utilisé si annoncé ; absent des deux ressources essayées. API de visionneuse observée, sans contrat public versionné qualifié ; pas un adaptateur pour toutes les AD | Implémenté, simulé, éprouvé sur un registre et une table le 08/11/2026 : [contrat et résultats](../docs/visionneuse-ad59.md) |
-| France — [Gallica, BnF](https://gallica.bnf.fr/) | Images de documents numérisés accessibles par IIIF | Résolution de l’ARK Gallica vers Image API ; manifeste, `info.json` ou URL IIIF explicites acceptés | Choix `fN` ou `page`, aperçu, recadrage, original et archivage si accessibles ; protections réseau et conditions propres au document | [API officielle BnF](https://api.bnf.fr/fr/api-iiif-de-recuperation-des-images-de-gallica), implémenté et simulé ; pas de recette réseau Gallica dans le lot 0.19.0 |
+| France — [Gallica, BnF](https://gallica.bnf.fr/) | Images de documents numérisés accessibles par IIIF | Résolution de l’ARK Gallica vers Image API ; manifeste, `info.json` ou URL IIIF explicites acceptés | Choix `fN` ou `page`, aperçu, recadrage, original et archivage si accessibles ; protections réseau et conditions propres au document | [API officielle BnF](https://api.bnf.fr/fr/api-iiif-de-recuperation-des-images-de-gallica), implémenté et simulé ; pas de recette réseau Gallica parmi celles du 08/11/2026 |
 | Suisse — [e-manuscripta](https://www.e-manuscripta.ch/) | Documents numérisés ; premier canvas du manifeste `3192957` essayé | IIIF générique, sans adaptateur spécifique ; [API officielle](https://www.e-manuscripta.ch/wiki/apiinfo?lang=de) | Choix de vue, aperçu, recadrage IIIF, original et archivage. PDF proposé par l’institution distinct du parcours image éprouvé | Implémenté, simulé pour le mécanisme générique ; une ressource éprouvée le 08/11/2026 : [résultats](../docs/telechargement-international.md#résultats-natifs) |
 | États-Unis — [Library of Congress](https://www.loc.gov/) | Images numérisées ; une page de journal essayée | IIIF générique via `info.json` ; [Image Services officiel](https://www.loc.gov/apis/micro-services/image-services/) | Aperçu, recadrage, original et archivage ; pas de recherche automatique dans l’ensemble des collections par cet outil. Repli `full/full` exercé lorsque `full/max` est refusé | Implémenté, simulé pour le mécanisme générique ; une image éprouvée le 08/11/2026 : [résultats](../docs/telechargement-international.md#résultats-natifs) |
 | Tous pays — autre fournisseur IIIF | Document dont le manifeste ou service d’image est accessible | Presentation v2/v3, Image API, ou image déclarée dans un canvas sans service ; une page HTML peut déclarer un unique manifeste | Choix de vue et parcours image selon le contenu réellement fourni. Plusieurs manifestes : demander lequel ; pas d’exécution JavaScript ni de résolution universelle des visionneuses | Implémenté et simulé ; essais réels limités aux services nommés ci-dessus |
@@ -77,7 +79,7 @@ connus ; IIIF peut rester inconnu. Ne pas extrapoler l’adaptateur AD59 aux ser
 ## Services documentés avec accès manuel ou non qualifié
 
 Ces portails constituent des pistes pour poursuivre la qualification. Aucun adaptateur spécifique de
-téléchargement n’est livré pour eux en 0.19.1. Les sources institutionnelles et leurs contraintes détaillées
+téléchargement n’est livré pour eux à ce jour. Les sources institutionnelles et leurs contraintes détaillées
 figurent dans la [matrice documentaire internationale](../docs/telechargement-international.md#matrice-documentaire-par-service).
 Aucun appel authentifié ni commande payante n’a été effectué.
 

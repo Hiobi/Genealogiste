@@ -17,10 +17,11 @@ Les six tests `gramps_live` sont ignorés sans URL de test. Les dépendances son
 avant les tests ; uv passe ensuite hors ligne. Aucun secret d'API ni compte Claude n'est requis.
 
 Le validateur Claude Code est installé via l'installateur officiel, en version 2.1.319.
-La validation n'invoque pas de modèle. Les avertissements existants (absence d'icône,
-`CLAUDE.md` à la racine non chargé comme contexte du plugin) restent visibles et non bloquants :
-`--strict` n'est pas activé. Ce contrôle valide la structure, pas le fonctionnement en session,
-les permissions effectives du client ni l'acceptation dans un annuaire de plugins.
+La validation n'invoque pas de modèle. L'icône est `.claude-plugin/icon.png` (PNG carré 1024 px).
+Un seul avertissement reste attendu, visible et non bloquant (`--strict` n'est pas activé) : `CLAUDE.md`
+à la racine n'est pas chargé comme contexte du plugin. Il y reste volontairement, comme consignes de
+développement du dépôt.
+Ce contrôle valide la structure, pas le fonctionnement en session, les permissions effectives du client ni l'acceptation dans un annuaire de plugins.
 
 ## Protection de main
 
