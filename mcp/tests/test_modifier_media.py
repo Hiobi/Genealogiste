@@ -207,3 +207,17 @@ def test_gramps_relocaliser_medias(gapp, fake):
     assert [x["etat"] for x in lignes if x["id"] == r["jeton"]][-1] == "terminee"
     annul = server.arbre_annuler_modification(r["jeton"])
     assert "erreur" not in annul, annul
+
+
+def test_relocaliser_prefixe_borne_au_dossier(fapp):
+    """« medias/ii » ne doit pas capter « medias/iiif/… » ; sans « / » final, le dossier reste reconnu."""
+    assert fapp.tree().medias["O1"].fichier == "medias/iiif/acte.jpg"
+    assert "Aucun média" in server.gramps_relocaliser_medias("medias/ii", "medias/classes")["note"]
+    _ecrire(fapp.config.media_dir, "classes/iiif/acte.jpg")
+    r = server.gramps_relocaliser_medias("medias/iiif", "medias/classes/iiif")
+    assert r["a_relocaliser"] == ["O1 : medias/iiif/acte.jpg → medias/classes/iiif/acte.jpg"], r
+    server.arbre_annuler_proposition(r["jeton"])
+
+
+def test_relocaliser_racine_refusee(fapp):
+    assert "erreur" in server.gramps_relocaliser_medias("/", "medias/")

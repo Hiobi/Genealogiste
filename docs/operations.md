@@ -66,8 +66,8 @@ est refusé, sauf `"non_source": true` + `"motif": "…"` (la mention « Non sou
   MD5 différent, il apparaît dans `fichiers_a_envoyer` et est envoyé après la transaction ; s'il est identique
   (simple déplacement), rien n'est renvoyé.
 - `gramps_relocaliser_medias(ancien_prefixe, nouveau_prefixe)` (changement de machine ou de point de montage)
-  remplace le préfixe des fichiers de médias qui commencent par `ancien_prefixe` (comparaison de chaînes : finir
-  le préfixe par `/`). Chaque nouveau chemin doit exister sous les racines autorisées et, si Gramps Web connaît
+  remplace le préfixe des fichiers de médias situés sous le dossier `ancien_prefixe` (comparaison par dossier :
+  `/a/b` couvre `/a/b/x.jpg`, pas `/a/b2/x.jpg` ; `/` final facultatif). Chaque nouveau chemin doit exister sous les racines autorisées et, si Gramps Web connaît
   la somme du fichier, avoir le même MD5 ; les autres sont listés à part (`introuvables`, `md5_differents`,
   `refuses`) et laissés intacts. Le résultat est une proposition ordinaire (`modifier_media` en lot : diff,
   jeton) : une seule écriture par `arbre_appliquer` après accord, journalisée et annulable

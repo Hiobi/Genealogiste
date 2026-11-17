@@ -1602,8 +1602,10 @@ def gramps_relocaliser_medias(ancien_prefixe: str, nouveau_prefixe: str) -> dict
 
     from .chemins import localiser
 
-    if not ancien_prefixe:
-        return {"erreur": "ancien_prefixe requis (ex. « /ancienne/racine/vault/ »)."}
+    # Préfixes comparés comme dossiers : « /a/b » couvre « /a/b/x.jpg », jamais « /a/b2/x.jpg ».
+    ancien, nouveau = ancien_prefixe.rstrip("/"), nouveau_prefixe.rstrip("/")
+    if not ancien:
+        return {"erreur": "ancien_prefixe requis, autre que la racine (ex. « /ancienne/racine/vault »)."}
     a = app()
 
     def run():
@@ -1612,9 +1614,10 @@ def gramps_relocaliser_medias(ancien_prefixe: str, nouveau_prefixe: str) -> dict
         out: dict[str, list[str]] = {"a_relocaliser": [], "introuvables": [], "md5_differents": [], "refuses": []}
         ops = []
         for mid, m in a.tree().medias.items():
-            if not m.fichier.startswith(ancien_prefixe):
+            reste = m.fichier[len(ancien):]
+            if not m.fichier.startswith(ancien) or (reste and not reste.startswith("/")):
                 continue
-            neuf = nouveau_prefixe + m.fichier[len(ancien_prefixe):]
+            neuf = nouveau + reste if nouveau else reste.lstrip("/")
             if "://" not in neuf:
                 try:
                     p = localiser(cfg.media_racines, neuf)
