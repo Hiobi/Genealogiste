@@ -23,6 +23,8 @@ IDEMPOTENT = frozenset({"GET", "HEAD", "OPTIONS"})
 SURCHARGE = frozenset({429, 502, 503, 504})  # réponses qui ralentissent l'hôte pour la journée (#211)
 FACTEUR_MAX = 64.0  # doublements cumulés au plus ; l'intervalle effectif reste borné par ralentissement_max
 ANTI_REBOND = 300.0  # (s) au plus un doublement par hôte dans cette fenêtre : une rafale d'erreurs = un épisode
+# (s) un défi observé de nouveau dans cette fenêtre après le précédent est un défi persistant : exclusion (#150)
+FENETRE_RECIDIVE = 30 * 86400.0
 
 
 MAX_IMAGE_BYTES = 150 * 1024 * 1024  # plafond d'une vue téléchargée (un TIFF de registre dépasse rarement 80 Mo)
@@ -34,8 +36,11 @@ class SourceError(Exception):
     def __init__(self, message: str, status: int | None = None, reessayer_apres: float | None = None,
                  echec_memorise: bool = False, coupe_circuit: bool = False, *,
                  bloque_antirobot: bool = False, protection: str | None = None,
-                 url: str | None = None, date_detection: str | None = None, intervalle: float | None = None):
+                 url: str | None = None, date_detection: str | None = None, intervalle: float | None = None,
+                 exclusion: bool = False, exclu_jusqu_au: str | None = None):
         super().__init__(message)
+        self.exclusion = exclusion  # hôte exclu durablement : défi persistant après la pause (#150)
+        self.exclu_jusqu_au = exclu_jusqu_au  # fin de l'exclusion (ISO 8601, UTC)
         self.intervalle = intervalle  # intervalle courant (s) entre deux requêtes vers l'hôte, s'il est ralenti
         self.status = status
         self.reessayer_apres = reessayer_apres  # secondes avant de réessayer (429/503, plafond atteint)
@@ -82,7 +87,10 @@ def _protection(resp: httpx.Response) -> str | None:
                 and any(titre in corps for titre in ("<title>just a moment", "<title>attention required",
                                                      "<title>vérification en cours")))
             or (resp.status_code == 403 and "cloudflare" in corps
-                and any(s in corps for s in ("accès refusé", "attention required")))):
+                and any(s in corps for s in ("accès refusé", "attention required")))
+            # Page de blocage générée par Cloudflare (règle de pare-feu, ex. erreur 1020) : 403 seulement, la
+            # même structure servie en 5xx signale une panne de l'origine (#150).
+            or (resp.status_code == 403 and 'id="cf-error-details"' in corps and "cloudflare" in corps)):
         return "Cloudflare"
     if ("js.hcaptcha.com/1/api.js" in corps and "h-captcha" in corps
             and any(s in corps for s in TITRES_VERIFICATION)):
@@ -139,10 +147,12 @@ class HttpClient:
         jour: Callable[[], date] = date.today,
         ralentissement_max: float = 60.0,
         politique=None,
+        exclusion_ttl: float = 0.0,
     ):
         from .politique_acces import PolitiqueAcces
 
         self.cache = cache
+        self.exclusion_ttl = exclusion_ttl  # exclusion (s) d'un hôte dont le défi persiste ; 0 = pause seule
         self.plafond = plafond  # budget.PlafondJour : plafond journalier par hôte, selon la politique d'accès (#211)
         self.hotes_contactes: list[str] = []  # relevé par le journal d'exploitation, remis à zéro par appel
         self.echec_ttl = echec_ttl
@@ -328,6 +338,7 @@ class HttpClient:
         return (urlparse(f"//{host}").hostname or host).lower()
 
     def _verifier_coupe_circuit(self, host: str) -> None:
+        self._verifier_exclusion(host)
         coupe = self.cache.get(Cache.key("coupe_circuit", self._hote(host)))
         if coupe is None:
             return
@@ -335,9 +346,40 @@ class HttpClient:
         heure = time.strftime("%H:%M", time.localtime(coupe["jusqu_a"]))
         raise SourceError(
             f"{host} : coupe-circuit actif après blocage anti-robot ({coupe['raison']}) ; reprise à {heure} "
-            f"(dans {round(reste)} s). Consulter le site dans le navigateur en attendant ; "
-            "cache_purger('coupe_circuit') pour lever la pause.", 403,
+            f"(dans {round(reste)} s). Poursuivre les autres pistes ; la consultation passe par l'utilisateur "
+            "(tâche manuelle) ; cache_purger('coupe_circuit') pour lever la pause.", 403,
             reessayer_apres=round(reste, 1), coupe_circuit=True, **coupe.get("antirobot", {}))
+
+    def _verifier_exclusion(self, host: str) -> None:
+        """Hôte exclu durablement (#150) : un défi a persisté après la pause ; aucune requête jusqu'à la fin de
+        l'exclusion ou sa levée explicite (cache_purger('coupe_circuit'))."""
+        try:
+            defi = self.cache.defi_antirobot(self._hote(host))
+        except sqlite3.Error:
+            return
+        if not defi or not defi.get("exclu_jusqu_a"):
+            return
+        reste = defi["exclu_jusqu_a"] - self.horloge_murale()
+        if reste <= 0:
+            return
+        fin = datetime.fromtimestamp(defi["exclu_jusqu_a"], UTC).isoformat(timespec="seconds")
+        raise SourceError(
+            f"{host} : service exclu après un défi anti-robot persistant ({defi['protection']}, "
+            f"{defi['detections']} détections) jusqu'au {fin} ; aucune requête n'est émise. Poursuivre les "
+            "autres pistes ; la consultation passe par l'utilisateur (tâche manuelle) ; "
+            "cache_purger('coupe_circuit') pour lever l'exclusion.", 403,
+            reessayer_apres=round(reste, 1), coupe_circuit=True, bloque_antirobot=True,
+            protection=defi["protection"], url=defi["url"],
+            date_detection=datetime.fromtimestamp(defi["derniere"], UTC).isoformat(),
+            exclusion=True, exclu_jusqu_au=fin)
+
+    def _observer_defi(self, host: str, protection: str, url: str, statut: int) -> dict:
+        """Historique durable du défi (#150) ; exclusion si le défi persiste après une pause."""
+        try:
+            return self.cache.noter_defi(self._hote(host), protection, url, statut, self.horloge_murale(),
+                                         self.exclusion_ttl, FENETRE_RECIDIVE)
+        except sqlite3.Error:
+            return {}
 
     def _couper(self, host: str, raison: str, exc: SourceError) -> None:
         if self.coupe_circuit_ttl > 0:
@@ -399,11 +441,17 @@ class HttpClient:
             if protection:
                 url_blocage = str(resp.url)
                 hote_blocage = urlparse(url_blocage).netloc
+                obs = self._observer_defi(hote_blocage, protection, url_blocage, resp.status_code)
+                exclu = obs.get("exclu_jusqu_a") if obs.get("recidive") else None
+                fin = datetime.fromtimestamp(exclu, UTC).isoformat(timespec="seconds") if exclu else None
                 exc = SourceError(
                     f"{hote_blocage} : blocage anti-robot ({protection}, HTTP {resp.status_code}). "
-                    f"Consulter manuellement {url_blocage} ; aucune tentative de contournement.",
+                    f"Consultation par l'utilisateur : {url_blocage} ; aucune tentative de contournement."
+                    + (f" Défi persistant ({obs['detections']} détections) : service exclu jusqu'au {fin} "
+                       "(cache_purger('coupe_circuit') pour lever l'exclusion)." if fin else ""),
                     resp.status_code, bloque_antirobot=True, protection=protection, url=url_blocage,
-                    date_detection=datetime.now(UTC).isoformat())
+                    date_detection=datetime.now(UTC).isoformat(), exclusion=bool(fin), exclu_jusqu_au=fin,
+                    reessayer_apres=round(exclu - self.horloge_murale(), 1) if exclu else None)
                 self._couper(hote_blocage, f"HTTP {resp.status_code}, {protection}", exc)
                 raise exc
             ralenti = self._ralentir(host, resp.status_code) if resp.status_code in SURCHARGE else None

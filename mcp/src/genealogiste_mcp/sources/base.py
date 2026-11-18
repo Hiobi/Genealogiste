@@ -97,6 +97,24 @@ def consigne_antirobot(protection: str | None, url: str = "") -> str:
             "(nom proposé par piece_nommer), puis la lire et tracer le relevé avec source_collee.")
 
 
+def suite_sans_navigateur(url: str = "") -> dict:
+    """Suite exploitable par le modèle après un défi anti-robot, sans navigateur côté serveur (#150) : ne pas
+    relancer, poursuivre les autres pistes, confier la consultation à l'utilisateur (tâche manuelle) et
+    reprendre son relevé ou son fichier avec les outils locaux."""
+    return {
+        "relancer": False,
+        "navigateur_serveur": False,
+        "poursuivre": "Passer aux autres pistes et sources de l'enquête ; ne pas réessayer ce service en boucle.",
+        "ouvrir": url,
+        "utilisateur": ("Depuis son propre poste, ouvrir le lien et relever cote, registre, numéro de vue et "
+                        "provenance, ou télécharger la vue."),
+        "tache": ("Avec enquete=<id>, la tâche est inscrite dans l'enquête (taches_manuelles) ; sinon la noter "
+                  "avec enquete_noter(tache={description, service}) pour la reprendre."),
+        "reprise": ["source_collee", "piece_archiver", "media_enregistrer"],
+        "lever": "cache_purger('coupe_circuit') lève la pause ou l'exclusion pour un nouvel essai explicite.",
+    }
+
+
 def error_envelope(ctx: SourceContext, source: str, operation: str, params: dict, exc: Exception,
                    personne: str | None = None) -> dict:
     # Les adaptateurs gardent la cause HTTP avec « raise … from exc ».
@@ -144,11 +162,13 @@ def error_envelope(ctx: SourceContext, source: str, operation: str, params: dict
         service = matches[0]["code"] if len(matches) == 1 else candidats[0]["code"] if len(candidats) == 1 else hote
         out.update(statut="bloque_antirobot", bloque="anti-robot", service=service, protection=cause.protection,
                    date_detection=cause.date_detection, url=url, tache_manuelle=tache,
-                   consigne=consigne_antirobot(cause.protection, url))
+                   consigne=consigne_antirobot(cause.protection, url), suite=suite_sans_navigateur(url))
+        if getattr(cause, "exclusion", False):
+            out.update(exclusion=True, exclu_jusqu_au=cause.exclu_jusqu_au)
         out["conseil"] = ("Conserver cette tâche au journal et poursuivre les autres pistes. "
                           "Quand un accès autorisé est disponible, reprendre avec source_collee ou fournir "
                           "un fichier local à piece_archiver ; ne pas relancer en boucle ni contourner le défi.")
     return out
 
 
-__all__ = ["SourceContext", "consigne_antirobot", "person_record", "rank", "envelope", "error_envelope", "SourceError", "DAY"]
+__all__ = ["SourceContext", "consigne_antirobot", "suite_sans_navigateur", "person_record", "rank", "envelope", "error_envelope", "SourceError", "DAY"]
