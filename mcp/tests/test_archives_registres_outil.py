@@ -37,3 +37,13 @@ def test_protection_recherche_conserve_tache_et_journal(app):
     assert res["service"] == "AD59"
     assert res["tache_manuelle"]["url"].startswith("https://archivesdepartementales.lenord.fr/search/results?")
     assert any(e["id"] == res["journal"] for e in app.journal.entries(statut="bloque_antirobot"))
+
+
+def test_outil_transmet_tables_decennales_et_intervalle(app, fixtures):
+    html = (fixtures / "ad59-tables-decennales.html").read_text()
+    with respx.mock as routes:
+        route = routes.get("https://archivesdepartementales.lenord.fr/search/results").respond(200, text=html)
+        res = server.archives_registres("AD59", "Commune-Fictive", 1850, "TD", annee_fin=1859)
+    assert route.call_count == 1 and "erreur" not in res, res
+    assert res["requete"]["annee_fin"] == 1859 and res["requete"]["type_acte"] == "TD"
+    assert [r["cote"] for r in res["resultats"]] == ["3E TD FICTIF/06", "3E TD FICTIF/07"]

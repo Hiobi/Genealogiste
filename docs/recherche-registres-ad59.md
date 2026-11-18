@@ -18,7 +18,8 @@ Seul `AD59` est qualifié. La commune est mise en capitales et sans accents, san
 commune ; les traits d'union fournis sont conservés. L'année doit être un entier précis de 1 à 9999.
 Les cases de filtre du formulaire GET portent `name=facet_typology` et les valeurs `Naissances`,
 `Mariages`, `Décès` : ce sont les filtres utilisés pour `N`, `M`, `D`. `NMD` et le type vide conservent la
-recherche sans filtre de typologie. Aucun filtre tables décennales n'a été qualifié : `TD` est refusé.
+recherche sans filtre de typologie. `TD` (tables décennales) et `annee_fin` (intervalle) sont décrits
+ci-dessous.
 Aucun nom ni identifiant de personne n'est envoyé ; `personne` sert uniquement à la garde de l'outil
 et au journal local.
 
@@ -49,8 +50,49 @@ liste, avec un message explicite. Le compteur et la pagination sont absents. L'a
 résultats seule n'autorise donc pas à conclure à zéro résultat. Un négatif sur une page supérieure à 1
 reste non qualifié et renvoie une erreur, plutôt qu'une absence globale de registre.
 
-La reconnaissance n'a observé qu'une page positive. Les scénarios à plusieurs pages sont testés sur
-fixtures synthétiques à partir des mêmes attributs observés ; aucun relevé réel de page 2 n'est revendiqué.
+Le relevé du 16 novembre n'avait observé qu'une page positive ; celui du 18 novembre (ci-dessous) a observé
+une vraie page 2 avec les mêmes attributs. Les scénarios à plusieurs pages restent testés sur fixtures
+synthétiques construites à partir de ces attributs.
+
+## Tables décennales et intervalles d'années — #221
+
+Relevé public du 18 novembre 2026 (robots.txt inchangé, aucune protection rencontrée, une requête par
+observation, sans image) :
+
+- **Intervalle.** Le formulaire `dc4e871d-…` expose, à côté de l'année précise `2-date`, une
+  « période » : `3-date_begin` et `3-date_end` (années, fin ≥ début). Pour Saint-Vaast-en-Cambrésis,
+  [1790-1802](https://archivesdepartementales.lenord.fr/search/results?formUuid=dc4e871d-0b62-41fb-9921-5ded573781b8&sort=date_asc&mode=list&facet_media=image&0-controlledAccessGeographicName%5B%5D=SAINT-VAAST-EN-CAMBRESIS&3-date_begin=1790&3-date_end=1802)
+  a renvoyé deux registres dont la période **recoupe** l'intervalle : `5 Mi 018 R 022` BMS 1737-1790
+  (`ark:/33518/jdtn31qz28ml`) et `5 Mi 018 R 023` NMD 1791-1830 (`ark:/33518/2klp0snfdtzj`). Le HTML de
+  résultat est identique à celui de l'année précise ; la facette `facet_typology` s'y combine.
+- **Page 2.** Lille, 1790-1802 : 50 résultats, `max="3"`, 20 par page ; `page=2` renvoie
+  `value="2"` et 20 blocs. Une page au-delà de la dernière (Douai, 13 résultats, `page=2`) répond par une
+  **redirection 302 vers `page=1`** : la page courante lue (1) diffère de la page demandée et l'outil renvoie
+  une erreur, jamais un négatif.
+- **Tables décennales.** La page éditoriale « Tables décennales » mène à un formulaire distinct,
+  `25905104-0354-4e23-aea0-e3b68cf1f881`, dont le **seul champ est la commune** (ni date, ni type). Pour
+  [Saint-Vaast-en-Cambrésis](https://archivesdepartementales.lenord.fr/search/results?formUuid=25905104-0354-4e23-aea0-e3b68cf1f881&sort=date_asc&mode=list&facet_media=image&0-controlledAccessGeographicName%5B%5D=SAINT-VAAST-EN-CAMBRESIS) :
+  9 tables, même HTML de liste, titres `COMMUNE / 1853-1862`, cotes `3E TD 547/07`, champ `Date` 1853-1862,
+  nombre de médias, ARK de registre sur le lien de notice (`ark:/33518/xwkrg498c6qs`). Une commune sans
+  table renvoie la même page négative `body#display-no-results`.
+
+Contrat retenu :
+
+- `annee_fin=0` (défaut) ou égal à `annee` : année précise (`2-date`), comportement inchangé.
+  `annee < annee_fin ≤ 9999` : `3-date_begin`/`3-date_end`, sans filtrage local (le service filtre).
+- `type_acte="TD"` : formulaire TD, commune et page seulement. La période `[annee, annee_fin or annee]`
+  est appliquée **localement** à la page lue : une table est gardée si ses bornes affichées recoupent la
+  période (`couvre_periode: true`) ou si ses bornes sont absentes (`couvre_periode: null`, à vérifier) ;
+  les autres sont comptées dans `tables_hors_periode`. `total` reste le nombre de tables annoncé par le
+  service pour la commune ; `page_suivante` permet de lire les tables suivantes.
+- Négatif : aucune table de la page ne couvre la période, ou réponse négative explicite du service. Dans les
+  deux cas l'enveloppe commune trace une entrée `negatif` au journal (y compris depuis le cache) et
+  `recherche_negative` rappelle que cela ne prouve pas l'absence de l'acte.
+- `annee_fin` fait partie de l'identité « déjà fait » des enquêtes et figure dans `requete`.
+
+Reste à vérifier sur le service réel : une commune ayant plus de 20 tables (deuxième page de tables
+décennales, non observée : les TD couvrent au plus 1792-1942) ; d'éventuelles tables à bornes non
+numériques ; l'effet de paramètres de date ajoutés au formulaire TD (non envoyés, donc non qualifiés).
 
 ## HTTP, protection et journal
 
@@ -75,7 +117,9 @@ parseur borne la profondeur HTML et refuse un document de plus de deux millions 
 ## Tests et recette volontaire
 
 `tests/fixtures/ad59-recherche-positive.html` et `ad59-recherche-negative.html` conservent les balises
-observées, avec une commune, une cote, un ARK, un UUID et une période synthétiques. Aucun export familial,
+observées, avec une commune, une cote, un ARK, un UUID et une période synthétiques.
+`ad59-tables-decennales.html` (trois tables décennales) et `ad59-recherche-intervalle-page2.html` (page 2 sur
+2 d'un intervalle, 25 résultats) en dérivent avec les titres, cotes et compteurs relevés le 18 novembre. Aucun export familial,
 HTML complet de production, cookie ou script tiers n'est livré comme fixture.
 
 ```bash
@@ -84,10 +128,12 @@ GENEALOGISTE_TEST_REGISTRES=1 uv --directory mcp run --locked --offline pytest t
 ```
 
 La recette réelle est ignorée par défaut, y compris en CI. Elle contrôle `robots.txt`, puis effectue
-exactement trois appels d'outil : NMD pour 1860, filtre N pour 1860, et résultat négatif pour 1200, sur
-Saint-Vaast-en-Cambrésis. Elle s'arrête à la première protection, sans télécharger d'image. La recette
-exécutée le 16 novembre 2026 a passé ces trois cas par le véritable outil MCP Python (`1 passed`, 4,90 s),
-avec l'ARK et la cote ci-dessus, sans défi bloquant. Le fichier JSON de preuve reste dans le dossier
+exactement cinq appels d'outil sur Saint-Vaast-en-Cambrésis : NMD pour 1860, filtre N pour 1860, résultat
+négatif pour 1200, table décennale (`TD`) pour 1860 et intervalle 1790-1802 (les deux derniers depuis #221).
+Elle s'arrête à la première protection, sans télécharger d'image. La recette exécutée le 16 novembre 2026 a
+passé les trois premiers cas par le véritable outil MCP Python (`1 passed`, 4,90 s), avec l'ARK et la cote
+ci-dessus, sans défi bloquant. Celle du 18 novembre 2026 a passé les cinq cas (`1 passed`, 8,49 s) : table
+`3E TD 547/07` (`ark:/33518/xwkrg498c6qs`, 1853-1862) et, pour 1790-1802, les registres `R 022` et `R 023`. Le fichier JSON de preuve reste dans le dossier
 temporaire de pytest, hors du dépôt.
 
 La recette native Codex 0.166.0 (`make test-codex`) vérifie aussi que le refus d'approbation

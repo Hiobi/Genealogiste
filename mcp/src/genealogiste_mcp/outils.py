@@ -307,7 +307,7 @@ IDENTITE_REQUETE: dict[str, dict[str, tuple[str, object]]] = {
                     "departement": (EXACT, ""), "limite": (ENTIER, 10)},
     "geo_historique": {"nom": (TEXTE, ""), "code_insee": (EXACT, ""), "departement": (EXACT, "")},
     "archives_registres": {"service": (EXACT, ""), "commune": (TEXTE, ""), "annee": (ENTIER, 0),
-                           "type_acte": (EXACT, ""), "page": (ENTIER, 1)},
+                           "type_acte": (EXACT, ""), "page": (ENTIER, 1), "annee_fin": (ENTIER, 0)},
     "archives_planche": {"source": (EXACT, ""), "de": (ENTIER, 0), "a": (ENTIER, 0), "pas": (ENTIER, 1),
                          "bandeau": (EXACT, ""), "largeur": (ENTIER, 1200), "gris": (BOOLEEN, True),
                          "miniatures": (BOOLEEN, False)},

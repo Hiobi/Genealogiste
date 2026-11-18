@@ -144,7 +144,8 @@ def test_format_inattendu_est_une_erreur_pas_un_negatif(app, fixtures, modificat
 
 @pytest.mark.parametrize("parametres", [{"service": "AD62"}, {"commune": " "}, {"commune": "X" * 201},
                                        {"annee": 0}, {"annee": 10000}, {"annee": True}, {"annee": "1840-1870"},
-                                       {"page": 0}, {"page": True}, {"type_acte": "TD"}, {"type_acte": "B"}])
+                                       {"page": 0}, {"page": True}, {"type_acte": "B"}, {"annee_fin": 1859},
+                                       {"annee_fin": 10000}, {"annee_fin": True}, {"annee_fin": "1870"}])
 @respx.mock
 def test_entrees_non_qualifiees_refusees_avant_http(app, parametres):
     demande = {"service": "AD59", "commune": "Commune-Fictive", "annee": 1860, **parametres}
@@ -212,5 +213,118 @@ def test_metadonnees_html_malformees_ou_contradictoires_refusees(app, fixtures, 
         html = html.replace('max="1"', 'max')
     respx.get(URL).respond(200, text=html)
     result = registres.rechercher(app.sctx, "AD59", "Commune-Fictive", 1860)
+    assert "erreur" in result and "recherche_negative" not in result
+    assert len(app.journal.entries(statut="erreur")) == 1
+
+
+# ---------------------------------------------------------------- tables décennales et intervalles (#221)
+
+TD = "25905104-0354-4e23-aea0-e3b68cf1f881"
+
+
+@respx.mock
+def test_table_decennale_localisee_depuis_commune_et_annee(app, fixtures):
+    route = respx.get(URL).respond(200, text=(fixtures / "ad59-tables-decennales.html").read_text())
+    result = registres.rechercher(app.sctx, "AD59", "Commune-Fictivé", 1860, type_acte="td", personne="I42")
+    assert "erreur" not in result, result
+    # Formulaire TD observé : commune seule, ni année ni typologie envoyées ; la période est filtrée localement.
+    assert dict(route.calls[0].request.url.params) == {
+        "formUuid": TD, "sort": "date_asc", "mode": "list", "facet_media": "image",
+        "0-controlledAccessGeographicName[]": "COMMUNE-FICTIVE", "page": "1"}
+    assert [(r["cote"], r["ark"], r["bornes"]) for r in result["resultats"]] == [
+        ("3E TD FICTIF/07", "ark:/33518/tdfictive07", [1853, 1862])]
+    assert result["resultats"][0]["couvre_periode"] is True
+    assert result["periode"] == [1860, 1860] and result["tables_hors_periode"] == 2
+    assert result["total"] == 3 and result["nb_renvoyes"] == 1 and result["fin"] is True
+    entree = app.journal.entries()[-1]
+    assert entree["id"] == result["journal"] and entree["statut"] == "positif" and entree["personne"] == "I42"
+    assert "I42" not in str(route.calls[0].request.url)
+
+
+@respx.mock
+def test_table_decennale_par_decennie_renvoie_les_tables_couvrantes(app, fixtures):
+    respx.get(URL).respond(200, text=(fixtures / "ad59-tables-decennales.html").read_text())
+    result = registres.rechercher(app.sctx, "AD59", "Commune-Fictive", 1850, type_acte="TD", annee_fin=1859)
+    assert "erreur" not in result, result
+    assert [r["cote"] for r in result["resultats"]] == ["3E TD FICTIF/06", "3E TD FICTIF/07"]
+    assert result["periode"] == [1850, 1859] and result["tables_hors_periode"] == 1
+
+
+@respx.mock
+def test_table_decennale_hors_periode_est_un_negatif_trace(app, fixtures):
+    route = respx.get(URL).respond(200, text=(fixtures / "ad59-tables-decennales.html").read_text())
+    for cached in (False, True):
+        result = registres.rechercher(app.sctx, "AD59", "Commune-Fictive", 1790, type_acte="TD", annee_fin=1802)
+        assert "erreur" not in result, result
+        assert result["resultats"] == [] and result["total"] == 3 and result["tables_hors_periode"] == 3
+        assert "ne couvre" in result["recherche_negative"] and "absence" in result["recherche_negative"]
+        entree = app.journal.entries()[-1]
+        assert entree["id"] == result["journal"] and entree["statut"] == "negatif"
+        assert bool(entree["cache"]) is cached
+    assert route.call_count == 1
+
+
+@respx.mock
+def test_table_decennale_bornes_inconnues_conservees_sans_conclure(app, fixtures):
+    html = (fixtures / "ad59-tables-decennales.html").read_text().replace(
+        "<span>1843-1852</span>", "<span>Date non précisée</span>")
+    respx.get(URL).respond(200, text=html)
+    result = registres.rechercher(app.sctx, "AD59", "Commune-Fictive", 1700, type_acte="TD")
+    assert [(r["cote"], r["couvre_periode"]) for r in result["resultats"]] == [("3E TD FICTIF/06", None)]
+    assert result["tables_hors_periode"] == 2
+
+
+@respx.mock
+def test_table_decennale_negatif_du_service_trace(app, fixtures):
+    respx.get(URL).respond(200, text=(fixtures / "ad59-recherche-negative.html").read_text())
+    result = registres.rechercher(app.sctx, "AD59", "Commune-Fictive", 1860, type_acte="TD")
+    assert "erreur" not in result, result
+    assert result["resultats"] == [] and result["total"] == 0 and result["tables_hors_periode"] == 0
+    assert "absence générale" in result["recherche_negative"]
+    assert app.journal.entries()[-1]["statut"] == "negatif"
+
+
+@pytest.mark.parametrize("type_acte,facette", [("", None), ("N", "Naissances"), ("D", "Décès")])
+@respx.mock
+def test_intervalle_envoie_la_periode_du_formulaire(app, fixtures, type_acte, facette):
+    route = respx.get(URL).respond(200, text=(fixtures / "ad59-recherche-positive.html").read_text())
+    result = registres.rechercher(app.sctx, "AD59", "Commune-Fictive", 1790, type_acte=type_acte, annee_fin=1802)
+    assert "erreur" not in result, result
+    attendu = {"formUuid": "dc4e871d-0b62-41fb-9921-5ded573781b8", "sort": "date_asc", "mode": "list",
+               "facet_media": "image", "0-controlledAccessGeographicName[]": "COMMUNE-FICTIVE",
+               "3-date_begin": "1790", "3-date_end": "1802", "page": "1"}
+    if facette:
+        attendu["facet_typology"] = facette
+    assert dict(route.calls[0].request.url.params) == attendu
+    assert result["periode"] == [1790, 1802] and "tables_hors_periode" not in result
+
+
+@respx.mock
+def test_intervalle_reduit_a_une_annee_reste_une_annee_precise(app, fixtures):
+    route = respx.get(URL).respond(200, text=(fixtures / "ad59-recherche-positive.html").read_text())
+    registres.rechercher(app.sctx, "AD59", "Commune-Fictive", 1860, annee_fin=1860)
+    params = route.calls[0].request.url.params
+    assert params["2-date"] == "1860" and "3-date_begin" not in params
+
+
+@respx.mock
+def test_intervalle_deuxieme_page_par_fixture(app, fixtures):
+    route = respx.get(URL).respond(200, text=(fixtures / "ad59-recherche-intervalle-page2.html").read_text())
+    result = registres.rechercher(app.sctx, "AD59", "Commune-Fictive", 1790, annee_fin=1802, page=2)
+    assert "erreur" not in result, result
+    assert route.call_count == 1 and route.calls[0].request.url.params["page"] == "2"
+    assert result["total"] == 25 and result["nb_renvoyes"] == 5
+    assert result["page"] == 2 and result["page_suivante"] is None and result["fin"] is True
+    assert [r["cote"] for r in result["resultats"]] == [f"5 Mi FICTIF R {n:03d}" for n in range(21, 26)]
+    assert result["resultats"][-1]["bornes"] == [1799, 1802]
+    assert app.journal.entries()[-1]["statut"] == "positif"
+
+
+@respx.mock
+def test_page_hors_bornes_redirigee_vers_la_premiere_est_une_erreur(app, fixtures):
+    # Relevé du 18 novembre 2026 : une page au-delà de la dernière renvoie une redirection vers page=1.
+    html = (fixtures / "ad59-recherche-intervalle-page2.html").read_text()
+    respx.get(URL).respond(200, text=html)
+    result = registres.rechercher(app.sctx, "AD59", "Commune-Fictive", 1790, annee_fin=1802, page=3)
     assert "erreur" in result and "recherche_negative" not in result
     assert len(app.journal.entries(statut="erreur")) == 1

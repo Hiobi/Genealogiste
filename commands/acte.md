@@ -33,7 +33,9 @@ hors ligne) devient une tâche manuelle (`enquete_noter`), la conclusion est dé
    - Pour AD59, appeler `archives_registres(service="AD59", commune=…, annee=…, type_acte="N"|"M"|"D",
      personne=id)` : les cotes et ARK viennent du résultat officiel. Consulter les pages suivantes
      explicitement si nécessaire ; ne pas confondre registre trouvé et acte trouvé. `NMD` ou le type vide
-     recherche sans filtre de type ; les tables décennales ne sont pas qualifiées dans ce formulaire.
+     recherche sans filtre de type. `type_acte="TD"` renvoie les tables décennales dont la période recoupe
+     l'année ou l'intervalle (`annee_fin`) ; `annee_fin` recherche aussi les registres d'un intervalle
+     (ex. 1790-1802).
      Un résultat vide est une recherche négative sur ce périmètre, pas une preuve d'absence de l'acte.
    - Pour les autres services ou fonds non pris en charge, orienter vers la recherche du service
      (`liens_recherche`, `cotes_a_consulter` pour la cote

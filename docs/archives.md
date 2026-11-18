@@ -222,7 +222,8 @@ tous les outils de collecte appelés avec `enquete=<id>`.
 
 `archives_registres(service="AD59", commune="Saint-Vaast-en-Cambrésis", annee=1860, type_acte="N")`
 interroge la recherche publique pour obtenir la cote et l'ARK du registre, sans navigateur ni ARK initial.
-Une seule page par appel, avec cache ; les pages suivantes sont demandées explicitement. Le serveur
+Une seule page par appel, avec cache ; les pages suivantes sont demandées explicitement. Les tables
+décennales (`type_acte="TD"`) et les intervalles d'années (`annee_fin`) sont pris en charge depuis #221. Le serveur
 ne cherche pas encore la vue contenant l'acte : poursuivre avec `archives_naviguer`.
 
 Le [guide utilisateur](../wiki/Services-archives.md#trouver-un-registre-ad59-sans-ark) décrit les types,

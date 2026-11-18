@@ -41,7 +41,7 @@ Le même parcours que `/genealogiste:acte` et la skill `genealogiste`.
    couverture déclarée ne prouve pas l'existence de l'acte.
 2. **Localiser le registre** (cote + ARK) : un ARK déjà porté par une source `S…` de l'arbre se réutilise
    (`ark_resoudre` pour le vérifier) ; pour AD59, `archives_registres(service="AD59", commune=…, annee=…,
-   type_acte="N"|"M"|"D", personne=id)`, une page par appel ; ailleurs `liens_recherche` et
+   type_acte="N"|"M"|"D"|"TD", personne=id)` (`annee_fin` pour un intervalle), une page par appel ; ailleurs `liens_recherche` et
    `cotes_a_consulter` (cote typique), jamais de cote devinée. Un résultat vide est une recherche négative sur ce
    périmètre, pas une preuve d'absence.
 3. **Sonder et naviguer** : `archives_naviguer(ark_registre, page=…, pas=…)` parcourt les vues (ou la table

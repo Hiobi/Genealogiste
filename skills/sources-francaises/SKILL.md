@@ -11,7 +11,8 @@ Outils : `cotes_a_consulter`, `prochaine_source`, `liens_recherche`, `communicab
 `archives_naviguer` (vues d'un registre), `archive_image` (lecture d'une vue), `piece_archiver` (conservation).
 Pour AD59, `archives_registres(service="AD59", commune=…, annee=…, type_acte="N"|"M"|"D", personne=id)`
 localise les registres depuis le résultat officiel. Une page par appel ; poursuivre explicitement avec
-`page_suivante`. `NMD` ou le type vide ne filtre pas le type ; tables décennales non qualifiées ici.
+`page_suivante`. `NMD` ou le type vide ne filtre pas le type ; `type_acte="TD"` donne les tables décennales
+couvrant l'année ; `annee_fin` (≥ `annee`) recherche un intervalle (ex. 1790-1802 ou une décennie).
 Ensuite `archives_naviguer` parcourt les vues, `archive_image` les lit et `piece_archiver` conserve l'original.
 Un résultat vide ne démontre pas que l'acte n'existe pas ; un blocage conserve une tâche manuelle au journal.
 Défi anti-robot (`bloque: "anti-robot"`, ex. Anubis aux AD de la Lozère) ou `consultation_manuelle` dans
