@@ -13,7 +13,7 @@ description: Rechercher une personne, importer un GEDCOM, préparer une édition
    - **Import** : `arbre_importer_gedcom` produit un bilan et un diff ; un import reste non vérifié.
    - **Acte** : pour retrouver un acte depuis une personne, suivre le parcours `archives_service` (service et
      couverture) → recherche du registre (`ark_resoudre` pour un ARK déjà cité ; `archives_registres` pour
-     AD59 avec commune, année, type d'acte et identifiant local `personne` ; sinon `liens_recherche`,
+     AD59 et les services Mnesys du référentiel, avec commune, année, type d'acte et identifiant local `personne` ; sinon `liens_recherche`,
      `cotes_a_consulter`) → `archives_naviguer` (sonder, parcourir les vues) → `archive_image` (lire) →
      transcription → `piece_archiver` (archiver) → citation. Appliquer `paleographie` pour la transcription
      et `organisation-pieces` pour le classement. La commande `/genealogiste:acte` et l'agent `chercheur`

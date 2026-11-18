@@ -226,8 +226,9 @@ l’emplacement que l’outil calculerait. La pièce se rattache directement par
 
 ## Archives en ligne : ce qui est automatisé et ce qui ne l’est pas
 
-- **Recherche de registres** : `archives_registres` ne sait chercher que dans les registres des **AD59**
-  (commune, année, type d’acte). Pour les autres départements, la recherche dans l’inventaire reste manuelle ;
+- **Recherche de registres** : `archives_registres` cherche par commune et année dans les registres de neuf
+  services (AD59, AD14, AD19, AD27, AD51, AD55, AD58, AD69, AD90, AD972). Pour les autres départements, la recherche
+  dans l’inventaire reste manuelle ;
   `archives_service` donne la fiche du service et `liens_recherche` des liens de recherche. Un registre trouvé ne
   prouve pas que l’acte y figure.
 - **Téléchargement**, du plus automatique au plus manuel :

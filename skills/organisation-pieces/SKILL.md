@@ -71,7 +71,7 @@ le dossier ne sont une preuve.
 (original pleine résolution, nommé, rangé) → note compagnon (texte personnel sous `## Notes`) → opérations
 suggérées présentées par `arbre_proposer` → `arbre_appliquer` après accord. Pièce déjà rangée : ne pas la
 réarchiver (copie), la rattacher par `ajouter_media` avec son chemin. Archives en ligne : registres cherchables
-seulement aux AD59 (`archives_registres`) ; ailleurs IIIF, URL directe d'image, ou téléchargement manuel depuis
+par commune et année pour dix services (`archives_registres`, liste dans `archives_service`) ; ailleurs IIIF, URL directe d'image, ou téléchargement manuel depuis
 la visionneuse puis fichier local (wiki `Services-archives`).
 
 ## Rattacher une pièce à l'arbre

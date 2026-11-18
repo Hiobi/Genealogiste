@@ -601,8 +601,8 @@ def pdf_markdown(chemin: str, langue: str = "fra", forcer_ocr: bool = False, rec
 @mcp.tool()
 def archives_planche(source: str, de: int, a: int = 0, pas: int = 1, bandeau: str = "", largeur: int = 1200,
                      gris: bool = True, miniatures: bool = False) -> dict:
-    """Planche-contact d'un registre AD59 : UNE image composite de 4 à 12 vues (numéro de vue incrusté) pour
-    repérer l'acte sans lire une image par vue. source : ARK de registre ou de vue AD59. de/a : première et
+    """Planche-contact d'un registre (AD59, services Mnesys) : UNE image composite de 4 à 12 vues (numéro de vue incrusté) pour
+    repérer l'acte sans lire une image par vue. source : ARK de registre ou de vue (AD59, services Mnesys). de/a : première et
     dernière vue (a = 0 : six vues) ; pas : une vue sur N (sondage large, puis planche fine). bandeau : ne garder
     que le haut de chaque vue (ex. pct:0,0,100,35) pour lire date et numéro d'acte dans la grille.
     Limites : 12 vues et 1 600 px par planche ; une requête et un téléchargement par vue (originales en cache,
@@ -802,7 +802,13 @@ def _defi_observe(hotes: list[str]) -> dict | None:
 @mcp.tool()
 def archives_registres(service: str, commune: str, annee: int, type_acte: str = "", page: int = 1,
                       personne: str = "", annee_fin: int = 0) -> dict:
-    """Localiser un registre par commune et année, sans connaître son ARK : service=AD59 uniquement.
+    """Localiser un registre par commune et année, sans connaître son ARK. Services : AD59, et les services
+    Mnesys du référentiel dotés de recherche_registres (AD14, AD19, AD27, AD51, AD55, AD58, AD69, AD90, AD972 ;
+    archives_service ou sources_catalogue pour la liste à jour) : leur formulaire public est lu et la commune
+    est prise dans son vocabulaire (commune_service ; valeur exacte acceptée en cas d'ambiguïté).
+    Services Mnesys seulement : RM (registres matricules : annee = classe, soit l'année de naissance + 20 ;
+    commune = bureau de recrutement, facultatif ; AD19, AD27, AD55, AD58, AD69, AD90, AD972) et SUCC (tables des
+    successions et absences, série 3 Q : commune = bureau de l'enregistrement ; AD27, AD58, AD69, AD90).
     type_acte : N (naissance), M (mariage), D (décès), NMD ou vide (tous), TD (tables décennales : tables dont
     la période affichée recoupe l'année ou l'intervalle demandé). annee_fin (facultatif, >= annee) : intervalle
     [annee, annee_fin], ex. 1790-1802 ou une décennie ; registres dont la période le recoupe. Une seule page de
@@ -825,7 +831,7 @@ def archives_registres(service: str, commune: str, annee: int, type_acte: str = 
 def archives_naviguer(source: str, page: int = 0, pas: int = 20, enquete: str = "") -> dict:
     """Parcourir les vues d'un registre d'archives sans connaître la vue à l'avance : renvoie une fenêtre de
     vues (numéro, ARK de vue, image) et les métadonnées du registre (titre, cote, commune, période, nombre
-    de vues). source : ARK de registre ou de vue AD59 (visionneuse reconnue), ARK Gallica ou manifeste IIIF.
+    de vues). source : ARK de registre ou de vue d'une visionneuse Naoned reconnue (AD59, services Mnesys), ARK Gallica ou manifeste IIIF.
     page : première vue à lister (1 = début) ; pas : taille de fenêtre (1-100). Ensuite archive_image ou
     piece_archiver sur une vue choisie. nb_vues indique le total ; fin_de_registre signale la dernière fenêtre
     et vue_suivante son prochain début (None en fin). Hors bornes : erreur avec les numéros valides.

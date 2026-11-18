@@ -20,7 +20,8 @@ def couverture(service: dict, recette: dict, document: str = "") -> dict:
     if adaptateur:
         for c in CAPACITES[:3]:
             capacites[c] = "implemente_non_eprouve"
-    recherche = service["code"] == "AD59" and document in ("", "naissance", "mariage", "deces")
+    recherche = ((service["code"] == "AD59" or bool(service.get("recherche_registres")))
+                 and document in ("", "naissance", "mariage", "deces"))
     if recherche:
         capacites["recherche"] = "implemente_non_eprouve"
     mesures = dict(recette.get("mesures") or {})
@@ -59,7 +60,7 @@ def tableau(services: list | tuple, recettes: dict, documents: tuple = ()) -> st
     lignes = ["# Couverture technique des archives", "",
               "Document généré par `uv --directory mcp run python ../scripts/generer_couverture_archives.py`. Ne pas modifier à la main.", "",
               "## Objectif du prochain lot M2", "",
-              "Pour la version cible 0.23.0 : qualifier trois services avec recette ARK/navigation/image qualifiée (AD25, AD39, AD59 ; date, environnement et révision requis), mesurer les quatre références depuis le VPS, puis qualifier une chaîne recherche → navigation → téléchargement → archivage sur AD59. Ces objectifs restent à valider ; les compteurs ci-dessous décrivent uniquement les preuves enregistrées.", "",
+              "Après 0.24.0 : mesurer les références depuis le VPS (#150), éprouver la recherche par commune des services Mnesys (#128, relevé du 2026-11-18) au-delà d'une commune chacun, puis qualifier les autres types de fonds (tables décennales, matricules, enregistrement ; #112). Ces objectifs restent à valider ; les compteurs ci-dessous décrivent uniquement les preuves enregistrées.", "",
               "Les niveaux 0 à 4 indiquent la capacité implémentée la plus avancée : 0 lien, 1 ARK, 2 navigation, 3 image, 4 recherche. Le niveau 5 désigne une recette de contrat réussie sur une référence avec date, environnement identifié et révision testée ; il ne garantit ni la recherche ni l'archivage. Les niveaux ne forment pas une chaîne cumulative.", "",
               "Un fonds inconnu reste inconnu : aucune recette n'est extrapolée aux autres types. Les mesures anciennes sans environnement restent « inconnu ». Une réussite locale ne qualifie pas le VPS. Consulter les dates et refaire les recettes avant usage ; une ancienne réussite ne garantit pas l'accès actuel.", "",
               "| Service | Fonds testé | Niveau | Recherche | Navigation | Image | Archivage | Mesures (environnement : verdict, date) |", "|---|---|---:|---|---|---|---|---|"]
