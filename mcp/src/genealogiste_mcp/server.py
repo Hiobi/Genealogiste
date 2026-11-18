@@ -307,6 +307,8 @@ def _mesure_enquete(nom: str, fn, args: tuple, kwargs: dict, enquete: str):
     except TypeError:
         appel = dict(kwargs)
     images = IMAGES_PAR_APPEL.get(nom, 0)
+    if enquete and (refus := _garde_avant_budget(nom, fn, appel)):
+        return refus  # vivant : rien consommé ni consigné (le contrôle de budget noterait ses paramètres)
     if refus := _budget_avant(enquete, nom, appel, images=images):
         return refus
     with _mesure(enquete) as m:
@@ -317,10 +319,23 @@ def _mesure_enquete(nom: str, fn, args: tuple, kwargs: dict, enquete: str):
     return _suivi_collecte(nom, appel, res, enquete)
 
 
+def _garde_avant_budget(nom: str, fn, appel: dict) -> dict | None:
+    """Garde « vivants » de l'outil (outils.GARDE_AVANT_BUDGET), rejouée avant le contrôle de budget : même
+    refus que l'outil, mêmes paramètres (défauts de la signature pour ceux omis)."""
+    correspondance = outils.GARDE_AVANT_BUDGET.get(nom)
+    if not correspondance:
+        return None
+    valeurs = {p: v.default for p, v in inspect.signature(fn).parameters.items()
+               if v.default is not inspect.Parameter.empty}
+    valeurs.update(appel)
+    return _garde(**{arg: valeurs.get(param) or "" for arg, param in correspondance.items()})
+
+
 def _suivi_collecte(nom: str, appel: dict, res: dict, enquete: str) -> dict:
     """« Déjà fait le … » des outils de collecte à identité déclarée (outils.IDENTITE_REQUETE, #211) : après un
     appel abouti seulement. Un refus (personne vivante, budget) ou une erreur n'est ni signalé ni noté : la
-    garde des vivants, dans l'outil, passe avant. Résultat négatif : aucun résultat renvoyé."""
+    garde des vivants passe avant (_garde_avant_budget, puis dans l'outil). Résultat négatif : aucun résultat
+    renvoyé."""
     if nom not in outils.IDENTITE_REQUETE or "erreur" in res or "refus" in res:
         return res
     negatif = bool(res.get("recherche_negative")) or res.get("resultats") == [] or res.get("nb_lignes") == 0

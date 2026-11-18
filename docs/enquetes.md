@@ -108,7 +108,11 @@ le reste à faire en tête de `a_faire` ; une demande refaite avec `enquete=<id>
 
 Sans `enquete`, rien ne change, hormis le plafond journalier par hôte d'archives
 (`GENEALOGISTE_PLAFOND_JOUR_ARCHIVES`, [securite.md](securite.md)). Les personnes vivantes restent filtrées
-avant tout (`_garde`) : un refus « vivant » ne consomme rien et n'est pas noté.
+avant tout (`_garde`) : un refus « vivant » ne consomme rien et n'est pas noté. Avec `enquete`, la garde
+passe même avant le contrôle de budget : une enquête bloquée renvoie le refus « vivant » (identique à celui de
+l'outil) sans consigner les paramètres au `reste_a_faire`. Pour les outils mesurés par l'enveloppe générique,
+`outils.GARDE_AVANT_BUDGET` déclare quels paramètres passent à la garde, comme dans l'outil (vérifié par
+`tests/test_garde_avant_budget.py`) ; `recherche_multi` appelle lui-même la garde avant le budget.
 
 ## « Déjà fait le … »
 
