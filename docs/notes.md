@@ -32,6 +32,9 @@ Le nom de fichier est préfixé par l'id. Les fiches de personnes portant encore
 avec génération automatique. Les anciens noms issus d'un affichage erroné (par exemple `~1874` pour
 `BEF 1925`) sont ainsi corrigés. Le résultat indique les chemins `ancien` et `nouveau` dans `renommees`.
 Une génération ciblée ne renomme que la personne demandée ; `notes_generer("tout")` traite l'ensemble.
+Le passage de vivant à décédé suit la même règle (#247) : `<id> - personne vivante.md` devient
+`<id> - Prénom NOM (naissance-décès).md`, les liens entrants suivent et le texte libre est conservé ; aucun
+fichier ne reste sous le nom masqué.
 
 Les dates compactes conservent leur sens : `BEF 1925` → `av. 1925`, `AFT` → `ap. …`, `ABT`/`EST`/`CAL`
 → `~…`, `BET 1920 AND 1925` et `FROM 1920 TO 1925` → `1920/1925`. Les arbres en liste, Mermaid et SVG
@@ -42,7 +45,7 @@ Les destinations des wikilinks et des liens Markdown URL encodés du vault sont 
 leurs fragments ; les alias/libellés et le reste du texte libre sont conservés. Les exemples en code et
 les liens externes restent inchangés. Les références hors du vault et les wikilinks sans dossier dont le
 nom est ambigu restent à vérifier manuellement. Les noms personnalisés par l'utilisateur sont conservés
-(préfixe `<id> - ` requis), ainsi que le traitement manuel des anciennes fiches remasquées décrit plus bas.
+(préfixe `<id> - ` requis) : seul un nom personnalisé remasqué reste à traiter à la main (voir plus bas).
 
 Les dossiers `recherches/` et `courriers/` peuvent être créés librement : aucune fiche n'y est générée,
 mais les liens vers une fiche renommée peuvent y être actualisés. Les propriétés manuelles sont conservées.
@@ -195,11 +198,11 @@ Par défaut, la fiche d'une personne présumée vivante ou marquée privée ne c
 
 **Remasquage** (passage de `complet` à `masquer`, ou personne devenue présumée vivante) : toutes les propriétés et
 sections produites par l'outil sont retirées, y compris celles qui n'existent plus dans la fiche masquée, et le
-titre est remplacé. Le fichier n'est **pas renommé** (les liens existants restent valides) ; `notes_generer`
-renvoie des `alertes` :
+titre est remplacé. Une fiche portant son nom généré est **renommée** au nom masqué (`I9 - personne vivante.md`,
+#247), liens entrants compris, sans copie sous l'ancien nom ; `notes_generer` renvoie des `alertes` :
 
-- nom de fichier pouvant identifier la personne (ex. `I9 - Lucas MARTIN (1990).md`) : le renommer à la main dans
-  Obsidian, qui met les liens à jour ;
+- nom de fichier personnalisé pouvant identifier la personne : le renommer à la main dans Obsidian, qui met les
+  liens à jour ;
 - texte libre ou propriétés saisis à la main : conservés, mais signalés pour vérification.
 Si le répertoire est dans un dépôt Git qui a un dépôt distant, `notes_generer` avertit : vérifier qu'il est
 **privé**.
