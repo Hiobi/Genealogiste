@@ -33,8 +33,8 @@ est refusé, sauf `"non_source": true` + `"motif": "…"` (la mention « Non sou
 | `lier_conjoint` | `famille`, `personne`, `role` (`epoux`/`epouse`) |
 | `ajouter_citation` | `cible` `{type: evenement(uid) | nom(id, index) | filiation(famille, enfant) | personne | famille | media (id)}`, `citation` |
 | | Citation : `source`, `page`, `texte`, `qualite`, `type_source`, `information`, `preuve`, `consultation`, `ark`, `medias` (ids ou `$ref` d'`ajouter_media` : images de l'acte), `note` |
-| `ajouter_media` | `fichier`* (voir « Fichier d'un média »), `format`, `titre`, `citations`, `lier_a` `[ids]` (personnes `I…` et familles `F…`, ou `$ref` : un acte de mariage se lie à la famille), `ref` |
-| `modifier_media` | `id`, `champs` `{fichier, titre, format}` (`fichier` contrôlé comme pour `ajouter_media` ; `date` refusée : un `OBJE` GEDCOM 7 ne porte pas de date, dater l'acte dans sa citation ou son événement), `citations_ajout` |
+| `ajouter_media` | `fichier`* (voir « Fichier d'un média »), `format`, `titre`, `citations`, `lier_a` `[ids]` (personnes `I…`, familles `F…`, sources `S…`, événements (uid), ou `$ref` : voir « Médias »), `ref` |
+| `modifier_media` | `id`, `champs` `{fichier, titre, format}` (`fichier` contrôlé comme pour `ajouter_media` ; `date` refusée : un `OBJE` GEDCOM 7 ne porte pas de date, dater l'acte dans sa citation ou son événement), `citations_ajout`, `lier_a` `[ids]` (liens ajoutés, mêmes cibles qu'`ajouter_media`) |
 | `fusionner_personnes` | `conserver`, `absorber`, `justification`*, `forcer` |
 | `scinder_personne` | `id`, `evenements` `[uid]`, `familles_parents`, `familles_conjoint`, `noms`, `sexe`, `justification`*, `ref` |
 | `definir_statut` | `cible` `{type: evenement | nom | filiation …}`, `statut` (`refute` \| `contradictoire` \| `""`), `justification`* |
@@ -103,13 +103,21 @@ renvois `@N…@`) ; UID en collision réattribués.
 - événements identiques : citations, associations, notes, cause, âge, valeur et statut manuel fusionnés ; une
   valeur divergente est reportée en note, le statut le plus grave (`refute`, puis `contradictoire`) est retenu.
 
-**Médias** (`ajouter_media`, `lier_a`) : un média se lie à des personnes (`I…`) et à des familles (`F…`),
-mélangeables (`["I1", "I2", "F3"]` pour un acte de mariage) ; le lien famille s'écrit `1 OBJE @O…@` sous le
-`FAM` (GEDCOM 7) ou dans la `media_list` de la famille (Gramps Web), apparaît dans le diff et le résumé, et la
-pièce figure dans la section « Pièces » des notes des deux conjoints. Un identifiant absent est refusé avec
-son type (« personne inconnue : I… », « famille inconnue : F… ») ; tout autre identifiant (source `S…`, uid
-d'événement) est refusé : pour rattacher l'image à une source ou à un événement, la passer dans
-`citation.medias` de la citation correspondante.
+**Médias** (`ajouter_media`, `modifier_media`, `lier_a`) : un média se lie à des personnes (`I…`), des
+familles (`F…`), des sources (`S…`) et des événements (uid), mélangeables (`["I1", "I2", "F3"]` pour un acte de
+mariage, `["S2", "<uid de la naissance>"]` pour la page du registre qui atteste une naissance), y compris des
+objets créés plus tôt dans la proposition (`$ref` d'`ajouter_source` / `ajouter_evenement`). Le lien s'écrit en
+GEDCOM 7 `1 OBJE @O…@` sous l'`INDI`, le `FAM` ou l'enregistrement `SOUR`, `2 OBJE @O…@` sous l'événement ; en
+Gramps Web, dans la `media_list` de la personne, de la famille, de la source ou de l'événement (`objref` à
+l'export Gramps XML). À la lecture, un `OBJE` portant des sous-structures (`CROP`, `TITL`) sous un événement ou une source est
+conservé tel quel (non interprété) pour un aller-retour sans perte. Il apparaît dans le diff et le résumé (« liée à S2, I1 naissance ») ; un lien déjà
+présent n'est pas dupliqué. La pièce figure dans la section « Pièces » des notes des personnes concernées
+(conjoints pour une famille, titulaire du fait pour un événement). `modifier_media` + `lier_a` rattache un média
+existant. Un identifiant absent est refusé avec son type (« personne inconnue », « famille inconnue », « source
+inconnue », « événement inconnu ») ; `medias` n'est pas accepté directement dans `ajouter_source`,
+`modifier_source` ou un événement : passer par `lier_a`. Pour l'image qui fonde une citation précise (page,
+acte), `citation.medias` reste le lien le plus fin. Publication : les images d'un événement ou d'une source
+privés, ou d'une personne masquée, sont retirées des exports.
 
 ### ARK (liens pérennes des archives)
 
@@ -121,17 +129,21 @@ d'événement) est refusé : pour rattacher l'image à une source ou à un évé
 - `ark_resoudre(ark)` : service, URL canonique, repli `n2t.net`, disponibilité (HEAD ; repli GET sans lire le
   corps si HEAD renvoie 405 ou 501), manifeste IIIF, citation
   suggérée. NAAN inconnu : registre public de l'ARK Alliance (cache 30 jours).
-- `archives_registres(service, commune, annee, type_acte, page, personne)` localise un registre AD59
+- `archives_registres(service, commune, annee, type_acte, page, personne, annee_fin)` localise un registre AD59
   sans ARK initial : cote, ARK, titre, bornes et nombre de vues seulement lorsqu'ils sont affichés par
-  le service. Types `N`, `M`, `D` ; `NMD` ou vide = aucun filtre. Une page de résultats par appel,
+  le service. Types `N`, `M`, `D` ; `NMD` ou vide = aucun filtre ; `TD` = tables décennales recoupant la
+  période. `annee_fin` (≥ `annee`) demande un intervalle. Une page de résultats par appel,
   puis `page_suivante` pour poursuivre explicitement. Un résultat vide est journalisé sans en déduire
-  l'absence de l'acte. Les autres services et les tables décennales gardent le parcours manuel.
+  l'absence de l'acte. Les autres services gardent le parcours manuel.
 - `archive_image(source, page, region, largeur, gris, details)` accepte un lien IIIF (Image API, `info.json`,
   manifeste v2/v3, tous pays), un ARK Gallica, un lien de visionneuse AD59, une image directe ou un fichier.
   Pour AD59 : ARK de vue complet, ou ARK du registre + `page=N` (vues à partir de 1). Les deux outils
   `archive_image` et `piece_archiver` partagent la même résolution ; IIIF est utilisé dès qu'il est annoncé.
   Un PDF (local ou téléchargé) est rendu page par page (`page=N`, à partir de 1) ; pour un PDF dactylographié
   ou imprimé, `pdf_markdown(chemin)` est bien plus économe (voir `docs/pieces.md`).
+- `archives_sonder(source, date_cible, type_acte, lecture, conclusion, enquete)` (#156) : sondage guidé, sans
+  réseau : propose la vue à lire, le modèle renvoie la date lue, l'outil resserre les bornes (interpolation
+  puis dichotomie ; section du bon type d'abord dans un registre à plusieurs séries). Voir `docs/archives.md`.
 - `archives_planche(source, de, a, pas, bandeau, largeur, gris, miniatures)` (#124) : **une** image composite de
   4 à 12 vues d'un registre AD59, numéro de vue incrusté, composée en local (Pillow), pour repérer un acte sans
   lire une image par vue. `pas` : sondage large (une vue sur N), puis planche fine ; `bandeau` (`pct:x,y,l,h`,

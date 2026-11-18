@@ -49,6 +49,12 @@ def _not_private(c: Node) -> bool:
     return not (c.tag in RESN_TAGS and is_private(c.value))
 
 
+def _bare_obje(c: Node) -> str:
+    """Pointeur d'un OBJE sans sous-structure (lien simple vers un média, #222) ; vide sinon : un OBJE en ligne
+    ou portant CROP / TITL est conservé tel quel (non interprété) pour un aller-retour sans perte."""
+    return "" if c.tag != "OBJE" or c.children else strip_xref(c.value)
+
+
 def _media_link(tree: Tree, c: Node, medias: list[str]) -> bool:
     """OBJE d'un individu ou d'une famille : pointeur, ou OBJE « en ligne » (5.5.1) converti en enregistrement
     média. Faux si le nœud n'est ni l'un ni l'autre (conservé alors comme non interprété)."""
@@ -217,9 +223,11 @@ class _Reader:
 
     def event(self, n: Node) -> Event:
         known = {"DATE", "PLAC", "TYPE", "AGE", "CAUS", "NOTE", "SOUR", "UID", "_UID", "_STAT", "ASSO"}
-        assos, extra = [], []
+        assos, extra, medias = [], [], []
         for c in n.children:
-            if c.tag == "ASSO":
+            if _bare_obje(c):  # lien vers un média (#222)
+                medias.append(_bare_obje(c))
+            elif c.tag == "ASSO":
                 a = self.association(c, "event")
                 if a:
                     assos.append(a)
@@ -233,7 +241,7 @@ class _Reader:
             cause=n.val("CAUS"), note="\n".join(x.value for x in n.all("NOTE")),
             citations=[self.citation(c) for c in n.all("SOUR")], associations=assos,
             uid=n.val("UID") or n.val("_UID") or new_uid(), statut_manuel=self.statut(n), extra=extra,
-            prive=_private_in(n),
+            prive=_private_in(n), medias=medias,
         )
 
     def name(self, n: Node) -> Name:
@@ -279,8 +287,9 @@ def read_gedcom(text: str) -> tuple[Tree, dict]:
                 note="\n".join(x.value for x in r.all("NOTE")),
                 extra=[c.to_dict() for c in r.children
                        if c.tag not in ("TITL", "AUTH", "PUBL", "REPO", "_URL", "WWW", "_ARK", "_TYPE", "_ORIG",
-                                        "NOTE") and _not_private(c)],
+                                        "NOTE") and _not_private(c) and not _bare_obje(c)],
                 prive=_private_in(r),
+                medias=[_bare_obje(c) for c in r.all("OBJE") if _bare_obje(c)],  # #222
             )
     for r in roots:
         tag = r.tag
@@ -524,6 +533,9 @@ def _w_event(parent: Node, e: Event, version: int) -> None:
         n.add("NOTE", "\n".join(notes))
     for c in e.citations:
         _w_citation(n, c)
+    for m in e.medias:
+        if m:
+            n.add("OBJE", f"@{m}@")
     _w_statut(n, e.statut_manuel)
     if e.prive:
         n.add("RESN", "PRIVACY")
@@ -645,6 +657,9 @@ def to_nodes(tree: Tree, version: int = 7) -> list[Node]:
         if s.original:
             r.add("_ORIG", f"@{s.original}@")
         r.add_if("NOTE", s.note)
+        for m in s.medias:
+            if m:
+                r.add("OBJE", f"@{m}@")
         if s.prive:
             r.add("_RESN", "PRIVACY")
         _extra(r, s.extra)

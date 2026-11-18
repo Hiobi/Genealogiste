@@ -198,6 +198,8 @@ def private_resources(tree: Tree, hidden: set[str]) -> tuple[set[str], set[str],
                 sources.add(c.source)
                 medias.update(c.medias)
         medias.update(getattr(owner, "medias", []) or [])
+        for e in getattr(owner, "evenements", []) or []:
+            medias.update(e.medias)
         notes.update(n.strip("@") for n in getattr(owner, "notes", []) or [] if n.startswith("@") and n.endswith("@"))
 
     for pid in hidden:
@@ -218,6 +220,7 @@ def private_resources(tree: Tree, hidden: set[str]) -> tuple[set[str], set[str],
                     sensibles(association)
         for event in getattr(owner, 'evenements', []):
             if event.prive:
+                medias.update(getattr(event, "medias", []) or [])
                 for cits in _citations(event):
                     for c in cits:
                         medias.update(c.medias)
@@ -229,6 +232,9 @@ def private_resources(tree: Tree, hidden: set[str]) -> tuple[set[str], set[str],
     for mid, media in tree.medias.items():
         if any(c.prive or c.source in sources for c in media.citations):
             medias.add(mid)
+    for sid in sources:  # images d'une source privée ou citée pour un masqué (#222)
+        if sid in tree.sources:
+            medias.update(tree.sources[sid].medias)
     return sources, medias, notes
 
 
@@ -299,6 +305,7 @@ def publication(tree: Tree, today: date | None = None) -> tuple[Tree, set[str], 
     for s in t.sources.values():
         if s.original in sources:
             s.original = ""
+        s.medias = [m for m in s.medias if m not in medias]
     t.extra_records = []
     _scrub(t, patterns)
     return t, hidden, {"masques": sorted(hidden), "retires": retires, "motifs": patterns}

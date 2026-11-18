@@ -41,12 +41,14 @@ Le même parcours que `/genealogiste:acte` et la skill `genealogiste`.
    couverture déclarée ne prouve pas l'existence de l'acte.
 2. **Localiser le registre** (cote + ARK) : un ARK déjà porté par une source `S…` de l'arbre se réutilise
    (`ark_resoudre` pour le vérifier) ; pour AD59, `archives_registres(service="AD59", commune=…, annee=…,
-   type_acte="N"|"M"|"D", personne=id)`, une page par appel ; ailleurs `liens_recherche` et
+   type_acte="N"|"M"|"D"|"TD", personne=id)` (`annee_fin` pour un intervalle), une page par appel ; ailleurs `liens_recherche` et
    `cotes_a_consulter` (cote typique), jamais de cote devinée. Un résultat vide est une recherche négative sur ce
    périmètre, pas une preuve d'absence.
 3. **Sonder et naviguer** : `archives_naviguer(ark_registre, page=…, pas=…)` parcourt les vues (ou la table
    décennale d'abord) ; pour un registre AD59 chronologique, `archives_planche(ark_registre, de, a, pas)` sonde
-   4 à 12 vues en une image.
+   4 à 12 vues en une image ; pour atteindre une date, `archives_sonder(ark_registre, date_cible, type_acte,
+   enquete=<id>)` propose la vue à lire et, rappelé avec la date lue (`lecture={vue, date, date_fin, type}`),
+   la suivante (interpolation puis dichotomie) jusqu'à `arret` (`localise`, `absent` journalisé, `budget`).
 4. **Lire** : `archive_image` en aperçu (800 px, gris), puis recadrage de l'acte ; surveiller
    `cout_estime_tokens`.
 5. **Transcrire** : transcription diplomatique (skill `paleographie`), niveau de confiance par champ, mots

@@ -95,6 +95,20 @@ def test_fichier_local_et_collision(vapp, tmp_path):
     assert server.piece_archiver(str(a), personnes=["DUPONT Jean"], type_piece="N")["deja_archivee"]
 
 
+def test_archivage_not_rattache_serie_3e(vapp, tmp_path):
+    """#223 : une pièce NOT est rattachée au type d'archives « notaire » ; la cote 3 E est acceptée."""
+    src = tmp_path / "minute.png"
+    Image.new("RGB", (50, 40), "white").save(src)
+    r = server.piece_archiver(str(src), personnes=["I1"], type_piece="NOT testament", depot="AD17",
+                              annees="1850", cote="3 E 52/123")
+    assert "erreur" not in r, r
+    assert Path(r["chemin_absolu"]).parent == vapp.vault / "documents" / "Notaires" / "MARTIN"
+    assert r["archives"]["type_document"] == "notaire" and r["archives"]["cote"] == "serie_3e"
+    autre = tmp_path / "naissance.png"
+    Image.new("RGB", (50, 40), "black").save(autre)
+    assert "archives" not in server.piece_archiver(str(autre), personnes=["I1"], type_piece="N")
+
+
 def test_contenu_non_image_refuse(vapp, iiif):
     iiif.get(f"{SERVICE}/full/max/0/default.jpg").mock(return_value=httpx.Response(200, text="<html>connexion</html>"))
     r = server.piece_archiver(SOURCE, personnes=["I1"])

@@ -1,4 +1,4 @@
-"""Recherche de registres sur le HTML serveur AD59 qualifié (relevé du 16 novembre 2026).
+"""Recherche de registres sur le HTML serveur AD59 qualifié (relevés des 16 et 18 novembre 2026).
 
 Une page par appel, sans exploration de JavaScript, de notice, de métadonnées ni d'image.
 Les ARK de registre viennent du lien de notice, jamais du lien de miniature (ARK de vue).
@@ -19,6 +19,7 @@ from .base import DAY, SourceContext, SourceError, envelope, error_envelope
 HOST = "https://archivesdepartementales.lenord.fr"
 URL = HOST + "/search/results"
 FORMULAIRE = "dc4e871d-0b62-41fb-9921-5ded573781b8"
+FORMULAIRE_TD = "25905104-0354-4e23-aea0-e3b68cf1f881"  # tables décennales (relevé du 18 novembre 2026)
 MAX_HTML = 2_000_000
 MAX_PROFONDEUR = 128
 TYPES = {"N": "Naissances", "M": "Mariages", "D": "Décès"}
@@ -161,10 +162,17 @@ def _lire(html: str, page: int) -> tuple[list[dict], int, int | None]:
     return [_registre(bloc) for bloc in blocs], total, page + 1 if page < maximum else None
 
 
+def _couvre(bornes: list[int] | None, periode: list[int]) -> bool | None:
+    """Recouvrement des bornes affichées et de la période demandée ; None si les bornes sont inconnues."""
+    return None if bornes is None else bornes[0] <= periode[1] and periode[0] <= bornes[1]
+
+
 def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_acte: str = "", page: int = 1,
-               personne: str = "") -> dict:
-    """Registres candidats d'une commune et d'une année exacte ; aucun nom de personne envoyé au service."""
-    params = {"service": service, "commune": commune, "annee": annee, "type_acte": type_acte, "page": page}
+               personne: str = "", annee_fin: int = 0) -> dict:
+    """Registres candidats d'une commune pour une année ou un intervalle [annee, annee_fin] ; type_acte=TD pour
+    les tables décennales (formulaire dédié, filtrées localement sur la période). Aucun nom de personne envoyé."""
+    params = {"service": service, "commune": commune, "annee": annee, "type_acte": type_acte, "page": page,
+              "annee_fin": annee_fin}
     try:
         service = (service or "").strip().upper()
         commune = " ".join(strip_accents(commune or "").upper().split())
@@ -175,13 +183,24 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
         if not commune or len(commune) > 200:
             raise ValueError("commune : nom obligatoire, de 1 à 200 caractères.")
         if type(annee) is not int or not 1 <= annee <= 9999:
-            raise ValueError("annee : année précise de 1 à 9999 ; les intervalles ne sont pas pris en charge.")
+            raise ValueError("annee : année précise de 1 à 9999 ; pour un intervalle, préciser aussi annee_fin.")
+        if type(annee_fin) is not int or (annee_fin and not annee <= annee_fin <= 9999):
+            raise ValueError("annee_fin : 0 (année seule) ou fin d'intervalle, de annee à 9999.")
         if type(page) is not int or page < 1:
             raise ValueError("page : entier à partir de 1.")
-        if type_acte not in {"", "NMD", *TYPES}:
-            raise ValueError("type_acte : N, M, D, NMD ou vide ; tables décennales (TD) non qualifiées pour cette recherche.")
-        requete = {"formUuid": FORMULAIRE, "sort": "date_asc", "mode": "list", "facet_media": "image",
-                   "0-controlledAccessGeographicName[]": commune, "2-date": str(annee), "page": page}
+        if type_acte not in {"", "NMD", "TD", *TYPES}:
+            raise ValueError("type_acte : N, M, D, NMD, TD (tables décennales) ou vide.")
+        periode = [annee, annee_fin or annee]
+        base = {"sort": "date_asc", "mode": "list", "facet_media": "image",
+                "0-controlledAccessGeographicName[]": commune}
+        if type_acte == "TD":
+            # Le formulaire TD observé n'a que la commune : aucune date envoyée, la période est filtrée localement.
+            requete = {"formUuid": FORMULAIRE_TD, **base, "page": page}
+        elif periode[0] == periode[1]:
+            requete = {"formUuid": FORMULAIRE, **base, "2-date": str(annee), "page": page}
+        else:
+            requete = {"formUuid": FORMULAIRE, **base, "3-date_begin": str(periode[0]),
+                       "3-date_end": str(periode[1]), "page": page}
         if type_acte in TYPES:
             requete["facet_typology"] = TYPES[type_acte]
         # Copie du wrapper seulement : cache, client, politique et verrou de débit restent partagés.
@@ -192,10 +211,23 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
         resultats, total, suivante = _lire(html, page)
     except (SourceError, ValueError) as exc:
         return error_envelope(ctx, "archives", "registres", params, exc, personne=personne or None)
+    extra = {}
+    if type_acte == "TD":
+        for r in resultats:
+            r["couvre_periode"] = _couvre(r["bornes"], periode)
+        couvrantes = [r for r in resultats if r["couvre_periode"] is not False]
+        extra["tables_hors_periode"] = len(resultats) - len(couvrantes)
+        resultats = couvrantes
     out = envelope(ctx, "archives", "registres", params, resultats, total, cached, personne=personne or None,
-                   service=service, page=page, page_suivante=suivante, fin=suivante is None,
-                   avertissement="Un registre candidat ne prouve pas la présence d'un acte : consulter ses vues.")
-    if not resultats:
+                   service=service, page=page, page_suivante=suivante, fin=suivante is None, periode=periode,
+                   avertissement="Un registre candidat ne prouve pas la présence d'un acte : consulter ses vues.",
+                   **extra)
+    if not resultats and extra.get("tables_hors_periode"):
+        out["recherche_negative"] = (
+            f"Aucune table décennale de cette page ne couvre {periode[0]}-{periode[1]} "
+            f"({extra['tables_hors_periode']} hors période) ; voir page_suivante s'il y en a une. Cela ne prouve "
+            "pas l'absence de l'acte : consulter les registres de la période (archives_registres sans TD).")
+    elif not resultats:
         out["recherche_negative"] = ("Aucun registre renvoyé pour cette recherche et cette page ; cela ne prouve pas "
                                       "l'absence générale de fonds numérisés. Vérifier les variantes et le service.")
     return out

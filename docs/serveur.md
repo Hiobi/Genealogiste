@@ -139,9 +139,15 @@ claude -p "…" --allowedTools \
 ## Limites connues
 
 - Plusieurs services d'archives sont derrière un défi anti-robot (Cloudflare, captcha). Le plugin le détecte,
-  met l'hôte en pause (coupe-circuit) et ne tente **aucun** contournement : consulter ces sites dans un
-  navigateur. Depuis un poste de développement, AD59 répondait et Gallica était bloqué ; l'accès réel depuis
-  une adresse de VPS est mesuré dans [#150](https://github.com/Hiobi/Genealogiste/issues/150).
+  met l'hôte en pause (coupe-circuit), l'exclut quelques jours si le défi persiste après la pause
+  (`GENEALOGISTE_EXCLUSION_ANTIROBOT`, 7 jours par défaut) et ne tente **aucun** contournement. Sans
+  navigateur sur le serveur, la réponse porte `suite` (lien à ouvrir par l'utilisateur depuis son poste, ce
+  qu'il faut relever, reprise par `source_collee`, `piece_archiver` ou `media_enregistrer`) ; avec
+  `enquete=<id>`, la consultation devient une tâche manuelle de l'enquête et la recherche continue sur les
+  autres pistes. `archives_service` montre sous `defi_observe` les défis constatés depuis cette machine ;
+  `cache_purger("coupe_circuit")` autorise un nouvel essai. Depuis un poste de développement, AD59 répondait
+  et Gallica était bloqué ; l'accès réel depuis une adresse de VPS reste à mesurer
+  (`GENEALOGISTE_RECETTE_ENVIRONNEMENT=vps make test-archives`, [#150](https://github.com/Hiobi/Genealogiste/issues/150)).
 - La recherche d'un registre depuis une commune et une année reste manuelle pour la plupart des services
   ([#121](https://github.com/Hiobi/Genealogiste/issues/121)).
 - `/genealogiste:diagnostic` vérifie l'ensemble (configuration, dépendances, droits, disque, caches, sources

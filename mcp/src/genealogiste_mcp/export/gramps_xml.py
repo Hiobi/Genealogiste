@@ -186,6 +186,7 @@ def db_to_xml(db: GrampsDb) -> str:
         f"<source handle={_h(s['handle'])} id={quoteattr(s.get('gramps_id') or '')}{_priv(s)}>" + _text("stitle", s.get("title", ""))
         + _text("sauthor", s.get("author", "")) + _text("spubinfo", s.get("pubinfo", ""))
         + _text("sabbrev", s.get("abbrev", "")) + _refs("noteref", s.get("note_list"))
+        + _refs("objref", [m["ref"] for m in s.get("media_list") or []])  # ordre du DTD Gramps
         + "".join(_attr(a, "srcattribute") for a in s.get("attribute_list") or [])
         + "".join(f"<reporef hlink={_h(r['ref'])} callno={quoteattr(r.get('call_number', ''))} "
                   f"medium={quoteattr(tname(r.get('media_type')) or 'Book')}/>" for r in s.get("reporef_list") or [])

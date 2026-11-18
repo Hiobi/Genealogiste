@@ -259,7 +259,7 @@ def controles_reseau(a) -> list[dict]:
             except SourceError as exc:
                 if exc.bloque_antirobot or exc.coupe_circuit:
                     ctl = _ctl(f"source:{nom}", "attention", str(exc),
-                               "Protection anti-robot sur cette adresse : consulter le site dans le navigateur ; "
+                               "Protection anti-robot sur cette adresse : consultation par l'utilisateur depuis son poste ; "
                                "aucun contournement n'est tenté.", verdict="protection")
                 elif exc.status and exc.status < 500 and exc.status not in (401, 403):
                     ctl = _ctl(f"source:{nom}", "ok", f"{urlsplit(url).hostname} répond (HTTP {exc.status})",

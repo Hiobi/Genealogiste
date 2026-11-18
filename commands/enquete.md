@@ -31,7 +31,7 @@ conclusions déposées dans la file de propositions, compte rendu à format fixe
    `piece_archiver`, sources… ; pistes, lectures, verdicts et tâches manuelles par `enquete_noter`), id, lien avec le
    sujet, lacunes (`arbre_lacunes`), sources à interroger et **parcours d'archives** pour chaque fait à établir :
    service et couverture (`archives_service`), registre (`archives_registres` pour AD59, `ark_resoudre` pour un
-   ARK déjà connu), sondage (`archives_naviguer`, `archives_planche`), lecture (`archive_image`), transcription,
+   ARK déjà connu), sondage (`archives_naviguer`, `archives_planche`, `archives_sonder`), lecture (`archive_image`), transcription,
    archivage (`piece_archiver`), citation. En mode interactif : rendre un dossier de pièces classées +
    opérations `arbre_proposer` suggérées (non appliquées) ; au-delà de 6 personnes, procéder par vagues et
    demander s'il faut continuer. En mode autonome : la consigne commence par

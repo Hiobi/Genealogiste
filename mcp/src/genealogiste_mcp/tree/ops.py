@@ -7,6 +7,7 @@ suivantes de la même proposition peuvent alors désigner l'objet créé par "$x
 from __future__ import annotations
 
 import copy
+import re
 from datetime import date
 from pathlib import PurePosixPath
 
@@ -182,6 +183,8 @@ def _event(ctx: Ctx, d: dict) -> Event:
     if "statut_manuel" in d and d["statut_manuel"]:
         d["statut_manuel"] = Assertion.from_dict(d["statut_manuel"])
     d.pop("uid", None)
+    if "medias" in d:
+        raise OpError("Événement : médias à lier par ajouter_media / modifier_media (lier_a : uid de l'événement)")
     try:
         return Event(**{k: v for k, v in d.items()})
     except TypeError as exc:
@@ -394,6 +397,8 @@ def op_ajouter_source(ctx: Ctx, o: dict) -> None:
             d["url"] = ark.Ark(a.naan, a.nom, "", a.hote).url()
         if not d.get("depot"):
             d["depot"] = _depot_for(ctx, a)
+    if "medias" in d:
+        raise OpError("ajouter_source : médias à lier par ajouter_media / modifier_media (lier_a : S…)")
     sid = ctx.tree.next_id("sources")
     d["depot"] = ctx.r(d.get("depot"))
     d["original"] = ctx.r(d.get("original"))
@@ -417,8 +422,9 @@ def op_modifier_source(ctx: Ctx, o: dict) -> None:
     if not s:
         raise OpError(f"Source inconnue : {sid}")
     for k, v in o.get("champs", {}).items():
-        if k in ("id", "extra") or not hasattr(s, k):
-            raise OpError(f"modifier_source : champ {k!r} invalide")
+        if k in ("id", "extra", "medias") or not hasattr(s, k):
+            raise OpError(f"modifier_source : champ {k!r} invalide"
+                          + (" (lier un média : ajouter_media / modifier_media, lier_a)" if k == "medias" else ""))
         setattr(s, k, ctx.r(v) if k in ("depot", "original") else v)
     ctx.summary.append(f"Source {sid} modifiée")
 
@@ -475,13 +481,10 @@ def op_ajouter_media(ctx: Ctx, o: dict) -> None:
     m = Media(id=mid, fichier=fichier, format=o.get("format", ""), titre=o.get("titre", ""),
               citations=[_citation(ctx, c) for c in o.get("citations", [])])
     ctx.tree.medias[mid] = m
-    liens = [_media_owner(ctx, x) for x in o.get("lier_a", [])]
-    for owner in liens:
-        if mid not in owner.medias:
-            owner.medias.append(mid)
+    liens = _lier_media(ctx, mid, o.get("lier_a") or [], "ajouter_media")
     if o.get("ref"):
         ctx.refs[o["ref"]] = mid
-    lie = f" (liée à {', '.join(x.id for x in liens)})" if liens else ""
+    lie = f" (liée à {', '.join(liens)})" if liens else ""
     ctx.summary.append(f"Média {mid} : {m.titre or m.fichier}{lie}")
 
 
@@ -502,8 +505,9 @@ def op_modifier_media(ctx: Ctx, o: dict) -> None:
     if inconnus:
         raise OpError(f"modifier_media : champs non modifiables {inconnus} (modifiables : {', '.join(MEDIA_CHAMPS)})")
     citations = o.get("citations_ajout") or []
-    if not champs and not citations:
-        raise OpError("modifier_media : rien à modifier (champs ou citations_ajout)")
+    lier_a = o.get("lier_a") or []
+    if not champs and not citations and not lier_a:
+        raise OpError("modifier_media : rien à modifier (champs, citations_ajout ou lier_a)")
     changes = []
     if "fichier" in champs:
         fichier = champs["fichier"]
@@ -527,6 +531,9 @@ def op_modifier_media(ctx: Ctx, o: dict) -> None:
         m.citations.append(_citation(ctx, c))
     if citations:
         changes.append(f"{len(citations)} citation(s) ajoutée(s)")
+    liens = _lier_media(ctx, mid, lier_a, "modifier_media", seulement_nouveaux=True)
+    if liens:
+        changes.append(f"liée à {', '.join(liens)}")
     ctx.summary.append(f"Média {mid} modifié : " + ("; ".join(changes) or "inchangé"))
 
 
@@ -534,19 +541,53 @@ def _suffixe(fichier: str) -> str:
     return PurePosixPath(fichier).suffix.lower()
 
 
-def _media_owner(ctx: Ctx, ident: str) -> Person | Family:
-    """Cible de lier_a : personne (I…) ou famille (F…), y compris créée plus tôt dans la proposition ($ref)."""
+_UID = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+
+
+def _lier_media(ctx: Ctx, mid: str, idents: list, op: str, seulement_nouveaux: bool = False) -> list[str]:
+    """Lie le média aux cibles de lier_a (sans doublon) ; renvoie leurs libellés pour le résumé (les cibles déjà
+    liées avant l'opération sont omises si seulement_nouveaux)."""
+    out = []
+    for ident in idents:
+        owner, label = _media_owner(ctx, ident, op)
+        if mid in owner.medias or _obje_conserve(owner, mid):
+            if not seulement_nouveaux and label not in out:
+                out.append(label)
+            continue
+        owner.medias.append(mid)
+        out.append(label)
+    return out
+
+
+def _obje_conserve(owner, mid: str) -> bool:
+    """OBJE vers ce média conservé tel quel dans les extensions (pointeur avec CROP / TITL, GEDCOM) : le lien
+    existe déjà, lier_a n'en ajoute pas un second."""
+    return any(x.get("tag") == "OBJE" and (x.get("value") or "").strip() == f"@{mid}@"
+               for x in getattr(owner, "extra", None) or [] if isinstance(x, dict))
+
+
+def _media_owner(ctx: Ctx, ident: str, op: str) -> tuple[Person | Family | Source | Event, str]:
+    """Cible de lier_a et son libellé : personne (I…), famille (F…), source (S…) ou événement (uid), y compris
+    créés plus tôt dans la proposition ($ref)."""
     oid = ctx.r(ident)
     if oid in ctx.tree.personnes:
-        return ctx.tree.personnes[oid]
+        return ctx.tree.personnes[oid], oid
     if oid in ctx.tree.familles:
-        return ctx.tree.familles[oid]
-    if isinstance(oid, str) and oid[:1] == "I":
-        raise OpError(f"ajouter_media : lier_a, personne inconnue : {oid}")
-    if isinstance(oid, str) and oid[:1] == "F":
-        raise OpError(f"ajouter_media : lier_a, famille inconnue : {oid}")
-    raise OpError(f"ajouter_media : lier_a accepte des personnes I… et familles F… ({oid!r} non pris en charge ; "
-                  "pour un événement ou une source, lier le média à la citation : citation.medias)")
+        return ctx.tree.familles[oid], oid
+    if oid in ctx.tree.sources:
+        return ctx.tree.sources[oid], oid
+    if isinstance(oid, str):
+        found = ctx.tree.find_event(oid)
+        if found:
+            owner, e = found
+            return e, f"{owner.id} {EVENT_LABELS.get(e.type, e.type)}"
+        for prefix, kind in (("I", "personne inconnue"), ("F", "famille inconnue"), ("S", "source inconnue")):
+            if oid[:1] == prefix and oid[1:].isdigit():
+                raise OpError(f"{op} : lier_a, {kind} : {oid}")
+        if _UID.match(oid):
+            raise OpError(f"{op} : lier_a, événement inconnu : {oid}")
+    raise OpError(f"{op} : lier_a accepte des personnes I…, familles F…, sources S… et événements (uid) "
+                  f"({oid!r} non pris en charge)")
 
 
 def _all_associations(tree: Tree):
@@ -603,6 +644,7 @@ def _merge_event(twin: Event, e: Event) -> list[str]:
     conflits = []
     twin.citations += [c for c in e.citations if c not in twin.citations]
     twin.associations += [a for a in e.associations if a not in twin.associations]
+    twin.medias += [m for m in e.medias if m not in twin.medias]
     if e.note and e.note not in twin.note:
         twin.note = f"{twin.note}\n{e.note}".strip()
     for champ in ("cause", "age", "valeur", "type_detail"):
@@ -821,8 +863,12 @@ def op_remplacer_arbre(ctx: Ctx, o: dict) -> None:
         fresh(f)
         for e in f.evenements:
             fresh(e)
+    for owner in [*new.personnes.values(), *new.familles.values()]:
+        for e in owner.evenements:
+            e.medias = [M.get(m, m) for m in e.medias]
     for s in new.sources.values():
         s.id, s.depot, s.original = S[s.id], R.get(s.depot, s.depot), S.get(s.original, s.original)
+        s.medias = [M.get(m, m) for m in s.medias]
     for r in new.depots.values():
         r.id = R[r.id]
     for m in new.medias.values():

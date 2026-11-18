@@ -13,7 +13,7 @@ install: ## Installe les dépendances du serveur MCP (uv)
 test: ## Lance les tests pytest (APIs mockées, aucun accès réseau)
 	$(UV) run pytest
 
-test-codex: ## Recette native Codex CLI 0.166.0, fournisseur local et données fictives
+test-codex: ## Recette native Codex CLI 0.166 à 0.169, fournisseur local et données fictives
 	python3 scripts/verifier_codex.py
 
 GW_TEST := docker compose -f docker-compose.test.yml

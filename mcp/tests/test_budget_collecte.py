@@ -78,7 +78,7 @@ def test_schema_expose_enquete_facultatif():
         assert "enquete" in exposes[nom].description, nom
         assert "enquete" in inspect.signature(getattr(server, nom)).parameters, nom
     for nom in set(outils.OUTILS) - outils.BUDGET_ENQUETE:
-        if nom in ("enquete_noter", "enquete_etat", "enquete_reprendre", "propositions_deposer"):
+        if nom in ("enquete_noter", "enquete_etat", "enquete_reprendre", "propositions_deposer", "archives_sonder"):
             continue  # « enquete » y désigne l'enquête gérée, pas un budget
         assert "enquete" not in exposes[nom].input_schema["properties"], nom
 
