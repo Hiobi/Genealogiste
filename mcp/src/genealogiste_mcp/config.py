@@ -104,6 +104,7 @@ class Config:
     cache_images_max_mo: float = 2000.0  # GENEALOGISTE_CACHE_IMAGES_MAX_MO : plafond de cache-images (0 = aucun)
     cache_echec: float = 900.0  # GENEALOGISTE_CACHE_ECHEC : mémoire d'un échec 403/404 (secondes)
     coupe_circuit: float = 1800.0  # GENEALOGISTE_COUPE_CIRCUIT : pause d'un hôte après blocage anti-robot
+    exclusion_antirobot: float = 604800.0  # GENEALOGISTE_EXCLUSION_ANTIROBOT : exclusion si le défi persiste (#150)
     ralentissement_max: float = 60.0  # GENEALOGISTE_RALENTISSEMENT_MAX : intervalle max (s) d'un hôte ralenti
     notes_attente: float = 20.0  # GENEALOGISTE_NOTES_ATTENTE : attente max des notes dans arbre_appliquer (s)
     git_delai: float = 60.0  # GENEALOGISTE_GIT_DELAI : délai maximal d'une commande git (push compris)
@@ -414,6 +415,8 @@ def load_config() -> Config:
                                      "GENEALOGISTE_CACHE_IMAGES_MAX_MO"),
         cache_echec=secondes(env("GENEALOGISTE_CACHE_ECHEC"), 900.0, "GENEALOGISTE_CACHE_ECHEC"),
         coupe_circuit=secondes(env("GENEALOGISTE_COUPE_CIRCUIT"), 1800.0, "GENEALOGISTE_COUPE_CIRCUIT"),
+        exclusion_antirobot=secondes(env("GENEALOGISTE_EXCLUSION_ANTIROBOT"), 604800.0,
+                                     "GENEALOGISTE_EXCLUSION_ANTIROBOT"),
         ralentissement_max=secondes(env("GENEALOGISTE_RALENTISSEMENT_MAX"), 60.0,
                                     "GENEALOGISTE_RALENTISSEMENT_MAX"),
         notes_attente=secondes(env("GENEALOGISTE_NOTES_ATTENTE"), 20.0, "GENEALOGISTE_NOTES_ATTENTE"),

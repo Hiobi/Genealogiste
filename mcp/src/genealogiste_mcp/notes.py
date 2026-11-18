@@ -332,8 +332,10 @@ class Notes:
 
         ids = []
         owners = [p, *tree.spouses_families(pid)]
-        for o in owners:  # médias liés directement (personne, union : acte de mariage…) puis ceux des citations
-            ids += o.medias
+        for o in owners:  # médias liés directement (personne, union : acte de mariage…), à ses faits (#222),
+            ids += o.medias  # puis ceux des citations
+        for o in owners:
+            ids += [m for e in o.evenements for m in e.medias]
         for o in owners:
             ids += [m for c in iter_citations(o) for m in c.medias]
         out = []

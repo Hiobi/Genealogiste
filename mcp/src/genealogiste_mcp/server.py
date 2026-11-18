@@ -24,6 +24,7 @@ from . import (
     outils,
     pieces,
     privacy,
+    sondage,
 )
 from . import pdf_markdown as pdf_md
 from .archives import communicability_online
@@ -95,6 +96,7 @@ class App:
                                policy=NetworkPolicy(self.config.hotes_autorises), politique=politique,
                                max_retries=self.config.http_tentatives, duree_max=self.config.http_duree_max,
                                echec_ttl=self.config.cache_echec, coupe_circuit_ttl=self.config.coupe_circuit,
+                               exclusion_ttl=self.config.exclusion_antirobot,
                                plafond=PlafondJour(self.cache, politique=politique),
                                ralentissement_max=self.config.ralentissement_max,
                                **kw)
@@ -286,12 +288,27 @@ def _budget_apres(enquete: str, m, outil: str, appel: dict, out: dict, images: i
     pendant l'appel : enquête bloquée, reste (ou l'appel) consigné."""
     if m is None:
         return out
+    _tache_blocage(enquete, out)
     try:
         out.update(app().enquetes.apres_collecte(enquete, dict(m.requetes), images, m.refus, outil,
                                                  reste if reste is not None else appel))
     except (EnqueteError, OSError) as exc:
         out["enquete_avertissement"] = f"Budget non mis à jour : {exc}"
     return out
+
+
+def _tache_blocage(enquete: str, out: dict) -> None:
+    """Défi anti-robot pendant un appel lié à une enquête (#150) : la consultation devient une tâche manuelle
+    de l'enquête (une par URL bloquée), reprise par enquete_reprendre ; l'enquête continue sur les autres pistes."""
+    if out.get("statut") != "bloque_antirobot" or not isinstance(out.get("tache_manuelle"), dict):
+        return
+    try:
+        t = app().enquetes.tache_blocage(enquete, str(out.get("service") or ""), str(out.get("url") or ""),
+                                         str(out.get("protection") or ""), str(out.get("journal") or ""))
+    except (EnqueteError, OSError) as exc:
+        out["enquete_avertissement"] = f"Tâche manuelle non notée dans l'enquête : {exc}"
+        return
+    out["tache_manuelle"] = {**out["tache_manuelle"], "enquete": enquete, "id": t["id"]}
 
 
 # Images lues par le modèle par appel réussi, pour les outils mesurés par l'enveloppe (archive_image compte les
@@ -708,31 +725,59 @@ def archives_service(lieu: str = "", departement: str = "", code: str = "", docu
     matricule… ; préciser lieu pour les exceptions communales et annee ; None = inconnu), inscription,
     date de vérification et couverture sourcée. Un accès déclaré ne prouve pas l'existence d'un acte.
     consultation_manuelle : protection anti-robot relevée (ex. Anubis) et consigne (vue fournie par
-    l'utilisateur, media_enregistrer) ; un nouvel essai réseau reste possible."""
+    l'utilisateur, media_enregistrer) ; un nouvel essai réseau reste possible. defi_observe : dernier défi
+    observé depuis cette installation sur ses hôtes (détections, exclusion en cours) ; acces_vps : mesure de
+    recette depuis le VPS."""
     res = archives.service(lieu, departement, code, document, annee or None)
     hotes = [normaliser_hote(res.get(k) or "") for k in ("site", "visionneuse")] if "erreur" not in res else []
     if any(hotes):  # politique d'accès effective (intervalle, plafond/jour, provenance) de ses hôtes (#211)
         res["politique_acces"] = {h: app().http.politique.politique(h).en_dict() for h in hotes if h}
+        if obs := _defi_observe(hotes):
+            res["defi_observe"] = obs
     return res
+
+
+def _defi_observe(hotes: list[str]) -> dict | None:
+    """Dernier défi anti-robot observé depuis cette installation sur les hôtes du service (#150), local."""
+    import time
+    from datetime import UTC, datetime
+
+    def iso(t):
+        return datetime.fromtimestamp(t, UTC).isoformat(timespec="seconds") if t else None
+
+    vus = [d for h in dict.fromkeys(hotes) if h and (d := app().cache.defi_antirobot(h))]
+    if not vus:
+        return None
+    d = max(vus, key=lambda x: x["derniere"])
+    exclu = d["exclu_jusqu_a"] if d["exclu_jusqu_a"] and d["exclu_jusqu_a"] > time.time() else None
+    out = {"hote": d["hote"], "protection": d["protection"], "url": d["url"], "statut_http": d["statut"],
+           "premiere_detection": iso(d["premiere"]), "derniere_detection": iso(d["derniere"]),
+           "detections": d["detections"], "exclu_jusqu_au": iso(exclu),
+           "note": ("Observé depuis cette installation (son adresse réseau) : vaut pour cette machine, pas "
+                    "pour l'accès en général ; cache_purger('antirobot') oublie cet historique.")}
+    return {k: v for k, v in out.items() if v is not None}
 
 
 @mcp.tool()
 def archives_registres(service: str, commune: str, annee: int, type_acte: str = "", page: int = 1,
-                      personne: str = "") -> dict:
+                      personne: str = "", annee_fin: int = 0) -> dict:
     """Localiser un registre par commune et année, sans connaître son ARK : service=AD59 uniquement.
-    type_acte : N (naissance), M (mariage), D (décès), NMD ou vide (tous). Une seule page de résultats
-    par appel ; page_suivante permet de poursuivre explicitement. Cote, ARK et période proviennent du
+    type_acte : N (naissance), M (mariage), D (décès), NMD ou vide (tous), TD (tables décennales : tables dont
+    la période affichée recoupe l'année ou l'intervalle demandé). annee_fin (facultatif, >= annee) : intervalle
+    [annee, annee_fin], ex. 1790-1802 ou une décennie ; registres dont la période le recoupe. Une seule page de
+    résultats par appel ; page_suivante permet de poursuivre explicitement. Cote, ARK et période proviennent du
     résultat officiel ; une recherche vide ne prouve pas l'absence de l'acte. personne désigne seulement
     la cible locale, pour la garde des vivants et le journal ; cet identifiant n'est pas envoyé au service."""
     if refus := _garde(personne=personne, texte=commune):
         return refus
     a = app()
     try:
-        return registres.rechercher(a.sctx, service, commune, annee, type_acte, page, personne)
+        return registres.rechercher(a.sctx, service, commune, annee, type_acte, page, personne, annee_fin)
     except (SourceError, ValueError) as exc:
         return error_envelope(a.sctx, "archives", "registres",
                               {"service": service, "commune": commune, "annee": annee,
-                               "type_acte": type_acte, "page": page}, exc, personne=personne or None)
+                               "type_acte": type_acte, "page": page, "annee_fin": annee_fin}, exc,
+                              personne=personne or None)
 
 
 @mcp.tool()
@@ -763,7 +808,81 @@ def archives_naviguer(source: str, page: int = 0, pas: int = 20, enquete: str = 
     reg = res.get("registre") or {}
     return _suivi_enquete("archives_naviguer", params, res, enquete, fenetre, resultat="positif",
                           journal=[res["journal"]], registre=source, nb_vues=res.get("nb_vues"),
-                          titre=reg.get("titre") or "", cote=reg.get("cote") or "", appel=params)
+                          titre=reg.get("titre") or "", cote=reg.get("cote") or "", appel=params,
+                          periode=reg.get("periode"))
+
+
+@mcp.tool()
+def archives_sonder(source: str, date_cible: str, type_acte: str = "", lecture: dict | None = None,
+                    conclusion: str = "", enquete: str = "", nb_vues: int = 0, periode: str = "",
+                    lectures: list[dict] | None = None, ordre_series: list[str] | None = None,
+                    max_lectures: int = 15) -> dict:
+    """Sondage guidé d'un registre chronologique : quelle vue lire pour atteindre date_cible, sans tâtonner.
+    Aucun réseau : le modèle lit la vue proposée (action : archive_image), puis rappelle archives_sonder avec
+    lecture={vue, date, date_fin?, type?} (date = premier acte de la vue, date_fin = dernier acte, type =
+    naissance|mariage|deces|table) ; l'outil resserre les bornes et propose la vue suivante : interpolation
+    sur la période et les dates lues, puis dichotomie si l'interpolation n'a pas divisé l'intervalle par deux.
+    type_acte (naissance, mariage, deces) : registre à plusieurs séries à la suite (ordre_series, défaut
+    naissance, mariage, deces, table ; [] = types ignorés, actes mêlés) : la section du bon type est trouvée
+    d'abord. date_cible : jour, mois ou année (première vue de la période).
+    Arrêts (arret) : localise (vues à lire recadrées), absent (dates lues encadrant la cible : registre négatif
+    journalisé avec les bornes examinées), budget (enquête bloquée, images épuisées, max_lectures) ; conclusion
+    = trouve | absent pour clore après lecture de l'acte.
+    enquete (recommandé) : enquête où le sondage est noté (lectures, historique, verdict ; source = ARK,
+    URL ou id du registre r1…) ; nb_vues et la période viennent de archives_naviguer. Sans enquete : passer
+    nb_vues, periode (« 1860-1869 ») et lectures (dans l'ordre fait), rien n'est noté."""
+    try:
+        if enquete:
+            plan = app().enquetes.sonder(enquete, source, date_cible, type_acte, lecture, conclusion, nb_vues,
+                                         periode or None, ordre_series, max_lectures)
+        else:
+            lus = [*(lectures or []), *([lecture] if lecture else [])]
+            plan = sondage.planifier(nb_vues, date_cible, lus, type_acte, periode or None, None, ordre_series)
+            if conclusion in ("trouve", "absent"):
+                plan.update(arret=conclusion, motif="Conclusion indiquée (sans enquete : rien n'est noté).")
+            elif not plan["arret"] and max_lectures and len(lus) >= max_lectures:
+                plan.update(arret="budget", motif=f"{max_lectures} lectures sans localiser la date.")
+            plan["source"] = source
+    except (EnqueteError, sondage.SondageError) as exc:
+        return {"erreur": str(exc)}
+    return _consigne_sondage(plan, enquete)
+
+
+def _consigne_sondage(plan: dict, enquete: str) -> dict:
+    """Action prête (outil et paramètres) et consigne de la suite d'un sondage."""
+    src, arret = plan.get("source", ""), plan.get("arret", "")
+    suite = {"enquete": enquete} if enquete else {}
+    rappel = ("puis archives_sonder(source, date_cible, type_acte, lecture={vue, date, date_fin, type}"
+              + (", enquete)" if enquete else ", lectures=[…toutes les lectures dans l'ordre…], nb_vues, periode)"))
+    if not arret:
+        v = plan["prochaine_vue"]
+        plan["action"] = {"outil": "archive_image",
+                          "parametres": {"source": src, "page": v, "largeur": 800, "gris": True, **suite}}
+        L, R = plan["bornes"]
+        if 2 <= R - L + 1 <= sondage.MAX_PLANCHE:
+            plan["alternative"] = {"outil": "archives_planche", "parametres": {
+                "source": src, "de": L, "a": R, "bandeau": "pct:0,0,100,35", **suite},
+                "motif": "Registre AD59 : une planche-contact des vues restantes au lieu d'une vue par lecture."}
+        plan["consigne"] = (f"Lire la vue {v} (action) : relever la date du premier acte (date), du dernier "
+                            f"(date_fin) et le type d'acte, {rappel}. Ne pas transcrire à ce stade.")
+    elif arret == "localise":
+        vues = plan["vues"]
+        plan["action"] = {"outil": "archive_image", "parametres": {
+            "source": src, "page": vues[0], "largeur": 1600, "gris": True, **suite}}
+        plan["consigne"] = (f"Date cible localisée : vue(s) {vues}. Lire l'acte (recadrer region pct:x,y,l,h), puis "
+                            "archives_sonder(…, conclusion='trouve' ou 'absent', lecture={vue, …}) ; acte trouvé : "
+                            "piece_archiver puis transcription.")
+    elif arret == "absent":
+        plan["consigne"] = ("Acte absent des bornes examinées" + (" (négatif journalisé dans l'enquête)" if enquete
+                                                                 else " : le tracer au journal (journal_ajouter)")
+                            + ". Prochaine source : autre registre (année voisine, commune voisine, tables "
+                            "décennales) ou consultation sur place.")
+    elif arret == "budget":
+        plan["consigne"] = ("Arrêt : " + plan.get("motif", "budget") + " Rendre compte à l'utilisateur ; ne pas "
+                            "continuer le sondage sans son accord.")
+    elif arret == "trouve":
+        plan["consigne"] = "Acte trouvé : piece_archiver, transcription, puis arbre_proposer avec la citation."
+    return plan
 
 
 def _naviguer(a: App, source: str, page: int, pas: int, params: dict) -> tuple[dict | None, dict | None]:
@@ -1618,6 +1737,7 @@ def piece_archiver(source: str, page: int = 0, personnes: list[str] | None = Non
            "operations_suggerees": [{"op": "ajouter_media", "ref": "piece", "fichier": ref,
                                      "format": archivage.MIME.get(ext, ""), "titre": dest.stem, "lier_a": ids}],
            "citation_suggeree": citation,
+           **({"archives": r} if (r := pieces.rattachement_archives(type_piece, cote)) else {}),
            "suite": "Proposer via arbre_proposer : ajouter_media, puis ajouter_citation sur le fait prouvé "
                     "(cible evenement uid) avec citation_suggeree."}
     alertes = []
@@ -1721,7 +1841,8 @@ def piece_nommer(personnes: list[str], commune: str = "", depot: str = "", type_
     NOM Prénom[ + NOM Prénom] -- COMMUNE - DÉPÔT - TYPE [AAAA-AAAA] - cote - p.vue n.acte.ext
     personnes : « NOM Prénom » ou identifiants de l'arbre (I12). type_piece : N, B, M, D, S, NMD, BMS, TD, RM,
     ANMT, PM, NOT (acte notarié ; libellé libre après le code : « NOT testament »), CNI, COUR (courrier), REC,
-    SIGN, PHOTO… source (S3) : complète dépôt (sigle) et cote depuis l'arbre. Ne renomme rien."""
+    SIGN, PHOTO… source (S3) : complète dépôt (sigle) et cote depuis l'arbre. Pour NOT, archives indique le type
+    d'archives « notaire » et l'état de la cote (sous-série 3 E acceptée, à compléter ou hors 3 E). Ne renomme rien."""
     try:
         noms = [_person_label(p) for p in personnes]
         if source:
@@ -1734,7 +1855,10 @@ def piece_nommer(personnes: list[str], commune: str = "", depot: str = "", type_
     except (pieces.PieceError, KeyError) as exc:
         return {"erreur": f"{exc}"}
     info = pieces.detecter(Path(nom))
-    return {"nom": nom, "dossier_convention": pieces.destination(info) or pieces.A_TRIER, "lecture": pieces.lire_nom(nom)}
+    out = {"nom": nom, "dossier_convention": pieces.destination(info) or pieces.A_TRIER, "lecture": pieces.lire_nom(nom)}
+    if archives := pieces.rattachement_archives(type_piece, cote):
+        out["archives"] = archives
+    return out
 
 
 def _dossier(dossier: str) -> Path:
@@ -1911,8 +2035,9 @@ def enquete_noter(enquete: str, piste: dict | None = None, registre: dict | None
     piste : {id?, question, hypotheses: [..], sources: [texte | {libelle, outil, parametres}] dans l'ordre,
       sources_faites: [libelle], statut: a_faire|en_cours|trouve|negatif|bloque|manuel, note, journal?}.
     registre : {id? | source (ARK, URL de visionneuse ou manifeste) | cote, service, titre, piste, nb_vues,
-      bornes: [de, a], vues_lues: [n | [de, a]], lectures: [{vue, date, type, numero, note}], verdict, statut}.
-    tache (manuelle, pour l'utilisateur) : {id?, description, service, piste, statut: a_faire|faite|abandonnee}.
+      bornes: [de, a], vues_lues: [n | [de, a]], lectures: [{vue, date, date_fin, type, numero, note}], verdict, statut}.
+    tache (manuelle, pour l'utilisateur) : {id?, description, service, piste, url, statut: a_faire|faite|abandonnee}
+      (un défi anti-robot rencontré avec enquete=<id> en crée une d'office).
     requete (faite hors outil suivi, ex. Geneanet) : {outil, parametres, resultat: positif|negatif|erreur|manuel,
       resume, journal?, piste}.
     statut : ouverte | bloque | close. budget : limites à modifier ({requetes_par_hote, images}, 0 = illimité) ; relever un budget épuisé débloque l'enquête (avec l'accord de l'utilisateur).
@@ -2069,8 +2194,10 @@ def marqueurs_migrer_appliquer(jeton: str) -> dict:
 def cache_purger(source: str = "") -> dict:
     """Vide le cache SQLite des réponses (tout si source est vide, sinon une catégorie). Catégories : matchid,
     wikitree, gallica, wikidata, geo, cog, archives, ark, iiif, visionneuse ; echec (échecs mémorisés sans
-    source) ; coupe_circuit (lève la pause de tous les hôtes mis en pause après un défi anti-robot, durée
-    GENEALOGISTE_COUPE_CIRCUIT, pour permettre un nouvel essai explicite) ; ralentissement (rétablit le rythme
+    source) ; coupe_circuit (lève la pause des hôtes mis en pause après un défi anti-robot, durée
+    GENEALOGISTE_COUPE_CIRCUIT, et l'exclusion d'un défi persistant, GENEALOGISTE_EXCLUSION_ANTIROBOT, pour
+    permettre un nouvel essai explicite) ; antirobot (oublie les défis observés, exposés par archives_service
+    sous defi_observe ; une purge complète les conserve) ; ralentissement (rétablit le rythme
     normal des hôtes ralentis pour la journée après 429/502/503/504 ; jamais levé par une purge complète). Les
     échecs mémorisés d'une source partent avec elle ; un nom inconnu ne supprime rien. Purge aussi les entrées expirées et applique les plafonds
     de taille : GENEALOGISTE_CACHE_MAX_MO au cache SQLite (plus anciennes entrées d'abord) et

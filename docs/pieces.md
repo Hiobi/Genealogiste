@@ -65,6 +65,27 @@ Sans patronyme ou sans type reconnu, la pièce va dans `_À trier/` en attendant
 segment : `type_piece="NOT testament"` donne `DUPONT Jean -- ERRE - Étude Leroy - NOT TESTAMENT [1850].pdf`
 (le segment type est en capitales), l'étude se place dans le segment dépôt. Le classement ne lit que le code.
 
+**Actes notariés et série 3 E (#223).** Le code `NOT` est relié au type d'archives `notaire` du vocabulaire
+commun ([archives.md](archives.md#types-de-documents-communs--129)), dont la série indicative est la sous-série
+3 E des archives départementales (minutes notariales, classées par étude ; les répertoires du notaire
+localisent l'acte). Pour une pièce `NOT`, `piece_nommer` et `piece_archiver` renvoient un bloc `archives` :
+`type_document` (`notaire`), `serie` (texte du vocabulaire), `cote` et une `consigne` :
+
+| `cote` | Situation | Effet |
+|---|---|---|
+| `serie_3e` | la cote commence par `3 E` ou `3E` (`3 E 52/123`, `3E 1234`) | acceptée telle quelle |
+| `a_completer` | aucune cote | suggestion : chercher la cote `3 E <étude>/<article>` dans l'inventaire du service |
+| `hors_3e` | autre cote | conservée telle quelle, jamais refusée : vérifier le classement du service |
+
+La suggestion porte sur le cadre de classement des archives départementales, pas sur un service donné :
+la forme exacte de la cote (numéro d'étude, article) dépend de l'inventaire. Des minutes peuvent être
+conservées ailleurs ; le référentiel signale par exemple le Minutier central des notaires de Paris aux
+Archives nationales (entrée `AN`). Aucune autre exception n'est déduite.
+
+Dans un nom à la convention sans segment type, une cote 3 E suffit à reconnaître un acte notarié :
+`DUPONT Jean -- ERRE - AD59 - 3 E 1234.pdf` est lu `NOT` et classé dans `documents/Notaires/DUPONT/`. Un type
+explicite prime toujours (`… - M [1850] - 3 E 1234` reste `M`).
+
 **Détection depuis un nom libre** (premier motif trouvé). Un nom à la convention est lu par son code ;
 sinon les mots du nom sont essayés dans cet ordre :
 

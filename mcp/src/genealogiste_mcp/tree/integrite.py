@@ -90,9 +90,15 @@ def dangling(tree: Tree) -> list[str]:
             chk(fid, "média", m, tree.medias)
         for a in (a for e in f.evenements for a in e.associations):
             chk(fid, "personne", a.personne, tree.personnes)
+    for owner in [*tree.personnes.values(), *tree.familles.values()]:
+        for e in owner.evenements:
+            for m in e.medias:
+                chk(owner.id, "média", m, tree.medias)
     for sid, s in tree.sources.items():
         chk(sid, "dépôt", s.depot, tree.depots)
         chk(sid, "source", s.original, tree.sources)
+        for m in s.medias:
+            chk(sid, "média", m, tree.medias)
     owners = [*tree.personnes.values(), *tree.familles.values(), *tree.medias.values()]
     for o in owners:
         for c in iter_citations(o):
