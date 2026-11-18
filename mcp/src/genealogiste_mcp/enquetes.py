@@ -23,7 +23,7 @@ import re
 from datetime import UTC, datetime
 from pathlib import Path
 
-from . import ark, outils
+from . import ark, outils, sondage
 from .budget import LIMITES, RETIREES, BudgetEpuise
 from .fichiers import ecrire_atomique, verrou
 from .journal import Journal
@@ -41,6 +41,7 @@ OUTILS_SUIVIS = ("recherche_multi", "archives_naviguer", "archive_image")
 SOURCES_MULTI = ("matchid", "wikitree", "wikidata", "gallica")
 _ID = re.compile(r"^[a-z0-9][a-z0-9_-]{0,79}$")
 PAS_DEFAUT = 20
+MAX_LECTURES_SONDAGE = 15  # lectures d'un sondage guidé avant l'arrêt (#156)
 
 
 class EnqueteError(ValueError):
@@ -307,6 +308,25 @@ class Enquetes:
             self._crees = []
         return out
 
+    def tache_blocage(self, eid: str, service: str, url: str, protection: str = "", journal: str = "") -> dict:
+        """Défi anti-robot rencontré pendant l'enquête (#150) : tâche manuelle « à faire » pour l'utilisateur
+        (lien exact, ce qu'il faut relever), une seule par URL bloquée tant qu'elle reste à faire."""
+        with verrou(self.data_dir, VERROU):
+            e = self._charger(eid)
+            taches = e.setdefault("taches_manuelles", [])
+            t = next((x for x in taches if x.get("statut") == "a_faire" and url and x.get("url") == url), None)
+            if t is None:
+                t = self._tache(e, {
+                    "description": (f"Défi anti-robot{f' {protection}' if protection else ''} sur {service} : ouvrir "
+                                    f"{url or 'le service'} depuis un accès autorisé et relever cote, registre, "
+                                    "vue et provenance (ou télécharger la vue) ; reprendre avec source_collee, "
+                                    "piece_archiver ou media_enregistrer."),
+                    "service": service, "url": url})
+                if journal:
+                    t["journal"] = [journal]
+                self._ecrire(e)
+        return t
+
     @staticmethod
     def _nouvel_id(items: list[dict], prefixe: str) -> str:
         n = 1
@@ -391,6 +411,8 @@ class Enquetes:
         for k in ("service", "cote", "titre", "piste", "verdict"):
             if d.get(k):
                 r[k] = d[k]
+        if d.get("periode"):
+            r["periode"] = list(d["periode"]) if isinstance(d["periode"], list | tuple) else d["periode"]
         if not r.get("source") and (d.get("source") or d.get("ark")):
             r["source"] = d.get("source") or d.get("ark")
             r["cle"] = cle_source(r["source"])
@@ -403,7 +425,8 @@ class Enquetes:
         for lec in d.get("lectures") or []:
             if not isinstance(lec, dict) or not lec.get("vue"):
                 raise EnqueteError(f"Lecture invalide : {lec!r} ({{vue, date, type, numero, note}}).")
-            lecture = {k: lec[k] for k in ("vue", "date", "type", "numero", "note") if lec.get(k) not in (None, "")}
+            lecture = {k: lec[k] for k in ("vue", "date", "date_fin", "type", "numero", "note")
+                       if lec.get(k) not in (None, "")}
             lecture["vue"] = int(lecture["vue"])
             r["lectures"] = [x for x in r["lectures"] if not (x["vue"] == lecture["vue"]
                                                                and x.get("numero") == lecture.get("numero"))]
@@ -437,7 +460,7 @@ class Enquetes:
             t = {"id": d.get("id") or self._nouvel_id(taches, "t"), "description": "", "service": "", "piste": "",
                  "statut": "a_faire", "creee": maintenant()}
             taches.append(t)
-        for k in ("description", "service", "piste", "resultat"):
+        for k in ("description", "service", "piste", "resultat", "url"):
             if d.get(k):
                 t[k] = d[k]
         if "statut" in d:
@@ -477,7 +500,8 @@ class Enquetes:
     # -- appels des outils réseau (paramètre enquete=…)
     def enregistrer(self, eid: str, outil: str, parametres: dict, resultat: str, journal: list[str] | None = None,
                     fenetre: list[int] | None = None, nb_vues: int | None = None, vue_lue: int | None = None,
-                    registre: str = "", titre: str = "", cote: str = "", appel: dict | None = None) -> None:
+                    registre: str = "", titre: str = "", cote: str = "", appel: dict | None = None,
+                    periode=None) -> None:
         """Note une demande faite par un outil réseau (et, pour une image, la vue consultée). appel : paramètres
         de l'appel tels que reçus ; une demande refusée faute de budget et désormais faite sort du reste à faire."""
         with verrou(self.data_dir, VERROU):
@@ -492,7 +516,7 @@ class Enquetes:
                                           and (x.get("cle") in faites
                                                or cle_requete(outil, x.get("parametres") or {}) in faites))]
             if registre:
-                d = {"source": registre, "titre": titre, "cote": cote, "nb_vues": nb_vues}
+                d = {"source": registre, "titre": titre, "cote": cote, "nb_vues": nb_vues, "periode": periode}
                 if vue_lue:
                     d["vues_lues"] = [vue_lue]
                 r = self._trouver_registre(e, d)
@@ -739,6 +763,104 @@ class Enquetes:
                     "motif": f"Fenêtre déjà parcourue ; vue {de} pas encore lue."}
         return {**base, "outil": "archives_naviguer", "parametres": params,
                 "motif": f"Vues {de}-{a} restantes."}
+
+    # -- sondage guidé d'un registre (#156)
+    def sonder(self, eid: str, source: str, date_cible: str, type_acte: str = "", lecture: dict | None = None,
+               conclusion: str = "", nb_vues: int = 0, periode=None, ordre_series: list[str] | None = None,
+               max_lectures: int = MAX_LECTURES_SONDAGE) -> dict:
+        """Note la lecture d'une vue dans le registre de l'enquête et propose la vue suivante (sondage.planifier).
+        Arrêts : localise ; trouve ou absent (conclusion, ou dates lues qui encadrent la cible : registre négatif
+        journalisé avec les bornes examinées) ; budget (enquête bloquée, images épuisées, max_lectures)."""
+        if conclusion not in ("", "trouve", "absent"):
+            raise EnqueteError("conclusion : trouve | absent (vide pendant le sondage).")
+        sondage.intervalle_date(date_cible, "date_cible")  # refus avant toute écriture
+        sondage.intervalle_periode(periode)
+        if lecture:
+            sondage.lecture(lecture)
+        with verrou(self.data_dir, VERROU):
+            self._crees = []
+            e = self._charger(eid)
+            r = (next((x for x in e.setdefault("registres", []) if x["id"] == source), None)
+                 or self._trouver_registre(e, {"source": source}))
+            maj = {"nb_vues": nb_vues, "periode": periode}
+            r = self._registre(e, {"id": r["id"], **maj} if r else {"source": source, **maj})
+            if lecture and r.get("nb_vues") and int(lecture["vue"]) > r["nb_vues"]:
+                raise EnqueteError(f"Vue {lecture['vue']} au-delà des {r['nb_vues']} vues du registre.")
+            typ = sondage.type_canonique(type_acte)
+            s = next((x for x in r.setdefault("sondages", [])
+                      if x.get("cible") == date_cible.strip() and x.get("type_acte") == typ), None)
+            if s is None:
+                s = {"cible": date_cible.strip(), "type_acte": typ, "historique": [], "statut": "en_cours",
+                     "debut": maintenant()}
+                r["sondages"].append(s)
+            if ordre_series is not None:
+                s["ordre_series"] = list(ordre_series)
+            if lecture:
+                self._registre(e, {"id": r["id"], "lectures": [lecture]})
+                vue = int(lecture["vue"])
+                s["historique"] = [v for v in s["historique"] if v != vue] + [vue]
+            avert: list[str] = []
+            per = r.get("periode")
+            try:
+                sondage.intervalle_periode(per)
+            except sondage.SondageError as exc:  # période notée illisible : sondage sans interpolation initiale
+                avert.append(f"Période du registre ignorée : {exc}")
+                per = None
+            plan = sondage.planifier(r.get("nb_vues") or 0, s["cible"], self._lectures_sondage(r, s, avert), typ,
+                                     per, r.get("bornes"), s.get("ordre_series"))
+            plan["avertissements"] = avert + plan["avertissements"]
+            if conclusion:
+                vues = [int(lecture["vue"])] if lecture else plan.get("vues") or plan["bornes"]
+                plan["arret"] = conclusion
+                plan["motif"] = f"Conclusion notée : acte {'trouvé' if conclusion == 'trouve' else 'absent'} (vues {vues})."
+            arret = plan.get("arret", "")
+            if arret in ("trouve", "absent"):
+                statut = "trouve" if arret == "trouve" else "negatif"
+                verdict = (f"Sondage {s['cible']}{' (' + typ + ')' if typ else ''} : "
+                           + ("acte trouvé" if arret == "trouve" else "absent")
+                           + f", bornes examinées {plan.get('encadrement') or plan['bornes']}, {len(s['historique'])} lecture(s) "
+                           f"(vues {s['historique']}). {plan['motif']}")
+                s["statut"], s["fin"] = statut, maintenant()
+                self._registre(e, {"id": r["id"], "verdict": verdict, "statut": statut})
+                if statut == "negatif":
+                    s["journal"] = list(r.get("journal", []))
+            elif not arret and (limite := self._arret_budget(e, s, max_lectures)):
+                plan.update(arret="budget", motif=limite)
+            plan.update(sondage={"historique": s["historique"], "statut": s["statut"]}, registre=r["id"],
+                        source=r.get("source", ""), journal_cree=list(self._crees), budget=self.etat_budget(e))
+            self._ecrire(e)
+            self._crees = []
+        return plan
+
+    @staticmethod
+    def _lectures_sondage(r: dict, s: dict, avert: list[str]) -> list[dict]:
+        """Lectures du registre dans l'ordre utile : celles d'avant le sondage (par vue), puis celles du sondage
+        dans l'ordre où elles ont été faites. Une lecture ancienne illisible est ignorée (avertissement)."""
+        hist = s.get("historique", [])
+        avant = [x for x in r.get("lectures", []) if x["vue"] not in hist]
+        pendant = [x for v in hist for x in r.get("lectures", []) if x["vue"] == v]
+        out = []
+        for x in avant + pendant:
+            if not (x.get("date") or x.get("type")):
+                continue
+            try:
+                sondage.lecture(x)
+            except sondage.SondageError as exc:
+                avert.append(f"Lecture ignorée : {exc}")
+                continue
+            out.append(x)
+        return out
+
+    def _arret_budget(self, e: dict, s: dict, max_lectures: int) -> str:
+        if e.get("statut") == "bloque":
+            return f"Enquête bloquée : {(e.get('blocage') or {}).get('message', 'budget épuisé')}"
+        reste = self.etat_budget(e)["reste"]["images"]
+        if reste != "illimite" and reste <= 0:
+            return "Budget d'images de l'enquête épuisé : rendre compte ; le relever seulement avec l'accord de l'utilisateur."
+        if max_lectures and len(s.get("historique", [])) >= max_lectures:
+            return (f"{max_lectures} lectures sans localiser la date : vérifier les dates lues, le type d'acte et "
+                    "l'ordre des séries, ou consulter la table du registre.")
+        return ""
 
     # -- cohérence avec le journal
     def coherence(self, eid: str) -> list[str]:

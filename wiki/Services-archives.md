@@ -21,7 +21,10 @@ si affiché, nombre de vues. Pour une personne de l'arbre, ajouter son identifia
 la garde des vivants est appliquée avant toute requête ; cet identifiant n'est pas transmis aux archives.
 
 Types pris en charge : `N` (naissances), `M` (mariages), `D` (décès). `NMD` ou vide recherche sans filtre
-de type. Les tables décennales et les autres services conservent la recherche manuelle.
+de type. `TD` renvoie les tables décennales de la commune dont la période recoupe l'année demandée.
+Pour un intervalle, ajouter `annee_fin` (ex. `annee=1790, annee_fin=1802`, ou une décennie) : les
+registres dont la période recoupe l'intervalle sont renvoyés. Les autres services conservent la
+recherche manuelle.
 Chaque appel lit une seule page ; `page_suivante` indique comment continuer explicitement.
 
 Choisir un registre, puis utiliser `archives_naviguer(ark_registre)` pour chercher la vue et
@@ -30,7 +33,8 @@ que l'acte y figure. Une recherche vide est journalisée pour ce périmètre uni
 du format de la page est signalée comme erreur. En cas de protection, conserver la tâche manuelle et
 poursuivre les autres pistes : un défi anti-robot détecté renvoie une consigne (ouvrir la vue dans le
 navigateur, fournir une capture ou l'image téléchargée) et met l'hôte en pause (coupe-circuit,
-`GENEALOGISTE_COUPE_CIRCUIT`) ; `cache_purger("coupe_circuit")` autorise un nouvel essai explicite. Le [contrat et le relevé technique](../docs/recherche-registres-ad59.md)
+`GENEALOGISTE_COUPE_CIRCUIT`) ; s'il persiste après la pause, le service est exclu quelques jours
+(`GENEALOGISTE_EXCLUSION_ANTIROBOT`). `cache_purger("coupe_circuit")` autorise un nouvel essai explicite. Le [contrat et le relevé technique](../docs/recherche-registres-ad59.md)
 précisent les limites observées.
 
 ## Choisir le lien à fournir

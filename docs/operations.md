@@ -129,17 +129,21 @@ privés, ou d'une personne masquée, sont retirées des exports.
 - `ark_resoudre(ark)` : service, URL canonique, repli `n2t.net`, disponibilité (HEAD ; repli GET sans lire le
   corps si HEAD renvoie 405 ou 501), manifeste IIIF, citation
   suggérée. NAAN inconnu : registre public de l'ARK Alliance (cache 30 jours).
-- `archives_registres(service, commune, annee, type_acte, page, personne)` localise un registre AD59
+- `archives_registres(service, commune, annee, type_acte, page, personne, annee_fin)` localise un registre AD59
   sans ARK initial : cote, ARK, titre, bornes et nombre de vues seulement lorsqu'ils sont affichés par
-  le service. Types `N`, `M`, `D` ; `NMD` ou vide = aucun filtre. Une page de résultats par appel,
+  le service. Types `N`, `M`, `D` ; `NMD` ou vide = aucun filtre ; `TD` = tables décennales recoupant la
+  période. `annee_fin` (≥ `annee`) demande un intervalle. Une page de résultats par appel,
   puis `page_suivante` pour poursuivre explicitement. Un résultat vide est journalisé sans en déduire
-  l'absence de l'acte. Les autres services et les tables décennales gardent le parcours manuel.
+  l'absence de l'acte. Les autres services gardent le parcours manuel.
 - `archive_image(source, page, region, largeur, gris, details)` accepte un lien IIIF (Image API, `info.json`,
   manifeste v2/v3, tous pays), un ARK Gallica, un lien de visionneuse AD59, une image directe ou un fichier.
   Pour AD59 : ARK de vue complet, ou ARK du registre + `page=N` (vues à partir de 1). Les deux outils
   `archive_image` et `piece_archiver` partagent la même résolution ; IIIF est utilisé dès qu'il est annoncé.
   Un PDF (local ou téléchargé) est rendu page par page (`page=N`, à partir de 1) ; pour un PDF dactylographié
   ou imprimé, `pdf_markdown(chemin)` est bien plus économe (voir `docs/pieces.md`).
+- `archives_sonder(source, date_cible, type_acte, lecture, conclusion, enquete)` (#156) : sondage guidé, sans
+  réseau : propose la vue à lire, le modèle renvoie la date lue, l'outil resserre les bornes (interpolation
+  puis dichotomie ; section du bon type d'abord dans un registre à plusieurs séries). Voir `docs/archives.md`.
 - `archives_planche(source, de, a, pas, bandeau, largeur, gris, miniatures)` (#124) : **une** image composite de
   4 à 12 vues d'un registre AD59, numéro de vue incrusté, composée en local (Pillow), pour repérer un acte sans
   lire une image par vue. `pas` : sondage large (une vue sur N), puis planche fine ; `bandeau` (`pct:x,y,l,h`,

@@ -64,6 +64,9 @@ OUTILS: dict[str, tuple[str, str]] = {  # nom -> (effet, classe)
     "archives_naviguer": (RESEAU, COLLECTE),
     "archives_registres": (RESEAU, COLLECTE),
     "archives_planche": (RESEAU, COLLECTE),  # écrit une planche dans le cache d'images, comme archive_image
+    # sondage guidé (#156) : sans réseau ; avec enquete, note lectures, historique et verdict dans l'état
+    # d'enquête (registre négatif : entrée de journal), jamais le budget ni la réouverture
+    "archives_sonder": (ECRITURE, COLLECTE),
     "source_collee": (JOURNAL, LECTURE),
     "diagnostic": (RESEAU, COLLECTE),  # contrôles locaux + une requête GET par source, sans donnée de personne
     "familysearch_exporter": (IDENTIFIANTS, ECRITURE),
@@ -307,7 +310,7 @@ IDENTITE_REQUETE: dict[str, dict[str, tuple[str, object]]] = {
                     "departement": (EXACT, ""), "limite": (ENTIER, 10)},
     "geo_historique": {"nom": (TEXTE, ""), "code_insee": (EXACT, ""), "departement": (EXACT, "")},
     "archives_registres": {"service": (EXACT, ""), "commune": (TEXTE, ""), "annee": (ENTIER, 0),
-                           "type_acte": (EXACT, ""), "page": (ENTIER, 1)},
+                           "type_acte": (EXACT, ""), "page": (ENTIER, 1), "annee_fin": (ENTIER, 0)},
     "archives_planche": {"source": (EXACT, ""), "de": (ENTIER, 0), "a": (ENTIER, 0), "pas": (ENTIER, 1),
                          "bandeau": (EXACT, ""), "largeur": (ENTIER, 1200), "gris": (BOOLEEN, True),
                          "miniatures": (BOOLEEN, False)},

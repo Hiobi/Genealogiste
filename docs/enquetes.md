@@ -26,8 +26,8 @@ notée.
 |---|---|
 | enquête | `id` (stable, minuscules, chiffres, `-`, `_`), `sujet`, `personnes` (ids de l'arbre), `statut` (`ouverte` / `bloque` / `close`) |
 | piste | `id` (`p1`…), `question`, `hypotheses`, `sources` à consulter dans l'ordre (`{libelle, outil, parametres, fait}`), `statut`, `note`, `journal` |
-| registre | `id` (`r1`…), `source` (ARK, URL de visionneuse ou manifeste), `cle` (ARK du registre sans vue), `service`, `cote`, `titre`, `piste`, `nb_vues`, `bornes` `[de, a]`, `vues_lues` (intervalles fusionnés), `lectures` (`{vue, date, type, numero, note}`), `verdict`, `statut`, `journal` |
-| tâche manuelle | `id` (`t1`…), `description`, `service`, `piste`, `statut` (`a_faire` / `faite` / `abandonnee`) |
+| registre | `id` (`r1`…), `source` (ARK, URL de visionneuse ou manifeste), `cle` (ARK du registre sans vue), `service`, `cote`, `titre`, `piste`, `nb_vues`, `bornes` `[de, a]`, `vues_lues` (intervalles fusionnés), `lectures` (`{vue, date, date_fin, type, numero, note}`), `periode` (notée par `archives_naviguer`), `sondages` (`{cible, type_acte, historique, statut}`, #156), `verdict`, `statut`, `journal` |
+| tâche manuelle | `id` (`t1`…), `description`, `service`, `piste`, `url` (lien à ouvrir), `statut` (`a_faire` / `faite` / `abandonnee`) ; un défi anti-robot rencontré avec `enquete=<id>` en crée une d'office, une par URL bloquée (#150) |
 | requête faite | `outil`, `parametres`, `cle` normalisée, `date`, `resultat` (`positif` / `negatif` / `erreur` / `manuel`), `journal` |
 | budget | `budget` (limites), `consomme` (`requetes` par hôte, `images`), `blocage` (`motif`, `limite`, `date`, `message`), `reste_a_faire` (`outil`, `parametres`, `cle`, `date`, `limite`) |
 
@@ -42,6 +42,7 @@ ouvert sans action automatique.
 | `enquete_ouvrir(sujet, personnes, id, budget)` | crée l'enquête ; `id` dérivé du sujet si absent ; `budget` facultatif |
 | `enquete_noter(enquete, piste, registre, tache, requete, statut, personnes, budget)` | ajoute ou met à jour (par `id`, ou pour un registre par ARK/cote) ; `budget` modifie les limites |
 | `enquete_etat(enquete)` | état complet + `coherence_journal` ; sans argument : liste des enquêtes |
+| `archives_sonder(source, date_cible, type_acte, lecture, conclusion, enquete)` | sondage guidé d'un registre (#156) : note la lecture d'une vue et propose la suivante ; arrêt `localise`, `absent` (registre négatif journalisé avec les bornes examinées) ou `budget` ; voir `docs/archives.md` |
 | `enquete_reprendre(enquete)` | `a_faire` (outil et paramètres prêts, dans l'ordre ; d'abord le reste à faire refusé faute de budget), pistes ouvertes, registres en cours avec `vues_restantes`, tâches manuelles, `deja_fait`, `budget`, `blocage` |
 
 Ces outils sont locaux : lecture (`enquete_etat`, `enquete_reprendre`) ou trace au journal
@@ -150,7 +151,7 @@ bord retirés) ; entiers et booléens par valeur. La pagination fait partie de l
 | `wikidata_sparql` | `requete` (exacte : les littéraux SPARQL sont sensibles à la casse) |
 | `geo_commune` | `nom` (texte) ; exacts : `code_postal`, `code_insee`, `departement` ; `limite` |
 | `geo_historique` | `nom` (texte) ; exacts : `code_insee`, `departement` |
-| `archives_registres` | `service` (exact), `commune` (texte), `annee`, `type_acte` (exact), `page` |
+| `archives_registres` | `service` (exact), `commune` (texte), `annee`, `annee_fin`, `type_acte` (exact), `page` |
 | `archives_planche` | `source`, `de`, `a`, `pas`, `bandeau`, `largeur`, `gris`, `miniatures` (une planche plus fine ou recadrée est une autre demande) |
 
 Hors identité : `personne` (id local de l'arbre, jamais envoyé) et `enquete`. Le résultat noté est `negatif`
@@ -191,7 +192,9 @@ enquete_reprendre("naissance-de-jean-dupont")
 Exécuter `a_faire` dans l'ordre en passant `enquete=<id>` ; ne pas relancer `deja_fait`. Pour un registre,
 les vues restantes sont les bornes (ou `1..nb_vues`) moins les vues lues : une vue déjà listée par une
 navigation est proposée en `archive_image`, sinon la fenêtre suivante en `archives_naviguer`. Noter chaque
-lecture (`registre.lectures`), le verdict et les tâches manuelles avec `enquete_noter`.
+lecture (`registre.lectures`), le verdict et les tâches manuelles avec `enquete_noter`. Pour atteindre une
+date dans un registre chronologique, `archives_sonder(…, enquete=<id>)` reprend le sondage là où il s'était
+arrêté (même `date_cible` et `type_acte`) et propose la vue suivante.
 
 L'identifiant d'enquête est une chaîne simple et stable : il peut être repris tel quel comme « enquête
 d'origine » par d'autres fonctions (file de propositions).

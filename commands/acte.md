@@ -33,7 +33,9 @@ hors ligne) devient une tâche manuelle (`enquete_noter`), la conclusion est dé
    - Pour AD59, appeler `archives_registres(service="AD59", commune=…, annee=…, type_acte="N"|"M"|"D",
      personne=id)` : les cotes et ARK viennent du résultat officiel. Consulter les pages suivantes
      explicitement si nécessaire ; ne pas confondre registre trouvé et acte trouvé. `NMD` ou le type vide
-     recherche sans filtre de type ; les tables décennales ne sont pas qualifiées dans ce formulaire.
+     recherche sans filtre de type. `type_acte="TD"` renvoie les tables décennales dont la période recoupe
+     l'année ou l'intervalle (`annee_fin`) ; `annee_fin` recherche aussi les registres d'un intervalle
+     (ex. 1790-1802).
      Un résultat vide est une recherche négative sur ce périmètre, pas une preuve d'absence de l'acte.
    - Pour les autres services ou fonds non pris en charge, orienter vers la recherche du service
      (`liens_recherche`, `cotes_a_consulter` pour la cote
@@ -46,7 +48,10 @@ hors ligne) devient une tâche manuelle (`enquete_noter`), la conclusion est dé
 4. **Localiser la vue de l'acte** : `archives_naviguer(ark_registre, page=…)` pour parcourir les vues
    (ou la table décennale pour retrouver année et n° d'acte avant d'aller à l'acte). Pour un registre AD59
    chronologique, `archives_planche(ark_registre, de, a, pas, bandeau="pct:0,0,100,35")` : une seule image de
-   4 à 12 vues (sondage large puis fin) au lieu d'un aperçu par vue. Choisir la vue. Avec une enquête, passer
+   4 à 12 vues (sondage large puis fin) au lieu d'un aperçu par vue. Pour atteindre une date connue,
+   `archives_sonder(ark_registre, date_cible, type_acte, enquete=<id>)` propose la vue à lire ; après chaque
+   lecture, le rappeler avec `lecture={vue, date, date_fin, type}` jusqu'à `arret` (`localise` : lire l'acte
+   puis `conclusion="trouve"|"absent"` ; `absent` : négatif journalisé). Choisir la vue. Avec une enquête, passer
    `enquete=<id>` à chaque outil de collecte (`archives_naviguer`, `archives_planche`, `archive_image`,
    `piece_archiver`… : budget compté).
 5. **Lire, transcrire, archiver** : suivre `/genealogiste:transcris` — aperçu (`archive_image`, 800 px gris)
