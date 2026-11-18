@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from urllib.parse import urlencode
 
-from .. import archives
+from .. import archives, sites_tiers
 from ..fr_sources import SERIES, next_source_hint
 from ..normalize.dates import parse_date
 from ..normalize.places import DEPARTEMENTS, normalize_place
@@ -64,12 +64,27 @@ def search_links(nom: str, prenom: str = "", ne_vers: str = "", lieu: str = "", 
     if dy and dy >= 1970:
         add("matchID (décès INSEE)", "https://deces.matchid.io/search?" + urlencode({"q": f"{prenom} {nom}"}),
             "décès depuis 1970 — interrogeable directement par l'outil matchid_recherche")
+    tiers = sites_tiers_du_lieu(dep_code, y, dy, nom, prenom)
     return {
         "personne": f"{prenom} {nom}".strip(), "liens": links,
+        **({"sites_tiers": tiers, "sites_tiers_avertissement": sites_tiers.AVERTISSEMENT} if tiers else {}),
         "consigne": ("Ouvrir les liens dans le navigateur (session personnelle de l'utilisateur), "
                      "puis coller le résultat avec l'outil source_collee pour le tracer au journal. "
                      "Ne jamais contourner une authentification ni extraire en masse (CGU)."),
     }
+
+
+def sites_tiers_du_lieu(dep_code: str, annee_min: int | None = None, annee_max: int | None = None,
+                        nom: str = "", prenom: str = "") -> list[dict]:
+    """Sites tiers utiles pour un département (#181) : cercles et relevés dont la zone le couvre, puis réseaux
+    nationaux de relevés. Les bases thématiques passent par sources_catalogue (theme=...)."""
+    if not dep_code:
+        return []
+    fin = annee_max if annee_max is not None else (annee_min + 100 if annee_min is not None else None)
+    locaux = [s for s in sites_tiers.filtrer(dep_code, annee_min=annee_min, annee_max=fin, nationaux=False)
+              if s["type"] in ("cercle_departemental", "releves_benevoles", "arbre_collaboratif")]
+    nationaux = [s for s in sites_tiers.filtrer(type="releves_benevoles") if "FR" in s["zone"]]
+    return [sites_tiers.lien(s, nom, prenom) for s in locaux + nationaux]
 
 
 DOCS = {"BIRT": "naissance", "CHR": "naissance", "BAPM": "naissance", "MARR": "mariage", "DEAT": "deces",
@@ -88,5 +103,6 @@ def cote_suggestions(fait: str, date: str = "", lieu: str = "") -> dict:
         "service_archives": svc,
         "sources": next_source_hint(fait.upper(), date, lieu),
         "series": SERIES,
+        **({"sites_tiers": tiers} if (tiers := sites_tiers_du_lieu(dep_code or "", _year(date))) else {}),
         "avertissement": "Cotes typiques du cadre de classement : vérifier dans l'inventaire du service.",
     }

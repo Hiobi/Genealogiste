@@ -7,7 +7,7 @@ description: Connaissance des sources généalogiques françaises et de leur loc
 
 Toujours préciser : **type de source** (originale/dérivée), **service** (AD, mairie, SHD…),
 **cote typique** (cadre de classement, à vérifier dans l'inventaire), **communicabilité**, **accès en ligne**.
-Outils : `cotes_a_consulter`, `prochaine_source`, `liens_recherche`, `communicabilite`, `archives_service` (service réel : site, mise en ligne, NAAN ; docs/archives.md), `ark_resoudre`, `archives_registres`,
+Outils : `cotes_a_consulter`, `prochaine_source`, `liens_recherche`, `sources_catalogue` (tout ce que le plugin connaît, dont les sites tiers : cercles, relevés, bases thématiques), `communicabilite`, `archives_service` (service réel : site, mise en ligne, NAAN ; docs/archives.md), `ark_resoudre`, `archives_registres`,
 `archives_naviguer` (vues d'un registre), `archive_image` (lecture d'une vue), `piece_archiver` (conservation).
 Pour AD59, `archives_registres(service="AD59", commune=…, annee=…, type_acte="N"|"M"|"D", personne=id)`
 localise les registres depuis le résultat officiel. Une page par appel ; poursuivre explicitement avec

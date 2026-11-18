@@ -127,6 +127,8 @@ def test_rapport_et_code_sortie_sans_mutation(monkeypatch, capsys, status, heade
 
     monkeypatch.setattr(verifier.archives, "services", lambda: services)
     monkeypatch.setattr(verifier.archives, "validate", lambda: erreurs)
+    monkeypatch.setattr(verifier.sites_tiers, "sites", lambda: ())
+    monkeypatch.setattr(verifier.sites_tiers, "validate", lambda: [])
     monkeypatch.setattr(verifier.httpx, "Client", lambda **kwargs: creer_client(
         transport=httpx.MockTransport(repondre), **kwargs))
     assert verifier.main() == attendu
@@ -160,3 +162,26 @@ def test_redirections_get_sans_lire_les_corps_intermediaires(boucle):
         assert verifier.sonder(client, URL) == (("KO", "TooManyRedirects") if boucle else ("OK", "200"))
     assert len(appels) == (4 if boucle else 3)
     assert corps and all(stream.ferme for stream in corps)
+
+
+@pytest.mark.parametrize("protection,attendu", [("aucune", "OK"), ("cloudflare", "AVERT")])
+def test_sites_tiers_sondes_et_protection_signalee(monkeypatch, capsys, protection, attendu):
+    # #181 : chaque site tiers est sondé ; une protection relevée est signalée, jamais contournée.
+    creer_client = httpx.Client
+    appels = []
+
+    def repondre(request):
+        appels.append(request.method)
+        return httpx.Response(200)
+
+    monkeypatch.setattr(verifier.archives, "services", lambda: [])
+    monkeypatch.setattr(verifier.archives, "validate", lambda: [])
+    monkeypatch.setattr(verifier.sites_tiers, "validate", lambda: [])
+    monkeypatch.setattr(verifier.sites_tiers, "sites", lambda: (
+        {"code": "T1", "url": URL + "tiers", "protection": protection},))
+    monkeypatch.setattr(verifier.httpx, "Client", lambda **kwargs: creer_client(
+        transport=httpx.MockTransport(repondre), **kwargs))
+    assert verifier.main() == 0
+    ligne = next(x for x in capsys.readouterr().out.splitlines() if "T1" in x)
+    assert ligne.startswith(attendu) and "site_tiers" in ligne
+    assert appels == ["HEAD"]
