@@ -14,6 +14,18 @@ les restrictions d’accès d’un site et ne remplace pas la consultation d’u
 | Geneanet, Filae, archives, Mémoire des hommes | Liens et pistes de consultation selon le service ; pas de promesse d’extraction automatisée des pages protégées |
 | FamilySearch | Ancien exporteur désactivé ; importer un GEDCOM obtenu séparément, sans fournir d’identifiants au plugin |
 
+## Associations, relevés et bases thématiques
+
+Le plugin connaît aussi des **sites tiers** : cercles généalogiques (au moins un pour 73 départements, d’après
+l’annuaire de la FFG), réseaux de relevés bénévoles (GeneaBank, FranceGenWeb), bases thématiques (protestants,
+déportés, Français libres, émigrants vers le Québec…) et outils de lieux (Cassini, DicoTopo). Demander par
+exemple « quelles ressources pour le Finistère ? » ou « que connaît le plugin sur la Seconde Guerre mondiale ? »
+(`sources_catalogue`). `liens_recherche` ajoute ceux du département du lieu.
+
+Ces sites sont consultés **dans votre navigateur** : le plugin n’y fait aucune requête. Un relevé reste une
+source dérivée : noter la référence qu’il donne (commune, date, numéro), puis consulter l’acte original.
+Détails : [sites tiers](../docs/sites-tiers.md).
+
 ## Accès aux archives
 
 Le [référentiel](../docs/archives.md) identifie les services et des accès aux fonds. Les informations sont

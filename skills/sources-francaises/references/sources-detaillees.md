@@ -42,3 +42,11 @@
 - Archives départementales (état civil, BMS, matricules, recensements numérisés).
 - Gallica (presse, annuaires, bulletins), Retronews, FranceArchives (inventaires), Mémoire des hommes,
   Grand Mémorial, matchID (décès ≥ 1970), Geneanet/FamilySearch/WikiTree (arbres = composites).
+
+## Sites tiers (associations, relevés, bases thématiques)
+- Cercles départementaux et réseaux de relevés bénévoles (GeneaBank, FranceGenWeb, GenNPdC…) : relevés BMS/NMD,
+  contrats, notaires. **Source dérivée** : piste à confirmer sur l'acte original.
+- Bases thématiques : protestants (Refuge huguenot), déportés (Livre-Mémorial FMD), FFL, Maitron, émigrants vers le
+  Québec (Fichier Origine), prisonniers 14-18 (CICR) ; lieux : DicoTopo, Remonter le temps (IGN), Cassini (EHESS).
+- `sources_catalogue(departement=…, theme=…)` liste ces sites ; `liens_recherche` et `cotes_a_consulter` proposent
+  ceux du département. Référentiel : `docs/sites-tiers.md`.

@@ -60,6 +60,7 @@ OUTILS: dict[str, tuple[str, str]] = {  # nom -> (effet, classe)
     "recherche_multi": (RESEAU, COLLECTE),
     "liens_recherche": (LECTURE, LECTURE),
     "cotes_a_consulter": (LECTURE, LECTURE),
+    "sources_catalogue": (LECTURE, LECTURE),  # référentiels embarqués (archives, sites tiers, API)
     "archives_service": (LECTURE, LECTURE),  # référentiel embarqué
     "archives_naviguer": (RESEAU, COLLECTE),
     "archives_registres": (RESEAU, COLLECTE),
