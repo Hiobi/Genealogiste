@@ -218,6 +218,13 @@ Choix et justification du défaut : [securite.md](securite.md#plafond-journalier
 Pour une enquête, le budget (`docs/enquetes.md`) borne en plus les requêtes par hôte et les images lues, sur
 tous les outils de collecte appelés avec `enquete=<id>`.
 
+## Accès machine, CGU et limites publiées — #119
+
+[acces-machine-archives.md](acces-machine-archives.md) répertorie, au 2026-11-18, les API et accès machine
+des services (clé, licence, CGU, limites publiées, protections, `robots.txt`) et justifie chaque valeur
+sourcée de la politique d'accès. `intervalle_requetes` d'ANOM (5 s) reprend le `Crawl-delay` de son
+`robots.txt`, cité dans `references`.
+
 ## Localisation des registres AD59 — #121
 
 `archives_registres(service="AD59", commune="Saint-Vaast-en-Cambrésis", annee=1860, type_acte="N")`
