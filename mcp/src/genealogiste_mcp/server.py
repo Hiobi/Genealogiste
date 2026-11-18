@@ -24,6 +24,7 @@ from . import (
     outils,
     pieces,
     privacy,
+    sondage,
 )
 from . import pdf_markdown as pdf_md
 from .archives import communicability_online
@@ -762,7 +763,81 @@ def archives_naviguer(source: str, page: int = 0, pas: int = 20, enquete: str = 
     reg = res.get("registre") or {}
     return _suivi_enquete("archives_naviguer", params, res, enquete, fenetre, resultat="positif",
                           journal=[res["journal"]], registre=source, nb_vues=res.get("nb_vues"),
-                          titre=reg.get("titre") or "", cote=reg.get("cote") or "", appel=params)
+                          titre=reg.get("titre") or "", cote=reg.get("cote") or "", appel=params,
+                          periode=reg.get("periode"))
+
+
+@mcp.tool()
+def archives_sonder(source: str, date_cible: str, type_acte: str = "", lecture: dict | None = None,
+                    conclusion: str = "", enquete: str = "", nb_vues: int = 0, periode: str = "",
+                    lectures: list[dict] | None = None, ordre_series: list[str] | None = None,
+                    max_lectures: int = 15) -> dict:
+    """Sondage guidé d'un registre chronologique : quelle vue lire pour atteindre date_cible, sans tâtonner.
+    Aucun réseau : le modèle lit la vue proposée (action : archive_image), puis rappelle archives_sonder avec
+    lecture={vue, date, date_fin?, type?} (date = premier acte de la vue, date_fin = dernier acte, type =
+    naissance|mariage|deces|table) ; l'outil resserre les bornes et propose la vue suivante : interpolation
+    sur la période et les dates lues, puis dichotomie si l'interpolation n'a pas divisé l'intervalle par deux.
+    type_acte (naissance, mariage, deces) : registre à plusieurs séries à la suite (ordre_series, défaut
+    naissance, mariage, deces, table ; [] = types ignorés, actes mêlés) : la section du bon type est trouvée
+    d'abord. date_cible : jour, mois ou année (première vue de la période).
+    Arrêts (arret) : localise (vues à lire recadrées), absent (dates lues encadrant la cible : registre négatif
+    journalisé avec les bornes examinées), budget (enquête bloquée, images épuisées, max_lectures) ; conclusion
+    = trouve | absent pour clore après lecture de l'acte.
+    enquete (recommandé) : enquête où le sondage est noté (lectures, historique, verdict ; source = ARK,
+    URL ou id du registre r1…) ; nb_vues et la période viennent de archives_naviguer. Sans enquete : passer
+    nb_vues, periode (« 1860-1869 ») et lectures (dans l'ordre fait), rien n'est noté."""
+    try:
+        if enquete:
+            plan = app().enquetes.sonder(enquete, source, date_cible, type_acte, lecture, conclusion, nb_vues,
+                                         periode or None, ordre_series, max_lectures)
+        else:
+            lus = [*(lectures or []), *([lecture] if lecture else [])]
+            plan = sondage.planifier(nb_vues, date_cible, lus, type_acte, periode or None, None, ordre_series)
+            if conclusion in ("trouve", "absent"):
+                plan.update(arret=conclusion, motif="Conclusion indiquée (sans enquete : rien n'est noté).")
+            elif not plan["arret"] and max_lectures and len(lus) >= max_lectures:
+                plan.update(arret="budget", motif=f"{max_lectures} lectures sans localiser la date.")
+            plan["source"] = source
+    except (EnqueteError, sondage.SondageError) as exc:
+        return {"erreur": str(exc)}
+    return _consigne_sondage(plan, enquete)
+
+
+def _consigne_sondage(plan: dict, enquete: str) -> dict:
+    """Action prête (outil et paramètres) et consigne de la suite d'un sondage."""
+    src, arret = plan.get("source", ""), plan.get("arret", "")
+    suite = {"enquete": enquete} if enquete else {}
+    rappel = ("puis archives_sonder(source, date_cible, type_acte, lecture={vue, date, date_fin, type}"
+              + (", enquete)" if enquete else ", lectures=[…toutes les lectures dans l'ordre…], nb_vues, periode)"))
+    if not arret:
+        v = plan["prochaine_vue"]
+        plan["action"] = {"outil": "archive_image",
+                          "parametres": {"source": src, "page": v, "largeur": 800, "gris": True, **suite}}
+        L, R = plan["bornes"]
+        if 2 <= R - L + 1 <= sondage.MAX_PLANCHE:
+            plan["alternative"] = {"outil": "archives_planche", "parametres": {
+                "source": src, "de": L, "a": R, "bandeau": "pct:0,0,100,35", **suite},
+                "motif": "Registre AD59 : une planche-contact des vues restantes au lieu d'une vue par lecture."}
+        plan["consigne"] = (f"Lire la vue {v} (action) : relever la date du premier acte (date), du dernier "
+                            f"(date_fin) et le type d'acte, {rappel}. Ne pas transcrire à ce stade.")
+    elif arret == "localise":
+        vues = plan["vues"]
+        plan["action"] = {"outil": "archive_image", "parametres": {
+            "source": src, "page": vues[0], "largeur": 1600, "gris": True, **suite}}
+        plan["consigne"] = (f"Date cible localisée : vue(s) {vues}. Lire l'acte (recadrer region pct:x,y,l,h), puis "
+                            "archives_sonder(…, conclusion='trouve' ou 'absent', lecture={vue, …}) ; acte trouvé : "
+                            "piece_archiver puis transcription.")
+    elif arret == "absent":
+        plan["consigne"] = ("Acte absent des bornes examinées" + (" (négatif journalisé dans l'enquête)" if enquete
+                                                                 else " : le tracer au journal (journal_ajouter)")
+                            + ". Prochaine source : autre registre (année voisine, commune voisine, tables "
+                            "décennales) ou consultation sur place.")
+    elif arret == "budget":
+        plan["consigne"] = ("Arrêt : " + plan.get("motif", "budget") + " Rendre compte à l'utilisateur ; ne pas "
+                            "continuer le sondage sans son accord.")
+    elif arret == "trouve":
+        plan["consigne"] = "Acte trouvé : piece_archiver, transcription, puis arbre_proposer avec la citation."
+    return plan
 
 
 def _naviguer(a: App, source: str, page: int, pas: int, params: dict) -> tuple[dict | None, dict | None]:
@@ -1906,7 +1981,7 @@ def enquete_noter(enquete: str, piste: dict | None = None, registre: dict | None
     piste : {id?, question, hypotheses: [..], sources: [texte | {libelle, outil, parametres}] dans l'ordre,
       sources_faites: [libelle], statut: a_faire|en_cours|trouve|negatif|bloque|manuel, note, journal?}.
     registre : {id? | source (ARK, URL de visionneuse ou manifeste) | cote, service, titre, piste, nb_vues,
-      bornes: [de, a], vues_lues: [n | [de, a]], lectures: [{vue, date, type, numero, note}], verdict, statut}.
+      bornes: [de, a], vues_lues: [n | [de, a]], lectures: [{vue, date, date_fin, type, numero, note}], verdict, statut}.
     tache (manuelle, pour l'utilisateur) : {id?, description, service, piste, statut: a_faire|faite|abandonnee}.
     requete (faite hors outil suivi, ex. Geneanet) : {outil, parametres, resultat: positif|negatif|erreur|manuel,
       resume, journal?, piste}.

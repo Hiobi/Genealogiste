@@ -223,7 +223,36 @@ tous les outils de collecte appelés avec `enquete=<id>`.
 `archives_registres(service="AD59", commune="Saint-Vaast-en-Cambrésis", annee=1860, type_acte="N")`
 interroge la recherche publique pour obtenir la cote et l'ARK du registre, sans navigateur ni ARK initial.
 Une seule page par appel, avec cache ; les pages suivantes sont demandées explicitement. Le serveur
-ne cherche pas encore la vue contenant l'acte : poursuivre avec `archives_naviguer`.
+ne cherche pas la vue contenant l'acte : poursuivre avec `archives_naviguer`, puis `archives_sonder`.
+
+## Sondage guidé d'un registre — #156
+
+`archives_sonder(source, date_cible, type_acte, lecture, conclusion, enquete)` remplace le tâtonnement
+dans un registre chronologique : l'outil propose la vue à lire, le modèle la lit (`archive_image`, 800 px)
+et renvoie ce qu'il y a lu, l'outil resserre les bornes et propose la vue suivante. Aucun réseau, aucune
+image : l'outil ne fait que calculer (`sondage.py`) et, avec `enquete`, noter.
+
+- **Lecture** : `{vue, date, date_fin?, type?}` ; `date` = premier acte de la vue (haut de page),
+  `date_fin` = dernier acte (resserre d'une vue de plus), `type` = `naissance`, `mariage`, `deces`, `table`
+  (alias N/B/baptême, M, D/S/sépulture, T). Dates ISO, françaises (« 14 mars 1862 ») ou républicaines.
+- **Méthode** : interpolation sur la période du registre (`periode`, notée par `archives_naviguer`) et les
+  dates déjà lues, puis dichotomie quand une interpolation n'a pas divisé l'intervalle par deux (alternance :
+  au pire deux fois une dichotomie). Sur un registre simulé de 1 000 vues à densité irrégulière, la date
+  est localisée en 10 lectures au plus (3 à 6 le plus souvent ; `tests/test_sondage.py`).
+- **Séries** : avec `type_acte`, un registre à plusieurs séries à la suite (naissances, mariages, décès,
+  tables en fin de volume ; `ordre_series` pour un autre ordre) est d'abord sondé par **section** : une vue
+  d'une autre série borne la section (par son milieu) jusqu'à la première vue du bon type ; la recherche par
+  date ne commence qu'ensuite. Actes mêlés (registre paroissial BMS) : `ordre_series=[]`.
+- **Date cible** : jour, mois ou année ; une cible partielle vise la première vue de la période.
+- **Arrêts** (`arret`) : `localise` (vue(s) à lire recadrées, puis `conclusion="trouve"` ou `"absent"`),
+  `absent` (dates lues qui encadrent la cible sans vue entre elles : registre `negatif` dans l'enquête,
+  entrée de journal avec les bornes examinées), `budget` (enquête bloquée, images épuisées,
+  `max_lectures`, 15 par défaut).
+- **Suite** : `action` donne l'appel prêt (`archive_image`, avec `enquete`) ; `alternative` propose une
+  planche-contact (`archives_planche`, AD59) quand 2 à 12 vues restent.
+- Avec `enquete` (recommandé), lectures, historique du sondage et verdict sont notés dans le registre de
+  l'enquête (`docs/enquetes.md`) : un sondage interrompu se reprend au même point. Sans `enquete`, passer
+  `nb_vues`, `periode` et toutes les `lectures` dans l'ordre : rien n'est noté.
 
 Le [guide utilisateur](../wiki/Services-archives.md#trouver-un-registre-ad59-sans-ark) décrit les types,
 la garde des vivants et les replis. Le [contrat observé](recherche-registres-ad59.md) documente le HTML,
