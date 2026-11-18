@@ -143,6 +143,7 @@ class Event(_Base):
     statut_manuel: Assertion | None = None
     extra: list = field(default_factory=list)
     prive: bool = False  # RESN PRIVACY / Gramps private : jamais publié
+    medias: list[str] = field(default_factory=list)  # images de l'acte qui atteste l'événement (#222)
 
 
 @dataclass
@@ -249,6 +250,7 @@ class Source(_Base):
     note: str = ""
     extra: list = field(default_factory=list)
     prive: bool = False
+    medias: list[str] = field(default_factory=list)  # images du registre, de la page de titre… (#222)
 
 
 @dataclass

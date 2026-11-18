@@ -62,10 +62,10 @@ def test_identifiant_inconnu(app_famille, ident, attendu):
     assert attendu in r["erreur"]
 
 
-@pytest.mark.parametrize("ident", ["S1", "ffffffff-1111-4111-8111-111111111111", "X1"])
+@pytest.mark.parametrize("ident", ["X1", "Z"])
 def test_type_non_pris_en_charge(app_famille, ident):
     r = server.arbre_proposer(_op([ident]), "t", "j")
-    assert "lier_a accepte des personnes I… et familles F…" in r["erreur"]
+    assert "lier_a accepte des personnes I…, familles F…, sources S… et événements (uid)" in r["erreur"]
 
 
 def test_aller_retour_gedcom(tree):
