@@ -9,6 +9,7 @@ from ..models import EVENT_LABELS, Tree
 from ..normalize.dates import parse_date
 from ..privacy import is_living
 from ..statuts import ICONS, LABELS
+from ..tree.liens_medias import a_lier
 
 LABEL = LABELS
 
@@ -144,7 +145,11 @@ def gaps(tree: Tree, pid: str, strict: bool = False) -> dict:
         plan.append({"priorite": 0 if i["niveau"] == "erreur" else 2, "fait": i["code"], "probleme": i["message"],
                      "sources": []})
     plan.sort(key=lambda x: x["priorite"])
-    return {"personne": p.label(), "nb_actions": len(plan), "plan": plan}
+    out = {"personne": p.label(), "nb_actions": len(plan), "plan": plan}
+    medias = [m for m in a_lier(tree) if pid in m["cibles"]]
+    if medias:  # images de citation absentes de la fiche (#246) : proposition prête, rien n'est écrit
+        out["medias_a_lier"] = medias
+    return out
 
 
 def tree_gaps(tree: Tree, strict: bool = False, limit: int = 30) -> dict:
@@ -158,4 +163,8 @@ def tree_gaps(tree: Tree, strict: bool = False, limit: int = 30) -> dict:
             rows.append({"personne": g["personne"], "urgent": len(top), "total": g["nb_actions"],
                          "premiere_action": top[0]["probleme"]})
     rows.sort(key=lambda r: -r["urgent"])
-    return {"personnes_a_traiter": len(rows), "classement": rows[:limit]}
+    out = {"personnes_a_traiter": len(rows), "classement": rows[:limit]}
+    medias = a_lier(tree)
+    if medias:  # images liées seulement à leur citation (#246) : opérations modifier_media à proposer
+        out["medias_a_lier"] = medias
+    return out

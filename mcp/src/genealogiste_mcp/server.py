@@ -1195,7 +1195,9 @@ def arbre_descendance(id: str, generations: int = 3, format: str = "liste") -> A
 
 @mcp.tool()
 def arbre_lacunes(id: str = "") -> dict:
-    """Faits manquants ou faibles + plan de recherche priorisé (une personne, ou classement de tout l'arbre)."""
+    """Faits manquants ou faibles + plan de recherche priorisé (une personne, ou classement de tout l'arbre).
+    medias_a_lier : images jointes à une citation mais absentes de la personne, de l'événement ou de la source
+    qu'elle prouve, avec l'opération modifier_media (lier_a) à soumettre par arbre_proposer."""
     t = app().tree()
     return gaps(t, id, app().config.strict_evidence) if id else tree_gaps(t, app().config.strict_evidence)
 

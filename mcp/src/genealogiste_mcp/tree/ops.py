@@ -51,6 +51,7 @@ class Ctx:
         self.summary: list[str] = []
         self.sources_cited: set[str] = set()
         self.warnings: list[str] = []
+        self.citations_images: list[Citation] = []  # citations à images de la proposition (#246)
 
     def r(self, value: str | None) -> str:
         if value and isinstance(value, str) and value.startswith("$"):
@@ -90,6 +91,9 @@ def _source_by_ark(tree: Tree, a: ark.Ark) -> str:
 
 def _citation(ctx: Ctx, d: dict) -> Citation:
     d = dict(d)
+    lier_media = d.pop("lier_media", True)
+    if not isinstance(lier_media, bool):
+        raise OpError("Citation : lier_media doit valoir true ou false")
     d["source"] = ctx.r(d.get("source"))
     a = _ark_of(d.get("ark", ""), d.get("page", ""))
     if a:  # ARK de l'image ou de la page : normalisé, source et vue déduites
@@ -116,7 +120,10 @@ def _citation(ctx: Ctx, d: dict) -> Citation:
         raise OpError(f"Citation : consultation doit valoir {', '.join(CONSULTATIONS)}")
     d.setdefault("date_consultation", date.today().isoformat())
     ctx.sources_cited.add(d["source"])
-    return Citation.from_dict(d)
+    c = Citation.from_dict(d)
+    if c.medias and lier_media:
+        ctx.citations_images.append(c)
+    return c
 
 
 def _place(v) -> Place | None:
@@ -1023,6 +1030,20 @@ def op_remplacer_arbre(ctx: Ctx, o: dict) -> None:
                        "doublons éventuels à traiter par /gen:recoupe puis fusion validée")
 
 
+def _lier_images_citees(ctx: Ctx) -> None:
+    """Images des citations de la proposition liées aussi à ce qu'elles prouvent (#246) ; lier_media: false sur
+    la citation pour s'en tenir au lien fin."""
+    if not ctx.citations_images:
+        return
+    from .liens_medias import cibles
+
+    nouvelles = {id(c) for c in ctx.citations_images}
+    for mid, liste in cibles(ctx.tree, lambda c: id(c) in nouvelles).items():
+        liens = _lier_media(ctx, mid, liste, "citation", seulement_nouveaux=True)
+        if liens:
+            ctx.summary.append(f"Média {mid} (image de citation) liée à {', '.join(liens)}")
+
+
 OPS = {name[3:]: fn for name, fn in globals().items() if name.startswith("op_")}
 
 
@@ -1040,6 +1061,7 @@ def apply_ops(tree: Tree, ops: list[dict], exiger_source: bool = True, media=Non
             raise OpError(f"Opération {i} ({name}) : {exc}") from exc
         except KeyError as exc:
             raise OpError(f"Opération {i} ({name}) : élément ou paramètre manquant {exc}") from exc
+    _lier_images_citees(ctx)
     from .integrite import introduced
 
     problems = introduced(tree, ctx.tree)
