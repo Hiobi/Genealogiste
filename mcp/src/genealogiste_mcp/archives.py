@@ -11,6 +11,7 @@ sources et relevés sont documentés ; un relevé automatisé ne remplace pas la
 from __future__ import annotations
 
 import json
+import re
 from datetime import UTC, date, datetime
 from functools import lru_cache
 from pathlib import Path
@@ -147,6 +148,23 @@ def validate() -> list[str]:
                 errs.append(f"{c} : résolution d'image inconnue ou mal formée")
             elif resolution.get("iiif") not in (True, False, None):
                 errs.append(f"{c} : état IIIF invalide")
+        if "recherche_registres" in s:  # formulaire Mnesys par commune et année (#128)
+            rr = s["recherche_registres"]
+            formulaires = rr.get("formulaires") if isinstance(rr, dict) else None
+            uuid = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+            if (not isinstance(formulaires, dict) or "etat_civil" not in formulaires
+                    or set(formulaires) - {"etat_civil", "tables_decennales", "matricules", "successions"}
+                    or not all(isinstance(v, str) and uuid.fullmatch(v) for v in formulaires.values())):
+                errs.append(f"{c} : recherche_registres.formulaires = {{etat_civil, tables_decennales?, matricules?, successions?}} en UUID")
+            if not s.get("ark_naan") or not (s.get("site") or "").startswith("https://"):
+                errs.append(f"{c} : recherche_registres exige site https et ark_naan")
+            try:
+                date.fromisoformat(rr.get("releve_le", "") if isinstance(rr, dict) else "")
+            except ValueError:
+                errs.append(f"{c} : recherche_registres.releve_le doit être une date ISO")
+            if not isinstance(rr, dict) or urlsplit(rr.get("reference", "")).hostname != urlsplit(
+                    s.get("site", "")).hostname:
+                errs.append(f"{c} : recherche_registres.reference doit pointer vers le site du service")
         if "visionneuse_acces" in s:
             errs.extend(f"{c} : visionneuse_acces.{e}" for e in acces_archives.valider(s["visionneuse_acces"]))
         if "intervalle_requetes" in s and (not isinstance(s["intervalle_requetes"], (int, float))

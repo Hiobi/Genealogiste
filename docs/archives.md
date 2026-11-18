@@ -46,7 +46,8 @@ Pour savoir quelles images le plugin peut résoudre et télécharger, voir le
 - `visionneuse_acces` : accès de visionneuse relevé pour le service (`famille` parmi `iiif_natif`, `editeur_ad`,
   `visionneuse_maison`, `images_statiques`, `authentifie` ; `editeur`, `logiciel`, `iiif`, `protection`,
   `reference`, `releve_le` facultatifs). `protection` vaut `null` ou l'une des valeurs `anubis`, `cloudflare`,
-  `cloudflare_hcaptcha`, `hcaptcha`, `recaptcha`, `datadome`, `attente` : défi opposé aux requêtes
+  `cloudflare_hcaptcha`, `hcaptcha`, `recaptcha`, `datadome`, `attente`, `redirection_js` (page qui
+  redirige en JavaScript avant tout contenu, relevée par `scripts/sonder_visionneuses.py`) : défi opposé aux requêtes
   automatisées du plugin et constaté sur une ressource précise, même s'il se résout seul dans un navigateur.
   `protection_releve_le` (date ISO), `protection_reference` (URL HTTP(S) observée) et `protection_note`
   documentent ce constat ; `archives.validate()` refuse une autre valeur. `par_type` décrit un accès propre à un type de document quand il
@@ -239,6 +240,31 @@ tous les outils de collecte appelés avec `enquete=<id>`.
 des services (clé, licence, CGU, limites publiées, protections, `robots.txt`) et justifie chaque valeur
 sourcée de la politique d'accès. `intervalle_requetes` d'ANOM (5 s) reprend le `Crawl-delay` de son
 `robots.txt`, cité dans `references`.
+
+## Recherche de registres sur les autres services Mnesys — #128
+
+Les services qui déclarent `recherche_registres` (AD14, AD19, AD27, AD51, AD55, AD58, AD69, AD90, AD972) passent par
+un chemin générique (`sources/mnesys.py`) : le formulaire public « État civil » est lu (mis en cache une
+semaine) pour connaître les noms de champs, la liste des communes et les typologies, puis la recherche GET est
+lue avec le même analyseur que pour AD59, contrôlé sur l'hôte et le NAAN du service.
+
+```json
+"recherche_registres": {"formulaires": {"etat_civil": "<uuid>", "tables_decennales": "<uuid facultatif>"},
+                        "releve_le": "2026-11-18", "reference": "https://<site>/search/form/<uuid>"}
+```
+
+- La commune est prise dans le vocabulaire du service (article inversé, forme actuelle préférée à une commune
+  ancienne) ; une homonymie renvoie une erreur qui liste les valeurs, à reprendre telles quelles.
+- Formulaire sans champ de date : recherche par commune seule, période filtrée sur les bornes affichées
+  (`registres_hors_periode`).
+- Type d'acte non proposé par le formulaire : erreur explicite, relancer sans type.
+- **Registres matricules** (`type_acte="RM"`, #112) : `annee` = classe (naissance + 20), `commune` = bureau de
+  recrutement si le formulaire le propose (facultatif) ; AD19, AD27, AD55, AD58, AD69, AD90, AD972. Le formulaire
+  d'AD14 renvoie des fiches individuelles (index nominatif) et n'est pas déclaré.
+- **Tables des successions et absences** (`type_acte="SUCC"`, série 3 Q, #112) : `commune` = bureau de
+  l'enregistrement (« Nevers », « Bureau de Delle » : le préfixe « Bureau de » est facultatif), `annee` et
+  `annee_fin` = période ; AD27, AD58, AD69, AD90.
+- Relevé et recette : [relevé du 18 novembre 2026](releves-archives-2026-11-18.md).
 
 ## Localisation des registres AD59 — #121
 

@@ -8,7 +8,8 @@ from .types_documents import DOCUMENTS, normaliser
 
 FAMILLES = ("iiif_natif", "editeur_ad", "visionneuse_maison", "images_statiques", "authentifie")
 # Protections anti-robot relevées sur un service (#196) ; null = aucune protection relevée.
-PROTECTIONS = ("anubis", "cloudflare", "cloudflare_hcaptcha", "hcaptcha", "recaptcha", "datadome", "attente")
+PROTECTIONS = ("anubis", "cloudflare", "cloudflare_hcaptcha", "hcaptcha", "recaptcha", "datadome", "attente",
+               "redirection_js")  # redirection_js : page de redirection JavaScript avant contenu (sonde #128)
 
 
 def _url_valide(reference) -> bool:

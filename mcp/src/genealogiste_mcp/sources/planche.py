@@ -5,7 +5,8 @@ Une requête et un téléchargement par vue au plus : les originales vont dans l
 ``archive_image`` et ``piece_archiver`` (jamais retéléchargées), les miniatures dans un cache à part.
 Pas de moisson : 12 vues maximum, arrêt à la première erreur ou protection, aucun contournement.
 
-Registres AD59 (visionneuse qualifiée) uniquement ; les autres sources renvoient une erreur explicite.
+Registres des visionneuses Naoned qualifiées (AD59, services Mnesys, #128) ; les autres sources renvoient une
+erreur explicite.
 La miniature annoncée par l'API (``location.thumb``) ne fait que 100 px : elle sert au repérage de la mise en
 page (option ``miniatures``), pas à lire une date."""
 
@@ -119,7 +120,7 @@ def composer(images: list[tuple[int, bytes]], largeur: int, gris: bool, bandeau:
 
 def planche(ctx: SourceContext, source: str, de: int, a: int = 0, pas: int = 1, bandeau: str = "",
             largeur: int = LARGEUR_DEFAUT, gris: bool = True, miniatures: bool = False) -> dict:
-    """Planche-contact d'un registre AD59 ; renvoie le chemin du JPEG composite, les vues et le coût estimé."""
+    """Planche-contact d'un registre (visionneuse Naoned qualifiée) ; renvoie le chemin du JPEG composite, les vues et le coût estimé."""
     from PIL import Image
 
     params = {"source": source, "de": de, "a": a, "pas": pas, "bandeau": bandeau, "miniatures": miniatures}
@@ -133,7 +134,8 @@ def planche(ctx: SourceContext, source: str, de: int, a: int = 0, pas: int = 1, 
         positions, avertissement = _positions(de, a, pas)
         info = planche_vues(ctx, source, positions)
         if info is None:
-            raise iiif.IiifError("Planche-contact disponible pour les registres AD59 (visionneuse qualifiée) ; "
+            raise iiif.IiifError("Planche-contact disponible pour les registres des visionneuses Naoned qualifiées "
+                                 "(AD59, services Mnesys) ; "
                                  "pour une autre source, utiliser archives_naviguer puis archive_image.")
         images = []
         for vue in info["vues"]:
