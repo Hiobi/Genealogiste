@@ -27,6 +27,7 @@ from urllib.parse import quote
 from .chemins import CheminRefuse, sous
 from .fichiers import ecrire_atomique
 from .markdown import lien_fichier
+from .types_documents import SERIES
 
 # ---------------------------------------------------------------- convention de nommage
 
@@ -185,6 +186,40 @@ _MOTS = [  # (motif sur nom normalisé, code) — le premier qui correspond l'em
     (r"\b(photos?|portraits?|photographies?)\b", "PHOTO"),
 ]
 _CODES_CONVENTION = {c for c in TYPES} | {"NM", "ND", "MD"}
+
+# code de pièce -> clé du vocabulaire commun des types d'archives (types_documents, #129) ; #223
+TYPES_ARCHIVES = {"NOT": "notaire"}
+# série E, sous-série 3 E : minutes notariales dans le cadre de classement des archives départementales
+_COTE_3E = re.compile(r"3\s*E(?![A-Za-z])", re.I)
+
+
+def cote_3e(cote: str) -> bool:
+    """Vrai si la cote relève de la sous-série 3 E (« 3 E 1234 », « 3E 12/45 »)."""
+    return bool(_COTE_3E.match((cote or "").strip()))
+
+
+def rattachement_archives(type_piece: str, cote: str = "") -> dict | None:
+    """Type d'archives du référentiel pour un code de pièce (seul NOT est relié, à « notaire ») et état de la
+    cote : serie_3e (acceptée), a_completer (suggestion 3 E) ou hors_3e (conservée, à vérifier). None sinon."""
+    code = (type_piece or "").split()[0].upper() if (type_piece or "").strip() else ""
+    cle = TYPES_ARCHIVES.get(code)
+    if cle is None:
+        return None
+    out = {"type_document": cle, "serie": SERIES[cle]}
+    if not (cote or "").strip():
+        out["cote"] = "a_completer"
+        out["consigne"] = ("Cote à compléter : aux archives départementales, les minutes notariales sont "
+                           "classées en sous-série 3 E, par étude (« 3 E <étude>/<article> » selon "
+                           "l'inventaire du service) ; le répertoire du notaire localise l'acte.")
+    elif cote_3e(cote):
+        out["cote"] = "serie_3e"
+        out["consigne"] = "Cote de la sous-série 3 E (minutes notariales)."
+    else:
+        out["cote"] = "hors_3e"
+        out["consigne"] = ("Cote hors de la sous-série 3 E, conservée telle quelle : vérifier le classement "
+                           "du service qui conserve les minutes (dépôt hors archives départementales, "
+                           "minutes non versées ou cotation propre).")
+    return out
 _PAS_PATRONYME = {*TYPES, "AD", "AM", "AN", "SHD", "ANMT", "NMD", "BMS", "TD", "IMG", "DSC", "DCIM", "SCAN",
                   "PDF", "JPG", "PNG", "COPIE", "COPY", "PXL", "WA", "VID", "PAGE", "VUE", "ACTE", "NOUVEAU"}
 _PROTEGES = {"personnes", "familles", "sources", "patronymes", "_organisation"}
@@ -239,6 +274,8 @@ def detecter(rel: Path) -> dict:
         if re.search(motif, n):
             info["type"] = code
             return info
+    if cote_3e(info.get("cote", "")):  # cote de minutes notariales sans type : acte notarié (#223)
+        info["type"] = "NOT"
     return info
 
 

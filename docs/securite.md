@@ -54,7 +54,7 @@ Cas tranchés d'après le code :
   manuelle de l'enquête ([enquetes.md](enquetes.md#mode-autonome)).
 - `notes_lire` est une écriture : une fiche absente est générée, ce qui peut renommer des fiches de personnes,
   retirer des fiches de patronymes et réécrire l'index.
-- `cache_purger` est une écriture : suppression, et `coupe_circuit` lève la pause anti-robot qui borne la collecte.
+- `cache_purger` est une écriture : suppression, et `coupe_circuit` lève la pause ou l'exclusion anti-robot qui borne la collecte.
 - `arbre_exporter` est une écriture : `chemin` libre, un fichier existant est remplacé.
 - `gramps_recalculer_notes` et `gramps_structurer_lieux` ne font que préparer un diff et un jeton (proposition) ;
   l'écriture passe par `arbre_appliquer`.
@@ -280,20 +280,23 @@ Chaque valeur porte sa **provenance** :
 
 Aucune valeur n'est présentée comme officielle sans référence vérifiée. Quand la documentation d'un service
 publie des limites, elles sont relevées dans `limites_documentees` à titre d'information : la valeur
-appliquée reste la valeur historique, plus prudente. Les valeurs sourcées complètes viendront de #119.
+appliquée reste la valeur historique, plus prudente. Le relevé des accès machine (#119,
+[acces-machine-archives.md](acces-machine-archives.md), 2026-11-18) ne marque `sourcee` que les valeurs
+appliquées égales à une limite publiée : intervalles de matchID et de l'API Géo. Aucun service relevé ne
+publie de plafond journalier ni de concurrence applicables : ces valeurs restent des défauts du plugin.
 
-Table au 2026-11-17 (défauts de configuration : intervalle 1,5 s, plafond 1000 requêtes/jour) :
+Table au 2026-11-18 (défauts de configuration : intervalle 1,5 s, plafond 1000 requêtes/jour) :
 
 | Hôte | Service | Intervalle | Plafond/jour | Concurrence | Référence (relevé) |
 |---|---|---|---|---|---|
-| `deces.matchid.io` | matchID | 1 s (historique) | 1000 (défaut) | 1 (défaut) | — |
+| `deces.matchid.io` | matchID | 1 s (sourcée) | 1000 (défaut) | 1 (défaut) | [matchID, API](https://matchid.io/link-api) (2026-11-18) : recherche limitée à une requête par seconde ; sans jeton, nombre d'appels limité |
 | `api.wikitree.com` | WikiTree API | 1 s (historique) | 1000 (défaut) | 1 (défaut) | [README de l'API](https://github.com/wikitree/wikitree-api/blob/main/README.md) (2026-11-17) : limites strictes sans `appId`, aucun chiffre publié |
 | `gallica.bnf.fr` | Gallica (BnF) | 1 s (historique) | 1000 (défaut) | 1 (défaut) | — (aucune limite chiffrée trouvée sur [api.bnf.fr](https://api.bnf.fr/fr/api-gallica-de-recherche)) |
 | `query.wikidata.org` | Wikidata Query Service | 1 s (historique) | 1000 (défaut) | 1 (défaut) | [User Manual, Query limits](https://www.mediawiki.org/wiki/Wikidata_Query_Service/User_Manual#Query_limits) (2026-11-17) : 60 s de calcul/min, 30 erreurs/min, 5 requêtes parallèles par IP |
-| `geo.api.gouv.fr` | API Géo | 0,1 s (historique) | 1000 (défaut) | 1 (défaut) | [data.gouv.fr](https://www.data.gouv.fr/dataservices/672cf6946a8456f417812b0f) (2026-11-17) : 50 appels/s par IP |
+| `geo.api.gouv.fr` | API Géo | 0,1 s (sourcée) | 1000 (défaut) | 1 (défaut) | [FAQ data.gouv.fr](https://guides.data.gouv.fr/foire-aux-questions) (2026-11-18) : 10 requêtes/s par IP (API Découpage administratif) ; la [fiche data.gouv.fr](https://www.data.gouv.fr/dataservices/672cf6946a8456f417812b0f) annonce 50 appels/s : la plus stricte est retenue |
 | `www.insee.fr` | INSEE (fichiers du COG) | 1,5 s (défaut) | 1000 (défaut) | 1 (défaut) | — |
 | `n2t.net` | N2T (registre des NAAN ARK) | 1,5 s (défaut) | 1000 (défaut) | 1 (défaut) | — |
-| hôtes du référentiel des archives (sous-domaines compris, hors type « autre ») | service du référentiel | `intervalle_requetes` (référentiel) sinon 1,5 s (défaut) | `GENEALOGISTE_PLAFOND_JOUR_ARCHIVES` (1000) | 1 (défaut) | référentiel ([archives.md](archives.md)) |
+| hôtes du référentiel des archives (sous-domaines compris, hors type « autre ») | service du référentiel | `intervalle_requetes` (référentiel ; ANOM : 5 s, `Crawl-delay` de son robots.txt) sinon 1,5 s (défaut) | `GENEALOGISTE_PLAFOND_JOUR_ARCHIVES` (1000) | 1 (défaut) | référentiel ([archives.md](archives.md)) |
 | tout autre hôte (IIIF, visionneuses…) | — | `GENEALOGISTE_DEBIT_DEFAUT` (1,5 s) | `GENEALOGISTE_PLAFOND_JOUR_DEFAUT` (1000) | 1 (défaut) | — |
 
 Un test dérive des modules `sources/` (et des URL COG de la configuration) la liste des hôtes réellement
@@ -407,6 +410,7 @@ tracée au journal : passer à une autre source et revenir plus tard, sans relan
 | `GENEALOGISTE_HTTP_TENTATIVES` | 5 | essais au plus (requête rejouable) |
 | `GENEALOGISTE_HTTP_DUREE_MAX` | 60 | plafond d'un appel d'outil (s) |
 | `GENEALOGISTE_RALENTISSEMENT_MAX` | 60 | intervalle maximal (s) d'un hôte ralenti après 429/5xx ; 0 désactive |
+| `GENEALOGISTE_EXCLUSION_ANTIROBOT` | 604800 | exclusion (s) d'un hôte dont le défi anti-robot persiste ; 0 = pause seule |
 
 ## Échecs mémorisés, coupe-circuit, caches bornés
 
@@ -422,15 +426,29 @@ tracée au journal : passer à une autre source et revenir plus tard, sans relan
   La pause dure `GENEALOGISTE_COUPE_CIRCUIT` secondes (1800 par défaut) : les appels suivants échouent
   aussitôt avec la raison, l'heure de
   reprise et `coupe_circuit: true`, sans retenter le site. `cache_purger("coupe_circuit")` lève la pause.
-  Aucun contournement n'est tenté.
+  Aucun contournement n'est tenté. Une page de blocage générée par Cloudflare (structure `cf-error-details`,
+  ex. erreur 1020) est reconnue en 403 seulement ; servie en 5xx, elle signale une panne de l'origine (#150).
+- **Exclusion durable** (#150) : chaque défi est consigné par hôte dans le cache SQLite (table
+  `defis_antirobot` : protection, URL, statut HTTP, première et dernière détection, nombre). Un défi
+  observé de nouveau dans les 30 jours après le précédent — il a donc persisté après la pause — exclut
+  l'hôte `GENEALOGISTE_EXCLUSION_ANTIROBOT` secondes (604800, soit 7 jours, par défaut ; 0 = pause seule) :
+  aucune requête n'est émise, l'enveloppe porte `exclusion: true` et `exclu_jusqu_au` (UTC). L'exclusion
+  survit au redémarrage et à une purge complète du cache ; `cache_purger("coupe_circuit")` la lève (nouvel
+  essai explicite, l'historique reste) et `cache_purger("antirobot")` oublie l'historique. Cet historique
+  vaut pour l'adresse réseau de cette installation : `archives_service` l'expose sous `defi_observe`, à
+  côté de `acces_vps` (mesure de recette), sans le confondre avec elle. La sonde de `diagnostic` consigne
+  ses défis mais n'exclut jamais.
 - **Suite sans navigateur** : les enveloppes portent `statut: bloque_antirobot`, `service`, `protection`,
-  `date_detection` (UTC), l'URL effective, une `tache_manuelle`, `bloque: "anti-robot"` et une `consigne`
-  (vue fournie par l'utilisateur puis `media_enregistrer`). Cette tâche et la provenance du défi
+  `date_detection` (UTC), l'URL effective, une `tache_manuelle`, `bloque: "anti-robot"`, une `consigne`
+  (vue fournie par l'utilisateur puis `media_enregistrer`) et `suite`, exploitable par le modèle sans
+  navigateur côté serveur : `relancer: false`, `navigateur_serveur: false`, lien à `ouvrir` par
+  l'utilisateur depuis son poste, ce qu'il faut relever, outils de `reprise` (`source_collee`,
+  `piece_archiver`, `media_enregistrer`) et levée explicite. Cette tâche et la provenance du défi
   sont conservées au journal (`journal_lister(statut="bloque_antirobot")`), y compris après passage dans
-  un adaptateur ou réutilisation du coupe-circuit. L'agent poursuit les autres pistes, puis reprend avec
-  `source_collee` ou `piece_archiver` sur un fichier local fourni depuis un accès autorisé. Il n'a pas
-  besoin d'un navigateur sur le serveur pour consigner ce travail restant. Il ne s'agit pas encore de
-  l'état d'enquête persistant prévu par #155.
+  un adaptateur ou réutilisation du coupe-circuit. Avec `enquete=<id>`, la consultation devient une tâche
+  manuelle `a_faire` de l'enquête (une par URL bloquée, champ `url`), reprise par `enquete_reprendre` ;
+  l'enveloppe renvoie son `id`. L'agent poursuit les autres pistes, puis reprend avec `source_collee` ou
+  `piece_archiver` sur un fichier local fourni depuis un accès autorisé.
 - **Proxy sortant** : aucun nouveau mécanisme de proxy résidentiel, rotation d'adresse ou reprise via
   une autre identité n'est ajouté. Les variables proxy standard du transport restent des paramètres de
   déploiement réseau ; elles ne doivent pas servir à contourner un refus. Une éventuelle sortie vers

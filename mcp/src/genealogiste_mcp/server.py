@@ -96,6 +96,7 @@ class App:
                                policy=NetworkPolicy(self.config.hotes_autorises), politique=politique,
                                max_retries=self.config.http_tentatives, duree_max=self.config.http_duree_max,
                                echec_ttl=self.config.cache_echec, coupe_circuit_ttl=self.config.coupe_circuit,
+                               exclusion_ttl=self.config.exclusion_antirobot,
                                plafond=PlafondJour(self.cache, politique=politique),
                                ralentissement_max=self.config.ralentissement_max,
                                **kw)
@@ -286,12 +287,27 @@ def _budget_apres(enquete: str, m, outil: str, appel: dict, out: dict, images: i
     pendant l'appel : enquête bloquée, reste (ou l'appel) consigné."""
     if m is None:
         return out
+    _tache_blocage(enquete, out)
     try:
         out.update(app().enquetes.apres_collecte(enquete, dict(m.requetes), images, m.refus, outil,
                                                  reste if reste is not None else appel))
     except (EnqueteError, OSError) as exc:
         out["enquete_avertissement"] = f"Budget non mis à jour : {exc}"
     return out
+
+
+def _tache_blocage(enquete: str, out: dict) -> None:
+    """Défi anti-robot pendant un appel lié à une enquête (#150) : la consultation devient une tâche manuelle
+    de l'enquête (une par URL bloquée), reprise par enquete_reprendre ; l'enquête continue sur les autres pistes."""
+    if out.get("statut") != "bloque_antirobot" or not isinstance(out.get("tache_manuelle"), dict):
+        return
+    try:
+        t = app().enquetes.tache_blocage(enquete, str(out.get("service") or ""), str(out.get("url") or ""),
+                                         str(out.get("protection") or ""), str(out.get("journal") or ""))
+    except (EnqueteError, OSError) as exc:
+        out["enquete_avertissement"] = f"Tâche manuelle non notée dans l'enquête : {exc}"
+        return
+    out["tache_manuelle"] = {**out["tache_manuelle"], "enquete": enquete, "id": t["id"]}
 
 
 # Images lues par le modèle par appel réussi, pour les outils mesurés par l'enveloppe (archive_image compte les
@@ -708,12 +724,37 @@ def archives_service(lieu: str = "", departement: str = "", code: str = "", docu
     matricule… ; préciser lieu pour les exceptions communales et annee ; None = inconnu), inscription,
     date de vérification et couverture sourcée. Un accès déclaré ne prouve pas l'existence d'un acte.
     consultation_manuelle : protection anti-robot relevée (ex. Anubis) et consigne (vue fournie par
-    l'utilisateur, media_enregistrer) ; un nouvel essai réseau reste possible."""
+    l'utilisateur, media_enregistrer) ; un nouvel essai réseau reste possible. defi_observe : dernier défi
+    observé depuis cette installation sur ses hôtes (détections, exclusion en cours) ; acces_vps : mesure de
+    recette depuis le VPS."""
     res = archives.service(lieu, departement, code, document, annee or None)
     hotes = [normaliser_hote(res.get(k) or "") for k in ("site", "visionneuse")] if "erreur" not in res else []
     if any(hotes):  # politique d'accès effective (intervalle, plafond/jour, provenance) de ses hôtes (#211)
         res["politique_acces"] = {h: app().http.politique.politique(h).en_dict() for h in hotes if h}
+        if obs := _defi_observe(hotes):
+            res["defi_observe"] = obs
     return res
+
+
+def _defi_observe(hotes: list[str]) -> dict | None:
+    """Dernier défi anti-robot observé depuis cette installation sur les hôtes du service (#150), local."""
+    import time
+    from datetime import UTC, datetime
+
+    def iso(t):
+        return datetime.fromtimestamp(t, UTC).isoformat(timespec="seconds") if t else None
+
+    vus = [d for h in dict.fromkeys(hotes) if h and (d := app().cache.defi_antirobot(h))]
+    if not vus:
+        return None
+    d = max(vus, key=lambda x: x["derniere"])
+    exclu = d["exclu_jusqu_a"] if d["exclu_jusqu_a"] and d["exclu_jusqu_a"] > time.time() else None
+    out = {"hote": d["hote"], "protection": d["protection"], "url": d["url"], "statut_http": d["statut"],
+           "premiere_detection": iso(d["premiere"]), "derniere_detection": iso(d["derniere"]),
+           "detections": d["detections"], "exclu_jusqu_au": iso(exclu),
+           "note": ("Observé depuis cette installation (son adresse réseau) : vaut pour cette machine, pas "
+                    "pour l'accès en général ; cache_purger('antirobot') oublie cet historique.")}
+    return {k: v for k, v in out.items() if v is not None}
 
 
 @mcp.tool()
@@ -1692,6 +1733,7 @@ def piece_archiver(source: str, page: int = 0, personnes: list[str] | None = Non
            "operations_suggerees": [{"op": "ajouter_media", "ref": "piece", "fichier": ref,
                                      "format": archivage.MIME.get(ext, ""), "titre": dest.stem, "lier_a": ids}],
            "citation_suggeree": citation,
+           **({"archives": r} if (r := pieces.rattachement_archives(type_piece, cote)) else {}),
            "suite": "Proposer via arbre_proposer : ajouter_media, puis ajouter_citation sur le fait prouvé "
                     "(cible evenement uid) avec citation_suggeree."}
     alertes = []
@@ -1791,7 +1833,8 @@ def piece_nommer(personnes: list[str], commune: str = "", depot: str = "", type_
     NOM Prénom[ + NOM Prénom] -- COMMUNE - DÉPÔT - TYPE [AAAA-AAAA] - cote - p.vue n.acte.ext
     personnes : « NOM Prénom » ou identifiants de l'arbre (I12). type_piece : N, B, M, D, S, NMD, BMS, TD, RM,
     ANMT, PM, NOT (acte notarié ; libellé libre après le code : « NOT testament »), CNI, COUR (courrier), REC,
-    SIGN, PHOTO… source (S3) : complète dépôt (sigle) et cote depuis l'arbre. Ne renomme rien."""
+    SIGN, PHOTO… source (S3) : complète dépôt (sigle) et cote depuis l'arbre. Pour NOT, archives indique le type
+    d'archives « notaire » et l'état de la cote (sous-série 3 E acceptée, à compléter ou hors 3 E). Ne renomme rien."""
     try:
         noms = [_person_label(p) for p in personnes]
         if source:
@@ -1804,7 +1847,10 @@ def piece_nommer(personnes: list[str], commune: str = "", depot: str = "", type_
     except (pieces.PieceError, KeyError) as exc:
         return {"erreur": f"{exc}"}
     info = pieces.detecter(Path(nom))
-    return {"nom": nom, "dossier_convention": pieces.destination(info) or pieces.A_TRIER, "lecture": pieces.lire_nom(nom)}
+    out = {"nom": nom, "dossier_convention": pieces.destination(info) or pieces.A_TRIER, "lecture": pieces.lire_nom(nom)}
+    if archives := pieces.rattachement_archives(type_piece, cote):
+        out["archives"] = archives
+    return out
 
 
 def _dossier(dossier: str) -> Path:
@@ -1982,7 +2028,8 @@ def enquete_noter(enquete: str, piste: dict | None = None, registre: dict | None
       sources_faites: [libelle], statut: a_faire|en_cours|trouve|negatif|bloque|manuel, note, journal?}.
     registre : {id? | source (ARK, URL de visionneuse ou manifeste) | cote, service, titre, piste, nb_vues,
       bornes: [de, a], vues_lues: [n | [de, a]], lectures: [{vue, date, date_fin, type, numero, note}], verdict, statut}.
-    tache (manuelle, pour l'utilisateur) : {id?, description, service, piste, statut: a_faire|faite|abandonnee}.
+    tache (manuelle, pour l'utilisateur) : {id?, description, service, piste, url, statut: a_faire|faite|abandonnee}
+      (un défi anti-robot rencontré avec enquete=<id> en crée une d'office).
     requete (faite hors outil suivi, ex. Geneanet) : {outil, parametres, resultat: positif|negatif|erreur|manuel,
       resume, journal?, piste}.
     statut : ouverte | bloque | close. budget : limites à modifier ({requetes_par_hote, images}, 0 = illimité) ; relever un budget épuisé débloque l'enquête (avec l'accord de l'utilisateur).
@@ -2139,8 +2186,10 @@ def marqueurs_migrer_appliquer(jeton: str) -> dict:
 def cache_purger(source: str = "") -> dict:
     """Vide le cache SQLite des réponses (tout si source est vide, sinon une catégorie). Catégories : matchid,
     wikitree, gallica, wikidata, geo, cog, archives, ark, iiif, visionneuse ; echec (échecs mémorisés sans
-    source) ; coupe_circuit (lève la pause de tous les hôtes mis en pause après un défi anti-robot, durée
-    GENEALOGISTE_COUPE_CIRCUIT, pour permettre un nouvel essai explicite) ; ralentissement (rétablit le rythme
+    source) ; coupe_circuit (lève la pause des hôtes mis en pause après un défi anti-robot, durée
+    GENEALOGISTE_COUPE_CIRCUIT, et l'exclusion d'un défi persistant, GENEALOGISTE_EXCLUSION_ANTIROBOT, pour
+    permettre un nouvel essai explicite) ; antirobot (oublie les défis observés, exposés par archives_service
+    sous defi_observe ; une purge complète les conserve) ; ralentissement (rétablit le rythme
     normal des hôtes ralentis pour la journée après 429/502/503/504 ; jamais levé par une purge complète). Les
     échecs mémorisés d'une source partent avec elle ; un nom inconnu ne supprime rien. Purge aussi les entrées expirées et applique les plafonds
     de taille : GENEALOGISTE_CACHE_MAX_MO au cache SQLite (plus anciennes entrées d'abord) et

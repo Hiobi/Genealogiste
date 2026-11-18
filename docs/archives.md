@@ -181,6 +181,20 @@ avec `source_collee` ou le téléchargement autorisé à `piece_archiver` en fic
 navigateur n'est requis sur le serveur pour conserver cette attente. Les signaux et la décision sur le
 proxy sortant sont décrits dans [Sécurité](securite.md#échecs-mémorisés-coupe-circuit-caches-bornés).
 
+Compléments #150 :
+
+- l'enveloppe porte `suite` (ne pas relancer, aucun navigateur côté serveur, lien à ouvrir par
+  l'utilisateur, ce qu'il faut relever, outils de reprise, levée explicite) ;
+- avec `enquete=<id>`, la consultation est inscrite comme tâche manuelle `a_faire` de l'enquête (une par
+  URL bloquée), reprise par `enquete_reprendre` ;
+- un défi qui persiste après la pause exclut le service `GENEALOGISTE_EXCLUSION_ANTIROBOT` secondes
+  (7 jours par défaut) : `exclusion: true`, `exclu_jusqu_au` ; `cache_purger("coupe_circuit")` la lève ;
+- `archives_service` expose `defi_observe` : dernier défi observé **depuis cette installation** sur les
+  hôtes du service (protection, détections, première et dernière date, exclusion en cours). Ce constat
+  local ne remplace ni `acces_vps` (recette) ni le champ `protection` du référentiel, qui restent à
+  valider par une mesure datée ;
+- une page de blocage Cloudflare en 403 (`cf-error-details`, ex. erreur 1020) est reconnue comme défi.
+
 ### Défi anti-robot et consultation manuelle — #196
 
 Signatures reconnues par `http._protection`, en lecture seule du HTML (aucun script exécuté, aucune
@@ -217,6 +231,13 @@ SQLite) ; au plafond, aucune requête ne part et l'outil renvoie une erreur avec
 Choix et justification du défaut : [securite.md](securite.md#plafond-journalier-par-hôte-et-budget-denquête).
 Pour une enquête, le budget (`docs/enquetes.md`) borne en plus les requêtes par hôte et les images lues, sur
 tous les outils de collecte appelés avec `enquete=<id>`.
+
+## Accès machine, CGU et limites publiées — #119
+
+[acces-machine-archives.md](acces-machine-archives.md) répertorie, au 2026-11-18, les API et accès machine
+des services (clé, licence, CGU, limites publiées, protections, `robots.txt`) et justifie chaque valeur
+sourcée de la politique d'accès. `intervalle_requetes` d'ANOM (5 s) reprend le `Crawl-delay` de son
+`robots.txt`, cité dans `references`.
 
 ## Localisation des registres AD59 — #121
 
@@ -285,6 +306,8 @@ continuent d'utiliser les clés canoniques.
 
 Les accents, espaces extérieurs et majuscules sont normalisés. Les clés historiques de `SERIES`, dont
 `etat_civil`, `recensements`, `matricules`, `notaires` et `justice`, restent disponibles.
+Le type de pièce `NOT` (acte notarié) est rattaché à `notaire` (`pieces.TYPES_ARCHIVES`) : voir
+[pieces.md](pieces.md#codes-de-type) pour la suggestion de cote 3 E (#223).
 `medical` et `vie_privee` restent des régimes transversaux hors catalogue de fonds ; `etat_civil` est
 un regroupement qui exige de choisir naissance, mariage ou décès pour calculer un délai.
 
