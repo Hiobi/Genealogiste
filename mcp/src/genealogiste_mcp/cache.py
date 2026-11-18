@@ -14,6 +14,8 @@ ATTENTE = 30.0  # secondes d'attente d'un verrou SQLite tenu par un autre proces
 ATTENTE_CRENEAU = 5.0  # attente maximale du verrou pour réserver un créneau ; au-delà, repli en mémoire
 DERIVE_MAX = 3600.0  # créneau enregistré plus loin dans le futur : horloge reculée, ignoré
 RALENTISSEMENT = "ralentissement"  # catégorie de cache_purger qui lève les ralentissements du jour
+ANTIROBOT = "antirobot"  # catégorie de cache_purger qui oublie les défis anti-robot observés (#150)
+COUPE_CIRCUIT = "coupe_circuit"  # catégorie de cache_purger : pauses et exclusions anti-robot levées
 
 
 class Cache:
@@ -54,6 +56,14 @@ class Cache:
             " double_a REAL)"
         )
         self._migrer_ralentissements()
+        # Défis anti-robot observés par hôte (#150) : historique durable de cette installation et exclusion
+        # éventuelle (défi persistant). Hors du cache des réponses : une purge complète ne les touche pas ;
+        # purge("coupe_circuit") lève l'exclusion, purge("antirobot") oublie l'historique.
+        self._db.execute(
+            "CREATE TABLE IF NOT EXISTS defis_antirobot (hote TEXT PRIMARY KEY, protection TEXT, url TEXT,"
+            " statut INTEGER, premiere REAL NOT NULL, derniere REAL NOT NULL, detections INTEGER NOT NULL,"
+            " exclu_jusqu_a REAL)"
+        )
         self._db.commit()
 
     def _migrer_ralentissements(self) -> None:
@@ -154,6 +164,16 @@ class Cache:
                 cur = self._db.execute("DELETE FROM ralentissements")
                 self._db.commit()
                 return cur.rowcount
+            if source == ANTIROBOT:
+                cur = self._db.execute("DELETE FROM defis_antirobot")
+                self._db.commit()
+                return cur.rowcount
+            if source == COUPE_CIRCUIT:  # pauses et exclusions levées ; l'historique des défis reste
+                levees = self._db.execute("UPDATE defis_antirobot SET exclu_jusqu_a = NULL"
+                                          " WHERE exclu_jusqu_a IS NOT NULL").rowcount
+                cur = self._db.execute("DELETE FROM cache WHERE source = ?", (source,))
+                self._db.commit()
+                return cur.rowcount + levees
             if source:
                 cur = self._db.execute("DELETE FROM cache WHERE source = ?", (source,))
             else:
@@ -239,6 +259,41 @@ class Cache:
                 if self._db.in_transaction:
                     self._db.rollback()
                 raise
+
+    def noter_defi(self, hote: str, protection: str, url: str, statut: int | None, maintenant: float,
+                   exclusion: float = 0.0, fenetre: float = 0.0) -> dict:
+        """Enregistre un défi anti-robot observé sur ``hote`` (#150). Récidive : un défi précédent observé il y a
+        moins de ``fenetre`` s (le défi persiste après la pause du coupe-circuit) ; avec ``exclusion`` > 0, l'hôte
+        est alors exclu ``exclusion`` s. Lecture et écriture dans une même transaction. Renvoie l'observation."""
+        with self._lock:
+            try:
+                self._transaction(ATTENTE)
+                row = self._db.execute("SELECT premiere, derniere, detections, exclu_jusqu_a FROM defis_antirobot"
+                                       " WHERE hote = ?", (hote,)).fetchone()
+                premiere, detections, exclu = (row[0], row[2], row[3]) if row else (maintenant, 0, None)
+                recidive = bool(row) and 0 <= maintenant - row[1] < fenetre
+                if recidive and exclusion > 0:
+                    exclu = maintenant + exclusion
+                self._db.execute(
+                    "INSERT OR REPLACE INTO defis_antirobot (hote, protection, url, statut, premiere, derniere,"
+                    " detections, exclu_jusqu_a) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    (hote, protection, url, statut, premiere, maintenant, detections + 1, exclu))
+                self._db.commit()
+            except BaseException:
+                if self._db.in_transaction:
+                    self._db.rollback()
+                raise
+        return {**(self.defi_antirobot(hote) or {}), "recidive": recidive}
+
+    def defi_antirobot(self, hote: str) -> dict | None:
+        """Dernier défi anti-robot observé sur ``hote`` (None s'il n'y en a pas)."""
+        with self._lock:
+            row = self._db.execute("SELECT hote, protection, url, statut, premiere, derniere, detections,"
+                                   " exclu_jusqu_a FROM defis_antirobot WHERE hote = ?", (hote,)).fetchone()
+        if row is None:
+            return None
+        return dict(zip(("hote", "protection", "url", "statut", "premiere", "derniere", "detections",
+                         "exclu_jusqu_a"), row, strict=True))
 
     def ralentissement(self, hote: str, jour: str) -> float:
         """Facteur de ralentissement de ``hote`` pour ``jour`` (1.0 sans incident ce jour-là)."""

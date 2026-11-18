@@ -136,7 +136,7 @@ ci-dessus, sans défi bloquant. Celle du 18 novembre 2026 a passé les cinq cas 
 `3E TD 547/07` (`ark:/33518/xwkrg498c6qs`, 1853-1862) et, pour 1790-1802, les registres `R 022` et `R 023`. Le fichier JSON de preuve reste dans le dossier
 temporaire de pytest, hors du dépôt.
 
-La recette native Codex 0.166.0 (`make test-codex`) vérifie aussi que le refus d'approbation
+La recette native Codex (`make test-codex`, Codex CLI 0.166 à 0.169) vérifie aussi que le refus d'approbation
 d'`archives_registres` laisse le journal de recherche intact, puis qu'un appel approuvé visant le
 vivant fictif `I9` est refusé par la garde locale. Cette recette utilise le fournisseur déterministe
 local et le mode hors ligne ; elle ne recherche aucune personne réelle.

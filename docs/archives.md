@@ -181,6 +181,20 @@ avec `source_collee` ou le téléchargement autorisé à `piece_archiver` en fic
 navigateur n'est requis sur le serveur pour conserver cette attente. Les signaux et la décision sur le
 proxy sortant sont décrits dans [Sécurité](securite.md#échecs-mémorisés-coupe-circuit-caches-bornés).
 
+Compléments #150 :
+
+- l'enveloppe porte `suite` (ne pas relancer, aucun navigateur côté serveur, lien à ouvrir par
+  l'utilisateur, ce qu'il faut relever, outils de reprise, levée explicite) ;
+- avec `enquete=<id>`, la consultation est inscrite comme tâche manuelle `a_faire` de l'enquête (une par
+  URL bloquée), reprise par `enquete_reprendre` ;
+- un défi qui persiste après la pause exclut le service `GENEALOGISTE_EXCLUSION_ANTIROBOT` secondes
+  (7 jours par défaut) : `exclusion: true`, `exclu_jusqu_au` ; `cache_purger("coupe_circuit")` la lève ;
+- `archives_service` expose `defi_observe` : dernier défi observé **depuis cette installation** sur les
+  hôtes du service (protection, détections, première et dernière date, exclusion en cours). Ce constat
+  local ne remplace ni `acces_vps` (recette) ni le champ `protection` du référentiel, qui restent à
+  valider par une mesure datée ;
+- une page de blocage Cloudflare en 403 (`cf-error-details`, ex. erreur 1020) est reconnue comme défi.
+
 ### Défi anti-robot et consultation manuelle — #196
 
 Signatures reconnues par `http._protection`, en lecture seule du HTML (aucun script exécuté, aucune
@@ -218,13 +232,49 @@ Choix et justification du défaut : [securite.md](securite.md#plafond-journalier
 Pour une enquête, le budget (`docs/enquetes.md`) borne en plus les requêtes par hôte et les images lues, sur
 tous les outils de collecte appelés avec `enquete=<id>`.
 
+## Accès machine, CGU et limites publiées — #119
+
+[acces-machine-archives.md](acces-machine-archives.md) répertorie, au 2026-11-18, les API et accès machine
+des services (clé, licence, CGU, limites publiées, protections, `robots.txt`) et justifie chaque valeur
+sourcée de la politique d'accès. `intervalle_requetes` d'ANOM (5 s) reprend le `Crawl-delay` de son
+`robots.txt`, cité dans `references`.
+
 ## Localisation des registres AD59 — #121
 
 `archives_registres(service="AD59", commune="Saint-Vaast-en-Cambrésis", annee=1860, type_acte="N")`
 interroge la recherche publique pour obtenir la cote et l'ARK du registre, sans navigateur ni ARK initial.
 Une seule page par appel, avec cache ; les pages suivantes sont demandées explicitement. Les tables
 décennales (`type_acte="TD"`) et les intervalles d'années (`annee_fin`) sont pris en charge depuis #221. Le serveur
-ne cherche pas encore la vue contenant l'acte : poursuivre avec `archives_naviguer`.
+ne cherche pas la vue contenant l'acte : poursuivre avec `archives_naviguer`, puis `archives_sonder`.
+
+## Sondage guidé d'un registre — #156
+
+`archives_sonder(source, date_cible, type_acte, lecture, conclusion, enquete)` remplace le tâtonnement
+dans un registre chronologique : l'outil propose la vue à lire, le modèle la lit (`archive_image`, 800 px)
+et renvoie ce qu'il y a lu, l'outil resserre les bornes et propose la vue suivante. Aucun réseau, aucune
+image : l'outil ne fait que calculer (`sondage.py`) et, avec `enquete`, noter.
+
+- **Lecture** : `{vue, date, date_fin?, type?}` ; `date` = premier acte de la vue (haut de page),
+  `date_fin` = dernier acte (resserre d'une vue de plus), `type` = `naissance`, `mariage`, `deces`, `table`
+  (alias N/B/baptême, M, D/S/sépulture, T). Dates ISO, françaises (« 14 mars 1862 ») ou républicaines.
+- **Méthode** : interpolation sur la période du registre (`periode`, notée par `archives_naviguer`) et les
+  dates déjà lues, puis dichotomie quand une interpolation n'a pas divisé l'intervalle par deux (alternance :
+  au pire deux fois une dichotomie). Sur un registre simulé de 1 000 vues à densité irrégulière, la date
+  est localisée en 10 lectures au plus (3 à 6 le plus souvent ; `tests/test_sondage.py`).
+- **Séries** : avec `type_acte`, un registre à plusieurs séries à la suite (naissances, mariages, décès,
+  tables en fin de volume ; `ordre_series` pour un autre ordre) est d'abord sondé par **section** : une vue
+  d'une autre série borne la section (par son milieu) jusqu'à la première vue du bon type ; la recherche par
+  date ne commence qu'ensuite. Actes mêlés (registre paroissial BMS) : `ordre_series=[]`.
+- **Date cible** : jour, mois ou année ; une cible partielle vise la première vue de la période.
+- **Arrêts** (`arret`) : `localise` (vue(s) à lire recadrées, puis `conclusion="trouve"` ou `"absent"`),
+  `absent` (dates lues qui encadrent la cible sans vue entre elles : registre `negatif` dans l'enquête,
+  entrée de journal avec les bornes examinées), `budget` (enquête bloquée, images épuisées,
+  `max_lectures`, 15 par défaut).
+- **Suite** : `action` donne l'appel prêt (`archive_image`, avec `enquete`) ; `alternative` propose une
+  planche-contact (`archives_planche`, AD59) quand 2 à 12 vues restent.
+- Avec `enquete` (recommandé), lectures, historique du sondage et verdict sont notés dans le registre de
+  l'enquête (`docs/enquetes.md`) : un sondage interrompu se reprend au même point. Sans `enquete`, passer
+  `nb_vues`, `periode` et toutes les `lectures` dans l'ordre : rien n'est noté.
 
 Le [guide utilisateur](../wiki/Services-archives.md#trouver-un-registre-ad59-sans-ark) décrit les types,
 la garde des vivants et les replis. Le [contrat observé](recherche-registres-ad59.md) documente le HTML,
@@ -257,6 +307,8 @@ continuent d'utiliser les clés canoniques.
 
 Les accents, espaces extérieurs et majuscules sont normalisés. Les clés historiques de `SERIES`, dont
 `etat_civil`, `recensements`, `matricules`, `notaires` et `justice`, restent disponibles.
+Le type de pièce `NOT` (acte notarié) est rattaché à `notaire` (`pieces.TYPES_ARCHIVES`) : voir
+[pieces.md](pieces.md#codes-de-type) pour la suggestion de cote 3 E (#223).
 `medical` et `vie_privee` restent des régimes transversaux hors catalogue de fonds ; `etat_civil` est
 un regroupement qui exige de choisir naissance, mariage ou décès pour calculer un délai.
 
