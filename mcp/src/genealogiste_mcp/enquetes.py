@@ -307,6 +307,25 @@ class Enquetes:
             self._crees = []
         return out
 
+    def tache_blocage(self, eid: str, service: str, url: str, protection: str = "", journal: str = "") -> dict:
+        """Défi anti-robot rencontré pendant l'enquête (#150) : tâche manuelle « à faire » pour l'utilisateur
+        (lien exact, ce qu'il faut relever), une seule par URL bloquée tant qu'elle reste à faire."""
+        with verrou(self.data_dir, VERROU):
+            e = self._charger(eid)
+            taches = e.setdefault("taches_manuelles", [])
+            t = next((x for x in taches if x.get("statut") == "a_faire" and url and x.get("url") == url), None)
+            if t is None:
+                t = self._tache(e, {
+                    "description": (f"Défi anti-robot{f' {protection}' if protection else ''} sur {service} : ouvrir "
+                                    f"{url or 'le service'} depuis un accès autorisé et relever cote, registre, "
+                                    "vue et provenance (ou télécharger la vue) ; reprendre avec source_collee, "
+                                    "piece_archiver ou media_enregistrer."),
+                    "service": service, "url": url})
+                if journal:
+                    t["journal"] = [journal]
+                self._ecrire(e)
+        return t
+
     @staticmethod
     def _nouvel_id(items: list[dict], prefixe: str) -> str:
         n = 1
@@ -437,7 +456,7 @@ class Enquetes:
             t = {"id": d.get("id") or self._nouvel_id(taches, "t"), "description": "", "service": "", "piste": "",
                  "statut": "a_faire", "creee": maintenant()}
             taches.append(t)
-        for k in ("description", "service", "piste", "resultat"):
+        for k in ("description", "service", "piste", "resultat", "url"):
             if d.get(k):
                 t[k] = d[k]
         if "statut" in d:

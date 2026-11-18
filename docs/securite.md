@@ -54,7 +54,7 @@ Cas tranchés d'après le code :
   manuelle de l'enquête ([enquetes.md](enquetes.md#mode-autonome)).
 - `notes_lire` est une écriture : une fiche absente est générée, ce qui peut renommer des fiches de personnes,
   retirer des fiches de patronymes et réécrire l'index.
-- `cache_purger` est une écriture : suppression, et `coupe_circuit` lève la pause anti-robot qui borne la collecte.
+- `cache_purger` est une écriture : suppression, et `coupe_circuit` lève la pause ou l'exclusion anti-robot qui borne la collecte.
 - `arbre_exporter` est une écriture : `chemin` libre, un fichier existant est remplacé.
 - `gramps_recalculer_notes` et `gramps_structurer_lieux` ne font que préparer un diff et un jeton (proposition) ;
   l'écriture passe par `arbre_appliquer`.
@@ -410,6 +410,7 @@ tracée au journal : passer à une autre source et revenir plus tard, sans relan
 | `GENEALOGISTE_HTTP_TENTATIVES` | 5 | essais au plus (requête rejouable) |
 | `GENEALOGISTE_HTTP_DUREE_MAX` | 60 | plafond d'un appel d'outil (s) |
 | `GENEALOGISTE_RALENTISSEMENT_MAX` | 60 | intervalle maximal (s) d'un hôte ralenti après 429/5xx ; 0 désactive |
+| `GENEALOGISTE_EXCLUSION_ANTIROBOT` | 604800 | exclusion (s) d'un hôte dont le défi anti-robot persiste ; 0 = pause seule |
 
 ## Échecs mémorisés, coupe-circuit, caches bornés
 
@@ -425,15 +426,29 @@ tracée au journal : passer à une autre source et revenir plus tard, sans relan
   La pause dure `GENEALOGISTE_COUPE_CIRCUIT` secondes (1800 par défaut) : les appels suivants échouent
   aussitôt avec la raison, l'heure de
   reprise et `coupe_circuit: true`, sans retenter le site. `cache_purger("coupe_circuit")` lève la pause.
-  Aucun contournement n'est tenté.
+  Aucun contournement n'est tenté. Une page de blocage générée par Cloudflare (structure `cf-error-details`,
+  ex. erreur 1020) est reconnue en 403 seulement ; servie en 5xx, elle signale une panne de l'origine (#150).
+- **Exclusion durable** (#150) : chaque défi est consigné par hôte dans le cache SQLite (table
+  `defis_antirobot` : protection, URL, statut HTTP, première et dernière détection, nombre). Un défi
+  observé de nouveau dans les 30 jours après le précédent — il a donc persisté après la pause — exclut
+  l'hôte `GENEALOGISTE_EXCLUSION_ANTIROBOT` secondes (604800, soit 7 jours, par défaut ; 0 = pause seule) :
+  aucune requête n'est émise, l'enveloppe porte `exclusion: true` et `exclu_jusqu_au` (UTC). L'exclusion
+  survit au redémarrage et à une purge complète du cache ; `cache_purger("coupe_circuit")` la lève (nouvel
+  essai explicite, l'historique reste) et `cache_purger("antirobot")` oublie l'historique. Cet historique
+  vaut pour l'adresse réseau de cette installation : `archives_service` l'expose sous `defi_observe`, à
+  côté de `acces_vps` (mesure de recette), sans le confondre avec elle. La sonde de `diagnostic` consigne
+  ses défis mais n'exclut jamais.
 - **Suite sans navigateur** : les enveloppes portent `statut: bloque_antirobot`, `service`, `protection`,
-  `date_detection` (UTC), l'URL effective, une `tache_manuelle`, `bloque: "anti-robot"` et une `consigne`
-  (vue fournie par l'utilisateur puis `media_enregistrer`). Cette tâche et la provenance du défi
+  `date_detection` (UTC), l'URL effective, une `tache_manuelle`, `bloque: "anti-robot"`, une `consigne`
+  (vue fournie par l'utilisateur puis `media_enregistrer`) et `suite`, exploitable par le modèle sans
+  navigateur côté serveur : `relancer: false`, `navigateur_serveur: false`, lien à `ouvrir` par
+  l'utilisateur depuis son poste, ce qu'il faut relever, outils de `reprise` (`source_collee`,
+  `piece_archiver`, `media_enregistrer`) et levée explicite. Cette tâche et la provenance du défi
   sont conservées au journal (`journal_lister(statut="bloque_antirobot")`), y compris après passage dans
-  un adaptateur ou réutilisation du coupe-circuit. L'agent poursuit les autres pistes, puis reprend avec
-  `source_collee` ou `piece_archiver` sur un fichier local fourni depuis un accès autorisé. Il n'a pas
-  besoin d'un navigateur sur le serveur pour consigner ce travail restant. Il ne s'agit pas encore de
-  l'état d'enquête persistant prévu par #155.
+  un adaptateur ou réutilisation du coupe-circuit. Avec `enquete=<id>`, la consultation devient une tâche
+  manuelle `a_faire` de l'enquête (une par URL bloquée, champ `url`), reprise par `enquete_reprendre` ;
+  l'enveloppe renvoie son `id`. L'agent poursuit les autres pistes, puis reprend avec `source_collee` ou
+  `piece_archiver` sur un fichier local fourni depuis un accès autorisé.
 - **Proxy sortant** : aucun nouveau mécanisme de proxy résidentiel, rotation d'adresse ou reprise via
   une autre identité n'est ajouté. Les variables proxy standard du transport restent des paramètres de
   déploiement réseau ; elles ne doivent pas servir à contourner un refus. Une éventuelle sortie vers
