@@ -181,6 +181,20 @@ avec `source_collee` ou le téléchargement autorisé à `piece_archiver` en fic
 navigateur n'est requis sur le serveur pour conserver cette attente. Les signaux et la décision sur le
 proxy sortant sont décrits dans [Sécurité](securite.md#échecs-mémorisés-coupe-circuit-caches-bornés).
 
+Compléments #150 :
+
+- l'enveloppe porte `suite` (ne pas relancer, aucun navigateur côté serveur, lien à ouvrir par
+  l'utilisateur, ce qu'il faut relever, outils de reprise, levée explicite) ;
+- avec `enquete=<id>`, la consultation est inscrite comme tâche manuelle `a_faire` de l'enquête (une par
+  URL bloquée), reprise par `enquete_reprendre` ;
+- un défi qui persiste après la pause exclut le service `GENEALOGISTE_EXCLUSION_ANTIROBOT` secondes
+  (7 jours par défaut) : `exclusion: true`, `exclu_jusqu_au` ; `cache_purger("coupe_circuit")` la lève ;
+- `archives_service` expose `defi_observe` : dernier défi observé **depuis cette installation** sur les
+  hôtes du service (protection, détections, première et dernière date, exclusion en cours). Ce constat
+  local ne remplace ni `acces_vps` (recette) ni le champ `protection` du référentiel, qui restent à
+  valider par une mesure datée ;
+- une page de blocage Cloudflare en 403 (`cf-error-details`, ex. erreur 1020) est reconnue comme défi.
+
 ### Défi anti-robot et consultation manuelle — #196
 
 Signatures reconnues par `http._protection`, en lecture seule du HTML (aucun script exécuté, aucune

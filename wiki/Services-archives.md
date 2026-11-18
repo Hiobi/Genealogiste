@@ -30,7 +30,8 @@ que l'acte y figure. Une recherche vide est journalisée pour ce périmètre uni
 du format de la page est signalée comme erreur. En cas de protection, conserver la tâche manuelle et
 poursuivre les autres pistes : un défi anti-robot détecté renvoie une consigne (ouvrir la vue dans le
 navigateur, fournir une capture ou l'image téléchargée) et met l'hôte en pause (coupe-circuit,
-`GENEALOGISTE_COUPE_CIRCUIT`) ; `cache_purger("coupe_circuit")` autorise un nouvel essai explicite. Le [contrat et le relevé technique](../docs/recherche-registres-ad59.md)
+`GENEALOGISTE_COUPE_CIRCUIT`) ; s'il persiste après la pause, le service est exclu quelques jours
+(`GENEALOGISTE_EXCLUSION_ANTIROBOT`). `cache_purger("coupe_circuit")` autorise un nouvel essai explicite. Le [contrat et le relevé technique](../docs/recherche-registres-ad59.md)
 précisent les limites observées.
 
 ## Choisir le lien à fournir
