@@ -19,6 +19,8 @@ est refusé, sauf `"non_source": true` + `"motif": "…"` (la mention « Non sou
 | `ajouter_source` | `titre`*, `auteur`, `publication`, `depot`, `cote`, `url`, `ark`, `type_source`, `original`, `note`, `ref` |
 | `ajouter_depot` | `nom`, `sigle`, `adresse`, `url`, `ref` |
 | `modifier_source` | `id`, `champs` |
+| `supprimer_source` | `id`, `cascade` (défaut `false` : refus si la source est encore citée ; `true` : chaque citation retirée est listée avec son porteur). Médias de la source détachés, jamais supprimés ; refus si elle est la source originale d'une autre |
+| `fusionner_sources` | `de` (doublon), `vers` (source gardée) : citations réécrites, citations devenues identiques (même source et page) sur un même porteur fondues (médias réunis), médias et sources dérivées reportés, doublon supprimé |
 | `ajouter_personne` | `noms`* `[{prenoms, nom, surnom, type, citations}]`, `sexe`, `evenements`, `citations`, `notes`, `vivant`, `ref` |
 | `modifier_personne` | `id`, `sexe`, `vivant`, `noms` (remplace), `notes_ajout` |
 | `supprimer_personne` | `id` |
@@ -33,6 +35,7 @@ est refusé, sauf `"non_source": true` + `"motif": "…"` (la mention « Non sou
 | `lier_conjoint` | `famille`, `personne`, `role` (`epoux`/`epouse`) |
 | `ajouter_citation` | `cible` `{type: evenement(uid) | nom(id, index) | filiation(famille, enfant) | personne | famille | media (id)}`, `citation` |
 | | Citation : `source`, `page`, `texte`, `qualite`, `type_source`, `information`, `preuve`, `consultation`, `ark`, `medias` (ids ou `$ref` d'`ajouter_media` : images de l'acte), `lier_media` (défaut `true` : voir « Images d'une citation »), `note` |
+| `supprimer_citation` | `cible` (même forme qu'`ajouter_citation`), `source`*, `page` (facultatif), `index` (parmi les citations qui correspondent, si plusieurs) : retire cette citation ; ses médias restent dans l'arbre |
 | `ajouter_media` | `fichier`* (voir « Fichier d'un média »), `format`, `titre`, `citations`, `lier_a` `[ids]` (personnes `I…`, familles `F…`, sources `S…`, événements (uid), ou `$ref` : voir « Médias »), `ref` |
 | `modifier_media` | `id`, `champs` `{fichier, titre, format}` (`fichier` contrôlé comme pour `ajouter_media` ; `date` refusée : un `OBJE` GEDCOM 7 ne porte pas de date, dater l'acte dans sa citation ou son événement), `citations_ajout`, `lier_a` `[ids]` (liens ajoutés, mêmes cibles qu'`ajouter_media`) |
 | `fusionner_personnes` | `conserver`, `absorber`, `justification`*, `forcer` |
@@ -160,6 +163,18 @@ dupliqué. `lier_media: false` sur la citation garde le seul lien fin. Rattrapag
 `arbre_lacunes` (tout l'arbre ou une personne) renvoie `medias_a_lier`, chaque image liée seulement à des
 citations avec l'opération `modifier_media` + `lier_a` prête à soumettre par `arbre_proposer` ; rien n'est écrit
 sans `arbre_appliquer`.
+
+### Supprimer une citation ou une source (#248)
+
+Aucune suppression n'est automatique : tout passe par `arbre_proposer` (diff, résumé) puis `arbre_appliquer`
+après accord, et s'annule par `arbre_annuler_modification`. `supprimer_citation` vise une citation précise :
+`source`, plus `page` ou `index` si plusieurs citations de la même source sont sur le porteur (l'erreur liste
+celles présentes). `supprimer_source` refuse une source encore citée et énumère ses porteurs ; avec
+`cascade: true`, chaque citation retirée figure dans le résumé avec son porteur. Pour une source en double,
+préférer `fusionner_sources` (`de: S352`, `vers: S321`) : aucune citation ne se perd, les citations devenues
+identiques sont fondues et aucune source orpheline ne reste. Un porteur qui n'a plus de citation est signalé
+dans les avertissements. Notes : la fiche `sources/<S…>.md` d'une source supprimée perd ses sections générées ;
+sans texte libre, elle est retirée, sinon conservée avec une alerte ; les fiches des porteurs sont régénérées.
 
 ### ARK (liens pérennes des archives)
 
