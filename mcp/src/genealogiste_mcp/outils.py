@@ -256,3 +256,55 @@ EXEMPTIONS = {
     "gramps_recherche": "serveur Gramps Web de l'utilisateur (son propre arbre), pas un service tiers",
     "piece_archiver": "nom = nom de fichier local ; seule l'adresse de la vue part sur le réseau",
 }
+
+# « Déjà fait le … » (#211) : identité d'une demande pour chaque outil budgété. Deux appels sont « la même
+# demande » si leurs paramètres d'identité, normalisés, sont égaux (enquetes.cle_requete) : correspondance exacte
+# et prudente ; tout paramètre qui change le résultat en fait partie (pagination comprise). Normalisations :
+# texte = casse, accents et espaces ignorés (noms, lieux, dates libres) ; exact = espaces de bord seulement
+# (identifiants, ARK, URL, clés WikiTree, codes, SPARQL) ; entier ; booleen. Le défaut est celui de la signature
+# (vérifié par test_deja_fait_collecte) : un paramètre omis vaut son défaut. Les outils de enquetes.OUTILS_SUIVIS
+# (recherche_multi, archives_naviguer, archive_image) ont une identité dédiée (registre, fenêtre, vues lues).
+TEXTE, EXACT, ENTIER, BOOLEEN = "texte", "exact", "entier", "booleen"
+_NOM = {"nom": (TEXTE, ""), "prenom": (TEXTE, ""), "ne_vers": (TEXTE, ""), "lieu": (TEXTE, "")}
+IDENTITE_REQUETE: dict[str, dict[str, tuple[str, object]]] = {
+    "matchid_recherche": {"nom": (TEXTE, ""), "prenom": (TEXTE, ""), "ne_vers": (TEXTE, ""),
+                          "lieu_naissance": (TEXTE, ""), "decede_vers": (TEXTE, ""), "lieu_deces": (TEXTE, ""),
+                          "sexe": (TEXTE, ""), "texte": (TEXTE, ""), "taille": (ENTIER, 20), "page": (ENTIER, 1)},
+    "wikitree_recherche": {**_NOM, "decede_vers": (TEXTE, ""), "limite": (ENTIER, 20)},
+    "wikitree_profil": {"cle": (EXACT, "")},
+    "wikitree_personne": {"cle": (EXACT, "")},
+    "wikitree_ascendants": {"cle": (EXACT, ""), "profondeur": (ENTIER, 3)},
+    "wikitree_descendants": {"cle": (EXACT, ""), "profondeur": (ENTIER, 2)},
+    "gallica_recherche": {"texte": (TEXTE, ""), "type_doc": (EXACT, ""), "titre": (TEXTE, ""), "debut": (EXACT, ""),
+                          "fin": (EXACT, ""), "exact": (BOOLEEN, True), "nombre": (ENTIER, 20),
+                          "depart": (ENTIER, 1)},
+    "gallica_recherche_document": {"ark": (EXACT, ""), "texte": (TEXTE, "")},
+    "gallica_texte": {"ark": (EXACT, ""), "page": (ENTIER, 0), "max_caracteres": (ENTIER, 20000)},
+    "gallica_alto": {"ark": (EXACT, ""), "page": (ENTIER, 0)},
+    "ark_resoudre": {"ark": (EXACT, ""), "verifier": (BOOLEEN, True), "titre": (EXACT, "")},
+    "piece_archiver": {"source": (EXACT, ""), "page": (ENTIER, 0)},
+    "wikidata_personne": {**_NOM, "limite": (ENTIER, 20)},
+    "wikidata_sparql": {"requete": (EXACT, "")},
+    "geo_commune": {"nom": (TEXTE, ""), "code_postal": (EXACT, ""), "code_insee": (EXACT, ""),
+                    "departement": (EXACT, ""), "limite": (ENTIER, 10)},
+    "geo_historique": {"nom": (TEXTE, ""), "code_insee": (EXACT, ""), "departement": (EXACT, "")},
+    "archives_registres": {"service": (EXACT, ""), "commune": (TEXTE, ""), "annee": (ENTIER, 0),
+                           "type_acte": (EXACT, ""), "page": (ENTIER, 1)},
+    "archives_planche": {"source": (EXACT, ""), "de": (ENTIER, 0), "a": (ENTIER, 0), "pas": (ENTIER, 1),
+                         "bandeau": (EXACT, ""), "largeur": (ENTIER, 1200), "gris": (BOOLEEN, True),
+                         "miniatures": (BOOLEEN, False)},
+}
+# Paramètres hors identité (sans effet sur la demande envoyée ni sur ce qui est obtenu), motif à l'appui ; tout
+# autre paramètre de la signature doit figurer dans IDENTITE_REQUETE (test_deja_fait_collecte).
+HORS_IDENTITE: dict[str, str] = {
+    "personne": "id local de l'arbre (garde des vivants, journal), jamais envoyé au service",
+    "enquete": "enquête où noter la demande, sans effet sur le résultat",
+}
+HORS_IDENTITE_OUTIL: dict[str, dict[str, str]] = {
+    "piece_archiver": {p: "nommage et note de la pièce : la vue archivée est la même (source, page)"
+                       for p in ("personnes", "type_piece", "commune", "depot", "annees", "cote", "acte",
+                                 "source_arbre", "nom", "nom_fichier")},
+}
+# Hors « déjà fait » : les outils sans paramètre enquete (HORS_BUDGET, classe écriture). En particulier
+# matchid_appariement_statut renvoie l'état d'un traitement en cours, qui change d'un appel à l'autre : redemander
+# le même job n'est pas refaire une demande.

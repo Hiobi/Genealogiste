@@ -33,9 +33,10 @@ class ServeurMCP(MCPServer):
         # fonction de l'outil, y compris quand elle est appelée directement (hors protocole MCP).
         self.garde = None
         # Budget d'enquête (#211) : outils (noms) dont l'enveloppe accepte le paramètre facultatif « enquete »
-        # (ajouté à la signature exposée s'il manque) et, quand il est fourni, délègue l'appel à
-        # mesure(nom, fn, args, kwargs, enquete) qui l'exécute sous la mesure du budget. À fixer AVANT
-        # l'enregistrement des outils ; un outil qui déclare lui-même « enquete » le gère seul.
+        # (ajouté à la signature exposée s'il manque) ; l'enveloppe délègue chacun de leurs appels à
+        # mesure(nom, fn, args, kwargs, enquete) — enquete vide s'il n'est pas fourni — qui l'exécute sous la
+        # mesure du budget et ajoute le signal « déjà fait ». À fixer AVANT l'enregistrement des outils ; un outil
+        # qui déclare lui-même « enquete » le gère seul.
         self.avec_enquete: set[str] | frozenset[str] = frozenset()
         self.mesure = None
         self.doc_enquete = ""
@@ -65,7 +66,7 @@ class ServeurMCP(MCPServer):
                     eid = kw.pop("enquete", "") if enquete else ""
                     if self.garde is not None and (refus := self.garde(nom, fn, a, kw)) is not None:
                         return refus
-                    if eid and self.mesure is not None:
+                    if enquete and self.mesure is not None:
                         return self.mesure(nom, fn, a, kw, eid)
                     return fn(*a, **kw)
                 enveloppe = garde_sync

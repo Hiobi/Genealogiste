@@ -78,8 +78,9 @@ négative) ; toujours indiquer la prochaine source à consulter pour un fait non
 mcp = ServeurMCP("genealogiste", instructions=INSTRUCTIONS, log_level="WARNING")
 # Budget d'enquête (#211) : tous les outils réseau de collecte du catalogue acceptent enquete=<id> (enveloppe).
 mcp.avec_enquete = outils.BUDGET_ENQUETE
-mcp.doc_enquete = ("enquete (facultatif) : id d'enquête dont le budget compte les requêtes émises (par hôte) ; "
-                   "budget épuisé : refus avant la requête, enquête bloquée, appel consigné au reste à faire.")
+mcp.doc_enquete = ("enquete (facultatif) : id d'enquête où noter la demande et dont le budget compte les requêtes "
+                   "émises (par hôte) ; budget épuisé : refus avant la requête, enquête bloquée, appel consigné au "
+                   "reste à faire. deja_fait signale la même demande déjà notée dans une enquête (sans bloquer).")
 
 class App:
     def __init__(self, config: Config | None = None, transport=None, sleeper=None, gramps_transport=None):
@@ -298,8 +299,9 @@ IMAGES_PAR_APPEL = {"archives_planche": 1}
 
 
 def _mesure_enquete(nom: str, fn, args: tuple, kwargs: dict, enquete: str):
-    """Mesure générique (#211) d'un outil de collecte appelé avec enquete=<id> (enveloppe de ServeurMCP) :
-    contrôle avant appel, requêtes émises comptées par hôte, refus avant l'envoi à l'épuisement."""
+    """Mesure générique (#211) d'un outil de collecte (enveloppe de ServeurMCP, appelée avec ou sans enquête) :
+    avec enquete=<id>, contrôle avant appel, requêtes émises comptées par hôte, refus avant l'envoi à
+    l'épuisement ; dans tous les cas, signal « déjà fait » et, avec enquete, demande notée (_suivi_collecte)."""
     try:
         appel = dict(inspect.signature(fn).bind_partial(*args, **kwargs).arguments)
     except TypeError:
@@ -311,7 +313,20 @@ def _mesure_enquete(nom: str, fn, args: tuple, kwargs: dict, enquete: str):
         res = fn(*args, **kwargs)
     if not isinstance(res, dict):
         return res
-    return _budget_apres(enquete, m, nom, appel, res, images=images if "erreur" not in res else 0)
+    res = _budget_apres(enquete, m, nom, appel, res, images=images if "erreur" not in res else 0)
+    return _suivi_collecte(nom, appel, res, enquete)
+
+
+def _suivi_collecte(nom: str, appel: dict, res: dict, enquete: str) -> dict:
+    """« Déjà fait le … » des outils de collecte à identité déclarée (outils.IDENTITE_REQUETE, #211) : après un
+    appel abouti seulement. Un refus (personne vivante, budget) ou une erreur n'est ni signalé ni noté : la
+    garde des vivants, dans l'outil, passe avant. Résultat négatif : aucun résultat renvoyé."""
+    if nom not in outils.IDENTITE_REQUETE or "erreur" in res or "refus" in res:
+        return res
+    negatif = bool(res.get("recherche_negative")) or res.get("resultats") == [] or res.get("nb_lignes") == 0
+    journal = [res["journal"]] if isinstance(res.get("journal"), str) else []
+    return _suivi_enquete(nom, appel, res, enquete, resultat="negatif" if negatif else "positif",
+                          journal=journal, appel=appel)
 
 
 # ============================================================================ sources prioritaires
