@@ -803,14 +803,14 @@ def _defi_observe(hotes: list[str]) -> dict | None:
 def archives_registres(service: str, commune: str, annee: int, type_acte: str = "", page: int = 1,
                       personne: str = "", annee_fin: int = 0) -> dict:
     """Localiser un registre par commune et année, sans connaître son ARK. Services : AD59, et les services
-    Mnesys du référentiel dotés de recherche_registres (AD14, AD19, AD25, AD27, AD39, AD51, AD55, AD58, AD69,
+    Mnesys du référentiel dotés de recherche_registres (AD14, AD19, AD25, AD27, AD37, AD39, AD51, AD55, AD58, AD69,
     AD80, AD90, AD91, AD972 ; AD25 : TD, RM et SUCC seulement ; archives_service ou sources_catalogue pour la
     liste à jour) : leur formulaire public est lu et la commune est prise dans son vocabulaire (commune_service ;
     valeur exacte acceptée en cas d'ambiguïté).
     Services Mnesys seulement : RM (registres matricules : annee = classe, soit l'année de naissance + 20 ;
     commune = bureau de recrutement, facultatif ; AD19, AD25, AD27, AD39, AD55, AD58, AD69, AD90, AD972) et SUCC
-    (tables des successions et absences, série 3 Q : commune = bureau de l'enregistrement ; AD25, AD27, AD58,
-    AD69, AD90, AD91).
+    (tables des successions et absences, série 3 Q : commune = bureau de l'enregistrement ; AD25, AD27,
+    AD37 (canton), AD58, AD69, AD90, AD91).
     type_acte : N (naissance), M (mariage), D (décès), NMD ou vide (tous), TD (tables décennales : tables dont
     la période affichée recoupe l'année ou l'intervalle demandé). annee_fin (facultatif, >= annee) : intervalle
     [annee, annee_fin], ex. 1790-1802 ou une décennie ; registres dont la période le recoupe. Une seule page de

@@ -119,6 +119,25 @@
       }
     }
   },
+  "AD37": {
+    "dernier_essai": "2026-11-18",
+    "resultat": "ok",
+    "detail": "",
+    "derniere_reussite": "2026-11-18",
+    "mesures": {
+      "inconnu": {
+        "verdict": "oui",
+        "date_mesure": "2026-11-18T20:43:40+00:00",
+        "detail": "",
+        "revision": "",
+        "reference": {
+          "source": "https://archives.touraine.fr/ark:/37621/drb7t4vxl6qh",
+          "page": 1,
+          "note": "Registre localisé par archives_registres (commune et année), relevé du 2026-11-18 (#242)."
+        }
+      }
+    }
+  },
   "AD39": {
     "dernier_essai": "2026-11-18",
     "resultat": "ok",

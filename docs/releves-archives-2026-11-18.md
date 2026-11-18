@@ -86,7 +86,8 @@ Même chaîne (recherche → navigation → vue), formulaires dédiés relevés 
   ARK connu reste valable. Formulaires « Tables décennales », « Matricules militaires » et « Tables des
   successions et absences » relevés pour la suite (#112).
 - **Sans formulaire d'état civil trouvé** sur les pages publiques parcourues : AD37 (Indre-et-Loire), AD39
-  (Jura), AD80 (Somme), AD91 (Essonne, seulement « tous les fonds »). AD73 (Savoie) n'utilise pas Mnesys Expo
+  (Jura), AD80 (Somme), AD91 (Essonne, seulement « tous les fonds »). Formulaires trouvés le soir même :
+  voir « Formulaires complémentaires (#242) ». AD73 (Savoie) n'utilise pas Mnesys Expo
   (moteur Eolas).
 - **Planche-contact** (`archives_planche`) : essai réel réussi sur AD51 (4 vues) ; elle n'est donc pas propre
   à AD59, contrairement à ce qu'indiquait sa documentation.
@@ -157,7 +158,7 @@ défi rencontré). Communes chefs-lieux, années 1840, 1860 et 1880, aucune donn
 | AD39 Jura | `/page/acces-aux-documents-numerises` : Registres paroissiaux et d'état-civil, Matricules militaires | N Lons-le-Saunier 1860 : 3E/4726 ; TD : 3E/1228 (1853-1862) ; RM classe 1880 : R862-R865 ; communes « …, commune », type d'acte en sujet (BAPTEME, NAISSANCE…) | état civil, RM |
 | AD80 Somme | `/page/etat-civil` : Registres paroissiaux et de l'état civil | N Abbeville 1860 : 5MI_D271 ; TD : 5MI_D2 (1853-1872) ; Amiens 1850-1852 : 14 registres ; cote affichée avec le libellé « (Cote(s)) », retiré | état civil |
 | AD91 Essonne | `/page/par-thematique` : Etat civil et registres paroissiaux ; `/page/successions-1` : Tables de succession | NMD Étampes 1860 : 4E/1145, 4E/1219, 4E/1309, 4E/1400 ; SUCC Étampes 1840 : 3Q5/435 ; communes « ETAMPES Commune », « ARPAJON Canton » | état civil, SUCC |
-| AD37 Indre-et-Loire | `/page/formulaires-de-recherche-specialisee`, `/page/formulaires-de-recherche-generale`, `/page/archives-numerisees`, sitemap éditorial | aucun formulaire d'état civil ; « Recherche avancée » (commune en texte libre) renvoie un nœud « Amboise » ; cote 6NUM8 + 1860 : 0 résultat | non |
+| AD37 Indre-et-Loire | `/page/des-personnes-et-des-familles` : État civil (« Recherche ciblée »), Tables des successions (par canton) ; formulaire signalé par l'utilisateur, absent des pages parcourues plus tôt | N Amboise 1860 : 6NUM8/003/050 (1850-1860) et Saint-Denis-Hors 6NUM8/215/007 ; TD 1853-1862 : 6NUM2/003/020-022 ; Chinon M 1700-1710 : 55 registres ; SUCC Amboise 1880 : 3Q23, 6NUM3/001/007 (1879-1890), communes « Amboise (Indre-et-Loire, France ; canton) » ; paroisses de Tours dans un second champ de lieu, non utilisé ; cote affichée avec le libellé « (Cote) », retiré | état civil, SUCC |
 | AD73 Savoie | — | moteur Eolas, hors Mnesys Expo : relève de #243 | non |
 
 - **Date exacte et intervalle** : sur AD91, « 1-date=1860 » ne trouve pas le volume de tables des successions

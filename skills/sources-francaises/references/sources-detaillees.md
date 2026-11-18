@@ -37,7 +37,7 @@
 - Tables des successions et absences (TSA) : date du décès, héritiers, déclaration de mutation par décès
   (biens, liens de parenté). Délai de déclaration : 6 mois.
 - Cherchable par bureau et période : `archives_registres(service, commune=<bureau>, annee, annee_fin,
-  type_acte="SUCC")` pour AD27, AD58, AD69, AD90 ; ailleurs, inventaire de la série 3 Q.
+  type_acte="SUCC")` pour AD25, AD27, AD37, AD58, AD69, AD90, AD91 ; ailleurs, inventaire de la série 3 Q.
 
 ## Cadastre (3 P) et hypothèques (4 Q)
 - Plan, état de sections, matrice des propriétaires ; hypothèques : transcriptions de mutations.

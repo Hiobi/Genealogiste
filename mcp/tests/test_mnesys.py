@@ -272,14 +272,16 @@ def test_cote_sans_libelle_colle(fixtures):
     html = (fixtures / "mnesys-recherche-positive.html").read_text()
     debut = html.index('class="referenceCodes">') + len('class="referenceCodes">')
     fin = html.index("<", debut)
-    html = html[:debut] + html[debut:fin] + " (Cote(s))" + html[fin:]
-    resultats, _, _ = registres._lire(html, 1, HOTE, "99999")
-    assert not resultats[0]["cote"].endswith("(Cote(s))")
+    valeur = html[debut:fin].strip()
+    for colle, attendu in ((f"{valeur} (Cote(s))", valeur),  # AD80
+                           (f"3Q23 (Cote), {valeur} (Cote)", f"3Q23, {valeur}")):  # AD37
+        resultats, _, _ = registres._lire(html[:debut] + colle + html[fin:], 1, HOTE, "99999")
+        assert resultats[0]["cote"] == attendu
 
 
 def test_referentiel_declare_les_services_du_releve_242():
     codes = set(registres.services_registres())
-    assert {"AD25", "AD39", "AD80", "AD91"} <= codes
+    assert {"AD25", "AD37", "AD39", "AD80", "AD91"} <= codes
     ad25 = archives.by_code("AD25")["recherche_registres"]
     assert "etat_civil" not in ad25["formulaires"] and ad25["champs_annee"] == {"matricules": "0-title"}
     assert "successions" in archives.by_code("AD91")["recherche_registres"]["formulaires"]

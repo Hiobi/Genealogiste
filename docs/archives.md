@@ -154,7 +154,7 @@ revendiquée. Les références et `releve_le` sont renseignés, sans modificatio
 Le [relevé du 10 novembre](releves-archives-2026-11-10.md) classe les 101 services par visionneuse
 (sonde `scripts/sonder_visionneuses.py`). L’adaptateur `visualizer_api` (Naoned, logiciel Mnesys Expo) est
 générique : 14 services Mnesys Expo (AD14, AD19, AD25, AD37, AD39, AD51, AD55, AD58, AD59, AD69,
-AD80, AD90, AD91, AD972) sont déclarés pour l’adaptateur générique. Tous ont une recette de référence réussie enregistrée (`recettes_archives.json`), sauf AD37 : implémenté, non éprouvé. Aucun fonds supplémentaire n’est qualifié par cette déclaration. Ajouter un service Mnesys Expo = renseigner `resolution_image` après recette, sans code.
+AD80, AD90, AD91, AD972) sont déclarés pour l’adaptateur générique. Tous ont une recette de référence réussie enregistrée (`recettes_archives.json`), y compris AD37 depuis le relevé du 18 novembre 2026 (#242). Aucun fonds supplémentaire n’est qualifié par cette déclaration. Ajouter un service Mnesys Expo = renseigner `resolution_image` après recette, sans code.
 
 ## Recette depuis un VPS et accès protégé — #150
 
@@ -243,7 +243,7 @@ sourcée de la politique d'accès. `intervalle_requetes` d'ANOM (5 s) reprend le
 
 ## Recherche de registres sur les autres services Mnesys — #128
 
-Les services qui déclarent `recherche_registres` (AD14, AD19, AD25, AD27, AD39, AD51, AD55, AD58, AD69, AD80, AD90, AD91, AD972) passent par
+Les services qui déclarent `recherche_registres` (AD14, AD19, AD25, AD27, AD37, AD39, AD51, AD55, AD58, AD69, AD80, AD90, AD91, AD972) passent par
 un chemin générique (`sources/mnesys.py`) : le formulaire public « État civil » est lu (mis en cache une
 semaine) pour connaître les noms de champs, la liste des communes et les typologies, puis la recherche GET est
 lue avec le même analyseur que pour AD59, contrôlé sur l'hôte et le NAAN du service.
@@ -278,7 +278,7 @@ formulaire qui ne le type pas (AD25 : classe des matricules en texte libre).
   d'AD14 renvoie des fiches individuelles (index nominatif) et n'est pas déclaré.
 - **Tables des successions et absences** (`type_acte="SUCC"`, série 3 Q, #112) : `commune` = bureau de
   l'enregistrement (« Nevers », « Bureau de Delle » : le préfixe « Bureau de » est facultatif), `annee` et
-  `annee_fin` = période ; AD25, AD27, AD58, AD69, AD90, AD91.
+  `annee_fin` = période ; AD25, AD27, AD37 (bureau = canton), AD58, AD69, AD90, AD91.
 - Relevé et recette : [relevé du 18 novembre 2026](releves-archives-2026-11-18.md).
 
 ## Localisation des registres AD59 — #121

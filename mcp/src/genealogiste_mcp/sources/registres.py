@@ -101,8 +101,8 @@ def _registre(bloc: _Noeud, host: str = HOST, naan: str = "33518") -> dict:
         raise FormatRegistresError("Lien de notice incohérent ou hors du service : registre refusé.")
     cotes = bloc.trouver("p", classe="referenceCodes")
     cote = _unique(cotes, "cote").texte() if cotes or naan == "33518" else None  # cote facultative hors AD59
-    if cote:  # libellé collé à la valeur : « 5MI_D271 (Cote(s)) » (AD80)
-        cote = re.sub(r"\s*\(Cote\(s\)\)$", "", cote) or None
+    if cote:  # libellé collé à chaque valeur : « 5MI_D271 (Cote(s)) » (AD80), « 3Q23 (Cote), 6NUM3/001/007 (Cote) » (AD37)
+        cote = re.sub(r"\s*\(Cote(?:s|\(s\))?\)(?=\s*(?:,|$))", "", cote) or None
     bornes = None
     for partie in bloc.trouver(classe="content-sub-part"):
         if [h.texte() for h in partie.trouver("h3")] == ["Date"]:
