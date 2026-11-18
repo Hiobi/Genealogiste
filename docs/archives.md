@@ -263,6 +263,8 @@ continuent d'utiliser les clés canoniques.
 
 Les accents, espaces extérieurs et majuscules sont normalisés. Les clés historiques de `SERIES`, dont
 `etat_civil`, `recensements`, `matricules`, `notaires` et `justice`, restent disponibles.
+Le type de pièce `NOT` (acte notarié) est rattaché à `notaire` (`pieces.TYPES_ARCHIVES`) : voir
+[pieces.md](pieces.md#codes-de-type) pour la suggestion de cote 3 E (#223).
 `medical` et `vie_privee` restent des régimes transversaux hors catalogue de fonds ; `etat_civil` est
 un regroupement qui exige de choisir naissance, mariage ou décès pour calculer un délai.
 

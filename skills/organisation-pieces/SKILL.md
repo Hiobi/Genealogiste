@@ -29,7 +29,9 @@ NOT (acte notarié), CNI (carte d'identité), COUR (courrier, demande ou répons
 (recensement), SIGN, CAPTURE (arbre en ligne), PHOTO, TOMBE, LIEU.
 Actes notariés : un seul code `NOT`, la nature en libellé libre après lui (`type_piece="NOT testament"`),
 l'étude dans le dépôt. Une attestation immobilière après décès ou un contrat de mariage est `NOT`, pas `D`
-ou `M` ; une demande d'acte est `COUR`, pas l'acte demandé.
+ou `M` ; une demande d'acte est `COUR`, pas l'acte demandé. Pour `NOT`, le bloc `archives` de
+`piece_nommer` relie la pièce au type `notaire` : cote 3 E acceptée, absente (chercher la cote 3 E de l'étude
+dans l'inventaire), ou autre (conservée, classement du service à vérifier).
 Pièce qu'aucun code ne couvre : `dossier` explicite dans le renommage (`{actuel, propose, dossier}`), sous
 `documents/`, `photographies/` ou `courriers/` seulement. Ne jamais mettre de chemin dans `propose`.
 

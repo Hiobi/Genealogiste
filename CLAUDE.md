@@ -84,4 +84,5 @@ Claude Code ne propose une mise à jour que si la version change. `make version 
 `plugin.json` et `mcp.json` fournissent les skills sans hooks ni serveur implicite ; le profil généré par
 `scripts/configurer_codex.py` active le MCP avec approbation native de chaque outil. Pour toucher au
 conditionnement ou aux permissions Codex, lire `docs/adaptation-codex.md` et exécuter `make test-codex`
-avec Codex CLI 0.166.0. Conserver la distribution et les hooks Claude.
+avec Codex CLI 0.166 à 0.169 (plage contrôlée par `scripts/verifier_codex.py`, dernière exécution
+0.169.0). Conserver la distribution et les hooks Claude.

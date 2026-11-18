@@ -47,3 +47,23 @@ def test_profil_resout_liens_symboliques(tmp_path):
     link.symlink_to(ROOT, target_is_directory=True)
     with pytest.raises(ValueError, match="hors du dépôt"):
         configurer.profil(link / "donnees")
+
+
+@pytest.mark.parametrize("texte, attendu", [
+    ("codex-cli 0.166.0", True),
+    ("codex-cli 0.169.0", True),
+    ("codex-cli 0.169.3", True),
+    ("codex-cli 0.165.9", False),
+    ("codex-cli 0.170.0", False),
+    ("codex-cli 1.0.0", False),
+    ("codex-cli 0.169.0-alpha.1", False),
+    ("autre 0.169.0", False),
+    ("", False),
+])
+def test_recette_codex_plage_de_versions(monkeypatch, texte, attendu):
+    """La recette native refuse une version de Codex CLI qui n'a pas été exécutée (#224)."""
+    monkeypatch.syspath_prepend(str(ROOT / "scripts"))
+    spec_v = importlib.util.spec_from_file_location("verifier_codex", ROOT / "scripts/verifier_codex.py")
+    verifier = importlib.util.module_from_spec(spec_v)
+    spec_v.loader.exec_module(verifier)
+    assert verifier.version_acceptee(texte) is attendu
