@@ -35,7 +35,7 @@ Un fonds inconnu reste inconnu : aucune recette n'est extrapolée aux autres typ
 | AD22 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD23 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD24 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
-| AD25 | inconnu | 5 | inconnu | teste | teste | inconnu | inconnu : oui, 2026-11-18T16:25:33+00:00; vps : oui, 2026-11-18T17:35:56+00:00 |
+| AD25 | inconnu | 5 | implemente_non_eprouve | teste | teste | inconnu | inconnu : oui, 2026-11-18T18:16:39+00:00; vps : oui, 2026-11-18T17:35:56+00:00 |
 | AD26 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD27 | inconnu | 5 | implemente_non_eprouve | teste | teste | inconnu | inconnu : oui, 2026-11-18T16:25:39+00:00; vps : oui, 2026-11-18T17:36:01+00:00 |
 | AD28 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
@@ -47,9 +47,9 @@ Un fonds inconnu reste inconnu : aucune recette n'est extrapolée aux autres typ
 | AD34 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD35 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD36 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
-| AD37 | inconnu | 3 | inconnu | implemente_non_eprouve | implemente_non_eprouve | inconnu | inconnu |
+| AD37 | inconnu | 4 | implemente_non_eprouve | teste | teste | inconnu | inconnu : oui, 2026-11-18T20:43:40+00:00 |
 | AD38 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
-| AD39 | inconnu | 5 | inconnu | teste | teste | inconnu | inconnu : oui, 2026-11-18T16:25:42+00:00; vps : oui, 2026-11-18T17:36:05+00:00 |
+| AD39 | inconnu | 5 | implemente_non_eprouve | teste | teste | inconnu | inconnu : oui, 2026-11-18T18:16:44+00:00; vps : oui, 2026-11-18T17:36:05+00:00 |
 | AD40 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD41 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD42 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
@@ -89,7 +89,7 @@ Un fonds inconnu reste inconnu : aucune recette n'est extrapolée aux autres typ
 | AD77 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD78 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD79 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
-| AD80 | inconnu | 3 | inconnu | implemente_non_eprouve | implemente_non_eprouve | inconnu | inconnu |
+| AD80 | inconnu | 4 | implemente_non_eprouve | teste | teste | inconnu | inconnu : oui, 2026-11-18T18:16:50+00:00 |
 | AD81 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD82 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD83 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
@@ -100,7 +100,7 @@ Un fonds inconnu reste inconnu : aucune recette n'est extrapolée aux autres typ
 | AD88 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD89 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD90 | inconnu | 5 | implemente_non_eprouve | teste | teste | inconnu | inconnu : oui, 2026-11-18T16:26:14+00:00; vps : oui, 2026-11-18T17:36:37+00:00 |
-| AD91 | inconnu | 3 | inconnu | implemente_non_eprouve | implemente_non_eprouve | inconnu | inconnu |
+| AD91 | inconnu | 4 | implemente_non_eprouve | teste | teste | inconnu | inconnu : oui, 2026-11-18T18:16:55+00:00 |
 | AD92 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD93 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD94 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
@@ -168,9 +168,9 @@ Chaque cellule reprend le niveau de `archives_service(document=...)`. Une recett
 | AD34 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | AD35 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | AD36 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
-| AD37 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 |
+| AD37 | 4 | 4 | 4 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 |
 | AD38 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
-| AD39 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 |
+| AD39 | 4 | 4 | 4 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 |
 | AD40 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | AD41 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | AD42 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -210,7 +210,7 @@ Chaque cellule reprend le niveau de `archives_service(document=...)`. Une recett
 | AD77 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | AD78 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | AD79 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
-| AD80 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 |
+| AD80 | 4 | 4 | 4 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 |
 | AD81 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | AD82 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | AD83 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -221,7 +221,7 @@ Chaque cellule reprend le niveau de `archives_service(document=...)`. Une recett
 | AD88 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | AD89 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | AD90 | 4 | 4 | 4 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 |
-| AD91 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 |
+| AD91 | 4 | 4 | 4 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 |
 | AD92 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | AD93 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | AD94 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |

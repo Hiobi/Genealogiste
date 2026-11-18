@@ -39,8 +39,16 @@ def cle(texte: str) -> str:
     return " ".join(s.split())
 
 
+_NIVEAU = re.compile(r"(.*?)(?:\s*,\s*|\s+)(commune|canton|arrondissement)\s*", re.I)
+
+
 def _base(option: str) -> tuple[str, str]:
-    """(nom sans qualificatif, qualificatif) ; « Lamentin (Le) » devient « Le Lamentin »."""
+    """(nom sans qualificatif, qualificatif) ; « Lamentin (Le) » devient « Le Lamentin ». Niveau administratif
+    en suffixe : « Lons-le-Saunier, commune » (AD39), « FERTE-ALAIS (LA) Commune », « ARPAJON Canton » (AD91)."""
+    niveau = _NIVEAU.fullmatch(option)
+    if niveau and niveau[1]:
+        nom, qualif = _base(niveau[1])
+        return nom, " ; ".join(q for q in (qualif, niveau[2].lower()) if q)
     m = re.fullmatch(r"(.*?)\s*\(([^()]*)\)\s*", option)
     if not m:
         return option, ""
@@ -64,6 +72,7 @@ def _champ(nom: str) -> str:
 
 
 _LIEUX = ("controlledAccessGeographicName", "title", "controlledAccessTitle", "controlledAccessCorporateName")
+_TYPOLOGIES = ("controlledAccessPhysicalCharacteristic", "controlledAccessSubject")
 
 
 def lire_formulaire(noeuds) -> dict:
@@ -97,8 +106,10 @@ def lire_formulaire(noeuds) -> dict:
             out["debut"] = nom
         elif sans in ("date_end", "period_end") and out["fin"] is None:
             out["fin"] = nom
-        elif sans == "controlledAccessPhysicalCharacteristic" and options:
+        elif sans in _TYPOLOGIES and options:
             out["typologies"][nom] = options
+    # typologie matérielle d'abord ; « Type d'acte » en sujet (AD39) seulement si elle ne distingue pas le type
+    out["typologies"] = dict(sorted(out["typologies"].items(), key=lambda kv: _TYPOLOGIES.index(_champ(kv[0]))))
     for sans in _LIEUX:  # la commune d'abord, sinon le bureau (titre ou collectivité)
         if sans in lieux:
             out["commune"], out["communes"] = lieux[sans]
@@ -128,6 +139,8 @@ def options_typologie(formulaire: dict, type_acte: str) -> tuple[str | None, lis
     """(champ, options) du premier champ de typologie qui propose ce type ; (None, []) sinon."""
     for nom, options in formulaire["typologies"].items():
         retenues = [o for o in options if _correspond(o, type_acte)]
+        if type_acte == "TD":  # « Tables décennales » plutôt que « Table des familles » (AD80)
+            retenues = [o for o in retenues if "decennal" in strip_accents(o).lower()] or retenues
         if retenues:
             return nom, retenues
     return None, []
@@ -143,7 +156,10 @@ def choisir_commune(options: list[str], commune: str) -> str:
     candidates = [o for o in options if _sans_bureau(cle(_base(o)[0])) == cible]
     if len(candidates) > 1:
         actuelles = [o for o in candidates if not _ANCIENNE.search(_base(o)[1])]
-        sans_qualif = [o for o in actuelles if not _base(o)[1] or "France" in _base(o)[1]]
+        # la commune avant le canton ou l'arrondissement de même nom (AD91)
+        communes = [o for o in actuelles if not re.search(r"\b(canton|arrondissement)$", _base(o)[1])]
+        actuelles = communes or actuelles
+        sans_qualif = [o for o in actuelles if not _base(o)[1] or "France" in _base(o)[1] or _base(o)[1] == "commune"]
         candidates = sans_qualif or actuelles or candidates
     if len(candidates) == 1:
         return candidates[0]

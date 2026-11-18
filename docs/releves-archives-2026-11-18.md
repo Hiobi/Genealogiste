@@ -86,7 +86,8 @@ Même chaîne (recherche → navigation → vue), formulaires dédiés relevés 
   ARK connu reste valable. Formulaires « Tables décennales », « Matricules militaires » et « Tables des
   successions et absences » relevés pour la suite (#112).
 - **Sans formulaire d'état civil trouvé** sur les pages publiques parcourues : AD37 (Indre-et-Loire), AD39
-  (Jura), AD80 (Somme), AD91 (Essonne, seulement « tous les fonds »). AD73 (Savoie) n'utilise pas Mnesys Expo
+  (Jura), AD80 (Somme), AD91 (Essonne, seulement « tous les fonds »). Formulaires trouvés le soir même :
+  voir « Formulaires complémentaires (#242) ». AD73 (Savoie) n'utilise pas Mnesys Expo
   (moteur Eolas).
 - **Planche-contact** (`archives_planche`) : essai réel réussi sur AD51 (4 vues) ; elle n'est donc pas propre
   à AD59, contrairement à ce qu'indiquait sa documentation.
@@ -145,3 +146,26 @@ Gallica (Cloudflare 403), le portail des Archives de Corse (Cloudflare 403) et 4
 départementales (Anubis, redirection JavaScript, Cloudflare) ont opposé un défi. Ces protections peuvent
 viser les adresses de centre de données plutôt que les clients automatisés en général : la comparaison avec
 une adresse résidentielle (relevé du 2026-11-10 : aucun défi sur AD59) reste à faire service par service.
+
+## Formulaires complémentaires (#242)
+
+Relevé du soir, depuis le poste de développement (HTTP simple, une requête toutes les 2 s environ, aucun
+défi rencontré). Communes chefs-lieux, années 1840, 1860 et 1880, aucune donnée familiale.
+
+| Service | Formulaires relevés (pages publiques) | Recherche réelle | Déclaré |
+|---|---|---|---|
+| AD25 Doubs | `/page/formulaires-de-recherche` : État civil, Tables décennales, Matricules militaires, Tables des successions et absences | TD Besançon 1860 : 3 tables 1853-1862 (période envoyée) ; RM classe 1880 : 5 volumes (classe en texte libre « 0-title ») ; SUCC Besançon 1860 : 7Q19 (1859-1862) ; État civil : nœud de commune « Besançon » (2 médias), feuille du plan de classement, registres atteignables seulement en JavaScript | TD, RM, SUCC |
+| AD39 Jura | `/page/acces-aux-documents-numerises` : Registres paroissiaux et d'état-civil, Matricules militaires | N Lons-le-Saunier 1860 : 3E/4726 ; TD : 3E/1228 (1853-1862) ; RM classe 1880 : R862-R865 ; communes « …, commune », type d'acte en sujet (BAPTEME, NAISSANCE…) | état civil, RM |
+| AD80 Somme | `/page/etat-civil` : Registres paroissiaux et de l'état civil | N Abbeville 1860 : 5MI_D271 ; TD : 5MI_D2 (1853-1872) ; Amiens 1850-1852 : 14 registres ; cote affichée avec le libellé « (Cote(s)) », retiré | état civil |
+| AD91 Essonne | `/page/par-thematique` : Etat civil et registres paroissiaux ; `/page/successions-1` : Tables de succession | NMD Étampes 1860 : 4E/1145, 4E/1219, 4E/1309, 4E/1400 ; SUCC Étampes 1840 : 3Q5/435 ; communes « ETAMPES Commune », « ARPAJON Canton » | état civil, SUCC |
+| AD37 Indre-et-Loire | `/page/des-personnes-et-des-familles` : État civil (« Recherche ciblée »), Tables des successions (par canton) ; formulaire signalé par l'utilisateur, absent des pages parcourues plus tôt | N Amboise 1860 : 6NUM8/003/050 (1850-1860) et Saint-Denis-Hors 6NUM8/215/007 ; TD 1853-1862 : 6NUM2/003/020-022 ; Chinon M 1700-1710 : 55 registres ; SUCC Amboise 1880 : 3Q23, 6NUM3/001/007 (1879-1890), communes « Amboise (Indre-et-Loire, France ; canton) » ; paroisses de Tours dans un second champ de lieu, non utilisé ; cote affichée avec le libellé « (Cote) », retiré | état civil, SUCC |
+| AD73 Savoie | — | moteur Eolas, hors Mnesys Expo : relève de #243 | non |
+
+- **Date exacte et intervalle** : sur AD91, « 1-date=1860 » ne trouve pas le volume de tables des successions
+  1859-1865 que « 2-date_begin/2-date_end=1860 » trouve ; le formulaire d'état civil, lui, rend les mêmes
+  registres par les deux voies. L'outil envoie donc l'intervalle d'une année quand il existe (matricules : classe
+  exacte).
+- **Volumes sans images** : `facet_media=image` exclut les volumes non numérisés (AD91, successions 1859-1865) ;
+  une recherche vide ne dit rien des volumes consultables en salle.
+- AD58 et AD14 rejoués après le changement d’envoi de l’année : registres de 1860 trouvés (Nevers : 5Mi1 89 ; Caen :
+  registres de naissances de 1860). La recette complète `make test-archives` couvre les autres.

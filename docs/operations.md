@@ -159,7 +159,7 @@ privés, ou d'une personne masquée, sont retirées des exports.
   corps si HEAD renvoie 405 ou 501), manifeste IIIF, citation
   suggérée. NAAN inconnu : registre public de l'ARK Alliance (cache 30 jours).
 - `archives_registres(service, commune, annee, type_acte, page, personne, annee_fin)` localise un registre
-  (AD59 et les services Mnesys du référentiel (AD14, AD19, AD27, AD51, AD55, AD58, AD69, AD90, AD972)) sans ARK initial : cote, ARK, titre, bornes et nombre de vues seulement lorsqu'ils sont affichés par
+  (AD59 et les services Mnesys du référentiel (AD14, AD19, AD25, AD27, AD37, AD39, AD51, AD55, AD58, AD69, AD80, AD90, AD91, AD972)) sans ARK initial : cote, ARK, titre, bornes et nombre de vues seulement lorsqu'ils sont affichés par
   le service. Types `N`, `M`, `D` ; `NMD` ou vide = aucun filtre ; `TD` = tables décennales recoupant la
   période. `annee_fin` (≥ `annee`) demande un intervalle. Une page de résultats par appel,
   puis `page_suivante` pour poursuivre explicitement. Un résultat vide est journalisé sans en déduire

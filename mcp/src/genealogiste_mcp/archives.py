@@ -152,10 +152,17 @@ def validate() -> list[str]:
             rr = s["recherche_registres"]
             formulaires = rr.get("formulaires") if isinstance(rr, dict) else None
             uuid = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
-            if (not isinstance(formulaires, dict) or "etat_civil" not in formulaires
-                    or set(formulaires) - {"etat_civil", "tables_decennales", "matricules", "successions"}
+            types_form = {"etat_civil", "tables_decennales", "matricules", "successions"}
+            if (not isinstance(formulaires, dict) or not formulaires or set(formulaires) - types_form
                     or not all(isinstance(v, str) and uuid.fullmatch(v) for v in formulaires.values())):
-                errs.append(f"{c} : recherche_registres.formulaires = {{etat_civil, tables_decennales?, matricules?, successions?}} en UUID")
+                errs.append(f"{c} : recherche_registres.formulaires = {{etat_civil?, tables_decennales?, matricules?, "
+                            "successions?}} en UUID, au moins un")
+            champs_annee = rr.get("champs_annee", {}) if isinstance(rr, dict) else {}
+            if (not isinstance(champs_annee, dict) or not isinstance(formulaires, dict)
+                    or set(champs_annee) - set(formulaires)
+                    or not all(isinstance(v, str) and re.fullmatch(r"\d+-[A-Za-z]+", v)
+                               for v in champs_annee.values())):
+                errs.append(f"{c} : recherche_registres.champs_annee = {{formulaire déclaré: nom de champ}}")
             if not s.get("ark_naan") or not (s.get("site") or "").startswith("https://"):
                 errs.append(f"{c} : recherche_registres exige site https et ark_naan")
             try:

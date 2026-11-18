@@ -67,7 +67,7 @@
     "mesures": {
       "inconnu": {
         "verdict": "oui",
-        "date_mesure": "2026-11-18T16:25:33+00:00",
+        "date_mesure": "2026-11-18T18:16:39+00:00",
         "detail": "",
         "revision": "",
         "reference": {
@@ -119,6 +119,25 @@
       }
     }
   },
+  "AD37": {
+    "dernier_essai": "2026-11-18",
+    "resultat": "ok",
+    "detail": "",
+    "derniere_reussite": "2026-11-18",
+    "mesures": {
+      "inconnu": {
+        "verdict": "oui",
+        "date_mesure": "2026-11-18T20:43:40+00:00",
+        "detail": "",
+        "revision": "",
+        "reference": {
+          "source": "https://archives.touraine.fr/ark:/37621/drb7t4vxl6qh",
+          "page": 1,
+          "note": "Registre localisé par archives_registres (commune et année), relevé du 2026-11-18 (#242)."
+        }
+      }
+    }
+  },
   "AD39": {
     "dernier_essai": "2026-11-18",
     "resultat": "ok",
@@ -127,7 +146,7 @@
     "mesures": {
       "inconnu": {
         "verdict": "oui",
-        "date_mesure": "2026-11-18T16:25:42+00:00",
+        "date_mesure": "2026-11-18T18:16:44+00:00",
         "detail": "",
         "revision": "",
         "reference": {
@@ -299,6 +318,25 @@
       }
     }
   },
+  "AD80": {
+    "dernier_essai": "2026-11-18",
+    "resultat": "ok",
+    "detail": "",
+    "derniere_reussite": "2026-11-18",
+    "mesures": {
+      "inconnu": {
+        "verdict": "oui",
+        "date_mesure": "2026-11-18T18:16:50+00:00",
+        "detail": "",
+        "revision": "",
+        "reference": {
+          "source": "https://archives.somme.fr/ark:/58483/l57mwbrkdf68",
+          "page": 1,
+          "note": "Registre localisé par archives_registres (commune et année), relevé du 2026-11-18 (#242)."
+        }
+      }
+    }
+  },
   "AD90": {
     "dernier_essai": "2026-11-18",
     "resultat": "ok",
@@ -325,6 +363,25 @@
           "source": "https://archives.territoiredebelfort.fr/ark:/12997/ws6xb0jv5rqm",
           "page": 1,
           "note": "Registre localisé par archives_registres (commune et année), relevé du 2026-11-18 (#128)."
+        }
+      }
+    }
+  },
+  "AD91": {
+    "dernier_essai": "2026-11-18",
+    "resultat": "ok",
+    "detail": "",
+    "derniere_reussite": "2026-11-18",
+    "mesures": {
+      "inconnu": {
+        "verdict": "oui",
+        "date_mesure": "2026-11-18T18:16:55+00:00",
+        "detail": "",
+        "revision": "",
+        "reference": {
+          "source": "https://archives.essonne.fr/ark:/28047/v8xqz7h3rmd4",
+          "page": 1,
+          "note": "Registre localisé par archives_registres (commune et année), relevé du 2026-11-18 (#242)."
         }
       }
     }

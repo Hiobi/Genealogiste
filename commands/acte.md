@@ -30,7 +30,7 @@ hors ligne) devient une tâche manuelle (`enquete_noter`), la conclusion est dé
 3. **Trouver le registre** (cote + ARK) :
    - Si une source `S…` de l'arbre porte déjà un ARK de registre ou de vue, le réutiliser (`ark_resoudre`
      pour le vérifier).
-   - Pour AD59 et les services Mnesys du référentiel (AD14, AD19, AD27, AD51, AD55, AD58, AD69, AD90, AD972), appeler `archives_registres(service=…, commune=…, annee=…, type_acte="N"|"M"|"D",
+   - Pour AD59 et les services Mnesys du référentiel (AD14, AD19, AD25, AD27, AD37, AD39, AD51, AD55, AD58, AD69, AD80, AD90, AD91, AD972), appeler `archives_registres(service=…, commune=…, annee=…, type_acte="N"|"M"|"D",
      personne=id)` : les cotes et ARK viennent du résultat officiel. Consulter les pages suivantes
      explicitement si nécessaire ; ne pas confondre registre trouvé et acte trouvé. `NMD` ou le type vide
      recherche sans filtre de type. `type_acte="TD"` renvoie les tables décennales dont la période recoupe

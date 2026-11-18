@@ -91,3 +91,13 @@ def test_matrice_par_type_conserve_la_portee():
     rapport = tableau([service()], {"AD00": {"resultat": "ok", "mesures": {"local": mesure}}},
                       ("naissance", "matricule"))
     assert "| AD00 | 5 | 3 |" in rapport
+
+
+def test_recherche_d_acte_exige_le_formulaire_d_etat_civil():
+    # AD25 : tables décennales, matricules et successions seulement (#242)
+    service = {"code": "AD00", "ark_naan": "99999", "resolution_image": {"type": "visualizer_api"},
+               "recherche_registres": {"formulaires": {"tables_decennales": "x"}}}
+    assert couverture(service, {}, "")["capacites"]["recherche"] == "implemente_non_eprouve"
+    assert couverture(service, {}, "naissance")["capacites"]["recherche"] == "inconnu"
+    service["recherche_registres"]["formulaires"]["etat_civil"] = "y"
+    assert couverture(service, {}, "naissance")["niveau"] == 4

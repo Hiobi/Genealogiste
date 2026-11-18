@@ -20,8 +20,10 @@ def couverture(service: dict, recette: dict, document: str = "") -> dict:
     if adaptateur:
         for c in CAPACITES[:3]:
             capacites[c] = "implemente_non_eprouve"
-    recherche = ((service["code"] == "AD59" or bool(service.get("recherche_registres")))
-                 and document in ("", "naissance", "mariage", "deces"))
+    formulaires = (service.get("recherche_registres") or {}).get("formulaires") or {}
+    # un acte précis exige le formulaire d'état civil (AD25 : tables, matricules et successions seulement, #242)
+    recherche = document in ("", "naissance", "mariage", "deces") and (
+        service["code"] == "AD59" or ("etat_civil" in formulaires if document else bool(formulaires)))
     if recherche:
         capacites["recherche"] = "implemente_non_eprouve"
     mesures = dict(recette.get("mesures") or {})

@@ -154,7 +154,7 @@ revendiquée. Les références et `releve_le` sont renseignés, sans modificatio
 Le [relevé du 10 novembre](releves-archives-2026-11-10.md) classe les 101 services par visionneuse
 (sonde `scripts/sonder_visionneuses.py`). L’adaptateur `visualizer_api` (Naoned, logiciel Mnesys Expo) est
 générique : 14 services Mnesys Expo (AD14, AD19, AD25, AD37, AD39, AD51, AD55, AD58, AD59, AD69,
-AD80, AD90, AD91, AD972) sont déclarés pour l’adaptateur générique. Seuls AD25, AD39 et AD59 ont une recette de référence réussie enregistrée ; les onze autres restent implémentés, non éprouvés. Aucun fonds supplémentaire n’est qualifié par cette déclaration. Ajouter un service Mnesys Expo = renseigner `resolution_image` après recette, sans code.
+AD80, AD90, AD91, AD972) sont déclarés pour l’adaptateur générique. Tous ont une recette de référence réussie enregistrée (`recettes_archives.json`), y compris AD37 depuis le relevé du 18 novembre 2026 (#242). Aucun fonds supplémentaire n’est qualifié par cette déclaration. Ajouter un service Mnesys Expo = renseigner `resolution_image` après recette, sans code.
 
 ## Recette depuis un VPS et accès protégé — #150
 
@@ -243,27 +243,42 @@ sourcée de la politique d'accès. `intervalle_requetes` d'ANOM (5 s) reprend le
 
 ## Recherche de registres sur les autres services Mnesys — #128
 
-Les services qui déclarent `recherche_registres` (AD14, AD19, AD27, AD51, AD55, AD58, AD69, AD90, AD972) passent par
+Les services qui déclarent `recherche_registres` (AD14, AD19, AD25, AD27, AD37, AD39, AD51, AD55, AD58, AD69, AD80, AD90, AD91, AD972) passent par
 un chemin générique (`sources/mnesys.py`) : le formulaire public « État civil » est lu (mis en cache une
 semaine) pour connaître les noms de champs, la liste des communes et les typologies, puis la recherche GET est
 lue avec le même analyseur que pour AD59, contrôlé sur l'hôte et le NAAN du service.
 
 ```json
-"recherche_registres": {"formulaires": {"etat_civil": "<uuid>", "tables_decennales": "<uuid facultatif>"},
+"recherche_registres": {"formulaires": {"etat_civil": "<uuid>", "tables_decennales": "<uuid>",
+                                        "matricules": "<uuid>", "successions": "<uuid>"},
+                        "champs_annee": {"matricules": "0-title"},
                         "releve_le": "2026-11-18", "reference": "https://<site>/search/form/<uuid>"}
 ```
 
+Chaque formulaire est facultatif, au moins un est déclaré. AD25 (Doubs) n'a que tables décennales, matricules
+et successions : son formulaire « État civil » renvoie un nœud de commune, pas des registres (#242) ; un type
+N, M ou D y renvoie une erreur qui liste les types disponibles. `champs_annee` désigne le champ d'année d'un
+formulaire qui ne le type pas (AD25 : classe des matricules en texte libre).
+
 - La commune est prise dans le vocabulaire du service (article inversé, forme actuelle préférée à une commune
   ancienne) ; une homonymie renvoie une erreur qui liste les valeurs, à reprendre telles quelles.
+- Niveau administratif en suffixe (« Lons-le-Saunier, commune » à AD39, « ARPAJON Commune » et
+  « ARPAJON Canton » à AD91) : la commune l'emporte sur le canton ou l'arrondissement de même nom.
+- Une année seule est envoyée comme intervalle d'une année quand le formulaire a une période : la date exacte
+  manque des volumes pluriannuels (tables des successions AD91). Matricules : classe en date exacte.
+- Typologie : la typologie matérielle d'abord ; à défaut de type d'acte, le champ « Type d'acte » en sujet
+  (AD39 : BAPTEME, NAISSANCE…). TD retient « Tables décennales » seule quand le formulaire propose d'autres
+  tables (AD80 : « Table des familles »).
+- Formulaire de tables dédié doté d'une période (AD25) : période envoyée ; sans période (AD59), filtre local.
 - Formulaire sans champ de date : recherche par commune seule, période filtrée sur les bornes affichées
   (`registres_hors_periode`).
 - Type d'acte non proposé par le formulaire : erreur explicite, relancer sans type.
 - **Registres matricules** (`type_acte="RM"`, #112) : `annee` = classe (naissance + 20), `commune` = bureau de
-  recrutement si le formulaire le propose (facultatif) ; AD19, AD27, AD55, AD58, AD69, AD90, AD972. Le formulaire
+  recrutement si le formulaire le propose (facultatif) ; AD19, AD25, AD27, AD39, AD55, AD58, AD69, AD90, AD972. Le formulaire
   d'AD14 renvoie des fiches individuelles (index nominatif) et n'est pas déclaré.
 - **Tables des successions et absences** (`type_acte="SUCC"`, série 3 Q, #112) : `commune` = bureau de
   l'enregistrement (« Nevers », « Bureau de Delle » : le préfixe « Bureau de » est facultatif), `annee` et
-  `annee_fin` = période ; AD27, AD58, AD69, AD90.
+  `annee_fin` = période ; AD25, AD27, AD37 (bureau = canton), AD58, AD69, AD90, AD91.
 - Relevé et recette : [relevé du 18 novembre 2026](releves-archives-2026-11-18.md).
 
 ## Localisation des registres AD59 — #121
