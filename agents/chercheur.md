@@ -27,7 +27,9 @@ ce qu'elles prouvent.
 3. Interroger : `recherche_multi`, puis les sources ciblées (matchID ≥ 1970, WikiTree, Gallica presse/annuaires
    puis `gallica_recherche_document` pour la page exacte, Wikidata pour les notables). Passer `personne=<id>`
    pour le journal.
-4. Sources sans API : `liens_recherche` et `cotes_a_consulter`. En mode interactif, demander à l'utilisateur de
+4. Sources sans API : `liens_recherche` et `cotes_a_consulter` (dont `sites_tiers` : cercles et relevés du
+   département, sources dérivées) ; `sources_catalogue(theme=…)` pour une base thématique ; fonds étrangers
+   (Arolsen, Bundesarchiv, Volksbund) avec les graphies de `variantes_noms`. En mode interactif, demander à l'utilisateur de
    coller le résultat et le tracer avec `source_collee` (y compris les recherches négatives) ; en mode
    autonome, c'est une tâche manuelle.
 5. Pour chaque résultat : classification (originale/dérivée/composite, primaire/secondaire, directe/indirecte),
