@@ -495,6 +495,10 @@ class _Reader:
             medias=[x for x in (self.xid("Media", r.get("ref")) for r in c.get("media_list") or []) if x],
             prive=bool(c.get("private")))
 
+    def media_ids(self, obj: dict) -> list[str]:
+        """Médias liés (media_list) d'une personne, famille, source ou d'un événement : identifiants O…."""
+        return [x for x in (self.xid("Media", m.get("ref")) for m in obj.get("media_list") or []) if x]
+
     def citations(self, handles: list[str]) -> list[Citation]:
         return [c for c in (self.citation(h) for h in handles or []) if c]
 
@@ -555,7 +559,8 @@ class _Reader:
         e = Event(type=code, date=date_from_gramps(ev.get("date")), lieu=lieu, valeur=ev.get("description") or "",
                   type_detail=detail, age=_attr_value(ref, A_AGE), cause=_attr_value(ev, A_CAUSE),
                   note=self.single_note(ev.get("note_list")), citations=self.citations(ev.get("citation_list")), uid=uid,
-                  statut_manuel=_statut_read(_attr_value(ev, A_STATUT)), prive=bool(ev.get("private")))
+                  statut_manuel=_statut_read(_attr_value(ev, A_STATUT)), prive=bool(ev.get("private")),
+                  medias=self.media_ids(ev))
         named = []
         for a in _attrs(ev):
             if _atype(a) == A_ASSO:
@@ -607,7 +612,7 @@ class _Reader:
             person.famc = [x for x in (self.xid("Family", f) for f in p.get("parent_family_list") or []) if x]
             person.fams = [x for x in (self.xid("Family", f) for f in p.get("family_list") or []) if x]
             person.citations = self.citations(p.get("citation_list"))
-            person.medias = [x for x in (self.xid("Media", m.get("ref")) for m in p.get("media_list") or []) if x]
+            person.medias = self.media_ids(p)
             texts, shared = self.notes(p.get("note_list"), ("Person Note",))
             person.notes = texts + shared
             assos, linked = [], set()
@@ -649,7 +654,7 @@ class _Reader:
                         fam.evenements.append(e)
                         owned.setdefault(ref.get("ref"), e)
             fam.citations = self.citations(f.get("citation_list"))
-            fam.medias = [x for x in (self.xid("Media", m.get("ref")) for m in f.get("media_list") or []) if x]
+            fam.medias = self.media_ids(f)
             texts, shared = self.notes(f.get("note_list"), ("Family Note",))
             fam.notes = texts + shared
             t.familles[fid] = fam
@@ -678,7 +683,8 @@ class _Reader:
                 id=sid, titre=s.get("title") or "", auteur=s.get("author") or "", publication=s.get("pubinfo") or "",
                 depot=self.xid("Repository", repo.get("ref")), cote=repo.get("call_number") or "",
                 url=_attr_value(s, "URL"), ark=_attr_value(s, "ARK"), type_source=_REV_TYPES.get(_attr_value(s, "Type de source"), "indeterminee"),
-                original=orig, note=self.single_note(s.get("note_list")), prive=bool(s.get("private")))
+                original=orig, note=self.single_note(s.get("note_list")), prive=bool(s.get("private")),
+                medias=self.media_ids(s))
         for h, r in sorted(db.all("Repository").items(), key=lambda kv: self.xid("Repository", kv[0])):
             rid = self.xid("Repository", h)
             self.rep("Repository", h)
@@ -879,7 +885,8 @@ class _Writer:
         obj["attribute_list"] = _same_list(base, keep + pending)
 
     def media_refs(self, obj: dict, ids: list[str]) -> None:
-        """media_list d'une personne ou d'une famille : références existantes conservées (cadrage, citations)."""
+        """media_list d'une personne, famille, source ou d'un événement : références existantes conservées (cadrage,
+        citations)."""
         base_media = {m.get("ref"): m for m in obj.get("media_list") or []}
         medias = []
         for mid in ids:
@@ -1149,6 +1156,7 @@ class _Writer:
         self.set_attrs(obj, lambda t: t in (A_UID, A_STATUT, A_CAUSE, A_PAROISSE, A_PRECISION, A_ASSO), desired)
         obj["citation_list"] = _same_list(obj.get("citation_list") or [],
                                           self.citations(e.citations, obj.get("citation_list"), h))
+        self.media_refs(obj, e.medias)
         regen = self.regen("Event", e.uid)
         obj["note_list"] = self.single(e.note, obj.get("note_list"), "Event Note", h, self.auto("Event", e.uid),
                                        keep=not regen)
@@ -1362,6 +1370,7 @@ class _Writer:
                                 else s.original) if s.original else ""),
                 ("URL", s.url), ("ARK", s.ark)) if v]
             self.set_attrs(obj, lambda x: x in SRC_ATTRS, desired)
+            self.media_refs(obj, s.medias)
             regen = self.regen("Source", sid)
             auto = [("Source Note", f"Lien : {s.url}")] if s.url and regen else None
             if s.url:
