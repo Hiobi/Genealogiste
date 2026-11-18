@@ -1,6 +1,8 @@
 # Relevé des archives du 18 novembre 2026 — recherche de registres Mnesys (#128)
 
-Relevé fait depuis l'hôte de travail (environnement **inconnu** : ce n'est pas une mesure depuis le VPS, #150),
+Relevé fait depuis l'hôte de travail, une machine **hébergée en centre de données** (précision de l'utilisateur,
+18 novembre 2026). Les recettes restent enregistrées avec l'environnement `inconnu` : cette machine n'est pas
+identifiée comme le VPS cible de #150, mais ses résultats valent pour une adresse IP de centre de données,
 en HTTP simple, débit du plugin respecté (une requête toutes les 2 s environ pendant l'exploration). Aucun
 défi anti-robot n'a été rencontré ; aucun n'aurait été contourné. Les `robots.txt` des services ne
 contiennent aucune règle `Disallow` sur `/search`. Aucune donnée familiale n'a été utilisée : communes
@@ -130,3 +132,12 @@ conseille alors la consultation manuelle, sans interdire un nouvel essai. Nouvel
   une visionneuse). Aucun portail de registres identifié.
 - **AD06** : `https://archives06.fr/` présente une chaîne de certificats TLS incomplète pour un client HTTP
   (`CERTIFICATE_VERIFY_FAILED`) ; la vérification n'a pas été désactivée. L'accès aux fonds reste non validé.
+
+## Portée pour #150 (adresse de centre de données)
+
+Depuis cette adresse de centre de données : les 13 services Mnesys essayés (AD14, AD19, AD25, AD27, AD39, AD51,
+AD55, AD58, AD59, AD69, AD90, AD91, AD972) ont répondu sans défi, recherche, navigation et image comprises ;
+Gallica (Cloudflare 403), le portail des Archives de Corse (Cloudflare 403) et 43 visionneuses
+départementales (Anubis, redirection JavaScript, Cloudflare) ont opposé un défi. Ces protections peuvent
+viser les adresses de centre de données plutôt que les clients automatisés en général : la comparaison avec
+une adresse résidentielle (relevé du 2026-11-10 : aucun défi sur AD59) reste à faire service par service.
