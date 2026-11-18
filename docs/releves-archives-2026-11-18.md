@@ -1,8 +1,12 @@
 # Relevé des archives du 18 novembre 2026 — recherche de registres Mnesys (#128)
 
-Relevé fait depuis l'hôte de travail, une machine **hébergée en centre de données** (précision de l'utilisateur,
-18 novembre 2026). Les recettes restent enregistrées avec l'environnement `inconnu` : cette machine n'est pas
-identifiée comme le VPS cible de #150, mais ses résultats valent pour une adresse IP de centre de données,
+Relevé fait depuis l'hôte de travail, qui est le **VPS cible de #150** (serveur dédié en centre de données,
+confirmé par l'utilisateur le 18 novembre 2026). La recette a été rejouée avec
+`GENEALOGISTE_RECETTE_ENVIRONNEMENT=vps make test-archives ECRIRE=1` (révision `e769828`, 17:36 UTC) : 12 réussis,
+1 ignoré (BnF). `archives_service` expose donc `acces_vps` : `oui` pour AD14, AD19, AD25, AD27, AD39, AD51, AD55,
+AD58, AD59, AD69, AD90, AD972 ; `defi` pour BnF ; `inconnu` pour les services sans recette. Les premières mesures
+du jour restent notées `inconnu`. Recherche AD59 (`GENEALOGISTE_TEST_REGISTRES=1`, `test_registres_live.py`) :
+réussie. Mesures faites
 en HTTP simple, débit du plugin respecté (une requête toutes les 2 s environ pendant l'exploration). Aucun
 défi anti-robot n'a été rencontré ; aucun n'aurait été contourné. Les `robots.txt` des services ne
 contiennent aucune règle `Disallow` sur `/search`. Aucune donnée familiale n'a été utilisée : communes
@@ -133,9 +137,9 @@ conseille alors la consultation manuelle, sans interdire un nouvel essai. Nouvel
 - **AD06** : `https://archives06.fr/` présente une chaîne de certificats TLS incomplète pour un client HTTP
   (`CERTIFICATE_VERIFY_FAILED`) ; la vérification n'a pas été désactivée. L'accès aux fonds reste non validé.
 
-## Portée pour #150 (adresse de centre de données)
+## Portée pour #150 (VPS cible)
 
-Depuis cette adresse de centre de données : les 13 services Mnesys essayés (AD14, AD19, AD25, AD27, AD39, AD51,
+Depuis le VPS cible : les 13 services Mnesys essayés (AD14, AD19, AD25, AD27, AD39, AD51,
 AD55, AD58, AD59, AD69, AD90, AD91, AD972) ont répondu sans défi, recherche, navigation et image comprises ;
 Gallica (Cloudflare 403), le portail des Archives de Corse (Cloudflare 403) et 43 visionneuses
 départementales (Anubis, redirection JavaScript, Cloudflare) ont opposé un défi. Ces protections peuvent

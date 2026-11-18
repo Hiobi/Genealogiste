@@ -15,6 +15,17 @@
           "page": 1,
           "note": "Registre localisé par archives_registres (commune et année), relevé du 2026-11-18 (#128)."
         }
+      },
+      "vps": {
+        "verdict": "oui",
+        "date_mesure": "2026-11-18T17:35:47+00:00",
+        "detail": "",
+        "revision": "e769828acc9280277375160f521ac5d71317bedf",
+        "reference": {
+          "source": "https://archives.calvados.fr/ark:/52329/n1lc50f2vz8d",
+          "page": 1,
+          "note": "Registre localisé par archives_registres (commune et année), relevé du 2026-11-18 (#128)."
+        }
       }
     }
   },
@@ -29,6 +40,17 @@
         "date_mesure": "2026-11-18T16:25:28+00:00",
         "detail": "",
         "revision": "",
+        "reference": {
+          "source": "https://www.archives.correze.fr/ark:/69090/j6pl1tkd52mb",
+          "page": 1,
+          "note": "Registre localisé par archives_registres (commune et année), relevé du 2026-11-18 (#128)."
+        }
+      },
+      "vps": {
+        "verdict": "oui",
+        "date_mesure": "2026-11-18T17:35:52+00:00",
+        "detail": "",
+        "revision": "e769828acc9280277375160f521ac5d71317bedf",
         "reference": {
           "source": "https://www.archives.correze.fr/ark:/69090/j6pl1tkd52mb",
           "page": 1,
@@ -53,6 +75,17 @@
           "page": 0,
           "note": "Vue publique (recette réelle du 2026-11-10, verifier_telechargements.py)."
         }
+      },
+      "vps": {
+        "verdict": "oui",
+        "date_mesure": "2026-11-18T17:35:56+00:00",
+        "detail": "",
+        "revision": "e769828acc9280277375160f521ac5d71317bedf",
+        "reference": {
+          "source": "https://archives.doubs.fr/ark:/25993/7rx3d5cm9tzk/0cb0200e-150f-426e-958f-68ce8f04f9a2",
+          "page": 0,
+          "note": "Vue publique (recette réelle du 2026-11-10, verifier_telechargements.py)."
+        }
       }
     }
   },
@@ -67,6 +100,17 @@
         "date_mesure": "2026-11-18T16:25:39+00:00",
         "detail": "",
         "revision": "",
+        "reference": {
+          "source": "https://archives.eure.fr/ark:/26335/q962nct0xfkp",
+          "page": 1,
+          "note": "Registre localisé par archives_registres (commune et année), relevé du 2026-11-18 (#128)."
+        }
+      },
+      "vps": {
+        "verdict": "oui",
+        "date_mesure": "2026-11-18T17:36:01+00:00",
+        "detail": "",
+        "revision": "e769828acc9280277375160f521ac5d71317bedf",
         "reference": {
           "source": "https://archives.eure.fr/ark:/26335/q962nct0xfkp",
           "page": 1,
@@ -91,6 +135,17 @@
           "page": 0,
           "note": "Vue publique (recette réelle du 2026-11-10, verifier_telechargements.py)."
         }
+      },
+      "vps": {
+        "verdict": "oui",
+        "date_mesure": "2026-11-18T17:36:05+00:00",
+        "detail": "",
+        "revision": "e769828acc9280277375160f521ac5d71317bedf",
+        "reference": {
+          "source": "https://archives39.fr/ark:/36595/p3rdck27zjbm/6e6facba-b9d7-4672-9c7c-ea86f058a89b",
+          "page": 0,
+          "note": "Vue publique (recette réelle du 2026-11-10, verifier_telechargements.py)."
+        }
       }
     }
   },
@@ -105,6 +160,17 @@
         "date_mesure": "2026-11-18T16:25:47+00:00",
         "detail": "",
         "revision": "",
+        "reference": {
+          "source": "https://archives.marne.fr/ark:/86869/trh5nx2l10vs",
+          "page": 1,
+          "note": "Registre localisé par archives_registres (commune et année), relevé du 2026-11-18 (#128)."
+        }
+      },
+      "vps": {
+        "verdict": "oui",
+        "date_mesure": "2026-11-18T17:36:10+00:00",
+        "detail": "",
+        "revision": "e769828acc9280277375160f521ac5d71317bedf",
         "reference": {
           "source": "https://archives.marne.fr/ark:/86869/trh5nx2l10vs",
           "page": 1,
@@ -129,6 +195,17 @@
           "page": 1,
           "note": "Registre localisé par archives_registres (commune et année), relevé du 2026-11-18 (#128)."
         }
+      },
+      "vps": {
+        "verdict": "oui",
+        "date_mesure": "2026-11-18T17:36:16+00:00",
+        "detail": "",
+        "revision": "e769828acc9280277375160f521ac5d71317bedf",
+        "reference": {
+          "source": "https://archives.meuse.fr/ark:/52669/985mlvpj2t0x",
+          "page": 1,
+          "note": "Registre localisé par archives_registres (commune et année), relevé du 2026-11-18 (#128)."
+        }
       }
     }
   },
@@ -143,6 +220,17 @@
         "date_mesure": "2026-11-18T16:25:58+00:00",
         "detail": "",
         "revision": "",
+        "reference": {
+          "source": "https://archives.nievre.fr/ark:/60877/r5dwqfj1k26p",
+          "page": 1,
+          "note": "Registre localisé par archives_registres (commune et année), relevé du 2026-11-18 (#128)."
+        }
+      },
+      "vps": {
+        "verdict": "oui",
+        "date_mesure": "2026-11-18T17:36:21+00:00",
+        "detail": "",
+        "revision": "e769828acc9280277375160f521ac5d71317bedf",
         "reference": {
           "source": "https://archives.nievre.fr/ark:/60877/r5dwqfj1k26p",
           "page": 1,
@@ -167,6 +255,17 @@
           "page": 25,
           "note": "Tables décennales, vue publique (scripts/verifier_telechargements.py)."
         }
+      },
+      "vps": {
+        "verdict": "oui",
+        "date_mesure": "2026-11-18T17:36:27+00:00",
+        "detail": "",
+        "revision": "e769828acc9280277375160f521ac5d71317bedf",
+        "reference": {
+          "source": "ark:/33518/q0km71zxrv5s",
+          "page": 25,
+          "note": "Tables décennales, vue publique (scripts/verifier_telechargements.py)."
+        }
       }
     }
   },
@@ -181,6 +280,17 @@
         "date_mesure": "2026-11-18T16:26:09+00:00",
         "detail": "",
         "revision": "",
+        "reference": {
+          "source": "https://archives.rhone.fr/ark:/28729/sfwm2qtlk70n",
+          "page": 1,
+          "note": "Registre localisé par archives_registres (commune et année), relevé du 2026-11-18 (#128)."
+        }
+      },
+      "vps": {
+        "verdict": "oui",
+        "date_mesure": "2026-11-18T17:36:32+00:00",
+        "detail": "",
+        "revision": "e769828acc9280277375160f521ac5d71317bedf",
         "reference": {
           "source": "https://archives.rhone.fr/ark:/28729/sfwm2qtlk70n",
           "page": 1,
@@ -205,6 +315,17 @@
           "page": 1,
           "note": "Registre localisé par archives_registres (commune et année), relevé du 2026-11-18 (#128)."
         }
+      },
+      "vps": {
+        "verdict": "oui",
+        "date_mesure": "2026-11-18T17:36:37+00:00",
+        "detail": "",
+        "revision": "e769828acc9280277375160f521ac5d71317bedf",
+        "reference": {
+          "source": "https://archives.territoiredebelfort.fr/ark:/12997/ws6xb0jv5rqm",
+          "page": 1,
+          "note": "Registre localisé par archives_registres (commune et année), relevé du 2026-11-18 (#128)."
+        }
       }
     }
   },
@@ -224,6 +345,17 @@
           "page": 1,
           "note": "Registre localisé par archives_registres (commune et année), relevé du 2026-11-18 (#128)."
         }
+      },
+      "vps": {
+        "verdict": "oui",
+        "date_mesure": "2026-11-18T17:36:43+00:00",
+        "detail": "",
+        "revision": "e769828acc9280277375160f521ac5d71317bedf",
+        "reference": {
+          "source": "https://www.patrimoines-martinique.org/ark:/35569/2p4wv0sfxbcl",
+          "page": 1,
+          "note": "Registre localisé par archives_registres (commune et année), relevé du 2026-11-18 (#128)."
+        }
       }
     }
   },
@@ -237,6 +369,17 @@
         "date_mesure": "2026-11-18T16:26:20+00:00",
         "detail": "archives_naviguer : gallica.bnf.fr : blocage anti-robot (Cloudflare, HTTP 403). Consultation par l'utilisateur : https://gallica.bnf.fr/iiif/ark:/12148/bpt6k5619759j/manifest.json ; aucune tentative de contournement.",
         "revision": "",
+        "reference": {
+          "source": "https://gallica.bnf.fr/ark:/12148/bpt6k5619759j",
+          "page": 12,
+          "note": "Manifeste IIIF Gallica."
+        }
+      },
+      "vps": {
+        "verdict": "defi",
+        "date_mesure": "2026-11-18T17:36:44+00:00",
+        "detail": "archives_naviguer : gallica.bnf.fr : blocage anti-robot (Cloudflare, HTTP 403). Consultation par l'utilisateur : https://gallica.bnf.fr/iiif/ark:/12148/bpt6k5619759j/manifest.json ; aucune tentative de contournement.",
+        "revision": "e769828acc9280277375160f521ac5d71317bedf",
         "reference": {
           "source": "https://gallica.bnf.fr/ark:/12148/bpt6k5619759j",
           "page": 12,
