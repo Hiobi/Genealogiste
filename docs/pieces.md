@@ -132,6 +132,11 @@ _organisation/            journaux TSV des déplacements
   de même nom de base que la pièce et portant `type: piece` suit celle-ci ; `fichier` et son image
   incorporée sont actualisés. La section `## Notes` et les autres propriétés sont préservées. Une note
   modifiée depuis le plan bloque l’application avant tout déplacement.
+- **Liens des notes ordinaires** : une note Markdown qui pointe vers une pièce que le plan renomme (lien wiki
+  `[[nom.jpg]]`) ou déplace (lien par chemin, `[acte](scans/acte.pdf)`) est signalée dans `references_notes`
+  (`note`, `lien`, `piece`, `vers` ; 50 au plus, total dans `nb_references_notes`). La note n'est **jamais réécrite** :
+  les liens se corrigent ensuite, note par note, avec l'accord de l'utilisateur. Un lien wiki par nom reste
+  valide quand la pièce change seulement de dossier. Parcours complet : [organiser un fonds](../wiki/Organiser-un-fonds.md).
 - **Médias de l'arbre** : par défaut, un fichier référencé par un média de l'arbre n'est pas déplacé (la
   référence casserait) ; il est listé dans `references_arbre_non_deplacees`. Avec `suivre_medias=true`, il
   est rangé comme les autres pièces et sa référence est mise à jour (voir

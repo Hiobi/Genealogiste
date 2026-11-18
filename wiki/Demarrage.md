@@ -82,5 +82,8 @@ Fermer cette session, retirer les exports de l’exercice ou ouvrir un nouveau t
 votre vrai dossier privé. Vérifier à nouveau les effectifs avec `arbre_info` avant un import.
 Ne copier ni votre arbre ni vos actes dans le dépôt du plugin.
 
+Pour ranger un dossier de pièces existant, créer votre base ou partir de votre arbre GEDCOM ou Gramps Web,
+suivre [organiser un fonds](Organiser-un-fonds.md).
+
 La suite : [mode fichier](Mode-fichier.md), [parcours de recherche](Parcours-de-recherche.md),
 [configuration](Configuration.md) et [exports](Exports.md).

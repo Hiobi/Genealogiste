@@ -68,6 +68,12 @@ Relisez le bilan et le diff de l’import avant de l’approuver. Utilisez ensui
 présents dans votre arbre. Le [tutoriel avec les données fictives du projet](https://github.com/Hiobi/Genealogiste/wiki/Demarrage)
 détaille ce parcours et le résultat attendu.
 
+Vous avez déjà un dossier de scans, de photos d’archives ou de PDF d’actes, éventuellement avec des notes
+Markdown ? Demandez simplement « organise ce dossier de scans » ou lancez `/genealogiste:organise <dossier>` :
+un plan vous est présenté avant tout déplacement, et tout s’annule. Le guide
+[organiser un fonds](https://github.com/Hiobi/Genealogiste/wiki/Organiser-un-fonds) décrit trois départs :
+dossier existant, base depuis zéro, arbre GEDCOM ou Gramps Web. Obsidian n’est pas nécessaire.
+
 ## Vos données et vos décisions
 
 - Arbres, actes, notes et identifiants restent dans des emplacements privés **hors du dépôt du plugin**.

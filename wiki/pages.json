@@ -24,6 +24,12 @@
     "groupe": "Commencer"
   },
   {
+    "slug": "Organiser-un-fonds",
+    "source": "wiki/Organiser-un-fonds.md",
+    "titre": "Organiser un fonds",
+    "groupe": "Commencer"
+  },
+  {
     "slug": "Configuration",
     "source": "wiki/Configuration.md",
     "titre": "Configuration",
