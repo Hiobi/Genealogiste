@@ -50,9 +50,24 @@ class Cache:
         self._db.execute("CREATE TABLE IF NOT EXISTS creneaux (hote TEXT PRIMARY KEY, dernier REAL NOT NULL)")
         self._db.execute(
             "CREATE TABLE IF NOT EXISTS ralentissements (hote TEXT PRIMARY KEY, jour TEXT NOT NULL,"
-            " facteur REAL NOT NULL, incidents INTEGER NOT NULL, statut INTEGER, maj REAL NOT NULL)"
+            " facteur REAL NOT NULL, incidents INTEGER NOT NULL, statut INTEGER, maj REAL NOT NULL,"
+            " double_a REAL)"
         )
+        self._migrer_ralentissements()
         self._db.commit()
+
+    def _migrer_ralentissements(self) -> None:
+        """Cache antérieur à l'anti-rebond (#211) : ajoute la colonne ``double_a`` (horodatage du dernier
+        doublement). Plusieurs serveurs ouvrant ensemble un ancien cache peuvent se la disputer : une colonne
+        déjà ajoutée par un autre n'est pas une erreur."""
+        colonnes = {r[1] for r in self._db.execute("PRAGMA table_info(ralentissements)")}
+        if "double_a" in colonnes:
+            return
+        try:
+            self._db.execute("ALTER TABLE ralentissements ADD COLUMN double_a REAL")
+        except sqlite3.OperationalError as exc:
+            if "duplicate column" not in str(exc):
+                raise
 
     def _passer_en_wal(self) -> None:
         """Le changement de mode de journal n'attend pas le verrou (busy_timeout ignoré) : plusieurs serveurs
@@ -197,20 +212,27 @@ class Cache:
                 raise
 
     def ralentir(self, hote: str, jour: str, facteur_max: float, statut: int | None = None,
-                 maintenant: float | None = None) -> float:
+                 maintenant: float | None = None, anti_rebond: float = 0.0) -> float:
         """Double le facteur de ralentissement de ``hote`` pour ``jour`` (plafonné à ``facteur_max``) ;
-        un ralentissement d'un jour précédent repart de 1. Renvoie le nouveau facteur."""
+        un ralentissement d'un jour précédent repart de 1. Anti-rebond : un incident survenu moins de
+        ``anti_rebond`` s (horloge murale) après le dernier doublement est compté (incidents, statut) sans
+        doubler de nouveau, pour qu'une rafale d'erreurs d'un même épisode ne vaille qu'un doublement. Lecture
+        et écriture dans une même transaction : sûr entre processus. Renvoie le facteur courant."""
+        maintenant = time.time() if maintenant is None else maintenant
         with self._lock:
             try:
                 self._transaction(self.attente_creneau)
-                row = self._db.execute("SELECT jour, facteur, incidents FROM ralentissements WHERE hote = ?",
-                                       (hote,)).fetchone()
-                facteur, incidents = (row[1], row[2]) if row and row[0] == jour else (1.0, 0)
-                facteur = min(max(1.0, facteur_max), facteur * 2)
+                row = self._db.execute(
+                    "SELECT jour, facteur, incidents, double_a FROM ralentissements WHERE hote = ?",
+                    (hote,)).fetchone()
+                facteur, incidents, double_a = (row[1], row[2], row[3]) if row and row[0] == jour else (1.0, 0, None)
+                if double_a is None or not 0 <= maintenant - double_a < anti_rebond:
+                    facteur = min(max(1.0, facteur_max), facteur * 2)
+                    double_a = maintenant
                 self._db.execute(
-                    "INSERT OR REPLACE INTO ralentissements (hote, jour, facteur, incidents, statut, maj)"
-                    " VALUES (?, ?, ?, ?, ?, ?)",
-                    (hote, jour, facteur, incidents + 1, statut, time.time() if maintenant is None else maintenant))
+                    "INSERT OR REPLACE INTO ralentissements (hote, jour, facteur, incidents, statut, maj, double_a)"
+                    " VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    (hote, jour, facteur, incidents + 1, statut, maintenant, double_a))
                 self._db.commit()
                 return facteur
             except BaseException:

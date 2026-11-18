@@ -13,7 +13,7 @@ import respx
 
 from genealogiste_mcp import diagnostic, server
 from genealogiste_mcp.cache import Cache
-from genealogiste_mcp.http import HttpClient, SourceError
+from genealogiste_mcp.http import ANTI_REBOND, HttpClient, SourceError
 
 URL = "https://archives.exemple.fr/api/vue"
 HOTE = "archives.exemple.fr"
@@ -151,7 +151,79 @@ def test_ralentissement_cumule_jusqu_au_plafond(tmp_path):
         with pytest.raises(SourceError):
             a.get(URL, use_cache=False)
         vus.append(a.intervalle(HOTE))
+        h.t += ANTI_REBOND  # épisodes de surcharge distincts
     assert vus == [4.0, 8.0, 10.0, 10.0, 10.0]
+
+
+@respx.mock
+def test_anti_rebond_rafale_un_seul_doublement(tmp_path):
+    """Rafale d'erreurs (requêtes parallèles d'autres processus, reprises) dans la fenêtre : un seul
+    doublement ; les incidents sont comptés et l'erreur porte toujours l'intervalle courant."""
+    h = Horloge()
+    respx.get(URL).mock(return_value=httpx.Response(503))
+    a = client(tmp_path / "c.sqlite", h)
+    b = client(tmp_path / "c.sqlite", h)  # autre processus, même cache
+    for c in (a, b, a, b):
+        with pytest.raises(SourceError) as exc:
+            c.get(URL, use_cache=False)
+        assert exc.value.intervalle == 4.0 and "ralenti" in str(exc.value)
+    etat = a.cache.ralentissements("2026-11-17")[HOTE]
+    assert etat["facteur"] == 2.0 and etat["incidents"] == 4 and etat["dernier_statut"] == 503
+
+
+@respx.mock
+def test_anti_rebond_reprises_d_un_meme_appel(tmp_path):
+    h = Horloge()
+    respx.get(URL).mock(return_value=httpx.Response(429))
+    a = client(tmp_path / "c.sqlite", h, max_retries=4)
+    with pytest.raises(SourceError):
+        a.get(URL, use_cache=False)
+    assert a.intervalle(HOTE) == 4.0
+    assert a.cache.ralentissements("2026-11-17")[HOTE]["incidents"] == 4
+
+
+@respx.mock
+def test_anti_rebond_fenetre_ecoulee_double_de_nouveau(tmp_path):
+    h = Horloge()
+    respx.get(URL).mock(return_value=httpx.Response(503))  # 503 : pas d'échec mémorisé, chaque appel part
+    a = client(tmp_path / "c.sqlite", h)
+    with pytest.raises(SourceError):
+        a.get(URL, use_cache=False)
+    debut = h.t
+    h.t = debut + ANTI_REBOND - 1
+    with pytest.raises(SourceError):
+        a.get(URL, use_cache=False)
+    assert a.intervalle(HOTE) == 4.0
+    h.t = debut + ANTI_REBOND  # la fenêtre court depuis le dernier doublement, pas depuis le dernier incident
+    with pytest.raises(SourceError):
+        a.get(URL, use_cache=False)
+    assert a.intervalle(HOTE) == 8.0
+
+
+def test_anti_rebond_lendemain_repart_de_un(tmp_path):
+    c = Cache(tmp_path / "c.sqlite")
+    assert c.ralentir("a.exemple", "2026-11-17", 64, 429, 1000.0, anti_rebond=300) == 2.0
+    assert c.ralentir("a.exemple", "2026-11-17", 64, 429, 1001.0, anti_rebond=300) == 2.0
+    # minuit passé, même dans la fenêtre : nouvelle journée, nouveau doublement depuis 1
+    assert c.ralentir("a.exemple", "2026-11-18", 64, 429, 1002.0, anti_rebond=300) == 2.0
+    assert c.ralentissements("2026-11-18")["a.exemple"]["incidents"] == 1
+    assert c.ralentir("a.exemple", "2026-11-18", 64, 429, 1003.0, anti_rebond=300) == 2.0
+
+
+def test_migration_ancien_cache_ralentissements(tmp_path):
+    chemin = tmp_path / "c.sqlite"
+    db = sqlite3.connect(chemin)
+    db.execute("CREATE TABLE ralentissements (hote TEXT PRIMARY KEY, jour TEXT NOT NULL,"
+               " facteur REAL NOT NULL, incidents INTEGER NOT NULL, statut INTEGER, maj REAL NOT NULL)")
+    db.execute("INSERT INTO ralentissements VALUES ('a.exemple', '2026-11-17', 4.0, 2, 503, 900.0)")
+    db.commit()
+    db.close()
+    c = Cache(chemin)
+    Cache(chemin)  # réouverture : migration idempotente
+    assert c.ralentissement("a.exemple", "2026-11-17") == 4.0  # état existant conservé
+    # ligne antérieure sans horodatage de doublement : le prochain incident double, le suivant non
+    assert c.ralentir("a.exemple", "2026-11-17", 64, 429, 1000.0, anti_rebond=300) == 8.0
+    assert c.ralentir("a.exemple", "2026-11-17", 64, 429, 1010.0, anti_rebond=300) == 8.0
 
 
 @respx.mock
