@@ -188,3 +188,34 @@ def test_liens_markdown_des_pieces_resolvent_les_fichiers(vapp, tmp_path):
         if note == fiche:
             liens = [c.attrGet('href') for c in enfants if c.type == 'link_open']
             assert any((note.parent / unquote(lien)).resolve() == compagnon for lien in liens)
+
+
+def test_section_pieces_sans_wikilink_casse_par_les_crochets(vapp):
+    """#75 : un nom de pièce conforme à la convention (« … [1820].jpg ») ne doit pas produire d'incorporation
+    ``![[…]]`` (cible coupée par les crochets dans Obsidian) : lien Markdown encodé, résolu vers le fichier, pour
+    un média lié directement à la personne et à la famille (acte de mariage), sans note compagnon."""
+    from urllib.parse import unquote, urlsplit
+
+    from markdown_it import MarkdownIt
+
+    rel = "documents/État civil/MARTIN/MARTIN Jean -- ROCHEFORT - AD17 - N [1820] (copie) #2.jpg"
+    image = vapp.vault / rel
+    image.parent.mkdir(parents=True)
+    image.write_bytes(_jpeg())
+    p = server.arbre_proposer([{"op": "ajouter_media", "fichier": rel, "titre": "Acte N [1820]",
+                                "lier_a": ["I1", "F1"]}], "Acte", "Pièce aux crochets (#75).")
+    assert "jeton" in p, p
+    server.arbre_appliquer(p["jeton"])
+    server.notes_generer()
+    for pid in ("I1", "I2"):  # I2 : conjointe, par le lien famille
+        fiche = next((vapp.vault / "personnes").glob(f"{pid} - *.md"))
+        section = fiche.read_text(encoding="utf-8").split("## Pièces", 1)[1].split("<!--", 1)[0]
+        assert "[[" not in section and "]]" not in section, section
+        jetons = [c for b in MarkdownIt().parse(section) for c in b.children or []]
+        images = [c.attrGet("src") for c in jetons if c.type == "image"]
+        assert len(images) == 1, section
+        url = urlsplit(images[0])
+        assert not url.fragment and not url.query
+        assert (fiche.parent / unquote(url.path)).resolve() == image.resolve()
+        assert not [c for c in jetons if c.type == "link_open"]  # le titre « [1820] » reste du texte
+        assert "Acte N [1820]" in "".join(c.content for c in jetons if c.type == "text")
