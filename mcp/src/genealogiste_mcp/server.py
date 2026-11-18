@@ -24,6 +24,7 @@ from . import (
     outils,
     pieces,
     privacy,
+    sites_tiers,
     sondage,
 )
 from . import pdf_markdown as pdf_md
@@ -707,8 +708,48 @@ def recherche_multi(nom: str, prenom: str = "", ne_vers: str = "", lieu: str = "
 @mcp.tool()
 def liens_recherche(nom: str, prenom: str = "", ne_vers: str = "", lieu: str = "", decede_vers: str = "") -> dict:
     """URL de recherche pour Geneanet, FranceArchives, Mémoire des hommes, Grand Mémorial, AD (navigateur
-    de l'utilisateur, lecture seule)."""
+    de l'utilisateur, lecture seule), plus sites_tiers : cercles et relevés bénévoles du département du lieu
+    (sources dérivées : remonter à l'acte)."""
     return liens.search_links(nom, prenom, ne_vers, lieu, decede_vers)
+
+
+@mcp.tool()
+def sources_catalogue(departement: str = "", type: str = "", acces: str = "", theme: str = "") -> dict:
+    """Tout ce que le plugin connaît, sans requête : archives publiques du référentiel, sites tiers de généalogie
+    (cercles, relevés bénévoles, bases thématiques, annuaires, lieux) et services interrogés par API. Filtres :
+    departement (« 59 », « 2A »), type (departementales… pour les archives ; cercle_departemental,
+    releves_benevoles, base_thematique, annuaire, lieux, cimetieres_monuments, arbre_collaboratif pour les sites
+    tiers), acces (libre, inscription_gratuite, adhesion, points, mixte, a_determiner), theme (ww2, protestants,
+    juifs, deportes, emigration…). Un relevé de site tiers est une source dérivée : remonter à l'acte."""
+    from .normalize.places import DEPARTEMENTS
+
+    dep = (departement or "").strip().upper()
+    if dep.isdigit() and len(dep) == 1:
+        dep = "0" + dep
+    if dep and dep not in DEPARTEMENTS:
+        return {"erreur": f"département inconnu : {departement!r} (ex. « 59 », « 2A », « 974 »)"}
+    types_tiers = sites_tiers.TYPES
+    if type and type not in types_tiers and type not in archives.TYPES:
+        return {"erreur": f"type inconnu : {type!r}", "types_archives": list(archives.TYPES),
+                "types_sites_tiers": list(types_tiers)}
+    if acces and acces not in sites_tiers.ACCES:
+        return {"erreur": f"accès inconnu : {acces!r}", "valeurs": list(sites_tiers.ACCES)}
+    arch = [] if (type in types_tiers or acces or theme) else [
+        {k: s[k] for k in ("code", "nom", "type", "departement", "site", "visionneuse") if s.get(k)}
+        for s in archives.services()
+        if (not dep or s.get("departement") == dep or s.get("type") != "departementales")
+        and (not type or s.get("type") == type)]
+    tiers = [] if type in archives.TYPES else [
+        sites_tiers.resume(s) for s in sites_tiers.filtrer(dep, type, acces, theme)]
+    api = [] if (dep or type or acces or theme) else list(sites_tiers.API)
+    return {"filtres": {k: v for k, v in (("departement", dep), ("type", type), ("acces", acces),
+                                          ("theme", theme)) if v},
+            "totaux": {"archives": len(arch), "sites_tiers": len(tiers), "api": len(api)},
+            "archives": arch, "sites_tiers": tiers, "api": api,
+            "avertissement": sites_tiers.AVERTISSEMENT,
+            "consigne": ("Détail d'un service d'archives : archives_service(code=...). Liens de recherche pour une "
+                         "personne : liens_recherche. Site protégé ou sur adhésion : navigateur de l'utilisateur, "
+                         "puis source_collee ; aucun contournement.")}
 
 
 @mcp.tool()

@@ -1,4 +1,4 @@
-"""Vérifie que les sites du référentiel des archives répondent (requête HEAD ; repli GET limité aux en-têtes,
+"""Vérifie que les sites du référentiel des archives et des sites tiers (#181) répondent (requête HEAD ; repli GET limité aux en-têtes,
 corps jamais lu, quand le site refuse HEAD).
 
 Usage : uv run python scripts/verifier_archives.py
@@ -11,7 +11,7 @@ import sys
 
 import httpx
 
-from genealogiste_mcp import archives
+from genealogiste_mcp import archives, sites_tiers
 
 UA = "genealogiste-mcp (verification du referentiel des archives ; en-tetes uniquement)"
 REPLI = {403, 405, 501}  # sites qui refusent HEAD mais répondent en GET
@@ -54,7 +54,7 @@ def sonder(client: httpx.Client, url: str) -> tuple[str, str]:
 
 
 def main() -> int:
-    errs = archives.validate()
+    errs = archives.validate() + [f"sites_tiers : {e}" for e in sites_tiers.validate()]
     for e in errs:
         print(f"FORMAT  {e}")
     bad = 0
@@ -69,6 +69,12 @@ def main() -> int:
                 print(f"{verdict:<6}  {s['code']:<16} {field:<18} {detail}  {url}")
             if w := archives.staleness(s):
                 print(f"VIEUX   {w}")
+        for s in sites_tiers.sites():  # protection relevée signalée, jamais contournée
+            verdict, detail = sonder(client, s["url"])
+            if verdict == "OK" and s.get("protection") not in (None, "aucune"):
+                verdict, detail = "AVERT", f"{detail}, protection relevée : {s['protection']}"
+            bad += verdict == "KO"
+            print(f"{verdict:<6}  {s['code']:<16} {'site_tiers':<18} {detail}  {s['url']}")
     return 1 if errs or bad else 0
 
 

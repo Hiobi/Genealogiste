@@ -102,6 +102,12 @@
     "groupe": "Utiliser le plugin"
   },
   {
+    "slug": "Sites-tiers",
+    "source": "docs/sites-tiers.md",
+    "titre": "Sites tiers de généalogie",
+    "groupe": "Utiliser le plugin"
+  },
+  {
     "slug": "Notes-et-Obsidian",
     "source": "docs/notes.md",
     "titre": "Notes et Obsidian",

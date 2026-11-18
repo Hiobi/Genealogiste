@@ -1,0 +1,2683 @@
+{
+ "_description": "Sites tiers de généalogie (associations, relevés bénévoles, bases thématiques, annuaires, lieux) : PAS des archives publiques (voir archives_fr.json). Un relevé est une source dérivée : il donne une piste et oblige à remonter à l'acte original. verifie_le reste vide tant qu'aucun contrôle humain n'a eu lieu ; protection et site_repond_le valent pour un client automatisé à la date du relevé. Format : docs/sites-tiers.md (#181).",
+ "sites": [
+  {
+   "code": "GENEABANK",
+   "nom": "GeneaBank",
+   "url": "https://www.geneabank.org/frenind.php",
+   "type": "releves_benevoles",
+   "zone": [
+    "FR"
+   ],
+   "acces": "mixte",
+   "nature": "index",
+   "actes": [
+    "BMS",
+    "NMD"
+   ],
+   "recherche": "https://gbkcouples.geneabank.org?nom={nom}&nomconjoint=&prenom={prenom}&prenomconjoint=",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)",
+   "notes": "Relevés de dizaines d'associations ; recherche par couple libre, acte payé en points d'association. Index menant à un relevé dérivé."
+  },
+  {
+   "code": "FFG-ANNUAIRE",
+   "nom": "Fédération française de généalogie — associations par département",
+   "url": "https://www.genefede.eu/associations-federees-par-departements/",
+   "type": "annuaire",
+   "zone": [
+    "FR"
+   ],
+   "acces": "libre",
+   "nature": "outil",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)",
+   "notes": "152 associations fédérées ; filtres par région, département et thème. Source du peuplement des cercles (département du siège)."
+  },
+  {
+   "code": "FFG-BASES",
+   "nom": "Fédération française de généalogie — bases de données",
+   "url": "https://www.genefede.eu/bases-de-donnees/",
+   "type": "base_thematique",
+   "zone": [
+    "FR"
+   ],
+   "acces": "libre",
+   "nature": "index",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)",
+   "notes": "Métiers anciens, villages disparus, GénéaDico, Cavaliers de Napoléon : une page par base."
+  },
+  {
+   "code": "RFG-ANNUAIRE",
+   "nom": "Revue française de généalogie — annuaire",
+   "url": "https://www.rfgenealogie.com/annuaire/associations",
+   "type": "annuaire",
+   "zone": [
+    "FR"
+   ],
+   "acces": "libre",
+   "nature": "outil",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)",
+   "notes": "Associations, archives et professionnels. Le filtre GET par département (idd) n'a pas filtré lors du relevé du 2026-11-18 : passer par le formulaire."
+  },
+  {
+   "code": "GENEAWIKI-RELEVES",
+   "nom": "Geneawiki — annuaire des relevés collaboratifs libres et gratuits",
+   "url": "https://fr.geneawiki.com/wiki/Annuaire_des_relev%C3%A9s_collaboratifs_libres_et_gratuits",
+   "type": "annuaire",
+   "zone": [
+    "FR"
+   ],
+   "acces": "libre",
+   "nature": "outil",
+   "protection": "cloudflare",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)",
+   "notes": "Relevés gratuits classés par département (wiki)."
+  },
+  {
+   "code": "FRANCEGENWEB",
+   "nom": "FranceGenWeb",
+   "url": "https://www.francegenweb.org/",
+   "type": "releves_benevoles",
+   "zone": [
+    "FR"
+   ],
+   "acces": "libre",
+   "nature": "releve_derive",
+   "actes": [
+    "BMS",
+    "NMD",
+    "notaires"
+   ],
+   "protection": "captcha",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)",
+   "notes": "Actes en vrac, Migranet, protestants, notaires, cimetières ; recherche /multibases/index.php avec code anti-robot."
+  },
+  {
+   "code": "GENNPDC",
+   "nom": "GenNPdC — Nord–Pas-de-Calais",
+   "url": "https://www.gennpdc.net/",
+   "type": "releves_benevoles",
+   "zone": [
+    "59",
+    "62"
+   ],
+   "acces": "inscription_gratuite",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)",
+   "notes": "Forum d'entraide et relevés ; accès à confirmer (inscription au forum). Réponse partielle au relevé."
+  },
+  {
+   "code": "CGF-RECIF",
+   "nom": "Centre généalogique du Finistère — RECIF",
+   "url": "https://recif.cgf.bzh/cgf.php?ctxt=0",
+   "type": "cercle_departemental",
+   "zone": [
+    "29"
+   ],
+   "acces": "mixte",
+   "nature": "index",
+   "actes": [
+    "BMS",
+    "NMD"
+   ],
+   "protection": "aucune",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)",
+   "notes": "11,9 M d'actes avec connexion ; base hors état civil (victimes de conflits, bagnards, conscrits, douaniers)."
+  },
+  {
+   "code": "CGHVY",
+   "nom": "Cercle généalogique et héraldique de Versailles et des Yvelines",
+   "url": "https://www.cgvy.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "78"
+   ],
+   "acces": "mixte",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)",
+   "notes": "« Métiers du Château » ouvert à tous, le reste réservé aux adhérents."
+  },
+  {
+   "code": "AUBE-GENEALOGIE",
+   "nom": "Aube Généalogie",
+   "url": "https://www.aubegenealogie.com/",
+   "type": "cercle_departemental",
+   "zone": [
+    "10"
+   ],
+   "acces": "mixte",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)",
+   "notes": "Relevés en accès libre et base « Morts pour la France »."
+  },
+  {
+   "code": "EGMT",
+   "nom": "Entraide généalogique du Midi toulousain",
+   "url": "https://egmt.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "31",
+    "81"
+   ],
+   "acces": "adhesion",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)",
+   "notes": "Relevés via GeneaBank."
+  },
+  {
+   "code": "CG-SAINTONGE",
+   "nom": "Cercle généalogique de Saintonge",
+   "url": "https://www.cgsaintonge.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "17"
+   ],
+   "acces": "adhesion",
+   "nature": "releve_derive",
+   "actes": [
+    "BMS",
+    "contrats",
+    "notaires"
+   ],
+   "protection": "aucune",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)",
+   "notes": "Contrats de mariage, notaires ; relevés via GeneaBank."
+  },
+  {
+   "code": "CGHAV",
+   "nom": "Cercle généalogique et héraldique de l'Auvergne et du Velay",
+   "url": "https://www.cghav.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "15",
+    "43",
+    "63"
+   ],
+   "acces": "mixte",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)"
+  },
+  {
+   "code": "GENEACAUX",
+   "nom": "Cercle généalogique du Pays de Caux",
+   "url": "https://www.geneacaux.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "76"
+   ],
+   "acces": "adhesion",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)",
+   "notes": "Plus de 4 M d'actes."
+  },
+  {
+   "code": "CGPA64",
+   "nom": "Cercle généalogique des Pyrénées-Atlantiques",
+   "url": "https://www.cgpa64.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "64"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "captcha",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)",
+   "notes": "reCAPTCHA au relevé."
+  },
+  {
+   "code": "CG-AVEYRON",
+   "nom": "Cercle généalogique de l'Aveyron",
+   "url": "https://www.genealogie-aveyron.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "12"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)"
+  },
+  {
+   "code": "CG22",
+   "nom": "Centre généalogique des Côtes-d'Armor",
+   "url": "https://www.genealogie22.com/",
+   "type": "cercle_departemental",
+   "zone": [
+    "22"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "cloudflare",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)",
+   "notes": "Rôles d'équipage."
+  },
+  {
+   "code": "CGCSHB",
+   "nom": "Cercle généalogique de Conflans — batellerie",
+   "url": "https://gw.geneanet.org/cgcshb",
+   "type": "arbre_collaboratif",
+   "zone": [
+    "78"
+   ],
+   "acces": "libre",
+   "nature": "releve_derive",
+   "themes": [
+    "mariniers"
+   ],
+   "protection": "aucune",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)",
+   "notes": "Arbre commun (GeneWeb) ; aucune base de mariniers trouvée en ligne. Arbre = piste."
+  },
+  {
+   "code": "FICHIER-ORIGINE",
+   "nom": "Fichier Origine",
+   "url": "https://www.fichierorigine.com/fr/",
+   "type": "base_thematique",
+   "zone": [
+    "FR",
+    "CA"
+   ],
+   "acces": "libre",
+   "nature": "releve_derive",
+   "periode": {
+    "a": 1865
+   },
+   "themes": [
+    "emigration"
+   ],
+   "protection": "aucune",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)",
+   "notes": "Émigrants de France vers le Québec avant 1865."
+  },
+  {
+   "code": "PRDH",
+   "nom": "Programme de recherche en démographie historique (PRDH)",
+   "url": "https://www.prdh-igd.com/",
+   "type": "base_thematique",
+   "zone": [
+    "CA"
+   ],
+   "acces": "mixte",
+   "nature": "releve_derive",
+   "themes": [
+    "emigration"
+   ],
+   "protection": "aucune",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)",
+   "notes": "Démographie canadienne-française ; détail payant."
+  },
+  {
+   "code": "REFUGE-HUGUENOT",
+   "nom": "Refuge huguenot",
+   "url": "https://www.refuge-huguenot.fr/",
+   "type": "base_thematique",
+   "zone": [
+    "FR"
+   ],
+   "acces": "libre",
+   "nature": "index",
+   "periode": {
+    "de": 1685,
+    "a": 1700
+   },
+   "themes": [
+    "protestants"
+   ],
+   "protection": "aucune",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)",
+   "notes": "Refuge protestant 1685-~1700 (~135 000 notices)."
+  },
+  {
+   "code": "SHPF",
+   "nom": "Société de l'histoire du protestantisme français",
+   "url": "https://www.shpf.fr/",
+   "type": "base_thematique",
+   "zone": [
+    "FR"
+   ],
+   "acces": "a_determiner",
+   "nature": "notice",
+   "themes": [
+    "protestants"
+   ],
+   "protection": "aucune",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)"
+  },
+  {
+   "code": "GENEALOJ",
+   "nom": "Cercle de généalogie juive",
+   "url": "https://www.genealoj.org/fr",
+   "type": "base_thematique",
+   "zone": [
+    "FR"
+   ],
+   "acces": "a_determiner",
+   "nature": "index",
+   "themes": [
+    "juifs"
+   ],
+   "protection": "aucune",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)",
+   "notes": "BECANE, BIKETTE, REGIE, dénombrement d'Alsace 1784."
+  },
+  {
+   "code": "GENAMI",
+   "nom": "GenAmi",
+   "url": "https://www.genami.org/",
+   "type": "base_thematique",
+   "zone": [
+    "FR"
+   ],
+   "acces": "mixte",
+   "nature": "notice",
+   "themes": [
+    "juifs"
+   ],
+   "protection": "aucune",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)",
+   "notes": "Guides de recherche."
+  },
+  {
+   "code": "FMD-LIVRE-MEMORIAL",
+   "nom": "Fondation pour la mémoire de la déportation — Livre-Mémorial",
+   "url": "https://www.bddm.org/liv/recherche.php",
+   "type": "base_thematique",
+   "zone": [
+    "FR"
+   ],
+   "acces": "libre",
+   "nature": "index",
+   "periode": {
+    "de": 1940,
+    "a": 1945
+   },
+   "themes": [
+    "deportes",
+    "ww2"
+   ],
+   "protection": "aucune",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)",
+   "notes": "Déportés partis de France 1940-1945."
+  },
+  {
+   "code": "MEMORIAL-SHOAH",
+   "nom": "Mémorial de la Shoah — ressources",
+   "url": "https://ressources.memorialdelashoah.org/",
+   "type": "base_thematique",
+   "zone": [
+    "FR"
+   ],
+   "acces": "a_determiner",
+   "nature": "index",
+   "periode": {
+    "de": 1939,
+    "a": 1945
+   },
+   "themes": [
+    "juifs",
+    "deportes",
+    "ww2"
+   ],
+   "protection": "aucune",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)",
+   "notes": "Victimes, documents."
+  },
+  {
+   "code": "MAITRON",
+   "nom": "Maitron",
+   "url": "https://maitron.fr/",
+   "type": "base_thematique",
+   "zone": [
+    "FR"
+   ],
+   "acces": "libre",
+   "nature": "notice",
+   "themes": [
+    "ww2",
+    "mouvement_ouvrier"
+   ],
+   "protection": "aucune",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)",
+   "notes": "~226 000 notices biographiques, dont les fusillés 1940-1944."
+  },
+  {
+   "code": "FRANCAIS-LIBRES",
+   "nom": "Français libres",
+   "url": "https://www.francaislibres.net/",
+   "type": "base_thematique",
+   "zone": [
+    "FR"
+   ],
+   "acces": "libre",
+   "nature": "notice",
+   "periode": {
+    "de": 1940,
+    "a": 1945
+   },
+   "themes": [
+    "ww2",
+    "militaires"
+   ],
+   "protection": "aucune",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)",
+   "notes": "Forces françaises libres 1940-1945."
+  },
+  {
+   "code": "CICR-14-18",
+   "nom": "CICR — prisonniers de la Première Guerre mondiale",
+   "url": "https://grandeguerre.icrc.org/fr",
+   "type": "base_thematique",
+   "zone": [
+    "FR",
+    "INT"
+   ],
+   "acces": "libre",
+   "nature": "image",
+   "periode": {
+    "de": 1914,
+    "a": 1918
+   },
+   "themes": [
+    "ww1",
+    "prisonniers"
+   ],
+   "protection": "aucune",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)",
+   "notes": "~5 M de fiches."
+  },
+  {
+   "code": "MEMORIALGENWEB",
+   "nom": "MemorialGenWeb",
+   "url": "https://www.memorialgenweb.org/",
+   "type": "cimetieres_monuments",
+   "zone": [
+    "FR"
+   ],
+   "acces": "libre",
+   "nature": "releve_derive",
+   "themes": [
+    "monuments_aux_morts"
+   ],
+   "protection": "captcha",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)",
+   "notes": "Relevés et photos des monuments aux morts."
+  },
+  {
+   "code": "LANDRU",
+   "nom": "Landru Cimetières",
+   "url": "https://www.landrucimetieres.fr/",
+   "type": "cimetieres_monuments",
+   "zone": [
+    "FR"
+   ],
+   "acces": "libre",
+   "nature": "notice",
+   "recherche": "https://www.landrucimetieres.fr/spip/spip.php?page=recherche&recherche={nom}",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)",
+   "notes": "Tombes de personnalités."
+  },
+  {
+   "code": "LIBRA-MEMORIA",
+   "nom": "Libra Memoria",
+   "url": "https://www.libramemoria.com/",
+   "type": "cimetieres_monuments",
+   "zone": [
+    "FR"
+   ],
+   "acces": "a_determiner",
+   "nature": "notice",
+   "themes": [
+    "avis_deces"
+   ],
+   "protection": "captcha",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)",
+   "notes": "Avis de décès récents : personnes vivantes possibles dans l'entourage. Aucune recherche automatique ; consultation par l'utilisateur seulement."
+  },
+  {
+   "code": "ROGLO",
+   "nom": "Roglo",
+   "url": "https://roglo.eu/roglo",
+   "type": "arbre_collaboratif",
+   "zone": [
+    "FR"
+   ],
+   "acces": "libre",
+   "nature": "releve_derive",
+   "protection": "cloudflare",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)",
+   "notes": "Arbre collaboratif : piste à confirmer par l'acte. Cloudflare Turnstile."
+  },
+  {
+   "code": "DICOTOPO",
+   "nom": "DicoTopo (CTHS)",
+   "url": "https://dicotopo.cths.fr/",
+   "type": "lieux",
+   "zone": [
+    "FR"
+   ],
+   "acces": "libre",
+   "nature": "outil",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)",
+   "notes": "Dictionnaires topographiques, lieux-dits disparus ; application JavaScript, pas de recherche GET simple observée."
+  },
+  {
+   "code": "REMONTER-LE-TEMPS",
+   "nom": "Remonter le temps (IGN)",
+   "url": "https://remonterletemps.ign.fr/",
+   "type": "lieux",
+   "zone": [
+    "FR"
+   ],
+   "acces": "libre",
+   "nature": "outil",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-16",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)",
+   "notes": "Cartes de Cassini et d'état-major, photographies aériennes anciennes."
+  },
+  {
+   "code": "CASSINI-EHESS",
+   "nom": "Des villages de Cassini aux communes d'aujourd'hui (EHESS)",
+   "url": "http://cassini.ehess.fr/",
+   "type": "lieux",
+   "zone": [
+    "FR"
+   ],
+   "acces": "libre",
+   "nature": "outil",
+   "periode": {
+    "de": 1801,
+    "a": 2001
+   },
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "relevé curl/WebFetch du 2026-11-16 (#181)",
+   "notes": "Communes de 1801 à 2001. Délai dépassé au relevé du 2026-11-16 : à revoir."
+  },
+  {
+   "code": "FFG-15087",
+   "nom": "Ain Généalogie",
+   "url": "http://www.ain-genealogie.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "01"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/ain-genealogie/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/ain-genealogie/"
+  },
+  {
+   "code": "FFG-14579",
+   "nom": "Allier Généalogie",
+   "url": "https://www.allier-genealogie.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "03"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/allier-genealogie/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/allier-genealogie/"
+  },
+  {
+   "code": "FFG-14957",
+   "nom": "Centre Généalogique des Alpes-de-Haute-Provence (04)",
+   "url": "http://genea04.blogspot.com/",
+   "type": "cercle_departemental",
+   "zone": [
+    "04"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/centre-genealogique-des-alpes-de-haute-provence-04/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/centre-genealogique-des-alpes-de-haute-provence-04/"
+  },
+  {
+   "code": "FFG-16277",
+   "nom": "Cercle Généalogique des Alpes-de-Haute-Provence",
+   "url": "http://www.genea04.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "04"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/16277/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/16277/"
+  },
+  {
+   "code": "FFG-14954",
+   "nom": "Association Généalogique des Hautes-Alpes (05)",
+   "url": "https://agha.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "05"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/association-genealogique-des-hautes-alpes-05/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/association-genealogique-des-hautes-alpes-05/"
+  },
+  {
+   "code": "FFG-14943",
+   "nom": "Association Généalogique des Alpes-Maritimes (AGAM)",
+   "url": "https://www.agam-06.com/",
+   "type": "cercle_departemental",
+   "zone": [
+    "06"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/association-genealogique-des-alpes-maritimes/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/association-genealogique-des-alpes-maritimes/"
+  },
+  {
+   "code": "FFG-14960",
+   "nom": "CEGAMA (Cercle d'Entraide Généalogique des Alpes Maritimes et d'Ailleurs)",
+   "url": "https://cegama.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "06"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cegama-cercle-dentraide-genealogique-des-alpes-maritimes-et-dailleurs/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cegama-cercle-dentraide-genealogique-des-alpes-maritimes-et-dailleurs/"
+  },
+  {
+   "code": "FFG-14980",
+   "nom": "Cercle Généalogique Pays Cannois",
+   "url": "http://cgpc06.org",
+   "type": "cercle_departemental",
+   "zone": [
+    "06"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-pays-cannois/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-pays-cannois/"
+  },
+  {
+   "code": "FFG-14977",
+   "nom": "Cercle généalogique Maralpin",
+   "url": "https://www.cgmaralpin.com/",
+   "type": "cercle_departemental",
+   "zone": [
+    "06"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-maralpin/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-maralpin/"
+  },
+  {
+   "code": "FFG-16514",
+   "nom": "Cercle généalogique et héraldique des Ardennes",
+   "url": "http://www.cghardennes.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "08"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-et-heraldique-des-ardennes/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-et-heraldique-des-ardennes/"
+  },
+  {
+   "code": "FFG-16394",
+   "nom": "Entraide Généalogique Audoise (EGA11)",
+   "url": "https://ugoh.fr/associations/ega11/",
+   "type": "cercle_departemental",
+   "zone": [
+    "11"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/entraide-genealogique-audoise/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/entraide-genealogique-audoise/"
+  },
+  {
+   "code": "FFG-14906",
+   "nom": "Palaja Généalogie",
+   "url": "https://www.palaja-genealogie.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "11"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/palaja-genealogie/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/palaja-genealogie/"
+  },
+  {
+   "code": "FFG-14948",
+   "nom": "Association Généalogique des Bouches du Rhône",
+   "url": "https://ag13.org",
+   "type": "cercle_departemental",
+   "zone": [
+    "13"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/association-genealogique-des-bouches-du-rhone/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/association-genealogique-des-bouches-du-rhone/"
+  },
+  {
+   "code": "FFG-14940",
+   "nom": "Centre Généalogique du Midi Provence",
+   "url": "https://cgmp-provence.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "13"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/centre-genealogique-du-midi-provence/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/centre-genealogique-du-midi-provence/"
+  },
+  {
+   "code": "FFG-16292",
+   "nom": "Cercle Généalogique et Héraldique de la Principauté de Monaco",
+   "url": "https://www.genealogiemonaco.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "13"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-et-heraldique-de-la-principaute-de-monaco/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-et-heraldique-de-la-principaute-de-monaco/"
+  },
+  {
+   "code": "FFG-16375",
+   "nom": "Relais international de généalogie Arménienne",
+   "url": "https://contact125608.wixsite.com/association-riga",
+   "type": "cercle_departemental",
+   "zone": [
+    "13"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/relais-international-de-genealogie-armenienne/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/relais-international-de-genealogie-armenienne/"
+  },
+  {
+   "code": "FFG-15034",
+   "nom": "Cercle de Généalogie du Calvados (14)",
+   "url": "https://www.cegecal.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "14"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-de-genealogie-du-calvados-14/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-de-genealogie-du-calvados-14/"
+  },
+  {
+   "code": "FFG-15064",
+   "nom": "Association Généalogique de la Charente",
+   "url": "https://www.genea16.net/",
+   "type": "cercle_departemental",
+   "zone": [
+    "16"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/association-genealogique-de-la-charente/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/association-genealogique-de-la-charente/"
+  },
+  {
+   "code": "FFG-15084",
+   "nom": "Cercle Généalogique Sud-Saintonge (17)",
+   "url": "https://www.cgss17.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "17"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-sud-saintonge-17/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-sud-saintonge-17/"
+  },
+  {
+   "code": "FFG-15068",
+   "nom": "Cercle généalogique de l'Aunis – La Rochelle",
+   "url": "https://cgaunis.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "17"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/15068/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/15068/"
+  },
+  {
+   "code": "FFG-18111",
+   "nom": "Généalogie Entraide et Astuces",
+   "url": "https://www.genefede.eu/association/genealogie-entraide-et-astuces/",
+   "type": "cercle_departemental",
+   "zone": [
+    "17"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/genealogie-entraide-et-astuces/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite. Aucun site propre dans l'annuaire : lien vers la fiche FFG.",
+   "fiche_annuaire": "https://www.genefede.eu/association/genealogie-entraide-et-astuces/"
+  },
+  {
+   "code": "FFG-15916",
+   "nom": "Centre Généalogique de Vierzon (CGV18)",
+   "url": "https://www.ancetres18.fr/ancetres18.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "18"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/centre-genealogique-de-vierzon-cgv18/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/centre-genealogique-de-vierzon-cgv18/"
+  },
+  {
+   "code": "FFG-14806",
+   "nom": "Cercle Généalogique du Haut-Berry (18)",
+   "url": "https://www.genea18.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "18"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-du-haut-berry-18/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-du-haut-berry-18/"
+  },
+  {
+   "code": "FFG-14596",
+   "nom": "Cercle Généalogique de la Côte-d'Or (21)",
+   "url": "https://cgco.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "21"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-de-la-cote-dor-21/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-de-la-cote-dor-21/"
+  },
+  {
+   "code": "FFG-14602",
+   "nom": "Généalogie Entraide Recherche en Côte-d'Or (21)",
+   "url": "http://www.gerco.asso.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "21",
+    "75"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/genealogie-entraide-recherche-en-cote-dor-21/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/genealogie-entraide-recherche-en-cote-dor-21/"
+  },
+  {
+   "code": "FFG-16090",
+   "nom": "Association Chef d'Armor (Lannion)",
+   "url": "https://www.associations22.com/culture/assos/chefarmor.htm",
+   "type": "cercle_departemental",
+   "zone": [
+    "22"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/association-chef-darmor-lannion/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/association-chef-darmor-lannion/"
+  },
+  {
+   "code": "FFG-14632",
+   "nom": "Centre Généalogique des Côtes-d'Armor (22)",
+   "url": "https://www.genealogie22.bzh/",
+   "type": "cercle_departemental",
+   "zone": [
+    "22"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/centre-genealogique-des-cotes-darmor-22/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/centre-genealogique-des-cotes-darmor-22/"
+  },
+  {
+   "code": "FFG-17063",
+   "nom": "Association Généalogie en Périgord Noir",
+   "url": "https://genealogieperigordnoir.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "24"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/association-genealogie-en-perigord-noir/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/association-genealogie-en-perigord-noir/"
+  },
+  {
+   "code": "FFG-14064",
+   "nom": "Cercle d'Histoire et de Généalogie du Périgord (24)",
+   "url": "https://cerclegenealogieperigord.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "24"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-dhistoire-et-de-genealogie-du-perigord-24/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-dhistoire-et-de-genealogie-du-perigord-24/"
+  },
+  {
+   "code": "FFG-14836",
+   "nom": "Centre d'Entraide Généalogique de Franche-Comté",
+   "url": "https://www.cegfc.net/",
+   "type": "cercle_departemental",
+   "zone": [
+    "25"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/centre-dentraide-genealogique-de-franche-comte/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/centre-dentraide-genealogique-de-franche-comte/"
+  },
+  {
+   "code": "FFG-14963",
+   "nom": "Cercle Généalogique de la Drôme Provençale",
+   "url": "https://geneacgdp.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "26"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-de-la-drome-provencale/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-de-la-drome-provencale/"
+  },
+  {
+   "code": "FFG-15037",
+   "nom": "Cercle Généalogique de l'Eure (27)",
+   "url": "https://www.eure-genealogie.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "27"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-de-leure-27/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-de-leure-27/"
+  },
+  {
+   "code": "FFG-14831",
+   "nom": "Corsica Genealugia",
+   "url": "https://www.corsicagenealugia.com/",
+   "type": "cercle_departemental",
+   "zone": [
+    "2A",
+    "2B"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/corsica-genealugia/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/corsica-genealugia/"
+  },
+  {
+   "code": "FFG-14898",
+   "nom": "Cercle de Généalogie en Uzège et Gard",
+   "url": "https://gugard.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "30"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/genealogie-en-uzege-et-gard/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/genealogie-en-uzege-et-gard/"
+  },
+  {
+   "code": "FFG-20039",
+   "nom": "Amitiés généalogiques Bordelaises",
+   "url": "https://www.genealogie-gironde.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "33"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/amities-genealogiques-bordelaises/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/amities-genealogiques-bordelaises/"
+  },
+  {
+   "code": "FFG-16192",
+   "nom": "Association de Recherches Historiques de I'Ornon (33)",
+   "url": "https://arhovo.jimdofree.com/",
+   "type": "cercle_departemental",
+   "zone": [
+    "33"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/association-de-recherches-historiques-de-iornon-33/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/association-de-recherches-historiques-de-iornon-33/"
+  },
+  {
+   "code": "FFG-19838",
+   "nom": "Centre Généalogique du Sud-Ouest ( CGSO)",
+   "url": "https://www.cgso-bordeaux.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "33"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/centre-genealogique-du-sud-ouest-cgso/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/centre-genealogique-du-sud-ouest-cgso/"
+  },
+  {
+   "code": "FFG-14040",
+   "nom": "Cercle Généalogique du Bassin d'Arcachon et Pays de Buch 33",
+   "url": "https://sites.google.com/site/bassindarcachongenealogie",
+   "type": "cercle_departemental",
+   "zone": [
+    "33"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-du-bassin-darcachon-et-pays-de-buch/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-du-bassin-darcachon-et-pays-de-buch/"
+  },
+  {
+   "code": "FFG-16195",
+   "nom": "Club Soulac Sport Culture section généalogie",
+   "url": "https://www.genefede.eu/association/club-soulac-sport-culture-section-genealogie/",
+   "type": "cercle_departemental",
+   "zone": [
+    "33"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/club-soulac-sport-culture-section-genealogie/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite. Aucun site propre dans l'annuaire : lien vers la fiche FFG.",
+   "fiche_annuaire": "https://www.genefede.eu/association/club-soulac-sport-culture-section-genealogie/"
+  },
+  {
+   "code": "FFG-16197",
+   "nom": "Généalogie 33",
+   "url": "https://genealogie33staubin.blogspot.com/",
+   "type": "cercle_departemental",
+   "zone": [
+    "33"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/genealogie-33/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/genealogie-33/"
+  },
+  {
+   "code": "FFG-16189",
+   "nom": "Généalogie Bordeaux Rail",
+   "url": "https://gebora.weebly.com/",
+   "type": "cercle_departemental",
+   "zone": [
+    "33"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/16189/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/16189/"
+  },
+  {
+   "code": "FFG-16187",
+   "nom": "Généalogie à Cadillac (GENEACAD- 33)",
+   "url": "https://www.genefede.eu/association/cadillac-genealogie-geneacad-33/",
+   "type": "cercle_departemental",
+   "zone": [
+    "33"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cadillac-genealogie-geneacad-33/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite. Aucun site propre dans l'annuaire : lien vers la fiche FFG.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cadillac-genealogie-geneacad-33/"
+  },
+  {
+   "code": "FFG-16384",
+   "nom": "La Mémoire de Bruges",
+   "url": "http://memoiredebruges.over-blog.com/",
+   "type": "cercle_departemental",
+   "zone": [
+    "33"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/la-memoire-de-bruges/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/la-memoire-de-bruges/"
+  },
+  {
+   "code": "FFG-14341",
+   "nom": "Le Haillan Généalogie Histoire (33)",
+   "url": "https://haillan-genealogie.fr",
+   "type": "cercle_departemental",
+   "zone": [
+    "33"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/le-haillan-genealogie-histoire-33/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/le-haillan-genealogie-histoire-33/"
+  },
+  {
+   "code": "FFG-16093",
+   "nom": "Cercle Généalogique Bretagne Côte d'Émeraude(35)",
+   "url": "https://cgce35.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "35"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-bretagne-cote-demeraude/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-bretagne-cote-demeraude/"
+  },
+  {
+   "code": "FFG-16080",
+   "nom": "Histoire et Généalogie  Grand Fougeray (35)",
+   "url": "https://www.hggf35.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "35"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/histoire-et-genealogie-grand-fougeray-35/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/histoire-et-genealogie-grand-fougeray-35/"
+  },
+  {
+   "code": "FFG-14823",
+   "nom": "Société Généalogique du Bas Berry",
+   "url": "https://www.genebasberry.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "36"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/societe-genealogique-du-bas-berry/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/societe-genealogique-du-bas-berry/"
+  },
+  {
+   "code": "FFG-26856",
+   "nom": "Arche",
+   "url": "https://www.genefede.eu/association/arche/",
+   "type": "cercle_departemental",
+   "zone": [
+    "37"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/arche/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite. Aucun site propre dans l'annuaire : lien vers la fiche FFG.",
+   "fiche_annuaire": "https://www.genefede.eu/association/arche/"
+  },
+  {
+   "code": "FFG-14796",
+   "nom": "Centre Généalogique de Touraine (CGDT)",
+   "url": "https://tourainegenealogie.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "37"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/centre-genealogique-de-touraine-cgdt/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/centre-genealogique-de-touraine-cgdt/"
+  },
+  {
+   "code": "FFG-15114",
+   "nom": "Centre Généalogique de Vienne et de la Vallée du Rhône",
+   "url": "https://cgvvr.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "38"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/centre-genealogique-de-vienne-et-de-la-vallee-du-rhone/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/centre-genealogique-de-vienne-et-de-la-vallee-du-rhone/"
+  },
+  {
+   "code": "FFG-15105",
+   "nom": "Centre Généalogique du Dauphiné (38)",
+   "url": "https://cgdauphine.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "38"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/centre-genealogique-du-dauphine-38/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/centre-genealogique-du-dauphine-38/"
+  },
+  {
+   "code": "FFG-16311",
+   "nom": "Centre d'Études Généalogiques Rhône-Alpes",
+   "url": "http://cegra.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "38"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/centre-detudes-genealogiques-rhone-alpes/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/centre-detudes-genealogiques-rhone-alpes/"
+  },
+  {
+   "code": "FFG-15118",
+   "nom": "Club Généalogie Nord-Isère",
+   "url": "http://cgni.free.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "38"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/club-genealogie-nord-isere/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/club-genealogie-nord-isere/"
+  },
+  {
+   "code": "FFG-14810",
+   "nom": "Cercle généalogique de Loir-et-Cher",
+   "url": "http://www.cglc41.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "41"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-de-loir-et-cher/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-de-loir-et-cher/"
+  },
+  {
+   "code": "FFG-17802",
+   "nom": "Association Généalogique de la Loire",
+   "url": "https://www.agloire42.org",
+   "type": "cercle_departemental",
+   "zone": [
+    "42"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/association-genealogique-de-la-loire/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/association-genealogique-de-la-loire/"
+  },
+  {
+   "code": "FFG-15095",
+   "nom": "CEUX DU ROANNAIS Généalogie & Histoire",
+   "url": "https://www.ceuxduroannais.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "42"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/ceux-du-roannais-genealogie-et-histoire/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/ceux-du-roannais-genealogie-et-histoire/"
+  },
+  {
+   "code": "FFG-14654",
+   "nom": "Centre Généalogique de Loire-Atlantique (44)",
+   "url": "https://cgla44.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "44"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/centre-genealogique-de-loire-atlantique-44/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/centre-genealogique-de-loire-atlantique-44/"
+  },
+  {
+   "code": "FFG-16088",
+   "nom": "Mémoire vivante de Fégréac (dans le 44)",
+   "url": "https://www.genefede.eu/association/memoire-vivante-de-fegreac-dans-le-44/",
+   "type": "cercle_departemental",
+   "zone": [
+    "44"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/memoire-vivante-de-fegreac-dans-le-44/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite. Aucun site propre dans l'annuaire : lien vers la fiche FFG.",
+   "fiche_annuaire": "https://www.genefede.eu/association/memoire-vivante-de-fegreac-dans-le-44/"
+  },
+  {
+   "code": "FFG-14819",
+   "nom": "Loiret Généalogique",
+   "url": "https://loiretgenealogique.fr",
+   "type": "cercle_departemental",
+   "zone": [
+    "45"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/loiret-genealogique/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/loiret-genealogique/"
+  },
+  {
+   "code": "FFG-17227",
+   "nom": "Cercle héraldique généalogique et histoire du Lot-et- Garonne (CHGH47)",
+   "url": "https://www.genefede.eu/association/cercle-heraldique-genealogique-et-histoire-du-lot-et-garonne-chgh/",
+   "type": "cercle_departemental",
+   "zone": [
+    "47"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-heraldique-genealogique-et-histoire-du-lot-et-garonne-chgh/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite. Aucun site propre dans l'annuaire : lien vers la fiche FFG.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-heraldique-genealogique-et-histoire-du-lot-et-garonne-chgh/"
+  },
+  {
+   "code": "FFG-16387",
+   "nom": "Rencontres généalogiques en Agenais",
+   "url": "https://www.asso-rga-47.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "47"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/rencontres-genealogiques-en-agenais/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/rencontres-genealogiques-en-agenais/"
+  },
+  {
+   "code": "FFG-20043",
+   "nom": "Cercle Gévaudan de Généalogie (CGG48)",
+   "url": "https://clg48.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "48"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-gevaudan-de-genealogie-cgg48/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-gevaudan-de-genealogie-cgg48/"
+  },
+  {
+   "code": "FFG-15868",
+   "nom": "Association Généalogique de l'Anjou (A.Gen.A)",
+   "url": "https://www.agena49.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "49"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/association-genealogique-de-lanjou-a-gen-a/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/association-genealogique-de-lanjou-a-gen-a/"
+  },
+  {
+   "code": "FFG-16336",
+   "nom": "SLA Cholet – Section Généalogique",
+   "url": "https://sla-cholet.org/activites/sciences-humaines/genealogie/",
+   "type": "cercle_departemental",
+   "zone": [
+    "49"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/sla-cholet-section-genealogique/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/sla-cholet-section-genealogique/"
+  },
+  {
+   "code": "FFG-15049",
+   "nom": "Cercle Généalogique de la Mayenne (53)",
+   "url": "https://www.genealogie-53.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "53"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-de-la-mayenne-53/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-de-la-mayenne-53/"
+  },
+  {
+   "code": "FFG-14927",
+   "nom": "Cercle Généalogique Blénod lès Pont à Mousson",
+   "url": "https://www.geneablenodpam.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "54"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-blenod-les-pont-a-mousson/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-blenod-les-pont-a-mousson/"
+  },
+  {
+   "code": "FFG-14918",
+   "nom": "Cercle Généalogique du Pays de Briey (54)",
+   "url": "https://geneabriey.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "54"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-du-pays-de-briey-54/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-du-pays-de-briey-54/"
+  },
+  {
+   "code": "FFG-14930",
+   "nom": "Cercle généalogique Toulois (54)",
+   "url": "https://www.genealogiedutoulois.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "54"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-toulois-54/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-toulois-54/"
+  },
+  {
+   "code": "FFG-14934",
+   "nom": "Groupement des Cercles Généalogiques de Meurthe et Moselle",
+   "url": "https://www.cg540.net/",
+   "type": "cercle_departemental",
+   "zone": [
+    "54"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/groupement-cercles-genealogiques-de-meurthe-et-moselle/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/groupement-cercles-genealogiques-de-meurthe-et-moselle/"
+  },
+  {
+   "code": "FFG-14637",
+   "nom": "Cercle Généalogique Centre Est Bretagne",
+   "url": "http://cegenceb.asso.fr/index.php",
+   "type": "cercle_departemental",
+   "zone": [
+    "56"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-centre-est-bretagne/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-centre-est-bretagne/"
+  },
+  {
+   "code": "FFG-16083",
+   "nom": "Cercle généalogique de Rhuys (56)",
+   "url": "https://cgrhuys56.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "56"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-de-rhuys-56/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-de-rhuys-56/"
+  },
+  {
+   "code": "FFG-16099",
+   "nom": "Section Généalogique de la Garde du Voeu à Hennebont (56)",
+   "url": "https://garde-du-voeu.com/wp/",
+   "type": "cercle_departemental",
+   "zone": [
+    "56"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/section-genealogique-de-la-garde-du-voeu-a-hennebont-56/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/section-genealogique-de-la-garde-du-voeu-a-hennebont-56/"
+  },
+  {
+   "code": "FFG-14937",
+   "nom": "Association généalogique de Hambach – Pays de Sarreguemines",
+   "url": "https://www.genealogiehambach.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "57"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/association-genealogique-de-hambach-pays-de-sarreguemines/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/association-genealogique-de-hambach-pays-de-sarreguemines/"
+  },
+  {
+   "code": "FFG-14583",
+   "nom": "Cercle Culturel d'Entraide Généalogique Hérédit-Nièvre (58)",
+   "url": "https://www.heredit-nievre.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "58"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-culturel-dentraide-genealogique-heredit-nievre-58/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-culturel-dentraide-genealogique-heredit-nievre-58/"
+  },
+  {
+   "code": "FFG-14814",
+   "nom": "Cercle Généalogique et Historique Nivernais-Morvan",
+   "url": "https://www.cghnm.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "58"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-et-historique-nivernais-morvan/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-et-historique-nivernais-morvan/"
+  },
+  {
+   "code": "FFG-16392",
+   "nom": "Association armentiéroise de Généalogie",
+   "url": "https://www.genefede.eu/association/association-armentieroise-de-genealogie/",
+   "type": "cercle_departemental",
+   "zone": [
+    "59"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/association-armentieroise-de-genealogie/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite. Aucun site propre dans l'annuaire : lien vers la fiche FFG.",
+   "fiche_annuaire": "https://www.genefede.eu/association/association-armentieroise-de-genealogie/"
+  },
+  {
+   "code": "FFG-15449",
+   "nom": "Généa'Hem",
+   "url": "http://geneahem.free.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "59"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/geneahem-2/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/geneahem-2/"
+  },
+  {
+   "code": "FFG-15453",
+   "nom": "Généaproville",
+   "url": "https://www.genefede.eu/association/geneaproville-2/",
+   "type": "cercle_departemental",
+   "zone": [
+    "59"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/geneaproville-2/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite. Aucun site propre dans l'annuaire : lien vers la fiche FFG.",
+   "fiche_annuaire": "https://www.genefede.eu/association/geneaproville-2/"
+  },
+  {
+   "code": "FFG-15056",
+   "nom": "Association Héraldique et Généalogique des Deux Vexins",
+   "url": "https://www.genefede.eu/association/association-heraldique-et-genealogique-des-deux-vexins/",
+   "type": "cercle_departemental",
+   "zone": [
+    "60"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/association-heraldique-et-genealogique-des-deux-vexins/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite. Aucun site propre dans l'annuaire : lien vers la fiche FFG.",
+   "fiche_annuaire": "https://www.genefede.eu/association/association-heraldique-et-genealogique-des-deux-vexins/"
+  },
+  {
+   "code": "FFG-20020",
+   "nom": "Cercle Généalogique de l'Oise et de Senlis",
+   "url": "http://tierino.wixsite.com/genecastel",
+   "type": "cercle_departemental",
+   "zone": [
+    "60"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-de-loise-et-de-senlis/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-de-loise-et-de-senlis/"
+  },
+  {
+   "code": "FFG-15008",
+   "nom": "Association Généalogique du Pas-de-Calais (AGP)",
+   "url": "https://www.genealogiepasdecalais.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "62"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/association-genealogique-du-pas-de-calais-62/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/association-genealogique-du-pas-de-calais-62/"
+  },
+  {
+   "code": "FFG-15017",
+   "nom": "Centre d'Etudes Généalogiques du Pays des 7 vallées ( C.E.G.P.7V.)",
+   "url": "http://asso.cegp7v.free.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "62"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/centre-detudes-genealogiques-du-pays-des-7-vallees-c-e-g-p-7v/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/centre-detudes-genealogiques-du-pays-des-7-vallees-c-e-g-p-7v/"
+  },
+  {
+   "code": "FFG-14320",
+   "nom": "Généalogie et Histoire des familles Pays Basque-Adour Maritime (64)",
+   "url": "http://www.ghfpbam.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "64"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/genealogie-et-histoire-des-familles-pays-basque-adour-maritime-64/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/genealogie-et-histoire-des-familles-pays-basque-adour-maritime-64/"
+  },
+  {
+   "code": "FFG-16305",
+   "nom": "Société Généalogique du Lyonnais et du Beaujolais",
+   "url": "https://www.sglb.org/page/1692280-presentation",
+   "type": "cercle_departemental",
+   "zone": [
+    "69"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/societe-genealogique-du-lyonnais-et-du-beaujolais/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/societe-genealogique-du-lyonnais-et-du-beaujolais/"
+  },
+  {
+   "code": "FFG-16390",
+   "nom": "Généalogie Val-de-Gray",
+   "url": "https://www.genefede.eu/association/genealogie-val-de-gray/",
+   "type": "cercle_departemental",
+   "zone": [
+    "70"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/genealogie-val-de-gray/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite. Aucun site propre dans l'annuaire : lien vers la fiche FFG.",
+   "fiche_annuaire": "https://www.genefede.eu/association/genealogie-val-de-gray/"
+  },
+  {
+   "code": "FFG-14599",
+   "nom": "Cercle Généalogique de Saône-et-Loire (71)",
+   "url": "https://www.cgsl.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "71"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-de-saone-et-loire-71/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-de-saone-et-loire-71/"
+  },
+  {
+   "code": "FFG-15102",
+   "nom": "Association de Recherche et d'Entraide pour la Documentation et les Études Savoyardes (73)",
+   "url": "http://www.aredes.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "73"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/association-de-recherche-et-dentraide-pour-la-documentation-et-les-etudes-savoyardes-73/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/association-de-recherche-et-dentraide-pour-la-documentation-et-les-etudes-savoyardes-73/"
+  },
+  {
+   "code": "FFG-15125",
+   "nom": "Maurienne Généalogie",
+   "url": "https://maurienne-genealogie.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "73"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/maurienne-genealogie/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/maurienne-genealogie/"
+  },
+  {
+   "code": "FFG-15031",
+   "nom": "Association Parisienne de Généalogie Normande",
+   "url": "https://www.apgn.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "75",
+    "76"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/association-parisienne-de-genealogie-normande/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/association-parisienne-de-genealogie-normande/"
+  },
+  {
+   "code": "FFG-14895",
+   "nom": "France Généalogique",
+   "url": "https://www.cegf.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "75"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/france-genealogique/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/france-genealogique/"
+  },
+  {
+   "code": "FFG-18100",
+   "nom": "Cercle Généalogique Rouen Seine-Maritime",
+   "url": "https://cgrsm.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "76"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-rouen-seine-maritime/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-rouen-seine-maritime/"
+  },
+  {
+   "code": "FFG-15046",
+   "nom": "Groupement Généalogique du Havre et Seine-Maritime",
+   "url": "https://www.gghsm.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "76"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/groupement-genealogique-du-havre-et-seine-maritime/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/groupement-genealogique-du-havre-et-seine-maritime/"
+  },
+  {
+   "code": "FFG-14846",
+   "nom": "Association Généalogique de Brie-Comte-Robert",
+   "url": "https://www.agbcr.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "77"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/association-genealogique-de-brie-comte-robert/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/association-genealogique-de-brie-comte-robert/"
+  },
+  {
+   "code": "FFG-18090",
+   "nom": "Association Géné…OZOIR",
+   "url": "https://www.genefede.eu/association/association-gene-ozoir/",
+   "type": "cercle_departemental",
+   "zone": [
+    "77"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/association-gene-ozoir/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite. Aucun site propre dans l'annuaire : lien vers la fiche FFG.",
+   "fiche_annuaire": "https://www.genefede.eu/association/association-gene-ozoir/"
+  },
+  {
+   "code": "FFG-14890",
+   "nom": "Cercle Généalogique Pontellois-Combalusien",
+   "url": "https://cgpc77.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "77"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-pontellois-combalusien/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-pontellois-combalusien/"
+  },
+  {
+   "code": "FFG-14871",
+   "nom": "Cercle Généalogique de la Brie",
+   "url": "https://www.cgbrie.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "77"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-de-la-brie/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-de-la-brie/"
+  },
+  {
+   "code": "FFG-14886",
+   "nom": "Cercle Généalogique et d'Héraldique de Seine-et-Marne",
+   "url": "https://cghsm.over-blog.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "77"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-et-dheraldique-de-seine-et-marne/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-et-dheraldique-de-seine-et-marne/"
+  },
+  {
+   "code": "FFG-14875",
+   "nom": "Cercle Généalogique Conflans-Sainte-Honorine et de la Batellerie",
+   "url": "http://geneaconflans.eu/",
+   "type": "cercle_departemental",
+   "zone": [
+    "78"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-conflans-sainte-honorine-et-de-la-batellerie/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-conflans-sainte-honorine-et-de-la-batellerie/"
+  },
+  {
+   "code": "FFG-15072",
+   "nom": "Cercle Généalogique des Deux-Sèvres (79)",
+   "url": "https://genea79.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "79"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-des-deux-sevres-79/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-des-deux-sevres-79/"
+  },
+  {
+   "code": "FFG-15058",
+   "nom": "Cercle Généalogique de Picardie",
+   "url": "http://genealogiepicardie.com/ici/",
+   "type": "cercle_departemental",
+   "zone": [
+    "80"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-de-picardie/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-de-picardie/"
+  },
+  {
+   "code": "FFG-14994",
+   "nom": "AVF Montauban",
+   "url": "https://www.helloasso.com/associations/avf-montauban",
+   "type": "cercle_departemental",
+   "zone": [
+    "82"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/avf-montauban/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/avf-montauban/"
+  },
+  {
+   "code": "FFG-16341",
+   "nom": "Entraide Généalogique de Tarn-et-Garonne",
+   "url": "https://www.egtg.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "82"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/entraide-genealogique-de-tarn-et-garonne/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/entraide-genealogique-de-tarn-et-garonne/"
+  },
+  {
+   "code": "FFG-27347",
+   "nom": "Cercle Généalogique Hyèrois",
+   "url": "https://www.genefede.eu/association/cercle-genealogique-hyerois/",
+   "type": "cercle_departemental",
+   "zone": [
+    "83"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-hyerois/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite. Aucun site propre dans l'annuaire : lien vers la fiche FFG.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-hyerois/"
+  },
+  {
+   "code": "FFG-14983",
+   "nom": "Cercle Généalogique du Var",
+   "url": "https://cercle.cgenea83.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "83"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-du-var/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-du-var/"
+  },
+  {
+   "code": "FFG-14990",
+   "nom": "A Bonnieux Généalogie Lubéron Monts de Vaucluse",
+   "url": "https://www.a-bonnieux.com/",
+   "type": "cercle_departemental",
+   "zone": [
+    "84"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/a-bonnieux-genealogie-luberon-monts-de-vaucluse/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/a-bonnieux-genealogie-luberon-monts-de-vaucluse/"
+  },
+  {
+   "code": "FFG-14986",
+   "nom": "Cercle Généalogique du Vaucluse et terres adjacentes",
+   "url": "https://www.cgvaucluse.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "84"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-du-vaucluse-et-terres-adjacentes/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-du-vaucluse-et-terres-adjacentes/"
+  },
+  {
+   "code": "FFG-15076",
+   "nom": "Cercle Généalogique Poitevin (86)",
+   "url": "https://www.genea86.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "86"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-poitevin-86/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-poitevin-86/"
+  },
+  {
+   "code": "FFG-14916",
+   "nom": "Racines à Bessines",
+   "url": "https://www.genefede.eu/association/racines-a-bessines/",
+   "type": "cercle_departemental",
+   "zone": [
+    "87"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/racines-a-bessines/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite. Aucun site propre dans l'annuaire : lien vers la fiche FFG.",
+   "fiche_annuaire": "https://www.genefede.eu/association/racines-a-bessines/"
+  },
+  {
+   "code": "FFG-14880",
+   "nom": "Centre Généalogique de l'Essonne (91)",
+   "url": "https://essonnegenealogie.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "91"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/centre-genealogique-de-lessonne-91/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/centre-genealogique-de-lessonne-91/"
+  },
+  {
+   "code": "FFG-18699",
+   "nom": "Association des secrets de famille",
+   "url": "https://asf-genealogie.wixsite.com/asfg",
+   "type": "cercle_departemental",
+   "zone": [
+    "92"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/association-des-secrets-des-familles/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/association-des-secrets-des-familles/"
+  },
+  {
+   "code": "FFG-14868",
+   "nom": "Cercle Généalogique Boulogne-Billancourt",
+   "url": "http://genealogie-boulogne-billancourt.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "92"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-boulogne-billancourt/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-boulogne-billancourt/"
+  },
+  {
+   "code": "FFG-14877",
+   "nom": "Cercle Généalogique CG 92",
+   "url": "http://cg92.free.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "92"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-cg-92/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-cg-92/"
+  },
+  {
+   "code": "FFG-14893",
+   "nom": "Entente Généalogique de l'Arrondissement Nord des Hauts-de-Seine (EGAN92)",
+   "url": "https://www.genefede.eu/association/entente-genealogique-de-larrondissement-nord-des-hauts-de-seine-egan92/",
+   "type": "cercle_departemental",
+   "zone": [
+    "92"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/entente-genealogique-de-larrondissement-nord-des-hauts-de-seine-egan92/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite. Aucun site propre dans l'annuaire : lien vers la fiche FFG.",
+   "fiche_annuaire": "https://www.genefede.eu/association/entente-genealogique-de-larrondissement-nord-des-hauts-de-seine-egan92/"
+  },
+  {
+   "code": "FFG-14883",
+   "nom": "Cercle Généalogique de l'Est Parisien (93)",
+   "url": "https://www.genefede.eu/association/cercle-genealogique-de-lest-parisien-93/",
+   "type": "cercle_departemental",
+   "zone": [
+    "93"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-de-lest-parisien-93/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite. Aucun site propre dans l'annuaire : lien vers la fiche FFG.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-de-lest-parisien-93/"
+  },
+  {
+   "code": "FFG-14849",
+   "nom": "Association Généalogique de Franconville-la-Garenne",
+   "url": "https://agfg-franconville.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "95"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/association-genealogique-de-franconville-la-garenne/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/association-genealogique-de-franconville-la-garenne/"
+  },
+  {
+   "code": "FFG-14855",
+   "nom": "Association Généalogique de Taverny",
+   "url": "http://www.genea-taverny.fr:8080/exist/AGT/pages/accueil.html",
+   "type": "cercle_departemental",
+   "zone": [
+    "95"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/association-genealogique-de-taverny/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/association-genealogique-de-taverny/"
+  },
+  {
+   "code": "FFG-14858",
+   "nom": "Association Historique Généalogique et Héraldique Val d'Oise",
+   "url": "http://ahgehvo.free.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "95"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/association-historique-genealogique-et-heraldique-val-doise/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/association-historique-genealogique-et-heraldique-val-doise/"
+  },
+  {
+   "code": "FFG-14861",
+   "nom": "Association de Recherches Entraide Généalogique Historique d'Argenteuil (95)",
+   "url": "http://aregha.free.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "95"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/association-de-recherches-entraide-genealogique-historique-dargenteuil-95/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/association-de-recherches-entraide-genealogique-historique-dargenteuil-95/"
+  },
+  {
+   "code": "FFG-14864",
+   "nom": "Cercle d'Etudes Généalogiques et Héraldiques de l'Ile-de-France (78)",
+   "url": "https://www.ceghif.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "95"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-detudes-genealogiques-et-heraldiques-de-lile-de-france-78/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-detudes-genealogiques-et-heraldiques-de-lile-de-france-78/"
+  },
+  {
+   "code": "FFG-15137",
+   "nom": "Généalogie et Histoire de la Caraïbe",
+   "url": "https://www.ghcaraibe.org/",
+   "type": "cercle_departemental",
+   "zone": [
+    "971",
+    "972",
+    "973"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/genealogie-et-histoire-de-la-caraibe/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/genealogie-et-histoire-de-la-caraibe/"
+  },
+  {
+   "code": "FFG-15135",
+   "nom": "Génésis Guadeloupe",
+   "url": "https://www.genefede.eu/association/genesis-guadeloupe/",
+   "type": "cercle_departemental",
+   "zone": [
+    "971"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/genesis-guadeloupe/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite. Aucun site propre dans l'annuaire : lien vers la fiche FFG.",
+   "fiche_annuaire": "https://www.genefede.eu/association/genesis-guadeloupe/"
+  },
+  {
+   "code": "FFG-15130",
+   "nom": "Association martiniquaise de recherche sur l'histoire des familles (AMARHISFA)",
+   "url": "https://www.amarhisfa.fr/",
+   "type": "cercle_departemental",
+   "zone": [
+    "972"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/association-martiniquaise-de-recherche-sur-lhistoire-des-familles-amarhisfa/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/association-martiniquaise-de-recherche-sur-lhistoire-des-familles-amarhisfa/"
+  },
+  {
+   "code": "FFG-15133",
+   "nom": "François Objectif Solidarité",
+   "url": "https://www.genefede.eu/association/francois-objectif-solidarite/",
+   "type": "cercle_departemental",
+   "zone": [
+    "972"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/francois-objectif-solidarite/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite. Aucun site propre dans l'annuaire : lien vers la fiche FFG.",
+   "fiche_annuaire": "https://www.genefede.eu/association/francois-objectif-solidarite/"
+  },
+  {
+   "code": "FFG-15140",
+   "nom": "Office Municipal de la Culture et des Loisirs du Robert",
+   "url": "https://www.genefede.eu/association/office-municipal-de-la-culture-et-des-loisirs-du-robert/",
+   "type": "cercle_departemental",
+   "zone": [
+    "972"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/office-municipal-de-la-culture-et-des-loisirs-du-robert/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite. Aucun site propre dans l'annuaire : lien vers la fiche FFG.",
+   "fiche_annuaire": "https://www.genefede.eu/association/office-municipal-de-la-culture-et-des-loisirs-du-robert/"
+  },
+  {
+   "code": "FFG-15142",
+   "nom": "Cercle Généalogique de Bourbon",
+   "url": "https://cgb-reunion.re/",
+   "type": "cercle_departemental",
+   "zone": [
+    "974"
+   ],
+   "acces": "a_determiner",
+   "nature": "releve_derive",
+   "protection": "aucune",
+   "verifie_le": "",
+   "origine": "annuaire FFG (fiche https://www.genefede.eu/association/cercle-genealogique-de-bourbon/), relevé du 2026-11-18",
+   "notes": "Département du siège selon l'annuaire FFG : la zone couverte peut être plus large ou plus étroite.",
+   "fiche_annuaire": "https://www.genefede.eu/association/cercle-genealogique-de-bourbon/"
+  }
+ ]
+}
