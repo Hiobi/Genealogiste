@@ -25,15 +25,41 @@ def _xdg(var: str, default: str) -> Path:
     return Path(os.environ.get(var) or Path.home() / default)
 
 
-def user_agent_par_defaut() -> str:
-    """User-Agent dérivé de la version du paquet : les services identifient la version qui les interroge."""
+def user_agent_par_defaut(contact: str = "") -> str:
+    """User-Agent dérivé de la version du paquet : les services identifient la version qui les interroge.
+    `contact` (GENEALOGISTE_CONTACT, déjà validé par `contact_valide`) est ajouté au commentaire RFC 9110 ;
+    vide, l'en-tête est inchangé."""
     from importlib import metadata
 
     try:
         version = metadata.version("genealogiste-mcp")
     except metadata.PackageNotFoundError:
         version = "inconnue"
-    return f"genealogiste-mcp/{version} (plugin Claude Code; usage genealogique personnel)"
+    suffixe = f"; contact: {contact}" if contact else ""
+    return f"genealogiste-mcp/{version} (plugin Claude Code; usage genealogique personnel{suffixe})"
+
+
+CONTACT_MAX = 200
+# Caractères qui sortiraient du commentaire « (…) » de l'en-tête ou en casseraient la syntaxe (RFC 9110 §5.6.5).
+_CONTACT_INTERDITS = set("();\\")
+
+
+def contact_valide(valeur: str | None) -> tuple[str, str]:
+    """GENEALOGISTE_CONTACT (#211, lot D) -> (contact retenu, motif du rejet). Facultatif, jamais de valeur par
+    défaut : absent ou vide -> ("", ""). Invalide -> ("", motif) : ignoré, signalé par diagnostic, sans jamais
+    empêcher le démarrage. Le motif ne reprend pas la valeur (donnée personnelle)."""
+    v = (valeur or "").strip()
+    if not v:
+        return "", ""
+    if len(v) > CONTACT_MAX:
+        return "", f"plus de {CONTACT_MAX} caractères"
+    if any(ord(c) < 0x20 or ord(c) == 0x7F for c in v):
+        return "", "caractère de contrôle (retour à la ligne, tabulation…)"
+    if not v.isascii():
+        return "", "caractère non ASCII (un en-tête HTTP n'en admet pas de façon fiable)"
+    if _CONTACT_INTERDITS & set(v):
+        return "", "caractère interdit dans un commentaire d'en-tête : ( ) ; \\"
+    return v, ""
 
 
 @dataclass
@@ -94,6 +120,12 @@ class Config:
     plafond_jour_archives: int = 1000  # GENEALOGISTE_PLAFOND_JOUR_ARCHIVES : requêtes/hôte/jour (0 = aucun)
     plafond_jour_defaut: int = 1000  # GENEALOGISTE_PLAFOND_JOUR_DEFAUT : autres hôtes (API…), requêtes/jour (0 = aucun)
     plafonds_jour: dict[str, int] = field(default_factory=dict)  # GENEALOGISTE_PLAFONDS_JOUR : hote=n,… (priorité)
+    # GENEALOGISTE_CONTACT (#211, lot D) : contact facultatif ajouté au User-Agent par défaut (donnée personnelle
+    # envoyée à chaque hôte externe, jamais journalisée). etat_contact : absent | configure | rejete | ignore
+    # (User-Agent explicite) ; contact_motif : raison d'un rejet ou d'une mise à l'écart, sans la valeur.
+    contact: str = ""
+    etat_contact: str = "absent"
+    contact_motif: str = ""
     offline: bool = False
     extra: dict = field(default_factory=dict)
 
@@ -384,8 +416,18 @@ def load_config() -> Config:
         cache_pdf_dir_conf=_dir(env("GENEALOGISTE_CACHE_PDF_DIR")),
         tesseract=str(Path(env("GENEALOGISTE_TESSERACT")).expanduser()) if env("GENEALOGISTE_TESSERACT") else "",
     )
+    contact, motif = contact_valide(env("GENEALOGISTE_CONTACT"))
     if env("GENEALOGISTE_USER_AGENT"):
+        # User-Agent explicite : envoyé tel quel, le contact n'y est jamais ajouté.
         cfg.user_agent = env("GENEALOGISTE_USER_AGENT")
+        if contact or motif:
+            cfg.etat_contact = "ignore"
+            cfg.contact_motif = "GENEALOGISTE_USER_AGENT est défini : il est envoyé tel quel, sans le contact"
+    elif motif:
+        cfg.etat_contact, cfg.contact_motif = "rejete", motif
+    elif contact:
+        cfg.contact, cfg.etat_contact = contact, "configure"
+        cfg.user_agent = user_agent_par_defaut(contact)
     if env("GENEALOGISTE_COG_MVT_URL"):
         cfg.cog_mvt_url = env("GENEALOGISTE_COG_MVT_URL")
     if env("GENEALOGISTE_COG_COMMUNES_URL"):

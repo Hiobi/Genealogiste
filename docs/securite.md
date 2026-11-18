@@ -315,6 +315,39 @@ départs entre processus). Elle est consignée pour une éventuelle parallélisa
 nommé et des hôtes surchargés, avec la provenance de chaque valeur, les défauts par catégorie et la
 consommation du jour ; `archives_service` ajoute `politique_acces` pour le site et la visionneuse du service.
 
+## Identification : User-Agent et contact facultatif
+
+`config.py` (#211, lot D). Chaque requête externe (sources, archives, IIIF, ainsi que Gramps Web) porte
+l'en-tête `User-Agent` suivant, de la forme produit + commentaire (RFC 9110) :
+
+```text
+genealogiste-mcp/<version> (plugin Claude Code; usage genealogique personnel)
+```
+
+**Contact facultatif** : `GENEALOGISTE_CONTACT` (adresse électronique ou URL fournie par l'utilisateur) est
+ajouté à la fin du commentaire, pour qu'un service puisse joindre l'utilisateur au lieu de le bloquer :
+
+```text
+genealogiste-mcp/<version> (plugin Claude Code; usage genealogique personnel; contact: contact@example.org)
+```
+
+- **Opt-in, jamais de valeur par défaut** : absente ou vide, l'en-tête est identique, octet pour octet, à
+  celui sans contact. Le plugin n'invente ni ne déduit aucun contact (compte Git, adresse système…).
+- **Donnée personnelle** : le contact est envoyé à **chaque hôte externe** interrogé (services d'archives,
+  matchID, WikiTree, Gallica, Wikidata, API Géo, INSEE, manifestes IIIF de tiers…), qui peut le conserver
+  dans ses journaux. Préférer une adresse dédiée à cet usage plutôt qu'une adresse personnelle principale.
+- **Jamais journalisé** : ni dans le journal de recherche, ni dans le journal d'exploitation. `diagnostic`
+  n'indique que son état (`valeurs.contact_user_agent` : `absent`, `configuré`, `rejeté`, `ignoré`), et
+  `make check` de même ; la valeur n'est jamais affichée.
+- **Validation** : espaces de début et de fin retirés ; refus d'une valeur de plus de 200 caractères, non
+  ASCII, contenant un caractère de contrôle (dont retour chariot et saut de ligne) ou l'un de `(`, `)`, `;`,
+  `\` (qui sortiraient du commentaire de l'en-tête). Une valeur refusée est **ignorée** (User-Agent sans
+  contact), sans bloquer le démarrage, et signalée par `diagnostic` (contrôle `configuration`, état
+  `attention`, avec le motif mais sans la valeur).
+- **User-Agent explicite** : si `GENEALOGISTE_USER_AGENT` est défini, il est envoyé **tel quel** et le contact
+  n'y est jamais ajouté ; `diagnostic` signale alors le contact comme ignoré. Pour combiner les deux, inclure
+  le contact dans `GENEALOGISTE_USER_AGENT`.
+
 ## Plafond journalier par hôte et budget d'enquête
 
 `budget.py`, `http.py`, `cache.py` (#157, étendu à tous les hôtes par #211).

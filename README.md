@@ -83,6 +83,9 @@ détaille ce parcours et le résultat attendu.
   ([politique d’accès par service](docs/securite.md#politique-daccès-par-service)). Réglages :
   `GENEALOGISTE_BUDGET_*`, `GENEALOGISTE_PLAFOND_JOUR_ARCHIVES`, `GENEALOGISTE_PLAFOND_JOUR_DEFAUT` et
   `GENEALOGISTE_PLAFONDS_JOUR` (`.env.example`).
+- Aucun contact personnel n’est envoyé aux sites par défaut ; `GENEALOGISTE_CONTACT` (facultatif) ajoute
+  l’adresse ou l’URL de votre choix au User-Agent de chaque requête externe
+  ([identification](docs/securite.md#identification--user-agent-et-contact-facultatif)).
 - Pour une recherche sans surveillance (`/genealogiste:campagne`, tâche planifiée), `GENEALOGISTE_ECRITURE=interdite`
   fait refuser par le serveur lui-même toute écriture, quel que soit le mode de permission du client ; les
   conclusions attendent dans la file de propositions ([campagne sans surveillance](docs/campagne.md)).

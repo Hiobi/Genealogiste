@@ -2304,6 +2304,10 @@ def main() -> None:
             raise SystemExit(2) from exc
         print(json.dumps(arbre_info(), ensure_ascii=False, indent=2, default=str))
         print("WikiTree appId :", "défini" if a.config.wikitree_app_id else "ABSENT")
+        # Contact du User-Agent (#211, lot D) : état seulement, jamais la valeur.
+        etat_contact = {"configure": "configuré", "absent": "absent"}.get(
+            a.config.etat_contact, f"IGNORÉ — {a.config.contact_motif}")
+        print("Contact User-Agent (GENEALOGISTE_CONTACT) :", etat_contact)
         langues = pdf_md._tesseract_langues(a.config.tesseract)
         if langues is None:
             cmd = pdf_md.commande_installation(["fra"]).get("commande") or "voir docs/pieces.md"
