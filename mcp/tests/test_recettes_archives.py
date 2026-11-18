@@ -64,9 +64,11 @@ def test_acces_vps_inconnu_sans_mesure(tmp_path, monkeypatch):
 def test_adaptateur_sans_recette_signale_non_eprouve():
     eprouve = archives.service(code="AD25")["telechargement"]
     assert eprouve["etat"] == "automatique"
-    for code in ("AD37", "AD80", "AD91"):  # adaptateur Naoned sans recette (AD14, AD972 éprouvés le 2026-11-18)
-        t = archives.service(code=code)["telechargement"]
-        assert t["adaptateur_disponible"] and t["etat"] == "automatique_non_eprouve" and t["note"]
+    # adaptateur Naoned sans recette (AD14, AD972 éprouvés le 2026-11-18 ; AD80, AD91 le même soir, #242)
+    t = archives.service(code="AD37")["telechargement"]
+    assert t["adaptateur_disponible"] and t["etat"] == "automatique_non_eprouve" and t["note"]
+    for code in ("AD80", "AD91"):
+        assert archives.service(code=code)["telechargement"]["etat"] == "automatique"
 
 
 def test_mesure_conserve_reference_meme_sans_revision(tmp_path, monkeypatch):

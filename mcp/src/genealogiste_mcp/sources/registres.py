@@ -101,6 +101,8 @@ def _registre(bloc: _Noeud, host: str = HOST, naan: str = "33518") -> dict:
         raise FormatRegistresError("Lien de notice incohérent ou hors du service : registre refusé.")
     cotes = bloc.trouver("p", classe="referenceCodes")
     cote = _unique(cotes, "cote").texte() if cotes or naan == "33518" else None  # cote facultative hors AD59
+    if cote:  # libellé collé à la valeur : « 5MI_D271 (Cote(s)) » (AD80)
+        cote = re.sub(r"\s*\(Cote\(s\)\)$", "", cote) or None
     bornes = None
     for partie in bloc.trouver(classe="content-sub-part"):
         if [h.texte() for h in partie.trouver("h3")] == ["Date"]:
@@ -183,20 +185,23 @@ def _requete_mnesys(http, svc: dict, commune: str, periode: list[int], type_acte
     cfg = svc["recherche_registres"]["formulaires"]
     host = svc["site"].rstrip("/")
     dedie = type_acte == "TD" and cfg.get("tables_decennales")
-    if type_acte in mnesys.TYPES_FONDS:
-        cle_form = mnesys.TYPES_FONDS[type_acte]
-        if not cfg.get(cle_form):
-            raise ValueError(f"Aucun formulaire « {cle_form} » relevé pour {svc['code']} : chercher dans l'inventaire "
-                             "du service (archives_service, lien).")
-        uuid = cfg[cle_form]
-    else:
-        uuid = cfg["tables_decennales"] if dedie else cfg["etat_civil"]
+    cle_form = mnesys.TYPES_FONDS.get(type_acte) or ("tables_decennales" if dedie else "etat_civil")
+    if not cfg.get(cle_form):
+        autres = ", ".join(sorted(k for k in ("TD", *mnesys.TYPES_FONDS)
+                                  if cfg.get(mnesys.TYPES_FONDS.get(k, "tables_decennales"))))
+        raise ValueError(f"Aucun formulaire « {cle_form} » relevé pour {svc['code']} : chercher dans l'inventaire "
+                         "du service (archives_service, lien)" + (f" ; types disponibles : {autres}." if autres
+                                                                     else "."))
+    uuid = cfg[cle_form]
     form, _ = http.get(f"{host}/search/form/{uuid}", parse="text", ttl=7 * DAY, source="archives")
     if len(form) > MAX_HTML:
         raise FormatRegistresError("Formulaire de recherche trop volumineux : consultation manuelle nécessaire.")
     parser = _HTML()
     parser.feed(form)
     f = mnesys.lire_formulaire(parser.racine.trouver())
+    # champ d'année déclaré au référentiel quand le formulaire ne le type pas (AD25 : classe en texte libre « 0-title »)
+    if annee := svc["recherche_registres"].get("champs_annee", {}).get(cle_form):
+        f["date"], f["debut"], f["fin"] = annee, None, None
     requete = {"formUuid": uuid, "sort": "date_asc", "mode": "list", "facet_media": "image"}
     valeur = None
     if commune and f["commune"]:
@@ -204,13 +209,19 @@ def _requete_mnesys(http, svc: dict, commune: str, periode: list[int], type_acte
         requete[f["commune"] + "[]"] = valeur
     elif type_acte != "RM":  # matricules : le bureau de recrutement est facultatif
         raise mnesys.FormulaireError("Formulaire sans liste de lieux : recherche par commune ou bureau impossible.")
-    # Formulaire de tables dédié ou formulaire sans date (AD25, relevé du 18 novembre 2026) : commune seule,
-    # période filtrée localement sur les bornes affichées (filtre_local).
-    filtre_local = bool(dedie) or not (f["date"] or f["debut"] and f["fin"])
+    # Formulaire sans date, ou formulaire de tables dédié sans période (AD59) : commune seule, période filtrée
+    # localement sur les bornes affichées (filtre_local). Un formulaire de tables dédié doté d'une période (AD25,
+    # relevé du 18 novembre 2026) la reçoit ; la typologie reste propre au formulaire d'état civil.
+    filtre_local = bool(dedie) and not (f["debut"] and f["fin"]) or not (f["date"] or f["debut"] and f["fin"])
+    if dedie and not filtre_local:
+        requete[f["debut"]], requete[f["fin"]] = str(periode[0]), str(periode[1])
     if not dedie:
+        # L'intervalle d'abord, même pour une année : la date exacte ne trouve pas toujours un volume pluriannuel
+        # (AD91, tables des successions 1859-1865 absentes pour « 1-date=1860 », relevé du 18 novembre 2026).
+        # Matricules : la classe est une année exacte.
         if filtre_local:
             pass
-        elif periode[0] == periode[1] and f["date"]:
+        elif periode[0] == periode[1] and f["date"] and (type_acte == "RM" or not (f["debut"] and f["fin"])):
             requete[f["date"]] = str(periode[0])
         elif f["debut"] and f["fin"]:
             requete[f["debut"]], requete[f["fin"]] = str(periode[0]), str(periode[1])

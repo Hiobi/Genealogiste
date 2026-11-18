@@ -27,7 +27,7 @@
 - Recrutement par classe (année des 20 ans). Fiche : état civil, parents, domicile, signalement, degré
   d'instruction, parcours, blessures, adresses successives. Tables alphabétiques par classe et bureau.
 - En ligne et cherchable par classe : `archives_registres(service, commune=<bureau ou vide>, annee=<classe>,
-  type_acte="RM")` pour AD19, AD27, AD55, AD58, AD69, AD90, AD972.
+  type_acte="RM")` pour AD19, AD25, AD27, AD39, AD55, AD58, AD69, AD90, AD972.
 
 ## Notaires (3 E)
 - Retrouver l'acte : répertoire de l'étude, tables de l'enregistrement (avant 1790 : contrôle des actes,

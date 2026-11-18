@@ -42,7 +42,8 @@ def _params(route):
 # ------------------------------------------------------------------- choix de la commune
 
 OPTIONS = ["Commune-Fictive (Département, France)", "Commune-Fictive (Département, France ; jusqu'en 1833)",
-           "Lamentin (Le)", "VILLE-FICTIVE", "VILLE-FICTIVE (Saint-Jean)", "Doublon (Département, France)",
+           "Lamentin (Le)", "VILLE-FICTIVE", "Lons-le-Saunier, canton", "Lons-le-Saunier, commune",
+           "ARPAJON Canton", "ARPAJON Commune", "FERTE-ALAIS (LA) Commune", "VILLE-FICTIVE (Saint-Jean)", "Doublon (Département, France)",
            "Doublon (Autre, France)", "Andelys (Les) (Eure, France)", "Amfreville_La_Campagne (Eure, France)"]
 
 
@@ -53,6 +54,9 @@ OPTIONS = ["Commune-Fictive (Département, France)", "Commune-Fictive (Départem
     ("Ville-Fictive", "VILLE-FICTIVE"),  # sans qualificatif de paroisse
     ("Les Andelys", "Andelys (Les) (Eure, France)"),  # article et qualificatif (AD27)
     ("Amfreville-la-Campagne", "Amfreville_La_Campagne (Eure, France)"),  # tirets bas (AD27)
+    ("Lons-le-Saunier", "Lons-le-Saunier, commune"),  # niveau en suffixe, commune avant canton (AD39)
+    ("Arpajon", "ARPAJON Commune"),  # idem (AD91)
+    ("La Ferté-Alais", "FERTE-ALAIS (LA) Commune"),  # article et niveau (AD91)
 ])
 def test_choisir_commune(saisie, attendu):
     assert mnesys.choisir_commune(OPTIONS, saisie) == attendu
@@ -84,7 +88,8 @@ def test_recherche_generique_construit_la_requete_depuis_le_formulaire(app, fixt
     assert r["resultats"][0]["ark"] == "ark:/99999/registrefictif121"
     assert r["resultats"][0]["url"] == f"{HOTE}/ark:/99999/registrefictif121"
     q = _params(res)
-    assert q["formUuid"] == [FORM] and q["2-date"] == ["1860"]
+    # année seule : intervalle d'une année plutôt que la date exacte (volume pluriannuel, AD91)
+    assert q["formUuid"] == [FORM] and q["3-date_begin"] == ["1860"] == q["3-date_end"] and "2-date" not in q
     assert q["0-controlledAccessGeographicName[]"] == ["Commune-Fictive (Département, France)"]
     assert q["1-controlledAccessPhysicalCharacteristic[]"] == ["Baptêmes", "Naissances"]
     assert "I7" not in str(res.calls[0].request.url)
@@ -215,3 +220,66 @@ def test_referentiel_declare_matricules_et_successions():
             if "successions" in archives.by_code(c)["recherche_registres"]["formulaires"]]
     assert {"AD19", "AD55", "AD58", "AD69", "AD90", "AD972"} <= set(rm)
     assert {"AD58", "AD69", "AD90"} <= set(succ)
+
+
+# ------------------------------------------------------------------- formulaires relevés pour #242
+
+@respx.mock
+def test_type_d_acte_en_sujet_et_tables_decennales(app, fixtures, service):
+    """AD39 : typologie matérielle sans type d'acte, « Type d'acte » en sujet ; AD80 : « Tables décennales »
+    retenue seule parmi d'autres tables."""
+    _form(fixtures, "mnesys-formulaire-sujet.html")
+    res = _resultats(fixtures)
+    assert "erreur" not in registres.rechercher(app.sctx, "AD99", "Ville-Fictive", 1860, "N")
+    q = _params(res)
+    assert q["2-controlledAccessSubject[]"] == ["BAPTEME", "NAISSANCE"]
+    assert not any("PhysicalCharacteristic" in k for k in q)
+    registres.rechercher(app.sctx, "AD99", "Ville-Fictive", 1860, "TD")
+    q = _params(res)
+    assert q["1-controlledAccessPhysicalCharacteristic[]"] == ["table décennale"] and not any("Subject" in k for k in q)
+
+
+@respx.mock
+def test_tables_dediees_avec_periode_et_etat_civil_absent(app, fixtures, service):
+    """AD25 : formulaire de tables doté d'une période, sans formulaire d'état civil par commune."""
+    formulaires = service["recherche_registres"]["formulaires"]
+    del formulaires["etat_civil"]
+    formulaires["tables_decennales"] = TD
+    _form(fixtures, "mnesys-formulaire-periode.html", TD)
+    res = _resultats(fixtures)
+    r = registres.rechercher(app.sctx, "AD99", "Le Lamentin", 1860, "TD")
+    assert "erreur" not in r and "tables_hors_periode" not in r, r
+    q = _params(res)
+    assert q["formUuid"] == [TD] and q["period_begin"] == ["1860"] == q["period_end"]
+    r = registres.rechercher(app.sctx, "AD99", "Le Lamentin", 1860, "N")
+    assert "« etat_civil »" in r["erreur"] and "types disponibles : TD" in r["erreur"] and res.call_count == 1
+
+
+@respx.mock
+def test_champ_d_annee_declare_pour_les_matricules(app, fixtures, service):
+    """AD25 : classe saisie en texte libre « 0-title », déclarée au référentiel (champs_annee)."""
+    service["recherche_registres"]["formulaires"]["matricules"] = MAT
+    service["recherche_registres"]["champs_annee"] = {"matricules": "0-title"}
+    _form(fixtures, "mnesys-formulaire-classe-texte.html", MAT)
+    res = _resultats(fixtures)
+    r = registres.rechercher(app.sctx, "AD99", "", 1880, "RM")
+    assert "erreur" not in r, r
+    q = _params(res)
+    assert q["0-title"] == ["1880"] and "registres_hors_periode" not in r
+
+
+def test_cote_sans_libelle_colle(fixtures):
+    html = (fixtures / "mnesys-recherche-positive.html").read_text()
+    debut = html.index('class="referenceCodes">') + len('class="referenceCodes">')
+    fin = html.index("<", debut)
+    html = html[:debut] + html[debut:fin] + " (Cote(s))" + html[fin:]
+    resultats, _, _ = registres._lire(html, 1, HOTE, "99999")
+    assert not resultats[0]["cote"].endswith("(Cote(s))")
+
+
+def test_referentiel_declare_les_services_du_releve_242():
+    codes = set(registres.services_registres())
+    assert {"AD25", "AD39", "AD80", "AD91"} <= codes
+    ad25 = archives.by_code("AD25")["recherche_registres"]
+    assert "etat_civil" not in ad25["formulaires"] and ad25["champs_annee"] == {"matricules": "0-title"}
+    assert "successions" in archives.by_code("AD91")["recherche_registres"]["formulaires"]
