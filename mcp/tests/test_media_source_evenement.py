@@ -185,6 +185,32 @@ def test_obje_avec_sous_structure_conserve(tree):
     assert "2 OBJE @O1@\n3 CROP\n4 TOP 10" in out and "1 OBJE @O1@\n2 CROP\n3 TOP 10" in out
 
 
+def test_lier_a_obje_avec_crop_deja_present(app_famille):
+    """Un OBJE vers ce média déjà porté (avec CROP) par la source / l'événement vaut lien existant : pas de
+    second OBJE ; sans autre changement, la proposition ne modifie rien."""
+    p = server.arbre_proposer(_op([]), "Média", "Image.")
+    server.arbre_appliquer(p["jeton"])
+    path = app_famille.store.path
+    text = path.read_text(encoding="utf-8")
+    text = text.replace("2 UID " + NAISSANCE, "2 OBJE @O1@\n3 CROP\n4 TOP 10\n2 UID " + NAISSANCE)
+    text = text.replace("0 @S1@ SOUR\n", "0 @S1@ SOUR\n1 OBJE @O1@\n2 CROP\n3 TOP 10\n")
+    path.write_text(text, encoding="utf-8")
+    app_famille.store.write(app_famille.store.load())  # forme normalisée par l'écrivain
+    app_famille.store.commit("crop")
+    r = server.arbre_proposer([{"op": "modifier_media", "id": "O1", "lier_a": ["S1", NAISSANCE]}], "t", "j")
+    assert "ne modifie rien" in r.get("erreur", ""), r
+    r = server.arbre_proposer([{"op": "modifier_media", "id": "O1", "lier_a": ["S1", NAISSANCE, "F1"]}], "t", "j")
+    assert "jeton" in r, r
+    assert any("liée à F1" in s and "S1" not in s for s in r["resume"]), r["resume"]
+    server.arbre_appliquer(r["jeton"])
+    out = path.read_text(encoding="utf-8")
+    assert out.count("OBJE @O1@") == 3  # source et naissance (avec CROP) + famille
+    assert "2 OBJE @O1@\n3 CROP\n4 TOP 10" in out and "1 OBJE @O1@\n2 CROP\n3 TOP 10" in out
+    # un autre média lié à S1 reste un lien simple
+    p = server.arbre_proposer(_op(["S1"]), "Média 2", "Image.")
+    assert "jeton" in p and "+1 OBJE @O2@" in p["diff"], p
+
+
 def test_references_pendantes(tree):
     tree.sources["S1"].medias.append("O99")
     tree.personnes["I1"].event_by_uid(NAISSANCE).medias.append("O98")

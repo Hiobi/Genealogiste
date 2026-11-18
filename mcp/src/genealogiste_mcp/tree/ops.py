@@ -550,13 +550,20 @@ def _lier_media(ctx: Ctx, mid: str, idents: list, op: str, seulement_nouveaux: b
     out = []
     for ident in idents:
         owner, label = _media_owner(ctx, ident, op)
-        if mid in owner.medias:
+        if mid in owner.medias or _obje_conserve(owner, mid):
             if not seulement_nouveaux and label not in out:
                 out.append(label)
             continue
         owner.medias.append(mid)
         out.append(label)
     return out
+
+
+def _obje_conserve(owner, mid: str) -> bool:
+    """OBJE vers ce média conservé tel quel dans les extensions (pointeur avec CROP / TITL, GEDCOM) : le lien
+    existe déjà, lier_a n'en ajoute pas un second."""
+    return any(x.get("tag") == "OBJE" and (x.get("value") or "").strip() == f"@{mid}@"
+               for x in getattr(owner, "extra", None) or [] if isinstance(x, dict))
 
 
 def _media_owner(ctx: Ctx, ident: str, op: str) -> tuple[Person | Family | Source | Event, str]:
