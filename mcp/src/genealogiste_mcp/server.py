@@ -1658,6 +1658,7 @@ def piece_archiver(source: str, page: int = 0, personnes: list[str] | None = Non
            "operations_suggerees": [{"op": "ajouter_media", "ref": "piece", "fichier": ref,
                                      "format": archivage.MIME.get(ext, ""), "titre": dest.stem, "lier_a": ids}],
            "citation_suggeree": citation,
+           **({"archives": r} if (r := pieces.rattachement_archives(type_piece, cote)) else {}),
            "suite": "Proposer via arbre_proposer : ajouter_media, puis ajouter_citation sur le fait prouvé "
                     "(cible evenement uid) avec citation_suggeree."}
     alertes = []
@@ -1757,7 +1758,8 @@ def piece_nommer(personnes: list[str], commune: str = "", depot: str = "", type_
     NOM Prénom[ + NOM Prénom] -- COMMUNE - DÉPÔT - TYPE [AAAA-AAAA] - cote - p.vue n.acte.ext
     personnes : « NOM Prénom » ou identifiants de l'arbre (I12). type_piece : N, B, M, D, S, NMD, BMS, TD, RM,
     ANMT, PM, NOT (acte notarié ; libellé libre après le code : « NOT testament »), CNI, COUR (courrier), REC,
-    SIGN, PHOTO… source (S3) : complète dépôt (sigle) et cote depuis l'arbre. Ne renomme rien."""
+    SIGN, PHOTO… source (S3) : complète dépôt (sigle) et cote depuis l'arbre. Pour NOT, archives indique le type
+    d'archives « notaire » et l'état de la cote (sous-série 3 E acceptée, à compléter ou hors 3 E). Ne renomme rien."""
     try:
         noms = [_person_label(p) for p in personnes]
         if source:
@@ -1770,7 +1772,10 @@ def piece_nommer(personnes: list[str], commune: str = "", depot: str = "", type_
     except (pieces.PieceError, KeyError) as exc:
         return {"erreur": f"{exc}"}
     info = pieces.detecter(Path(nom))
-    return {"nom": nom, "dossier_convention": pieces.destination(info) or pieces.A_TRIER, "lecture": pieces.lire_nom(nom)}
+    out = {"nom": nom, "dossier_convention": pieces.destination(info) or pieces.A_TRIER, "lecture": pieces.lire_nom(nom)}
+    if archives := pieces.rattachement_archives(type_piece, cote):
+        out["archives"] = archives
+    return out
 
 
 def _dossier(dossier: str) -> Path:

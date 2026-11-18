@@ -1,4 +1,4 @@
-"""Recette native Codex 0.166.0 : fournisseur déterministe local, aucune clé API.
+"""Recette native Codex CLI 0.166 à 0.169 : fournisseur déterministe local, aucune clé API.
 
 Lance le vrai app-server et le vrai MCP sur une famille fictive. Simule les réponses du client aux
 approbations natives ; ne démontre pas qu'une personne a cliqué dans l'interface desktop.
@@ -19,6 +19,26 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from configurer_codex import ROOT, profil
+
+# Plage acceptée : du minimum conçu (0.166.0) à la dernière série exécutée (0.169.x), bornes du
+# protocole app-server expérimental. Élargir seulement après une exécution réelle consignée.
+VERSION_MIN = (0, 166, 0)
+VERSION_MAX = (0, 170, 0)  # exclue
+PLAGE = "codex-cli >= 0.166.0, < 0.170.0"
+
+
+def version_codex(texte: str) -> tuple[int, ...] | None:
+    """`codex-cli 0.169.0` -> (0, 169, 0) ; None si le format n'est pas reconnu."""
+    nom, _, numero = texte.strip().partition(" ")
+    parties = numero.split(".")
+    if nom != "codex-cli" or len(parties) != 3 or not all(p.isdigit() for p in parties):
+        return None
+    return tuple(int(p) for p in parties)
+
+
+def version_acceptee(texte: str) -> bool:
+    version = version_codex(texte)
+    return version is not None and VERSION_MIN <= version < VERSION_MAX
 
 
 def diff_outil(value):
@@ -179,8 +199,8 @@ def verifier(base: Path):
     env.update(CODEX_HOME=str(home), XDG_CACHE_HOME=str(base / "cache"), UV_CACHE_DIR=os.environ.get(
         "UV_CACHE_DIR", str(base / "uv-cache")))
     version = subprocess.check_output(["codex", "--version"], env=env, text=True).strip()
-    if version != "codex-cli 0.166.0":
-        raise RuntimeError(f"Recette figée sur codex-cli 0.166.0 ; version reçue : {version}")
+    if not version_acceptee(version):
+        raise RuntimeError(f"Recette validée pour {PLAGE} ; version reçue : {version}")
     for command in (["marketplace", "add", str(ROOT)], ["add", "genealogiste@genealogiste"]):
         subprocess.run(["codex", "plugin", *command, "--json"], env=env, check=True, capture_output=True)
     provider = Fournisseur(("127.0.0.1", 0), Reponse)
@@ -307,6 +327,6 @@ requires_openai_auth = false
 
 if __name__ == "__main__":
     if not shutil.which("codex") or not shutil.which("uv"):
-        raise SystemExit("codex 0.166.0 et uv sont nécessaires")
+        raise SystemExit(f"Codex CLI ({PLAGE}) et uv sont nécessaires")
     with tempfile.TemporaryDirectory(prefix="genealogiste-codex-") as folder:
         verifier(Path(folder))

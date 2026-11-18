@@ -280,20 +280,23 @@ Chaque valeur porte sa **provenance** :
 
 Aucune valeur n'est présentée comme officielle sans référence vérifiée. Quand la documentation d'un service
 publie des limites, elles sont relevées dans `limites_documentees` à titre d'information : la valeur
-appliquée reste la valeur historique, plus prudente. Les valeurs sourcées complètes viendront de #119.
+appliquée reste la valeur historique, plus prudente. Le relevé des accès machine (#119,
+[acces-machine-archives.md](acces-machine-archives.md), 2026-11-18) ne marque `sourcee` que les valeurs
+appliquées égales à une limite publiée : intervalles de matchID et de l'API Géo. Aucun service relevé ne
+publie de plafond journalier ni de concurrence applicables : ces valeurs restent des défauts du plugin.
 
-Table au 2026-11-17 (défauts de configuration : intervalle 1,5 s, plafond 1000 requêtes/jour) :
+Table au 2026-11-18 (défauts de configuration : intervalle 1,5 s, plafond 1000 requêtes/jour) :
 
 | Hôte | Service | Intervalle | Plafond/jour | Concurrence | Référence (relevé) |
 |---|---|---|---|---|---|
-| `deces.matchid.io` | matchID | 1 s (historique) | 1000 (défaut) | 1 (défaut) | — |
+| `deces.matchid.io` | matchID | 1 s (sourcée) | 1000 (défaut) | 1 (défaut) | [matchID, API](https://matchid.io/link-api) (2026-11-18) : recherche limitée à une requête par seconde ; sans jeton, nombre d'appels limité |
 | `api.wikitree.com` | WikiTree API | 1 s (historique) | 1000 (défaut) | 1 (défaut) | [README de l'API](https://github.com/wikitree/wikitree-api/blob/main/README.md) (2026-11-17) : limites strictes sans `appId`, aucun chiffre publié |
 | `gallica.bnf.fr` | Gallica (BnF) | 1 s (historique) | 1000 (défaut) | 1 (défaut) | — (aucune limite chiffrée trouvée sur [api.bnf.fr](https://api.bnf.fr/fr/api-gallica-de-recherche)) |
 | `query.wikidata.org` | Wikidata Query Service | 1 s (historique) | 1000 (défaut) | 1 (défaut) | [User Manual, Query limits](https://www.mediawiki.org/wiki/Wikidata_Query_Service/User_Manual#Query_limits) (2026-11-17) : 60 s de calcul/min, 30 erreurs/min, 5 requêtes parallèles par IP |
-| `geo.api.gouv.fr` | API Géo | 0,1 s (historique) | 1000 (défaut) | 1 (défaut) | [data.gouv.fr](https://www.data.gouv.fr/dataservices/672cf6946a8456f417812b0f) (2026-11-17) : 50 appels/s par IP |
+| `geo.api.gouv.fr` | API Géo | 0,1 s (sourcée) | 1000 (défaut) | 1 (défaut) | [FAQ data.gouv.fr](https://guides.data.gouv.fr/foire-aux-questions) (2026-11-18) : 10 requêtes/s par IP (API Découpage administratif) ; la [fiche data.gouv.fr](https://www.data.gouv.fr/dataservices/672cf6946a8456f417812b0f) annonce 50 appels/s : la plus stricte est retenue |
 | `www.insee.fr` | INSEE (fichiers du COG) | 1,5 s (défaut) | 1000 (défaut) | 1 (défaut) | — |
 | `n2t.net` | N2T (registre des NAAN ARK) | 1,5 s (défaut) | 1000 (défaut) | 1 (défaut) | — |
-| hôtes du référentiel des archives (sous-domaines compris, hors type « autre ») | service du référentiel | `intervalle_requetes` (référentiel) sinon 1,5 s (défaut) | `GENEALOGISTE_PLAFOND_JOUR_ARCHIVES` (1000) | 1 (défaut) | référentiel ([archives.md](archives.md)) |
+| hôtes du référentiel des archives (sous-domaines compris, hors type « autre ») | service du référentiel | `intervalle_requetes` (référentiel ; ANOM : 5 s, `Crawl-delay` de son robots.txt) sinon 1,5 s (défaut) | `GENEALOGISTE_PLAFOND_JOUR_ARCHIVES` (1000) | 1 (défaut) | référentiel ([archives.md](archives.md)) |
 | tout autre hôte (IIIF, visionneuses…) | — | `GENEALOGISTE_DEBIT_DEFAUT` (1,5 s) | `GENEALOGISTE_PLAFOND_JOUR_DEFAUT` (1000) | 1 (défaut) | — |
 
 Un test dérive des modules `sources/` (et des URL COG de la configuration) la liste des hôtes réellement

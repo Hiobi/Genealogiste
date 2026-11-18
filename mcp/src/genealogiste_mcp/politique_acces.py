@@ -72,10 +72,16 @@ class Entree:
             raise ValueError(f"{self.service} : catégorie inconnue {self.categorie!r}")
 
 
-# Valeurs complètes et sourcées : #119. Intervalles repris tels quels de l'ancienne table RATE de server.py.
+# Intervalles repris tels quels de l'ancienne table RATE de server.py ; provenance revue au 2026-11-18 (#119,
+# docs/acces-machine-archives.md) : « sourcee » seulement quand la valeur appliquée est publiée par le service.
 SERVICES: dict[str, Entree] = {
     "deces.matchid.io": Entree(
-        "matchID (fichier des personnes décédées)", intervalle=1.0, provenance_intervalle="historique"),
+        "matchID (fichier des personnes décédées)", intervalle=1.0, provenance_intervalle="sourcee",
+        reference="https://matchid.io/link-api", releve_le="2026-11-18",
+        limites_documentees="Recherche unitaire limitée à une requête par seconde (valeur appliquée) ; sans jeton, "
+                            "nombre d'appels limité (« au-delà d'une centaine d'appels » : jeton gratuit "
+                            "nécessaire) ; avec jeton, nombre d'appels illimité, 1/s maintenu ; appariement "
+                            "search/csv : 50 à 100 requêtes par seconde."),
     "api.wikitree.com": Entree(
         "WikiTree API", intervalle=1.0, provenance_intervalle="historique",
         reference="https://github.com/wikitree/wikitree-api/blob/main/README.md", releve_le="2026-11-17",
@@ -91,9 +97,12 @@ SERVICES: dict[str, Entree] = {
                             "par minute, 5 requêtes parallèles par IP ; 429 avec Retry-After au-delà ; "
                             "User-Agent conforme exigé."),
     "geo.api.gouv.fr": Entree(
-        "API Géo", intervalle=0.1, provenance_intervalle="historique",
-        reference="https://www.data.gouv.fr/dataservices/672cf6946a8456f417812b0f", releve_le="2026-11-17",
-        limites_documentees="50 appels par seconde et par adresse IP."),
+        "API Géo", intervalle=0.1, provenance_intervalle="sourcee",
+        reference="https://guides.data.gouv.fr/foire-aux-questions", releve_le="2026-11-18",
+        limites_documentees="FAQ data.gouv.fr : 10 requêtes par seconde et par IP pour l'API Découpage "
+                            "administratif (valeur appliquée) ; la fiche "
+                            "https://www.data.gouv.fr/dataservices/672cf6946a8456f417812b0f annonce 50 appels "
+                            "par seconde et par IP : sources contradictoires, la plus stricte est retenue."),
     "www.insee.fr": Entree("INSEE (fichiers du COG)"),
     "n2t.net": Entree("N2T (registre des NAAN ARK)"),
 }

@@ -4,7 +4,7 @@ Le moteur MCP et les cinq skills métier sont communs à Claude Code et Codex. L
 les parcours `genealogiste` et `genealogiste-verifier`. Les commandes slash et les agents Claude restent
 propres à Claude ; leur syntaxe ne s’applique pas à Codex.
 
-**Surface validée : Codex CLI 0.166.0, app-server local en stdio, backend fichier, données fictives.**
+**Surface validée : Codex CLI 0.166 à 0.169 (dernière exécution : 0.169.0), app-server local en stdio, backend fichier, données fictives.**
 L’app-server est une interface expérimentale. La recette contrôle le vrai moteur d’approbation et simule
 les réponses du client ; elle ne constitue pas une validation visuelle du bouton dans Codex desktop.
 Codex Cloud, ChatGPT Work et les autres versions ne sont pas couverts par cette recette.
@@ -120,7 +120,10 @@ make lint
 make test-codex
 ```
 
-`make test-codex` requiert exactement Codex CLI 0.166.0 et uv. Il crée un `CODEX_HOME`, un cache, un arbre,
+`make test-codex` requiert uv et Codex CLI dans la plage `>= 0.166.0, < 0.170.0` (constantes
+`VERSION_MIN`/`VERSION_MAX` de `scripts/verifier_codex.py`) ; toute autre version est refusée avant
+le moindre appel. L’app-server étant expérimental, la borne haute n’est relevée qu’après une exécution
+réelle consignée ci-dessous. Il crée un `CODEX_HOME`, un cache, un arbre,
 des notes et des médias temporaires, installe le paquet local puis les supprime à la fin. Aucun compte ni
 clé API n’est requis. Un fournisseur HTTP local déterministe émet les appels imposés par la recette :
 aucun modèle distant ne choisit les outils.
@@ -130,6 +133,25 @@ par de vrais tours Codex : lecture, diff, refus de l’application sans mutation
 application unique, expiration, conflit, garde des vivants, export masqué, refus puis accord sur notes et
 médias. Les réponses d’approbation sont **simulées par le client de test**. Les tests Python couvrent les
 autres invariants du moteur ; la recette native est distincte de pytest et n’est pas exécutée par la CI ordinaire.
+
+### Exécution consignée
+
+18 novembre 2026, Linux, `codex-cli 0.169.0`, uv, aucun compte ni clé API (#224) :
+
+```text
+$ make test-codex
+python3 scripts/verifier_codex.py
+WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries
+under temporary dir "/tmp" (codex_home: …/genealogiste-codex-…/codex)
+{ "codex": "codex-cli 0.169.0", "skills": [7 skills], "approbations_natives": [20], "resultat": "OK" }
+```
+
+Code de sortie 0, environ 6 s (cache uv déjà rempli). Les sept skills sont découverts sans serveur
+implicite ; les 20 demandes d’approbation natives (16 acceptées, 4 refusées : `arbre_appliquer`,
+`archives_registres`, `notes_ajouter`, `media_enregistrer`) suivent le scénario décrit plus haut, et
+toutes les assertions passent. L’avertissement provient de Codex, qui refuse de créer ses binaires
+auxiliaires dans un `CODEX_HOME` sous `/tmp` ; il est sans effet sur la recette. La configuration
+personnelle `~/.codex` n’est pas modifiée (le `CODEX_HOME` est temporaire).
 
 ## Mise à jour
 

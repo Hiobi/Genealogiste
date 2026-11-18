@@ -122,9 +122,30 @@ def test_valeurs_historiques_reprises_telles_quelles():
     p = PolitiqueAcces.depuis_config(_cfg())
     attendu = {"deces.matchid.io": 1.0, "api.wikitree.com": 1.0, "gallica.bnf.fr": 1.0, "query.wikidata.org": 1.0,
                "geo.api.gouv.fr": 0.1}
+    sourcees = {"deces.matchid.io", "geo.api.gouv.fr"}  # #119 : valeur historique égale à la limite publiée
     for hote, v in attendu.items():
         pol = p.politique(hote)
-        assert pol.intervalle == v and pol.provenance["intervalle"] == "historique", hote
+        assert pol.intervalle == v, hote
+        assert pol.provenance["intervalle"] == ("sourcee" if hote in sourcees else "historique"), hote
+
+
+def test_intervalles_sources_119():
+    """Seules les valeurs publiées par le service sont « sourcee », avec la page citée et sa date de relevé
+    (docs/acces-machine-archives.md). Plafonds et concurrences restent des défauts du plugin."""
+    m, g = SERVICES["deces.matchid.io"], SERVICES["geo.api.gouv.fr"]
+    assert (m.reference, m.releve_le) == ("https://matchid.io/link-api", "2026-11-18")
+    assert "une requête par seconde" in m.limites_documentees
+    assert (g.reference, g.releve_le) == ("https://guides.data.gouv.fr/foire-aux-questions", "2026-11-18")
+    assert "10 requêtes par seconde" in g.limites_documentees and "contradictoires" in g.limites_documentees
+    for e in SERVICES.values():
+        assert e.provenance_plafond == "defaut" and e.provenance_concurrence == "defaut", e.service
+
+
+def test_intervalle_anom_issu_du_crawl_delay():
+    s = next(x for x in archives.services() if x["code"] == "ANOM")
+    assert s["intervalle_requetes"] == 5 and "https://recherche-anom.culture.gouv.fr/robots.txt" in s["references"]
+    pol = PolitiqueAcces.depuis_config(_cfg()).politique("recherche-anom.culture.gouv.fr")
+    assert pol.intervalle == 5.0 and pol.provenance["intervalle"] == "referentiel"
 
 
 def test_referentiel_reste_la_source_des_archives(monkeypatch):
