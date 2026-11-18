@@ -759,21 +759,24 @@ def _defi_observe(hotes: list[str]) -> dict | None:
 
 @mcp.tool()
 def archives_registres(service: str, commune: str, annee: int, type_acte: str = "", page: int = 1,
-                      personne: str = "") -> dict:
+                      personne: str = "", annee_fin: int = 0) -> dict:
     """Localiser un registre par commune et année, sans connaître son ARK : service=AD59 uniquement.
-    type_acte : N (naissance), M (mariage), D (décès), NMD ou vide (tous). Une seule page de résultats
-    par appel ; page_suivante permet de poursuivre explicitement. Cote, ARK et période proviennent du
+    type_acte : N (naissance), M (mariage), D (décès), NMD ou vide (tous), TD (tables décennales : tables dont
+    la période affichée recoupe l'année ou l'intervalle demandé). annee_fin (facultatif, >= annee) : intervalle
+    [annee, annee_fin], ex. 1790-1802 ou une décennie ; registres dont la période le recoupe. Une seule page de
+    résultats par appel ; page_suivante permet de poursuivre explicitement. Cote, ARK et période proviennent du
     résultat officiel ; une recherche vide ne prouve pas l'absence de l'acte. personne désigne seulement
     la cible locale, pour la garde des vivants et le journal ; cet identifiant n'est pas envoyé au service."""
     if refus := _garde(personne=personne, texte=commune):
         return refus
     a = app()
     try:
-        return registres.rechercher(a.sctx, service, commune, annee, type_acte, page, personne)
+        return registres.rechercher(a.sctx, service, commune, annee, type_acte, page, personne, annee_fin)
     except (SourceError, ValueError) as exc:
         return error_envelope(a.sctx, "archives", "registres",
                               {"service": service, "commune": commune, "annee": annee,
-                               "type_acte": type_acte, "page": page}, exc, personne=personne or None)
+                               "type_acte": type_acte, "page": page, "annee_fin": annee_fin}, exc,
+                              personne=personne or None)
 
 
 @mcp.tool()
