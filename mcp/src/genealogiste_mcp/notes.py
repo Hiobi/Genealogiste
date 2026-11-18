@@ -54,7 +54,7 @@ _BLOCK = marqueurs.BLOCK  # les deux formes (sosa | genealogiste)
 # conservées comme « manuelles » (sinon un remasquage laisserait nom et dates d'un vivant, #36).
 GENERATED_KEYS = {"id", "type", "nom", "statut", "sosa", "naissance", "deces", "lieux", "sources", "journal", "vivant",
                   "epoux", "epouse", "mariage", "titre", "depot", "cote", "url", "nature", "cite_par", "personnes",
-                  "familles", "mis_a_jour", "patronyme", "variantes", "berceau"}
+                  "familles", "mis_a_jour", "patronyme", "variantes", "berceau", "supprimee"}
 
 
 class NotesError(RuntimeError):
@@ -695,8 +695,13 @@ class Notes:
         cibles = [target] if isinstance(target, str) else list(dict.fromkeys(target))
         sosa = self._sosa(tree)
         porteurs = self._porteurs(tree)
-        ids, erreurs = [], []
+        ids, erreurs, supprimees = [], [], []
         for cible in cibles:
+            if cible == "tout":
+                supprimees += self._sources_supprimees(tree)
+            elif (fiche := self._source_supprimee(tree, cible)) is not None:
+                supprimees.append(fiche)  # source retirée de l'arbre (#248)
+                continue
             try:
                 ids += self._targets(tree, cible, porteurs)
             except NotesError as exc:
@@ -727,6 +732,17 @@ class Notes:
         retired, retire_alerts = self._retire_surnames(tree, existants)
         written += retired
         alertes += retire_alerts
+        for sid, path in dict(supprimees).items():
+            rel = str(path.relative_to(root))
+            if _manual_text(path):
+                if self._write(path, {"id": sid, "type": "source", "supprimee": True}, {},
+                               f"{sid} (source supprimée)"):
+                    written.append(rel)
+                alertes.append(f"{rel} : source supprimée de l'arbre ; sections générées retirées, texte saisi à la "
+                               "main conservé (supprimer la fiche à la main une fois relu).")
+            else:
+                path.unlink()
+                written.append(rel)
         if target == "tout" or (root / 'index.md').exists():
             self._index(tree, porteurs)
         out = {"repertoire": str(root), "ecrites": list(dict.fromkeys(written)), "inchangees": unchanged}
@@ -745,6 +761,28 @@ class Notes:
         if w := self.git_warning():
             out["avertissement"] = w
         return out
+
+    def _source_supprimee(self, tree: Tree, sid: str) -> tuple[str, Path] | None:
+        """Fiche générée d'une source absente de l'arbre (supprimée ou fondue, #248) ; None sinon."""
+        if sid in tree.sources or sid in tree.personnes or sid in tree.familles:
+            return None
+        path = self._existing("source", sid)
+        if path is None or path.is_symlink() or not path.is_file():
+            return None
+        fields = {}
+        for line in _split(path.read_text(encoding="utf-8"))[0]:
+            key, _, value = line.partition(":")
+            if key in {"id", "type"}:
+                try:
+                    fields[key] = json.loads(value)
+                except ValueError:
+                    pass
+        return (sid, path) if fields == {"id": sid, "type": "source"} else None
+
+    def _sources_supprimees(self, tree: Tree) -> list[tuple[str, Path]]:
+        folder = self._require() / FOLDERS["source"]
+        noms = sorted(folder.glob("* - *.md")) if folder.exists() else []
+        return [x for x in (self._source_supprimee(tree, p.name.split(" - ", 1)[0]) for p in noms) if x]
 
     def _alertes(self, tree: Tree, kind: str, oid: str, path: Path, porteurs: dict | None = None) -> list[str]:
         """Ce qui reste d'une personne masquée et que l'outil ne touche pas : nom de fichier, texte manuel."""
@@ -932,11 +970,13 @@ class Notes:
 
 
 def touched(before: Tree, after: Tree) -> list[str]:
-    """Personnes, familles et sources modifiées entre deux états de l'arbre (régénération après écriture)."""
+    """Personnes, familles et sources modifiées entre deux états de l'arbre (régénération après écriture), plus
+    les sources supprimées (fiche à retirer, #248)."""
     out = []
     for coll in ("personnes", "familles", "sources"):
         a, b = getattr(before, coll), getattr(after, coll)
         for oid, obj in b.items():
             if oid not in a or a[oid].to_dict() != obj.to_dict():
                 out.append(oid)
+    out += [sid for sid in before.sources if sid not in after.sources]
     return out

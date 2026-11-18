@@ -1274,7 +1274,8 @@ def arbre_proposer(operations: list[dict], titre: str, justification: str, sourc
     """Prépare une modification SANS l'écrire : renvoie le diff GEDCOM, les alertes de cohérence nouvelles et un
     jeton. Opérations : ajouter_personne, modifier_personne, supprimer_personne, ajouter_nom, ajouter_evenement,
     modifier_evenement, supprimer_evenement, ajouter_famille, lier_enfant, delier_enfant, lier_conjoint,
-    ajouter_source, modifier_source, ajouter_depot, ajouter_citation, ajouter_media, modifier_media, ajouter_association,
+    ajouter_source, modifier_source, supprimer_source, fusionner_sources, ajouter_depot, ajouter_citation,
+    supprimer_citation, ajouter_media, modifier_media, ajouter_association,
     supprimer_association, fusionner_personnes, scinder_personne, definir_statut, marquer_vivant.
     Règle de métier : tout événement ou filiation exige une citation, sauf non_source=true + motif.
     Citation : préciser 'consultation' (original | image | transcription | index | non_vu). Référencer un objet créé dans la même proposition par

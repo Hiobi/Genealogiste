@@ -438,36 +438,166 @@ def op_ajouter_depot(ctx: Ctx, o: dict) -> None:
     ctx.summary.append(f"Dépôt {rid} : {o.get('nom', '')}")
 
 
-def op_ajouter_citation(ctx: Ctx, o: dict) -> None:
-    cible = o["cible"]
-    c = _citation(ctx, o["citation"])
+def _liste_citations(ctx: Ctx, cible: dict) -> tuple[list[Citation], str]:
+    """Liste de citations visée par cible (ajouter_citation, supprimer_citation) et son libellé."""
     t = cible.get("type")
     if t == "evenement":
         owner, e = _find_event(ctx, ctx.r(cible["uid"]))
-        e.citations.append(c)
-        what = f"{owner.id} {EVENT_LABELS[e.type]}"
-    elif t == "nom":
+        return e.citations, f"{owner.id} {EVENT_LABELS[e.type]}"
+    if t == "nom":
         p = ctx.tree.person(ctx.r(cible["id"]))
         idx = int(cible.get("index", 0))
-        p.noms[idx].citations.append(c)
-        what = f"{p.id} nom"
-    elif t == "filiation":
+        if not 0 <= idx < len(p.noms):
+            raise OpError(f"{p.id} : nom d'index {idx} inexistant")
+        return p.noms[idx].citations, f"{p.id} nom"
+    if t == "filiation":
         fam = ctx.tree.family(ctx.r(cible["famille"]))
         link = fam.child(ctx.r(cible["enfant"]))
         if not link:
             raise OpError("filiation inexistante")
-        link.citations.append(c)
-        what = f"filiation {link.enfant}/{fam.id}"
-    elif t in ("personne", "famille", "media"):
+        return link.citations, f"filiation {link.enfant}/{fam.id}"
+    if t in ("personne", "famille", "media"):
         oid = ctx.r(cible["id"])
         coll = {"personne": ctx.tree.personnes, "famille": ctx.tree.familles, "media": ctx.tree.medias}[t]
         if oid not in coll:
             raise OpError(f"{t} inconnu(e) : {oid}")
-        coll[oid].citations.append(c)
-        what = f"{t} {oid}"
-    else:
-        raise OpError("cible.type : evenement | nom | filiation | personne | famille | media")
+        return coll[oid].citations, f"{t} {oid}"
+    raise OpError("cible.type : evenement | nom | filiation | personne | famille | media")
+
+
+def op_ajouter_citation(ctx: Ctx, o: dict) -> None:
+    c = _citation(ctx, o["citation"])
+    liste, what = _liste_citations(ctx, o["cible"])
+    liste.append(c)
     ctx.summary.append(f"Citation {c.source} ({c.page}) sur {what}")
+
+
+def op_supprimer_citation(ctx: Ctx, o: dict) -> None:
+    """Retire une citation précise (#248) : source (+ page) ; index parmi les citations qui correspondent si
+    plusieurs. Les médias de la citation restent dans l'arbre."""
+    liste, what = _liste_citations(ctx, o["cible"])
+    sid = ctx.r(o.get("source"))
+    if not sid:
+        raise OpError("supprimer_citation : source requise (S…)")
+    candidates = [i for i, c in enumerate(liste) if c.source == sid and ("page" not in o or c.page == o["page"])]
+    if not candidates:
+        presentes = [f"{c.source} ({c.page})" for c in liste] or ["aucune"]
+        raise OpError(f"supprimer_citation : aucune citation {sid}"
+                      + (f" ({o['page']})" if "page" in o else "") + f" sur {what} ; présentes : {', '.join(presentes)}")
+    if "index" in o:
+        k = int(o["index"])
+        if not 0 <= k < len(candidates):
+            raise OpError(f"supprimer_citation : index {k} hors des {len(candidates)} citation(s) correspondantes")
+    elif len(candidates) > 1:
+        raise OpError(f"supprimer_citation : {len(candidates)} citations {sid} sur {what} "
+                      f"(pages : {', '.join(repr(liste[i].page) for i in candidates)}) ; préciser page ou index")
+    else:
+        k = 0
+    c = liste.pop(candidates[k])
+    ctx.summary.append(f"Citation {c.source} ({c.page}) retirée de {what}")
+    if not liste:
+        ctx.warnings.append(f"{what} n'a plus aucune citation.")
+
+
+def _toutes_listes_citations(tree: Tree):
+    """(libellé du porteur, liste de citations) pour chaque liste de citations de l'arbre."""
+    for p in tree.personnes.values():
+        yield p.id, p.citations
+        for i, n in enumerate(p.noms):
+            yield f"{p.id} nom" + (f" {i}" if i else ""), n.citations
+        for a in p.associations:
+            yield f"{p.id} association", a.citations
+        for e in p.evenements:
+            yield f"{p.id} {EVENT_LABELS.get(e.type, e.type)}", e.citations
+            for a in e.associations:
+                yield f"{p.id} {EVENT_LABELS.get(e.type, e.type)} association", a.citations
+    for f in tree.familles.values():
+        yield f.id, f.citations
+        for e in f.evenements:
+            yield f"{f.id} {EVENT_LABELS.get(e.type, e.type)}", e.citations
+            for a in e.associations:
+                yield f"{f.id} {EVENT_LABELS.get(e.type, e.type)} association", a.citations
+        for link in f.enfants:
+            yield f"filiation {link.enfant}/{f.id}", link.citations
+    for m in tree.medias.values():
+        yield f"média {m.id}", m.citations
+
+
+def _source_existante(ctx: Ctx, cle: str, op: str) -> str:
+    sid = ctx.r(cle)
+    if sid not in ctx.tree.sources:
+        raise OpError(f"{op} : source inconnue {sid!r}")
+    return sid
+
+
+def op_supprimer_source(ctx: Ctx, o: dict) -> None:
+    """Supprime une source (#248). Refus si elle est encore citée, sauf cascade: true (chaque citation retirée
+    est listée avec son porteur). Médias de la source détachés, jamais supprimés."""
+    sid = _source_existante(ctx, o.get("id"), "supprimer_source")
+    derivees = sorted(x.id for x in ctx.tree.sources.values() if x.original == sid and x.id != sid)
+    if derivees:
+        raise OpError(f"supprimer_source : {sid} est la source originale de {', '.join(derivees)} "
+                      "(modifier_source champs.original d'abord)")
+    porteurs = [(label, liste) for label, liste in _toutes_listes_citations(ctx.tree)
+                if any(c.source == sid for c in liste)]
+    if porteurs and not o.get("cascade"):
+        noms = [label for label, _ in porteurs]
+        raise OpError(f"supprimer_source : {sid} est encore citée par {len(noms)} objet(s) ({', '.join(noms[:20])}"
+                      + (", …" if len(noms) > 20 else "") + ") ; cascade: true pour retirer ces citations, "
+                      "ou fusionner_sources vers la bonne source")
+    for label, liste in porteurs:
+        retirees = [c for c in liste if c.source == sid]
+        liste[:] = [c for c in liste if c.source != sid]
+        for c in retirees:
+            ctx.summary.append(f"Citation {sid} ({c.page}) retirée de {label}")
+        if not liste:
+            ctx.warnings.append(f"{label} n'a plus aucune citation.")
+    s = ctx.tree.sources.pop(sid)
+    detaches = f" ; médias détachés (conservés) : {', '.join(s.medias)}" if s.medias else ""
+    ctx.summary.append(f"Suppression de la source {sid} : {s.titre}{detaches}")
+
+
+def op_fusionner_sources(ctx: Ctx, o: dict) -> None:
+    """Source doublon fondue dans la bonne (#248) : citations réécrites de « de » vers « vers », citations
+    devenues identiques (même source et page) sur un même porteur dédoublonnées (médias réunis), médias de la
+    source reportés, puis doublon supprimé."""
+    de = _source_existante(ctx, o.get("de"), "fusionner_sources")
+    vers = _source_existante(ctx, o.get("vers"), "fusionner_sources")
+    if de == vers:
+        raise OpError("fusionner_sources : « de » et « vers » désignent la même source")
+    reecrites, fondues = 0, []
+    for label, liste in _toutes_listes_citations(ctx.tree):
+        if not any(c.source == de for c in liste):
+            continue
+        gardees: list[Citation] = []
+        for c in liste:
+            if c.source == de:
+                c.source = vers
+                reecrites += 1
+            double = next((g for g in gardees if g.source == vers and c.source == vers and g.page == c.page), None)
+            if double is None:
+                gardees.append(c)
+                continue
+            for m in c.medias:
+                if m not in double.medias:
+                    double.medias.append(m)
+            for k in ("texte", "note", "ark"):
+                if not getattr(double, k) and getattr(c, k):
+                    setattr(double, k, getattr(c, k))
+            fondues.append(label)
+        liste[:] = gardees
+    cible = ctx.tree.sources[vers]
+    for x in ctx.tree.sources.values():
+        if x.original == de:
+            x.original = vers if x.id != vers else ""
+    for m in ctx.tree.sources[de].medias:
+        if m not in cible.medias:
+            cible.medias.append(m)
+    s = ctx.tree.sources.pop(de)
+    ctx.sources_cited.add(vers)
+    ctx.summary.append(f"Fusion de la source {de} ({s.titre}) dans {vers} ({cible.titre}) : {reecrites} citation(s) "
+                       "réécrite(s)" + (f", doublon(s) fondu(s) sur {', '.join(dict.fromkeys(fondues))}" if fondues
+                                         else "") + f" ; source {de} supprimée")
 
 
 def op_ajouter_media(ctx: Ctx, o: dict) -> None:
