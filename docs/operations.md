@@ -132,6 +132,9 @@ d'événement) est refusé : pour rattacher l'image à une source ou à un évé
   `archive_image` et `piece_archiver` partagent la même résolution ; IIIF est utilisé dès qu'il est annoncé.
   Un PDF (local ou téléchargé) est rendu page par page (`page=N`, à partir de 1) ; pour un PDF dactylographié
   ou imprimé, `pdf_markdown(chemin)` est bien plus économe (voir `docs/pieces.md`).
+- `archives_sonder(source, date_cible, type_acte, lecture, conclusion, enquete)` (#156) : sondage guidé, sans
+  réseau : propose la vue à lire, le modèle renvoie la date lue, l'outil resserre les bornes (interpolation
+  puis dichotomie ; section du bon type d'abord dans un registre à plusieurs séries). Voir `docs/archives.md`.
 - `archives_planche(source, de, a, pas, bandeau, largeur, gris, miniatures)` (#124) : **une** image composite de
   4 à 12 vues d'un registre AD59, numéro de vue incrusté, composée en local (Pillow), pour repérer un acte sans
   lire une image par vue. `pas` : sondage large (une vue sur N), puis planche fine ; `bandeau` (`pct:x,y,l,h`,

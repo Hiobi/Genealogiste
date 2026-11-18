@@ -46,7 +46,10 @@ hors ligne) devient une tâche manuelle (`enquete_noter`), la conclusion est dé
 4. **Localiser la vue de l'acte** : `archives_naviguer(ark_registre, page=…)` pour parcourir les vues
    (ou la table décennale pour retrouver année et n° d'acte avant d'aller à l'acte). Pour un registre AD59
    chronologique, `archives_planche(ark_registre, de, a, pas, bandeau="pct:0,0,100,35")` : une seule image de
-   4 à 12 vues (sondage large puis fin) au lieu d'un aperçu par vue. Choisir la vue. Avec une enquête, passer
+   4 à 12 vues (sondage large puis fin) au lieu d'un aperçu par vue. Pour atteindre une date connue,
+   `archives_sonder(ark_registre, date_cible, type_acte, enquete=<id>)` propose la vue à lire ; après chaque
+   lecture, le rappeler avec `lecture={vue, date, date_fin, type}` jusqu'à `arret` (`localise` : lire l'acte
+   puis `conclusion="trouve"|"absent"` ; `absent` : négatif journalisé). Choisir la vue. Avec une enquête, passer
    `enquete=<id>` à chaque outil de collecte (`archives_naviguer`, `archives_planche`, `archive_image`,
    `piece_archiver`… : budget compté).
 5. **Lire, transcrire, archiver** : suivre `/genealogiste:transcris` — aperçu (`archive_image`, 800 px gris)

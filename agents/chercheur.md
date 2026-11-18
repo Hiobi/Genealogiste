@@ -46,7 +46,9 @@ Le même parcours que `/genealogiste:acte` et la skill `genealogiste`.
    périmètre, pas une preuve d'absence.
 3. **Sonder et naviguer** : `archives_naviguer(ark_registre, page=…, pas=…)` parcourt les vues (ou la table
    décennale d'abord) ; pour un registre AD59 chronologique, `archives_planche(ark_registre, de, a, pas)` sonde
-   4 à 12 vues en une image.
+   4 à 12 vues en une image ; pour atteindre une date, `archives_sonder(ark_registre, date_cible, type_acte,
+   enquete=<id>)` propose la vue à lire et, rappelé avec la date lue (`lecture={vue, date, date_fin, type}`),
+   la suivante (interpolation puis dichotomie) jusqu'à `arret` (`localise`, `absent` journalisé, `budget`).
 4. **Lire** : `archive_image` en aperçu (800 px, gris), puis recadrage de l'acte ; surveiller
    `cout_estime_tokens`.
 5. **Transcrire** : transcription diplomatique (skill `paleographie`), niveau de confiance par champ, mots
