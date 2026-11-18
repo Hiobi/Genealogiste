@@ -102,6 +102,15 @@ def _inscriptible(d: Path) -> bool:
     return os.access(d, os.W_OK | os.X_OK)
 
 
+ETATS_CONTACT = {"configure": "configuré", "rejete": "rejeté", "ignore": "ignoré"}
+REMEDE_CONTACT = {
+    "rejete": "Corriger GENEALOGISTE_CONTACT (adresse ou URL, 200 caractères ASCII au plus, sans parenthèse, "
+              "point-virgule, barre oblique inverse ni retour à la ligne).",
+    "ignore": "Retirer GENEALOGISTE_USER_AGENT pour que le contact soit ajouté au User-Agent par défaut, ou "
+              "inclure le contact dans GENEALOGISTE_USER_AGENT.",
+}
+
+
 def controles_locaux(a, probleme: dict | None, config) -> list[dict]:
     out = []
     vs, (vp, chemin) = version_serveur(), version_plugin()
@@ -123,13 +132,20 @@ def controles_locaux(a, probleme: dict | None, config) -> list[dict]:
             "matchid_token": "défini" if config.matchid_token else "absent",
             "wikitree_app_id": "défini" if config.wikitree_app_id else "absent",
             "mcp_token": "défini" if os.environ.get("MCP_TOKEN") else "absent",
+            # Contact du User-Agent (#211, lot D) : donnée personnelle, jamais affichée en clair.
+            "contact_user_agent": ETATS_CONTACT.get(getattr(config, "etat_contact", "absent"), "absent"),
         }
-        retirees = getattr(config, "variables_retirees", [])
-        out.append(_ctl("configuration", "attention", f"backend {config.backend} ; variable(s) retirée(s) "
-                        f"ignorée(s) : {', '.join(retirees)}",
-                        "Les retirer de l'environnement ou du .env : le budget d'enquête ne limite plus la durée ni "
-                        "le coût estimé ; plafonner le coût réel côté client (--max-budget-usd).",
-                        valeurs=valeurs) if retirees
+        details, remedes = [], []
+        if retirees := getattr(config, "variables_retirees", []):
+            details.append(f"variable(s) retirée(s) ignorée(s) : {', '.join(retirees)}")
+            remedes.append("Les retirer de l'environnement ou du .env : le budget d'enquête ne limite plus la durée "
+                           "ni le coût estimé ; plafonner le coût réel côté client (--max-budget-usd).")
+        etat_contact = getattr(config, "etat_contact", "absent")
+        if etat_contact in ("rejete", "ignore"):
+            details.append(f"GENEALOGISTE_CONTACT ignoré : {config.contact_motif}")
+            remedes.append(REMEDE_CONTACT[etat_contact])
+        out.append(_ctl("configuration", "attention", f"backend {config.backend} ; " + " ; ".join(details),
+                        " ".join(remedes), valeurs=valeurs) if details
                    else _ctl("configuration", "ok", f"backend {config.backend}", valeurs=valeurs))
     git = _version_outil(["git", "--version"])
     out.append(_ctl("git", "ok", git) if git else _ctl(
