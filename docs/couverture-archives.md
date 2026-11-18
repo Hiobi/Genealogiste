@@ -25,19 +25,19 @@ Un fonds inconnu reste inconnu : aucune recette n'est extrapolée aux autres typ
 | AD11 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD12 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD13 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
-| AD14 | inconnu | 4 | implemente_non_eprouve | teste | teste | inconnu | inconnu : oui, 2026-11-18T16:25:22+00:00 |
+| AD14 | inconnu | 5 | implemente_non_eprouve | teste | teste | inconnu | inconnu : oui, 2026-11-18T16:25:22+00:00; vps : oui, 2026-11-18T17:35:47+00:00 |
 | AD15 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD16 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD17 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD18 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
-| AD19 | inconnu | 4 | implemente_non_eprouve | teste | teste | inconnu | inconnu : oui, 2026-11-18T16:25:28+00:00 |
+| AD19 | inconnu | 5 | implemente_non_eprouve | teste | teste | inconnu | inconnu : oui, 2026-11-18T16:25:28+00:00; vps : oui, 2026-11-18T17:35:52+00:00 |
 | AD21 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD22 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD23 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD24 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
-| AD25 | inconnu | 3 | inconnu | teste | teste | inconnu | inconnu : oui, 2026-11-18T16:25:33+00:00 |
+| AD25 | inconnu | 5 | inconnu | teste | teste | inconnu | inconnu : oui, 2026-11-18T16:25:33+00:00; vps : oui, 2026-11-18T17:35:56+00:00 |
 | AD26 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
-| AD27 | inconnu | 4 | implemente_non_eprouve | teste | teste | inconnu | inconnu : oui, 2026-11-18T16:25:39+00:00 |
+| AD27 | inconnu | 5 | implemente_non_eprouve | teste | teste | inconnu | inconnu : oui, 2026-11-18T16:25:39+00:00; vps : oui, 2026-11-18T17:36:01+00:00 |
 | AD28 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD29 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD30 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
@@ -49,7 +49,7 @@ Un fonds inconnu reste inconnu : aucune recette n'est extrapolée aux autres typ
 | AD36 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD37 | inconnu | 3 | inconnu | implemente_non_eprouve | implemente_non_eprouve | inconnu | inconnu |
 | AD38 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
-| AD39 | inconnu | 3 | inconnu | teste | teste | inconnu | inconnu : oui, 2026-11-18T16:25:42+00:00 |
+| AD39 | inconnu | 5 | inconnu | teste | teste | inconnu | inconnu : oui, 2026-11-18T16:25:42+00:00; vps : oui, 2026-11-18T17:36:05+00:00 |
 | AD40 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD41 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD42 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
@@ -61,15 +61,15 @@ Un fonds inconnu reste inconnu : aucune recette n'est extrapolée aux autres typ
 | AD48 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD49 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD50 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
-| AD51 | inconnu | 4 | implemente_non_eprouve | teste | teste | inconnu | inconnu : oui, 2026-11-18T16:25:47+00:00 |
+| AD51 | inconnu | 5 | implemente_non_eprouve | teste | teste | inconnu | inconnu : oui, 2026-11-18T16:25:47+00:00; vps : oui, 2026-11-18T17:36:10+00:00 |
 | AD52 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD53 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD54 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
-| AD55 | inconnu | 4 | implemente_non_eprouve | teste | teste | inconnu | inconnu : oui, 2026-11-18T16:25:53+00:00 |
+| AD55 | inconnu | 5 | implemente_non_eprouve | teste | teste | inconnu | inconnu : oui, 2026-11-18T16:25:53+00:00; vps : oui, 2026-11-18T17:36:16+00:00 |
 | AD56 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD57 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
-| AD58 | inconnu | 4 | implemente_non_eprouve | teste | teste | inconnu | inconnu : oui, 2026-11-18T16:25:58+00:00 |
-| AD59 | inconnu | 4 | implemente_non_eprouve | teste | teste | inconnu | inconnu : oui, 2026-11-18T16:26:04+00:00 |
+| AD58 | inconnu | 5 | implemente_non_eprouve | teste | teste | inconnu | inconnu : oui, 2026-11-18T16:25:58+00:00; vps : oui, 2026-11-18T17:36:21+00:00 |
+| AD59 | inconnu | 5 | implemente_non_eprouve | teste | teste | inconnu | inconnu : oui, 2026-11-18T16:26:04+00:00; vps : oui, 2026-11-18T17:36:27+00:00 |
 | AD60 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD61 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD62 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
@@ -79,7 +79,7 @@ Un fonds inconnu reste inconnu : aucune recette n'est extrapolée aux autres typ
 | AD66 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD67 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD68 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
-| AD69 | inconnu | 4 | implemente_non_eprouve | teste | teste | inconnu | inconnu : oui, 2026-11-18T16:26:09+00:00 |
+| AD69 | inconnu | 5 | implemente_non_eprouve | teste | teste | inconnu | inconnu : oui, 2026-11-18T16:26:09+00:00; vps : oui, 2026-11-18T17:36:32+00:00 |
 | AD70 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD71 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD72 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
@@ -99,7 +99,7 @@ Un fonds inconnu reste inconnu : aucune recette n'est extrapolée aux autres typ
 | AD87 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD88 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD89 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
-| AD90 | inconnu | 4 | implemente_non_eprouve | teste | teste | inconnu | inconnu : oui, 2026-11-18T16:26:14+00:00 |
+| AD90 | inconnu | 5 | implemente_non_eprouve | teste | teste | inconnu | inconnu : oui, 2026-11-18T16:26:14+00:00; vps : oui, 2026-11-18T17:36:37+00:00 |
 | AD91 | inconnu | 3 | inconnu | implemente_non_eprouve | implemente_non_eprouve | inconnu | inconnu |
 | AD92 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD93 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
@@ -108,7 +108,7 @@ Un fonds inconnu reste inconnu : aucune recette n'est extrapolée aux autres typ
 | AD2A | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD2B | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD971 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
-| AD972 | inconnu | 4 | implemente_non_eprouve | teste | teste | inconnu | inconnu : oui, 2026-11-18T16:26:19+00:00 |
+| AD972 | inconnu | 5 | implemente_non_eprouve | teste | teste | inconnu | inconnu : oui, 2026-11-18T16:26:19+00:00; vps : oui, 2026-11-18T17:36:43+00:00 |
 | AD973 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD974 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | AD976 | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
@@ -119,11 +119,11 @@ Un fonds inconnu reste inconnu : aucune recette n'est extrapolée aux autres typ
 | SHD | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | MDH | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | FRANCEARCHIVES | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
-| BnF | inconnu | 3 | inconnu | bloque | bloque | inconnu | inconnu : defi, 2026-11-18T16:26:20+00:00 |
+| BnF | inconnu | 3 | inconnu | bloque | bloque | inconnu | inconnu : defi, 2026-11-18T16:26:20+00:00; vps : defi, 2026-11-18T17:36:44+00:00 |
 | RETRONEWS | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 | MATCHID | inconnu | 0 | inconnu | inconnu | inconnu | inconnu | inconnu |
 
-Total : 110 services ; 0 recettes de référence qualifiées (niveau 5).
+Total : 110 services ; 12 recettes de référence qualifiées (niveau 5).
 
 Les URL et pages de référence sont dans `archives_fr.json` ; les verdicts et détails d'échec dans `recettes_archives.json`. `archives_service` expose les mêmes informations sous `couverture_technique`, avec les capacités et mesures séparées.
 
