@@ -118,6 +118,8 @@ def test_remasquage_retire_les_donnees_generees(napp):
 
     napp.notes.vivants = "masquer"
     r = server.notes_generer()
+    assert not f.exists()  # renommée au nom masqué, sans copie sous l'ancien nom (#247)
+    f = vault / "personnes" / "I9 - personne vivante.md"
     apres = f.read_text(encoding="utf-8")
     entete, corps = apres.split("\n---\n", 1)
     assert "vivant: true" in entete
@@ -126,9 +128,35 @@ def test_remasquage_retire_les_donnees_generees(napp):
     assert corps.lstrip().startswith("# I9 (personne vivante)")
     assert "ma_cle: rencontre 2024" in entete and "Appel téléphonique" in corps  # manuel : conservé…
     alertes = "\n".join(r.get("alertes", []))
-    assert f.name in alertes and "renommer" in alertes                             # …mais signalé
-    assert "saisis à la main" in alertes
-    assert f.exists()                                                              # pas de renommage
+    assert "saisis à la main" in alertes and "renommer" not in alertes             # …mais signalé
+    assert [x["nouveau"] for x in r["renommees"]] == ["personnes/I9 - personne vivante.md"]
+    assert sorted(p.name for p in (vault / "personnes").glob("I9 - *.md")) == ["I9 - personne vivante.md"]
+    assert "Lucas" not in "\n".join(snapshot(vault).values()).split("Appel téléphonique")[0]
+
+
+def test_vivant_devenu_decede_fiche_renommee_et_liens_suivis(napp):
+    """#247 : décès ajouté à une personne masquée → nom calculé, liens entrants suivis, texte libre conservé."""
+    server.notes_generer()
+    vault = napp.config.notes_dir
+    masquee = vault / "personnes" / "I9 - personne vivante.md"
+    assert masquee.exists()
+    masquee.write_text(masquee.read_text(encoding="utf-8") + "\nSouvenir saisi à la main.\n", encoding="utf-8")
+    autre = next((vault / "personnes").glob("I1 - *.md"))
+    autre.write_text(autre.read_text(encoding="utf-8") + "\nVoir [[I9 - personne vivante]].\n", encoding="utf-8")
+    p = server.arbre_proposer([{"op": "ajouter_evenement", "cible": "I9",
+                                "evenement": {"type": "DEAT", "date": "22 DEC 2024", "non_source": True,
+                                              "motif": "test"}}], "Décès", "Fichier INSEE fictif.")
+    r = server.arbre_appliquer(p["jeton"])
+    assert not r.get("notes", {}).get("erreurs"), r
+    fiches = sorted(x.name for x in (vault / "personnes").glob("I9 - *.md"))
+    assert len(fiches) == 1 and "personne vivante" not in fiches[0] and "2024" in fiches[0], fiches
+    nouvelle = vault / "personnes" / fiches[0]
+    assert "Souvenir saisi à la main." in nouvelle.read_text(encoding="utf-8")
+    assert f"[[{nouvelle.stem}]]" in autre.read_text(encoding="utf-8")
+    assert "I9 - personne vivante" not in "\n".join(snapshot(vault).values())
+    for _ in range(2):  # aucun doublon après deux régénérations complètes
+        server.notes_generer()
+    assert sorted(x.name for x in (vault / "personnes").glob("I9 - *.md")) == fiches
 
 
 def test_personne_privee_masquee_dans_les_notes(napp):
