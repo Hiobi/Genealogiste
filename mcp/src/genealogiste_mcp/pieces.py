@@ -7,6 +7,7 @@ Principes :
 - journal TSV ancien_chemin → nouveau_chemin écrit au fil des déplacements (annulation) ;
 - noms compatibles Windows et Nextcloud ;
 - notes générées (personnes/, familles/, sources/, patronymes/), dossiers cachés et notes Markdown ordinaires jamais touchées ; les notes type: piece suivent leur média ;
+- liens des notes ordinaires qu'un déplacement rendrait caducs signalés dans le plan (references_notes), jamais réécrits ;
 - contrôle avant/après : même nombre de fichiers, mêmes empreintes.
 """
 
@@ -22,7 +23,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from urllib.parse import quote
+from urllib.parse import quote, unquote
 
 from .chemins import CheminRefuse, sous
 from .fichiers import ecrire_atomique
@@ -442,6 +443,47 @@ def _actualiser_note(texte: str, ancien: Path, nouveau: Path) -> str:
     return entete + genere + libre
 
 
+_LIEN_WIKI = re.compile(r"!?\[\[([^\]|#^\r\n]+)")
+_LIEN_MD = re.compile(r"!?\[[^\]\r\n]*\]\(<?([^)>\r\n]+?)>?(?:\s+\"[^\"]*\")?\)")
+MAX_REFERENCES_NOTES = 50
+
+
+def references_notes(racine: Path, moves: list[dict]) -> list[dict]:
+    """Liens de notes Markdown ordinaires que le plan rendrait caducs (#106) : lien wiki vers une pièce
+    renommée, ou lien par chemin vers une pièce déplacée. Lecture seule : aucune note n'est réécrite ; la
+    liste est présentée avec le plan pour une reprise manuelle ou une proposition séparée."""
+    pieces_dep = {}
+    for m in moves:
+        if m["motif"] != "note compagnon":
+            pieces_dep.setdefault(Path(m["de"]).name, []).append(m)
+    if not pieces_dep:
+        return []
+    deplacees = {m["de"]: m.get("piece") for m in moves if m["motif"] == "note compagnon"}
+    trouves = []
+    for dirpath, dirnames, filenames in os.walk(racine):
+        d = Path(dirpath)
+        dirnames[:] = sorted(n for n in dirnames if not _ignore_dossier(n) and not (d / n).is_symlink())
+        for name in sorted(filenames):
+            p = d / name
+            if not name.lower().endswith(".md") or p.is_symlink():
+                continue
+            rel = str(p.relative_to(racine))
+            try:
+                texte = p.read_text(encoding="utf-8")
+            except (OSError, UnicodeError):
+                continue
+            cibles = [(c.strip(), True) for c in _LIEN_WIKI.findall(texte)]
+            cibles += [(unquote(c.strip()), False) for c in _LIEN_MD.findall(texte)]
+            for cible, wiki in cibles:
+                for m in pieces_dep.get(Path(cible).name, ()):
+                    if deplacees.get(rel) == m["de"]:
+                        continue  # note compagnon de la pièce : son lien généré est mis à jour
+                    renommee = Path(m["vers"]).name != Path(m["de"]).name
+                    if renommee or not wiki or "/" in cible:
+                        trouves.append({"note": rel, "lien": cible, "piece": m["de"], "vers": m["vers"]})
+    return trouves
+
+
 def dossier_explicite(racine: Path, dossier) -> Path:
     """Dossier imposé par un renommage, relatif à la racine : seulement sous documents/, photographies/ ou
     courriers/, sans « .. », chemin absolu, composant caché, nom incompatible ni lien symbolique sortant."""
@@ -583,12 +625,14 @@ def planifier(racine: Path, renommages: list[dict] | None = None, references: se
         moves.append({"de": str(f.rel), "vers": str(cible), "motif": motif, "sha256": f.sha256,
                       **({"media_arbre": True} if reference else {})})
     resume = Counter(str(Path(m["vers"]).parent) for m in moves)
+    liens = references_notes(racine, moves)
     return {
         "dossier": str(racine), "racine": str(racine), "perimetre": str(perimetre),
         "seulement_renommages": seulement_renommages, "pieces": len(fichiers), "deplacements": moves,
         "resume_par_dossier": dict(sorted(resume.items())),
         "doublons": len(doublons), "a_trier": sum(1 for m in moves if m["vers"].startswith(A_TRIER)),
         "references_arbre_non_deplacees": protegees, "ignores": ignores, "erreurs": erreurs,
+        "references_notes": liens[:MAX_REFERENCES_NOTES], "nb_references_notes": len(liens),
         "empreintes": sorted(f.sha256 for f in tous),
     }
 

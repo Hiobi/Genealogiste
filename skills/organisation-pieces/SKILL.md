@@ -1,6 +1,6 @@
 ---
 name: organisation-pieces
-description: Organiser un dossier de pièces généalogiques existant — inventaire, classement par type et patronyme, doublons, renommage selon la convention « NOM Prénom -- COMMUNE - DÉPÔT - TYPE [années] - cote - p.vue n.acte », triage des pièces non identifiables, médias dans le vault. À utiliser pour /organise, « range mes scans », « trie ce dossier », « renomme ces actes », « comment nommer mes fichiers », import d'un dossier de pièces hétérogène.
+description: Organiser un dossier de pièces généalogiques existant, simple répertoire ou vault Obsidian — inventaire, classement par type et patronyme, doublons, renommage selon la convention « NOM Prénom -- COMMUNE - DÉPÔT - TYPE [années] - cote - p.vue n.acte », triage des pièces non identifiables, reprise des notes Markdown existantes et de leurs liens, archivage d'un acte avec sa note. À utiliser pour /organise, « organise ce dossier de scans », « range mes photos d'archives », « classe mes PDF d'actes », « range mes scans », « trie ce dossier », « mets de l'ordre dans mes documents de généalogie », « renomme ces actes », « comment nommer mes fichiers », « reprends mes notes de recherche », import d'un dossier de pièces hétérogène.
 ---
 
 # Organisation des pièces
@@ -41,6 +41,38 @@ Pièce qu'aucun code ne couvre : `dossier` explicite dans le renommage (`{actuel
 Présenter la racine, le périmètre et le résumé du plan. Les chemins `actuel` sont relatifs au dossier
 parcouru ; l’aperçu est relatif à la racine. Les notes `type: piece` suivent automatiquement leur image.
 Gros dossiers : présenter le résumé, jamais la liste complète. Le plan complet est dans le fichier TSV.
+Un dossier ordinaire suffit : ni vault ni `.obsidian` ne sont requis (la racine est alors le dossier lui-même).
+Réexécuter sur un dossier rangé doit répondre « Rien à déplacer » ; annuler les journaux du plus récent au
+plus ancien. Parcours détaillés (dossier existant, base depuis zéro, arbre GEDCOM/Gramps) : wiki
+`Organiser-un-fonds`.
+
+## Notes Markdown existantes
+- **Jamais réécrites** par l'organisation, ni déplacées (seule une note compagnon `type: piece` suit sa pièce,
+  texte libre et propriétés conservés).
+- **Liens** : présenter `references_notes` (`nb_references_notes`) avec le plan, avant l'accord : liens wiki vers une pièce
+  renommée, liens par chemin vers une pièce déplacée. Proposer ensuite, au choix : garder l'ancien nom (retirer
+  ce renommage), correction dans Obsidian par l'utilisateur, ou correction note par note présentée (avant/après)
+  et faite seulement après accord.
+- **Analyse et rapprochements** : lire les notes pour en tirer des pistes (noms, dates, lieux, cotes) ; chercher
+  les personnes dans l'arbre (`arbre_recherche`, `arbre_fiche`) ; un fait nouveau devient une proposition
+  `arbre_proposer`, avec sa source, jamais une écriture directe. Sans source citée, c'est une hypothèse.
+- **Réorganiser des notes** (déplacer, fusionner, renommer) : jamais automatique ; présenter un plan (note,
+  destination, motif) et ne rien faire sans accord explicite.
+
+## Méthode
+Pour chaque pièce : provenance (service, lien, date de consultation), dépôt, cote (à vérifier dans
+l'inventaire), vue et numéro d'acte. Transcription : abréviations développées `[ ]`, incertitudes `(?)`,
+illisible `[…]` (skill `paleographie`). Une source décrit le document, une citation pointe la vue et l'acte. Un
+fait sans citation reste une hypothèse ; une capture d'arbre en ligne est une piste. Ni le nom de fichier ni
+le dossier ne sont une preuve.
+
+## De l'image à l'arbre
+`archive_image` (aperçu 800 px, gris) → recadrage (`region`, `largeur` 1500) → transcription → `piece_archiver`
+(original pleine résolution, nommé, rangé) → note compagnon (texte personnel sous `## Notes`) → opérations
+suggérées présentées par `arbre_proposer` → `arbre_appliquer` après accord. Pièce déjà rangée : ne pas la
+réarchiver (copie), la rattacher par `ajouter_media` avec son chemin. Archives en ligne : registres cherchables
+seulement aux AD59 (`archives_registres`) ; ailleurs IIIF, URL directe d'image, ou téléchargement manuel depuis
+la visionneuse puis fichier local (wiki `Services-archives`).
 
 ## Rattacher une pièce à l'arbre
 Une fois la pièce rangée et nommée, l'ajouter comme média d'une citation via une proposition `arbre_proposer`

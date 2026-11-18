@@ -50,6 +50,25 @@ Une collision de noms ou un lien symbolique sur une fiche à renommer provoque u
 Le renommage nécessite un système de fichiers acceptant les liens physiques ; sinon il est refusé en
 conservant les originaux. Garder la sauvegarde habituelle du vault avant une régénération importante.
 
+## Reprendre des notes existantes
+
+Un dossier de notes Markdown écrit avant Genealogiste (recherches, transcriptions, courriers) peut servir de
+`GENEALOGISTE_NOTES_DIR`. Les fiches sont générées dans `personnes/`, `familles/`, `sources/` et `patronymes/` ;
+les autres notes ne sont ni déplacées ni modifiées, ni par `notes_generer`, ni par l'organisation des pièces.
+
+- **Analyse** : le modèle lit les notes pour en tirer des pistes. Une information sans source citée reste une
+  piste ou une hypothèse.
+- **Rapprochements** : une personne ou un fait trouvé dans une note est cherché dans l'arbre ; tout ajout passe
+  par `arbre_proposer`, puis accord, puis `arbre_appliquer`.
+- **Texte libre et propriétés** : jamais réécrits. Pour une fiche générée, voir « Format d'une fiche » ; pour une
+  note compagnon de pièce, voir [pièces](pieces.md#règles-de-sûreté).
+- **Liens** : quand une organisation de pièces rendrait un lien caduc, le plan le signale (`references_notes`) sans le
+  corriger.
+- **Réorganisation** (déplacer, fusionner, renommer des notes) : jamais automatique ; un plan est présenté, puis
+  exécuté seulement après accord explicite.
+
+Parcours pas à pas : [organiser un fonds](../wiki/Organiser-un-fonds.md#reprendre-des-notes-markdown-existantes).
+
 ## Format d'une fiche
 
 - **Frontmatter** (propriétés Dataview / Bases) : `id`, `type` (`personne` | `famille` | `source` | `patronyme` |

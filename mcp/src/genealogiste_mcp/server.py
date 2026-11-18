@@ -1935,7 +1935,8 @@ def pieces_proposer(dossier: str, renommages: list[dict] | None = None, annuler:
     actuel sont relatifs à dossier ; l'aperçu est relatif à racine (configuration médias ou vault .obsidian). seulement_renommages limite le plan aux fichiers
     nommés, sans isoler les doublons. Les notes type: piece suivent leur média, avec fichier et embed mis à
     jour ; leur texte libre est conservé. annuler : nom d'un journal _organisation/*.tsv à défaire. Renvoie un jeton
-    pour pieces_appliquer, à n'utiliser qu'après accord explicite de l'utilisateur sur le plan."""
+    pour pieces_appliquer, à n'utiliser qu'après accord explicite de l'utilisateur sur le plan. references_notes : liens de
+    notes ordinaires qu'un déplacement rendrait caducs, signalés sans être réécrits."""
     a = app()
     conseil = ""
     try:
@@ -1966,6 +1967,11 @@ def pieces_proposer(dossier: str, renommages: list[dict] | None = None, annuler:
                    "déplacement, à valider).")
     if conseil:
         plan["medias_conseil"] = conseil
+    if plan.get("nb_references_notes"):
+        plan["references_notes_conseil"] = (
+            "Des notes Markdown ordinaires pointent vers des pièces que ce plan déplace ou renomme : leurs liens "
+            "ne seront pas réécrits. Les présenter (references_notes) avant l'accord ; une correction se fait ensuite, "
+            "note par note, avec l'accord de l'utilisateur.")
     moves = plan["deplacements"]
     if not moves:
         return {**{k: v for k, v in plan.items() if k not in ("empreintes", "deplacements")},
