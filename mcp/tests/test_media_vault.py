@@ -53,7 +53,7 @@ def test_media_relatif_au_vault_envoye(gvault, fake, vault):
     assert "erreur" not in p, p
     tx = p["transaction_gramps"]
     assert "fichiers_absents" not in tx
-    assert tx["fichiers_a_envoyer"] == [f"O1 : {vault / RELATIF} ({len(WEBP)} octets)"]
+    assert tx["fichiers_a_envoyer"] == [f"O1 : {RELATIF} ({len(WEBP)} octets)"]  # référence relative (#193)
     r = server.arbre_appliquer(p["jeton"])
     assert not r["medias"]["erreurs"]
     assert fake.files[fake.find("Media", "O1")["handle"]] == WEBP
@@ -105,14 +105,14 @@ def test_ajouter_media_relatif_normalise_en_reference(fvault, vault):
     assert "erreur" not in p, p
     server.arbre_appliquer(p["jeton"])
     fichiers = [m.fichier for m in fvault.tree().medias.values()]
-    assert str(vault / RELATIF) in fichiers
+    assert RELATIF in fichiers  # relative à l'arborescence des pièces (#193)
 
 
 def test_ajouter_media_relatif_au_repertoire_des_medias(fvault, vault):
     p = server.arbre_proposer(_op("État civil/MARTIN/naissance MARTIN Jean.webp"), "Image", "Acte archivé.")
     assert "erreur" not in p, p
     server.arbre_appliquer(p["jeton"])
-    assert str(vault / RELATIF) in [m.fichier for m in fvault.tree().medias.values()]
+    assert RELATIF in [m.fichier for m in fvault.tree().medias.values()]
 
 
 def test_ajouter_media_dans_les_donnees_reste_relatif(app_famille):
@@ -158,4 +158,5 @@ def test_media_enregistrer_renvoie_reference_media(app, tmp_path):
     assert r["reference_media"] == "medias/a.jpg"
     app.config.media_dir_conf = tmp_path / "vault" / "documents"
     r = server.media_enregistrer(str(src), "naissance MARTIN.jpg", classer=True)
-    assert r["reference_media"] == r["chemin_absolu"] and Path(r["reference_media"]).is_file()
+    assert r["reference_media"] == "documents/État civil/MARTIN/naissance MARTIN.jpg"
+    assert Path(r["chemin_absolu"]) == tmp_path / "vault" / r["reference_media"] and Path(r["chemin_absolu"]).is_file()

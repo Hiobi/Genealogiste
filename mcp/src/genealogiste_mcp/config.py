@@ -179,11 +179,33 @@ class Config:
         return self.data_dir / "pieces-archivees.jsonl"
 
     def media_ref(self, path: Path) -> str:
-        """Référence d'un média enregistrée dans l'arbre : relative au répertoire de données quand il s'y trouve
-        (« medias/… »), absolue sinon (GENEALOGISTE_MEDIA_DIR hors des données, ex. un vault Obsidian)."""
+        """Référence d'un média enregistrée dans l'arbre (#193) : relative au répertoire de données quand il s'y
+        trouve (« medias/… ») ; sinon, avec GENEALOGISTE_MEDIA_DIR, relative à l'arborescence des pièces
+        (« documents/État civil/… », « photographies/… » : indépendante de la machine) pourvu qu'elle se résolve
+        sans ambiguïté vers ce même fichier ; absolue dans les autres cas."""
+        from .chemins import CheminRefuse, localiser
+
         p = Path(path).resolve()
         base = Path(self.data_dir).resolve()
-        return p.relative_to(base).as_posix() if p.is_relative_to(base) else str(p)
+        if p.is_relative_to(base):
+            return p.relative_to(base).as_posix()
+        racine = Path(self.pieces_root).resolve()
+        if self.media_dir_conf and p.is_relative_to(racine):
+            rel = p.relative_to(racine).as_posix()
+            try:
+                if localiser(self.media_racines, rel) == p:
+                    return rel
+            except CheminRefuse:  # ambigu (doublon différent sous une autre racine) : chemin absolu
+                pass
+        return str(p)
+
+    def media_local(self, fichier: str) -> Path:
+        """Fichier local désigné par la référence d'un média, selon la règle unique de chemins.localiser (#193) :
+        absolu sous une racine autorisée, ou relatif essayé contre données, médias, arborescence des pièces.
+        Lève CheminRefuse (hors des racines) ou CheminAmbigu (présent sous plusieurs racines, contenus différents)."""
+        from .chemins import localiser
+
+        return localiser(self.media_racines, fichier)
 
     @property
     def media_racines(self) -> tuple[Path, ...]:
@@ -196,11 +218,11 @@ class Config:
         quelle ; un chemin local (relatif aux données, au répertoire des médias ou à l'arborescence des pièces, ou
         absolu sous l'une d'elles) doit désigner un fichier existant et devient media_ref. Lève CheminRefuse
         (ValueError) pour un chemin hors de ces racines ou un fichier introuvable."""
-        from .chemins import CheminRefuse, localiser
+        from .chemins import CheminRefuse
 
         if "://" in fichier:
             return fichier
-        p = localiser(self.media_racines, fichier)
+        p = self.media_local(fichier)
         if not p.is_file():
             raise CheminRefuse(f"Fichier de média introuvable : {fichier} (cherché dans "
                                + ", ".join(dict.fromkeys(str(r) for r in self.media_racines))

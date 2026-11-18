@@ -45,15 +45,44 @@ est refusé, sauf `"non_source": true` + `"motif": "…"` (la mention « Non sou
 `fichier` est résolu dès la proposition (#192) :
 
 - une URL distante (`https://…`, tout `fichier` contenant `://`) est gardée telle quelle, sans contrôle ;
-- un chemin local est cherché, dans cet ordre, sous le répertoire des données, le répertoire des médias
-  (`GENEALOGISTE_MEDIA_DIR`, ex. `<vault>/documents`) puis l'arborescence des pièces (ex. `<vault>`) ;
-  `documents/État civil/NOM/x.webp` (relatif au vault), `État civil/NOM/x.webp` (relatif aux médias) ou le
-  chemin absolu désignent donc le même fichier ;
-- la référence enregistrée est normalisée comme celle de `media_enregistrer` (`reference_media`) : relative
-  aux données (`medias/…`) quand le fichier s'y trouve, absolue sinon ;
+- un chemin local est résolu par la **règle commune** ci-dessous ; `documents/État civil/NOM/x.webp` (relatif
+  au vault), `État civil/NOM/x.webp` (relatif aux médias) ou le chemin absolu désignent donc le même fichier ;
+- la référence enregistrée est normalisée comme celle de `media_enregistrer` (`reference_media`, voir
+  « Référence enregistrée ») ;
 - la proposition est **refusée** si le fichier local est introuvable (l'enregistrer d'abord par
-  `media_enregistrer` ou `piece_archiver`) ou si le chemin sort de ces racines (absolu ailleurs, `..`, lien
-  symbolique sortant).
+  `media_enregistrer` ou `piece_archiver`), si le chemin sort de ces racines (absolu ailleurs, `..`, lien
+  symbolique sortant) ou s'il est ambigu.
+
+#### Résolution d'un chemin de média (#193)
+
+Une seule règle (`chemins.localiser`, `Config.media_local`), appliquée à la proposition (`ajouter_media`,
+`modifier_media`, `gramps_relocaliser_medias`), aux notes (section « Pièces »), à l'envoi vers Gramps Web
+(`arbre_appliquer`, `gramps_envoyer_medias`, bascule) et au suivi des pièces (`pieces_proposer`) :
+
+1. Racines autorisées, dans cet ordre : répertoire des données, répertoire des médias
+   (`GENEALOGISTE_MEDIA_DIR`, ex. `<vault>/documents`), arborescence des pièces (son parent s'il s'appelle
+   `documents`, ex. `<vault>`).
+2. Chemin absolu : accepté seulement s'il se trouve sous l'une d'elles (liens symboliques résolus).
+3. Chemin relatif : essayé contre chaque racine qui l'admet (sans sortie par `..` ni lien sortant) :
+   - présent sous une seule racine : ce fichier ;
+   - présent sous plusieurs racines avec un contenu **identique** : la première dans l'ordre ci-dessus ;
+   - présent sous plusieurs racines avec des contenus **différents** : **refusé** (« Chemin ambigu », avec la
+     liste des fichiers) ; aucun choix silencieux. Lever l'ambiguïté en donnant le chemin absolu ou en
+     supprimant le doublon ;
+   - absent partout : introuvable (proposition refusée ; listé dans `fichiers_absents` à l'envoi).
+
+À l'envoi vers Gramps Web, une référence ambiguë n'est jamais lue ni envoyée : elle figure dans les fichiers
+absents avec le motif. Dans les notes, la pièce est remplacée par une ligne « chemin ambigu » sans image (et
+tous les candidats d'un média privé restent masqués).
+
+#### Référence enregistrée (`media_ref`)
+
+- fichier sous le répertoire des données : relative à celui-ci (`medias/…`), comme avant ;
+- sinon, avec `GENEALOGISTE_MEDIA_DIR`, fichier sous l'arborescence des pièces : **relative à celle-ci**
+  (`documents/État civil/NOM/x.webp`, `photographies/NOM/p.jpg` ; relative au répertoire des médias lui-même
+  quand il ne s'appelle pas `documents`). La référence ne dépend plus de la machine ni du point de montage ;
+  elle n'est retenue que si elle se résout, par la règle ci-dessus, vers ce même fichier (sinon : absolue) ;
+- autres cas : chemin absolu.
 
 ### Modifier ou relocaliser un média (`modifier_media`, #193)
 
@@ -72,11 +101,11 @@ est refusé, sauf `"non_source": true` + `"motif": "…"` (la mention « Non sou
   `refuses`) et laissés intacts. Le résultat est une proposition ordinaire (`modifier_media` en lot : diff,
   jeton) : une seule écriture par `arbre_appliquer` après accord, journalisée et annulable
   (`arbre_annuler_modification`). L'outil fonctionne aussi en mode fichier (existence seule, sans MD5).
-- Chemins relatifs à `GENEALOGISTE_MEDIA_DIR` : non retenus pour l'instant. La référence stockée reste relative
-  aux données (`medias/…`) ou absolue ; un chemin relatif au répertoire des médias serait ambigu (le même
-  chemin relatif est d'abord cherché sous les données) et n'est pas encore relu par tous les consommateurs
-  (notes, organisation des pièces). Après un changement de machine, `gramps_relocaliser_medias` corrige les
-  chemins absolus.
+- Chemins relatifs à `GENEALOGISTE_MEDIA_DIR` : les nouvelles références sont relatives à l'arborescence des
+  pièces (voir « Référence enregistrée ») et survivent à un changement de machine. Les références absolues
+  existantes restent valides ; pour les convertir, appeler `gramps_relocaliser_medias` avec le **même**
+  préfixe des deux côtés (ex. `<vault>` → `<vault>`) : chaque chemin est vérifié puis renormalisé, et la
+  proposition liste `absolu → relatif`.
 
 ### Intégrité (contrôlée à chaque proposition)
 

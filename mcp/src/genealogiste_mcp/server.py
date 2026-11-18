@@ -115,7 +115,8 @@ class App:
         self.sctx = SourceContext(self.http, self.journal, self.config)
         self.notes = Notes(self.config.notes_dir, self.config.notes_vivants, self.config.strict_evidence,
                            self.config.sosa_racine, self.journal, data_dir=self.config.data_dir,
-                           kit=self.config.notes_kit, marqueurs=self.config.marqueurs)
+                           kit=self.config.notes_kit, marqueurs=self.config.marqueurs,
+                           media_racines=lambda: self.config.media_racines)
         self._gramps_transport = gramps_transport
         self._gramps_sleeper = sleeper
         self._client = None
@@ -127,7 +128,7 @@ class App:
                                          self.config.gramps_ttl,
                                          GitMirror(self.store) if self.config.git_mirror else None,
                                          notes_auto=self.config.gramps_notes_auto,
-                                         media_dir=self.config.pieces_root if self.config.media_dir_conf else None,
+                                         media_dir=self.config.media_racines[1:] if self.config.media_dir_conf else None,
                                          media=self.config.media_reference, forme=self.config.marqueurs)
 
     def gramps(self):
@@ -1643,7 +1644,7 @@ def _tree_media_refs(strict: bool = False) -> dict[Path, list[tuple[str, str]]]:
     """Fichiers locaux référencés par les médias de l'arbre : chemin absolu -> [(id, référence)]. Un chemin
     relatif est cherché comme ajouter_media le fait (données, médias, arborescence des pièces : #192).
     strict : une erreur de lecture de l'arbre est propagée (sinon : aucune référence connue)."""
-    from .chemins import localiser
+    from .chemins import CheminAmbigu, localiser
 
     a = app()
     try:
@@ -1658,6 +1659,10 @@ def _tree_media_refs(strict: bool = False) -> dict[Path, list[tuple[str, str]]]:
             continue
         try:
             p = localiser(a.config.media_racines, m.fichier)
+        except CheminAmbigu as exc:  # référence ambiguë (#193) : chaque candidat compte comme référencé
+            for c in exc.candidats:
+                out.setdefault(c.resolve(), []).append((mid, m.fichier))
+            continue
         except CheminRefuse:
             p = Path(m.fichier).expanduser()
             p = p if p.is_absolute() else a.config.data_dir / p
@@ -2166,7 +2171,9 @@ def gramps_bascule_appliquer(jeton: str) -> dict:
     « Bascule vers Gramps Web ») ; journal.jsonl reste local. Ensuite : GENEALOGISTE_BACKEND=gramps."""
     from .gramps.backend import bascule_apply
     try:
-        return _gramps_guard(lambda: bascule_apply(app().gramps(), app().store, app().tokens, jeton))
+        cfg = app().config
+        racines = cfg.media_racines[1:] if cfg.media_dir_conf else None  # mêmes racines que l'envoi (#193)
+        return _gramps_guard(lambda: bascule_apply(app().gramps(), app().store, app().tokens, jeton, racines))
     except ProposalError as exc:
         return {"erreur": str(exc)}
 
