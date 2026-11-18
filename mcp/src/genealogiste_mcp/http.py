@@ -22,6 +22,7 @@ MAX_REDIRECTS = 5
 IDEMPOTENT = frozenset({"GET", "HEAD", "OPTIONS"})
 SURCHARGE = frozenset({429, 502, 503, 504})  # réponses qui ralentissent l'hôte pour la journée (#211)
 FACTEUR_MAX = 64.0  # doublements cumulés au plus ; l'intervalle effectif reste borné par ralentissement_max
+ANTI_REBOND = 300.0  # (s) au plus un doublement par hôte dans cette fenêtre : une rafale d'erreurs = un épisode
 
 
 MAX_IMAGE_BYTES = 150 * 1024 * 1024  # plafond d'une vue téléchargée (un TIFF de registre dépasse rarement 80 Mo)
@@ -194,13 +195,14 @@ class HttpClient:
         return max(base, min(base * facteur, self.ralentissement_max))
 
     def _ralentir(self, host: str, status: int) -> float | None:
-        """Après une réponse de surcharge : double le facteur de l'hôte pour la journée (persistant, partagé).
-        Renvoie l'intervalle effectif s'il est ralenti, sinon None."""
+        """Après une réponse de surcharge : double le facteur de l'hôte pour la journée (persistant, partagé),
+        au plus une fois par fenêtre de ``ANTI_REBOND`` s ; les incidents suivants de la fenêtre sont comptés
+        sans doubler. Renvoie l'intervalle effectif s'il est ralenti, sinon None."""
         if self.cache is None or not self.ralentissement_max or not self._intervalle_base(host):
             return None
         try:
             self.cache.ralentir(self._hote(host), self.jour().isoformat(), FACTEUR_MAX, status,
-                                self.horloge_murale())
+                                self.horloge_murale(), anti_rebond=ANTI_REBOND)
         except sqlite3.Error:
             return None
         return self.intervalle(host)

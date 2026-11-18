@@ -244,6 +244,14 @@ secondes (60 par défaut ; 0 désactive). Les incidents se cumulent (×2, ×4, �
 est persistant (table `ralentissements` du cache SQLite) et partagé entre processus. Un hôte dont
 l'intervalle de base est nul (`GENEALOGISTE_DEBITS=hote=0`) n'est pas ralenti.
 
+**Anti-rebond** : un hôte n'est doublé qu'**une fois par fenêtre de 5 minutes** (`ANTI_REBOND = 300` s
+dans `http.py`, comptés depuis le dernier doublement). Une rafale d'erreurs d'un même épisode (requêtes
+parallèles de plusieurs serveurs, reprises d'un même appel) ne vaut donc qu'un doublement : les réponses
+suivantes de la fenêtre sont comptées (nombre d'incidents, dernier statut) et l'erreur indique toujours
+l'intervalle courant, mais le facteur n'augmente pas. L'horodatage du dernier doublement (colonne
+`double_a`, ajoutée automatiquement aux caches existants) est lu et écrit dans la même transaction que le
+facteur : la règle tient entre processus. Un changement de jour repart de ×1 quelle que soit la fenêtre.
+
 - `Retry-After` continue de primer pour l'attente immédiate ; le ralentissement règle le rythme des
   requêtes suivantes.
 - L'enveloppe d'erreur indique l'intervalle courant (`intervalle_actuel`, et dans le message) en plus de
