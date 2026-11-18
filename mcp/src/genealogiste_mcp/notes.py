@@ -601,12 +601,13 @@ class Notes:
         return written, alertes
 
     def _person_renames(self, tree: Tree, ids: list[tuple[str, str]]) -> dict[Path, Path]:
-        """Plan sans écriture : seules les fiches reconnues portant leur nom généré sont renommées."""
+        """Plan sans écriture : seules les fiches reconnues portant leur nom généré sont renommées, y compris au
+        passage de vivant (fiche masquée) à décédé et au remasquage (#247)."""
         root = self._require().resolve()
         renames = {}
         for kind, oid in ids:
-            if kind != "personne" or self._masked(tree, oid):
-                continue  # remasquage : conserver les alertes et le traitement manuel existants
+            if kind != "personne":
+                continue
             folder = self._require() / FOLDERS[kind]
             if not folder.resolve().is_relative_to(root):
                 raise NotesError("Dossier de personnes hors du répertoire des notes : renommage refusé.")
@@ -629,9 +630,12 @@ class Notes:
                         pass
             if fields.get("id") != oid or fields.get("type") != "personne" or not _BLOCK.search(body):
                 continue
-            label = fields.get("nom") or "(sans nom)"
-            prefix = _safe(f"{oid} - {label}", 120)
-            generated = re.fullmatch(re.escape(prefix) + r"(?: \([0-9 ?~apv.à/–-]*\)?)?", old.stem)
+            if "nom" not in fields and old.stem == f"{oid} - personne vivante":
+                generated = True  # fiche masquée (sans nom dans ses propriétés)
+            else:
+                label = fields.get("nom") or "(sans nom)"
+                prefix = _safe(f"{oid} - {label}", 120)
+                generated = re.fullmatch(re.escape(prefix) + r"(?: \([0-9 ?~apv.à/–-]*\)?)?", old.stem)
             if not generated:
                 continue  # nom personnalisé : conserver le choix de l'utilisateur
             new = old.with_name(self.fresh_name(tree, kind, oid) + ".md")
