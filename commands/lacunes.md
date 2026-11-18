@@ -10,3 +10,6 @@ Lacunes de : **$ARGUMENTS**
    (`cotes_a_consulter`), accès en ligne, délai de communicabilité si récent (`communicabilite`).
 3. Regrouper les actions par service d'archives / déplacement pour un plan efficace.
 4. Proposer de lancer les recherches en ligne correspondantes (`/genealogiste:cherche` ou agent `chercheur`).
+5. Si `medias_a_lier` est présent : images jointes à des citations mais absentes des fiches (personne, événement,
+   source). Lister média et cibles, et proposer de soumettre les opérations `operation` par `arbre_proposer` ;
+   `arbre_appliquer` seulement après accord explicite.
