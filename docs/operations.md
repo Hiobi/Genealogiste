@@ -32,7 +32,7 @@ est refusé, sauf `"non_source": true` + `"motif": "…"` (la mention « Non sou
 | `lier_enfant` / `delier_enfant` | `famille`, `enfant`, (`filiation`, `citations`, `non_source`, `motif`) |
 | `lier_conjoint` | `famille`, `personne`, `role` (`epoux`/`epouse`) |
 | `ajouter_citation` | `cible` `{type: evenement(uid) | nom(id, index) | filiation(famille, enfant) | personne | famille | media (id)}`, `citation` |
-| | Citation : `source`, `page`, `texte`, `qualite`, `type_source`, `information`, `preuve`, `consultation`, `ark`, `medias` (ids ou `$ref` d'`ajouter_media` : images de l'acte), `note` |
+| | Citation : `source`, `page`, `texte`, `qualite`, `type_source`, `information`, `preuve`, `consultation`, `ark`, `medias` (ids ou `$ref` d'`ajouter_media` : images de l'acte), `lier_media` (défaut `true` : voir « Images d'une citation »), `note` |
 | `ajouter_media` | `fichier`* (voir « Fichier d'un média »), `format`, `titre`, `citations`, `lier_a` `[ids]` (personnes `I…`, familles `F…`, sources `S…`, événements (uid), ou `$ref` : voir « Médias »), `ref` |
 | `modifier_media` | `id`, `champs` `{fichier, titre, format}` (`fichier` contrôlé comme pour `ajouter_media` ; `date` refusée : un `OBJE` GEDCOM 7 ne porte pas de date, dater l'acte dans sa citation ou son événement), `citations_ajout`, `lier_a` `[ids]` (liens ajoutés, mêmes cibles qu'`ajouter_media`) |
 | `fusionner_personnes` | `conserver`, `absorber`, `justification`*, `forcer` |
@@ -147,6 +147,19 @@ inconnue », « événement inconnu ») ; `medias` n'est pas accepté directemen
 `modifier_source` ou un événement : passer par `lier_a`. Pour l'image qui fonde une citation précise (page,
 acte), `citation.medias` reste le lien le plus fin. Publication : les images d'un événement ou d'une source
 privés, ou d'une personne masquée, sont retirées des exports.
+
+**Images d'une citation** (#246) : une citation qui porte `medias` lie aussi, d'elle-même, chaque image à ce
+qu'elle prouve, pour qu'elle apparaisse dans l'onglet Médias des fiches (Gramps Web) et dans les `OBJE` GEDCOM :
+événement individuel → l'événement, la personne et la source ; événement familial → l'événement, la famille, les
+deux conjoints et la source ; citation de la famille → la famille, les conjoints et la source ; nom ou citation
+générale d'une personne → la personne et la source ; filiation → l'enfant et la source ; association (témoin,
+parrain…) → la source seulement. Seul le titulaire de la citation compte : une vue collective (table décennale,
+recensement, table des successions) n'est jamais liée à tout le contenu de la page. Ces liens figurent dans le
+diff et le résumé (« Média O3 (image de citation) liée à I1 décès, I1, S4 ») ; un lien déjà présent n'est pas
+dupliqué. `lier_media: false` sur la citation garde le seul lien fin. Rattrapage de l'existant :
+`arbre_lacunes` (tout l'arbre ou une personne) renvoie `medias_a_lier`, chaque image liée seulement à des
+citations avec l'opération `modifier_media` + `lier_a` prête à soumettre par `arbre_proposer` ; rien n'est écrit
+sans `arbre_appliquer`.
 
 ### ARK (liens pérennes des archives)
 
