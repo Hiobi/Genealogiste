@@ -54,10 +54,11 @@ Tous les outils réseau de collecte (catalogue `outils.BUDGET_ENQUETE` : `recher
 `ark_resoudre`, `matchid_recherche`, `wikitree_*`, `gallica_*`, `wikidata_*`, `geo_*`) acceptent un paramètre
 facultatif `enquete=<id>` qui les fait compter dans le budget de l'enquête (#211). Exemptés, motif à l'appui
 dans `outils.HORS_BUDGET` : `diagnostic` (contrôle de santé) et `gramps_recherche` / `gramps_personne`
-(serveur Gramps Web de l'utilisateur). En plus, `recherche_multi`, `archives_naviguer` et `archive_image`
-notent la demande dans l'état (fenêtre parcourue et nombre de vues pour une navigation, vue consultée pour
-une image, résultat et entrées de journal pour une recherche). Sans ce paramètre, rien ne change pour ces
-outils, sinon l'indication ci-dessous.
+(serveur Gramps Web de l'utilisateur). Avec `enquete=<id>`, chacun de ces outils note aussi la demande
+aboutie dans l'état (`requetes` : paramètres reçus, clé normalisée, date, résultat `positif` ou `negatif`,
+entrée de journal) ; en plus, `archives_naviguer` et `archive_image` notent la fenêtre parcourue, le nombre de
+vues et la vue consultée du registre. Sans ce paramètre, rien ne change pour ces outils, sinon l'indication
+ci-dessous.
 
 ## Budget et arrêt propre
 
@@ -111,9 +112,11 @@ avant tout (`_garde`) : un refus « vivant » ne consomme rien et n'est pas not�
 
 ## « Déjà fait le … »
 
-Les trois outils ajoutent `deja_fait` (liste avec `enquete`, `date`, `resultat`, `message`) quand la même
-demande figure déjà dans l'état d'une enquête. L'appel n'est **jamais bloqué** ni modifié. La correspondance
-est exacte et prudente :
+Tous les outils qui acceptent `enquete` (budget, ci-dessus) ajoutent `deja_fait` (liste avec `enquete`,
+`date`, `resultat`, `message`) quand la même demande figure déjà dans l'état d'une enquête, avec ou sans
+`enquete` dans l'appel. L'appel n'est **jamais bloqué** ni modifié (seul `deja_fait` est ajouté) ; tout est
+local. Seul un appel abouti est signalé et noté : un refus « vivant » (la garde passe avant tout), un refus de
+budget ou une erreur ne le sont pas. La correspondance est exacte et prudente :
 
 - `recherche_multi` : mêmes `nom`, `prenom`, `ne_vers`, `lieu`, `decede_vers` (casse, accents et espaces
   ignorés) et même ensemble de sources ; un prénom différent n'est pas « la même demande » ;
@@ -121,6 +124,43 @@ est exacte et prudente :
   comprise dans les vues déjà lues du registre ;
 - `archive_image` : même registre et même vue, consultée ou notée comme lue (les lectures notées sont
   rappelées). Un recadrage de la même vue est donc signalé : c'est attendu, la consigne reste d'agrandir l'acte.
+
+Pour les autres, l'identité est déclarée par outil dans le catalogue (`outils.IDENTITE_REQUETE`) : tous les
+paramètres listés doivent être égaux, après normalisation ; un paramètre omis vaut son défaut. *Texte* : casse,
+accents et espaces ignorés ; *exact* : identifiants, ARK, URL, clés et codes comparés tels quels (espaces de
+bord retirés) ; entiers et booléens par valeur. La pagination fait partie de la demande.
+
+| Outil | Même demande si mêmes… |
+|---|---|
+| `matchid_recherche` | texte : `nom`, `prenom`, `ne_vers`, `lieu_naissance`, `decede_vers`, `lieu_deces`, `sexe`, `texte` ; `taille`, `page` |
+| `wikitree_recherche` | texte : `nom`, `prenom`, `ne_vers`, `lieu`, `decede_vers` ; `limite` |
+| `wikitree_profil`, `wikitree_personne` | `cle` (exacte) |
+| `wikitree_ascendants`, `wikitree_descendants` | `cle` (exacte), `profondeur` |
+| `gallica_recherche` | texte : `texte`, `titre` ; exacts : `type_doc`, `debut`, `fin` ; `exact`, `nombre`, `depart` |
+| `gallica_recherche_document` | `ark` (exact), `texte` (texte) |
+| `gallica_texte` | `ark`, `page`, `max_caracteres` |
+| `gallica_alto` | `ark`, `page` |
+| `ark_resoudre` | `ark`, `verifier`, `titre` (exact : repris dans la citation) |
+| `piece_archiver` | `source`, `page` : la même vue archivée, quels que soient le nommage et la note |
+| `wikidata_personne` | texte : `nom`, `prenom`, `ne_vers`, `lieu` ; `limite` |
+| `wikidata_sparql` | `requete` (exacte : les littéraux SPARQL sont sensibles à la casse) |
+| `geo_commune` | `nom` (texte) ; exacts : `code_postal`, `code_insee`, `departement` ; `limite` |
+| `geo_historique` | `nom` (texte) ; exacts : `code_insee`, `departement` |
+| `archives_registres` | `service` (exact), `commune` (texte), `annee`, `type_acte` (exact), `page` |
+| `archives_planche` | `source`, `de`, `a`, `pas`, `bandeau`, `largeur`, `gris`, `miniatures` (une planche plus fine ou recadrée est une autre demande) |
+
+Hors identité : `personne` (id local de l'arbre, jamais envoyé) et `enquete`. Le résultat noté est `negatif`
+quand l'outil ne renvoie aucun résultat (recherche négative, liste vide, aucune ligne SPARQL) et référence
+l'entrée du journal de l'appel ; sinon `positif`. Un tableau sans entrée pour un outil budgété fait échouer
+`tests/test_deja_fait_collecte.py`.
+
+Hors « déjà fait » : les outils sans paramètre `enquete` (`diagnostic`, `gramps_*`, classe écriture). En
+particulier `matchid_appariement_statut` renvoie l'état d'un traitement par lot en cours, qui change d'un appel
+à l'autre : redemander le même job n'est pas refaire une demande.
+
+À la reprise, `deja_fait` liste toutes ces demandes ; une source de piste (`{outil, parametres}`) dont la
+demande est notée sort de `a_faire`, et un appel refusé faute de budget puis refait avec `enquete=<id>` sort du
+reste à faire (clé recalculée depuis ses paramètres, y compris pour un refus consigné avant cette identité).
 
 ## Cohérence avec le journal
 
@@ -186,8 +226,8 @@ suivie de la personne et de la question. Sans la ligne `MODE AUTONOME`, l'agent 
 1. `enquete_reprendre(<id>)` si l'enquête existe, sinon `enquete_ouvrir` **sans** `budget` ;
 2. pour chaque fait : service et couverture (`archives_service`), registre (`archives_registres`,
    `ark_resoudre`), sondage (`archives_naviguer`, `archives_planche`), lecture (`archive_image`),
-   transcription, archivage (`piece_archiver`), citation ; `enquete=<id>` sur `recherche_multi`,
-   `archives_naviguer` et `archive_image` ;
+   transcription, archivage (`piece_archiver`), citation ; `enquete=<id>` sur chaque outil réseau de
+   collecte (`recherche_multi`, `archives_*`, `archive_image`, `piece_archiver`, sources…) ;
 3. aucune question : service protégé ou anti-robot, archives non numérisées, source sans API, capture
    nécessaire, homonymes non départagés deviennent des **tâches manuelles** (`enquete_noter(id, tache=…)`) ;
    `media_enregistrer`, qui demande une confirmation, n'est pas utilisé ;

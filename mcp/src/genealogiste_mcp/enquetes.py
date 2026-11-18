@@ -23,7 +23,7 @@ import re
 from datetime import UTC, datetime
 from pathlib import Path
 
-from . import ark
+from . import ark, outils
 from .budget import LIMITES, RETIREES, BudgetEpuise
 from .fichiers import ecrire_atomique, verrou
 from .journal import Journal
@@ -36,6 +36,7 @@ STATUTS_ENQUETE = ("ouverte", "bloque", "close")
 LIBELLES_LIMITES = {"requetes_par_hote": "requêtes par hôte", "images": "images lues"}
 RESULTATS = ("positif", "negatif", "erreur", "manuel")
 TERMINES = ("trouve", "negatif")  # piste ou registre sans action restante
+# identité dédiée (cle_requete) ; les autres outils budgétés : outils.IDENTITE_REQUETE (#211)
 OUTILS_SUIVIS = ("recherche_multi", "archives_naviguer", "archive_image")
 SOURCES_MULTI = ("matchid", "wikitree", "wikidata", "gallica")
 _ID = re.compile(r"^[a-z0-9][a-z0-9_-]{0,79}$")
@@ -73,7 +74,24 @@ def cle_requete(outil: str, parametres: dict) -> dict:
     if outil == "archive_image":
         return {"registre": cle_source(p.get("registre") or p.get("source", "")),
                 "vue": int(p.get("vue") or p.get("page") or 0)}
+    if (identite := outils.IDENTITE_REQUETE.get(outil)) is not None:  # outils de collecte budgétés (#211)
+        return {k: _identite(nature, p.get(k), defaut) for k, (nature, defaut) in identite.items()}
     return {k: _txt(v) if isinstance(v, str) else v for k, v in sorted(p.items())}
+
+
+def _identite(nature: str, valeur, defaut):
+    """Valeur normalisée d'un paramètre d'identité (outils.IDENTITE_REQUETE) ; absent ou None : le défaut."""
+    v = defaut if valeur is None else valeur
+    if nature == outils.TEXTE:
+        return _txt(v)
+    if nature == outils.ENTIER:
+        try:
+            return int(v)
+        except (TypeError, ValueError):
+            return _txt(v)  # valeur inattendue : comparée telle quelle, jamais confondue avec un entier
+    if nature == outils.BOOLEEN:
+        return v if isinstance(v, bool) else _txt(v) in ("true", "1", "oui", "vrai")
+    return str(v).strip()
 
 
 # ---------------------------------------------------------------------------- intervalles de vues
@@ -467,8 +485,12 @@ class Enquetes:
             e = self._charger(eid)
             r = self._requete(e, outil, parametres, resultat, journal, fenetre=fenetre)
             faites = [r["cle"]] + ([cle_requete(outil, appel)] if appel is not None else [])
+            # clé recalculée aussi depuis les paramètres consignés : un refus consigné avant que l'outil ait une
+            # identité dédiée (outils.IDENTITE_REQUETE, #211) sort quand même du reste à faire
             e["reste_a_faire"] = [x for x in e.get("reste_a_faire", [])
-                                  if not (x.get("outil") == outil and x.get("cle") in faites)]
+                                  if not (x.get("outil") == outil
+                                          and (x.get("cle") in faites
+                                               or cle_requete(outil, x.get("parametres") or {}) in faites))]
             if registre:
                 d = {"source": registre, "titre": titre, "cote": cote, "nb_vues": nb_vues}
                 if vue_lue:
@@ -674,7 +696,8 @@ class Enquetes:
         e["statut"] = "bloque"
         e["blocage"] = {"motif": "budget", "limite": limite, "date": maintenant(), "message": message}
         cle = cle_requete(outil, appel)
-        if not any(x.get("outil") == outil and x.get("cle") == cle for x in e["reste_a_faire"]):
+        if not any(x.get("outil") == outil and cle in (x.get("cle"), cle_requete(outil, x.get("parametres") or {}))
+                   for x in e["reste_a_faire"]):
             e["reste_a_faire"].append({"outil": outil, "parametres": dict(appel), "cle": cle, "date": maintenant(),
                                        "limite": limite})
         return {"refus": f"{outil} non exécuté pour l'enquête {e['id']} : {message} Aucune requête envoyée.",
