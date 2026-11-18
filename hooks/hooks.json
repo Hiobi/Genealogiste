@@ -3,7 +3,7 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "mcp__.*genealogiste.*__(arbre_ascendance|arbre_cercle|arbre_coherence|arbre_comparer|arbre_descendance|arbre_fiche|arbre_historique|arbre_info|arbre_lacunes|arbre_personne|arbre_rapport_preuve|arbre_recherche|arbre_statut_preuve|arbre_statut_transaction|arbre_vivant|archives_service|communicabilite|comparer_noms|comparer_profils|convertir_date|cotes_a_consulter|enquete_etat|enquete_reprendre|gallica_iiif|journal_ajouter|journal_lister|liens_recherche|naissance_depuis_age|normaliser_lieu|normaliser_nom|pdf_markdown|piece_nommer|pieces_inventaire|prochaine_source|propositions_lister|source_collee|sources_catalogue)$",
+        "matcher": "mcp__.*genealogiste.*__(arbre_ascendance|arbre_cercle|arbre_coherence|arbre_comparer|arbre_descendance|arbre_fiche|arbre_historique|arbre_info|arbre_lacunes|arbre_personne|arbre_rapport_preuve|arbre_recherche|arbre_statut_preuve|arbre_statut_transaction|arbre_vivant|archives_service|communicabilite|comparer_noms|comparer_profils|convertir_date|cotes_a_consulter|enquete_etat|enquete_reprendre|gallica_iiif|journal_ajouter|journal_lister|liens_recherche|naissance_depuis_age|normaliser_lieu|normaliser_nom|pdf_markdown|piece_nommer|pieces_inventaire|prochaine_source|propositions_lister|source_collee|sources_catalogue|variantes_noms)$",
         "hooks": [
           {
             "type": "command",

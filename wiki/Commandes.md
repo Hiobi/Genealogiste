@@ -42,6 +42,17 @@ Ces exemples supposent `I1` dans l’arbre chargé. Ne pas reprendre des identif
 Pour une recherche, donner au moins un nom et des éléments de contexte ; l’agent demandera une précision
 si l’identité est ambiguë. Le [parcours d’enquête](Parcours-de-recherche.md) explique comment lire les résultats.
 
+## Demandes sans commande
+
+Certaines demandes n’ont pas de commande dédiée ; les formuler en langage courant :
+
+| Demande | Ce que fait Claude |
+|---|---|
+| « Quelles ressources pour le Finistère ? », « que connais-tu sur les protestants ? » | `sources_catalogue` : archives publiques, [sites tiers](../docs/sites-tiers.md) (cercles, relevés, bases thématiques) et API |
+| « Mon grand-père était prisonnier en Allemagne » | parcours [Seconde Guerre mondiale](../docs/seconde-guerre-mondiale.md) par profil, fonds et dossiers à demander |
+| « Comment chercher MÜLLER Jean dans les fonds allemands ? » | `variantes_noms` : Müller, Mueller, Muller ; Jean, Johann, Hans |
+| « Range ce dossier de scans » | `organise` : inventaire, plan de classement, application après accord |
+
 ## Commande ou outil MCP ?
 
 Une commande telle que `/genealogiste:fiche` guide Claude dans une tâche. Un outil tel que `arbre_info`

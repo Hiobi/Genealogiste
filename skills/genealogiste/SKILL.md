@@ -8,7 +8,7 @@ description: Rechercher une personne, importer un GEDCOM, préparer une édition
    Les données appartiennent à un dossier privé distinct du plugin.
 2. Selon la demande :
    - **Recherche** : consulter `arbre_personne`, `arbre_lacunes`, puis les sources appropriées.
-     Appliquer `methodologie-gps`, `sources-francaises` et `droit-communicabilite`.
+     Appliquer `methodologie-gps`, `sources-francaises` et `droit-communicabilite` (période 1939-1945 : `seconde-guerre-mondiale`).
      Conserver les références, distinguer homonymes, hypothèses et faits cités.
    - **Import** : `arbre_importer_gedcom` produit un bilan et un diff ; un import reste non vérifié.
    - **Acte** : pour retrouver un acte depuis une personne, suivre le parcours `archives_service` (service et

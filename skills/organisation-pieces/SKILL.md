@@ -24,7 +24,7 @@ Référence complète : `docs/pieces.md` du plugin.
 `NOM Prénom[ + NOM Prénom] -- COMMUNE - DÉPÔT - TYPE [AAAA-AAAA] - cote - p.vue n.acte.ext`.
 Produire les noms avec `piece_nommer`, jamais à la main : l'outil garantit la compatibilité Windows et
 Nextcloud et reprend depuis l'arbre les noms (`I12`), le dépôt et la cote (`S3`).
-Codes de type : N, B, M, D, S, NMD, BMS, TD, RM (matricule), ANMT (mineur), PM (personnel des mines),
+Codes de type : N, B, M, D, S, NMD, BMS, TD, RM (matricule), SGM (Seconde Guerre mondiale : Arolsen, GR 16 P, Stalag, STO, épuration), ANMT (mineur), PM (personnel des mines),
 NOT (acte notarié), CNI (carte d'identité), COUR (courrier, demande ou réponse administrative), REC
 (recensement), SIGN, CAPTURE (arbre en ligne), PHOTO, TOMBE, LIEU.
 Actes notariés : un seul code `NOT`, la nature en libellé libre après lui (`type_piece="NOT testament"`),

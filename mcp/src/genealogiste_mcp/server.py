@@ -996,6 +996,20 @@ def comparer_noms(nom1: str, nom2: str) -> dict:
 
 
 @mcp.tool()
+def variantes_noms(nom: str, prenom: str = "") -> dict:
+    """Graphies françaises et allemandes à essayer dans les fonds étrangers (Arolsen, Bundesarchiv, Volksbund,
+    listes de prisonniers ou de déportés) : tréma et transcription (Müller, Mueller, Muller), ß/ss, ei/ai/ey/ay,
+    finales dt/tt/t/d, -mann/-man, C/K ; prénoms Jean/Johann/Hans, Joseph/Josef, Charles/Karl… Sans réseau.
+    Une graphie commune ne prouve pas l'identité : recouper (comparer_profils)."""
+    from .normalize import allemand
+
+    return {"nom": allemand.variantes_nom(nom), "prenoms": allemand.variantes_prenom(prenom),
+            "combinaisons": allemand.combinaisons(nom, prenom),
+            "consigne": ("Variantes à essayer une par une dans le formulaire du site (navigateur de l'utilisateur) ; "
+                         "noter chaque recherche, y compris négative (journal_ajouter ou source_collee).")}
+
+
+@mcp.tool()
 def convertir_date(date_texte: str) -> dict:
     """Analyse/convertit une date : GEDCOM, texte français, républicain (« 12 vendémiaire an III »), julien.
     Renvoie équivalents grégorien/républicain/julien, intervalle et forme GEDCOM 7 / 5.5.1."""
