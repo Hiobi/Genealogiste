@@ -45,6 +45,7 @@ personnes (`I12`) et une source (`S3`), dont il reprend le sigle du dépôt et l
 | `N` `B` `M` `D` `S` | naissance, baptême, mariage, décès, sépulture | `documents/État civil/<NOM>/` |
 | `NMD` `BMS` `TD` | registres, tables décennales | `documents/État civil/<NOM>/` |
 | `RM` | registre ou fiche matricule | `documents/Militaire/<NOM>/` |
+| `SGM` | pièce de la Seconde Guerre mondiale (fiche Arolsen, dossier GR 16 P, Stalag, STO, épuration) | `documents/Seconde Guerre mondiale/<NOM>/` |
 | `ANMT` | fiche de mineur (Archives nationales du monde du travail) | `documents/Mines (ANMT)/<NOM>/` |
 | `PM` | dossier du personnel des mines (houillères) | `documents/Mines (ANMT)/<NOM>/` |
 | `NOT` | acte notarié : contrat de mariage, testament, acte de notoriété, partage, inventaire, déclaration de succession, attestation immobilière… | `documents/Notaires/<NOM>/` |

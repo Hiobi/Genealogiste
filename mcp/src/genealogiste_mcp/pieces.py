@@ -154,7 +154,9 @@ TYPES = {
     "N": ("naissance", "État civil"), "B": ("baptême", "État civil"), "M": ("mariage", "État civil"),
     "D": ("décès", "État civil"), "S": ("sépulture", "État civil"), "NMD": ("registre NMD", "État civil"),
     "BMS": ("registre BMS", "État civil"), "TD": ("tables décennales", "État civil"),
-    "RM": ("registre matricule", "Militaire"), "ANMT": ("fiche de mineur (ANMT)", "Mines (ANMT)"),
+    "RM": ("registre matricule", "Militaire"),
+    "SGM": ("document de la Seconde Guerre mondiale", "Seconde Guerre mondiale"),  # #131
+    "ANMT": ("fiche de mineur (ANMT)", "Mines (ANMT)"),
     "PM": ("dossier du personnel des mines", "Mines (ANMT)"),
     "NOT": ("acte notarié", "Notaires"), "CNI": ("carte d'identité", "Divers"),
     "COUR": ("courrier ou démarche administrative", "Divers"),
@@ -182,6 +184,11 @@ _MOTS = [  # (motif sur nom normalisé, code) — le premier qui correspond l'em
      r"|attestations? immobilieres?|hypotheques?)\b", "NOT"),
     (r"\b(naissances?|nais|naiss)\b", "N"), (r"\b(baptemes?|bapt)\b", "B"),
     (r"\b(mariages?)\b", "M"), (r"\b(deces|dc)\b", "D"), (r"\b(sepultures?|inhumations?)\b", "S"),
+    # #131 : prisonnier, déporté, STO, résistant, épuration, incorporé de force ; après les actes : un acte de
+    # décès portant « mort en déportation » reste un acte d'état civil
+    (r"\b(arolsen|stalag|oflag|frontstalag|kriegsgefangen\w*|deportee?s?|deportations?|sto"
+     r"|service du travail obligatoire|gr 16 p|ffi|ffl|fft|resistants?|epuration|cours? de justice"
+     r"|chambres? civiques?|wehrmacht|waffen ss|nsdap|malgre nous|incorporee?s? de force|davcc)\b", "SGM"),
     # après les actes : une « lettre » ou une « réponse » ne l'emporte pas sur le type d'acte
     (r"\b(lettres?|reponses?)\b", "COUR"),
     (r"\b(photos?|portraits?|photographies?)\b", "PHOTO"),
@@ -222,7 +229,8 @@ def rattachement_archives(type_piece: str, cote: str = "") -> dict | None:
                            "minutes non versées ou cotation propre).")
     return out
 _PAS_PATRONYME = {*TYPES, "AD", "AM", "AN", "SHD", "ANMT", "NMD", "BMS", "TD", "IMG", "DSC", "DCIM", "SCAN",
-                  "PDF", "JPG", "PNG", "COPIE", "COPY", "PXL", "WA", "VID", "PAGE", "VUE", "ACTE", "NOUVEAU"}
+                  "PDF", "JPG", "PNG", "COPIE", "COPY", "PXL", "WA", "VID", "PAGE", "VUE", "ACTE", "NOUVEAU",
+                  "GR"}  # GR : cote du SHD (GR 16 P)
 _PROTEGES = {"personnes", "familles", "sources", "patronymes", "_organisation"}
 CLASSES = ("documents", "photographies", "archives", "courriers")
 DOSSIERS_EXPLICITES = ("documents", "photographies", "courriers")  # seules racines d'un dossier imposé
@@ -234,6 +242,9 @@ def _norm(s: str) -> str:
     return re.sub(r"[^a-z0-9]+", " ", s).strip()
 
 
+_ROMAIN = re.compile(r"X{0,3}(IX|IV|V?I{1,3}|V)|X{1,3}")  # numéro de Stalag, de classe… (XII, IV)
+
+
 def _patronyme(nom: str) -> str:
     """Patronyme : celui de la convention, sinon premier mot en capitales (≥ 2 lettres) qui n'est pas un code."""
     lu = lire_nom(nom)
@@ -243,7 +254,7 @@ def _patronyme(nom: str) -> str:
     # nom à la convention : seules les personnes (avant « -- ») peuvent donner le patronyme, jamais la commune
     for tok in re.split(r"[\s_\-.,()\[\]]+", stem.split(" -- ", 1)[0]):
         if (len(tok) >= 2 and tok.isalpha() and tok.isupper() and tok not in _PAS_PATRONYME
-                and not re.fullmatch(r"[NBMDS]+", tok) and not any(re.search(m, _norm(tok)) for m, _ in _MOTS)):
+                and not re.fullmatch(r"[NBMDS]+", tok) and not _ROMAIN.fullmatch(tok) and not any(re.search(m, _norm(tok)) for m, _ in _MOTS)):
             return tok
     return ""
 

@@ -5,6 +5,8 @@ from __future__ import annotations
 import re
 import unicodedata
 
+from .allemand import cle_germanique
+
 PARTICLES = {"de", "du", "des", "de la", "de l", "d", "le", "la", "les", "l", "van", "von", "der", "den", "di", "da"}
 
 # Formes latines (nominatif et cas obliques courants) -> prénom français
@@ -88,7 +90,7 @@ def strip_accents(s: str) -> str:
 
 
 def basic(s: str) -> str:
-    s = strip_accents(s or "").lower()
+    s = strip_accents((s or "").replace("ß", "ss")).lower()
     s = s.replace("’", "'").replace("œ", "oe").replace("æ", "ae")
     s = re.sub(r"[^a-z' -]", " ", s)
     return re.sub(r"\s+", " ", s).strip()
@@ -261,6 +263,8 @@ def surname_similarity(a: str, b: str) -> dict:
                 v = max(0.92, jaro_winkler(fa2, fb2))
                 if v > best:
                     best, reason = v, "variante phonétique"
+            if best < 0.95 and cle_germanique(fa2) == cle_germanique(fb2):  # Müller / Mueller, Meyer / Maier (#131)
+                best, reason = 0.95, "variante germanique (tréma, ei/ai, dt/tt)"
             if latin_surname_stem(fa) == latin_surname_stem(fb):
                 if best < 0.9:
                     best, reason = 0.9, "forme latinisée"

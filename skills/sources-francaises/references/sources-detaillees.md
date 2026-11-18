@@ -50,3 +50,5 @@
   Québec (Fichier Origine), prisonniers 14-18 (CICR) ; lieux : DicoTopo, Remonter le temps (IGN), Cassini (EHESS).
 - `sources_catalogue(departement=…, theme=…)` liste ces sites ; `liens_recherche` et `cotes_a_consulter` proposent
   ceux du département. Référentiel : `docs/sites-tiers.md`.
+- Seconde Guerre mondiale (prisonniers, déportés, STO, résistants, épuration, incorporés de force) : skill
+  `seconde-guerre-mondiale` et `docs/seconde-guerre-mondiale.md`.

@@ -74,6 +74,7 @@ OUTILS: dict[str, tuple[str, str]] = {  # nom -> (effet, classe)
     # analyse
     "normaliser_nom": (LECTURE, LECTURE),
     "comparer_noms": (LECTURE, LECTURE),
+    "variantes_noms": (LECTURE, LECTURE),  # graphies françaises et allemandes, sans réseau (#131)
     "convertir_date": (LECTURE, LECTURE),
     "naissance_depuis_age": (LECTURE, LECTURE),
     "normaliser_lieu": (LECTURE, LECTURE),

@@ -24,7 +24,8 @@ exemple « quelles ressources pour le Finistère ? » ou « que connaît le plug
 
 Ces sites sont consultés **dans votre navigateur** : le plugin n’y fait aucune requête. Un relevé reste une
 source dérivée : noter la référence qu’il donne (commune, date, numéro), puis consulter l’acte original.
-Détails : [sites tiers](../docs/sites-tiers.md).
+Détails : [sites tiers](../docs/sites-tiers.md). Pour 1939-1945 (prisonniers, déportés, STO, résistants,
+épuration, incorporés de force) : [Seconde Guerre mondiale](../docs/seconde-guerre-mondiale.md).
 
 ## Accès aux archives
 

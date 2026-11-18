@@ -107,6 +107,23 @@ manuels = [
    protection="captcha", themes=["avis_deces"], notes="Avis de décès récents : personnes vivantes possibles dans l'entourage. Aucune recherche automatique ; consultation par l'utilisateur seulement."),
  S("ROGLO","Roglo","https://roglo.eu/roglo","arbre_collaboratif",FR,"libre","releve_derive",
    protection="cloudflare", notes="Arbre collaboratif : piste à confirmer par l'acte. Cloudflare Turnstile."),
+ # Seconde Guerre mondiale, fonds étrangers et mémoriaux (#131, relevé HTTP du 2026-11-18)
+ S("AROLSEN","Arolsen Archives — collections en ligne","https://collections.arolsen-archives.org/","base_thematique",["INT"],"libre","image",
+   periode={"de":1933,"a":1950}, themes=["ww2","deportes","prisonniers","travail_force"], repond=R18,
+   origine=f"relevé HTTP du {R18} (#131)",
+   notes="Ex-Service international de recherches (ITS) : camps, persécutés, travailleurs forcés, personnes déplacées. Recherche nominative dans le navigateur ; demande de recherche gratuite possible auprès d'Arolsen. Aucune API publique documentée relevée."),
+ S("BUNDESARCHIV-INVENIO","Bundesarchiv — invenio (recherche dans les fonds)","https://invenio.bundesarchiv.de/","base_thematique",["INT"],"inscription_gratuite","index",
+   periode={"de":1933,"a":1945}, themes=["ww2","wehrmacht","nsdap"], repond=R18, origine=f"relevé HTTP du {R18} (#131)",
+   notes="Inventaires des archives fédérales allemandes (dont fichier central du NSDAP, R 9361). Les dossiers de la Wehrmacht (ex-WASt, Deutsche Dienststelle) se demandent au Bundesarchiv par formulaire ; pas d'automatisation."),
+ S("VOLKSBUND","Volksbund — recherche de sépultures","https://www.volksbund.de/erinnern-gedenken/graebersuche-online","cimetieres_monuments",["INT"],"libre","index",
+   periode={"de":1914,"a":1945}, themes=["ww1","ww2","wehrmacht","sepultures"], repond=R18, origine=f"relevé HTTP du {R18} (#131)",
+   notes="Sépultures de soldats allemands (dont incorporés de force d'Alsace-Moselle) ; graphies allemandes à essayer (variantes_noms)."),
+ S("USHMM-HSV","USHMM — ressources sur les survivants et victimes de la Shoah","https://www.ushmm.org/remember/resources-holocaust-survivors-victims","base_thematique",["INT"],"libre","index",
+   periode={"de":1933,"a":1950}, themes=["ww2","juifs","deportes"], repond=R18, origine=f"relevé HTTP du {R18} (#131)",
+   notes="Base des survivants et victimes (HSV), listes et documents ; en anglais."),
+ S("MUSEE-RESISTANCE","Musée de la Résistance en ligne","https://www.museedelaresistanceenligne.org/","base_thematique",FR,"libre","notice",
+   periode={"de":1940,"a":1945}, themes=["ww2","resistants"], repond=R18, origine=f"relevé HTTP du {R18} (#131)",
+   notes="Notices, documents et témoignages sur la Résistance ; contexte, pas une base nominative exhaustive."),
  S("DICOTOPO","DicoTopo (CTHS)","https://dicotopo.cths.fr/","lieux",FR,"libre","outil",
    notes="Dictionnaires topographiques, lieux-dits disparus ; application JavaScript, pas de recherche GET simple observée."),
  S("REMONTER-LE-TEMPS","Remonter le temps (IGN)","https://remonterletemps.ign.fr/","lieux",FR,"libre","outil",
@@ -141,8 +158,8 @@ for a in ffg:
     ffg_entries.append(e)
 ffg_entries.sort(key=lambda e: (e["zone"][0].zfill(3), e["nom"]))
 doc = {"_description": (
-  "Sites tiers de généalogie (associations, relevés bénévoles, bases thématiques, annuaires, lieux) : "
-  "PAS des archives publiques (voir archives_fr.json). Un relevé est une source dérivée : il donne une piste "
+  "Sites tiers de généalogie (associations, relevés bénévoles, bases thématiques, annuaires, lieux, fonds "
+  "étrangers) : PAS les archives publiques françaises (voir archives_fr.json). Un relevé est une source dérivée : il donne une piste "
   "et oblige à remonter à l'acte original. verifie_le reste vide tant qu'aucun contrôle humain n'a eu lieu ; "
   "protection et site_repond_le valent pour un client automatisé à la date du relevé. Format : docs/sites-tiers.md (#181)."),
   "sites": manuels + ffg_entries}
