@@ -188,8 +188,11 @@ Quand le répertoire des médias s'appelle `documents` (ex. `<vault>/documents`)
 (`documents/`, `photographies/`, `archives/`, `_À trier/`) part de son dossier parent, le vault : une pièce classée
 va dans `<vault>/documents/État civil/DUPONT/`, une photo dans `<vault>/photographies/DUPONT/`.
 
-- Un média situé dans le répertoire de données est référencé en relatif (`medias/…`). Hors de celui-ci, il
-  l'est en chemin absolu. L'envoi vers Gramps Web accepte les deux racines et refuse tout le reste.
+- Un média situé dans le répertoire de données est référencé en relatif (`medias/…`). Hors de celui-ci, sous
+  l'arborescence des pièces, il l'est en relatif à celle-ci (`documents/État civil/…`, `photographies/…`) pour
+  ne pas dépendre de la machine (#193) ; ailleurs, en chemin absolu. Un chemin relatif présent sous deux
+  racines avec des contenus différents est refusé comme ambigu (règle : `docs/operations.md`, « Résolution
+  d'un chemin de média »). L'envoi vers Gramps Web accepte ces racines et refuse tout le reste.
 - Un rapport écrit hors du répertoire de données n'est **pas versionné** par Genealogiste (`commit: null`).
 - `media_enregistrer(chemin, nom, classer=true)` range directement selon la convention :
   `documents/<type>/<NOM>/`, ou `_À trier/` si le nom ne suffit pas.

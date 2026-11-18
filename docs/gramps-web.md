@@ -174,8 +174,10 @@ Le dépôt est local par défaut. `GENEALOGISTE_GIT_REMOTE` ajoute un push aprè
   introuvable est refusé, voir `docs/operations.md`) crée l'objet Media ; une citation le référence par `medias`
   (`media_list` de la citation Gramps, `OBJE` sous la citation en GEDCOM) : l'image prouve la citation.
 - La proposition annonce les fichiers à envoyer (`transaction_gramps.fichiers_a_envoyer`, ou
-  `fichiers_absents` pour un média existant dont le fichier a disparu). À l'envoi, un chemin relatif absent
-  des données est cherché dans le répertoire des médias / l'arborescence des pièces (médias créés avant #192). Après accord, la transaction crée l'objet, puis chaque fichier est envoyé par
+  `fichiers_absents` pour un média existant dont le fichier a disparu). À l'envoi, un chemin relatif est résolu
+  par la règle commune (données, répertoire des médias, arborescence des pièces ; refusé s'il est ambigu :
+  `docs/operations.md`) ; les nouvelles références hors des données sont relatives à l'arborescence des pièces
+  (#193). Après accord, la transaction crée l'objet, puis chaque fichier est envoyé par
   `PUT /api/media/{handle}/file` (`If-Match` = somme MD5 lue) ; le serveur attribue chemin et somme.
 - Le chemin local est gardé dans l'attribut `Genealogiste-Fichier` (`Sosa-Fichier` dans une base non migrée) : le chemin du serveur n'est jamais réécrit.
 - `modifier_media` (`arbre_proposer`) change le fichier, le titre ou le format d'un média : le chemin et la

@@ -233,7 +233,7 @@ def test_media_enregistrer_dans_media_dir(app, vault_medias, tmp_path):
     src = tmp_path / "scan.jpg"
     src.write_bytes(b"img")
     r = server.media_enregistrer(str(src), "acte.jpg")
-    assert Path(r["chemin_absolu"]) == vault_medias / "acte.jpg" and r["fichier"] == str(vault_medias / "acte.jpg")
+    assert Path(r["chemin_absolu"]) == vault_medias / "acte.jpg" and r["fichier"] == "documents/acte.jpg"
     assert "erreur" in server.media_enregistrer(str(src), "../evasion.jpg")
     c = server.media_enregistrer(str(src), "naissance DUPONT.jpg", classer=True)
     assert Path(c["chemin_absolu"]) == vault_medias / "État civil/DUPONT/naissance DUPONT.jpg"  # pas de documents/documents

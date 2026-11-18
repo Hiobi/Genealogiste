@@ -3,6 +3,7 @@ ni écraser un fichier interne (arbre, journal, Git). Liens symboliques résolus
 
 from __future__ import annotations
 
+import filecmp
 from pathlib import Path
 
 
@@ -27,19 +28,39 @@ def sous(base: Path, chemin: str | Path) -> Path:
     return cible
 
 
+class CheminAmbigu(CheminRefuse):
+    """Chemin relatif présent sous plusieurs racines avec des contenus différents : aucun n'est choisi."""
+
+    def __init__(self, chemin, candidats: list[Path]):
+        self.candidats = candidats
+        super().__init__(f"Chemin ambigu : {chemin} désigne des fichiers différents sous plusieurs racines ("
+                         + ", ".join(str(c) for c in candidats) + ") ; utiliser le chemin absolu ou "
+                         "supprimer le doublon")
+
+
 def localiser(racines, chemin: str | Path) -> Path:
-    """Fichier désigné par chemin sous l'une des racines autorisées (relatif : essayé contre chacune, dans l'ordre).
-    Renvoie le premier fichier existant ; à défaut, le chemin sous la première racine qui l'admet (absent).
+    """Fichier désigné par chemin sous l'une des racines autorisées (#192, #193).
+
+    Un chemin absolu doit se trouver sous l'une d'elles. Un chemin relatif est essayé contre chacune, dans l'ordre :
+    - existant sous une seule racine (ou sous plusieurs avec un contenu identique) : la première occurrence ;
+    - existant sous plusieurs racines avec des contenus différents : CheminAmbigu (jamais de choix silencieux) ;
+    - absent partout : le chemin sous la première racine qui l'admet (absent).
     CheminRefuse si aucune racine ne l'admet (absolu ailleurs, traversée « .. » ou lien symbolique sortants)."""
     admis: list[Path] = []
+    trouves: list[Path] = []
     for racine in dict.fromkeys(Path(r).resolve() for r in racines if r is not None):
         try:
             p = sous(racine, chemin)
         except CheminRefuse:
             continue
-        if p.is_file():
-            return p
         admis.append(p)
+        if p.is_file() and p not in trouves:
+            trouves.append(p)
+    if trouves:
+        differents = [t for t in trouves[1:] if not filecmp.cmp(trouves[0], t, shallow=False)]
+        if differents:
+            raise CheminAmbigu(chemin, [trouves[0], *differents])
+        return trouves[0]
     if admis:
         return admis[0]
     raise CheminRefuse(f"Chemin hors des répertoires autorisés (données, médias) : {chemin}")

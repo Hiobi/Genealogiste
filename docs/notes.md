@@ -206,8 +206,11 @@ porteur masqué (par identifiant ou par nom). Une règle commune avec les export
 les ressources exclues ; le filtrage des noms de fichiers reste un complément, avec prise en charge
 des noms et prénoms d’un seul caractère.
 
-Les chemins des médias sont résolus depuis le répertoire de données : une référence relative et une
-référence absolue vers le même fichier sont exclues ensemble. Les fichiers physiques ne sont ni
+Les chemins des médias sont résolus par la règle commune (`docs/operations.md`, « Résolution d'un chemin de
+média ») : données, répertoire des médias puis arborescence des pièces ; une référence relative et une
+référence absolue vers le même fichier sont exclues ensemble. Une référence relative ambiguë (fichiers
+différents sous deux racines) n'affiche aucune image (ligne « chemin ambigu ») et, pour un média privé, tous
+ses candidats restent exclus. Les fichiers physiques ne sont ni
 supprimés ni modifiés. En mode `complet`, les médias des vivants peuvent être affichés, mais les marques
 privées explicites restent appliquées. Une pièce non enregistrée dans le modèle et sans nom
 identifiant ne peut pas être classée confidentielle par ces seuls contrôles.

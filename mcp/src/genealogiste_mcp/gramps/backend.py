@@ -22,7 +22,7 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
-from ..chemins import CheminRefuse, localiser
+from ..chemins import CheminAmbigu, CheminRefuse, localiser
 from ..fichiers import ajouter_jsonl, lire_jsonl
 from ..gedcom.mapping import write_gedcom
 from ..models import Tree
@@ -58,14 +58,24 @@ from .mapping import (
 MAX_PREVIEW_OBJECTS = 40
 
 
-def _local_media(local: str, data_dir: Path, media_dir: Path | None) -> Path:
-    """Fichier d'un média : confiné au répertoire de données ou au répertoire des médias configuré ; un chemin
-    relatif absent des données est cherché dans le répertoire des médias (vault hors des données, #192)."""
-    return localiser((data_dir, media_dir), local)
+def _racines_media(data_dir: Path, media_dir) -> tuple:
+    """Racines d'un média : le répertoire de données puis media_dir (un dossier, ou la suite des racines de
+    Config.media_racines après les données : répertoire des médias, arborescence des pièces)."""
+    if media_dir is None:
+        return (data_dir,)
+    if isinstance(media_dir, (str, Path)):
+        return (data_dir, Path(media_dir))
+    return (data_dir, *media_dir)
+
+
+def _local_media(local: str, data_dir: Path, media_dir=None) -> Path:
+    """Fichier d'un média : confiné aux racines autorisées, résolu par la règle unique de chemins.localiser
+    (#192, #193 : relatif essayé dans l'ordre, refusé s'il désigne des fichiers différents sous deux racines)."""
+    return localiser(_racines_media(data_dir, media_dir), local)
 
 
 def media_pending(db: GrampsDb, data_dir: Path, handles: set[str] | None = None,
-                  media_dir: Path | None = None) -> tuple[list[dict], list[str]]:
+                  media_dir=None) -> tuple[list[dict], list[str]]:
     """Fichiers locaux à envoyer (somme MD5 différente de celle de Gramps) et fichiers locaux absents."""
     todo, missing = [], []
     for h, m in sorted(db.all("Media").items()):
@@ -75,6 +85,9 @@ def media_pending(db: GrampsDb, data_dir: Path, handles: set[str] | None = None,
         if local:
             try:
                 p = _local_media(local, data_dir, media_dir)
+            except CheminAmbigu as exc:
+                missing.append(f"{m.get('gramps_id') or h} : {local} ({exc})")
+                continue
             except CheminRefuse:
                 missing.append(f"{m.get('gramps_id') or h} : {local} (hors du répertoire de données, refusé)")
                 continue
@@ -162,12 +175,14 @@ class GrampsBackend:
 
     def __init__(self, client: GrampsClient, data_dir: Path, proposals_dir: Path, exiger_source: bool = True,
                  strict: bool = False, ttl: float = 30.0, mirror: GitMirror | None = None,
-                 clock=time.monotonic, notes_auto: str = "true", media_dir: Path | None = None,
+                 clock=time.monotonic, notes_auto: str = "true", media_dir=None,
                  media=None, forme: str = "genealogiste"):
         self.forme = forme  # forme écrite des marqueurs (GENEALOGISTE_MARQUEURS, #182)
         self.client = client
         self.media = media  # résolution des fichiers d'ajouter_media (Config.media_reference)
-        self.media_dir = Path(media_dir) if media_dir else None
+        # racines des médias après les données (dossier, ou suite de Config.media_racines : #193)
+        self.media_dir = (Path(media_dir) if isinstance(media_dir, (str, Path)) else tuple(media_dir)) \
+            if media_dir else None
         self.tokens = TokenStore(proposals_dir)
         self.data_dir = Path(data_dir)
         self.log_path = self.data_dir / "gramps-transactions.jsonl"
@@ -528,7 +543,7 @@ def bascule_preview(client: GrampsClient, store: TreeStore, tokens: TokenStore, 
                         "accord explicite."}
 
 
-def bascule_apply(client: GrampsClient, store: TreeStore, tokens: TokenStore, token: str) -> dict:
+def bascule_apply(client: GrampsClient, store: TreeStore, tokens: TokenStore, token: str, media_dir=None) -> dict:
     record = tokens.take(token)
     if record.get("type") != "bascule":
         raise ProposalError("Ce jeton n'est pas une bascule.")
@@ -545,7 +560,7 @@ def bascule_apply(client: GrampsClient, store: TreeStore, tokens: TokenStore, to
     info = {"date": _now(), "gramps_url": client.base.removesuffix("/api"), "objets": summarize(record["items"]),
             "transaction": token}
     commit = store.freeze(info)
-    todo, _ = media_pending(client.load_all(), store.dir)
+    todo, _ = media_pending(client.load_all(), store.dir, None, media_dir)
     if todo:
         info["medias"] = media_upload(client, todo)
     log = Path(store.dir) / "gramps-transactions.jsonl"

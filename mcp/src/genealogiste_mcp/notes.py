@@ -24,6 +24,7 @@ from datetime import date
 from pathlib import Path
 
 from . import marqueurs, obsidian_kit
+from .chemins import CheminAmbigu, CheminRefuse, localiser
 from .evidence import assess_person
 from .export.charts import _years, ancestors
 from .export.fiche import _fmt_date
@@ -136,10 +137,13 @@ def _manual_text(path: Path) -> str:
 class Notes:
     def __init__(self, directory: Path | None, vivants: str = "masquer", strict: bool = False,
                  sosa_racine: str = "", journal=None, today=date.today, data_dir: Path | None = None,
-                 kit: bool = True, marqueurs: str = "genealogiste"):
+                 kit: bool = True, marqueurs: str = "genealogiste", media_racines=None):
         self.forme = marqueurs  # forme écrite des balises (#182) ; les deux formes sont lues
         self.dir = Path(directory).expanduser() if directory else None
         self.data_dir = Path(data_dir) if data_dir else None
+        # racines des médias (fonction renvoyant Config.media_racines, relue à chaque appel) : même règle de
+        # résolution que l'arbre et l'envoi vers Gramps Web (#193) ; à défaut, le répertoire de données seul
+        self._media_racines = media_racines
         self.vivants = vivants
         self.strict = strict
         self.sosa_racine = sosa_racine
@@ -287,7 +291,22 @@ class Notes:
                   "recherches": "## Recherches (journal)\n\n" + ("\n".join(research) or "- (aucune)")}
         return fm, blocks, p.label()
 
+    @property
+    def media_racines(self) -> tuple:
+        if self._media_racines is not None:
+            return tuple(self._media_racines())
+        return (self.data_dir,) if self.data_dir else ()
+
     def _media_path(self, fichier: str) -> Path:
+        """Fichier d'un média : règle unique de chemins.localiser (#193) ; hors des racines, chemin tel quel
+        (relatif : sous les données). CheminAmbigu si un relatif désigne des fichiers différents sous deux racines."""
+        if self.media_racines:
+            try:
+                return localiser(self.media_racines, fichier)
+            except CheminAmbigu:
+                raise
+            except CheminRefuse:
+                pass
         path = Path(fichier).expanduser()
         if not path.is_absolute() and self.data_dir:
             path = self.data_dir / path
@@ -296,7 +315,14 @@ class Notes:
     def _private_media_paths(self, tree: Tree) -> set[Path]:
         hidden = {pid for pid in tree.personnes if self._masked(tree, pid)}
         _, medias, _ = private_resources(tree, hidden)
-        return {self._media_path(m.fichier) for mid, m in tree.medias.items() if mid in medias and m.fichier}
+        out: set[Path] = set()
+        for mid, m in tree.medias.items():
+            if mid in medias and m.fichier:
+                try:
+                    out.add(self._media_path(m.fichier))
+                except CheminAmbigu as exc:  # référence ambiguë : tous les candidats restent privés
+                    out.update(exc.candidats)
+        return out
 
     def _pieces(self, tree: Tree, pid: str, private_paths: set[Path] | None = None) -> list[str]:
         """Médias de la personne, de ses noms, faits et citations (et des unions) : image affichée et lien vers la
@@ -319,7 +345,13 @@ class Notes:
             m = tree.medias.get(mid)
             if not m or not m.fichier:
                 continue
-            f = self._media_path(m.fichier)
+            try:
+                f = self._media_path(m.fichier)
+            except CheminAmbigu as exc:
+                if not private_paths.intersection(exc.candidats):
+                    out.append(f"- {m.titre or Path(m.fichier).stem} : `{m.fichier}` (chemin ambigu : fichiers "
+                               "différents sous plusieurs racines, aucun affiché)")
+                continue
             if f in private_paths:
                 continue
             titre = m.titre or f.stem
