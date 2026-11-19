@@ -74,6 +74,11 @@ def patronyme(p) -> str:
     return _surname_key(p.nom_principal.nom)
 
 
+def _nfc(text: str) -> str:
+    """Forme composée : macOS et Nextcloud écrivent les noms de fichiers en NFD (#255)."""
+    return unicodedata.normalize('NFC', text)
+
+
 def _surname_key(value: str) -> str:
     return unicodedata.normalize('NFC', ' '.join(value.split())).upper()
 
@@ -177,10 +182,25 @@ class Notes:
         hits = sorted(folder.glob(f"{oid} - *.md")) if folder.exists() else []
         return hits[0] if hits else None
 
+    def _surname_disk(self) -> dict[str, str]:
+        """Nom composé (NFC) -> nom réel des fiches patronymiques sur le disque, qui peut être en NFD (#255)."""
+        cache = getattr(self, "_cache_patronymes", None)
+        if cache is not None:  # pendant une génération : un seul listage
+            return cache
+        folder = self._require() / FOLDERS["patronyme"]
+        index: dict[str, str] = {}
+        for p in sorted(folder.glob("*.md")) if folder.exists() else []:
+            if p.stem != _nfc(p.stem):
+                index.setdefault(_nfc(p.stem), p.stem)
+        if getattr(self, "_generation", False):
+            self._cache_patronymes = index
+        return index
+
     def name(self, tree: Tree, kind: str, oid: str) -> str:
         """Nom de fichier stable (sans .md) : le fichier existant est réutilisé même si le libellé change."""
         if kind == "patronyme":
-            return _surname_name(oid)
+            stem = _surname_name(oid)
+            return self._surname_disk().get(stem, stem)
         hit = self._existing(kind, oid)
         return hit.stem if hit else self.fresh_name(tree, kind, oid)
 
@@ -571,7 +591,8 @@ class Notes:
         root = self._require()
         existants = self._surname_files()
         keys = set(porteurs) | {key for path, key in existants.items()
-                                if path == self.path(tree, 'patronyme', key)}
+                                if _nfc(path.name) == _nfc(self.path(tree, 'patronyme', key).name)}
+        par_nom = {_nfc(path.name): key for path, key in existants.items()}
         chemins = {}
         ids = [('patronyme', key) for key in sorted(keys)]
         paths = {self.path(tree, 'patronyme', key) for key in keys} | set(existants)
@@ -584,7 +605,7 @@ class Notes:
             if portable in chemins and chemins[portable] != oid:
                 raise NotesError('Collision de fichiers patronymiques : génération refusée sans écrasement.')
             chemins[portable] = oid
-            if path.exists() and existants.get(path) != oid:
+            if path.exists() and par_nom.get(_nfc(path.name)) != oid:
                 raise NotesError(f'{path.name} : fichier préexistant non reconnu pour ce patronyme ; aucun écrasement.')
         return ids, existants
 
@@ -592,7 +613,7 @@ class Notes:
         """Nettoie les anciennes sections générées ; conserve les fichiers et tous leurs textes manuels."""
         written, alertes = [], []
         for path, key in existants.items():
-            if path == self.path(tree, 'patronyme', key):
+            if _nfc(path.name) == _nfc(self.path(tree, 'patronyme', key).name):
                 continue
             if self._write(path, *self.surname(tree, key, {})):
                 written.append(str(path.relative_to(self._require())))
@@ -630,12 +651,13 @@ class Notes:
                         pass
             if fields.get("id") != oid or fields.get("type") != "personne" or not _BLOCK.search(body):
                 continue
-            if "nom" not in fields and old.stem == f"{oid} - personne vivante":
+            stem = _nfc(old.stem)
+            if "nom" not in fields and stem == f"{oid} - personne vivante":
                 generated = True  # fiche masquée (sans nom dans ses propriétés)
             else:
                 label = fields.get("nom") or "(sans nom)"
-                prefix = _safe(f"{oid} - {label}", 120)
-                generated = re.fullmatch(re.escape(prefix) + r"(?: \([0-9 ?~apv.à/–-]*\)?)?", old.stem)
+                prefix = _safe(f"{oid} - {_nfc(label)}", 120)
+                generated = re.fullmatch(re.escape(prefix) + r"(?: \([0-9 ?~apv.à/–-]*\)?)?", stem)
             if not generated:
                 continue  # nom personnalisé : conserver le choix de l'utilisateur
             new = old.with_name(self.fresh_name(tree, kind, oid) + ".md")
@@ -688,10 +710,12 @@ class Notes:
         """Génère « tout », un objet, ou un lot d'objets (une seule passe : calculs de l'arbre, patronymes
         concernés et index faits une fois). Dans un lot, un identifiant inconnu est signalé dans « erreurs »."""
         with verrou(self._require()):
+            self._generation, self._cache_patronymes = True, None
             try:
                 return self._generate(tree, target)
             finally:
                 self._cache_fiches = None
+                self._generation, self._cache_patronymes = False, None
 
     def _generate(self, tree: Tree, target: str | list[str]) -> dict:
         root = self._require()
@@ -806,7 +830,7 @@ class Notes:
         out = []
         rel = path.relative_to(self._require())
         fresh = self.fresh_name(tree, kind, oid)
-        if path.stem != fresh:
+        if _nfc(path.stem) != _nfc(fresh):
             out.append(f"{rel} : le nom du fichier peut identifier une personne masquée ; le renommer à la main en "
                        f"« {fresh}.md » (les liens Obsidian suivent un renommage fait dans Obsidian).")
         if _manual_text(path):
