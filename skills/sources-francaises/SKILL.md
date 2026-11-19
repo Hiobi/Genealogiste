@@ -15,7 +15,8 @@ localise les registres depuis le résultat officiel. Une page par appel ; poursu
 couvrant l'année ; `annee_fin` (≥ `annee`) recherche un intervalle (ex. 1790-1802 ou une décennie).
 Ensuite `archives_naviguer` parcourt les vues, `archive_image` les lit et `piece_archiver` conserve l'original.
 Un résultat vide ne démontre pas que l'acte n'existe pas ; un blocage conserve une tâche manuelle au journal.
-Défi anti-robot (`bloque: "anti-robot"`, ex. Anubis aux AD de la Lozère) ou `consultation_manuelle` dans
+Défi anti-robot (`bloque: "anti-robot"`, ex. Anubis aux AD de la Lozère, redirection JS des AD Arkotheque
+comme le Cantal, blocage « robots IA » de WikiTree) ou `consultation_manuelle` dans
 `archives_service` : ne pas relancer ni contourner ; demander à l'utilisateur une capture ou l'image de la vue,
 l'enregistrer avec `media_enregistrer(chemin, nom, classer=true)`, la lire, puis tracer avec `source_collee`.
 En mode autonome (aucune personne présente), ce blocage devient une tâche manuelle de l'enquête (`enquete_noter`).

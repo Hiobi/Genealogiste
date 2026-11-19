@@ -351,6 +351,14 @@ genealogiste-mcp/<version> (plugin Claude Code; usage genealogique personnel; co
   n'y est jamais ajouté ; `diagnostic` signale alors le contact comme ignoré. Pour combiner les deux, inclure
   le contact dans `GENEALOGISTE_USER_AGENT`.
 
+**Filtre de WikiTree contre les robots d'IA (#253)** : depuis novembre 2026, `api.wikitree.com` renvoie une
+page 403 « Error 403 - Access Blocked » (« problems with AI-scraping bots ») à tout User-Agent contenant
+« claude », donc au User-Agent par défaut. Le plugin la reconnaît comme blocage (`bloque_antirobot`,
+protection `blocage robots IA`) : tâche manuelle, coupe-circuit, aucun réessai. **Le User-Agent n'est pas
+modifié pour passer ce filtre** : masquer l'outil reviendrait à contourner une décision délibérée du site.
+Voie légitime : écrire à WikiTree (info@wikitree.com) en citant l'`appId` pour demander son autorisation ;
+en attendant, consulter WikiTree depuis son navigateur et reprendre le relevé avec `source_collee`.
+
 ## Plafond journalier par hôte et budget d'enquête
 
 `budget.py`, `http.py`, `cache.py` (#157, étendu à tous les hôtes par #211).
