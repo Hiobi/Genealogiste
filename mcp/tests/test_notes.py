@@ -2,6 +2,7 @@
 
 import re
 import shutil
+import unicodedata
 from datetime import date
 
 import pytest
@@ -325,4 +326,44 @@ def test_fiche_sans_nom_ou_tronquee_reconnue_comme_generee(napp, prenom, nom):
     server.notes_generer("I1")
     nouvelle = next((napp.config.notes_dir / "personnes").glob("I1 - *.md"))
     assert nouvelle.name == attendu
+    assert not ancienne.exists()
+
+
+def _en_nfd(path):
+    """Renomme une fiche avec un nom en forme décomposée, comme Nextcloud ou macOS (#255)."""
+    nfd = path.with_name(unicodedata.normalize("NFD", path.name))
+    assert nfd.name != path.name
+    path.rename(nfd)
+    return nfd
+
+
+def test_fiche_patronymique_en_nfd_reconnue(napp):
+    """Nom de fichier en NFD sur le disque : la fiche est reconnue et mise à jour, sans doublon (#255)."""
+    tree = napp.tree()
+    tree.personnes["I1"].noms[0].nom = "ÉLÈVE"
+    napp.store.write(tree)
+    server.notes_generer("I1")
+    dossier = napp.config.notes_dir / "patronymes"
+    fiche = _en_nfd(dossier / "ÉLÈVE.md")
+    fiche.write_text(fiche.read_text(encoding="utf-8") + "\nNote manuelle.\n", encoding="utf-8")
+    for cible in ("I1", "tout"):
+        r = server.notes_generer(cible)
+        assert "erreur" not in r and not r.get("erreurs"), r
+        assert [p.name for p in dossier.glob("*.md") if "LÈVE" in unicodedata.normalize("NFC", p.name)] == [fiche.name]
+        texte = fiche.read_text(encoding="utf-8")
+        assert "Note manuelle." in texte and "<!-- genealogiste:debut" in texte
+        assert not any("non canonique" in a for a in r.get("alertes", []))
+
+
+def test_fiche_personne_en_nfd_renommee(napp):
+    """Une fiche personne générée en NFD reste reconnue comme générée lors d'un renommage (#255)."""
+    tree = napp.tree()
+    tree.personnes["I1"].noms[0].nom = "ÉLÈVE"
+    napp.store.write(tree)
+    server.notes_generer("I1")
+    ancienne = _en_nfd(next((napp.config.notes_dir / "personnes").glob("I1 - *.md")))
+    _modifier_deces(napp)
+    server.notes_generer("I1")
+    nouvelle = next((napp.config.notes_dir / "personnes").glob("I1 - *.md"))
+    assert nouvelle.name == napp.notes.fresh_name(napp.tree(), "personne", "I1") + ".md"
     assert not ancienne.exists()
