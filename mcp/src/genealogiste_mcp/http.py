@@ -61,6 +61,12 @@ def _metadonnees(exc: SourceError) -> dict:
 ANUBIS_MARQUEURS = ('id="anubis_challenge"', "/.within.website/x/cmd/anubis/")
 TITRES_VERIFICATION = ("<title>security verification</title>", "<title>verify you are human</title>",
                        "<title>vérification de sécurité</title>")
+# Défi « redirection JS » des visionneuses Arkotheque (AD15 et une vingtaine d'AD, #253) : page minimale qui pose
+# le cookie bot_mitigation_cookie et renvoie vers /redirect_<jeton>/… par script. Les deux marqueurs sont exigés.
+ARKOTHEQUE_MARQUEURS = ("window.location.href='/redirect_", "this website requires js enabled and cookies")
+# Page 403 de WikiTree contre les robots d'IA (#253) : le filtre porte notamment sur le User-Agent ; ne pas le
+# contourner, demander l'autorisation à WikiTree.
+WIKITREE_MARQUEURS = ("<title>error 403 - access blocked</title>", "ai-scraping bots")
 
 
 def _protection(resp: httpx.Response) -> str | None:
@@ -82,6 +88,10 @@ def _protection(resp: httpx.Response) -> str | None:
         return "Anubis"
     if resp.status_code not in (200, 403, 503):
         return None
+    if all(m in corps for m in ARKOTHEQUE_MARQUEURS):
+        return "redirection JS"
+    if resp.status_code == 403 and all(m in corps for m in WIKITREE_MARQUEURS):
+        return "blocage robots IA"
     if ("window._cf_chl_opt" in corps
             or ("/cdn-cgi/challenge-platform/" in corps
                 and any(titre in corps for titre in ("<title>just a moment", "<title>attention required",
