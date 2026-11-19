@@ -155,8 +155,13 @@ def error_envelope(ctx: SourceContext, source: str, operation: str, params: dict
     if bloque:
         from .. import archives, ark
         hote = urlsplit(url).hostname or source
+
+        def _sans_www(h: str | None) -> str:
+            return (h or "").removeprefix("www.")
+
+        # Le référentiel note parfois « www. » alors que la visionneuse sert sans (AD15, #253).
         candidats = [s for s in archives.services()
-                     if hote in {urlsplit(s.get(k) or "").hostname for k in ("site", "visionneuse")}]
+                     if _sans_www(hote) in {_sans_www(urlsplit(s.get(k) or "").hostname) for k in ("site", "visionneuse")}]
         identifiant = ark.find(url) or ark.find(params.get("source") or "")
         matches = [s for s in candidats if identifiant and s.get("ark_naan") == identifiant.naan]
         service = matches[0]["code"] if len(matches) == 1 else candidats[0]["code"] if len(candidats) == 1 else hote

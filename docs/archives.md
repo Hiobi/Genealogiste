@@ -209,6 +209,15 @@ preuve de travail calculée) :
 - **Cloudflare**, **hCaptcha**, **DataDome**, page d'attente (#150) et **reCAPTCHA** interstitiel :
   `recaptcha/api.js`, bloc `g-recaptcha` et titre de vérification (« Security verification »,
   « Verify you are human », « Vérification de sécurité ») ; un formulaire ordinaire avec reCAPTCHA passe.
+- **redirection JS** des visionneuses Arkotheque (#253 ; AD15 et les autres services classés `redirection_js`
+  au référentiel) : page minimale qui pose le cookie `bot_mitigation_cookie` et contient **à la fois**
+  `window.location.href='/redirect_…'` et le `noscript` « This website requires JS enabled and cookies ».
+  Une redirection JavaScript ordinaire n'est pas un défi. Le plugin ne suit pas la redirection ;
+- **blocage robots IA** de WikiTree (#253) : page 403 « Error 403 - Access Blocked » citant les
+  « AI-scraping bots » (voir [securite.md](securite.md#identification--user-agent-et-contact-facultatif)).
+
+Le service est identifié sans tenir compte du préfixe `www.` (le référentiel note `www.archives.cantal.fr`,
+la visionneuse sert `archives.cantal.fr`), de sorte que l'enveloppe nomme bien `AD15`.
 
 L'enveloppe d'erreur ajoute alors `bloque: "anti-robot"` et une `consigne` : ne pas relancer ni résoudre
 le défi, demander à l'utilisateur une capture ou l'image téléchargée de la vue, l'enregistrer avec
