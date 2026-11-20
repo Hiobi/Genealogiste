@@ -1906,9 +1906,11 @@ def piece_nommer(personnes: list[str], commune: str = "", depot: str = "", type_
     """Nom de fichier d'une pièce selon la convention (docs/pieces.md) :
     NOM Prénom[ + NOM Prénom] -- COMMUNE - DÉPÔT - TYPE [AAAA-AAAA] - cote - p.vue n.acte.ext
     personnes : « NOM Prénom » ou identifiants de l'arbre (I12). type_piece : N, B, M, D, S, NMD, BMS, TD, RM,
-    ANMT, PM, NOT (acte notarié ; libellé libre après le code : « NOT testament »), CNI, COUR (courrier), REC,
-    SIGN, PHOTO… source (S3) : complète dépôt (sigle) et cote depuis l'arbre. Pour NOT, archives indique le type
-    d'archives « notaire » et l'état de la cote (sous-série 3 E acceptée, à compléter ou hors 3 E). Ne renomme rien."""
+    ANMT, PM, NOT (acte notarié ; libellé libre après le code : « NOT testament »), TSA (table des successions et
+    absences), MPD (déclaration de mutation par décès), CNI, COUR (courrier), REC, SIGN, PHOTO… source (S3) :
+    complète dépôt (sigle) et cote depuis l'arbre. Pour NOT, archives indique le type d'archives « notaire » et
+    l'état de la cote (sous-série 3 E acceptée, à compléter ou hors 3 E) ; pour TSA et MPD, « enregistrement »,
+    la cote 3 Q et la communicabilité propre au code. Ne renomme rien."""
     try:
         noms = [_person_label(p) for p in personnes]
         if source:

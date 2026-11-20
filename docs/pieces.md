@@ -48,7 +48,9 @@ personnes (`I12`) et une source (`S3`), dont il reprend le sigle du dépôt et l
 | `SGM` | pièce de la Seconde Guerre mondiale (fiche Arolsen, dossier GR 16 P, Stalag, STO, épuration) | `documents/Seconde Guerre mondiale/<NOM>/` |
 | `ANMT` | fiche de mineur (Archives nationales du monde du travail) | `documents/Mines (ANMT)/<NOM>/` |
 | `PM` | dossier du personnel des mines (houillères) | `documents/Mines (ANMT)/<NOM>/` |
-| `NOT` | acte notarié : contrat de mariage, testament, acte de notoriété, partage, inventaire, déclaration de succession, attestation immobilière… | `documents/Notaires/<NOM>/` |
+| `NOT` | acte notarié : contrat de mariage, testament, acte de notoriété, partage, inventaire, attestation immobilière… | `documents/Notaires/<NOM>/` |
+| `TSA` | table des successions et absences (bureau de l'enregistrement, série 3 Q) | `documents/Enregistrement/<NOM>/` |
+| `MPD` | déclaration de mutation par décès, dite « déclaration de succession » (série 3 Q) | `documents/Enregistrement/<NOM>/` |
 | `CNI` | carte d'identité | `documents/Divers/<NOM>/` |
 | `COUR` | courrier ou démarche : demande d'acte (récapitulatif service-public, lettre à une mairie), réponse d'un service, lettre | `documents/Divers/<NOM>/` |
 | `REC` | recensement | `documents/Divers/<NOM>/` |
@@ -83,6 +85,14 @@ la forme exacte de la cote (numéro d'étude, article) dépend de l'inventaire. 
 conservées ailleurs ; le référentiel signale par exemple le Minutier central des notaires de Paris aux
 Archives nationales (entrée `AN`). Aucune autre exception n'est déduite.
 
+**Enregistrement : `TSA` et `MPD` (#258).** Les tables des successions et absences et les déclarations de
+mutation par décès viennent des bureaux de l'enregistrement (administration fiscale, sous-série 3 Q), pas des
+minutes notariales : une déclaration rédigée par un notaire reste `MPD`. Deux codes, parce que leur
+communicabilité diffère (tables librement communicables, déclarations soumises à cinquante ans ; voir
+[archives.md](archives.md)). Les deux sont reliés au type d'archives `enregistrement` ; le bloc `archives` suit
+le modèle de `NOT` avec la sous-série 3 Q (`serie_3q`, `a_completer`, `hors_3q`) et ajoute `communicabilite`.
+Une cote 3 Q seule ne suffit pas à déduire le type : la sous-série contient aussi d'autres registres.
+
 Dans un nom à la convention sans segment type, une cote 3 E suffit à reconnaître un acte notarié :
 `DUPONT Jean -- ERRE - AD59 - 3 E 1234.pdf` est lu `NOT` et classé dans `documents/Notaires/DUPONT/`. Un type
 explicite prime toujours (`… - M [1850] - 3 E 1234` reste `M`).
@@ -94,19 +104,21 @@ sinon les mots du nom sont essayés dans cet ordre :
    courrier, pas l'acte) ;
 2. registres, matricules, `PM` (« personnel des mines »), `ANMT`, `CNI` (« carte d'identité »), recensement,
    signature, capture, tombe ;
-3. `NOT` : notaire, notarié, notoriété, testament, contrat de mariage, partage, succession, attestation
+3. `TSA` : « TSA », « table(s) des successions », « successions et absences » ; puis `MPD` : « MPD »,
+   « mutation(s) par/après décès », « déclaration de succession/mutation » ;
+4. `NOT` : notaire, notarié, notoriété, testament, contrat de mariage, partage, succession, attestation
    immobilière, hypothèque(s). Placé **avant** `N`, `M`, `D` : « attestation immobilière après décès »
    ou « contrat de mariage » est notarié ; « acte de mariage » reste `M` ;
-4. `N`, `B`, `M`, `D`, `S` ;
-5. `COUR` : « lettre », « réponse », seulement si aucun type d'acte n'a été reconnu ;
-6. `PHOTO`.
+5. `N`, `B`, `M`, `D`, `S` ;
+6. `COUR` : « lettre », « réponse », seulement si aucun type d'acte n'a été reconnu ;
+7. `PHOTO`.
 
 Le code `PM` n'est pas déduit du sigle seul (trop ambigu dans un nom libre) : l'écrire dans le segment type.
 
 ## Arborescence produite
 
 ```
-documents/{État civil,Militaire,Mines (ANMT),Notaires,Signatures,Témoignages oraux,Divers}/<NOM>/
+documents/{État civil,Militaire,Mines (ANMT),Notaires,Enregistrement,Signatures,Témoignages oraux,Divers}/<NOM>/
 photographies/<NOM>/ · photographies/Sépultures/<NOM>/ · photographies/Lieux/
 archives/{GeneWeb,GEDCOM,INSEE,Doublons}/
 courriers/                seulement par dossier explicite (jamais déduit du type)

@@ -25,13 +25,18 @@ Référence complète : `docs/pieces.md` du plugin.
 Produire les noms avec `piece_nommer`, jamais à la main : l'outil garantit la compatibilité Windows et
 Nextcloud et reprend depuis l'arbre les noms (`I12`), le dépôt et la cote (`S3`).
 Codes de type : N, B, M, D, S, NMD, BMS, TD, RM (matricule), SGM (Seconde Guerre mondiale : Arolsen, GR 16 P, Stalag, STO, épuration), ANMT (mineur), PM (personnel des mines),
-NOT (acte notarié), CNI (carte d'identité), COUR (courrier, demande ou réponse administrative), REC
+NOT (acte notarié), TSA (table des successions et absences), MPD (déclaration de mutation par décès),
+CNI (carte d'identité), COUR (courrier, demande ou réponse administrative), REC
 (recensement), SIGN, CAPTURE (arbre en ligne), PHOTO, TOMBE, LIEU.
 Actes notariés : un seul code `NOT`, la nature en libellé libre après lui (`type_piece="NOT testament"`),
 l'étude dans le dépôt. Une attestation immobilière après décès ou un contrat de mariage est `NOT`, pas `D`
 ou `M` ; une demande d'acte est `COUR`, pas l'acte demandé. Pour `NOT`, le bloc `archives` de
 `piece_nommer` relie la pièce au type `notaire` : cote 3 E acceptée, absente (chercher la cote 3 E de l'étude
 dans l'inventaire), ou autre (conservée, classement du service à vérifier).
+Enregistrement (série 3 Q) : `TSA` pour une table des successions et absences, `MPD` pour une déclaration
+de mutation par décès (« déclaration de succession »), même rédigée par un notaire ; tous deux classés dans
+`documents/Enregistrement/`. Le bloc `archives` vérifie la cote 3 Q et donne la communicabilité (tables
+libres, déclarations 50 ans). « Succession » seul, partage ou notoriété restent `NOT`.
 Pièce qu'aucun code ne couvre : `dossier` explicite dans le renommage (`{actuel, propose, dossier}`), sous
 `documents/`, `photographies/` ou `courriers/` seulement. Ne jamais mettre de chemin dans `propose`.
 
