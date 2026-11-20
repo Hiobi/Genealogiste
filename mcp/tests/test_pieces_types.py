@@ -44,7 +44,7 @@ def test_not_sous_type_libre_dans_le_segment_type(app):
 
 @pytest.mark.parametrize("nom,type_", [
     ("DUPONT attestation immobilière après décès 2003.pdf", "NOT"),
-    ("DUPONT déclaration de succession après décès.pdf", "NOT"),
+    ("DUPONT déclaration de succession après décès.pdf", "MPD"),  # enregistrement, 3 Q (#258)
     ("DUPONT contrat de mariage 1850.pdf", "NOT"),
     ("DUPONT acte de notoriété naissance.pdf", "NOT"),
     ("DUPONT testament.pdf", "NOT"),

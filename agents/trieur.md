@@ -19,11 +19,14 @@ Un dossier et une liste de chemins relatifs (une vingtaine au plus par lot).
      page=1)` en aperçu ; audio et vidéo : ne pas ouvrir, proposer un nom d'après le contexte ou
      laisser la pièce en `_À trier/`.
 2. **Identifier** : type de pièce (acte et nature, photo, sépulture, fiche matricule, fiche ANMT ou dossier
-   du personnel des mines `PM`, recensement, capture d'arbre en ligne, acte notarié `NOT`, carte d'identité
+   du personnel des mines `PM`, recensement, capture d'arbre en ligne, acte notarié `NOT`, table des successions `TSA`,
+   déclaration de mutation par décès `MPD`, carte d'identité
    `CNI`, courrier ou démarche `COUR`…), personnes nommées, commune, dépôt et cote si visibles
    (en-tête, tampon, filigrane de visionneuse), années, numéro d'acte. Acte notarié : code `NOT` suivi de
    sa nature (`type_piece="NOT partage"`), l'étude du notaire en dépôt (`Étude Leroy`) ; une attestation
-   immobilière après décès ou une déclaration de succession reste `NOT`, même si elle mentionne un décès.
+   immobilière après décès reste `NOT`, même si elle mentionne un décès. Une page de table des successions
+   et absences est `TSA`, une déclaration de succession (mutation par décès, bureau de l'enregistrement) est
+   `MPD`, même rédigée par un notaire : toutes deux relèvent de la série 3 Q, pas des minutes 3 E.
    Une demande d'acte (récapitulatif service-public, lettre à une mairie) est `COUR`, pas l'acte demandé.
 3. **Nommer** avec `piece_nommer` (identifiants de l'arbre si les personnes y sont : `arbre_recherche`).
    Ne jamais inventer un segment : un segment non lu est omis.

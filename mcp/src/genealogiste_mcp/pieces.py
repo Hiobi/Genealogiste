@@ -159,6 +159,8 @@ TYPES = {
     "ANMT": ("fiche de mineur (ANMT)", "Mines (ANMT)"),
     "PM": ("dossier du personnel des mines", "Mines (ANMT)"),
     "NOT": ("acte notarié", "Notaires"), "CNI": ("carte d'identité", "Divers"),
+    "TSA": ("table des successions et absences", "Enregistrement"),  # #258
+    "MPD": ("déclaration de mutation par décès", "Enregistrement"),
     "COUR": ("courrier ou démarche administrative", "Divers"),
     "REC": ("recensement", "Divers"), "SIGN": ("signature", "Signatures"),
     "AUDIO": ("témoignage oral", "Témoignages oraux"), "PHOTO": ("photographie", None),
@@ -179,6 +181,9 @@ _MOTS = [  # (motif sur nom normalisé, code) — le premier qui correspond l'em
     (r"\b(signatures?)\b", "SIGN"),
     (r"\b(capture d ecran|screenshot|capture|geneanet|filae|myheritage|familysearch)\b", "CAPTURE"),
     (r"\b(tombe|tombes|sepultures? photo|cimetiere|findagrave|find a grave|grave)\b", "TOMBE"),
+    # enregistrement (série 3 Q, #258) : avant NOT, qui garde « succession » seul (partage, notoriété)
+    (r"\b(tsa|tables? (des |de )?successions?|successions? et absences?)\b", "TSA"),
+    (r"\b(mpd|mutations? (par|apres) deces|declarations? de (successions?|mutations?))\b", "MPD"),
     # avant N, M, D : « attestation immobilière après décès », « contrat de mariage » sont notariés
     (r"\b(notaires?|notaries?|notoriete|testaments?|contrats? de mariage|partages?|successions?"
      r"|attestations? immobilieres?|hypotheques?)\b", "NOT"),
@@ -196,9 +201,11 @@ _MOTS = [  # (motif sur nom normalisé, code) — le premier qui correspond l'em
 _CODES_CONVENTION = {c for c in TYPES} | {"NM", "ND", "MD"}
 
 # code de pièce -> clé du vocabulaire commun des types d'archives (types_documents, #129) ; #223
-TYPES_ARCHIVES = {"NOT": "notaire"}
-# série E, sous-série 3 E : minutes notariales dans le cadre de classement des archives départementales
+TYPES_ARCHIVES = {"NOT": "notaire", "TSA": "enregistrement", "MPD": "enregistrement"}
+# sous-séries du cadre de classement des archives départementales : 3 E (minutes notariales), 3 Q (bureaux de
+# l'enregistrement)
 _COTE_3E = re.compile(r"3\s*E(?![A-Za-z])", re.I)
+_COTE_3Q = re.compile(r"3\s*Q(?![A-Za-z])", re.I)
 
 
 def cote_3e(cote: str) -> bool:
@@ -206,27 +213,60 @@ def cote_3e(cote: str) -> bool:
     return bool(_COTE_3E.match((cote or "").strip()))
 
 
+def cote_3q(cote: str) -> bool:
+    """Vrai si la cote relève de la sous-série 3 Q (« 3 Q 1234 », « 3Q 12/45 »)."""
+    return bool(_COTE_3Q.match((cote or "").strip()))
+
+
+_ENREGISTREMENT = {
+    "serie": ("3q", cote_3q),
+    "a_completer": ("Cote à compléter : aux archives départementales, les fonds des bureaux de l'enregistrement "
+                    "sont classés en sous-série 3 Q, par bureau (« 3 Q <bureau>/<article> » selon l'inventaire "
+                    "du service) ; le bureau compétent est celui du domicile du défunt."),
+    "dans_serie": "Cote de la sous-série 3 Q (bureaux de l'enregistrement).",
+    "hors_serie": ("Cote hors de la sous-série 3 Q, conservée telle quelle : vérifier le classement du service "
+                   "(fonds non versé, bureau rattaché à un autre département ou cotation propre)."),
+}
+# règle de cote par code de pièce (#223, #258) ; la communicabilité n'est donnée que si elle est propre au code
+_REGLES_COTE = {
+    "NOT": {
+        "serie": ("3e", cote_3e),
+        "a_completer": ("Cote à compléter : aux archives départementales, les minutes notariales sont "
+                        "classées en sous-série 3 E, par étude (« 3 E <étude>/<article> » selon "
+                        "l'inventaire du service) ; le répertoire du notaire localise l'acte."),
+        "dans_serie": "Cote de la sous-série 3 E (minutes notariales).",
+        "hors_serie": ("Cote hors de la sous-série 3 E, conservée telle quelle : vérifier le classement "
+                       "du service qui conserve les minutes (dépôt hors archives départementales, "
+                       "minutes non versées ou cotation propre)."),
+    },
+    "TSA": {**_ENREGISTREMENT,
+            "communicabilite": ("Tables des successions et absences : librement communicables (régime distinct "
+                                "des déclarations ; vérifier auprès du service).")},
+    "MPD": {**_ENREGISTREMENT,
+            "communicabilite": ("Déclarations de mutation par décès : 50 ans à compter de la déclaration "
+                                "(vie privée, art. L213-2 du Code du patrimoine ; vérifier auprès du service).")},
+}
+
+
 def rattachement_archives(type_piece: str, cote: str = "") -> dict | None:
-    """Type d'archives du référentiel pour un code de pièce (seul NOT est relié, à « notaire ») et état de la
-    cote : serie_3e (acceptée), a_completer (suggestion 3 E) ou hors_3e (conservée, à vérifier). None sinon."""
+    """Type d'archives du référentiel pour un code de pièce (NOT -> « notaire », TSA et MPD -> « enregistrement »)
+    et état de la cote : serie_3e / serie_3q (acceptée), a_completer (suggestion) ou hors_3e / hors_3q
+    (conservée, à vérifier). None pour les autres codes."""
     code = (type_piece or "").split()[0].upper() if (type_piece or "").strip() else ""
     cle = TYPES_ARCHIVES.get(code)
     if cle is None:
         return None
+    regle = _REGLES_COTE[code]
+    suffixe, dans_serie = regle["serie"]
     out = {"type_document": cle, "serie": SERIES[cle]}
     if not (cote or "").strip():
-        out["cote"] = "a_completer"
-        out["consigne"] = ("Cote à compléter : aux archives départementales, les minutes notariales sont "
-                           "classées en sous-série 3 E, par étude (« 3 E <étude>/<article> » selon "
-                           "l'inventaire du service) ; le répertoire du notaire localise l'acte.")
-    elif cote_3e(cote):
-        out["cote"] = "serie_3e"
-        out["consigne"] = "Cote de la sous-série 3 E (minutes notariales)."
+        out["cote"], out["consigne"] = "a_completer", regle["a_completer"]
+    elif dans_serie(cote):
+        out["cote"], out["consigne"] = f"serie_{suffixe}", regle["dans_serie"]
     else:
-        out["cote"] = "hors_3e"
-        out["consigne"] = ("Cote hors de la sous-série 3 E, conservée telle quelle : vérifier le classement "
-                           "du service qui conserve les minutes (dépôt hors archives départementales, "
-                           "minutes non versées ou cotation propre).")
+        out["cote"], out["consigne"] = f"hors_{suffixe}", regle["hors_serie"]
+    if "communicabilite" in regle:
+        out["communicabilite"] = regle["communicabilite"]
     return out
 _PAS_PATRONYME = {*TYPES, "AD", "AM", "AN", "SHD", "ANMT", "NMD", "BMS", "TD", "IMG", "DSC", "DCIM", "SCAN",
                   "PDF", "JPG", "PNG", "COPIE", "COPY", "PXL", "WA", "VID", "PAGE", "VUE", "ACTE", "NOUVEAU",
