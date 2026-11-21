@@ -95,7 +95,11 @@ def main() -> int:
 
     rapport["gramps"] = VERSION
     rapport["xml"] = libgrampsxml.GRAMPS_XML_VERSION
-    from gramps.gen.const import DATA_DIR
+    from gramps.gen.const import DATA_DIR, USER_PICTURES
+
+    # import .gpkg : médias extraits sous le dossier d'images de l'arbre, à défaut celui de l'utilisateur
+    # (GLib réel ou factice, selon la version : HOME, HOME/Pictures, GRAMPSHOME/gramps…) ; il doit exister.
+    os.makedirs(USER_PICTURES, exist_ok=True)
     from gramps.gen.utils.file import media_path_full
 
     # schémas livrés avec la bibliothèque : le banc valide les fichiers remis contre eux (#268)
