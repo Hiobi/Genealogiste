@@ -918,7 +918,39 @@ def identifiants_importables(db: GrampsDb) -> list[str]:
     return changes
 
 
-def importer(chemin: Path, data_dir: Path, horodatage: str) -> tuple[Any, dict, Path | None]:
+def rapport_personne_reference(db: GrampsDb, home: str | None, racine: str = "", mode: str = "remplacer") -> dict | None:
+    """Personne de référence du fichier (``<people home>``, #274), rapportée sans rien modifier : ni la configuration
+    ni le ``.env`` (la racine Sosa reste au choix de l'utilisateur). Seul le ``gramps_id`` est donné, jamais un nom.
+    ``None`` si le fichier n'en porte pas. L'arbre Genealogiste ne la conserve pas (chiffrée sous « non_repris »)."""
+    if not home:
+        return None
+    p = db.get("Person", home)
+    gid = (p or {}).get("gramps_id") or None
+    if gid is None:
+        return {"id": None, "etat": "introuvable",
+                "avertissement": "La personne de référence du fichier n'existe pas dans ses personnes : ignorée."}
+    rap: dict = {"id": gid, "racine_sosa": racine or None}
+    if mode == "ajouter":
+        rap["note"] = ("Mode ajouter : les identifiants sont renumérotés à l'application ; retrouver la personne "
+                       "importée avant de choisir la racine Sosa.")
+    if not racine:
+        rap["etat"] = "racine_non_definie"
+        rap["suggestion"] = (f"Racine Sosa suggérée : {gid} (GENEALOGISTE_SOSA_RACINE n'est pas définie ; à régler "
+                             "soi-même, rien n'est modifié).")
+    elif mode == "ajouter":
+        rap["etat"] = "a_verifier"
+    elif racine == gid:
+        rap["etat"] = "identique"
+    else:
+        rap["etat"] = "differente"
+        rap["suggestion"] = (f"La personne de référence du fichier ({gid}) diffère de la racine Sosa configurée "
+                             f"({racine}) : les numéros Sosa des rapports Gramps ne suivront pas ceux des notes. "
+                             "Rien n'est modifié.")
+    return rap
+
+
+def importer(chemin: Path, data_dir: Path, horodatage: str, racine_sosa: str = "",
+             mode: str = "remplacer") -> tuple[Any, dict, Path | None]:
     """Prépare l'import d'un fichier Gramps : lecture, médias d'un paquet extraits dans la zone d'attente
     ``<données>/imports/gramps/<nom>-<horodatage>/``, identifiants, conversion par :func:`gramps_to_tree`
     (correspondance unique) et bilan de ce que l'arbre Genealogiste ne reprend pas. Renvoie (arbre, info, zone
@@ -959,6 +991,10 @@ def importer(chemin: Path, data_dir: Path, horodatage: str) -> tuple[Any, dict, 
                               "consigne": "Chemins des médias repris tels quels, fichiers non copiés (relatifs au "
                                           "dossier des médias de Gramps : « mediapath »)."}
         reattribues = identifiants_importables(db)
+        if (ref := rapport_personne_reference(db, lecture.meta.personne_reference, racine_sosa, mode)) is not None:
+            info["personne_reference"] = ref
+            if ref.get("avertissement"):
+                info["avertissements"].append(ref["avertissement"])
         if reattribues:
             info["identifiants_reattribues"] = reattribues[:50] + (
                 [f"… {len(reattribues) - 50} autre(s)"] if len(reattribues) > 50 else [])

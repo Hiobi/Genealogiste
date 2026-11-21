@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import time
@@ -323,6 +324,8 @@ def controles_gramps(a) -> list[dict]:
         out.append(_controle_role_gramps(a, gramps_actif))
     if meta is not None:
         out.append(_controle_reglages_gramps(a, meta))
+        if not injoignable:
+            out.append(_controle_personne_reference(a, meta, gramps_actif))
     return out
 
 
@@ -428,6 +431,81 @@ def _controle_reglages_gramps(a, meta: dict) -> dict:
     note = "" if file_taches else (
         "Sans file de tâches, les grosses transactions s'exécutent dans la requête (délai plus long, pas d'échec).")
     return _ctl("gramps_reglages", "ok", detail + (f" ({note})" if note else ""), valeurs=valeurs)
+
+
+_PROCEDURE_REFERENCE = (
+    "Gramps Web n'offre aucun point d'API pour la modifier (docs/gramps-web.md, « Personne de référence »). "
+    "Gramps Desktop : sélectionner la personne puis Édition > Définir la personne de référence ; ou exporter avec "
+    "arbre_exporter (format gramps, la racine Sosa devient <people home>) et importer dans un arbre vide. Le réglage "
+    "« Home person » de l'interface Gramps Web est propre à chaque navigateur et n'est pas lu ici.")
+_ID_SIMPLE = re.compile(r"^[A-Za-z0-9_.\-]{1,60}$")
+
+
+def _gramps_id_de(a, cls: str, **params) -> str | None:
+    """`gramps_id` d'un objet par lecture ciblée (`keys=gramps_id`), jamais l'arbre entier ni un nom. `None` : absent."""
+    chemin = f"/{cls}/{params.pop('handle')}" if "handle" in params else f"/{cls}/"
+    r = a.gramps().request("GET", chemin, params={**params, "keys": "gramps_id"})
+    if r.status_code == 404:
+        return None
+    if r.status_code >= 400:
+        raise RuntimeError(f"HTTP {r.status_code}")
+    d = r.json()
+    if isinstance(d, list):  # serveur ignorant `gramps_id` : liste (légère) des identifiants
+        wanted = params.get("gramps_id")
+        return wanted if any(isinstance(o, dict) and o.get("gramps_id") == wanted for o in d) else None
+    return d.get("gramps_id") if isinstance(d, dict) else None
+
+
+def _sans_zeros(gid: str) -> str:
+    """`I0003` -> `I3` : Gramps complète par des zéros le numéro des identifiants importés (`id2user_format`)."""
+    m = re.match(r"^(\D*)(\d+)$", gid)
+    return f"{m[1]}{int(m[2])}" if m else gid
+
+
+def _controle_personne_reference(a, meta: dict, gramps_actif: bool) -> dict:
+    """Racine Sosa (`GENEALOGISTE_SOSA_RACINE`) et personne de référence de Gramps (`default_person`), #274.
+
+    Seuls des `gramps_id` sont affichés (jamais un nom). Lectures ciblées ; aucune ne fait échouer le diagnostic."""
+    racine = (a.config.sosa_racine or "").strip()
+    handle = meta.get("default_person") or ""
+    ref: str | None = None
+    try:
+        if isinstance(handle, str) and handle:
+            ref = _gramps_id_de(a, "people", handle=handle)
+            if ref is None:
+                return _ctl("gramps_personne_reference", "attention",
+                            "la personne de référence de Gramps n'existe plus dans l'arbre", _PROCEDURE_REFERENCE,
+                            racine_sosa=racine or None, personne_reference=None)
+        if not racine:
+            detail = ("racine Sosa non définie (GENEALOGISTE_SOSA_RACINE) ; "
+                      + (f"personne de référence de Gramps : {ref}" if ref else "Gramps n'a pas de personne de référence"))
+            extra = {"suggestion": f"GENEALOGISTE_SOSA_RACINE={ref}"} if ref else {}
+            return _ctl("gramps_personne_reference", "ok", detail, racine_sosa=None, personne_reference=ref, **extra)
+        if ref == racine:
+            return _ctl("gramps_personne_reference", "ok",
+                        f"la racine Sosa et la personne de référence de Gramps sont la même personne ({racine})",
+                        racine_sosa=racine, personne_reference=ref)
+        existe = bool(_ID_SIMPLE.match(racine)) and _gramps_id_de(a, "people", gramps_id=racine) is not None
+    except Exception as exc:  # noqa: BLE001
+        return _ctl("gramps_personne_reference", "attention", f"personne de référence non vérifiée : {_motif(exc)}",
+                    "Relancer le diagnostic une fois Gramps Web rétabli.", racine_sosa=racine or None)
+    zeros = ref is not None and _sans_zeros(racine) == _sans_zeros(ref)  # I3 écrit I0003 par Gramps
+    explication = ("Même numéro, écrit autrement : Gramps complète les identifiants numériques à l'import "
+                   f"(I3 devient I0003, ou I00003 avec Gramps 6.1). Régler GENEALOGISTE_SOSA_RACINE={ref}, l'identifiant que porte Gramps. "
+                   if zeros else "")
+    if not existe:
+        return _ctl("gramps_personne_reference", "erreur" if gramps_actif else "attention",
+                    f"la racine Sosa {racine} est introuvable dans l'arbre Gramps",
+                    explication + "Corriger GENEALOGISTE_SOSA_RACINE : les notes ne peuvent pas être numérotées "
+                    "sans elle.", racine_sosa=racine, personne_reference=ref)
+    if ref is None:
+        return _ctl("gramps_personne_reference", "attention",
+                    f"racine Sosa {racine} ; Gramps n'a pas de personne de référence (rapports et numéros Sosa "
+                    "natifs sans point de départ)", _PROCEDURE_REFERENCE, racine_sosa=racine, personne_reference=None)
+    remede = explication + _PROCEDURE_REFERENCE
+    return _ctl("gramps_personne_reference", "attention",
+                f"racine Sosa {racine} différente de la personne de référence de Gramps {ref} : les numéros Sosa "
+                "des notes et ceux des rapports Gramps divergent", remede, racine_sosa=racine, personne_reference=ref)
 
 
 def executer(app_ou_exc, probleme: dict | None, reseau: bool = True) -> dict:

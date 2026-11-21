@@ -468,6 +468,21 @@ class Metadonnees:
                 raise ValueError(f"Signet invalide : {cible} {h}")
 
 
+def personne_reference(db: GrampsDb, racine: str, masquees=frozenset()) -> tuple[str | None, str]:
+    """Personne de référence d'un export (#274) : (handle, motif). Le handle est celui de la personne dont le
+    ``gramps_id`` est la racine Sosa (``GENEALOGISTE_SOSA_RACINE``) ; ``None`` avec le motif quand rien n'est écrit :
+    racine non configurée, masquée par la projection de publication (aucune trace : ni handle ni ``home``) ou absente
+    de l'export. Rien n'est inventé : sans racine, pas de ``home``."""
+    if not racine:
+        return None, "racine Sosa non configurée (GENEALOGISTE_SOSA_RACINE)"
+    if racine in masquees:
+        return None, "racine Sosa masquée par l'export public (personne vivante ou privée)"
+    for p in db.all("Person").values():
+        if p.get("gramps_id") == racine:
+            return p["handle"], ""
+    return None, "racine Sosa absente de l'export"
+
+
 def _tri(db: GrampsDb, cls: str) -> list[dict]:
     objs = db.all(cls).values()
     if cls == "Tag":

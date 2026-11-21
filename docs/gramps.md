@@ -102,8 +102,20 @@ URL, ordonnances LDS, attributs, rectangles des références de médias, texte s
 complètes (double datation, nouvel an, jour sans mois, date composée à un seul bout, comme `write_date` de Gramps).
 Restent hors du fichier, comme chez Gramps : `Date.text` (sauf date texte) et `Date.sortval`, recalculés, et
 `birth_ref_index`/`death_ref_index`, que Gramps déduit de l'ordre des références d'événement (la référence
-retenue passe en tête quand Gramps ne la retrouverait pas sinon). Les sections hors objets (`<people home>`,
-signets, `namemaps`) ont leur point d'extension (`Metadonnees`), vide tant que Genealogiste ne les gère pas.
+retenue passe en tête quand Gramps ne la retrouverait pas sinon). Les sections hors objets (signets,
+`namemaps`) ont leur point d'extension (`Metadonnees`), vide tant que Genealogiste ne les gère pas.
+
+### Personne de référence (`<people home>`, #274)
+
+`home` est un **attribut** de `<people>` (`<people home="_handle">`), pas un élément. `arbre_exporter` (formats `gramps`
+et `gpkg`) l'écrit avec la racine Sosa (`GENEALOGISTE_SOSA_RACINE`) quand elle est configurée et présente dans l'export.
+Sans racine : `<people>` nu, rien n'est inventé. Racine masquée par l'export public (vivant, privé) : aucun `home`.
+Le résultat de l'export dit ce qui a été écrit (`personne_reference.ecrite`, ou `null` avec le motif). À l'import dans
+Gramps, `home` devient la personne de référence de la base, **toujours** quand le fichier en porte un, même si l'arbre
+cible en avait déjà une (`importxml.py`, `start_people` puis `parse` : `set_default_person_handle` sans condition ;
+même règle en 5.2, 6.0 et 6.1). Le banc `make test-gramps-desktop` (cas `reference`) relit la personne de référence
+après import par chaque version. Procédure complète, dont la voie manuelle faute d'API Gramps Web :
+`docs/gramps-web.md`, « Personne de référence et racine Sosa ».
 
 ### Paquet .gpkg
 
@@ -190,7 +202,9 @@ compteur, pas un diff : une valeur gardée sous une autre forme (hiérarchie de 
 texte stylé, ordonnances LDS, attributs utilisateur (âge, profession…), suffixe, titre et nom d'usage,
 patronymes multiples, rectangles des références de médias, notes privées, plusieurs dépôts d'une source, et
 les métadonnées (chercheur, dossier des médias, personne de référence, formats de noms, signets,
-regroupements). Leur reprise relève du lot 2 du jalon M6 (#279) ; les noms et rattachements datés des lieux
+regroupements). La personne de référence du fichier est rapportée à part (`import.personne_reference` : son
+`gramps_id`, son état par rapport à `GENEALOGISTE_SOSA_RACINE` et, si la racine n'est pas définie ou diffère,
+une suggestion ; jamais de nom, jamais de modification de la configuration, #274). Leur reprise relève du lot 2 du jalon M6 (#279) ; les noms et rattachements datés des lieux
 restent côté Gramps (#277 : posés dans Gramps Web par `gramps_dater_lieux`, pas dans le modèle) ; les étiquettes des autres
 objets sont reprises depuis #262, et un type personnalisé qui est le libellé d'un type standard (« Baptême »,
 attribut « Âge ») est repris comme ce type depuis #273 (un attribut est compté sous son type standard). Dates d'événement (#272) : toutes les formes de Gramps sont reprises à

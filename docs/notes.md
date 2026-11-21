@@ -17,7 +17,7 @@ référence** : rien n'est écrit dans l'arbre depuis les notes (`arbre_proposer
 | `GENEALOGISTE_NOTES_KIT` | `true` (défaut) : `notes_generer("tout")` dépose le kit Obsidian (voir « Kit Obsidian ») ; `false` : aucun fichier de kit |
 | `GENEALOGISTE_NOTES_AUTO` | `true` (défaut) : après `arbre_appliquer`, fiches des personnes, familles et sources modifiées régénérées ; après `journal_ajouter` avec `personne`, fiche de cette personne |
 | `GENEALOGISTE_NOTES_ATTENTE` | `20` (s) : après `arbre_appliquer`, la régénération tourne en arrière-plan ; l'outil attend au plus ce délai puis répond `notes.etat = en_cours`, consultable par `arbre_statut_transaction(jeton)` |
-| `GENEALOGISTE_SOSA_RACINE` | id de la personne n° 1 : propriété `sosa` des ascendants |
+| `GENEALOGISTE_SOSA_RACINE` | id de la personne n° 1 : propriété `sosa` des ascendants ; écrite comme personne de référence (`<people home>`) des exports Gramps XML et comparée à celle de Gramps par `diagnostic` (docs/gramps-web.md, « Personne de référence et racine Sosa ») |
 | `GENEALOGISTE_MARQUEURS` | forme écrite des balises des sections générées : `genealogiste` (défaut) ou `sosa` (ancienne forme, pour partager le vault avec une ancienne version) ; les deux formes sont toujours lues |
 
 ## Arborescence

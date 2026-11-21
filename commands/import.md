@@ -12,6 +12,8 @@ Import : **$ARGUMENTS**
   comme le type standard qu'il désigne) et, pour un `.gpkg`, `import.medias` : fichiers extraits dans une zone
   d'attente du répertoire de données, jamais rangés sans accord. Après application, proposer de les classer
   avec `pieces_proposer(dossier=<zone_attente>, suivre_medias=true)` (docs/gramps.md#import-depuis-gramps-desktop).
+  Si le fichier porte une personne de référence, présenter `import.personne_reference` (identifiant, état par rapport
+  à `GENEALOGISTE_SOSA_RACINE`, suggestion) : ne jamais modifier la configuration ni le `.env` soi-même.
 - **FamilySearch** : l’ancien exporteur est désactivé pour sécurité. Importer un GEDCOM obtenu
   séparément ; ne jamais demander d’identifiants FamilySearch.
 - **Gramps Web** (mode fichier) : `gramps_tirer(mode)` lit l'arbre Gramps Web par l'API. Pour travailler en

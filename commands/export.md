@@ -23,6 +23,8 @@ l'arbre comme références d'événement avec leur rôle, parrains en associatio
 import dans un arbre non vide duplique tout (pour travailler en direct sur Gramps Web : docs/gramps-web.md). Pour une instance Gramps Web privée, l'utilisateur peut demander
 `masquer_vivants=False`. Garder `version_xml="1.7.1"` (lu par Gramps 5.2, 6.0, 6.1) sauf demande pour
 Gramps 6.x seul (`1.7.2`, refusé par 5.2) ; `compresse=True` donne le `.gramps` gzip natif de Gramps Desktop.
+La racine Sosa configurée devient la personne de référence du fichier (`personne_reference` du résultat dit si
+`home` a été écrit ; jamais pour une racine masquée) : le dire à l'utilisateur.
 
 **gpkg** : paquet Gramps Desktop (XML + fichiers des médias locaux, chemins relatifs). Afficher le bilan
 `medias` : médias inclus, **manquants** (introuvables ou hors des répertoires autorisés, avec le motif) et

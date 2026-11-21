@@ -201,11 +201,13 @@ def test_diagnostic_sur_le_vrai_gramps_web(tmp_path):
     assert v["api"] and v["gramps"].startswith("6.")
     assert (ctl["gramps_role"]["etat"], ctl["gramps_role"]["role"]) == ("ok", 3)
     g = ctl["gramps_reglages"]
-    assert g["etat"] == "ok" and "file de tâches : non" in g["detail"] and "multi-arbres : non" in g["detail"]
+    assert "file de tâches : non" in g["detail"] and "multi-arbres : non" in g["detail"]
     if version_api(v["api"]) >= FONCTIONS_API["inscription_libre"]:
-        assert "inscription libre : fermée" in g["detail"] or "inscription libre : ouverte" in g["detail"]
+        # le serveur déclare l'inscription ouverte dès qu'un compte Owner existe (`is_registration_disabled`, amont) :
+        # le compte `sosa-owner` du banc (#274, rôle requis par l'import) la rend ouverte, et le diagnostic le dit
+        assert g["etat"] == "attention" and "inscription libre : ouverte" in g["detail"] and g["remede"]
     else:
-        assert "non vérifiable sur cette version" in g["detail"]
+        assert g["etat"] == "ok" and "non vérifiable sur cette version" in g["detail"]
     texte = json.dumps(list(ctl.values()), ensure_ascii=False)
     assert "sosa-test" not in texte and "Bearer" not in texte
 
@@ -591,3 +593,78 @@ def test_notes_texte_enrichi_sur_vrai_gramps_web(client, loaded, tmp_path):
     assert not any(cible_interne(tg.get("value")) for h, n in db.all("Note").items() if h != nh
                    for tg in n["text"]["tags"])
     assert db.get("Note", nh) == avant
+
+
+# ---------------------------------------------------------------------------- #274 : personne de référence
+
+def _xml_deux_personnes(a: str, b: str, home: str) -> bytes:
+    """Gramps XML minimal et fictif : deux personnes d'identifiants neufs, `home` désignant l'une d'elles."""
+    def personne(h, gid, prenom):
+        return (f'<person handle="_{h}" change="1" id="{gid}"><gender>M</gender>'
+                f'<name type="Birth Name"><first>{prenom}</first><surname>REFERENCE</surname></name></person>')
+    return ('<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<!DOCTYPE database PUBLIC "-//Gramps//DTD Gramps XML 1.7.1//EN"\n'
+            '"http://gramps-project.org/xml/1.7.1/grampsxml.dtd">\n'
+            '<database xmlns="http://gramps-project.org/xml/1.7.1/">'
+            '<header><created date="2026-01-01" version="5.2.0"/><researcher/></header>'
+            f'<people home="_{home}">{personne(a, "I9001", "Essai")}{personne(b, "I9002", "Autre")}</people>'
+            '</database>').encode()
+
+
+def _diag_reference(tmp_path, racine):
+    from genealogiste_mcp import diagnostic
+    a = _app_gramps(tmp_path, "sosa-test", "sosa-test")
+    a.config.sosa_racine = racine
+    time.sleep(1.1)  # /token/ : 1 requête par seconde
+    return next(c for c in diagnostic.controles_gramps(a) if c["controle"] == "gramps_personne_reference")
+
+
+def test_personne_de_reference_vide_sur_arbre_neuf(client, tmp_path):
+    """Sur un arbre sans personne de référence, `default_person` est vide et le diagnostic le dit."""
+    meta = client.request("GET", "/metadata/").json()
+    print("default_person d'un arbre neuf :", repr(meta.get("default_person")))
+    assert not meta.get("default_person")
+    c = _diag_reference(tmp_path, "I3")
+    print("diagnostic (racine I3, aucune référence) :", c)
+    assert c["etat"] == "attention" and c["personne_reference"] is None
+    assert "Définir la personne de référence" in c["remede"]
+    c = _diag_reference(tmp_path, "")
+    assert c["etat"] == "ok" and "non définie" in c["detail"] and not c.get("remede")
+    c = _diag_reference(tmp_path, "I999999")
+    assert c["etat"] == "erreur" and "introuvable" in c["detail"]
+
+
+def test_import_xml_avec_home_definit_la_personne_de_reference(tmp_path):
+    """Voie légitime pour définir la référence sur le Gramps Web jetable : import d'un Gramps XML portant
+    `<people home>` (rôle Owner : `ImportFile`). Règle amont : `home` est appliqué à chaque import qui en porte un,
+    même si l'arbre en a déjà une (importxml.py, `parse`). Donne les états « identiques » et « différentes »."""
+    time.sleep(1.1)
+    owner = GrampsClient(URL, "sosa-owner", "sosa-owner")
+
+    def importer(a, b, home):
+        r = owner.request("POST", "/importers/gramps/file", content=_xml_deux_personnes(a, b, home),
+                          headers={"Content-Type": "application/octet-stream"})
+        print("import /importers/gramps/file :", r.status_code, r.text[:300])
+        assert r.status_code in (200, 201, 202), r.text
+
+    def reference():
+        h = owner.request("GET", "/metadata/").json().get("default_person")
+        gid = owner.request("GET", f"/people/{h}", params={"keys": "gramps_id"}).json()["gramps_id"] if h else None
+        return h, gid
+
+    importer("a274a", "a274b", "a274b")
+    h1, gid1 = reference()
+    print("référence après le 1er import :", h1, gid1)
+    assert h1 and gid1 == "I9002"  # le serveur attribue ses propres handles : seul le gramps_id est comparable
+    c = _diag_reference(tmp_path, "I9002")
+    assert c["etat"] == "ok" and c["personne_reference"] == "I9002" == c["racine_sosa"]
+    c = _diag_reference(tmp_path, "I3")
+    assert c["etat"] == "attention" and "I3" in c["detail"] and "I9002" in c["detail"]
+    c = _diag_reference(tmp_path, "")
+    assert c["etat"] == "ok" and c["suggestion"] == "GENEALOGISTE_SOSA_RACINE=I9002"
+    # second import (mêmes identifiants, personnes en double renumérotées) : `home` écrase la référence existante
+    importer("a274a", "a274b", "a274a")
+    h2, gid2 = reference()
+    print("référence après le 2e import (home vers l'autre personne) :", h2, gid2)
+    assert h2 and h2 != h1 and gid2 != "I9002"
+    assert _diag_reference(tmp_path, gid2)["etat"] == "ok"
