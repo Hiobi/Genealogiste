@@ -246,6 +246,59 @@ def test_nom_different_du_cog_et_type_commune_personnalise(index, tree):
     assert len(new[m["handle"]]["placeref_list"]) == 2
 
 
+def avec_non_dates(tree):
+    """Événements sans valeur de tri (date vide, date textuelle) et un « vers 1950 » (daté) ajoutés."""
+    t = arbre_lieux(tree)
+    evs = t.personnes["ILIEUX277"].evenements
+    lieu = {e.lieu.nom: e.lieu for e in evs}
+    evs += [Event(type="RESI", date="", lieu=copy.deepcopy(lieu["Charleville-Mézières, Ardennes, France"]),
+                  uid="nd-1"),
+            Event(type="RESI", date="", lieu=copy.deepcopy(lieu["Charleville-Mézières, Ardennes, France"]),
+                  uid="nd-2"),
+            Event(type="RESI", date="(vers la Saint-Jean)",
+                  lieu=copy.deepcopy(lieu["Boulogne-Billancourt, Hauts-de-Seine, France"]), uid="nd-3"),
+            Event(type="RESI", date="", lieu=copy.deepcopy(lieu["Meythet, Haute-Savoie, France"]), uid="nd-4"),
+            Event(type="RESI", date="ABT 1950",
+                  lieu=copy.deepcopy(lieu["Charleville-Mézières, Ardennes, France"]), uid="nd-5")]
+    return t
+
+
+def test_evenements_non_dates_annonces(index, tree):
+    """Règle amont : un événement de valeur de tri 0 (date vide, ou textuelle : Date.set_as_text) ne correspond
+    qu'aux noms et rattachements « avant ». Compté par lieu avant le jeton ; « vers 1950 » (daté) et Meythet
+    (affichage inchangé sans date : département « avant ») ne comptent pas."""
+    db = tree_to_gramps(arbre_lieux(tree))
+    r = dater_lieux(db, chronos(index, db))[1]
+    assert r["nombre_evenements_non_dates"] == 0 and not r["evenements_non_dates"] and "avertissement" not in r
+    db = tree_to_gramps(avec_non_dates(tree))
+    textuel = next(e for e in db.all("Event").values() if "Saint-Jean" in (e["date"].get("text") or ""))
+    assert textuel["date"]["modifier"] == 6 and valeur_tri(textuel["date"]) == 0
+    items, r = dater_lieux(db, chronos(index, db))
+    assert r["nombre_evenements_non_dates"] == 3
+    lignes = r["evenements_non_dates"]
+    assert len(lignes) == 2
+    assert any(x.startswith(f"{par_nom(db, 'Charleville-Mézières')['gramps_id']} Charleville-Mézières")
+               and "2 événement(s) sans date afficheront « Charleville, Ardennes, France » au lieu de "
+                   "« Charleville-Mézières, Ardennes, France »" in x for x in lignes)
+    assert any("Boulogne-Billancourt" in x and "1 événement(s)" in x and "Seine, France" in x for x in lignes)
+    assert "3 événement(s) sans date" in r["avertissement"] and "sur 2 lieu(x)" in r["avertissement"]
+    assert "ignorer_lieux_evenements_non_dates" in r["avertissement"]
+    assert len(items) == 5  # l'annonce n'exclut rien
+
+
+def test_exclusion_des_lieux_a_evenements_non_dates(index, tree):
+    db = tree_to_gramps(avec_non_dates(tree))
+    items, r = dater_lieux(db, chronos(index, db), ignorer_non_dates=True)
+    touches = {it["handle"] for it in items}
+    for nom in ("Charleville-Mézières", "Boulogne-Billancourt"):
+        assert par_nom(db, nom)["handle"] not in touches
+        assert any(nom in x for x in r["lieux_exclus"])
+    assert {par_nom(db, "Valserhône")["handle"], par_nom(db, "Meythet")["handle"]} == touches
+    assert not any(it["type"] == "add" for it in items)  # Seine n'est plus utile
+    assert r["nombre_evenements_non_dates"] == 0 and "avertissement" not in r
+    assert len(r["lieux"]) == 2 and not any("Seine" in x for x in r["lieux"])
+
+
 def test_lieu_a_plat_et_commune_nouvelle_absente(index, tree):
     t = arbre_lieux(tree)
     t.personnes["ILIEUX277"].evenements = [e for e in t.personnes["ILIEUX277"].evenements
@@ -306,6 +359,7 @@ def test_outil_proposer_appliquer_annuler(tmp_path, fake, tree):
         ged = write_gedcom(a.tree())
         p = server.gramps_dater_lieux()
         assert "jeton" in p, p
+        assert p["nombre_evenements_non_dates"] == 0 and "avertissement" not in p
         assert p["transaction_gramps"]["bilan"] == {"Place": {"add": 1, "update": 4, "delete": 0}}
         assert any("Charleville" in x for x in p["lieux"]) and p["lieux_distincts"]
         entree = a.journal.entries(source="cog")[-1]
@@ -340,6 +394,20 @@ def test_outil_cog_injoignable_rien_ecrit(tmp_path, fake, tree):
         assert "COG injoignable" in r["erreur"] and "jeton" not in r
         assert a.journal.entries(source="cog")[-1]["statut"] == "erreur"
         assert not fake.transactions
+    finally:
+        server.set_app(None)
+
+
+def test_outil_avertissement_et_exclusion(tmp_path, fake, tree):
+    seed(fake, avec_non_dates(tree))
+    a = make_app(tmp_path)
+    try:
+        cog_routes(fake, a)
+        p = server.gramps_dater_lieux()
+        assert p["nombre_evenements_non_dates"] == 3 and "avertissement" in p and len(p["evenements_non_dates"]) == 2
+        q = server.gramps_dater_lieux(ignorer_lieux_evenements_non_dates=True)
+        assert "jeton" in q and len(q["lieux_exclus"]) == 2 and "avertissement" not in q
+        assert q["transaction_gramps"]["bilan"] == {"Place": {"add": 0, "update": 2, "delete": 0}}
     finally:
         server.set_app(None)
 

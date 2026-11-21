@@ -1957,12 +1957,59 @@ def _liens_dates(obj: dict, d0: dict, t0: str, voulus: list[tuple[str, dict, str
     return changements, []
 
 
-def dater_lieux(db: GrampsDb, chronos: dict[str, dict]) -> tuple[list[dict], dict]:
+def lieu_affiche(get, p: dict | None, sortval: float) -> str:
+    """Lieu tel que Gramps l'affiche pour un événement de valeur de tri ``sortval`` (``get_location_list``, format
+    par défaut : tous les niveaux, langue vide) ; ``get(handle)`` donne un lieu. « ? » : aucun nom ne correspond."""
+    noms, vus = [], set()
+    while p is not None and p.get("handle") not in vus:
+        vus.add(p.get("handle"))
+        ok = [n for n in [p.get("name") or {}, *(p.get("alt_names") or [])]
+              if (iv := intervalle(n.get("date"))) is not None and iv[0] <= sortval <= iv[1]]
+        noms.append(ok[0].get("value", "") if ok else "?")
+        ref = next((r for r in p.get("placeref_list") or []
+                    if (iv := intervalle(r.get("date"))) is not None and iv[0] <= sortval <= iv[1]), None)
+        p = get(ref.get("ref")) if ref else None
+    return ", ".join(noms)
+
+
+def _impact_non_dates(db: GrampsDb, modifies: dict[str, dict], ajoutes: dict[str, dict]) -> dict[str, list]:
+    """Événements de valeur de tri 0 (date vide ; date textuelle, y compris une date invalide importée comme texte :
+    ``Date.set_as_text`` et ``_calc_sort_value`` de Gramps) dont le lieu affiché change avec les lieux ``modifies`` :
+    lieu modifié (celui de l'événement ou un lieu englobant) -> [(événement, affiché avant, affiché après)]."""
+    def avant(h):
+        return db.get("Place", h)
+
+    def apres(h):
+        return modifies.get(h) or ajoutes.get(h) or db.get("Place", h)
+    out: dict[str, list] = {}
+    for e in sorted(db.all("Event").values(), key=lambda x: x.get("gramps_id") or x["handle"]):
+        lieu = e.get("place")
+        if not lieu or valeur_tri(e.get("date") or {}) != 0:
+            continue
+        a, b = lieu_affiche(avant, avant(lieu), 0), lieu_affiche(apres, apres(lieu), 0)
+        if a == b:
+            continue
+        todo, vus = [lieu], set()
+        while todo:  # lieux modifiés de la hiérarchie de l'événement
+            h = todo.pop()
+            if h in vus:
+                continue
+            vus.add(h)
+            if h in modifies:
+                out.setdefault(h, []).append((e.get("gramps_id") or e["handle"], a, b))
+            for get in (avant, apres):
+                todo += [r.get("ref") for r in (get(h) or {}).get("placeref_list") or []]
+    return out
+
+
+def dater_lieux(db: GrampsDb, chronos: dict[str, dict], ignorer_non_dates: bool = False) -> tuple[list[dict], dict]:
     """Noms et rattachements datés des communes d'une base Gramps d'après leur chronologie COG (``chronos`` : code
     INSEE -> :meth:`sources.geo.IndexCog.chronologie`). Lieu identifié par :func:`est_commune` ; nom relu (titre
     « Commune, Département, Pays ») inchangé : le nom principal et le premier rattachement gardent leur valeur, seule
     leur date est posée. Jamais d'écrasement ni de doublon ; un conflit est listé et le lieu laissé tel quel pour
-    ce volet ; aucune fusion de lieux. Renvoie (éléments de transaction, rapport)."""
+    ce volet ; aucune fusion de lieux. Effet sur les événements sans date (valeur de tri 0 : nom le plus ancien,
+    ancien département) compté par lieu (``evenements_non_dates``, ``avertissement``) ; ``ignorer_non_dates`` :
+    ces lieux restent hors de la proposition (``lieux_exclus``). Renvoie (éléments de transaction, rapport)."""
     reader = _Reader(db)
     places = db.all("Place")
     communes = {h: p for h, p in sorted(places.items()) if est_commune(p)}
@@ -1970,7 +2017,8 @@ def dater_lieux(db: GrampsDb, chronos: dict[str, dict]) -> tuple[list[dict], dic
     for h, p in communes.items():
         par_code.setdefault(p["code"].strip(), []).append(h)
     ajoutes: dict[str, dict] = {}
-    rapport: dict[str, list[str]] = {"lieux": [], "conflits": [], "non_traites": [], "lieux_distincts": []}
+    lignes: dict[str, tuple[str, str]] = {}
+    rapport: dict = {"lieux": [], "conflits": [], "non_traites": [], "lieux_distincts": []}
 
     def departement(nom: str, pays: str | None, code: str) -> str:
         for h, p in sorted(places.items()):
@@ -2049,8 +2097,28 @@ def dater_lieux(db: GrampsDb, chronos: dict[str, dict]) -> tuple[list[dict], dic
                         f"{label} le {a['date']} ({a['type']}) ; lieux gardés distincts, aucune fusion")
         rapport["conflits"] += [f"{label} : {c}" for c in conflits]
         if changements and _strip_change(obj) != _strip_change(p):
-            rapport["lieux"].append(f"{label} : " + " ; ".join(changements))
+            lignes[h] = (label, f"{label} : " + " ; ".join(changements))
             items.append({"type": "update", "_class": "Place", "handle": h, "old": p, "new": obj})
+    impact = _impact_non_dates(db, {it["handle"]: it["new"] for it in items}, ajoutes)
+
+    def ligne_impact(h: str) -> str:
+        ev = impact[h]
+        return (f"{lignes[h][0]} : {len(ev)} événement(s) sans date afficheront « {ev[0][2]} » au lieu de "
+                f"« {ev[0][1]} » ({', '.join(x[0] for x in ev[:5])}{', …' if len(ev) > 5 else ''})")
+    if ignorer_non_dates:
+        rapport["lieux_exclus"] = [ligne_impact(h) for h in impact]
+        items = [it for it in items if it["handle"] not in impact]
+        impact = _impact_non_dates(db, {it["handle"]: it["new"] for it in items}, ajoutes)
+    rapport["lieux"] = [lignes[it["handle"]][1] for it in items]
+    rapport["evenements_non_dates"] = [ligne_impact(h) for h in impact]
+    n_ev = len({x[0] for v in impact.values() for x in v})
+    rapport["nombre_evenements_non_dates"] = n_ev
+    if n_ev:
+        rapport["avertissement"] = (
+            f"{n_ev} événement(s) sans date (vide ou textuelle) sur {len(impact)} lieu(x) afficheront dans Gramps le "
+            "nom le plus ancien et l'ancien rattachement au lieu du nom actuel (règle de Gramps : un événement sans "
+            "date ne correspond qu'aux noms et rattachements « avant ») ; dater ces événements, ou relancer avec "
+            "ignorer_lieux_evenements_non_dates=true pour laisser ces lieux hors de la proposition.")
     utilises = {r.get("ref") for it in items for r in it["new"].get("placeref_list") or []}
     nouveaux = [{"type": "add", "_class": "Place", "handle": h, "old": None, "new": o}
                 for h, o in sorted(ajoutes.items()) if h in utilises]

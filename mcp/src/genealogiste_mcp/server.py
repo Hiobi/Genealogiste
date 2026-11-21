@@ -2539,7 +2539,7 @@ def gramps_structurer_lieux() -> dict:
 
 
 @mcp.tool()
-def gramps_dater_lieux() -> dict:
+def gramps_dater_lieux(ignorer_lieux_evenements_non_dates: bool = False) -> dict:
     """Mode gramps : prépare les noms et rattachements datés des communes (#277) d'après le COG de l'INSEE (fichiers
     publics, cache de 180 jours, requête tracée au journal même négative ; aucun nom de personne envoyé). Pour chaque
     lieu commune (code INSEE ; type City, Town, Village, Municipality ou personnalisé « Commune ») : noms anciens
@@ -2547,14 +2547,17 @@ def gramps_dater_lieux() -> dict:
     ancien département (Seine, Seine-et-Oise, Corse… : changement de code) et commune nouvelle d'une commune
     déléguée en rattachements datés. Gramps affiche alors le nom d'époque à la date de l'événement ; noms relus
     (« Commune, Département, Pays ») et événements inchangés. Jamais d'écrasement ni de doublon ; conflits et
-    communes réunies (lieux gardés distincts, aucune fusion) listés. Jeton pour arbre_appliquer après accord
-    explicite ; journalisée, annulable par arbre_annuler_modification. Rien à dater : pas de jeton."""
+    communes réunies (lieux gardés distincts, aucune fusion) listés. Règle de Gramps : un événement SANS date
+    (vide ou textuelle) affichera le nom le plus ancien et l'ancien département ; la proposition le compte par lieu
+    (evenements_non_dates, avertissement) avant le jeton. ignorer_lieux_evenements_non_dates=true : ces lieux restent
+    hors de la proposition (lieux_exclus). Jeton pour arbre_appliquer après accord explicite ; journalisée,
+    annulable par arbre_annuler_modification. Rien à dater : pas de jeton."""
     if app().config.backend != "gramps":
         return {"erreur": "Disponible en mode gramps (GENEALOGISTE_BACKEND=gramps) : le modèle fichier n'a pas "
                           "d'objet lieu (titre, code INSEE, coordonnées) où dater noms et rattachements."}
     try:
         return _gramps_guard(lambda: app().backend.propose_place_history(
-            lambda codes: geo.chronologies(app().sctx, codes)))
+            lambda codes: geo.chronologies(app().sctx, codes), ignorer_lieux_evenements_non_dates))
     except ProposalError as exc:
         return {"erreur": str(exc)}
 

@@ -633,6 +633,18 @@ Listés à part, jamais tranchés :
   absente de la base, rattachement terminé (commune rétablie) ou cumulé avec un changement de département ;
 - `codes_inconnus_du_cog`.
 
+**Événements sans date, annoncés avant l'accord.** Un événement de valeur de tri 0 — date vide, ou date
+textuelle, y compris une date invalide importée comme texte (`Date.set_as_text`, `_calc_sort_value` de Gramps) —
+ne correspond qu'aux noms et rattachements « avant » : après datation, Gramps lui affiche le nom le plus ancien et
+l'ancien département au lieu du nom actuel. La proposition le simule pour chaque événement concerné (lieu affiché
+avant et après, la date de l'événement étant 0) et l'annonce au même niveau que le bilan : `evenements_non_dates`,
+une ligne par lieu modifié (« P010304 Charleville-Mézières, Ardennes, France : 2 événement(s) sans date
+afficheront « Charleville, Ardennes, France » au lieu de « Charleville-Mézières, Ardennes, France » (E…) »),
+`nombre_evenements_non_dates`, et un `avertissement` global dès qu'il y en a un. Un événement daté, même « vers »,
+n'est pas concerné ; une commune déléguée non plus (sans date, son département seul reste affiché).
+`gramps_dater_lieux(ignorer_lieux_evenements_non_dates=true)` laisse ces lieux hors de la proposition
+(`lieux_exclus`) ; sinon, dater ces événements avant d'appliquer.
+
 **Invariants** : seules les dates du nom principal et du premier rattachement sont posées (s'ils n'en ont pas),
 des noms et rattachements ajoutés en fin de liste, un lieu *Department* créé au besoin ; aucun événement modifié.
 Le nom relu par Genealogiste (nom principal, puis premier rattachement : « Commune, Département, Pays ») ne
@@ -663,8 +675,9 @@ commune identifiée : aucune requête.
 
 **Limites** :
 
-- Événement **sans date** : Gramps lui donne le plus ancien nom (« avant ») et l'ancien département ; règle
-  amont, sans représentation qui l'évite (nom principal sans date : le nom d'époque ne s'afficherait jamais).
+- Événement **sans date** (ou à date textuelle) : Gramps lui donne le plus ancien nom (« avant ») et l'ancien
+  département ; règle amont, sans représentation qui l'évite (nom principal sans date : le nom d'époque ne
+  s'afficherait jamais). Annoncé par lieu dans la proposition, lieux excluables (ci-dessus).
 - COG : depuis 1943 seulement ; avant, et pour les paroisses d'Ancien Régime, le dictionnaire « Des villages de
   Cassini aux communes d'aujourd'hui » (EHESS), non exploité. Un changement de département sans changement de code
   n'est pas un mouvement du COG (Versailles, Paris : Seine-et-Oise et Seine avant 1968 non posés) ; les

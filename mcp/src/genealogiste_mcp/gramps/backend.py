@@ -383,11 +383,13 @@ class GrampsBackend:
                 "transaction_gramps": self._preview(items, db), "message_de_transaction": message,
                 "consigne": CONSIGNE}
 
-    def propose_place_history(self, chronologies) -> dict:
+    def propose_place_history(self, chronologies, ignorer_non_dates: bool = False) -> dict:
         """Noms et rattachements datés des communes (#277) d'après le COG : ``chronologies(codes INSEE)`` renvoie
         l'enveloppe de :func:`sources.geo.chronologies` (requête journalisée). Une transaction (jeton, accord
         explicite, journalisée et annulable) ; événements et noms relus inchangés. Sans rien à dater : pas de jeton.
-        COG injoignable : erreur, rien n'est préparé."""
+        COG injoignable : erreur, rien n'est préparé. Effet sur les événements sans date annoncé avant le jeton
+        (``evenements_non_dates``, ``avertissement``) ; ``ignorer_non_dates`` : lieux concernés laissés hors de la
+        proposition (``lieux_exclus``)."""
         exiger_ecriture(self.client)
         db = self.snapshot(fresh=True)
         codes = sorted({p["code"].strip() for p in db.all("Place").values() if est_commune(p)})
@@ -398,9 +400,11 @@ class GrampsBackend:
         if env.get("erreur"):
             raise ProposalError(f"COG injoignable : {env['erreur']} (journal {env.get('journal')}). Rien n'est "
                                 "préparé ni écrit ; réessayer plus tard.")
-        items, rapport = dater_lieux(db, {r["code_insee"]: r for r in env.get("resultats") or []})
+        items, rapport = dater_lieux(db, {r["code_insee"]: r for r in env.get("resultats") or []},
+                                     ignorer_non_dates)
         out: dict = {"communes_examinees": len(codes), "journal": env.get("journal"),
-                     **{k: v for k, v in rapport.items() if v}}
+                     **{k: v for k, v in rapport.items() if v},
+                     "nombre_evenements_non_dates": rapport["nombre_evenements_non_dates"]}
         if env.get("inconnus"):
             out["codes_inconnus_du_cog"] = env["inconnus"]
         if rapport["conflits"]:
