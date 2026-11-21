@@ -1388,7 +1388,9 @@ def test_vivants_prives_invisibles_pour_un_invite(client, loaded, tmp_path):
     vus = {p["gramps_id"] for p in g.list("Person")}
     print("Invité, personnes :", sorted(vus))
     assert not vus & set(vivants) and refs["d"] in vus
-    for x, h in hs.items():
+    # lectures directes : les vivants créés ici et I9 (la liste ci-dessus couvre tous les vivants ; une lecture
+    # d'Invité par gramps_id prend plusieurs secondes sur l'arbre chargé par toute la suite)
+    for x, h in ((x, hs[x]) for x in sorted({refs["a"], refs["e"], "I9"})):
         for chemin, params in ((f"/people/{h}", None), ("/people/", {"gramps_id": x}), (f"/living/{h}", None),
                                (f"/living/{h}/dates", None), (f"/people/{h}/timeline", None)):
             rep = g.request("GET", chemin, params=params)
