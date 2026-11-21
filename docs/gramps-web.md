@@ -37,7 +37,8 @@ réglages : à éviter pour un compte dont les identifiants sont stockés (privi
 
 - **Lecture** : possible avec n'importe quel rôle (recherche, fiches, preuve, ascendance, `gramps_tirer`).
 - **Proposition** : en mode `gramps`, `arbre_proposer` et les autres préparations (`gramps_recalculer_notes`,
-  `gramps_structurer_lieux`, `marqueurs_migrer_proposer`, annulation, `gramps_bascule_proposer`) refusent
+  `gramps_structurer_lieux`, `gramps_normaliser_types`, `marqueurs_migrer_proposer`, annulation,
+  `gramps_bascule_proposer`) refusent
   **avant de lire l'arbre et de calculer le diff** un compte sans droit d'écriture, avec le rôle détecté et le
   correctif. `arbre_appliquer` refuse de même avant de consommer le jeton : une promotion du compte permet de
   réessayer avec la même proposition. Les droits sont ceux du jeton d'accès (le rôle n'y figure pas : seulement
@@ -112,7 +113,7 @@ Module unique, utilisé par l'export Gramps XML et par le mode direct, testé al
 | uid des noms | attribut de personne `Genealogiste-UID noms` (dans l'ordre) |
 | statut forcé (réfuté, contradictoire) + justification | attribut `Genealogiste-Statut` « refute \| justification » (événement, famille), `Genealogiste-Statut nom N`, `Genealogiste-Statut filiation I3` |
 | vivant forcé | attribut `Genealogiste-Vivant` Y/N |
-| témoin, parrain, officier… de l'arbre | référence d'événement sur sa fiche (rôle Witness, Godparent, Celebrant, Informant, ou libellé français) + attribut `Genealogiste-Association` |
+| témoin, parrain, officier… de l'arbre | référence d'événement sur sa fiche (rôle standard : Witness, Godparent, Officiator, Father…, Informant ; personnalisé seulement sans équivalent, voir [Types](#types-personnalisés-et-libellés-français-273)) + attribut `Genealogiste-Association` |
 | intervenant seulement nommé | attribut d'événement `Genealogiste-Association` « rang \| RÔLE \| précision \| nom \| » avec ses citations |
 | parrain/marraine de niveau individu | `personref` + attribut de personne `Genealogiste-Association` « … \| xref » |
 | citation | page, confiance (QUAY ; attribut `QUAY` si 2), notes `Transcript` / `Citation`, attributs Consulté, Type de source, Information, Preuve, Date de consultation, ARK |
@@ -251,6 +252,120 @@ de durée**. Seuls ces noms exacts sont reconnus : un attribut personnel commen�
   réétiquetés et l'ancienne étiquette supprimée). Aucun objet n'est créé ni supprimé ; handles, `gramps_id`, uid
   et `_UID` GEDCOM sont inchangés, le miroir Git et les exports GEDCOM restent identiques. Deuxième exécution :
   rien à migrer.
+
+### Types personnalisés et libellés français (#273)
+
+**Comment Gramps stocke un type.** Type d'événement, rôle, attribut, note, lieu, nom, origine de patronyme,
+relation familiale, filiation, dépôt, support, lien : en JSON (Gramps 6, API), `{"_class", "value", "string"}`. Un
+type **standard** a son code (`value` : 15 pour *Baptism*) et une chaîne vide ; un type **personnalisé** a la
+valeur « personnalisé » (0 ; 4 pour `FamilyRelType`, 7 pour `ChildRefType`) et le texte saisi dans `string`. En
+Gramps XML, `type="…"` porte la chaîne XML anglaise du type standard (`Baptism`) ou le texte du type
+personnalisé ; à la lecture, une chaîne XML connue redevient le type standard (`set_from_xml_str`), toute autre
+reste personnalisée. Les lectures de l'API rendent la chaîne XML ; à l'écriture, l'API accepte la chaîne XML ou le
+libellé anglais (serveur en anglais) : « Baptême » y devient un type **personnalisé**.
+
+**Ce que voit l'utilisateur.** Gramps Web et Gramps Desktop affichent les types standard **traduits** (catalogue
+`fr.po`) : le standard *Baptism* s'affiche « Baptême », exactement comme un type personnalisé « Baptême ». À
+l'écran rien ne les distingue ; dans les données, si (filtres, rapports, statistiques, export GEDCOM : `BAPM` d'un
+côté, `EVEN` + `TYPE Baptême` de l'autre). Dans Gramps Desktop en français, saisir exactement le libellé traduit
+choisit le type standard ; une variante (« baptême », « Bapteme »), un import GEDCOM ou CSV crée un type
+personnalisé. Dans Gramps Web, l'interrupteur « Personnalisé » crée toujours un type personnalisé.
+
+**Référentiel.** `mcp/src/genealogiste_mcp/referentiels/types_gramps.json`, généré par
+`scripts/generer_types_gramps.py` depuis les sources de Gramps (`gramps/gen/lib/*type.py`, `_DATAMAP` lu sans
+importer Gramps, et `po/fr.po` de la même branche, contexte `msgctxt` respecté, entrées « fuzzy » ignorées comme par
+`msgfmt`) : par classe, chaque type standard (chaîne XML), sa valeur, sa version d'apparition et ses libellés
+anglais et français **par version**. Provenance : <https://github.com/gramps-project/gramps>, branches
+`maintenance/gramps52` (`14c01e56f088a865cd1f5a78708357237b74d92d`, 5.2.5), `maintenance/gramps60`
+(`32aa29629b94c549f232cd0b61c137ae95d73acf`, 6.0.8), `maintenance/gramps61`
+(`e9c09a44791def6a6b81079dc7f8cbe8c7e69cc0`, 6.1.0-beta2) ; données sous GPL-2.0-or-later, redistribuées sous
+GPL-3.0. Un test vérifie que les tables de `gramps/types.py` concordent avec le référentiel ; `--verifier` contrôle
+que le fichier versionné correspond aux sources.
+
+| Différence entre versions | Types |
+|---|---|
+| 5.2 → 6.0 | `EventRoleType` : Father (Père), Mother (Mère), Parent, Child (Enfant), Multiple birth (Naissance multiple), Friend (Ami(e)), Neighbor (Voisin(e)), Officiator (Officiant) |
+| 5.2 → 6.0, libellés seulement | `NameOriginType` : contexte « Surname » ajouté à Unknown, Occupation, Location (Location : « Emplacement » en 5.2, « Lieu » ensuite ; Unknown : « Inconnu », « Unknown » faute de traduction en 6.0, « Inconnue » en 6.1) ; `ChildRefType` Adopted : non traduit en 5.2, « Adopté(e) » ensuite |
+| 6.0 → 6.1 | aucun type ajouté ni retiré |
+| après 6.1 (branche master) | types ADN, hors référentiel tant qu'ils ne sont pas publiés |
+
+**Lecture.** Un type personnalisé dont la chaîne est un libellé d'un type standard **de sa classe** (libellé
+français de l'une des trois versions, libellé anglais ou chaîne XML ; comparaison sans casse, accents, espaces
+superflus, et apostrophe droite ou typographique confondues) est compris par le modèle comme ce type standard :
+événement « Baptême » → `BAPM`, « Recensement » → `CENS`, « Bénédiction » → `EVEN` + `TYPE Blessing` (type sans code
+GEDCOM : chaîne XML, comme un *Blessing* standard) ; rôle « Témoin » → `WITN`, « Principal » → événement propre ;
+attribut de référence « Âge » → âge ; note « Note sur l'individu » → note de personne, « Transcription » →
+transcription de citation ; nom « Alias » → `AKA` ; filiation « Adopté(e) » → `ADOPTED`. Les libellés écrits par
+Genealogiste avant #273 pour des rôles qui ont un type standard (« Père », « Mère », « Enfant », « Ami »,
+« Voisin », « Plusieurs ») sont lus de même, sans limite de durée (`ANCIENS_LIBELLES`). **Sans ambiguïté**
+seulement : un libellé de plusieurs types standard n'est pas reconnu et reste tel quel :
+
+| Classe | Libellé | Types standard |
+|---|---|---|
+| `EventRoleType` | Officiant | Celebrant (5.2 et suivantes), Officiator (6.0 et suivantes) |
+| `SourceMediaType` | Fiche | Card (« Fiche » en français), Fiche (chaîne XML ; « Microfiche » en français) |
+
+La lecture ne modifie **jamais** l'objet Gramps : relu puis réécrit sans changement, il garde son type personnalisé
+d'origine (aucune migration silencieuse, même règle que les marqueurs historiques et les dates). Une référence
+d'événement saisie dans l'interface (rôle « Témoin », sans attribut `Genealogiste-Association`) reste identique
+tant que les intervenants de l'événement ne changent pas (avant #273, elle recevait le rôle *Witness* et l'attribut
+à la première écriture). Le compteur `non_repris` d'un import Gramps XML range un attribut sous son type standard
+(« Âge » et *Age* : `[Age]`) : un libellé reconnu n'est plus compté comme perdu.
+
+**Écriture.** Un objet nouveau, ou dont le type change, reçoit le type **standard** quand il en existe un, y
+compris quand la précision du modèle en est un libellé (événement `EVEN` « Bénédiction » → *Blessing*) ;
+personnalisé seulement sinon. Un objet existant garde sa forme tant que son type ne change pas. Rôles des
+intervenants nouveaux ou modifiés :
+
+| Rôle du modèle | Avant #273 | Depuis #273 |
+|---|---|---|
+| `WITN`, `CLERGY` | Witness, Clergy | inchangé |
+| `OFFICIATOR` | Celebrant | Officiator (6.0) |
+| `GODP` | Godparent, ou la précision (« Parrain ») | Godparent (la précision reste dans `Genealogiste-Association`) |
+| `FATH`, `MOTH`, `CHIL` | « Père », « Mère », « Enfant » | Father, Mother, Child (6.0) |
+| `FRIEND`, `NGHBR`, `MULTIPLE` | « Ami », « Voisin », « Plusieurs » | Friend, Neighbor, Multiple birth (6.0) |
+| `PARENT` | Parent | inchangé (standard en 6.0) |
+| déclarant (« Déclarant » en précision) | Informant | inchangé |
+| `HUSB`, `WIFE`, `SPOU`, `OTHER` | précision, sinon « Époux », « Épouse », « Conjoint », « Autre » | inchangé (pas de type standard) ; une précision qui est le libellé d'un rôle standard donne ce rôle |
+
+Une précision, un âge ou des citations qui changent sans que le rôle change gardent le rôle existant.
+
+**Versions.** Gramps Web repose sur Gramps ≥ 6.0 : les rôles Father… Officiator y sont standard. L'export Gramps
+XML 1.7.1 destiné à Gramps 5.2 les écrit sous leur chaîne XML ; Gramps 5.2 les **lit comme des rôles
+personnalisés** portant la même chaîne (aucune perte, mais pas de type standard ; constaté avec la bibliothèque
+5.2.4, cas `types` du banc Desktop, [Gramps Desktop](gramps.md#types-et-versions-de-gramps-273)). Pas de repli
+silencieux vers Celebrant : relus par Genealogiste, ces rôles personnalisés redonnent les rôles du modèle.
+
+**Lieux.** Les libellés français des `PlaceType` de Gramps sont reconnus : « Pays » (*Country*), « Département »
+(*Department*), « Région » (*Region*), « Paroisse » (*Parish*), « Ville » (*City*), « Bourg » (*Town*), « Village »,
+« Hameau » (*Hamlet*), « Lieu-dit » (*Locality*), « Municipalité » (*Municipality*), « Quartier »
+(*Neighborhood*), « Rue » (*Street*), « Province », « Ferme », « Immeuble », « Numéro », ainsi que « Comté
+(Départ.) » (*County*), « Province (Région) » (*State*), « District (Arrondissement) » (*District*) et « Borough
+(Arrondissement) » (*Borough*) écrits exactement ainsi. « Commune », « Canton » et « Arrondissement » ne sont
+**pas** des libellés de Gramps (Commune pourrait être *City*, que Genealogiste écrit, ou *Municipality*) : ils
+restent personnalisés, jamais tranchés. Le type de lieu ne fait pas partie du modèle (nom « Commune, Département,
+Pays ») ; il sert à `gramps_structurer_lieux` (un lieu à plat de type personnalisé « Ville » est traité comme
+*City* : rattaché, il reçoit le type standard, comme tout objet modifié) et à la normalisation. L'écriture de la hiérarchie (commune *City*, département *Department*, pays *Country*) et de la
+paroisse (attribut d'événement) ne change pas (#277).
+
+**Détection.** `arbre_coherence` sur tout l'arbre, en mode gramps, ajoute une alerte `type_personnalise_doublon`
+(niveau `info`) par classe et par libellé (classe, chaîne, type standard et son libellé, nombre d'objets de
+premier niveau et d'occurrences) et `type_personnalise_ambigu` pour un libellé de plusieurs types. Choix de
+`arbre_coherence` plutôt que `diagnostic` : le diagnostic contrôle l'exploitation (configuration, versions,
+joignabilité) sans lire l'arbre et doit fonctionner même mal configuré ; la cohérence lit déjà tout l'arbre et
+signale ses défauts de données (cycles, références cassées). Aucune requête supplémentaire : la base déjà lue
+sert.
+
+**Normalisation explicite.** `gramps_normaliser_types(classes?)` (mode gramps, classe *proposition*) prépare
+**une** transaction : chaque type personnalisé qui désigne sans ambiguïté un type standard devient ce type, en
+place. Bilan par classe et par libellé (`bilan_types` : type standard, objets, occurrences), objets touchés
+(`transaction_gramps`), libellés ambigus listés (`ambigus`), jamais tranchés. Seul le type change : handles,
+`gramps_id`, valeurs, citations et positions inchangés, aucun objet créé ni supprimé ; le modèle lu (et donc le
+miroir Git et les exports GEDCOM) ne change pas. Appliquée par `arbre_appliquer` après accord, journalisée dans
+`gramps-transactions.jsonl`, annulable par `arbre_annuler_modification`. `classes` limite aux classes Gramps
+voulues (`EventType`, `EventRoleType`, `AttributeType`, `NoteType`, `PlaceType`, `NameType`, `NameOriginType`,
+`FamilyRelType`, `ChildRefType`, `RepositoryType`, `SourceMediaType`, `UrlType`, `SrcAttributeType`). Deuxième
+exécution : rien à faire (pas de jeton).
 
 ## Notes de preuve générées (`Genealogiste:auto`)
 
