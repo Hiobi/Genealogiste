@@ -377,6 +377,108 @@ def controle_lieux(cas: Cas, version: str, attendu: dict, rapport: dict) -> list
 
 # DTD et RNG de Gramps 5.2 et 6.0 : dateval type sans from/to (ajoutés par 6.1), que leur code lit et écrit pourtant
 # (MOD_FROM / MOD_TO depuis 5.2) ; validés comme « about », seul écart admis
+# --- notes stylées et liens internes (#279) ----------------------------------------------------------------
+
+TEXTE_STYLE = "Gras italique souligné Serif 14 rouge surligné x² H₂O barré lien personne famille 🟡 é⚠️ fin"
+NOTE_STYLEE = "notestylee279"
+# styles absents du DTD et du RNG livrés (5.2 à 6.1) mais écrits et relus par Gramps (StyledTextTagType) : seul écart
+# admis à la validation, ramené à « bold » avant validation
+STYLES_HORS_SCHEMA = ((rb'<style name="(?:strikethrough|subscript)"', b'<style name="bold"'),)
+
+
+def notes_stylees(db) -> None:
+    """Notes de preuve recalculées avec liens internes (GENEALOGISTE_GRAMPS_NOTES_LIENS) et une note manuelle de
+    personne portant les onze styles de Gramps, dont deux liens internes (personne, famille) et un lien externe."""
+    from genealogiste_mcp.gramps.mapping import gramps_to_tree, tree_to_gramps
+    from genealogiste_mcp.gramps.texte import tag
+    from genealogiste_mcp.gramps.types import blank, gtype
+
+    lie = tree_to_gramps(gramps_to_tree(db)[0], base=db, liens=True, recalcul=True)
+    for n in lie.all("Note").values():
+        db.put(n)
+    jean = next(o for o in db.all("Person").values() if o["gramps_id"] == "I1")
+    fam = next(iter(sorted(db.all("Family"))))
+
+    def r(mot):
+        i = TEXTE_STYLE.index(mot)
+        return [[i, i + len(mot)]]
+    n = blank("Note", NOTE_STYLEE, "N279")
+    n["type"] = gtype("NoteType", "Person Note")
+    n["text"] = {"_class": "StyledText", "string": TEXTE_STYLE, "tags": [
+        tag("bold", r("Gras") + r("🟡 é⚠️")), tag("italic", r("italique")), tag("underline", r("souligné")),
+        tag("fontface", r("Serif"), "Serif"), tag("fontsize", r("14"), 14), tag("fontcolor", r("rouge"), "#ff0000"),
+        tag("highlight", r("surligné"), "#ffff00"), tag("superscript", r("²")), tag("subscript", r("₂")),
+        tag("strikethrough", r("barré")), tag("link", r("lien"), "https://exemple.org/page_(a)"),
+        tag("link", r("personne"), f"gramps://Person/handle/{jean['handle']}"),
+        tag("link", r("famille"), f"gramps://Family/handle/{fam}")]}
+    db.put(n)
+    jean["note_list"].append(NOTE_STYLEE)
+
+
+def produire_notes(tree, dossier: Path) -> Path:
+    from genealogiste_mcp.export.gramps_xml import db_to_xml
+    from genealogiste_mcp.gramps.mapping import tree_to_gramps_stats
+
+    db, _ = tree_to_gramps_stats(tree, None, False)
+    notes_stylees(db)
+    chemin = dossier / "genealogiste.gramps"
+    chemin.write_text(db_to_xml(db, "1.7.1"), encoding="utf-8")
+    return chemin
+
+
+def styles_xml(chemin: Path) -> dict[str, list[tuple]]:
+    """Styles de chaque note d'un fichier Gramps XML : handle -> [(nom, valeur, début, fin)] triés, et texte."""
+    racine = ET.fromstring(lire_xml(chemin))
+    out = {}
+    for note in racine.iter():
+        if note.tag.rsplit("}", 1)[-1] != "note" or "handle" not in note.attrib:
+            continue
+        texte = next((c.text or "" for c in note if c.tag.rsplit("}", 1)[-1] == "text"), "")
+        styles = sorted((s.attrib["name"], s.attrib.get("value"), int(g.attrib["start"]), int(g.attrib["end"]))
+                        for s in note if s.tag.rsplit("}", 1)[-1] == "style" for g in s)
+        out[handle_gramps(note.attrib["handle"])] = (texte, styles)
+    return out
+
+
+def controle_notes(cas: Cas, version: str, attendu: dict, rapport: dict) -> list[str]:
+    """#279 : réexport de Gramps : chaque note garde texte et styles (onze noms, valeurs, plages en points de code),
+    chaque lien interne gramps:// vise un objet présent sous le même handle."""
+    if cas.nom != "notes":
+        return []
+    if "reexport" not in rapport:
+        return ["réexport absent"]
+    from genealogiste_mcp.gramps.texte import cible_interne
+
+    relus = styles_xml(Path(rapport["reexport"]))
+    handles = {cls: set(hs) for cls, hs in inventaire_xml(Path(rapport["reexport"])).items()}
+    ecarts, liens, noms = [], 0, set()
+    for o in attendu[MODELE]:
+        if o["_class"] != "Note":
+            continue
+        h = handle_gramps(o["handle"])
+        voulu = (o["text"]["string"], sorted((tname_xml(t["name"]), None if t["value"] is None else str(t["value"]), a, b)
+                                             for t in o["text"]["tags"] for a, b in t["ranges"]))
+        if relus.get(h) != voulu:
+            ecarts.append(f"note {h} : attendu {voulu}, relu {relus.get(h)}")
+            continue
+        for nom, valeur, _, _ in voulu[1]:
+            noms.add(nom)
+            c = cible_interne(valeur)
+            if c:
+                liens += 1
+                if handle_gramps(c[2]) not in handles.get(c[0], set()):
+                    ecarts.append(f"note {h} : lien {valeur} vers un objet absent")
+    print(f"   {version} : {liens} liens internes résolus, styles relus : {', '.join(sorted(noms))}", flush=True)
+    if len(noms) != 11:
+        ecarts.append(f"styles relus {sorted(noms)} : onze attendus")
+    return ecarts[:10]
+
+
+def tname_xml(t) -> str:
+    from genealogiste_mcp.gramps.types import tname
+    return tname(t)
+
+
 FROM_TO_HORS_SCHEMA = ((rb'(<dateval [^>]*type=")(?:from|to)"', rb'\1about"'),)
 
 CAS: list[Cas] = [
@@ -394,6 +496,9 @@ CAS: list[Cas] = [
         arbres=("famille.ged",), retoucher=types_francais),
     Cas("lieux", "Gramps XML 1.7.1 : noms et rattachements datés des communes (#277) ; nom d'époque affiché à la "
         "date de l'événement", produire_lieux, enrichir=avec_lieux, arbres=("famille.ged",), retoucher=dater),
+    Cas("notes", "Gramps XML 1.7.1 : notes de preuve avec liens internes et note manuelle aux onze styles (#279)",
+        produire_notes, arbres=("famille.ged",), retoucher=notes_stylees,
+        schema_admis={v: STYLES_HORS_SCHEMA for v in ("5.2", "6.0", "6.1")}),
 ]
 
 
@@ -806,7 +911,7 @@ def controle_types(cas: Cas, version: str, attendu: dict, rapport: dict) -> list
 
 
 CONTROLES: list[Controle] = [controle_reexport, controle_medias, controle_champs, controle_lecture, controle_dates,
-                             controle_types, controle_lieux]
+                             controle_types, controle_lieux, controle_notes]
 
 
 def comparer_cycle(premier: dict, second: dict, contexte: str, ecrit_par_gramps: bool = True) -> list[str]:

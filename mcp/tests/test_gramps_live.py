@@ -490,3 +490,104 @@ def test_lieux_dates_sur_vrai_gramps_web(client, loaded, tmp_path):
     db3 = client.load_all()
     assert {h: (o["name"], o["alt_names"], o["placeref_list"]) for h, o in db3.all("Place").items()} == \
         {h: (o["name"], o["alt_names"], o["placeref_list"]) for h, o in avant.all("Place").items()}
+
+
+# ---------------------------------------------------------------------------- #279 : texte enrichi, liens internes
+
+def _html(client, h: str, link_format: str | None = None) -> str:
+    params = {"formats": "html"}
+    if link_format:
+        params["format_options"] = json.dumps({"link_format": link_format})
+    return client.request("GET", f"/notes/{h}", params=params).json()["formatted"]["html"]
+
+
+def test_notes_texte_enrichi_sur_vrai_gramps_web(client, loaded, tmp_path):
+    """Note manuelle stylée créée comme l'interface (tags sans _class, name en chaîne : GrampsjsEditor), relue,
+    porteur modifié : note identique. Note écrite en Markdown (format_texte) : HTML rendu par l'API. Liens internes
+    (GENEALOGISTE_GRAMPS_NOTES_LIENS) : recalcul proposé, appliqué, idempotent, rendu par link_format, annulé."""
+    from genealogiste_mcp.gramps.texte import cible_interne
+
+    db = client.load_all()
+    jean = next(o for o in db.all("Person").values() if o["gramps_id"] == "I1")
+    texte = "Gras italique souligné Serif 14 rouge surligné x² H₂O barré lien interne 🟡 é⚠️ fin"
+
+    def r(mot):
+        i = texte.index(mot)
+        return [[i, i + len(mot)]]
+    ui = [{"name": "bold", "ranges": r("Gras"), "value": None}, {"name": "italic", "ranges": r("italique"), "value": None},
+          {"name": "underline", "ranges": r("souligné"), "value": None},
+          {"name": "fontface", "ranges": r("Serif"), "value": "Serif"},
+          {"name": "fontsize", "ranges": r("14"), "value": 14},
+          {"name": "fontcolor", "ranges": r("rouge"), "value": "#FF0000"},
+          {"name": "highlight", "ranges": r("surligné"), "value": "#FFFF00"},
+          {"name": "superscript", "ranges": r("²"), "value": None},
+          {"name": "subscript", "ranges": r("₂"), "value": None},
+          {"name": "strikethrough", "ranges": r("barré"), "value": None},
+          {"name": "link", "ranges": r("lien"), "value": "https://exemple.org/page"},
+          {"name": "link", "ranges": r("interne"), "value": f"gramps://Person/handle/{jean['handle']}"},
+          {"name": "bold", "ranges": r("🟡 é⚠️"), "value": None}]
+    rep = client.request("POST", "/notes/", json={"_class": "Note", "type": "Person Note",
+                                                  "text": {"_class": "StyledText", "string": texte, "tags": ui}})
+    assert rep.status_code in (200, 201), rep.text
+    nh = next(h for h, n in client.load_all().all("Note").items() if n["text"]["string"] == texte)
+    obj = client.request("GET", f"/people/{jean['handle']}").json()
+    obj["note_list"].append(nh)
+    assert client.request("PUT", f"/people/{jean['handle']}", json=obj).status_code == 200
+    avant = client.load_all().get("Note", nh)
+    print("note stylée relue (#279) :", json.dumps(avant["text"], ensure_ascii=False))
+    assert avant["text"]["string"] == texte and len(avant["text"]["tags"]) == len(ui)
+    html = _html(client, nh)
+    print("HTML de la note de l'interface (#279) :", html)
+    assert "<strong>Gras</strong>" in html and "<em>italique</em>" in html and "<s>barré</s>" in html
+    b = GrampsBackend(client, tmp_path, tmp_path / ".propositions", ttl=0)
+    t = b.load(fresh=True)
+    assert texte in t.personnes["I1"].notes
+    # porteur modifié par ailleurs (étiquette) : note identique
+    r1 = b.apply(b.propose([{"op": "modifier_personne", "id": "I1", "tags": ["Riche-279"]}], "Porteur",
+                           "Essai (test).")["jeton"])
+    assert client.load_all().get("Note", nh) == avant
+    # note écrite en Markdown
+    md = ("**Acte** de *naissance* : [registre](https://archives.exemple.org/a_(b)) et [Jean](gramps://Person/handle/"
+          f"{jean['handle']}) ; 2*3 \\*littéral\\*")
+    p = b.propose([{"op": "ajouter_source", "titre": "Billet 279", "note": md, "format_texte": "markdown"}],
+                  "Markdown", "Essai (test).")
+    r2 = b.apply(p["jeton"])
+    db = client.load_all()
+    src = next(o for o in db.all("Source").values() if o["title"] == "Billet 279")
+    note_md = db.get("Note", src["note_list"][0])
+    assert note_md["text"]["string"] == "Acte de naissance : registre et Jean ; 2*3 *littéral*"
+    html = _html(client, note_md["handle"])
+    print("HTML d'une note Markdown (#279) :", html)
+    assert "<strong>Acte</strong>" in html and "<em>naissance</em>" in html and "<em>3</em>" not in html
+    assert '<a href="https://archives.exemple.org/a_(b)">registre</a>' in html
+    html_lien = _html(client, note_md["handle"], "/{obj_class}/{gramps_id}")
+    print("HTML avec link_format (#279) :", html_lien)
+    assert '<a href="/person/I1">Jean</a>' in html_lien
+    # liens internes dans les notes de preuve : recalcul seulement
+    b.notes_liens = True
+    rec = b.propose_notes()
+    print("recalcul avec liens (#279) :", rec["transaction_gramps"]["bilan"], rec["transaction_gramps"].get(
+        "liens_internes"))
+    assert set(rec["transaction_gramps"]["bilan"]) == {"Note"}
+    r3 = b.apply(rec["jeton"])
+    with pytest.raises(ProposalError):
+        b.propose_notes()  # idempotent sur le vrai serveur (forme relue identique)
+    db = client.load_all()
+    fiche = next(db.get("Note", h) for h in db.get("Person", jean["handle"])["note_list"]
+                 if db.get("Note", h)["text"]["string"].startswith("Fiche de preuve"))
+    print("fiche de preuve avec liens (#279) :", json.dumps(fiche["text"], ensure_ascii=False))
+    for n in db.all("Note").values():
+        for tg in n["text"]["tags"]:
+            c = cible_interne(tg.get("value"))
+            if c:
+                assert db.get(c[0], c[2]), tg  # jamais vers un objet absent
+    html = _html(client, fiche["handle"], "/{obj_class}/{gramps_id}")
+    print("HTML de la fiche de preuve (#279) :", html)
+    assert '<a href="/person/I1">I1</a>' in html and 'href="/event/' in html
+    # annulations : liens, Markdown, porteur
+    for r in (r3, r2, r1):
+        b.apply(b.propose_undo(r["transaction"])["jeton"])
+    db = client.load_all()
+    assert not any(cible_interne(tg.get("value")) for h, n in db.all("Note").items() if h != nh
+                   for tg in n["text"]["tags"])
+    assert db.get("Note", nh) == avant

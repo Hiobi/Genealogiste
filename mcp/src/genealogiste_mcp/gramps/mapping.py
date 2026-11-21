@@ -1293,6 +1293,8 @@ class _Writer:
                 avail.remove(hit)
                 hits[i] = hit[0]
         out = list(privees)
+        partagees = {self.handle("Note", k) for k in self.t.notes}
+        libres = [h for h, _ in avail if h not in partagees]  # notes en ligne à réécrire (jamais une note partagée)
         for i, text in enumerate(texts):
             if text.startswith("@") and text.endswith("@") and len(text) > 2:
                 key = text.strip("@")
@@ -1304,8 +1306,8 @@ class _Writer:
                     self.out.put(copy.deepcopy(self.base.get("Note", hits[i])))
                     self.stats["notes"] += 1
                 out.append(hits[i])
-            elif avail:
-                out.append(self.rewrite_note(avail.pop(0)[0], text))
+            elif libres:
+                out.append(self.rewrite_note(libres.pop(0), text))
             else:
                 out.append(self.plain_note(text, typ, f"{owner}:{i}"))
         if keep:  # notes générées non recalculées : conservées à l'identique (#16)

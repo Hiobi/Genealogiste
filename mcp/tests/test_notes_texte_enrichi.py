@@ -282,6 +282,19 @@ def test_note_en_ligne_modifiee_garde_handle_etiquettes_type_et_styles_valides(b
     assert n["text"]["string"][slice(*lien["ranges"][0])] == "interne"
 
 
+def test_note_partagee_jamais_prise_pour_une_note_en_ligne_modifiee(base_stylee):
+    jean_h = next(o for o in base_stylee.all("Person").values() if o["gramps_id"] == "I1")["handle"]
+    base_stylee.get("Person", jean_h)["note_list"].insert(0, "ng")  # note partagée (General) avant la note en ligne
+    t = gramps_to_tree(base_stylee)[0]
+    jean = t.personnes["I1"]
+    assert jean.notes == [RICHE, "@N091@"]
+    jean.notes = ["Texte entièrement nouveau", "@N091@"]
+    out = tree_to_gramps(t, base=base_stylee)
+    assert out.get("Note", "ng") == base_stylee.get("Note", "ng")
+    assert out.get("Note", "np")["text"]["string"] == "Texte entièrement nouveau"
+    assert out.get("Person", jean_h)["note_list"] == base_stylee.get("Person", jean_h)["note_list"]
+
+
 def test_note_partagee_modifiee_styles_ajustes_et_signales(base_stylee):
     t = gramps_to_tree(base_stylee)[0]
     t.notes["N091"] = "Préfixe ajouté. " + RICHE
@@ -629,6 +642,24 @@ def test_configuration_notes_liens():
             notes_liens(v)
 
 
+def test_variable_d_environnement_lue(monkeypatch, tmp_path):
+    from genealogiste_mcp.config import load_config
+    monkeypatch.setenv("GENEALOGISTE_DATA_DIR", str(tmp_path / "d"))
+    assert load_config().gramps_notes_liens is False
+    monkeypatch.setenv("GENEALOGISTE_GRAMPS_NOTES_LIENS", "true")
+    assert load_config().gramps_notes_liens is True
+
+
+def test_option_transmise_au_backend(tmp_path, fake):
+    from gramps_fake import URL
+
+    from genealogiste_mcp.config import Config
+    for v in (False, True):
+        cfg = Config(data_dir=tmp_path / f"d{v}", cache_path=tmp_path / "c.sqlite", backend="gramps", gramps_url=URL,
+                     gramps_user="sosa", gramps_password="secret", gramps_notes_liens=v)
+        assert server.App(cfg, sleeper=lambda s: None).backend.notes_liens is v
+
+
 def test_diagnostic_affiche_l_option(app):
     app.config.gramps_notes_liens = True
     conf = next(c for c in server.diagnostic(reseau=False)["controles"] if c["controle"] == "configuration")
@@ -656,4 +687,4 @@ def test_import_xml_signale_la_mise_en_forme_non_reprise(base_stylee):
     from genealogiste_mcp.gramps.lecture_xml import pertes
     relu = gramps_to_tree(base_stylee)[0]
     p = pertes(base_stylee, tree_to_gramps(relu, generated=False))
-    assert any("tags" in k for k in p), p
+    assert p.get("Note.text.tags[]", 0) >= 5 * 12, p  # onze styles (douze tags) des cinq notes manuelles
