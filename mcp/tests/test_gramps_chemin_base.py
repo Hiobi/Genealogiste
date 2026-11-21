@@ -353,7 +353,7 @@ def fake():
         yield f
 
 
-def test_diagnostic_mode_gramps_chemin_serveur_et_attribut(tmp_path, fake, tree):
+def test_diagnostic_mode_gramps_chemin_serveur_et_attribut(tmp_path, fake, tree, monkeypatch):
     """Média envoyé par le plugin (chemin du serveur = somme.ext, attribut Genealogiste-Fichier relatif) : résolu ;
     média créé dans l'interface de Gramps Web (aucun attribut) : nom attribué par le serveur, sans fichier ici."""
     vault = tmp_path / "vault"
@@ -372,6 +372,8 @@ def test_diagnostic_mode_gramps_chemin_serveur_et_attribut(tmp_path, fake, tree)
         for o in objs.values():
             fake.put(o)
     fake.put(web)
+    from genealogiste_mcp import diagnostic_vivants
+    monkeypatch.setattr(diagnostic_vivants, "controles", lambda a, inscription: [])  # #264 : lit l'arbre, à part
     a = make_app(tmp_path)
     a.config = Config(**{**a.config.__dict__, "media_dir_conf": vault / "documents", "notes_dir": vault})
     try:
