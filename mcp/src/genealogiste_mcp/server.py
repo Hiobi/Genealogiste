@@ -1355,11 +1355,24 @@ def arbre_annuler_modification(reference: str) -> dict:
 
 @mcp.tool()
 def arbre_importer_gedcom(chemin: str, mode: str = "ajouter") -> dict:
-    """Prépare l'import d'un fichier GEDCOM (5.5.1 ou 7) : mode 'ajouter' (renumérote, doublons à recouper)
-    ou 'remplacer'. Renvoie une proposition (diff + jeton) à valider."""
+    """Prépare l'import d'un fichier GEDCOM (5.5.1 ou 7) ou Gramps Desktop (Gramps XML 1.7.1/1.7.2 « .gramps »,
+    gzip ou non, ou paquet « .gpkg »), format reconnu au contenu : mode 'ajouter' (renumérote, doublons à
+    recouper) ou 'remplacer'. Renvoie une proposition (diff + jeton) à valider ; rien n'est écrit dans l'arbre.
+    Gramps : bilan 'non_repris' (ce que l'arbre ne représente pas) ; médias d'un .gpkg extraits dans une zone
+    d'attente du répertoire de données, jamais rangés sans accord (pieces_proposer ensuite)."""
     p = Path(chemin).expanduser()
     if not p.is_file():
         return {"erreur": f"Fichier introuvable : {p}"}
+    if mode not in ("ajouter", "remplacer"):
+        return {"erreur": "mode : ajouter | remplacer"}
+    from .gramps import lecture_xml
+
+    try:
+        fmt = lecture_xml.detecter(p)
+    except lecture_xml.LectureGrampsError as exc:
+        return {"erreur": f"Fichier illisible : {exc}"}
+    if fmt != "gedcom":
+        return _importer_gramps(p, mode)
     raw = p.read_bytes()
     try:
         text = raw.decode("utf-8-sig")
@@ -1369,20 +1382,51 @@ def arbre_importer_gedcom(chemin: str, mode: str = "ajouter") -> dict:
         tree, info = read_gedcom(text)
     except ValueError as exc:
         return {"erreur": f"GEDCOM illisible : {exc}"}
-    if mode not in ("ajouter", "remplacer"):
-        return {"erreur": "mode : ajouter | remplacer"}
     app().journal.add("import", "gedcom", {"fichier": str(p), "mode": mode}, "positif", nb_resultats=info["personnes"])
+    return _proposer_import(tree, info, mode, f"Import GEDCOM {p.name} ({mode})",
+                            f"Import du fichier {p.name} ({info['version_source']}, {info['personnes']} personnes).")
+
+
+def _proposer_import(tree, info: dict, mode: str, titre: str, origine: str) -> dict:
+    """Même contrat pour tout import : opération remplacer_arbre (modes ajouter / remplacer), diff, jeton."""
     try:
-        prop = app().backend.propose([{"op": "remplacer_arbre", "mode": mode, "gedcom_texte": write_gedcom(tree)}],
-                                       f"Import GEDCOM {p.name} ({mode})",
-                                       f"Import du fichier {p.name} ({info['version_source']}, {info['personnes']} "
-                                       "personnes). Données importées non vérifiées : statut à établir fait par fait.",
-                                       [])
+        prop = _gramps_guard(lambda: app().backend.propose(
+            [{"op": "remplacer_arbre", "mode": mode, "gedcom_texte": write_gedcom(tree)}], titre,
+            f"{origine} Données importées non vérifiées : statut à établir fait par fait.", []))
     except ProposalError as exc:
         return {"erreur": str(exc)}
+    if "erreur" in prop:
+        return prop
     prop["import"] = info
     if len(prop["diff"]) > 8000:
         prop["diff"] = prop["diff"][:8000] + "\n… (diff tronqué : import volumineux)"
+    return prop
+
+
+def _importer_gramps(p: Path, mode: str) -> dict:
+    """Import Gramps Desktop (#269) : Gramps XML -> objets Gramps -> gramps_to_tree (correspondance unique),
+    puis le même chemin que l'import GEDCOM. Local : aucune donnée ne sort (vivants, privés)."""
+    from datetime import datetime
+
+    from .gramps import lecture_xml
+
+    a = app()
+    try:
+        tree, info, zone = lecture_xml.importer(p, a.config.data_dir, datetime.now().strftime("%Y%m%d-%H%M%S"))
+    except (lecture_xml.LectureGrampsError, OSError) as exc:  # OSError : lecture, zone d'attente
+        a.journal.add("import", "gramps", {"fichier": str(p), "mode": mode}, "erreur")
+        return {"erreur": f"Fichier Gramps refusé : {exc}"}
+    a.journal.add("import", "gramps", {"fichier": str(p), "mode": mode, "format": info["format"]}, "positif",
+                  nb_resultats=info["personnes"])
+    prop = _proposer_import(tree, info, mode, f"Import Gramps {p.name} ({mode})",
+                            f"Import du fichier Gramps {p.name} ({info['format']}, Gramps XML {info['version_xml']}, "
+                            f"Gramps {info['version_gramps']}, {info['personnes']} personnes).")
+    if "erreur" in prop and zone is not None:
+        shutil.rmtree(zone, ignore_errors=True)  # zone neuve créée par cet appel : rien d'autre n'y est
+    if info.get("non_repris"):
+        prop.setdefault("avertissements", []).append(
+            "Contenu Gramps non représenté par l'arbre Genealogiste, non importé : voir import.non_repris "
+            "(valeurs en moins par champ Gramps ; docs/gramps.md#import-depuis-gramps-desktop).")
     return prop
 
 

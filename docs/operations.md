@@ -125,7 +125,10 @@ Les défauts déjà présents ne bloquent pas : `arbre_coherence` les signale (`
 
 **Import en ajout** (`arbre_importer_gedcom(…, "ajouter")`) : personnes, familles, sources, dépôts, médias et
 notes partagées renumérotés, y compris les références imbriquées (citations des médias, médias des citations,
-renvois `@N…@`) ; UID en collision réattribués.
+renvois `@N…@`) ; UID en collision réattribués. Même règle pour un fichier de Gramps Desktop (Gramps XML
+`.gramps` ou paquet `.gpkg`, reconnus au contenu) : ses `gramps_id` servent d'identifiants avant
+renumérotation ; ce que l'arbre ne représente pas est compté dans `import.non_repris` et les médias d'un
+paquet attendent dans `<données>/imports/gramps/` ([Gramps Desktop](gramps.md#import-depuis-gramps-desktop)).
 
 **Fusion** (`fusionner_personnes`), champ par champ :
 

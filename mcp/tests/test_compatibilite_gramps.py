@@ -174,3 +174,35 @@ def test_controle_champ_par_champ(desktop):
     importe["primary_name"]["first_name"] = "Jea"
     assert controle(cas, "6.0", {cle: modele}, {"objets": [importe]})
     assert controle(cas, "5.2", {cle: modele}, {}) == []  # Gramps 5.2 : pas de format JSON
+
+
+def test_sens_inverse_branche_sur_le_banc(desktop):
+    """#269 : le réexport de chaque bibliothèque est relu par Genealogiste puis réimporté (cycle) ; arbre fictif
+    écrit par Gramps et arbre d'exemple épinglé au commit de la bibliothèque 6.1."""
+    assert desktop["controle_lecture"] in desktop["CONTROLES"]
+    six_un = next(e for e in MATRICE["gramps_desktop"] if e["version"] == "6.1")
+    assert desktop["EXEMPLE"]["commit"] == six_un["git"]["commit"]
+    assert all(re.fullmatch(r"[0-9a-f]{64}", h) for h in desktop["EXEMPLE"]["fichiers"].values())
+    for v in c.GRAMPS_DESKTOP_TESTES:  # fixtures écrites par la vraie bibliothèque, une par version
+        assert {p.name for p in (ROOT / f"mcp/tests/fixtures/gramps-desktop/gramps-{v}").iterdir()} == \
+            set(desktop["FORMATS_GENERES"])
+
+
+def test_controle_lecture_et_ecarts_admis(desktop, tmp_path):
+    """Relecture du réexport : aller-retour XML et objets champ par champ ; seuls écarts admis, ceux de l'écriture
+    de Gramps (espaces de bord retirés par fix, somme de contrôle calculée)."""
+    from genealogiste_mcp.export.gramps_xml import db_to_xml
+    from genealogiste_mcp.gramps.mapping import GrampsDb
+
+    o = {"_class": "Tag", "handle": "t1", "change": 1, "name": "x", "color": "#000000000000", "priority": 0}
+    f = tmp_path / "reexport.gramps"
+    f.write_text(db_to_xml(GrampsDb.from_objects([o])), encoding="utf-8")
+    rapport = {"reexport": str(f), "objets": [o], "handles": {"Tag": ["t1"]}}
+    assert desktop["controle_lecture"](desktop["CAS"][0], "6.0", {}, rapport) == []
+    assert Path(rapport["cycle"]).is_file()
+    assert desktop["controle_lecture"](desktop["CAS"][0], "6.0", {}, {**rapport, "objets": [{**o, "name": "y"}]})
+    ecarts = desktop["_ecarts_stricts"]
+    assert list(ecarts({"v": "a "}, {"v": "a"}, "x")) and not list(ecarts({"v": "a "}, {"v": "a"}, "x", True))
+    assert not list(ecarts({"checksum": ""}, {"checksum": "abc"}, "x", True))
+    assert list(ecarts({"checksum": "abd"}, {"checksum": "abc"}, "x", True))
+    assert list(ecarts({"a": 1}, {"a": 1, "b": 2}, "x"))  # clé en trop : écart (comparaison dans les deux sens)

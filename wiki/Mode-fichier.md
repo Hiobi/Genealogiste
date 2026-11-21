@@ -25,6 +25,9 @@ Créer un dossier privé distinct, vérifier `arbre_info`, puis importer une **c
 /genealogiste:import /chemin/prive/copie-arbre.ged
 ```
 
+Un export de Gramps Desktop (`.gramps` ou `.gpkg`) s’importe de la même façon ; voir
+l’[import depuis Gramps Desktop](../docs/gramps.md#import-depuis-gramps-desktop).
+
 Le mode d’import par défaut ajoute les objets en adaptant les identifiants. Le mode `remplacer` remplace
 l’arbre : lire soigneusement le diff et le bilan avant accord. Ne pas répéter un import approuvé sans
 examiner le risque de doublons. Un arbre importé reste à vérifier ; il ne vaut pas un ensemble de preuves.
