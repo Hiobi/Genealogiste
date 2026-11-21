@@ -28,6 +28,40 @@ jamais dans Git, un journal ou une issue.
 | `GENEALOGISTE_GIT_MIRROR` | `true` : miroir GEDCOM 7 versionné de l'arbre Gramps (défaut `false`) |
 | `GENEALOGISTE_GIT_REMOTE` | dépôt distant optionnel du répertoire de données (**privé**) |
 
+### Rôle requis et contrôle au diagnostic
+
+Écrire exige le rôle **Editor** (3) : `POST /api/transactions/` demande `AddObject`, `EditObject` et
+`DeleteObject`. Un compte *Contributor* (2) ne peut qu'ajouter, *Member* (1) et *Guest* (0) ne font que lire.
+*Owner* (4) et *Admin* (5) écrivent aussi, mais gèrent en plus les utilisateurs, les sauvegardes et les
+réglages : à éviter pour un compte dont les identifiants sont stockés (privilège minimal).
+
+- **Lecture** : possible avec n'importe quel rôle (recherche, fiches, preuve, ascendance, `gramps_tirer`).
+- **Proposition** : en mode `gramps`, `arbre_proposer` et les autres préparations (`gramps_recalculer_notes`,
+  `gramps_structurer_lieux`, `marqueurs_migrer_proposer`, annulation, `gramps_bascule_proposer`) refusent
+  **avant de lire l'arbre et de calculer le diff** un compte sans droit d'écriture, avec le rôle détecté et le
+  correctif. `arbre_appliquer` refuse de même avant de consommer le jeton : une promotion du compte permet de
+  réessayer avec la même proposition. Les droits sont ceux du jeton d'accès (le rôle n'y figure pas : seulement
+  la liste `permissions`) ; s'ils manquent, le jeton est renouvelé (au plus toutes les 5 secondes, car
+  `/token/` et `/token/refresh/` sont limités à une requête par seconde) puis `GET /api/users/-/` donne le rôle.
+- **Écriture refusée par le serveur** : un HTTP 403 est converti en « droits insuffisants : rôle Editor requis »,
+  un HTTP 422 `message: Unknown field` (API < 3.13.0) en « mettre à jour Gramps Web (API 3.13.0 au moins) ».
+  Forme réelle d'un 403 constatée sur les trois images de la matrice, avec des comptes *Member* et
+  *Contributor* : `{"code":403,"status":"Forbidden"}` (`application/json`, format flask-smorest, sans clé
+  `error.message`).
+
+`diagnostic` (réseau activé et `GENEALOGISTE_GRAMPS_URL` renseigné) ajoute à la joignabilité (`gramps_web`) trois
+contrôles, chacun indépendant : si `/api/metadata/` ou `/api/users/-/` échoue, le contrôle correspondant passe en
+`attention` avec le motif et les autres continuent. Aucun identifiant, jeton ni nom de personne n'y figure.
+
+| Contrôle | Contenu | États |
+|---|---|---|
+| `gramps_version` | version de l'API et de Gramps (`GET /api/metadata/`), plage testée, fonctions optionnelles disponibles ou absentes d'après `FONCTIONS_API` | `ok` dans la plage ; API plus ancienne que 3.13.0 : `erreur` en mode `gramps`, `attention` sinon ; plus récente ou illisible : `attention` |
+| `gramps_role` | rôle du compte (`GET /api/users/-/`) | Editor : `ok` ; sous Editor : `erreur` en mode `gramps`, `attention` sinon ; Owner ou Admin : `attention` (« préférer Editor ») |
+| `gramps_reglages` | file de tâches (`server.task_queue`), multi-arbres (`server.multi_tree`), inscription libre | `ok` ; inscription libre ouverte : `attention`. L'inscription libre n'est lisible que depuis l'API 3.26.0 (`GET /api/register/config/`) : avant, « non vérifiable sur cette version ». `/api/config/` est réservé aux Admin : jamais appelé |
+
+Le jeton d'accès Gramps Web dure 15 minutes ; sa revendication `exp` fixe le moment du renouvellement (30 secondes
+avant l'échéance), sans délai codé en dur. Le jeton renouvelé garde l'arbre et les droits.
+
 Le mode direct suppose une instance Gramps Web **privée** : les personnes vivantes y sont écrites en clair.
 Elles restent masquées par défaut dans les exports publics (`arbre_exporter`).
 
@@ -164,8 +198,11 @@ Le dépôt est local par défaut. `GENEALOGISTE_GIT_REMOTE` ajoute un push aprè
 ## Tests
 
 - `make test` : faux serveur Gramps Web (`tests/gramps_fake.py`, respx) fidèle au contrat de l'API
-  (format des lectures, contrôle de `old`, `undo`, tâches de fond).
-- `make test-gramps` : vrai Gramps Web jetable (`docker-compose.test.yml`, sans volume), données fictives.
+  (format des lectures, contrôle de `old`, `undo`, tâches de fond, rôles et droits du jeton, 403, `/api/metadata/`,
+  `/api/users/-/`, version d'API paramétrable, expiration du jeton sur horloge injectable).
+- `make test-gramps` : vrai Gramps Web jetable (`docker-compose.test.yml`, sans volume), données fictives ; crée
+  le compte Editor `sosa-test` et deux comptes à droits insuffisants (`sosa-membre`, rôle 1, et
+  `sosa-contributeur`, rôle 2) pour vérifier le diagnostic et le refus d'écriture.
 - `make test-gramps-matrice` : `make test-gramps` sur chaque image de la matrice ci-dessous.
 
 ## Compatibilité des versions
@@ -350,6 +387,9 @@ Hors v1 : fusion native de Gramps (la fusion passe par `/fusionne`).
 Les GET sont tentés au plus trois fois sur erreur réseau ou HTTP 502/503/504 (attentes de 2 puis
 4 secondes). Un 401 de lecture autorise un renouvellement de jeton et une nouvelle lecture ; les autres
 statuts ne déclenchent pas de reprise. Le jeton expiré localement est renouvelé avant tout appel.
+
+Les appels `/token/` et `/token/refresh/` (limités à une requête par seconde, HTTP 429 au-delà) sont retentés
+une seule fois après une pause d'environ une seconde.
 
 POST, PUT et DELETE ne sont jamais rejoués automatiquement, y compris sur 401. Après un refus 401,
 un nouvel appel explicite renouvelle d’abord le jeton. Après une réponse perdue pendant une écriture,

@@ -58,6 +58,10 @@ Cas tranchés d'après le code :
 - `arbre_exporter` est une écriture : `chemin` libre, un fichier existant est remplacé.
 - `gramps_recalculer_notes` et `gramps_structurer_lieux` ne font que préparer un diff et un jeton (proposition) ;
   l'écriture passe par `arbre_appliquer`.
+- En mode gramps, les propositions (`arbre_proposer`, `gramps_recalculer_notes`, `gramps_structurer_lieux`,
+  `marqueurs_migrer_proposer`, annulation, bascule) et `arbre_appliquer` refusent tôt un compte sans droit
+  d'écriture (rôle sous Editor) ; le diagnostic signale aussi un compte Owner ou Admin (privilège excessif).
+  Le contrôle ne lit que les droits du jeton et le rôle du compte, jamais `/api/config/` (réservé aux Admin).
 - `gramps_synchroniser` est une collecte : relecture de Gramps Web, sans écriture vers lui ; avec le miroir Git,
   les modifications externes constatées sont commitées (ajout à l'historique), comme lors de toute lecture
   rafraîchie de l'arbre en mode gramps.

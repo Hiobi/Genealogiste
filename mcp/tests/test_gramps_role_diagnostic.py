@@ -196,8 +196,9 @@ def test_apply_refuse_avant_de_consommer_le_jeton(tmp_path, fake):
         server.set_app(None)
 
 
-def test_role_releve_en_cours_de_session(tmp_path, fake):
-    """Compte promu Editor pendant la session : le jeton est renouvelé une fois avant de refuser."""
+def test_role_releve_en_cours_de_session(tmp_path, fake, monkeypatch):
+    """Compte promu Editor pendant la session : le jeton est renouvelé avant de refuser."""
+    monkeypatch.setattr("genealogiste_mcp.gramps.client.RENOUVELLEMENT_MIN", 0.0)
     fake.role = 2
     make_app(tmp_path)
     try:
@@ -332,3 +333,30 @@ def test_diagnostic_gramps_injoignable_ne_multiplie_pas_les_essais(tmp_path, fak
     assert ctl(res, "gramps_version")["etat"] == "attention"
     assert "injoignable" in ctl(res, "gramps_role")["detail"] and ctl(res, "gramps_reglages")["etat"] == "attention"
     assert len(appels) == 3  # trois essais de lecture, pas davantage
+
+
+def test_refus_de_droits_ne_martele_pas_le_renouvellement(fake):
+    """Limite d'une requête par seconde sur les jetons : un compte faible n'en renouvelle pas à chaque appel."""
+    fake.role = 2
+    fake.limite_jeton = True
+    c = GrampsClient(URL, "sosa", "secret")
+    for _ in range(4):
+        with pytest.raises(GrampsError, match="Editor"):
+            c.exiger_ecriture()
+    assert (fake.logins, fake.refreshes) == (1, 0)
+
+
+def test_429_sur_le_jeton_une_nouvelle_tentative_apres_pause(fake):
+    h = Horloge()
+    fake.horloge, fake.limite_jeton = h, True
+    pauses = []
+
+    def pause(s):
+        pauses.append(s)
+        h.t += s
+    c = GrampsClient(URL, "sosa", "secret", horloge=h, sleeper=pause)
+    c.list("Tag")
+    h.t += 0.2
+    c._exp = 0
+    c.list("Tag")  # renouvellement 0,2 s après la connexion : 429, pause, puis succès
+    assert pauses == [1.1] and (fake.logins, fake.refreshes) == (1, 1)

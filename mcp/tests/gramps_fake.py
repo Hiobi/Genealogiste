@@ -11,7 +11,8 @@
   transactions et envoi de fichier refusés en 403 sans AddObject/EditObject/DeleteObject (corps flask-smorest
   ``{"code": 403, "status": "Forbidden"}``) ;
 - ``GET /api/metadata/`` (versions, ``server.task_queue``…), ``GET /api/users/-/`` (rôle), ``GET /api/register/config/``
-  (API >= 3.26.0 seulement) ; version d'API paramétrable, ``message=`` refusé en 422 avant 3.13.0.
+  (API >= 3.26.0 seulement) ; ``limite_jeton=True`` : ``/token/`` et ``/token/refresh/`` limités à 1 requête par
+  seconde (429), sur l'horloge injectable ; version d'API paramétrable, ``message=`` refusé en 422 avant 3.13.0.
 Défauts : compte Editor, API épinglée de docker-compose.test.yml. Données fictives uniquement.
 """
 
@@ -97,7 +98,8 @@ def differs(old, cur) -> bool:
 class FakeGrampsWeb:
     def __init__(self, user: str = "sosa", password: str = "secret", tree: str = "", role: int = 3,
                  api_version: str = "3.25.1", gramps_version: str = "6.0.8", task_queue: bool = False,
-                 multi_tree: bool = False, inscription_libre: bool = False, horloge=time.time):
+                 multi_tree: bool = False, inscription_libre: bool = False, horloge=time.time,
+                 limite_jeton: bool = False):
         self.user, self.password = user, password
         self.tree = tree  # si défini : le jeton porte la revendication « tree » (toujours présente en réalité)
         self.role = role  # modifiable en cours de test : relu au renouvellement du jeton, pas avant
@@ -105,6 +107,7 @@ class FakeGrampsWeb:
         self.task_queue, self.multi_tree, self.inscription_libre = task_queue, multi_tree, inscription_libre
         self.horloge = horloge  # injectable : expiration du jeton (15 min) sans attendre
         self.logins = self.refreshes = 0
+        self.limite_jeton, self._dernier_jeton = limite_jeton, float("-inf")
         self.objects: dict[str, dict[str, dict]] = {c: {} for c in CLASSES}
         self.clock = 1_000
         self.messages: list[str] = []
@@ -179,7 +182,19 @@ class FakeGrampsWeb:
             return httpx.Response(403, json={"code": 403, "status": "Forbidden"})
         return None
 
+    def _limite(self) -> httpx.Response | None:
+        """flask-limiter ``1/second`` sur les deux routes de jeton (réponse 429)."""
+        if not self.limite_jeton:
+            return None
+        maintenant, depuis = self.horloge(), self._dernier_jeton
+        self._dernier_jeton = maintenant
+        if maintenant - depuis < 1:
+            return httpx.Response(429, json={"code": 429, "status": "Too Many Requests"})
+        return None
+
     def _refresh(self, req):
+        if (r := self._limite()) is not None:
+            return r
         self.refreshes += 1
         return httpx.Response(200, json={"access_token": self._jeton("A2")})
 
@@ -209,6 +224,8 @@ class FakeGrampsWeb:
         return httpx.Response(200, json={"enabled": self.inscription_libre})
 
     def _token(self, req):
+        if (r := self._limite()) is not None:
+            return r
         data = json.loads(req.content)
         if (data.get("username"), data.get("password")) != (self.user, self.password):
             return httpx.Response(403, json={"error": {"code": 403, "message": "Invalid username or password"}})

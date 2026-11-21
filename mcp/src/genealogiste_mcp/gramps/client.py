@@ -22,6 +22,8 @@ from .types import CLASSES, to_raw
 BACKGROUND_THRESHOLD = 200  # objets : au-delà, transaction en tâche de fond (Celery)
 REFETCH_LIMIT = 200  # objets à relire : au-delà, relecture complète de la classe
 READ_ATTEMPTS = 3
+PAUSE_LIMITE_JETON = 1.1  # /token/ et /token/refresh/ : 1 requête par seconde côté Gramps Web (429 au-delà)
+RENOUVELLEMENT_MIN = 5.0  # secondes : écart minimal entre deux renouvellements décidés par le contrôle des droits
 MARGE_JETON = 30.0  # secondes : jeton d'accès renouvelé un peu avant son expiration (15 min côté Gramps Web)
 
 # Rôles Gramps Web (gramps_webapi/auth/const.py). POST /api/transactions/ exige AddObject + EditObject +
@@ -80,11 +82,23 @@ class GrampsClient:
         self._access = ""
         self._refresh = ""
         self._exp = 0.0
+        self._emis = float("-inf")  # instant du dernier appel à /token/ ou /token/refresh/
         self.tree_id = ""  # arbre du compte (revendication « tree » du jeton Gramps Web)
 
     # ------------------------------------------------------------------ authentification
+    def _poster_jeton(self, chemin: str, **kw) -> httpx.Response:
+        """POST sur /token/ ou /token/refresh/ ; sur 429 (limite d'une requête par seconde), une seule nouvelle
+        tentative après une pause."""
+        r = self.client.post(f"{self.base}{chemin}", **kw)
+        if r.status_code == 429:
+            r.close()
+            self.sleep(PAUSE_LIMITE_JETON)
+            r = self.client.post(f"{self.base}{chemin}", **kw)
+        self._emis = self._horloge()
+        return r
+
     def _login(self) -> None:
-        r = self.client.post(f"{self.base}/token/", json={"username": self._user, "password": self._password})
+        r = self._poster_jeton("/token/", json={"username": self._user, "password": self._password})
         if r.status_code != 200:
             raise GrampsError(f"Gramps Web : authentification refusée (HTTP {r.status_code})", r.status_code)
         data = r.json()
@@ -101,7 +115,7 @@ class GrampsClient:
 
     def _renew(self) -> None:
         if self._refresh:
-            r = self.client.post(f"{self.base}/token/refresh/", headers={"Authorization": f"Bearer {self._refresh}"})
+            r = self._poster_jeton("/token/refresh/", headers={"Authorization": f"Bearer {self._refresh}"})
             if r.status_code == 200:
                 self._access = r.json().get("access_token", "")
                 self._exp = self._expiration()
@@ -194,7 +208,8 @@ class GrampsClient:
         puis relu. Jeton sans revendication de droits : rôle du compte. Indéterminé : on laisse passer, un 403
         à l'écriture est de toute façon converti en message actionnable."""
         perms = self.permissions()
-        if perms is not None and not set(DROITS_ECRITURE) <= perms:
+        if perms is not None and not set(DROITS_ECRITURE) <= perms and \
+                self._horloge() - self._emis >= RENOUVELLEMENT_MIN:  # pas de rafale sur la limite d'une requête/s
             self._renew()
             perms = self.permissions()
         role: int | None = None
