@@ -1,0 +1,2296 @@
+[
+ {
+  "_class": "Tag",
+  "handle": "tag0001",
+  "name": "Étiquette <1> & \"guillemets\"",
+  "color": "#ffff00000000",
+  "priority": 0,
+  "change": 1700000001
+ },
+ {
+  "_class": "Tag",
+  "handle": "tag0002",
+  "name": "À vérifier",
+  "color": "#000000000000",
+  "priority": 1,
+  "change": 0
+ },
+ {
+  "_class": "Note",
+  "handle": "note0001",
+  "gramps_id": "N0001",
+  "change": 1700000101,
+  "private": true,
+  "tag_list": [
+   "tag0001"
+  ],
+  "text": {
+   "_class": "StyledText",
+   "string": "Gras puis lien, taille et couleur.\nLigne deux\tavec tabulation.",
+   "tags": [
+    {
+     "_class": "StyledTextTag",
+     "name": {
+      "_class": "StyledTextTagType",
+      "value": 0,
+      "string": ""
+     },
+     "value": null,
+     "ranges": [
+      [
+       0,
+       4
+      ]
+     ]
+    },
+    {
+     "_class": "StyledTextTag",
+     "name": {
+      "_class": "StyledTextTagType",
+      "value": 8,
+      "string": ""
+     },
+     "value": "https://archives.example/r/1",
+     "ranges": [
+      [
+       11,
+       15
+      ]
+     ]
+    },
+    {
+     "_class": "StyledTextTag",
+     "name": {
+      "_class": "StyledTextTagType",
+      "value": 4,
+      "string": ""
+     },
+     "value": 14,
+     "ranges": [
+      [
+       17,
+       23
+      ],
+      [
+       26,
+       33
+      ]
+     ]
+    },
+    {
+     "_class": "StyledTextTag",
+     "name": {
+      "_class": "StyledTextTagType",
+      "value": 5,
+      "string": ""
+     },
+     "value": "#00ff00",
+     "ranges": [
+      [
+       26,
+       33
+      ]
+     ]
+    },
+    {
+     "_class": "StyledTextTag",
+     "name": {
+      "_class": "StyledTextTagType",
+      "value": 1,
+      "string": ""
+     },
+     "value": null,
+     "ranges": [
+      [
+       0,
+       4
+      ]
+     ]
+    },
+    {
+     "_class": "StyledTextTag",
+     "name": {
+      "_class": "StyledTextTagType",
+      "value": 2,
+      "string": ""
+     },
+     "value": null,
+     "ranges": [
+      [
+       0,
+       1
+      ]
+     ]
+    },
+    {
+     "_class": "StyledTextTag",
+     "name": {
+      "_class": "StyledTextTagType",
+      "value": 3,
+      "string": ""
+     },
+     "value": "Serif",
+     "ranges": [
+      [
+       5,
+       9
+      ]
+     ]
+    },
+    {
+     "_class": "StyledTextTag",
+     "name": {
+      "_class": "StyledTextTagType",
+      "value": 6,
+      "string": ""
+     },
+     "value": "#ffff00",
+     "ranges": [
+      [
+       0,
+       2
+      ]
+     ]
+    },
+    {
+     "_class": "StyledTextTag",
+     "name": {
+      "_class": "StyledTextTagType",
+      "value": 7,
+      "string": ""
+     },
+     "value": null,
+     "ranges": [
+      [
+       3,
+       4
+      ]
+     ]
+    }
+   ]
+  },
+  "format": 1,
+  "type": {
+   "_class": "NoteType",
+   "value": 2,
+   "string": ""
+  }
+ },
+ {
+  "_class": "Note",
+  "handle": "note0002",
+  "gramps_id": "N0002",
+  "change": 1700000102,
+  "private": false,
+  "tag_list": [],
+  "text": {
+   "_class": "StyledText",
+   "string": "a < b & c > d \"q\" 'a'  espaces finaux  ",
+   "tags": []
+  },
+  "format": 0,
+  "type": {
+   "_class": "NoteType",
+   "value": 0,
+   "string": "Type de note perso"
+  }
+ },
+ {
+  "_class": "Note",
+  "handle": "note0003",
+  "gramps_id": "N0003",
+  "change": 0,
+  "private": false,
+  "tag_list": [],
+  "text": {
+   "_class": "StyledText",
+   "string": "",
+   "tags": []
+  },
+  "format": 0,
+  "type": {
+   "_class": "NoteType",
+   "value": 1,
+   "string": ""
+  }
+ },
+ {
+  "_class": "Note",
+  "handle": "note0004",
+  "gramps_id": "N0004",
+  "change": 0,
+  "private": false,
+  "tag_list": [],
+  "text": {
+   "_class": "StyledText",
+   "string": "barré et indice (Gramps 6, hors DTD)",
+   "tags": [
+    {
+     "_class": "StyledTextTag",
+     "name": {
+      "_class": "StyledTextTagType",
+      "value": 9,
+      "string": ""
+     },
+     "value": null,
+     "ranges": [
+      [
+       0,
+       5
+      ]
+     ]
+    },
+    {
+     "_class": "StyledTextTag",
+     "name": {
+      "_class": "StyledTextTagType",
+      "value": 10,
+      "string": ""
+     },
+     "value": null,
+     "ranges": [
+      [
+       9,
+       15
+      ]
+     ]
+    }
+   ]
+  },
+  "format": 0,
+  "type": {
+   "_class": "NoteType",
+   "value": 1,
+   "string": ""
+  }
+ },
+ {
+  "_class": "Repository",
+  "handle": "repo0001",
+  "gramps_id": "R0001",
+  "change": 1700000201,
+  "private": true,
+  "tag_list": [
+   "tag0001"
+  ],
+  "type": {
+   "_class": "RepositoryType",
+   "value": 0,
+   "string": "Archives privées"
+  },
+  "name": "Dépôt riche",
+  "note_list": [
+   "note0002"
+  ],
+  "address_list": [
+   {
+    "_class": "Address",
+    "private": true,
+    "citation_list": [],
+    "note_list": [],
+    "date": {
+     "_class": "Date",
+     "calendar": 0,
+     "modifier": 0,
+     "quality": 0,
+     "dateval": [
+      1,
+      2,
+      1990,
+      false
+     ],
+     "text": "",
+     "sortval": 0,
+     "newyear": 0
+    },
+    "street": "rue 1",
+    "locality": "quartier 1",
+    "city": "ville 1",
+    "county": "arrondissement 1",
+    "state": "région 1",
+    "country": "pays 1",
+    "postal": "59001",
+    "phone": "+33 3 20 00 00 01"
+   }
+  ],
+  "urls": [
+   {
+    "_class": "Url",
+    "private": true,
+    "path": "https://depot.example",
+    "desc": "Site du dépôt",
+    "type": {
+     "_class": "UrlType",
+     "value": 2,
+     "string": ""
+    }
+   },
+   {
+    "_class": "Url",
+    "private": false,
+    "path": "mailto:x@example.org",
+    "desc": "",
+    "type": {
+     "_class": "UrlType",
+     "value": 1,
+     "string": ""
+    }
+   },
+   {
+    "_class": "Url",
+    "private": false,
+    "path": "ftp://f.example/",
+    "desc": "",
+    "type": {
+     "_class": "UrlType",
+     "value": 0,
+     "string": ""
+    }
+   }
+  ]
+ },
+ {
+  "_class": "Repository",
+  "handle": "repo0002",
+  "gramps_id": "R0002",
+  "change": 1700000202,
+  "private": false,
+  "tag_list": [],
+  "type": {
+   "_class": "RepositoryType",
+   "value": 1,
+   "string": ""
+  },
+  "name": "Bibliothèque",
+  "note_list": [],
+  "address_list": [],
+  "urls": []
+ },
+ {
+  "_class": "Source",
+  "handle": "srce0001",
+  "gramps_id": "S0001",
+  "change": 1700000301,
+  "private": true,
+  "tag_list": [
+   "tag0002"
+  ],
+  "title": "Registre paroissial",
+  "author": "Curé",
+  "pubinfo": "AD59, 5 Mi 1",
+  "abbrev": "RP",
+  "note_list": [
+   "note0001"
+  ],
+  "media_list": [
+   {
+    "_class": "MediaRef",
+    "private": false,
+    "citation_list": [
+     "cita0002"
+    ],
+    "note_list": [],
+    "attribute_list": [],
+    "ref": "medi0001",
+    "rect": [
+     5,
+     6,
+     95,
+     96
+    ]
+   }
+  ],
+  "attribute_list": [
+   {
+    "_class": "SrcAttribute",
+    "private": true,
+    "type": {
+     "_class": "SrcAttributeType",
+     "value": 0,
+     "string": "URL"
+    },
+    "value": "https://archives.example/s/1"
+   },
+   {
+    "_class": "SrcAttribute",
+    "private": false,
+    "type": {
+     "_class": "SrcAttributeType",
+     "value": 0,
+     "string": "Type de source"
+    },
+    "value": "source originale"
+   }
+  ],
+  "reporef_list": [
+   {
+    "_class": "RepoRef",
+    "note_list": [
+     "note0002"
+    ],
+    "ref": "repo0001",
+    "call_number": "5 Mi 1 R 2",
+    "media_type": {
+     "_class": "SourceMediaType",
+     "value": 6,
+     "string": ""
+    },
+    "private": true
+   },
+   {
+    "_class": "RepoRef",
+    "note_list": [],
+    "ref": "repo0002",
+    "call_number": "",
+    "media_type": {
+     "_class": "SourceMediaType",
+     "value": 0,
+     "string": "Microfiche perso"
+    },
+    "private": false
+   }
+  ]
+ },
+ {
+  "_class": "Source",
+  "handle": "srce0002",
+  "gramps_id": "S0002",
+  "change": 0,
+  "private": false,
+  "tag_list": [],
+  "title": "",
+  "author": "",
+  "pubinfo": "",
+  "abbrev": "",
+  "note_list": [],
+  "media_list": [],
+  "attribute_list": [],
+  "reporef_list": []
+ },
+ {
+  "_class": "Citation",
+  "handle": "cita0001",
+  "gramps_id": "C0001",
+  "change": 1700000401,
+  "private": true,
+  "tag_list": [
+   "tag0001",
+   "tag0002"
+  ],
+  "date": {
+   "_class": "Date",
+   "calendar": 1,
+   "modifier": 0,
+   "quality": 2,
+   "dateval": [
+    3,
+    3,
+    1700,
+    true
+   ],
+   "text": "",
+   "sortval": 0,
+   "newyear": 2
+  },
+  "page": "f° 12 v°, acte 3",
+  "confidence": 4,
+  "source_handle": "srce0001",
+  "note_list": [
+   "note0002"
+  ],
+  "media_list": [
+   {
+    "_class": "MediaRef",
+    "private": false,
+    "citation_list": [],
+    "note_list": [],
+    "attribute_list": [],
+    "ref": "medi0001",
+    "rect": null
+   }
+  ],
+  "attribute_list": [
+   {
+    "_class": "SrcAttribute",
+    "private": true,
+    "type": {
+     "_class": "SrcAttributeType",
+     "value": 0,
+     "string": "Information"
+    },
+    "value": "primaire"
+   }
+  ]
+ },
+ {
+  "_class": "Citation",
+  "handle": "cita0002",
+  "gramps_id": "C0002",
+  "change": 0,
+  "private": false,
+  "tag_list": [],
+  "date": {
+   "_class": "Date",
+   "calendar": 0,
+   "modifier": 0,
+   "quality": 0,
+   "dateval": [
+    0,
+    0,
+    0,
+    false
+   ],
+   "text": "",
+   "sortval": 0,
+   "newyear": 0
+  },
+  "page": "",
+  "confidence": 0,
+  "source_handle": "srce0002",
+  "note_list": [],
+  "media_list": [],
+  "attribute_list": []
+ },
+ {
+  "_class": "Place",
+  "handle": "plac0001",
+  "gramps_id": "P0001",
+  "change": 1700000501,
+  "private": false,
+  "tag_list": [],
+  "title": "",
+  "long": "",
+  "lat": "",
+  "placeref_list": [],
+  "name": {
+   "_class": "PlaceName",
+   "value": "France",
+   "date": {
+    "_class": "Date",
+    "calendar": 0,
+    "modifier": 0,
+    "quality": 0,
+    "dateval": [
+     0,
+     0,
+     0,
+     false
+    ],
+    "text": "",
+    "sortval": 0,
+    "newyear": 0
+   },
+   "lang": ""
+  },
+  "alt_names": [],
+  "place_type": {
+   "_class": "PlaceType",
+   "value": 1,
+   "string": ""
+  },
+  "code": "FR",
+  "alt_loc": [],
+  "urls": [],
+  "media_list": [],
+  "citation_list": [],
+  "note_list": []
+ },
+ {
+  "_class": "Place",
+  "handle": "plac0002",
+  "gramps_id": "P0002",
+  "change": 1700000502,
+  "private": true,
+  "tag_list": [
+   "tag0001"
+  ],
+  "title": "Lille, Nord, France",
+  "long": "3.0573",
+  "lat": "50.6292",
+  "placeref_list": [
+   {
+    "_class": "PlaceRef",
+    "ref": "plac0001",
+    "date": {
+     "_class": "Date",
+     "calendar": 0,
+     "modifier": 4,
+     "quality": 0,
+     "dateval": [
+      0,
+      0,
+      1668,
+      false,
+      0,
+      0,
+      1790,
+      false
+     ],
+     "text": "",
+     "sortval": 0,
+     "newyear": 0
+    }
+   },
+   {
+    "_class": "PlaceRef",
+    "ref": "plac0003",
+    "date": {
+     "_class": "Date",
+     "calendar": 0,
+     "modifier": 0,
+     "quality": 0,
+     "dateval": [
+      0,
+      0,
+      0,
+      false
+     ],
+     "text": "",
+     "sortval": 0,
+     "newyear": 0
+    }
+   }
+  ],
+  "name": {
+   "_class": "PlaceName",
+   "value": "Lille",
+   "date": {
+    "_class": "Date",
+    "calendar": 0,
+    "modifier": 2,
+    "quality": 0,
+    "dateval": [
+     0,
+     0,
+     1800,
+     false
+    ],
+    "text": "",
+    "sortval": 0,
+    "newyear": 0
+   },
+   "lang": "fr"
+  },
+  "alt_names": [
+   {
+    "_class": "PlaceName",
+    "value": "Rijsel",
+    "date": {
+     "_class": "Date",
+     "calendar": 0,
+     "modifier": 1,
+     "quality": 0,
+     "dateval": [
+      0,
+      0,
+      1668,
+      false
+     ],
+     "text": "",
+     "sortval": 0,
+     "newyear": 0
+    },
+    "lang": "nl"
+   },
+   {
+    "_class": "PlaceName",
+    "value": "Insula",
+    "date": {
+     "_class": "Date",
+     "calendar": 0,
+     "modifier": 0,
+     "quality": 0,
+     "dateval": [
+      0,
+      0,
+      0,
+      false
+     ],
+     "text": "",
+     "sortval": 0,
+     "newyear": 0
+    },
+    "lang": "la"
+   },
+   {
+    "_class": "PlaceName",
+    "value": "L'Isle",
+    "date": {
+     "_class": "Date",
+     "calendar": 0,
+     "modifier": 0,
+     "quality": 0,
+     "dateval": [
+      0,
+      0,
+      0,
+      false
+     ],
+     "text": "",
+     "sortval": 0,
+     "newyear": 0
+    },
+    "lang": ""
+   }
+  ],
+  "place_type": {
+   "_class": "PlaceType",
+   "value": 4,
+   "string": ""
+  },
+  "code": "59350",
+  "alt_loc": [
+   {
+    "_class": "Location",
+    "street": "Grand-Place",
+    "locality": "Vieux-Lille",
+    "city": "Lille",
+    "county": "Nord",
+    "state": "Hauts-de-France",
+    "country": "France",
+    "postal": "59000",
+    "phone": "+33 3 20 00 00 00",
+    "parish": "Saint-Étienne"
+   },
+   {
+    "_class": "Location",
+    "street": "",
+    "locality": "",
+    "city": "",
+    "county": "",
+    "state": "",
+    "country": "",
+    "postal": "",
+    "phone": "",
+    "parish": "Saint-Maurice"
+   }
+  ],
+  "urls": [
+   {
+    "_class": "Url",
+    "private": false,
+    "path": "https://fr.wikipedia.org/wiki/Lille",
+    "desc": "Wikipédia",
+    "type": {
+     "_class": "UrlType",
+     "value": 2,
+     "string": ""
+    }
+   }
+  ],
+  "media_list": [
+   {
+    "_class": "MediaRef",
+    "private": false,
+    "citation_list": [],
+    "note_list": [],
+    "attribute_list": [],
+    "ref": "medi0002",
+    "rect": null
+   }
+  ],
+  "citation_list": [
+   "cita0001"
+  ],
+  "note_list": [
+   "note0002"
+  ]
+ },
+ {
+  "_class": "Place",
+  "handle": "plac0003",
+  "gramps_id": "P0003",
+  "change": 0,
+  "private": false,
+  "tag_list": [],
+  "title": "",
+  "long": "",
+  "lat": "45.1",
+  "placeref_list": [],
+  "name": {
+   "_class": "PlaceName",
+   "value": "Flandre",
+   "date": {
+    "_class": "Date",
+    "calendar": 0,
+    "modifier": 0,
+    "quality": 0,
+    "dateval": [
+     0,
+     0,
+     0,
+     false
+    ],
+    "text": "",
+    "sortval": 0,
+    "newyear": 0
+   },
+   "lang": ""
+  },
+  "alt_names": [],
+  "place_type": {
+   "_class": "PlaceType",
+   "value": 0,
+   "string": "Province historique"
+  },
+  "code": "",
+  "alt_loc": [],
+  "urls": [],
+  "media_list": [],
+  "citation_list": [],
+  "note_list": []
+ },
+ {
+  "_class": "Media",
+  "handle": "medi0001",
+  "gramps_id": "O0001",
+  "change": 1700000601,
+  "private": true,
+  "tag_list": [
+   "tag0002"
+  ],
+  "path": "medias/acte de naissance.jpg",
+  "mime": "image/jpeg",
+  "desc": "Acte <n°1>",
+  "checksum": "0123456789abcdef0123456789abcdef",
+  "attribute_list": [
+   {
+    "_class": "Attribute",
+    "private": true,
+    "citation_list": [
+     "cita0002"
+    ],
+    "note_list": [
+     "note0002"
+    ],
+    "type": {
+     "_class": "AttributeType",
+     "value": 0,
+     "string": "Genealogiste-Fichier"
+    },
+    "value": "medias/acte de naissance.jpg"
+   }
+  ],
+  "citation_list": [
+   "cita0001"
+  ],
+  "note_list": [
+   "note0002"
+  ],
+  "date": {
+   "_class": "Date",
+   "calendar": 0,
+   "modifier": 6,
+   "quality": 0,
+   "dateval": [
+    0,
+    0,
+    0,
+    false
+   ],
+   "text": "vers la Saint-Jean 1750",
+   "sortval": 0,
+   "newyear": 0
+  }
+ },
+ {
+  "_class": "Media",
+  "handle": "medi0002",
+  "gramps_id": "O0002",
+  "change": 0,
+  "private": false,
+  "tag_list": [],
+  "path": "",
+  "mime": "",
+  "desc": "",
+  "checksum": "",
+  "attribute_list": [],
+  "citation_list": [],
+  "note_list": [],
+  "date": {
+   "_class": "Date",
+   "calendar": 0,
+   "modifier": 0,
+   "quality": 0,
+   "dateval": [
+    0,
+    0,
+    0,
+    false
+   ],
+   "text": "",
+   "sortval": 0,
+   "newyear": 0
+  }
+ },
+ {
+  "_class": "Event",
+  "handle": "even0001",
+  "gramps_id": "E0001",
+  "change": 1700000701,
+  "private": true,
+  "tag_list": [
+   "tag0001"
+  ],
+  "type": {
+   "_class": "EventType",
+   "value": 12,
+   "string": ""
+  },
+  "date": {
+   "_class": "Date",
+   "calendar": 0,
+   "modifier": 3,
+   "quality": 1,
+   "dateval": [
+    14,
+    7,
+    1750,
+    false
+   ],
+   "text": "",
+   "sortval": 0,
+   "newyear": 0
+  },
+  "place": "plac0002",
+  "description": "Naissance de Jean",
+  "citation_list": [
+   "cita0001"
+  ],
+  "note_list": [
+   "note0001"
+  ],
+  "media_list": [
+   {
+    "_class": "MediaRef",
+    "private": true,
+    "citation_list": [
+     "cita0002"
+    ],
+    "note_list": [
+     "note0002"
+    ],
+    "attribute_list": [
+     {
+      "_class": "Attribute",
+      "private": false,
+      "citation_list": [],
+      "note_list": [],
+      "type": {
+       "_class": "AttributeType",
+       "value": 7,
+       "string": ""
+      },
+      "value": "Jeannot"
+     }
+    ],
+    "ref": "medi0001",
+    "rect": [
+     10,
+     20,
+     30,
+     40
+    ]
+   }
+  ],
+  "attribute_list": [
+   {
+    "_class": "Attribute",
+    "private": true,
+    "citation_list": [
+     "cita0002"
+    ],
+    "note_list": [
+     "note0002"
+    ],
+    "type": {
+     "_class": "AttributeType",
+     "value": 10,
+     "string": ""
+    },
+    "value": "0"
+   },
+   {
+    "_class": "Attribute",
+    "private": false,
+    "citation_list": [],
+    "note_list": [],
+    "type": {
+     "_class": "AttributeType",
+     "value": 0,
+     "string": "Paroisse"
+    },
+    "value": "Saint-Étienne"
+   }
+  ]
+ },
+ {
+  "_class": "Event",
+  "handle": "even0002",
+  "gramps_id": "E0002",
+  "change": 0,
+  "private": false,
+  "tag_list": [],
+  "type": {
+   "_class": "EventType",
+   "value": 13,
+   "string": ""
+  },
+  "date": {
+   "_class": "Date",
+   "calendar": 0,
+   "modifier": 0,
+   "quality": 0,
+   "dateval": [
+    5,
+    0,
+    1790,
+    false
+   ],
+   "text": "",
+   "sortval": 0,
+   "newyear": 0
+  },
+  "place": "",
+  "description": "",
+  "citation_list": [],
+  "note_list": [],
+  "media_list": [],
+  "attribute_list": []
+ },
+ {
+  "_class": "Event",
+  "handle": "even0003",
+  "gramps_id": "E0003",
+  "change": 0,
+  "private": false,
+  "tag_list": [],
+  "type": {
+   "_class": "EventType",
+   "value": 0,
+   "string": "Événement perso"
+  },
+  "date": {
+   "_class": "Date",
+   "calendar": 1,
+   "modifier": 5,
+   "quality": 0,
+   "dateval": [
+    0,
+    0,
+    0,
+    false,
+    0,
+    0,
+    1720,
+    false
+   ],
+   "text": "",
+   "sortval": 0,
+   "newyear": 1
+  },
+  "place": "plac0003",
+  "description": "",
+  "citation_list": [],
+  "note_list": [],
+  "media_list": [],
+  "attribute_list": []
+ },
+ {
+  "_class": "Event",
+  "handle": "even0004",
+  "gramps_id": "E0004",
+  "change": 0,
+  "private": false,
+  "tag_list": [],
+  "type": {
+   "_class": "EventType",
+   "value": 42,
+   "string": ""
+  },
+  "date": {
+   "_class": "Date",
+   "calendar": 0,
+   "modifier": 7,
+   "quality": 0,
+   "dateval": [
+    0,
+    0,
+    1760,
+    false
+   ],
+   "text": "",
+   "sortval": 0,
+   "newyear": 0
+  },
+  "place": "",
+  "description": "Résidence (début)",
+  "citation_list": [],
+  "note_list": [],
+  "media_list": [],
+  "attribute_list": []
+ },
+ {
+  "_class": "Event",
+  "handle": "even0005",
+  "gramps_id": "E0005",
+  "change": 0,
+  "private": false,
+  "tag_list": [],
+  "type": {
+   "_class": "EventType",
+   "value": 37,
+   "string": ""
+  },
+  "date": {
+   "_class": "Date",
+   "calendar": 0,
+   "modifier": 8,
+   "quality": 0,
+   "dateval": [
+    0,
+    1,
+    1770,
+    false
+   ],
+   "text": "",
+   "sortval": 0,
+   "newyear": [
+    3,
+    25
+   ]
+  },
+  "place": "",
+  "description": "Laboureur",
+  "citation_list": [],
+  "note_list": [],
+  "media_list": [],
+  "attribute_list": []
+ },
+ {
+  "_class": "Event",
+  "handle": "even0006",
+  "gramps_id": "E0006",
+  "change": 0,
+  "private": false,
+  "tag_list": [],
+  "type": {
+   "_class": "EventType",
+   "value": 15,
+   "string": ""
+  },
+  "date": {
+   "_class": "Date",
+   "calendar": 0,
+   "modifier": 6,
+   "quality": 0,
+   "dateval": [
+    0,
+    0,
+    0,
+    false
+   ],
+   "text": "le jour de la Saint-Martin",
+   "sortval": 0,
+   "newyear": 0
+  },
+  "place": "",
+  "description": "",
+  "citation_list": [],
+  "note_list": [],
+  "media_list": [],
+  "attribute_list": []
+ },
+ {
+  "_class": "Event",
+  "handle": "even0007",
+  "gramps_id": "E0007",
+  "change": 0,
+  "private": false,
+  "tag_list": [],
+  "type": {
+   "_class": "EventType",
+   "value": 19,
+   "string": ""
+  },
+  "date": {
+   "_class": "Date",
+   "calendar": 0,
+   "modifier": 4,
+   "quality": 2,
+   "dateval": [
+    1,
+    1,
+    1790,
+    false,
+    31,
+    12,
+    1791,
+    false
+   ],
+   "text": "",
+   "sortval": 0,
+   "newyear": 0
+  },
+  "place": "",
+  "description": "",
+  "citation_list": [],
+  "note_list": [],
+  "media_list": [],
+  "attribute_list": []
+ },
+ {
+  "_class": "Event",
+  "handle": "even0008",
+  "gramps_id": "E0008",
+  "change": 1700000708,
+  "private": false,
+  "tag_list": [],
+  "type": {
+   "_class": "EventType",
+   "value": 1,
+   "string": ""
+  },
+  "date": {
+   "_class": "Date",
+   "calendar": 3,
+   "modifier": 0,
+   "quality": 0,
+   "dateval": [
+    10,
+    5,
+    8,
+    false
+   ],
+   "text": "",
+   "sortval": 0,
+   "newyear": 0
+  },
+  "place": "plac0002",
+  "description": "",
+  "citation_list": [],
+  "note_list": [],
+  "media_list": [],
+  "attribute_list": []
+ },
+ {
+  "_class": "Event",
+  "handle": "even0009",
+  "gramps_id": "E0009",
+  "change": 0,
+  "private": false,
+  "tag_list": [],
+  "type": {
+   "_class": "EventType",
+   "value": 12,
+   "string": ""
+  },
+  "date": {
+   "_class": "Date",
+   "calendar": 0,
+   "modifier": 1,
+   "quality": 0,
+   "dateval": [
+    0,
+    0,
+    1752,
+    false
+   ],
+   "text": "",
+   "sortval": 0,
+   "newyear": 0
+  },
+  "place": "",
+  "description": "Seconde naissance retenue",
+  "citation_list": [],
+  "note_list": [],
+  "media_list": [],
+  "attribute_list": []
+ },
+ {
+  "_class": "Event",
+  "handle": "even0010",
+  "gramps_id": "E0010",
+  "change": 0,
+  "private": false,
+  "tag_list": [],
+  "type": {
+   "_class": "EventType",
+   "value": 0,
+   "string": ""
+  },
+  "date": {
+   "_class": "Date",
+   "calendar": 0,
+   "modifier": 0,
+   "quality": 0,
+   "dateval": [
+    0,
+    0,
+    -50,
+    false
+   ],
+   "text": "",
+   "sortval": 0,
+   "newyear": 0
+  },
+  "place": "",
+  "description": "Type vide",
+  "citation_list": [],
+  "note_list": [],
+  "media_list": [],
+  "attribute_list": []
+ },
+ {
+  "_class": "Event",
+  "handle": "even0011",
+  "gramps_id": "E0011",
+  "change": 0,
+  "private": false,
+  "tag_list": [],
+  "type": {
+   "_class": "EventType",
+   "value": 12,
+   "string": ""
+  },
+  "date": {
+   "_class": "Date",
+   "calendar": 0,
+   "modifier": 0,
+   "quality": 0,
+   "dateval": [
+    0,
+    0,
+    0,
+    false
+   ],
+   "text": "",
+   "sortval": 0,
+   "newyear": 0
+  },
+  "place": "",
+  "description": "Naissance écartée (doublon)",
+  "citation_list": [],
+  "note_list": [],
+  "media_list": [],
+  "attribute_list": []
+ },
+ {
+  "_class": "Person",
+  "handle": "pers0001",
+  "gramps_id": "I0001",
+  "change": 1700000801,
+  "private": false,
+  "tag_list": [
+   "tag0001"
+  ],
+  "gender": 1,
+  "primary_name": {
+   "_class": "Name",
+   "private": false,
+   "surname_list": [
+    {
+     "_class": "Surname",
+     "surname": "Dupont",
+     "prefix": "de",
+     "primary": true,
+     "origintype": {
+      "_class": "NameOriginType",
+      "value": 9,
+      "string": ""
+     },
+     "connector": "-"
+    },
+    {
+     "_class": "Surname",
+     "surname": "Martin",
+     "prefix": "",
+     "primary": false,
+     "origintype": {
+      "_class": "NameOriginType",
+      "value": 0,
+      "string": "Origine perso"
+     },
+     "connector": ""
+    }
+   ],
+   "citation_list": [
+    "cita0001"
+   ],
+   "note_list": [
+    "note0002"
+   ],
+   "date": {
+    "_class": "Date",
+    "calendar": 0,
+    "modifier": 2,
+    "quality": 0,
+    "dateval": [
+     0,
+     0,
+     1750,
+     false
+    ],
+    "text": "",
+    "sortval": 0,
+    "newyear": 0
+   },
+   "first_name": "Jean Baptiste",
+   "suffix": "fils",
+   "title": "sieur",
+   "type": {
+    "_class": "NameType",
+    "value": 2,
+    "string": ""
+   },
+   "group_as": "DUPONT",
+   "sort_as": 1,
+   "display_as": 2,
+   "call": "Jean",
+   "nick": "Janot",
+   "famnick": "les Dupont"
+  },
+  "alternate_names": [
+   {
+    "_class": "Name",
+    "private": true,
+    "surname_list": [
+     {
+      "_class": "Surname",
+      "surname": "Dupond",
+      "prefix": "",
+      "primary": true,
+      "origintype": {
+       "_class": "NameOriginType",
+       "value": 1,
+       "string": ""
+      },
+      "connector": ""
+     }
+    ],
+    "citation_list": [],
+    "note_list": [],
+    "date": {
+     "_class": "Date",
+     "calendar": 0,
+     "modifier": 0,
+     "quality": 0,
+     "dateval": [
+      0,
+      0,
+      0,
+      false
+     ],
+     "text": "",
+     "sortval": 0,
+     "newyear": 0
+    },
+    "first_name": "Jean",
+    "suffix": "",
+    "title": "",
+    "type": {
+     "_class": "NameType",
+     "value": 1,
+     "string": ""
+    },
+    "group_as": "",
+    "sort_as": 0,
+    "display_as": 0,
+    "call": "",
+    "nick": "",
+    "famnick": ""
+   },
+   {
+    "_class": "Name",
+    "private": false,
+    "surname_list": [],
+    "citation_list": [],
+    "note_list": [],
+    "date": {
+     "_class": "Date",
+     "calendar": 0,
+     "modifier": 0,
+     "quality": 0,
+     "dateval": [
+      0,
+      0,
+      0,
+      false
+     ],
+     "text": "",
+     "sortval": 0,
+     "newyear": 0
+    },
+    "first_name": "",
+    "suffix": "",
+    "title": "",
+    "type": {
+     "_class": "NameType",
+     "value": 0,
+     "string": "Nom de religion"
+    },
+    "group_as": "",
+    "sort_as": 0,
+    "display_as": 0,
+    "call": "",
+    "nick": "",
+    "famnick": ""
+   }
+  ],
+  "event_ref_list": [
+   {
+    "_class": "EventRef",
+    "private": true,
+    "citation_list": [
+     "cita0001"
+    ],
+    "note_list": [
+     "note0002"
+    ],
+    "attribute_list": [
+     {
+      "_class": "Attribute",
+      "private": false,
+      "citation_list": [],
+      "note_list": [],
+      "type": {
+       "_class": "AttributeType",
+       "value": 10,
+       "string": ""
+      },
+      "value": "0"
+     }
+    ],
+    "ref": "even0001",
+    "role": {
+     "_class": "EventRoleType",
+     "value": 1,
+     "string": ""
+    }
+   },
+   {
+    "_class": "EventRef",
+    "private": false,
+    "citation_list": [],
+    "note_list": [],
+    "attribute_list": [],
+    "ref": "even0002",
+    "role": {
+     "_class": "EventRoleType",
+     "value": 1,
+     "string": ""
+    }
+   },
+   {
+    "_class": "EventRef",
+    "private": false,
+    "citation_list": [],
+    "note_list": [],
+    "attribute_list": [],
+    "ref": "even0003",
+    "role": {
+     "_class": "EventRoleType",
+     "value": 0,
+     "string": "Rôle perso"
+    }
+   },
+   {
+    "_class": "EventRef",
+    "private": false,
+    "citation_list": [],
+    "note_list": [],
+    "attribute_list": [],
+    "ref": "even0004",
+    "role": {
+     "_class": "EventRoleType",
+     "value": 1,
+     "string": ""
+    }
+   },
+   {
+    "_class": "EventRef",
+    "private": false,
+    "citation_list": [],
+    "note_list": [],
+    "attribute_list": [],
+    "ref": "even0005",
+    "role": {
+     "_class": "EventRoleType",
+     "value": 1,
+     "string": ""
+    }
+   }
+  ],
+  "birth_ref_index": 0,
+  "death_ref_index": 1,
+  "family_list": [
+   "fami0001"
+  ],
+  "parent_family_list": [],
+  "media_list": [
+   {
+    "_class": "MediaRef",
+    "private": false,
+    "citation_list": [],
+    "note_list": [],
+    "attribute_list": [],
+    "ref": "medi0001",
+    "rect": [
+     0,
+     0,
+     50,
+     50
+    ]
+   }
+  ],
+  "address_list": [
+   {
+    "_class": "Address",
+    "private": true,
+    "citation_list": [
+     "cita0002"
+    ],
+    "note_list": [
+     "note0002"
+    ],
+    "date": {
+     "_class": "Date",
+     "calendar": 0,
+     "modifier": 7,
+     "quality": 0,
+     "dateval": [
+      0,
+      0,
+      1780,
+      false
+     ],
+     "text": "",
+     "sortval": 0,
+     "newyear": 0
+    },
+    "street": "rue 2",
+    "locality": "quartier 2",
+    "city": "ville 2",
+    "county": "arrondissement 2",
+    "state": "région 2",
+    "country": "pays 2",
+    "postal": "59002",
+    "phone": "+33 3 20 00 00 02"
+   },
+   {
+    "_class": "Address",
+    "private": false,
+    "citation_list": [],
+    "note_list": [],
+    "date": {
+     "_class": "Date",
+     "calendar": 0,
+     "modifier": 0,
+     "quality": 0,
+     "dateval": [
+      0,
+      0,
+      0,
+      false
+     ],
+     "text": "",
+     "sortval": 0,
+     "newyear": 0
+    },
+    "street": "rue 3",
+    "locality": "",
+    "city": "ville 3",
+    "county": "",
+    "state": "",
+    "country": "",
+    "postal": "",
+    "phone": ""
+   }
+  ],
+  "attribute_list": [
+   {
+    "_class": "Attribute",
+    "private": false,
+    "citation_list": [],
+    "note_list": [],
+    "type": {
+     "_class": "AttributeType",
+     "value": 0,
+     "string": "Genealogiste-UID"
+    },
+    "value": "uid-1"
+   },
+   {
+    "_class": "Attribute",
+    "private": true,
+    "citation_list": [],
+    "note_list": [],
+    "type": {
+     "_class": "AttributeType",
+     "value": 15,
+     "string": ""
+    },
+    "value": "Laboureur"
+   }
+  ],
+  "urls": [
+   {
+    "_class": "Url",
+    "private": true,
+    "path": "https://wikitree.example/Dupont-1",
+    "desc": "WikiTree",
+    "type": {
+     "_class": "UrlType",
+     "value": 3,
+     "string": ""
+    }
+   }
+  ],
+  "lds_ord_list": [
+   {
+    "_class": "LdsOrd",
+    "citation_list": [
+     "cita0002"
+    ],
+    "note_list": [
+     "note0002"
+    ],
+    "date": {
+     "_class": "Date",
+     "calendar": 0,
+     "modifier": 0,
+     "quality": 0,
+     "dateval": [
+      1,
+      1,
+      1990,
+      false
+     ],
+     "text": "",
+     "sortval": 0,
+     "newyear": 0
+    },
+    "type": 0,
+    "place": "plac0002",
+    "famc": "fami0001",
+    "temple": "PARIS",
+    "status": 5,
+    "private": true
+   },
+   {
+    "_class": "LdsOrd",
+    "citation_list": [],
+    "note_list": [],
+    "date": {
+     "_class": "Date",
+     "calendar": 0,
+     "modifier": 0,
+     "quality": 0,
+     "dateval": [
+      0,
+      0,
+      0,
+      false
+     ],
+     "text": "",
+     "sortval": 0,
+     "newyear": 0
+    },
+    "type": 2,
+    "place": "",
+    "famc": null,
+    "temple": "",
+    "status": 0,
+    "private": false
+   }
+  ],
+  "citation_list": [
+   "cita0001"
+  ],
+  "note_list": [
+   "note0001"
+  ],
+  "person_ref_list": [
+   {
+    "_class": "PersonRef",
+    "private": true,
+    "citation_list": [
+     "cita0002"
+    ],
+    "note_list": [
+     "note0002"
+    ],
+    "ref": "pers0003",
+    "rel": "Parrain"
+   },
+   {
+    "_class": "PersonRef",
+    "private": false,
+    "citation_list": [],
+    "note_list": [],
+    "ref": "pers0004",
+    "rel": ""
+   }
+  ]
+ },
+ {
+  "_class": "Person",
+  "handle": "pers0002",
+  "gramps_id": "I0002",
+  "change": 0,
+  "private": false,
+  "tag_list": [],
+  "gender": 0,
+  "primary_name": {
+   "_class": "Name",
+   "private": false,
+   "surname_list": [
+    {
+     "_class": "Surname",
+     "surname": "Durand",
+     "prefix": "",
+     "primary": true,
+     "origintype": {
+      "_class": "NameOriginType",
+      "value": 1,
+      "string": ""
+     },
+     "connector": ""
+    }
+   ],
+   "citation_list": [],
+   "note_list": [],
+   "date": {
+    "_class": "Date",
+    "calendar": 0,
+    "modifier": 0,
+    "quality": 0,
+    "dateval": [
+     0,
+     0,
+     0,
+     false
+    ],
+    "text": "",
+    "sortval": 0,
+    "newyear": 0
+   },
+   "first_name": "Marie",
+   "suffix": "",
+   "title": "",
+   "type": {
+    "_class": "NameType",
+    "value": 3,
+    "string": ""
+   },
+   "group_as": "",
+   "sort_as": 0,
+   "display_as": 0,
+   "call": "",
+   "nick": "",
+   "famnick": ""
+  },
+  "alternate_names": [],
+  "event_ref_list": [
+   {
+    "_class": "EventRef",
+    "private": false,
+    "citation_list": [],
+    "note_list": [],
+    "attribute_list": [],
+    "ref": "even0006",
+    "role": {
+     "_class": "EventRoleType",
+     "value": 1,
+     "string": ""
+    }
+   },
+   {
+    "_class": "EventRef",
+    "private": false,
+    "citation_list": [],
+    "note_list": [],
+    "attribute_list": [],
+    "ref": "even0007",
+    "role": {
+     "_class": "EventRoleType",
+     "value": 1,
+     "string": ""
+    }
+   }
+  ],
+  "birth_ref_index": -1,
+  "death_ref_index": 1,
+  "family_list": [
+   "fami0001"
+  ],
+  "parent_family_list": [],
+  "media_list": [],
+  "address_list": [],
+  "attribute_list": [],
+  "urls": [],
+  "lds_ord_list": [],
+  "citation_list": [],
+  "note_list": [],
+  "person_ref_list": []
+ },
+ {
+  "_class": "Person",
+  "handle": "pers0003",
+  "gramps_id": "I0003",
+  "change": 0,
+  "private": true,
+  "tag_list": [],
+  "gender": 3,
+  "primary_name": {
+   "_class": "Name",
+   "private": false,
+   "surname_list": [
+    {
+     "_class": "Surname",
+     "surname": "Dupont",
+     "prefix": "",
+     "primary": true,
+     "origintype": {
+      "_class": "NameOriginType",
+      "value": 1,
+      "string": ""
+     },
+     "connector": ""
+    }
+   ],
+   "citation_list": [],
+   "note_list": [],
+   "date": {
+    "_class": "Date",
+    "calendar": 0,
+    "modifier": 0,
+    "quality": 0,
+    "dateval": [
+     0,
+     0,
+     0,
+     false
+    ],
+    "text": "",
+    "sortval": 0,
+    "newyear": 0
+   },
+   "first_name": "Camille",
+   "suffix": "",
+   "title": "",
+   "type": {
+    "_class": "NameType",
+    "value": 2,
+    "string": ""
+   },
+   "group_as": "",
+   "sort_as": 0,
+   "display_as": 0,
+   "call": "",
+   "nick": "",
+   "famnick": ""
+  },
+  "alternate_names": [],
+  "event_ref_list": [
+   {
+    "_class": "EventRef",
+    "private": false,
+    "citation_list": [],
+    "note_list": [],
+    "attribute_list": [],
+    "ref": "even0001",
+    "role": {
+     "_class": "EventRoleType",
+     "value": 10,
+     "string": ""
+    }
+   },
+   {
+    "_class": "EventRef",
+    "private": false,
+    "citation_list": [],
+    "note_list": [],
+    "attribute_list": [],
+    "ref": "even0011",
+    "role": {
+     "_class": "EventRoleType",
+     "value": 1,
+     "string": ""
+    }
+   },
+   {
+    "_class": "EventRef",
+    "private": false,
+    "citation_list": [],
+    "note_list": [],
+    "attribute_list": [],
+    "ref": "even0009",
+    "role": {
+     "_class": "EventRoleType",
+     "value": 1,
+     "string": ""
+    }
+   }
+  ],
+  "birth_ref_index": 2,
+  "death_ref_index": -1,
+  "family_list": [],
+  "parent_family_list": [
+   "fami0001"
+  ],
+  "media_list": [],
+  "address_list": [],
+  "attribute_list": [],
+  "urls": [],
+  "lds_ord_list": [],
+  "citation_list": [],
+  "note_list": [],
+  "person_ref_list": []
+ },
+ {
+  "_class": "Person",
+  "handle": "pers0004",
+  "gramps_id": "I0004",
+  "change": 0,
+  "private": false,
+  "tag_list": [],
+  "gender": 2,
+  "primary_name": {
+   "_class": "Name",
+   "private": false,
+   "surname_list": [],
+   "citation_list": [],
+   "note_list": [],
+   "date": {
+    "_class": "Date",
+    "calendar": 0,
+    "modifier": 0,
+    "quality": 0,
+    "dateval": [
+     0,
+     0,
+     0,
+     false
+    ],
+    "text": "",
+    "sortval": 0,
+    "newyear": 0
+   },
+   "first_name": "",
+   "suffix": "",
+   "title": "",
+   "type": {
+    "_class": "NameType",
+    "value": 2,
+    "string": ""
+   },
+   "group_as": "",
+   "sort_as": 0,
+   "display_as": 0,
+   "call": "",
+   "nick": "",
+   "famnick": ""
+  },
+  "alternate_names": [],
+  "event_ref_list": [
+   {
+    "_class": "EventRef",
+    "private": false,
+    "citation_list": [],
+    "note_list": [],
+    "attribute_list": [],
+    "ref": "even0010",
+    "role": {
+     "_class": "EventRoleType",
+     "value": 1,
+     "string": ""
+    }
+   }
+  ],
+  "birth_ref_index": -1,
+  "death_ref_index": -1,
+  "family_list": [],
+  "parent_family_list": [
+   "fami0001"
+  ],
+  "media_list": [],
+  "address_list": [],
+  "attribute_list": [],
+  "urls": [],
+  "lds_ord_list": [],
+  "citation_list": [],
+  "note_list": [],
+  "person_ref_list": []
+ },
+ {
+  "_class": "Family",
+  "handle": "fami0001",
+  "gramps_id": "F0001",
+  "change": 1700000901,
+  "private": true,
+  "tag_list": [
+   "tag0002"
+  ],
+  "father_handle": "pers0001",
+  "mother_handle": "pers0002",
+  "child_ref_list": [
+   {
+    "_class": "ChildRef",
+    "private": true,
+    "citation_list": [
+     "cita0002"
+    ],
+    "note_list": [
+     "note0002"
+    ],
+    "ref": "pers0003",
+    "frel": {
+     "_class": "ChildRefType",
+     "value": 2,
+     "string": ""
+    },
+    "mrel": {
+     "_class": "ChildRefType",
+     "value": 7,
+     "string": "Recueilli"
+    }
+   },
+   {
+    "_class": "ChildRef",
+    "private": false,
+    "citation_list": [],
+    "note_list": [],
+    "ref": "pers0004",
+    "frel": {
+     "_class": "ChildRefType",
+     "value": 1,
+     "string": ""
+    },
+    "mrel": {
+     "_class": "ChildRefType",
+     "value": 1,
+     "string": ""
+    }
+   }
+  ],
+  "type": {
+   "_class": "FamilyRelType",
+   "value": 0,
+   "string": ""
+  },
+  "event_ref_list": [
+   {
+    "_class": "EventRef",
+    "private": false,
+    "citation_list": [
+     "cita0002"
+    ],
+    "note_list": [
+     "note0002"
+    ],
+    "attribute_list": [
+     {
+      "_class": "Attribute",
+      "private": false,
+      "citation_list": [],
+      "note_list": [],
+      "type": {
+       "_class": "AttributeType",
+       "value": 13,
+       "string": ""
+      },
+      "value": "Pierre"
+     }
+    ],
+    "ref": "even0008",
+    "role": {
+     "_class": "EventRoleType",
+     "value": 8,
+     "string": ""
+    }
+   }
+  ],
+  "media_list": [
+   {
+    "_class": "MediaRef",
+    "private": false,
+    "citation_list": [],
+    "note_list": [],
+    "attribute_list": [],
+    "ref": "medi0002",
+    "rect": null
+   }
+  ],
+  "attribute_list": [
+   {
+    "_class": "Attribute",
+    "private": false,
+    "citation_list": [],
+    "note_list": [],
+    "type": {
+     "_class": "AttributeType",
+     "value": 5,
+     "string": ""
+    },
+    "value": "2"
+   }
+  ],
+  "lds_ord_list": [
+   {
+    "_class": "LdsOrd",
+    "citation_list": [],
+    "note_list": [],
+    "date": {
+     "_class": "Date",
+     "calendar": 0,
+     "modifier": 0,
+     "quality": 0,
+     "dateval": [
+      0,
+      0,
+      0,
+      false
+     ],
+     "text": "",
+     "sortval": 0,
+     "newyear": 0
+    },
+    "type": 3,
+    "place": "",
+    "famc": null,
+    "temple": "LONDON",
+    "status": 12,
+    "private": false
+   }
+  ],
+  "citation_list": [
+   "cita0001"
+  ],
+  "note_list": [
+   "note0001"
+  ]
+ },
+ {
+  "_class": "Family",
+  "handle": "fami0002",
+  "gramps_id": "F0002",
+  "change": 0,
+  "private": false,
+  "tag_list": [],
+  "father_handle": null,
+  "mother_handle": null,
+  "child_ref_list": [],
+  "type": {
+   "_class": "FamilyRelType",
+   "value": 4,
+   "string": "Union libre"
+  },
+  "event_ref_list": [],
+  "media_list": [],
+  "attribute_list": [],
+  "lds_ord_list": [],
+  "citation_list": [],
+  "note_list": []
+ }
+]
