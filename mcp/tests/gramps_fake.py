@@ -99,7 +99,7 @@ class FakeGrampsWeb:
     def __init__(self, user: str = "sosa", password: str = "secret", tree: str = "", role: int = 3,
                  api_version: str = "3.25.1", gramps_version: str = "6.0.8", task_queue: bool = False,
                  multi_tree: bool = False, inscription_libre: bool = False, horloge=time.time,
-                 limite_jeton: bool = False):
+                 limite_jeton: bool = False, default_person: str = ""):
         self.user, self.password = user, password
         self.tree = tree  # si défini : le jeton porte la revendication « tree » (toujours présente en réalité)
         self.role = role  # modifiable en cours de test : relu au renouvellement du jeton, pas avant
@@ -107,6 +107,7 @@ class FakeGrampsWeb:
         self.task_queue, self.multi_tree, self.inscription_libre = task_queue, multi_tree, inscription_libre
         self.horloge = horloge  # injectable : expiration du jeton (15 min) sans attendre
         self.logins = self.refreshes = 0
+        self.default_person = default_person  # handle de la personne de référence (« » : aucune), #274
         self.limite_jeton, self._dernier_jeton = limite_jeton, float("-inf")
         self.objects: dict[str, dict[str, dict]] = {c: {} for c in CLASSES}
         self.clock = 1_000
@@ -204,7 +205,7 @@ class FakeGrampsWeb:
         counts = {c.lower(): len(o) for c, o in self.objects.items() if c != "Tag"}
         return httpx.Response(200, json={
             "database": {"id": "fake", "name": "Sosa-tests", "type": "sqlite"},
-            "default_person": "",
+            "default_person": self.default_person,
             "gramps": {"version": self.gramps_version},
             "gramps_webapi": {"schema": self.api_version, "version": self.api_version},
             "object_counts": counts,
@@ -236,6 +237,10 @@ class FakeGrampsWeb:
         if (r := self._auth(req)) is not None:
             return r
         objs = [simplify(o) for o in self.objects[PLURAL[plural]].values()]
+        if (gid := req.url.params.get("gramps_id")) is not None:  # comme gramps-web-api : 404 si aucun objet
+            objs = [o for o in objs if o.get("gramps_id") == gid]
+            if not objs:
+                return httpx.Response(404, json={"error": {"code": 404, "message": "Not found"}})
         keys = req.url.params.get("keys")
         if keys:
             ks = keys.split(",")
@@ -246,7 +251,12 @@ class FakeGrampsWeb:
         if (r := self._auth(req)) is not None:
             return r
         o = self.objects[PLURAL[plural]].get(handle)
-        return httpx.Response(200, json=simplify(o)) if o else httpx.Response(404, json={})
+        if not o:
+            return httpx.Response(404, json={})
+        o = simplify(o)
+        if keys := req.url.params.get("keys"):
+            o = {k: o[k] for k in keys.split(",") if k in o}
+        return httpx.Response(200, json=o)
 
     def _search(self, req):
         q = req.url.params.get("query", "").lower()
@@ -305,6 +315,8 @@ class FakeGrampsWeb:
             before = copy.deepcopy(self.objects[it["_class"]].get(it["handle"]))
             if it["type"] == "delete":
                 self.objects[it["_class"]].pop(it["handle"], None)
+                if it["_class"] == "Person" and it["handle"] == self.default_person:
+                    self.default_person = ""  # comme gramps-web-api (tasks.py) : la référence supprimée est effacée
                 new = None
             else:
                 new = copy.deepcopy(it["new"])

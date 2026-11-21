@@ -1456,7 +1456,8 @@ def _importer_gramps(p: Path, mode: str) -> dict:
 
     a = app()
     try:
-        tree, info, zone = lecture_xml.importer(p, a.config.data_dir, datetime.now().strftime("%Y%m%d-%H%M%S"))
+        tree, info, zone = lecture_xml.importer(p, a.config.data_dir, datetime.now().strftime("%Y%m%d-%H%M%S"),
+                                                a.config.sosa_racine, mode)
     except (lecture_xml.LectureGrampsError, OSError) as exc:  # OSError : lecture, zone d'attente
         a.journal.add("import", "gramps", {"fichier": str(p), "mode": mode}, "erreur")
         return {"erreur": f"Fichier Gramps refusé : {exc}"}
@@ -1467,6 +1468,9 @@ def _importer_gramps(p: Path, mode: str) -> dict:
                             f"Gramps {info['version_gramps']}, {info['personnes']} personnes).")
     if "erreur" in prop and zone is not None:
         shutil.rmtree(zone, ignore_errors=True)  # zone neuve créée par cet appel : rien d'autre n'y est
+    ref = info.get("personne_reference") or {}
+    if ref.get("suggestion"):
+        prop.setdefault("avertissements", []).append(ref["suggestion"])
     if info.get("non_repris"):
         prop.setdefault("avertissements", []).append(
             "Contenu Gramps non représenté par l'arbre Genealogiste, non importé : voir import.non_repris "
@@ -1603,6 +1607,8 @@ def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", gene
     seulement) ; compresse=True : gzip, forme native de Gramps Desktop (défaut : XML non compressé).
     gpkg : paquet Gramps (XML + fichiers des médias locaux sous chemins relatifs) ; médias introuvables ou hors
     des répertoires autorisés listés dans le résultat, jamais empaquetés.
+    gramps/gpkg : la racine Sosa (GENEALOGISTE_SOSA_RACINE) devient la personne de référence du fichier
+    (<people home>), sauf si elle n'est pas configurée, absente ou masquée par l'export public.
     Vivants et objets privés masqués par défaut (RGPD) : sources, médias et notes liés à une personne masquée
     retirés avec leurs références, noms remplacés par « Vivant » dans les textes. chemin par défaut :
     <données>/exports/."""
@@ -1634,7 +1640,8 @@ def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", gene
         db, stats = tree_to_gramps_stats(t, None, a.config.strict_evidence, forme=a.config.marqueurs)
         if format == "gpkg":  # médias résolus par la règle commune (racines autorisées), chemins relatifs
             db, membres, bilan_medias = gramps_xml.preparer_gpkg(db, a.config.media_racines)
-        content = gramps_xml.db_to_xml(db, version_xml)
+        handle_ref, motif_ref = gramps_xml.personne_reference(db, a.config.sosa_racine, hidden)
+        content = gramps_xml.db_to_xml(db, version_xml, gramps_xml.Metadonnees(personne_reference=handle_ref))
     elif format == "mermaid_asc":
         content = charts.mermaid_ancestors(t, id, generations, hidden)
     elif format == "mermaid_desc":
@@ -1676,6 +1683,8 @@ def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", gene
             "arbre vide : un second import duplique tout)")
         if version_xml != "1.7.1":
             res["avertissement"] = f"Gramps XML {version_xml} : refusé par Gramps 5.2 (1.7.1 est lu par 5.2 à 6.1)."
+        res["personne_reference"] = ({"ecrite": a.config.sosa_racine} if handle_ref else
+                                     {"ecrite": None, "motif": motif_ref})
         dates = gramps_xml.avertissements_dates(db, version_xml)
         if dates:
             res["avertissements_dates"] = dates
