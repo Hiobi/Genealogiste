@@ -286,6 +286,7 @@ def test_compte_sans_droit_d_ecriture(compte, role, nom, tmp_path):
     r = next(c for c in diagnostic.controles_gramps(a) if c["controle"] == "gramps_role")
     assert (r["etat"], r.get("role"), r.get("role_nom")) == ("erreur", role, nom), r
     assert "Editor" in r["remede"]
+    a.backend.db = a.backend._tree = None  # le diagnostic a lu l'arbre (contrôles « vivants », #264)
     c = a.gramps()
     assert c.role() == role and "EditObject" not in (c.permissions() or set())
     with pytest.raises(GrampsError, match="Editor"):
