@@ -291,9 +291,10 @@ rempart contre un Invité est le drapeau privé, posé objet par objet.
   annulable) ; `GENEALOGISTE_GRAMPS_PRIVE_VIVANTS` vaut `off` (défaut) ou `propose` ; `auto` est refusé. Le retrait
   au décès est proposé, jamais automatique, et ne retire que ce que le plugin a posé (trace dans le journal local
   des transactions ; aucun attribut écrit dans Gramps).
-- **Diagnostic** : vivants non privés alors que l'instance a des comptes Invité ou l'inscription libre (comptes
-  seulement), privés à retirer, divergence entre la règle du plugin et celle de Gramps (`/api/living/`, échantillon
-  borné à 30 requêtes) ; jamais de nom.
+- **Diagnostic** (`diagnostic(vivants=true)`, explicite : lecture de l'arbre et 30 requêtes `/api/living/` au
+  plus) : vivants non privés alors que l'instance a des comptes Invité ou l'inscription libre (comptes seulement),
+  privés à retirer, divergence entre la règle du plugin et celle de Gramps ; jamais de nom. Par défaut, une ligne
+  « non lancé », en `attention` sans rien lire si l'inscription libre est ouverte et le réglage vaut `off`.
 - **Limite par version** : avant l'API 3.25.0 (constaté sur 3.13.0), la recherche plein texte trouve encore une
   famille ou un événement partagés en cherchant le nom du vivant (le nom n'est pas renvoyé) : mettre à jour.
 

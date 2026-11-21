@@ -159,9 +159,7 @@ def test_aucun_nom_dans_le_controle(tmp_path, fake):
     assert not any(p["primary_name"]["first_name"] in texte for p in fake.objects["Person"].values())
 
 
-def test_lecture_ciblee_sans_charger_l_arbre(tmp_path, fake, monkeypatch):
-    from genealogiste_mcp import diagnostic_vivants
-    monkeypatch.setattr(diagnostic_vivants, "controles", lambda a, inscription: [])  # #264 : lit l'arbre, à part
+def test_lecture_ciblee_sans_charger_l_arbre(tmp_path, fake):
     fake.default_person = handle(fake, "I1")
     controle(tmp_path, racine="I3")
     appels = [str(c.request.url) for c in fake.router.calls if "/people/" in str(c.request.url)]

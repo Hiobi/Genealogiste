@@ -34,7 +34,7 @@ analyse : vérifier les données avant de décider de ce qui peut être partagé
 
 Avec Gramps Web, les vivants sont écrits en clair et Gramps Web ne les cache pas aux comptes Invité : seul le
 drapeau « privé » les protège. `gramps_proteger_vivants` propose de le poser sur les vivants et leurs données (et
-de le retirer à leur décès), toujours après accord ; le diagnostic signale une instance exposée
+de le retirer à leur décès), toujours après accord ; `diagnostic(vivants=true)` signale une instance exposée
 ([vivants et privé](../docs/gramps-web.md#vivants-et-privé-264)).
 
 Les notes générées utilisent `masquer` par défaut. Le mode `complet` est pour un espace strictement privé.

@@ -48,6 +48,23 @@ def comptes_invites(a) -> int | None:
     return sum(1 for u in data if isinstance(u, dict) and u.get("role") == 0)
 
 
+def non_lance(a, inscription: bool | None) -> list[dict]:
+    """Diagnostic par défaut : contrôle des vivants NON lancé (ni lecture de l'arbre, ni requête /api/living/), une
+    ligne d'information. Seule exception, gratuite : inscription libre ouverte (lue par ``gramps_reglages``) et
+    ``GENEALOGISTE_GRAMPS_PRIVE_VIVANTS=off`` : ``attention`` avec la recommandation."""
+    if a.config.backend != "gramps":
+        return []
+    cout = (f"diagnostic(vivants=true) le lance : lecture complète de l'arbre et au plus {PLAFOND_REQUETES} requêtes "
+            "/api/living/")
+    if inscription and getattr(a.config, "gramps_prive_vivants", "off") == "off":
+        return [_ctl("gramps_vivants", "attention",
+                     "contrôle des vivants non lancé ; l'inscription libre est ouverte et "
+                     "GENEALOGISTE_GRAMPS_PRIVE_VIVANTS=off : les vivants non privés sont lisibles d'un compte Invité",
+                     f"Lancer {cout} ; ou préparer leur protection : gramps_proteger_vivants (proposition, accord "
+                     "explicite).", lance=False)]
+    return [_ctl("gramps_vivants", "ok", f"contrôle des vivants non lancé ({cout})", lance=False)]
+
+
 def controles(a, inscription: bool | None) -> list[dict]:
     if a.config.backend != "gramps":
         return []

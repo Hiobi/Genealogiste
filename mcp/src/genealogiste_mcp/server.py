@@ -989,20 +989,23 @@ def _naviguer(a: App, source: str, page: int, pas: int, params: dict) -> tuple[d
 
 
 @mcp.tool()
-def diagnostic(reseau: bool = True) -> dict:
+def diagnostic(reseau: bool = True, vivants: bool = False) -> dict:
     """Diagnostic d'exploitation : tableau « contrôle, état (ok/attention/erreur), détail, remède » —
     version du serveur et du plugin sur disque, configuration effective (sans secret), git, uv, droits,
     espace disque, taille des caches, OCR, propositions en attente/expirées, et si reseau=True la
     joignabilité de chaque source (verdict joignable/protection/injoignable, une requête par source, tracée
     au journal) et de Gramps Web (joignabilité, version de l'API et de Gramps, rôle du compte, réglages lisibles
-    sans droit Admin). Fonctionne même si la configuration est invalide."""
+    sans droit Admin). Fonctionne même si la configuration est invalide. vivants=True (mode gramps, réseau) : contrôle
+    des personnes vivantes (#264) — vivants non privés et exposition aux comptes Invité, privés à retirer, divergence
+    avec le calcul de Gramps — au prix d'une lecture complète de l'arbre et de 30 requêtes /api/living/ au plus ;
+    comptes et identifiants seulement. Par défaut : non lancé (une ligne d'information)."""
     from . import diagnostic as diag
 
     try:
         a = app()
     except Exception as exc:  # noqa: BLE001 — rapporté comme contrôle « configuration »
         return diag.executer(exc, verifier_demarrage(), reseau)
-    return diag.executer(a, verifier_demarrage(a.config), reseau)
+    return diag.executer(a, verifier_demarrage(a.config), reseau, vivants)
 
 
 @mcp.tool()

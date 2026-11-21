@@ -72,7 +72,7 @@ avant l'échéance), sans délai codé en dur. Le jeton renouvelé garde l'arbre
 Le mode direct suppose une instance Gramps Web **privée** : les personnes vivantes y sont écrites en clair.
 Elles restent masquées par défaut dans les exports publics (`arbre_exporter`). Pour une instance ouverte à des
 comptes Invité ou à l'inscription libre : `gramps_proteger_vivants` et les contrôles `gramps_vivants`,
-`gramps_prive_a_retirer` et `gramps_regle_vivants` du diagnostic ([vivants et privé](#vivants-et-privé-264)).
+`gramps_prive_a_retirer` et `gramps_regle_vivants` de `diagnostic(vivants=true)` ([vivants et privé](#vivants-et-privé-264)).
 
 ## Vivants et privé (#264)
 
@@ -143,7 +143,7 @@ plugin a posé le privé « parce que vivant » (`protection` : classe, handle, 
 ceux dont il l'a retiré (`retrait_protection`). **Aucun attribut n'est écrit dans Gramps** (une note n'a pas
 d'attribut : un marqueur dans Gramps ne couvrirait pas tout le périmètre). Quand toutes les personnes motivantes
 d'un objet ne sont plus présumées vivantes (décès saisi, âge dépassé), `arbre_coherence` (code
-`prive_vivant_a_retirer`) et `diagnostic` (`gramps_prive_a_retirer`) le signalent, et `gramps_proteger_vivants`
+`prive_vivant_a_retirer`) et `diagnostic(vivants=true)` (`gramps_prive_a_retirer`) le signalent, et `gramps_proteger_vivants`
 propose le retrait, jamais automatique. Seul ce que le plugin a posé est retiré : un privé voulu par l'utilisateur
 n'est jamais touché ; un objet qui masque encore un autre vivant reste privé ; une transaction annulée ne compte
 plus. Sans ce journal (répertoire de données perdu, autre poste), rien n'est retiré : retrait à la main dans
@@ -206,13 +206,20 @@ Gramps Web. Rendu dans le navigateur non automatisé : implémenté, non éprouv
 
 ### Diagnostic
 
+Le contrôle des vivants est **explicite** : `diagnostic(vivants=true)` (réseau activé, mode `gramps`). Il lit
+l'arbre complet et envoie au plus 30 requêtes `/api/living/`. Par défaut (`vivants=false`), le diagnostic reste
+léger : ni lecture de l'arbre ni requête `/api/living/`, une seule ligne `gramps_vivants` « non lancé » (`ok`) qui
+dit comment le lancer et ce qu'il coûte. Exception gratuite : inscription libre ouverte (déjà lue par
+`gramps_reglages`) et `GENEALOGISTE_GRAMPS_PRIVE_VIVANTS=off` : la ligne passe en `attention` et recommande
+`diagnostic(vivants=true)` ou `gramps_proteger_vivants`, toujours sans lire l'arbre. Avec `vivants=true` :
+
 | Contrôle | Contenu | États |
 |---|---|---|
 | `gramps_vivants` | personnes présumées vivantes et non privées (compte) ; exposition : comptes Invité (`GET /api/users/`, rôle Owner seulement ; sinon « non vérifiable ») et inscription libre (API ≥ 3.26.0) | aucun vivant non privé, ou exposition vérifiée nulle : `ok` ; sinon `attention` (exposée ou non vérifiable), remède `gramps_proteger_vivants` |
 | `gramps_prive_a_retirer` | personnes motivant un privé posé par le plugin et qui ne sont plus présumées vivantes (`gramps_id`, nombre d'objets) | présent seulement s'il y en a : `attention` |
 | `gramps_regle_vivants` | divergences plugin / Gramps sur l'échantillon borné ci-dessus (comptes, `gramps_id`, cause) | `ok` sans divergence ; `attention` sinon |
 
-Ces contrôles lisent l'arbre (déjà chargé par la session en mode `gramps`) et seulement en mode `gramps`.
+Ces contrôles n'existent qu'en mode `gramps`.
 
 ## Personne de référence et racine Sosa (#274)
 

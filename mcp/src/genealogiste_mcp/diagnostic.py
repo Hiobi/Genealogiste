@@ -249,7 +249,7 @@ def _controle_politique(a) -> dict:
                 consomme_aujourd_hui=consomme)
 
 
-def controles_reseau(a) -> list[dict]:
+def controles_reseau(a, vivants: bool = False) -> list[dict]:
     from .http import HttpClient, SourceError
 
     client = HttpClient(a.cache, a.config.user_agent, timeout=8.0, politique=a.http.politique,
@@ -284,7 +284,7 @@ def controles_reseau(a) -> list[dict]:
                   nb_resultats=len(out), resume="; ".join(f"{c['controle']}={c['verdict']}" for c in out),
                   references=list(SOURCES.values()))
     if a.config.gramps_url:
-        out += controles_gramps(a)
+        out += controles_gramps(a, vivants)
     return out
 
 
@@ -297,7 +297,7 @@ def _controle_gramps(a) -> dict:
         return _ctl("gramps_web", "erreur" if a.config.backend == "gramps" else "attention", d["erreur"], d["remede"])
 
 
-def controles_gramps(a) -> list[dict]:
+def controles_gramps(a, vivants: bool = False) -> list[dict]:
     """Joignabilité, puis version de l'API, rôle du compte et réglages lisibles sans droit Admin (#265).
 
     Chaque contrôle échoue seul : un `/api/metadata/` ou `/api/users/-/` en panne donne un contrôle `attention` avec
@@ -332,8 +332,11 @@ def controles_gramps(a) -> list[dict]:
         out.append(_controle_chercheur(a, meta))
         if not injoignable:
             out.append(_controle_personne_reference(a, meta, gramps_actif))
-            from . import diagnostic_vivants  # #264 : comptes et gramps_id seulement
-            out += diagnostic_vivants.controles(a, (reglages.get("valeurs") or {}).get("inscription_libre"))
+            # vivants (#264) : comptes et gramps_id seulement ; contrôle explicite (vivants=True), sinon une ligne
+            from . import diagnostic_vivants
+            inscription = (reglages.get("valeurs") or {}).get("inscription_libre")
+            out += (diagnostic_vivants.controles(a, inscription) if vivants
+                    else diagnostic_vivants.non_lance(a, inscription))
     if gramps_actif and not injoignable:
         out.append(_controle_medias_chemins(a, "gramps_medias_chemins"))
     return out
@@ -580,13 +583,13 @@ def _controle_personne_reference(a, meta: dict, gramps_actif: bool) -> dict:
                 "des notes et ceux des rapports Gramps divergent", remede, racine_sosa=racine, personne_reference=ref)
 
 
-def executer(app_ou_exc, probleme: dict | None, reseau: bool = True) -> dict:
+def executer(app_ou_exc, probleme: dict | None, reseau: bool = True, vivants: bool = False) -> dict:
     a = app_ou_exc if not isinstance(app_ou_exc, BaseException) else None
     if a is None and isinstance(app_ou_exc, BaseException) and not probleme:
         probleme = erreurs.decrire(app_ou_exc)
     controles = controles_locaux(a, probleme, a.config if a else None)
     if reseau and a is not None and not a.config.offline:
-        controles += controles_reseau(a)
+        controles += controles_reseau(a, vivants)
     etats = {c["etat"] for c in controles}
     etat = "erreur" if "erreur" in etats else "attention" if "attention" in etats else "ok"
     return {"etat": etat, "version": version_serveur(), "guide": GUIDE, "controles": controles,

@@ -446,13 +446,50 @@ def test_billet_public_nommant_l_identifiant_d_un_vivant_refuse(tree):
 
 # ---------------------------------------------------------------------------- diagnostic
 
-def _diag(tmp_path, fake, **kw):
-    app_gramps(tmp_path, **kw)
+def _diag(tmp_path, fake, vivants=True, **kw):
+    a = app_gramps(tmp_path, **kw)
     try:
-        res = server.diagnostic()
+        res = server.diagnostic(vivants=vivants)
     finally:
         server.set_app(None)
+    res["_app"] = a
     return {c["controle"]: c for c in res["controles"]}, res
+
+
+def _appels(fake, motif: str) -> list[str]:
+    return [str(c.request.url) for c in fake.router.calls if motif in str(c.request.url)]
+
+
+def test_diagnostic_par_defaut_ne_lit_pas_l_arbre(tmp_path, fake, arbre):
+    """Par défaut : contrôle des vivants non lancé, arbre non chargé, aucune requête /api/living/, une ligne ok."""
+    seed(fake, arbre)
+    c, res = _diag(tmp_path, fake, vivants=False)
+    assert res["_app"].backend.db is None
+    assert _appels(fake, "/living/") == [] and not [u for u in _appels(fake, "/people/") if "keys=" not in u]
+    v = c["gramps_vivants"]
+    assert v["etat"] == "ok" and v["lance"] is False and "diagnostic(vivants=true)" in v["detail"]
+    assert "30 requêtes" in v["detail"] and "lecture complète de l'arbre" in v["detail"]
+    assert "gramps_regle_vivants" not in c and "gramps_prive_a_retirer" not in c
+
+
+def test_diagnostic_par_defaut_attention_gratuite_si_inscription_libre(tmp_path, fake, arbre):
+    """Inscription libre ouverte (lue par gramps_reglages) et réglage off : attention, toujours sans lire l'arbre."""
+    seed(fake, arbre)
+    fake.api_version, fake.inscription_libre = "3.26.0", True
+    c, res = _diag(tmp_path, fake, vivants=False)
+    v = c["gramps_vivants"]
+    assert v["etat"] == "attention" and "inscription libre" in v["detail"]
+    assert "diagnostic(vivants=true)" in v["remede"] and "gramps_proteger_vivants" in v["remede"]
+    assert res["_app"].backend.db is None and _appels(fake, "/living/") == []
+    c, _ = _diag(tmp_path / "p", fake, vivants=False, mode="propose")
+    assert c["gramps_vivants"]["etat"] == "ok"  # réglage propose : pas d'alerte gratuite
+
+
+def test_diagnostic_vivants_explicite_lance_les_controles(tmp_path, fake, arbre):
+    seed(fake, arbre)
+    c, res = _diag(tmp_path, fake)
+    assert c["gramps_vivants"].get("lance") is not False and "gramps_regle_vivants" in c
+    assert res["_app"].backend.db is not None
 
 
 def test_diagnostic_exposition_inscription_libre(tmp_path, fake, arbre):
@@ -517,6 +554,6 @@ def test_diagnostic_signale_les_retraits(tmp_path, fake, gapp):
     server.arbre_appliquer(server.gramps_proteger_vivants()["jeton"])
     p = server.arbre_proposer([{"op": "ajouter_evenement", "cible": "I10", "evenement": {"type": "DEAT", "date": "2020", "non_source": True, "motif": "test fictif"}}], "Décès", "Test (fictif).")
     server.arbre_appliquer(p["jeton"])
-    res = server.diagnostic()
+    res = server.diagnostic(vivants=True)
     c = {x["controle"]: x for x in res["controles"]}
     assert c["gramps_prive_a_retirer"]["personnes"] == ["I10"]
