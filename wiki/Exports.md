@@ -47,6 +47,10 @@ Le fichier `gramps` est lu par Gramps 5.2, 6.0 et 6.1 ; demander la version XML 
 Gramps 6 (Gramps 5.2 la refuse), ou un fichier compressé si besoin. Pour un paquet `gpkg`, lire la liste
 des médias manquants : ils ne sont pas dans l’archive. Voir le [guide Gramps Desktop](../docs/gramps.md).
 
+Pour que Gramps Desktop retrouve directement les images du vault, exporter le `gramps` avec le dossier du vault tel que la machine
+Desktop le voit (paramètre `chemin_base_medias`, jamais écrit par défaut ni dans un export public) : voir le
+[chemin de base des médias](../docs/gramps.md#chemin-de-base-des-médias-280).
+
 Faire le premier essai dans une base vide ou jetable. Un second import dans un arbre Gramps non vide
 peut dupliquer les objets. Un export GEDCOM ne conserve pas forcément tous les détails d’un logiciel ;
 les [extensions](../docs/gedcom-extensions.md) et les guides Gramps/GeneWeb expliquent les choix.

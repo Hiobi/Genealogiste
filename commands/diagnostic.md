@@ -12,8 +12,10 @@ Diagnostic : **$ARGUMENTS**
    de rôle (Editor attendu : un rôle plus faible interdit l'écriture, Owner/Admin est déconseillé) et de réglages.
    Ajouter l'accord entre la racine Sosa et la personne de référence de Gramps : en cas d'écart, donner les deux
    identifiants et la procédure manuelle du remède (Gramps Web n'a aucun point d'API pour la modifier).
-4. Pour une source au verdict **protection** : le dire tel quel (blocage anti-robot de cette adresse) et
+4. Présenter le contrôle des chemins de médias (introuvables, ambigus, hors des racines, nom attribué par Gramps Web) avec son
+   échantillon d'identifiants, sans rien déduire d'autre ; pour la procédure, renvoyer à docs/gramps.md (chemin de base des médias).
+5. Pour une source au verdict **protection** : le dire tel quel (blocage anti-robot de cette adresse) et
    proposer la consultation dans le navigateur ; aucun contournement.
-5. Si la version du serveur diffère de celle du plugin, conseiller de redémarrer le serveur MCP (`/mcp`).
-6. Terminer par la liste `a_corriger`, dans l'ordre, avec la commande ou la variable à modifier, et le lien `guide`
+6. Si la version du serveur diffère de celle du plugin, conseiller de redémarrer le serveur MCP (`/mcp`).
+7. Terminer par la liste `a_corriger`, dans l'ordre, avec la commande ou la variable à modifier, et le lien `guide`
    (installation et exploitation sur un serveur).

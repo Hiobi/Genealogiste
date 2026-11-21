@@ -124,6 +124,65 @@ def test_media_upload_and_citation_link(client, loaded, tmp_path):
     assert b.media_status()["a_envoyer"] == []
 
 
+def test_chemin_media_apres_envoi_du_vault_relu_tel_quel(client, loaded, tmp_path):
+    """#280 (moitié « Web ») : un média du vault envoyé par le plugin. Gramps Web attribue son propre `path`
+    (somme + extension, sous son dossier de médias) ; le chemin relatif du vault ne survit que dans l'attribut
+    Genealogiste-Fichier, relu tel quel. Un média sans fichier garde le `path` écrit, sans somme, et figure dans
+    `filemissing`. Aucune route n'expose le dossier de base des médias du serveur."""
+    import hashlib
+    import io
+
+    from PIL import Image
+
+    from genealogiste_mcp.gramps.mapping import A_FICHIER
+    from genealogiste_mcp.gramps.types import tname
+    from genealogiste_mcp.models import Media
+
+    buf = io.BytesIO()
+    Image.new("L", (90, 60), 77).save(buf, "JPEG")
+    jpeg = buf.getvalue()
+    vault = tmp_path / "vault"
+    relatif = "documents/État civil/acte-280.jpg"
+    (vault / relatif).parent.mkdir(parents=True)
+    (vault / relatif).write_bytes(jpeg)
+    b = GrampsBackend(client, tmp_path / "donnees", tmp_path / ".propositions", ttl=0,
+                      media_dir=(vault / "documents", vault))
+    p = b.propose([{"op": "ajouter_media", "ref": "img", "fichier": relatif, "format": "image/jpeg",
+                    "titre": "Acte du vault (280)"}], "Média du vault", "Image fictive (280).")
+    r = b.apply(p["jeton"])
+    assert r["medias"]["envoyes"] and not r["medias"]["erreurs"], r
+    db = client.load_all()
+    m = next(x for x in db.all("Media").values() if x.get("desc") == "Acte du vault (280)")
+    somme = hashlib.md5(jpeg).hexdigest()
+    attrs = {tname(a["type"]): a["value"] for a in m["attribute_list"]}
+    assert attrs[A_FICHIER] == relatif  # le chemin relatif du vault, seul survivant
+    assert m["checksum"] == somme
+    assert m["path"] != relatif and m["path"].startswith(somme) and m["path"].rsplit(".", 1)[1] in ("jpg", "jpeg")
+    assert "/" not in m["path"]  # le serveur range le fichier sous son dossier, à plat
+    # relu tel quel par le plugin : ni le chemin du serveur ni l'attribut ne sont réécrits
+    t, _ = gramps_to_tree(db)
+    assert next(x for x in t.medias.values() if x.titre == "Acte du vault (280)").fichier == relatif
+    assert diff(db, tree_to_gramps(t, base=db)) == []
+    # média sans fichier : le path écrit est gardé tel quel, sans somme, signalé « fichier manquant » par le serveur
+    t.medias["O280"] = Media(id="O280", fichier="documents/sans-fichier-280.jpg", format="image/jpeg",
+                             titre="Sans fichier (280)")
+    client.transaction(diff(db, tree_to_gramps(t, base=db)), "Tests d'intégration : média sans fichier (280, fictif)")
+    db = client.load_all()
+    sans = next(x for x in db.all("Media").values() if x.get("desc") == "Sans fichier (280)")
+    assert sans["path"] == "documents/sans-fichier-280.jpg" and not sans.get("checksum")
+    manquants = {x["handle"] for x in client.request("GET", "/media/", params={"filemissing": 1}).json()}
+    assert sans["handle"] in manquants and m["handle"] not in manquants
+    # le dossier de base des médias du serveur n'est exposé par aucune route de métadonnées
+    meta = client.request("GET", "/metadata/").json()
+
+    def cles(o):
+        if isinstance(o, dict):
+            for k, v in o.items():
+                yield k.lower()
+                yield from cles(v)
+    assert not [k for k in cles(meta) if "media" in k and ("dir" in k or "path" in k or "base" in k)]
+
+
 def test_places_are_hierarchical_in_real_gramps(client, loaded):
     """#11 : commune → département → pays acceptés par l'API ; nom relu identique."""
     from genealogiste_mcp.gramps.types import tname

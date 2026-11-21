@@ -30,6 +30,7 @@ from __future__ import annotations
 import argparse
 import copy
 import gzip
+import html
 import io
 import json
 import os
@@ -553,6 +554,119 @@ def controle_groupes(cas: Cas, version: str, attendu: dict, rapport: dict) -> li
     return ecarts
 
 
+# Chemin de base des médias (#280) : arbre exporté avec <mediapath> = racine d'un « vault » et chemins relatifs ;
+# Gramps retrouve DIRECTEMENT les fichiers (media_path_full), sans extraction de paquet.
+MEDIA_VAULT = "documents/État civil/acte é.jpg"
+CONTENU_VAULT = b"\xff\xd8\xff\xe0 image fictive du vault"
+VAULTS: dict[str, str] = {}  # cas -> racine du vault de test écrite dans <mediapath> (ou à ne pas retrouver)
+
+
+def avec_media_vault(tree, dossier: Path):
+    """Copie de l'arbre avec un média du vault (arborescence des pièces, nom accentué) rattaché à la première
+    personne ; le fichier est écrit sous ``<dossier>/vault``."""
+    from genealogiste_mcp.models import Media
+
+    tree = copy.deepcopy(tree)
+    f = dossier / "vault" / MEDIA_VAULT
+    f.parent.mkdir(parents=True)
+    f.write_bytes(CONTENU_VAULT)
+    mid = "O" + str(len(tree.medias) + 900)
+    tree.medias[mid] = Media(id=mid, fichier=MEDIA_VAULT, titre="Acte fictif du vault")
+    tree.personnes[sorted(tree.personnes)[0]].medias.append(mid)
+    return tree
+
+
+def produire_mediapath(tree, dossier: Path) -> Path:
+    """Export réel avec chemin_base_medias : le même chemin que arbre_exporter (validation, chemins relatifs à la
+    base, ``Metadonnees.mediapath``)."""
+    from genealogiste_mcp.export.gramps_xml import (
+        Metadonnees,
+        chemins_relatifs_a_la_base,
+        db_to_xml,
+        verifier_chemin_base_medias,
+    )
+    from genealogiste_mcp.gramps.mapping import tree_to_gramps_stats
+
+    vault = (dossier / "vault").resolve()
+    base = verifier_chemin_base_medias(str(vault))
+    db, _ = tree_to_gramps_stats(tree, None, False)
+    db, bilan = chemins_relatifs_a_la_base(db, (vault,), vault)
+    if bilan["relatifs"] != 1:
+        raise SystemExit(f"chemin de base : bilan inattendu {bilan}")
+    VAULTS["mediapath"] = base
+    chemin = dossier / "genealogiste.gramps"
+    chemin.write_text(db_to_xml(db, "1.7.1", Metadonnees(mediapath=base)), encoding="utf-8")
+    return chemin
+
+
+def produire_sans_mediapath(tree, dossier: Path) -> Path:
+    VAULTS["sans-mediapath"] = str((dossier / "vault").resolve())
+    return produire_xml("1.7.1")(tree, dossier)
+
+
+def produire_gpkg_mediapath(tree, dossier: Path) -> Path:
+    """Paquet dont l'en-tête porte un <mediapath> : Gramps (importgpkg) doit l'ignorer."""
+    from genealogiste_mcp.export.gramps_xml import Metadonnees, paquet_gpkg
+    from genealogiste_mcp.gramps.mapping import tree_to_gramps_stats
+
+    vault = (dossier / "vault").resolve()
+    VAULTS["gpkg-mediapath"] = str(vault)
+    db, _ = tree_to_gramps_stats(tree, None, False)
+    brut, bilan = paquet_gpkg(db, (vault,), meta=Metadonnees(mediapath=str(vault)))
+    if bilan["manquants"]:
+        raise SystemExit(f"paquet incomplet : {bilan['manquants']}")
+    chemin = dossier / "genealogiste.gpkg"
+    chemin.write_bytes(brut)
+    return chemin
+
+
+def controle_chemin_base(cas: Cas, version: str, attendu: dict, rapport: dict) -> list[str]:
+    """#280 : après l'import par la vraie bibliothèque, ``media_path_full(db, path)`` désigne le fichier du vault quand
+    l'arbre exporté porte ``<mediapath>`` ; la somme de contrôle est calculée depuis ce chemin ; sans ``<mediapath>``
+    le fichier n'est pas retrouvé (le défaut de l'export n'écrit aucun chemin de la machine) ; le ``<mediapath>``
+    d'un paquet ``.gpkg`` est ignoré (importgpkg remet celui de l'arbre puis pose ``<nom>.gpkg.media``)."""
+    import hashlib
+    import os
+
+    mediapath = rapport.get("mediapath")
+    if cas.nom not in VAULTS:
+        # aucun autre cas n'écrit de <mediapath> ; le paquet pose son dossier d'extraction à l'import
+        if mediapath and cas.nom != "gpkg":
+            return [f"<mediapath> {mediapath!r} inventé par l'export du cas {cas.nom}"]
+        return []
+    vault = VAULTS[cas.nom]
+    ecarts = []
+    m = next((x for x in rapport.get("medias", []) if x["chemin"] == MEDIA_VAULT), None)
+    if m is None:
+        return [f"média {MEDIA_VAULT} absent après import : {rapport.get('medias')}"]
+    somme = hashlib.md5(CONTENU_VAULT).hexdigest()
+    norm = os.path.normpath
+    if cas.nom == "mediapath":
+        if not m["fichier"] or norm(m["complet"]) != norm(os.path.join(vault, MEDIA_VAULT)):
+            ecarts.append(f"fichier du vault non retrouvé directement : {m['complet']!r} (fichier : {m['fichier']})")
+        if not mediapath or norm(mediapath) != norm(vault):
+            ecarts.append(f"chemin de base de l'arbre {mediapath!r} au lieu de {vault!r}")
+        if m["checksum"] != somme:
+            ecarts.append(f"somme de contrôle {m['checksum']!r} au lieu de {somme} (calculée depuis <mediapath>)")
+        if "reexport" in rapport:
+            r = re.search(rb"<mediapath>([^<]*)</mediapath>", lire_xml(Path(rapport["reexport"])))
+            if not r or norm(html.unescape(r[1].decode())) != norm(vault):
+                ecarts.append(f"réexport de Gramps : mediapath {r and r[1].decode()!r}")
+    elif cas.nom == "sans-mediapath":
+        if m["fichier"]:
+            ecarts.append("fichier retrouvé sans <mediapath> : le banc ne démontre plus l'écart")
+        if mediapath is not None or m["checksum"]:
+            ecarts.append(f"chemin de base {mediapath!r} ou somme {m['checksum']!r} inventés sans <mediapath>")
+    else:  # gpkg-mediapath
+        if not m["fichier"]:
+            ecarts.append("média du paquet non retrouvé après extraction")
+        if not mediapath or not mediapath.endswith(".gpkg.media") or norm(mediapath) == norm(vault):
+            ecarts.append(f"<mediapath> du paquet non ignoré : chemin de base {mediapath!r}")
+    print(f"   {version} : {cas.nom} : chemin de base {mediapath!r}, fichier retrouvé {m['fichier']}, "
+          f"somme {m['checksum'] or '(vide)'}", flush=True)
+    return ecarts
+
+
 FROM_TO_HORS_SCHEMA = ((rb'(<dateval [^>]*type=")(?:from|to)"', rb'\1about"'),)
 
 CAS: list[Cas] = [
@@ -574,6 +688,15 @@ CAS: list[Cas] = [
         produire_reference, arbres=("famille.ged",)),
     Cas("groupes", "Gramps XML 1.7.1 avec <namemaps> : groupes de noms rendus par get_name_group_mapping (#276)",
         produire_groupes, arbres=("famille.ged",)),
+    Cas("mediapath", "Gramps XML 1.7.1 exporté avec chemin_base_medias = racine du vault : fichier retrouvé directement "
+        "par media_path_full, sans extraction de paquet (#280)", produire_mediapath, enrichir=avec_media_vault,
+        arbres=("famille.ged",)),
+    Cas("sans-mediapath", "Gramps XML 1.7.1 par défaut (aucun <mediapath>) avec un média du vault : fichier non "
+        "retrouvé, rien de la machine écrit (#280)", produire_sans_mediapath, enrichir=avec_media_vault,
+        arbres=("famille.ged",)),
+    Cas("gpkg-mediapath", "paquet .gpkg dont l'en-tête porte un <mediapath> : ignoré par Gramps, médias extraits dans "
+        "<nom>.gpkg.media (#280)", produire_gpkg_mediapath, enrichir=avec_media_vault, arbres=("famille.ged",),
+        avertissements_admis=("Base path for relative media set",)),
     Cas("notes", "Gramps XML 1.7.1 : notes de preuve avec liens internes et note manuelle aux onze styles (#279)",
         produire_notes, arbres=("famille.ged",), retoucher=notes_stylees,
         schema_admis={v: STYLES_HORS_SCHEMA for v in ("5.2", "6.0", "6.1")}),
@@ -990,7 +1113,7 @@ def controle_types(cas: Cas, version: str, attendu: dict, rapport: dict) -> list
 
 CONTROLES: list[Controle] = [controle_reexport, controle_medias, controle_champs, controle_lecture, controle_dates,
                              controle_types, controle_lieux, controle_notes,
-                             controle_reference, controle_groupes]
+                             controle_reference, controle_groupes, controle_chemin_base]
 
 
 def comparer_cycle(premier: dict, second: dict, contexte: str, ecrit_par_gramps: bool = True) -> list[str]:

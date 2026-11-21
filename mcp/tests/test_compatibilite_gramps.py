@@ -128,10 +128,21 @@ def test_cas_desktop_de_l_export_268(desktop):
     """Formes remises à Gramps : 1.7.1, 1.7.2 (refusée par 5.2 seulement), .gramps gzip, .gpkg avec média."""
     cas = {c.nom: c for c in desktop["CAS"]}
     assert set(cas) == {"xml-1.7.1", "xml-1.7.2", "gramps-gzip", "gpkg", "dates", "types", "lieux", "notes", "reference",
-                       "groupes"}
+                       "groupes", "mediapath", "sans-mediapath", "gpkg-mediapath"}
     assert cas["xml-1.7.2"].refus_attendu == {"5.2"}
     assert all(not c.refus_attendu for n, c in cas.items() if n != "xml-1.7.2")
     assert cas["gpkg"].enrichir and cas["gpkg"].avertissements_admis
+
+
+def test_cas_desktop_chemin_de_base_des_medias_280(desktop):
+    """Arbre exporté avec <mediapath> = racine du vault : fichier retrouvé directement (media_path_full) ; sans
+    <mediapath> : non retrouvé ; paquet : <mediapath> ignoré par Gramps. Contrôle branché sur chaque import."""
+    cas = {c.nom: c for c in desktop["CAS"]}
+    for nom in ("mediapath", "sans-mediapath", "gpkg-mediapath"):
+        assert cas[nom].arbres == ("famille.ged",) and cas[nom].enrichir is desktop["avec_media_vault"]
+    assert cas["gpkg-mediapath"].avertissements_admis == ("Base path for relative media set",)
+    assert not cas["mediapath"].avertissements_admis  # aucun avertissement de Gramps pour un arbre vierge
+    assert desktop["controle_chemin_base"] in desktop["CONTROLES"]
 
 
 def test_cas_reference_274(desktop):

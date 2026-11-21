@@ -201,6 +201,9 @@ Une seule règle (`chemins.localiser`, `Config.media_local`), appliquée à la p
 absents avec le motif. Dans les notes, la pièce est remplacée par une ligne « chemin ambigu » sans image (et
 tous les candidats d'un média privé restent masqués).
 
+Le contrôle `medias_chemins` / `gramps_medias_chemins` du diagnostic et le bilan `import.medias.resolution` appliquent cette
+même règle à tous les médias de l'arbre (#280 ; chemin de base d'un Gramps Desktop : `docs/gramps.md`).
+
 #### Référence enregistrée (`media_ref`)
 
 - fichier sous le répertoire des données : relative à celui-ci (`medias/…`), comme avant ;

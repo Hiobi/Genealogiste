@@ -147,6 +147,144 @@ désigne le chemin relatif du fichier dans l'archive. Fichiers introuvables, ref
 `medias.distants`. Les médias d'une personne masquée (vivants, objets privés) sont retirés par la projection de
 publication avant l'empaquetage. Archive déterministe (date nulle, propriétaire 0, membres triés), écrite à côté
 puis renommée. À l'import, Gramps extrait les médias dans `<dossier des médias>/<nom>.gpkg.media/`.
+Le `<mediapath>` d'un paquet est **ignoré** par Gramps : `arbre_exporter` n'en écrit jamais et refuse
+`chemin_base_medias` pour ce format ([chemin de base des médias](#chemin-de-base-des-médias-280)).
+
+### Chemin de base des médias (#280)
+
+Objectif : qu'un arbre ouvert dans Gramps Desktop, avec le vault synchronisé localement (Nextcloud, dossier
+partagé), **retrouve directement** les pièces du vault, sans casser l'envoi vers Gramps Web.
+
+#### Règle de Gramps Desktop (lue dans le code, `gramps/gen/utils/file.py`)
+
+Sources : `maintenance/gramps52` `14c01e56`, `maintenance/gramps60` `32aa2962`, `maintenance/gramps61` `e9c09a44`.
+`media_path`, `expand_media_path` et `expand_path` sont **identiques** dans les trois versions ; `media_path_full`
+ne diffère que par le passage direct d'une adresse `http(s)://` (6.0 et 6.1, pas 5.2).
+
+- `media_path_full(db, chemin)` : adresse web renvoyée telle quelle (6.0, 6.1) ; chemin **absolu** tel quel ;
+  sinon `<chemin de base de l'arbre>/<chemin>`. Un média relatif se résout donc **par rapport au chemin de base
+  de l'arbre**, jamais par rapport au dossier du fichier importé.
+- Le chemin de base est une propriété de **l'arbre** (métadonnée `media-path` de la base), réglée dans Édition >
+  Préférences, onglet « Family Tree » (« Base media path »). Il est exporté dans l'en-tête XML (`<mediapath>`).
+- Sans chemin de base : dossier Images de l'utilisateur (5.2 : dossier Images XDG, à défaut le dossier personnel ;
+  6.0 : dossier Images XDG, à défaut les données de Gramps ; 6.1 : `~/Pictures`).
+- Variables : `expand_path` applique `str.format` avec les variables d'environnement et celles de Gramps
+  (`{USER_HOME}`, `{USER_DATA}`, `{VERSION}`, `{GRAMPS_RESOURCES}`…). **`~` n'est pas développé** et une accolade
+  littérale fait échouer la résolution. Un chemin de base relatif est lu relatif au dossier de la base.
+- À l'import d'un Gramps XML (`importxml.py`) : le `<mediapath>` du fichier est appliqué **si l'arbre cible n'en a
+  pas** ; s'il en a un différent, Gramps affiche « Could not change media path » (non bloquant) et garde celui de
+  l'arbre. 6.1 ajoute l'option `paths.ignore-xml-mediapath`. Il sert aussi à calculer la somme de contrôle d'un
+  média quand le XML n'en porte pas (Genealogiste n'en écrit pas) : sans `<mediapath>`, la somme reste vide.
+- `.gpkg` : `importgpkg.py` **remet le chemin de base de l'arbre** après l'import et range les fichiers dans
+  `<chemin de base ou dossier Images>/<nom>.gpkg.media/` (il refuse un dossier déjà présent) : le `<mediapath>`
+  d'un paquet est ignoré.
+
+Le banc (`make test-gramps-desktop`, cas `mediapath`, `sans-mediapath`, `gpkg-mediapath`) le vérifie avec les
+vraies bibliothèques 5.2.4, 6.0.8 et 6.1.0-beta2 : arbre exporté avec `<mediapath>` = racine du « vault » de test et
+chemin relatif : `media_path_full` désigne **directement** le fichier du vault et la somme de contrôle est calculée ;
+sans `<mediapath>`, le fichier n'est pas retrouvé ; le `<mediapath>` d'un paquet est ignoré.
+
+#### Ce que Genealogiste écrit dans `path` et `Genealogiste-Fichier`
+
+| Média | Référence de l'arbre (`FILE` de `arbre.ged`, attribut `Genealogiste-Fichier`) | `path` d'un export `gramps` | `path` d'un export `gpkg` |
+|---|---|---|---|
+| sous l'arborescence des pièces (`GENEALOGISTE_MEDIA_DIR=<vault>/documents`) | relative aux pièces : `documents/État civil/…` | idem (par défaut) ; avec `chemin_base_medias`, relatif à la racine du vault | relatif à sa racine d'archive |
+| sous le répertoire des médias, hors `documents` | relative à ce répertoire | idem | relatif à sa racine |
+| sous les données | `medias/…` (relative aux données) | idem, **hors base** : jamais relatif au vault | relatif |
+| ailleurs, ou relatif ambigu | chemin absolu | **absolu, tel quel** (chemin de la machine) | refusé, nom du fichier seul, listé dans `medias.manquants` |
+
+En **mode gramps**, `path` est écrit à la création (même valeur que l'attribut) ; l'envoi du fichier fait attribuer
+`path` et somme par **le serveur** (voir ci-dessous) et le plugin ne les réécrit plus : le chemin relatif du vault ne
+survit alors que dans `Genealogiste-Fichier`, et c'est lui que `media_pending`, `gramps_envoyer_medias`,
+`gramps_relocaliser_medias`, l'export et le diagnostic lisent. L'export `gramps` du plugin lit donc cet attribut :
+**il redonne des chemins relatifs au vault même quand Gramps Web n'en a plus**.
+
+#### Gramps Web et le `path`
+
+Lu dans `gramps-web-api` `v3.26.0` (`5b3f8907`, `gramps_webapi/api/resources/file.py`, `api/media.py`) ; le test
+`gramps_live` de #280 le vérifie sur chaque image de la matrice.
+
+- Envoi d'un fichier (`PUT /media/{handle}/file`, `file.py:158-164`) : le serveur stocke le fichier à plat sous
+  `<somme MD5><extension>` dans son dossier de médias (`MEDIA_BASE_DIR`, à défaut le chemin de base de l'arbre côté
+  serveur, `media.py:547-572`) et **remplace** `path` par ce nom, `checksum` et `mime`. Le chemin relatif d'origine
+  est perdu côté serveur.
+- Même somme que l'objet et `uploadmissing=1` sur un fichier absent (`file.py:127-139`) : le `path` existant est
+  **conservé**, le fichier est rangé sous ce chemin relatif (c'est ce qu'utilise l'addon de synchronisation).
+- Média sans fichier : `path` rendu tel qu'écrit, somme vide ; listé par `GET /media/?filemissing=1`.
+- Aucune route n'expose le dossier de base : `GET /api/metadata/` ne porte aucune clé de chemin de médias.
+
+#### Quand c'est vrai aujourd'hui, et ce qui s'y oppose
+
+La règle visée : **chemin de base de l'arbre Desktop = racine du vault (arborescence des pièces), chemins relatifs
+identiques partout.** Elle tient dès que le média est référencé relativement aux pièces (cas courant avec
+`GENEALOGISTE_MEDIA_DIR=<vault>/documents`) et que l'arbre Desktop vient d'un fichier écrit par Genealogiste :
+export `gramps` avec `chemin_base_medias`, ou arbre dont le chemin de base a été réglé sur la racine du vault.
+Ce qui s'y oppose :
+
+1. **Gramps Web réécrit `path`** (`<somme>.<ext>`, à plat) après l'envoi par le plugin. Un arbre Desktop alimenté
+   **depuis Gramps Web** (export XML de Gramps Web, ou addon de synchronisation) porte ces noms, qui ne se
+   résolvent pas dans le vault ; le chemin relatif d'origine n'est que dans l'attribut `Genealogiste-Fichier`.
+2. Les médias hors de la base : sous les données (`medias/…`), absolus, ambigus. Le diagnostic les compte.
+3. Un chemin de base déjà défini dans l'arbre cible : Gramps garde le sien à l'import (avertissement non bloquant).
+
+#### Procédure Desktop
+
+1. **Arbre neuf depuis Genealogiste** : `arbre_exporter("gramps", masquer_vivants=False,
+   chemin_base_medias="<dossier du vault sur la machine Desktop>")`, puis Importer dans un arbre vide. Gramps
+   pose le chemin de base ; les médias du vault sont retrouvés directement. Le chemin de la machine Desktop peut
+   différer de celui du poste où tourne le plugin (c'est la raison d'être de chemins relatifs) : donner celui de la
+   machine qui ouvrira l'arbre. Le fichier contient ce chemin personnel : l'export est refusé avec
+   `masquer_vivants=True` (export public).
+2. **Arbre Desktop existant** : régler « Base media path » sur la racine du vault (Édition > Préférences, onglet « Family Tree »). Les médias dont le `path` est relatif aux pièces sont alors retrouvés.
+3. **Arbre venu de Gramps Web** (`path` en `<somme>.<ext>`) : la correspondance entre ce nom et le chemin du vault
+   n'est que dans `Genealogiste-Fichier`, et Gramps n'a pas d'outil qui la lise. Repartir d'un arbre neuf
+   (procédure 1), ou laisser Desktop gérer ses propres copies. Aucune réécriture du `path` dans Gramps Web n'est
+   faite par le plugin (changement du format écrit : décision du mainteneur).
+4. **`.gpkg`** : à utiliser pour transporter les fichiers eux-mêmes (ils sont extraits dans `<nom>.gpkg.media/`,
+   jamais dans le vault) ; `chemin_base_medias` est refusé pour ce format.
+
+**Dossier synchronisé (Nextcloud…)** : le chemin de base est celui du dossier **sur la machine Desktop**, pas celui
+du serveur ; seuls les chemins relatifs sont partagés. Sous Windows, Gramps normalise le chemin de base
+(`os.path.normcase` : minuscules, `\`) ; écrire le chemin de base avec la lettre de lecteur ou en UNC
+(`C:\Nextcloud\vault`, `\\nas\vault`). Pas d'accolade, pas de `~`, pas de variable dans le chemin écrit :
+`chemin_base_medias` les refuse.
+
+#### Outils
+
+- `arbre_exporter(format="gramps", chemin_base_medias=…)` : écrit `<mediapath>` et rend relatifs à cette base les
+  chemins des médias qui se trouvent sous l'arborescence des pièces ; `chemin_base_medias.medias` du résultat dit
+  combien (`relatifs`), lesquels restent hors base (`hors_base`), introuvables, refusés (identifiants seulement).
+  Par défaut (paramètre vide), **aucun** `<mediapath>`, le fichier est celui d'avant. Le chemin doit être absolu
+  (`/…`, `C:\…`, `\\serveur\…`), sans `..`, sans accolade, sans caractère de contrôle.
+- `arbre_importer_gedcom` (fichier Gramps) : `import.medias.mediapath` rapporte le chemin de base du fichier
+  (donnée **non fiable**, jamais utilisé : voir `docs/securite.md`) et `import.medias.resolution` compte les médias dont
+  le chemin se résout ou non dans les racines autorisées, par cause. Rien n'est déplacé ni modifié.
+- `diagnostic` : contrôle `medias_chemins` (mode fichier) ou `gramps_medias_chemins` (mode gramps) : médias introuvables,
+  ambigus, hors des racines, ou au nom attribué par Gramps Web et sans fichier ici ; identifiants (`gramps_id`) en
+  échantillon, jamais un titre ni un nom de personne ; 2 000 médias examinés au plus.
+
+#### Addon Gramps Web Sync : non éprouvé
+
+Étude par lecture du code (`addons-source` `maintenance/gramps61` `14a6d035` : `GrampsWebSync/session.py`
+`_scan_media`/`_path_for`, `adapters.py` `GrampsMediaStore.full_path`, `webapihandler.py`
+`download_media_file`) ; **addon non installé ni exécuté ici** (périmètre de #271). Un média envoyé à Gramps Web par
+le plugin puis synchronisé vers Desktop arrive avec le `path` du serveur (`<somme>.<ext>`) et l'attribut
+`Genealogiste-Fichier` (copie d'un objet ajouté d'un seul côté, tel quel). L'addon résout ce `path` avec le
+chemin de base de la base locale (`media_path_full`) ; le fichier n'existe pas : il le **télécharge à cet
+emplacement**. Avec un chemin de base = racine du vault, il apparaît donc en `<vault>/<somme>.<ext>`, **une copie
+à la racine du vault** (que Nextcloud synchronise), et non le fichier `documents/…` : le chemin relatif d'origine
+n'est pas retrouvé par Desktop. À vérifier avec l'addon réel avant de s'y fier.
+
+#### Limites
+
+- Export public (`masquer_vivants=True`, défaut) : un chemin de média absolu ou sortant (`..`) est réduit à son nom
+  de fichier dans `<file src>` et dans `Genealogiste-Fichier` (`chemins_absolus_reduits` du résultat : nombre et
+  identifiants) ; export refusé si le répertoire personnel ou de données du poste y figure encore. Export privé
+  (`masquer_vivants=False`) : le `path` reste tel qu'enregistré, absolu compris ; le diagnostic le signale
+  (`hors_racines`).
+- `chemin_base_medias` n'est pas vérifié contre un dossier réel : c'est le chemin d'une autre machine.
+- Pas de variables Gramps (`{USER_HOME}`…) écrites : un export portable demanderait de les connaître sur la
+  machine cible.
 
 ## Import depuis Gramps Desktop
 
@@ -198,6 +336,10 @@ correspondance du mode direct ; l'arbre obtenu suit ensuite exactement le chemin
 
 - `.gramps` : les chemins des médias sont repris **tels quels**, fichiers non copiés. Ils sont relatifs au
   dossier des médias de Gramps (`<mediapath>`), que Genealogiste ne reprend pas (compté dans `non_repris`).
+  `import.medias.mediapath` rapporte ce chemin de base (donnée de fichier tiers, **jamais utilisée**) et
+  `import.medias.resolution` compte, par la règle commune, les chemins qui se résolvent ou non dans les racines
+  autorisées de cette machine (introuvables, ambigus, hors racines), sans rien déplacer ni modifier
+  ([chemin de base des médias](#chemin-de-base-des-médias-280)).
 - `.gpkg` : les fichiers sont extraits dans une **zone d'attente** neuve du répertoire de données,
   `<données>/imports/gramps/<nom>-<AAAAMMJJ-HHMMSS>/`, et le chemin de chaque média de la proposition y est
   relocalisé (`import.medias.fichiers`). Rien n'est rangé dans le vault ni déplacé. Une fois l'import appliqué,
@@ -332,7 +474,16 @@ Workflow `Intégration Gramps`, un job `Gramps Desktop <version>` par version (v
     (`verifier_groupes_seuls`) : le document de `gramps_grouper_noms` (en-tête et `<namemaps>` seulement) est valide
     au DTD et au RNG de la bibliothèque, importé sans erreur ni avertissement, ne crée aucun objet et pose exactement
     ses regroupements.
+18. chemin de base des médias (#280) : cas `mediapath`, `sans-mediapath` et `gpkg-mediapath` (`famille.ged` et un
+    média du « vault » de test, nom accentué, sous-dossiers). Exporté avec `<mediapath>` = racine du vault et chemin
+    relatif, le média est retrouvé **directement** par `media_path_full(db, path)` après l'import de chaque version
+    (sans extraction de paquet), le chemin de base de l'arbre est celui du fichier, la somme de contrôle est calculée
+    par Gramps depuis ce chemin et le réexport de Gramps garde le même `<mediapath>` (`controle_chemin_base`) ; sans
+    `<mediapath>` (export par défaut), le fichier n'est pas retrouvé, la somme reste vide et aucun chemin n'est
+    inventé ; dans un paquet, le `<mediapath>` est ignoré (chemin de base = `<nom>.gpkg.media`).
 
+Résultat du 2026-11-21 (#280) : 147 vérifications sur 147 réussies (GLib factice, 5.2.4, 6.0.8 et 6.1.0-beta2), dont
+les 6 de chacun des cas `mediapath`, `sans-mediapath` et `gpkg-mediapath` (import et cycle) pour chaque version.
 Résultat du 2026-11-21 (#276) : 129 vérifications sur 129 réussies (GLib factice, 5.2.4, 6.0.8 et 6.1.0-beta2),
 dont, par version, les 2 du cas `groupes` (import et cycle) et `groupes:seuls` : les quatre regroupements relus par
 `get_name_group_mapping`, réexport de Gramps identique, document de regroupements seuls sans objet créé.

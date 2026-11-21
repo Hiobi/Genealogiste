@@ -450,7 +450,7 @@ def main() -> int:
     # import .gpkg : médias extraits sous le dossier d'images de l'arbre, à défaut celui de l'utilisateur
     # (GLib réel ou factice, selon la version : HOME, HOME/Pictures, GRAMPSHOME/gramps…) ; il doit exister.
     os.makedirs(USER_PICTURES, exist_ok=True)
-    from gramps.gen.utils.file import media_path_full
+    from gramps.gen.utils.file import media_path, media_path_full
 
     # schémas livrés avec la bibliothèque : le banc valide les fichiers remis contre eux (#268)
     rapport["schemas"] = {k: os.path.join(DATA_DIR, f"grampsxml.{k}") for k in ("dtd", "rng")}
@@ -508,8 +508,12 @@ def main() -> int:
         res["regroupements"] = {k: db.get_name_group_mapping(k) for k in db.get_name_group_keys()}
         res["lieux_affiches"] = lieux_affiches(db)
         # médias : chemin enregistré et fichier trouvé par Gramps (paquet .gpkg : extrait à côté de l'arbre)
-        res["medias"] = [{"chemin": m.get_path(), "fichier": os.path.isfile(media_path_full(db, m.get_path()))}
+        res["medias"] = [{"chemin": m.get_path(), "fichier": os.path.isfile(media_path_full(db, m.get_path())),
+                          "complet": media_path_full(db, m.get_path()), "checksum": m.get_checksum()}
                          for m in (db.get_media_from_handle(h) for h in db.get_media_handles())]
+        # chemin de base des médias de l'arbre (#280) : valeur enregistrée (None : jamais définie) et valeur résolue
+        res["mediapath"] = db.get_mediapath()
+        res["mediapath_resolu"] = media_path(db)
         if object_to_dict:  # Gramps ≥ 6.0 : objets importés au format JSON, comparés champ par champ
             res["objets"] = [object_to_dict(getattr(db, f"get_{cls.lower()}_from_handle")(h))
                              for cls, meth in CLASSES.items() for h in getattr(db, meth)()]

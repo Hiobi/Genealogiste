@@ -4,7 +4,7 @@ argument-hint: <geneweb|gedcom7|gedcom551|gramps|gpkg|mermaid_asc|mermaid_desc|s
 ---
 Export : **$ARGUMENTS**
 
-`arbre_exporter(format, chemin, id, generations, masquer_vivants=True, version_xml="1.7.1", compresse=False)`. Les personnes présumées vivantes
+`arbre_exporter(format, chemin, id, generations, masquer_vivants=True, version_xml="1.7.1", compresse=False, chemin_base_medias="")`. Les personnes présumées vivantes
 sont masquées par défaut (RGPD) ; ne désactiver le masquage que sur demande explicite et pour un usage
 strictement privé, en le rappelant. Indiquer le fichier produit, le nombre de vivants masqués et, pour
 Mermaid/fiche, afficher l'aperçu.
@@ -26,6 +26,11 @@ Gramps 6.x seul (`1.7.2`, refusé par 5.2) ; `compresse=True` donne le `.gramps`
 La racine Sosa configurée devient la personne de référence du fichier (`personne_reference` du résultat dit si
 `home` a été écrit ; jamais pour une racine masquée) : le dire à l'utilisateur.
 En mode gramps, les groupes de noms de Gramps sont écrits en `<namemaps>` (`groupes_de_noms` du résultat : nombre écrit, et en export public nombre retiré, sans nom) ; en mode fichier, aucun. Un groupe de noms ne fusionne aucune personne.
+
+**gramps avec images** : `chemin_base_medias` (absolu, facultatif) écrit le chemin de base des médias (`<mediapath>`) et rend relatifs à lui les
+chemins des médias du vault : Gramps Desktop les retrouve directement si ce dossier est la racine du vault sur sa machine.
+C'est un chemin personnel : jamais par défaut, refusé en export public (`masquer_vivants=True`) et pour `gpkg` ; le demander à
+l'utilisateur, ne jamais le deviner. Lire `chemin_base_medias.medias` du résultat (hors base, introuvables). Docs : docs/gramps.md.
 
 **gpkg** : paquet Gramps Desktop (XML + fichiers des médias locaux, chemins relatifs). Afficher le bilan
 `medias` : médias inclus, **manquants** (introuvables ou hors des répertoires autorisés, avec le motif) et
