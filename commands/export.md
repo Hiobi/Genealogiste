@@ -7,7 +7,9 @@ Export : **$ARGUMENTS**
 `arbre_exporter(format, chemin, id, generations, masquer_vivants=True, version_xml="1.7.1", compresse=False, chemin_base_medias="", chercheur=None)`. Les personnes présumées vivantes
 sont masquées par défaut (RGPD) ; ne désactiver le masquage que sur demande explicite et pour un usage
 strictement privé, en le rappelant. Indiquer le fichier produit, le nombre de vivants masqués et, pour
-Mermaid/fiche, afficher l'aperçu.
+Mermaid/fiche, afficher l'aperçu. Export public : un chemin de média absolu ou sortant est réduit à son nom de fichier
+(`FILE` GEDCOM, `<file src>` Gramps ; `chemins_absolus_reduits` du résultat, à signaler) et l'export est refusé si le répertoire
+personnel ou de données du poste figure dans le contenu (docs/securite.md).
 
 **geneweb** : GEDCOM 5.5.1 pour `ged2gwb` (GeneWeb 7) — citations complètes, statut de preuve et prochaines
 sources en notes, témoins et parrains en `ASSO`. Proposer `temoins_en_personnes=True` si l'utilisateur veut
