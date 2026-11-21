@@ -120,21 +120,25 @@ def bilan_chemins_medias(entrees, racines, base=None, limite: int = LIMITE_MEDIA
             out["non_verifies"] += 1
             continue
         out["examines"] += 1
-        windows = bool(_WINDOWS.match(chemin))
-        absolu = windows or Path(chemin).expanduser().is_absolute()
-        out["absolus"] += absolu
-        if windows:
+        if _WINDOWS.match(chemin):
+            out["absolus"] += 1
             noter("hors_racines", ident)
             continue
         try:
+            absolu = Path(chemin).expanduser().is_absolute()
             p = localiser(racines, chemin)
+            existe = p.is_file()
         except CheminAmbigu:
+            out["absolus"] += Path(chemin).is_absolute()
             noter("ambigus", ident)
             continue
-        except CheminRefuse:
+        except (CheminRefuse, RuntimeError, ValueError, OSError):
+            # refusé, ou chemin de fichier tiers inutilisable (« ~inconnu », octet nul, nom trop long) : jamais lu
+            out["absolus"] += chemin.startswith(("/", "~", "\\"))
             noter("hors_racines", ident)
             continue
-        if not p.is_file():
+        out["absolus"] += absolu
+        if not existe:
             noter("nom_serveur" if _NOM_SERVEUR.match(chemin) else "introuvables", ident)
             continue
         out["resolus"] += 1

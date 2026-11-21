@@ -107,6 +107,23 @@ def test_bilan_ne_lit_aucun_fichier_hors_ambiguite(tmp_path, monkeypatch):
     assert b["resolus"] == 2 and not lus
 
 
+@pytest.mark.parametrize("hostile", ["~inconnu_zz_280/x.jpg", "a\0b.jpg", "x" * 5000 + ".jpg", "\\\\nas\\v\\a.jpg"])
+def test_bilan_chemin_inutilisable_d_un_fichier_tiers_ne_plante_pas(tmp_path, hostile):
+    """Chemin d'un fichier tiers inutilisable (utilisateur inconnu, octet nul, nom trop long, UNC) : compté « hors
+    des racines », jamais lu, sans exception."""
+    b = bilan_chemins_medias([("O1", hostile), ("O2", "ok.jpg")], (tmp_path,), tmp_path)
+    assert b["hors_racines"] == 1 and b["introuvables"] == 1 and b["resolus"] == 0
+    assert b["echantillon"]["hors_racines"] == ["O1"]
+
+
+def test_import_chemins_hostiles_ne_font_pas_echouer_l_import(vapp, tmp_path):
+    f = _fichier_gramps(tmp_path, "/etc", ["~inconnu_zz_280/x.jpg", "x" * 5000 + ".jpg", "documents/ok.jpg"])
+    p = server.arbre_importer_gedcom(str(f), "remplacer")
+    assert "erreur" not in p, p
+    r = p["import"]["medias"]["resolution"]
+    assert (r["total"], r["hors_racines"], r["introuvables"]) == (3, 2, 1)
+
+
 def test_bilan_lien_sortant_hors_racines(tmp_path):
     vault = tmp_path / "vault"
     dehors = _ecrire(tmp_path / "dehors.jpg", b"secret")
