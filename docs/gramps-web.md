@@ -332,6 +332,8 @@ ni le journal de recherche, ni le résumé des propositions en attente ne contie
     `county` sont absents du Gramps XML (`champs_absents_du_format`) ; en GEDCOM, comme Gramps : `ADDR` (lignes adresse,
     lieu-dit, ville, comté, état, code postal, pays), `ADR1` = `addr`, `ADR2`, `CITY`, `STAE`, `POST`, `CTRY`, `PHON`, `EMAIL`.
     Un soumetteur importé d'un autre fichier cède la place à la fiche. Mode fichier : aucune fiche, rien d'inventé.
+    Le banc Gramps Desktop relit le `SUBM` par l'import GEDCOM réel (5.2.4, 6.0.8, 6.1.0-beta2 : `chercheur:ged`) et le
+    `<researcher>` par l'import XML (cas `reglages`).
   - *signets* (`<bookmarks>`, gramps et gpkg) : ceux de la base, dans l'ordre, pour les personnes, familles, sources,
     dépôts, médias et notes de l'export (retrouvés par leur identifiant Gramps) ; événements, lieux et citations (dont
     l'identifiant ne se conserve pas à l'export) sont comptés `non_ecrits`. **Export public** : un signet vers une personne

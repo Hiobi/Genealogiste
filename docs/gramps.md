@@ -499,7 +499,11 @@ Workflow `Intégration Gramps`, un job `Gramps Desktop <version>` par version (v
     nom ; après l'import par la bibliothèque, `db.get_researcher()` rend les neuf champs du XML (`street` et `county`
     vides), `db.get_bookmarks()` et les huit autres espaces rendent exactement les handles écrits dans l'ordre, et
     `db.name_formats` les deux formats, tous deux **actifs** (`bool("0")` de l'importeur de Gramps) ; le réexport de Gramps
-    garde fiche, signets et formats (`controle_reglages`) ; dans les autres cas, rien n'est inventé.
+    garde fiche, signets et formats (`controle_reglages`) ; dans les autres cas, rien n'est inventé. Puis `chercheur:ged`
+    (`verifier_soumetteur_gedcom`) : `famille.ged` exportée en GEDCOM 5.5.1 avec la fiche (`SUBM`) est importée par
+    l'import GEDCOM de la bibliothèque sans erreur ni avertissement, et `db.get_researcher()` rend nom, adresse, lieu-dit,
+    ville, état, code postal, pays, téléphone et courriel (`street` reçoit `ADR1`, `county` reste vide : le GEDCOM n'a pas de
+    comté).
 19. chemin de base des médias (#280) : cas `mediapath`, `sans-mediapath` et `gpkg-mediapath` (`famille.ged` et un
     média du « vault » de test, nom accentué, sous-dossiers). Exporté avec `<mediapath>` = racine du vault et chemin
     relatif, le média est retrouvé **directement** par `media_path_full(db, path)` après l'import de chaque version

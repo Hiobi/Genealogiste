@@ -1289,6 +1289,7 @@ def verifier_version(entree: dict, lots, travail: Path, cache: Path, python: str
                 resultats.append(Resultat(version, arbre, f"cycle:{cas.nom}", not ecarts, " ; ".join(ecarts),
                                           {cls: len(h) for cls, h in premier["handles"].items() if h}))
     resultats += verifier_groupes_seuls(entree, exe, env_sup, travail)
+    resultats += verifier_soumetteur_gedcom(entree, exe, env_sup, travail, fixtures)
     resultats += verifier_generes(entree, exe, env_sup, travail, fixtures)
     resultats += verifier_reference_dates(entree, exe, env_sup, travail, fixtures)
     if exemple:
@@ -1323,6 +1324,38 @@ def verifier_groupes_seuls(entree: dict, exe: Path, env_sup: dict, travail: Path
     print(f"   {version} : fichier de regroupements seuls importé, {len(r.get('regroupements') or {})} groupe(s) posé(s)",
           flush=True)
     return [Resultat(version, "inventaire", "groupes:seuls", not ecarts, " ; ".join(ecarts[:10]))]
+
+
+# --- fiche du chercheur en GEDCOM (#282) : SUBM relu par l'import GEDCOM réel de Gramps ------------------------------
+
+def verifier_soumetteur_gedcom(entree: dict, exe: Path, env_sup: dict, travail: Path,
+                               fixtures: Path | None = None) -> list[Resultat]:
+    """GEDCOM exporté avec fiche du chercheur (``write_gedcom(chercheur=…)``, GEDCOM 5.5.1) importé par la bibliothèque :
+    ``db.get_researcher()`` rend les champs du ``SUBM`` (``street`` reçoit ``ADR1`` : l'import de Gramps ne distingue pas
+    ``addr`` de ``street``, ``county`` n'existe pas en GEDCOM), sans erreur ni avertissement."""
+    from genealogiste_mcp.gedcom.mapping import read_gedcom, write_gedcom
+
+    version = entree["version"]
+    base = (fixtures or FIXTURES) / "famille.ged"
+    if not base.is_file():
+        return []
+    tree = read_gedcom(base.read_text(encoding="utf-8"))[0]
+    sortie = travail / f"gramps-{version}" / "soumetteur-gedcom"
+    sortie.mkdir(parents=True, exist_ok=True)
+    fichier = sortie / "chercheur.ged"
+    fichier.write_text(write_gedcom(tree, 5, dict(FICHE_BANC)), encoding="utf-8")
+    rapport, erreur = lancer_sonde(exe, env_sup, sortie, [fichier], False)
+    if rapport is None:
+        return [Resultat(version, "famille.ged", "chercheur:ged", False, erreur)]
+    r = rapport["fichiers"][fichier.name]
+    ecarts = list(r["erreurs"]) + list(r["avertissements"])
+    attendu = {**FICHE_BANC, "street": FICHE_BANC["addr"], "county": ""}
+    if not r.get("importe"):
+        ecarts.append("import refusé")
+    elif r["chercheur"] != attendu:
+        ecarts.append(f"fiche du chercheur {r['chercheur']} au lieu de {attendu}")
+    print(f"   {version} : GEDCOM avec SUBM importé, fiche {(r.get('chercheur') or {}).get('name')!r}", flush=True)
+    return [Resultat(version, "famille.ged", "chercheur:ged", not ecarts, " ; ".join(ecarts[:10]))]
 
 
 # --- dates (#272) : Date.set, valeur de tri et affichage de la bibliothèque, formes refusées --------------
