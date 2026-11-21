@@ -13,3 +13,10 @@ Lacunes de : **$ARGUMENTS**
 5. Si `medias_a_lier` est présent : images jointes à des citations mais absentes des fiches (personne, événement,
    source). Lister média et cibles, et proposer de soumettre les opérations `operation` par `arbre_proposer` ;
    `arbre_appliquer` seulement après accord explicite.
+6. **Tâches de Gramps Web** (seulement si l'utilisateur le demande, une personne à la fois, backend gramps et
+   `GENEALOGISTE_GRAMPS_TACHES=true`) : lister d'abord les tâches existantes
+   (`arbre_recherche(etiquette="ToDo", objet="source")`), puis `arbre_lacunes(id, taches=true)` →
+   `taches_a_proposer` (priorité Gramps calculée de la priorité de lacune : 0-1 haute, 2 moyenne, 3 basse).
+   Garder les actions retenues par l'utilisateur, `arbre_proposer` (tâches privées par défaut ; diff et
+   avertissements), `arbre_appliquer` seulement après accord explicite. Réglage désactivé : le dire et
+   s'arrêter là.

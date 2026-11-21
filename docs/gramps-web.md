@@ -25,6 +25,7 @@ jamais dans Git, un journal ou une issue.
 | `GENEALOGISTE_GRAMPS_TTL` | secondes entre deux relectures incrémentales en lecture (défaut 30) |
 | `GENEALOGISTE_GRAMPS_NOTES_AUTO` | notes de preuve `Genealogiste:auto` : `true` (défaut, recalcul sur toute la base à chaque écriture), `modifies` (recalcul limité aux objets touchés), `false` (aucune note ni étiquette générée ; celles qui existent sont conservées telles quelles) |
 | `GENEALOGISTE_GRAMPS_NOTES_LIENS` | `false` (défaut) : notes de preuve en texte simple, comme avant ; `true` : liens internes `gramps://` vers les personnes, événements, familles, sources et citations qu'elles citent ([#279](#texte-enrichi-et-liens-internes-279)). Changer la valeur ne réécrit aucune note : `gramps_recalculer_notes` propose le passage d'une forme à l'autre (diff, accord, journal, annulable) |
+| `GENEALOGISTE_GRAMPS_TACHES` | `false` (défaut) : aucune source n'est lue ni écrite comme tâche, comportement inchangé ; `true` : tâches de la vue Tâches (source + note étiquetées `ToDo`) lues et écrites par `ajouter_tache` / `modifier_tache`, correspondance avec les enquêtes et les lacunes ([#263](#tâches-263)). Jamais automatique |
 | `GENEALOGISTE_MARQUEURS` | forme écrite des attributs et de l'étiquette gérés : `genealogiste` (défaut, `Genealogiste-*`, `Genealogiste:auto`) ou `sosa` (`Sosa-*`, `Sosa:auto`, pour une base partagée avec une ancienne version) ; les deux formes sont toujours lues (voir « Marqueurs historiques ») |
 | `GENEALOGISTE_GIT_MIRROR` | `true` : miroir GEDCOM 7 versionné de l'arbre Gramps (défaut `false`) |
 | `GENEALOGISTE_GIT_REMOTE` | dépôt distant optionnel du répertoire de données (**privé**) |
@@ -390,6 +391,61 @@ hors présentation) :
   toutes les images de la [matrice](#compatibilité-des-versions). Vérifié par `make test-gramps-matrice`
   (requêtes de la page, compte Invité, annulation) ; le **rendu dans le navigateur n'est pas automatisé** :
   implémenté, non éprouvé visuellement.
+
+### Tâches (#263)
+
+Comme le blog, la vue Tâches n'a pas d'objet propre : une tâche est une **source portant l'étiquette `ToDo`**.
+Relevé dans le frontend gramps-web `v26.11.0` (`8df6820`, image épinglée) et `v26.11.3` (`20c7655`, constantes
+regroupées dans `src/taskConstants.js`, mêmes requêtes) ; côté Desktop, gramps `v6.0.8`
+(`maintenance/gramps60`, `32aa296`) :
+
+| Tâche | Gramps | Code |
+|---|---|---|
+| liste | `GET /api/sources/?rules={"rules":[{"name":"HasTag","values":["ToDo"]}]}&locale=…&sort=-gramps_id&extend=tag_list`, puis tri local par statut (Open, In Progress, Blocked, autre, Done) | `GrampsjsViewTasks.js:72-103` (v26.11.3), `taskConstants.js:88-102` |
+| étiquette | nom exact `ToDo` (casse comprise), masquée à l'affichage ; créée par `POST /api/tags/` si absente | `GrampsjsViewNewTask.js:205-223`, `GrampsjsTasks.js:428` |
+| statut | attribut de source (`SrcAttribute`) de type **personnalisé** (chaîne) `Status` : `Open`, `In Progress`, `Blocked`, `Done` ; un autre statut (Gramps Desktop, saisie à la main) est affiché tel quel | `taskConstants.js:1-17`, `GrampsjsTask.js:211-217` |
+| priorité | attribut `Priority` (chaîne) : l'interface écrit `"1"` (High), `"5"` (Medium), `"9"` (Low) ; toute valeur numérique < 5 est haute, 5 moyenne, > 5 basse ; absente ou non numérique : sans priorité | `taskConstants.js:19-25, 73-86` |
+| création | `POST /api/objects/` : source (`attribute_list` : `Priority "5"` puis `Status "Open"`, `tag_list` ToDo + étiquettes choisies) et note (type `To Do`, mêmes étiquettes) ; sans description, aucune note | `GrampsjsViewNewTask.js:22-25, 167-203` |
+| description | **première note** de `note_list` (`taskNote`) ; ajoutée depuis la page d'une tâche : note `To Do`, étiquettes et confidentialité de la tâche | `taskConstants.js:64-71`, `GrampsjsTask.js:482-511` |
+| statut ou priorité changés (une tâche ou plusieurs en lot) | une requête par tâche : `PUT /api/sources/<handle>` de l'objet complet, l'attribut retiré puis remis **en fin de liste** (`{_class: "SrcAttribute", type, value}` ; v26.11.0 : `{type, value}`) ; aucune transaction | `GrampsjsViewTasks.js:105-129`, `GrampsjsTasks.js:550-557` |
+| confidentialité | interrupteur de la source ; la note de description est privée comme la tâche à partir de `v26.11.3` seulement (v26.11.0 : note créée sans `private`) | `GrampsjsViewNewTask.js:200`, `GrampsjsViewTask.js:68-101` |
+| liens | aucun : l'interface ne rattache pas une tâche à une personne ou un autre objet | `GrampsjsViewTask.js`, `GrampsjsTask.js` |
+
+**Gramps Desktop** n'a pas de vue Tâches : son gramplet « To Do » liste les **notes** de type `To Do`
+(`plugins/gramplet/todogramplet.py:98-107`, règle `HasType(["To Do"])`) avec l'objet qui les porte, et le
+rapport complémentaire « ToDoReport » (greffon 1.2.40 pour 6.0) liste les notes portant une étiquette choisie.
+La description d'une tâche y apparaît donc (rattachée à sa source), sans statut ni priorité, qui restent des
+attributs de la source. Genealogiste ne crée pas de seconde représentation (note `To Do` isolée) : la tâche
+Web est la seule forme ; l'export Gramps XML la conserve telle quelle (source, attributs, étiquettes, note).
+
+Écriture par Genealogiste, **seulement avec `GENEALOGISTE_GRAMPS_TACHES=true`** (sinon une source étiquetée
+`ToDo` reste une source ordinaire, ses attributs `Status` et `Priority` intacts, et `ajouter_tache` est refusé) :
+
+- `ajouter_tache` ([opérations](operations.md#tâches-de-gramps-web-263)) : une transaction (*Editor*) avec la
+  `Source` (titre, `Priority` puis `Status`, comme l'interface ; défauts `5` et `Open`), la `Note` de description
+  (type `To Do`, étiquetée `ToDo`, privée comme la source, texte stylé si `format_texte: markdown`) et le `Tag`
+  `ToDo` si absent ; **privée par défaut** ;
+- `modifier_tache` : statut, priorité, titre, description, confidentialité ; l'attribut changé est retiré puis
+  remis en fin de liste, comme le fait l'interface ; les autres restent à leur place ;
+- la **description reste la première note** : aucune note générée (`Genealogiste:auto`) n'est ajoutée à une
+  tâche (un « Lien : … » deviendrait sa description), une note générée déjà présente est gardée telle quelle ;
+  une tâche saisie dans l'interface dont une autre note précède la description est remise en ordre la première
+  fois que Genealogiste la modifie (avertissement) ; tant qu'elle ne change pas, elle n'est jamais réécrite,
+  quel que soit `GENEALOGISTE_GRAMPS_NOTES_AUTO` ou `gramps_recalculer_notes` ;
+- un **statut ou une priorité changés dans l'interface** (PUT) sont relus sans réécriture ; la description
+  privée d'une tâche privée est lue dans le modèle (même règle que le corps d'un billet) ;
+- **compte Invité** : une tâche privée et sa description sont invisibles dans la vue Tâches ; une tâche publique
+  qui nomme une personne présumée vivante (nom ou identifiant) est refusée
+  ([sécurité](securite.md#tâches-de-gramps-web-263)) ;
+- le **diff** porte une ligne par tâche créée ou dont le statut ou la priorité change
+  (`@@ tâche S5 : statut Open → Done @@`), invisible autrement dans le GEDCOM ; le miroir Git et
+  `gramps_tirer` ne gardent pas `Status` ni `Priority` (seulement l'étiquette et la description) ;
+- lecture : `arbre_recherche(etiquette="ToDo", objet="source")` donne pour chaque tâche `tache` (statut,
+  priorité et son libellé, ouverte) ;
+- version : rien de plus que les étiquettes (#262) ; la vue Tâches existe dans toutes les images de la
+  [matrice](#compatibilité-des-versions). Vérifié par `make test-gramps-matrice` (requêtes exactes de la vue
+  Tâches et de la page d'une tâche, tri, changements « comme l'interface », compte Invité, annulation) ; le
+  **rendu dans le navigateur n'est pas automatisé** : implémenté, non éprouvé visuellement.
 
 ### Dates (#272)
 

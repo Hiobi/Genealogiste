@@ -2836,7 +2836,8 @@ def gramps_relocaliser_medias(ancien_prefixe: str, nouveau_prefixe: str) -> dict
 @mcp.tool()
 def gramps_synchroniser() -> dict:
     """Mode gramps : relit les modifications faites dans Gramps Web depuis la dernière lecture (incrémental) ;
-    avec le miroir Git, les commite (« Modifications externes »)."""
+    avec le miroir Git, les commite (« Modifications externes »). GENEALOGISTE_GRAMPS_TACHES : taches_ecarts, écarts
+    ouvert/terminé entre les enquêtes non closes et leurs tâches de Gramps Web (signalés, jamais corrigés)."""
     if app().config.backend != "gramps":
         return {"erreur": "Disponible en mode gramps (GENEALOGISTE_BACKEND=gramps)."}
 

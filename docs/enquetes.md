@@ -43,7 +43,7 @@ ouvert sans action automatique.
 | `enquete_noter(enquete, piste, registre, tache, requete, statut, personnes, budget)` | ajoute ou met à jour (par `id`, ou pour un registre par ARK/cote) ; `budget` modifie les limites |
 | `enquete_etat(enquete)` | état complet + `coherence_journal` ; sans argument : liste des enquêtes |
 | `archives_sonder(source, date_cible, type_acte, lecture, conclusion, enquete)` | sondage guidé d'un registre (#156) : note la lecture d'une vue et propose la suivante ; arrêt `localise`, `absent` (registre négatif journalisé avec les bornes examinées) ou `budget` ; voir `docs/archives.md` |
-| `enquete_reprendre(enquete)` | `a_faire` (outil et paramètres prêts, dans l'ordre ; d'abord le reste à faire refusé faute de budget), pistes ouvertes, registres en cours avec `vues_restantes`, tâches manuelles, `deja_fait`, `budget`, `blocage` |
+| `enquete_reprendre(enquete, taches, elements)` | `a_faire` (outil et paramètres prêts, dans l'ordre ; d'abord le reste à faire refusé faute de budget), pistes ouvertes, registres en cours avec `vues_restantes`, tâches manuelles, `deja_fait`, `budget`, `blocage` |
 
 Ces outils sont locaux : lecture (`enquete_etat`, `enquete_reprendre`) ou trace au journal
 (`enquete_ouvrir`, `enquete_noter` : classe collecte, état géré par le plugin, ouverture sans écrasement), autorisés
@@ -114,6 +114,33 @@ passe même avant le contrôle de budget : une enquête bloquée renvoie le refu
 l'outil) sans consigner les paramètres au `reste_a_faire`. Pour les outils mesurés par l'enveloppe générique,
 `outils.GARDE_AVANT_BUDGET` déclare quels paramètres passent à la garde, comme dans l'outil (vérifié par
 `tests/test_garde_avant_budget.py`) ; `recherche_multi` appelle lui-même la garde avant le budget.
+
+## Tâches de Gramps Web (#263)
+
+Avec le backend gramps et `GENEALOGISTE_GRAMPS_TACHES=true`, les pistes et les tâches manuelles d'une enquête
+peuvent devenir des **tâches de Gramps Web** (vue Tâches), visibles des autres comptes de l'instance. Rien n'est
+automatique ni caché :
+
+1. **Proposer** : `enquete_reprendre(id, taches=true)` (ou `elements=["t1", "p2"]`) renvoie
+   `taches_a_proposer` : une opération `ajouter_tache` par piste ou tâche manuelle ouverte sans tâche liée
+   (titre = question ou description, statut dérivé : piste `en_cours` → `In Progress`, `bloque` → `Blocked`,
+   sinon `Open` ; priorité moyenne ; privée ; personnes de l'enquête nommées ; ligne de référence
+   `Enquête Genealogiste : <id> · <élément>`). Rien n'est écrit : `arbre_proposer`, diff, accord explicite,
+   `arbre_appliquer`.
+2. **Mémoriser le lien** (local) : `enquete_noter(id, tache={"id": "t1", "tache_gramps": "S12"})` (ou
+   `piste=…`) avec l'identifiant de `references_creees` ; `"tache_gramps": ""` délie. Sans lien mémorisé, la
+   ligne de référence de la description suffit à retrouver la tâche (`lien: "reference"`, signalé dans
+   `a_memoriser`).
+3. **Écarts signalés** : `enquete_etat(id)`, `enquete_reprendre(id)` (bloc `taches_gramps` : `liees`, `ecarts`,
+   `non_liees`) et `gramps_synchroniser` (`taches_ecarts`, enquêtes non closes) comparent ouvert / terminé :
+   tâche `Done` dans Gramps Web mais élément encore ouvert (tâche manuelle `a_faire`, piste ni `trouve` ni
+   `negatif`), ou l'inverse ; tâche liée supprimée ou qui a perdu `ToDo`. Chaque écart donne les deux sens,
+   **jamais exécutés** : `vers_gramps` (`modifier_tache` à passer par `arbre_proposer`) et `vers_enquete`
+   (`enquete_noter`, après accord de l'utilisateur ; pour une piste, choisir `trouve` ou `negatif`).
+
+Correspondance des statuts : tâche manuelle `a_faire` ↔ tâche ouverte (`Open`, `In Progress`, `Blocked`),
+`faite` / `abandonnee` ↔ `Done` ; piste `trouve` / `negatif` ↔ `Done`, autres statuts ↔ ouverte. Réglage
+désactivé : aucun de ces blocs n'apparaît, les sorties sont inchangées.
 
 ## « Déjà fait le … »
 

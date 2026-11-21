@@ -111,6 +111,8 @@ un GEDCOM obtenu séparément peut être importé.
 Avec Gramps Web, la mise en forme de vos notes est préservée ; `GENEALOGISTE_GRAMPS_NOTES_LIENS=true` (désactivé par
 défaut) ajoute des liens cliquables aux notes de preuve, après un recalcul que vous validez
 ([texte enrichi](docs/gramps-web.md#texte-enrichi-et-liens-internes-279)).
+`GENEALOGISTE_GRAMPS_TACHES=true` (désactivé par défaut) rend le plan de recherche visible dans la vue Tâches
+de Gramps Web, une proposition validée à la fois ([tâches](docs/gramps-web.md#tâches-263)).
 
 Pour contribuer : [CONTRIBUTING.md](CONTRIBUTING.md), [architecture et conventions](CLAUDE.md),
 [tests et CI](docs/integration-continue.md). Licence : [GPL-3.0](LICENSE).

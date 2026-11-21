@@ -25,6 +25,8 @@ est refusé, sauf `"non_source": true` + `"motif": "…"` (la mention « Non sou
 |---|---|
 | `ajouter_source` | `titre`*, `auteur`, `publication`, `depot`, `cote`, `url`, `ark`, `type_source`, `original`, `note`, `prive`, `tags`, `ref` (avec l'étiquette `Blog` : privée sauf `prive: false`, voir « Billets ») |
 | `ajouter_billet` | `titre`*, `texte`* (corps), `auteur`, `medias` `[ids | $ref]` (ordre gardé : le premier sert d'aperçu), `prive` (défaut `true`), `tags` (en plus de `Blog`), `ref` ; `format_texte` possible. Backend gramps seulement ([billets](#billets-du-blog-de-gramps-web-261)) |
+| `ajouter_tache` | `titre`*, `description` (première note ; `format_texte` possible), `statut` (`Open` défaut, `In Progress`, `Blocked`, `Done` ; ou `ouverte`, `en_cours`, `bloquee`, `terminee`), `priorite` (`haute` 1, `moyenne` 5 défaut, `basse` 9, ou entier 0-9), `prive` (défaut `true`), `tags` (en plus de `ToDo`), `personnes` `[ids]` (nommées dans la description), `enquete` + `element` (`t1`, `p2` : ligne de référence), `ref`. Backend gramps et `GENEALOGISTE_GRAMPS_TACHES=true` seulement ([tâches](#tâches-de-gramps-web-263)) |
+| `modifier_tache` | `id`, `statut`, `priorite`, `titre`, `description` (remplace le texte ; la ligne de référence d'enquête est gardée), `prive`, `tags`, `tags_retrait` |
 | `ajouter_depot` | `nom`, `sigle`, `adresse`, `url`, `tags`, `ref` |
 | `modifier_source` | `id`, `champs` (sauf `tags`), `tags`, `tags_retrait` |
 | `supprimer_source` | `id`, `cascade` (défaut `false` : refus si la source est encore citée ; `true` : chaque citation retirée est listée avec son porteur). Médias de la source détachés, jamais supprimés ; refus si elle est la source originale d'une autre |
@@ -113,6 +115,41 @@ opération, lisible dans le diff comme une source :
   `prive`, médias dans l'ordre).
 - **Annulation** : `arbre_annuler_modification`, images envoyées comprises (l'état des médias après envoi est
   journalisé et sert de référence à l'annulation).
+
+### Tâches de Gramps Web (#263)
+
+Une tâche de la vue Tâches de Gramps Web est une **source étiquetée `ToDo`** : titre de la source, attributs
+`Status` et `Priority`, description = **première note** (type `To Do`, étiquetée `ToDo`)
+([Gramps Web](gramps-web.md#tâches-263)). Disponible seulement avec `GENEALOGISTE_GRAMPS_TACHES=true` (backend
+gramps) ; désactivé (défaut), rien ne change : `ajouter_tache` et `modifier_tache` sont refusés, une source
+étiquetée `ToDo` reste une source ordinaire. **Jamais automatique** : chaque tâche est créée, modifiée ou close
+par une proposition (diff, accord, `arbre_appliquer`), annulable.
+
+```json
+[{"op": "ajouter_tache", "ref": "t", "titre": "Mariage MARTIN × DUPONT",
+  "description": "Table décennale 1843-1852, puis registre des mariages.", "priorite": "haute",
+  "personnes": ["I1", "I2"]},
+ {"op": "modifier_tache", "id": "S12", "statut": "Done"}]
+```
+
+- **Privée par défaut** (source et description) ; `"prive": false` seulement sur demande explicite : la tâche
+  devient lisible par tout compte Invité.
+- **Personnes vivantes** : même contrôle que les billets, plus l'identifiant seul (`I9`, mot entier) et
+  `personnes` : tâche publique qui nomme une personne présumée vivante ou privée **refusée**, privée
+  **avertie**.
+- **Liens** : l'interface ne relie pas une tâche à d'autres objets ; `personnes` ajoute à la description
+  « Personnes concernées : Jean MARTIN (I1), … » et `enquete` + `element` la ligne
+  `Enquête Genealogiste : <enquête> · <élément>`, lue par la correspondance avec l'enquête
+  ([enquêtes](enquetes.md#tâches-de-gramps-web-263)).
+- **Étiquette posée ou retirée** (`etiqueter`, `tags`) : poser `ToDo` sur une source existante en fait une tâche
+  sans statut ni priorité (rien n'est inventé) ; `ajouter_source` avec `tags: ["ToDo"]` crée une tâche comme
+  l'interface (privée, `Open`, `5`) ; retirer `ToDo` défait la tâche (attributs laissés intacts).
+- **Preuve** : une tâche n'est pas une source ; une citation qui la désigne pèse 0 (`taches_citees` dans le
+  statut de preuve). **Notes de recherche** : aucune fiche (`notes_generer` l'ignore).
+- **Lecture** : `arbre_recherche(etiquette="ToDo", objet="source")` (statut, priorité, libellé).
+- **Depuis les lacunes** : `arbre_lacunes(id, taches=true)` → `taches_a_proposer` (une opération par action,
+  priorité Gramps calculée de la priorité de lacune : 0 et 1 → haute `1`, 2 → moyenne `5`, 3 → basse `9`) ;
+  **depuis une enquête** : `enquete_reprendre(id, taches=true)`. Rien n'est écrit avant `arbre_proposer`.
 
 ### Texte enrichi des notes (#279)
 

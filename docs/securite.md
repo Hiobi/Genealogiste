@@ -232,6 +232,16 @@ privé : avertissement. Le contrôle est local, rien n'est envoyé ailleurs. Lim
 un lien interne par handle ou une image ne sont pas reconnus ; la confidentialité des médias reste la leur.
 Détails : [opérations](operations.md#billets-du-blog-de-gramps-web-261), [Gramps Web](gramps-web.md#blog-261).
 
+### Tâches de Gramps Web (#263)
+
+Même raisonnement que les billets : une tâche **publique** (source étiquetée `ToDo`) et sa description sont
+lisibles par tout compte Invité dans la vue Tâches. Une tâche de recherche nomme presque toujours des personnes :
+privée par défaut (`ajouter_tache`, `ajouter_source` avec `ToDo`) ; titre et description contrôlés comme un
+billet, plus l'**identifiant seul** d'une personne présumée vivante ou privée (`I9`, mot entier) et le paramètre
+`personnes` ; tâche publique qui en nomme une : **refusée**, avec la liste ; privée : avertissement (« elle ne
+doit pas devenir publique en l'état »). Rendre publique une tâche existante repasse par le même contrôle.
+Le réglage `GENEALOGISTE_GRAMPS_TACHES` est désactivé par défaut et rien n'est écrit sans proposition validée.
+
 ## Réseau : seules les adresses publiques
 
 Module `reseau.py` (#42), appliqué par le client HTTP commun (`http.py`) à **toutes** les sources externes

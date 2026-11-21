@@ -45,7 +45,7 @@ Les identifiants FamilySearch ne doivent plus être configurés : l’ancien exp
 
 | Besoin | Variables et guide |
 |---|---|
-| Gramps Web | `GENEALOGISTE_GRAMPS_URL`, `GENEALOGISTE_GRAMPS_USER`, `GENEALOGISTE_GRAMPS_PASSWORD` ; `GENEALOGISTE_GRAMPS_NOTES_LIENS=true` pour des liens cliquables dans les notes de preuve ; [guide Gramps](../docs/gramps-web.md) |
+| Gramps Web | `GENEALOGISTE_GRAMPS_URL`, `GENEALOGISTE_GRAMPS_USER`, `GENEALOGISTE_GRAMPS_PASSWORD` ; `GENEALOGISTE_GRAMPS_NOTES_LIENS=true` pour des liens cliquables dans les notes de preuve ; `GENEALOGISTE_GRAMPS_TACHES=true` pour proposer des tâches dans la vue Tâches ; [guide Gramps](../docs/gramps-web.md) |
 | Miroir Git privé | `GENEALOGISTE_GIT_MIRROR`, `GENEALOGISTE_GIT_REMOTE` ; aucun dépôt public pour l’arbre |
 | Notes Markdown/Obsidian | `GENEALOGISTE_NOTES_DIR` ; vide = désactivées ; [guide des notes](../docs/notes.md) |
 | Confidentialité des notes | `GENEALOGISTE_NOTES_VIVANTS=masquer` par défaut ; `complet` pour un espace strictement privé |

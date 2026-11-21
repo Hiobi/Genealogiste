@@ -218,6 +218,9 @@ de fiche dans `sources/`, ne figure ni dans l'index ni dans les sources d'une fi
 et la régénération après `arbre_appliquer` l'ignore. `notes_generer` sur l'identifiant d'un billet est refusé.
 Une fiche existante d'une source devenue billet n'est ni modifiée ni supprimée.
 
+Même règle pour une tâche de Gramps Web (source étiquetée `ToDo`, #263, avec `GENEALOGISTE_GRAMPS_TACHES=true`) :
+pas de fiche, ni dans l'index ni dans les sources des fiches ; `notes_generer` sur son identifiant est refusé.
+
 ## Liens de pièces
 
 Les images des fiches et des nouvelles notes compagnons utilisent `![](chemin-encode)`. Les liens vers
