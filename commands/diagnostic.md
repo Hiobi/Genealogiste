@@ -8,8 +8,8 @@ Diagnostic : **$ARGUMENTS**
    (une requête par source, tracée au journal).
 2. Afficher un tableau « contrôle | état | détail | remède », les contrôles en **erreur** d'abord, puis en
    **attention**. Ne jamais afficher de secret (le diagnostic n'en renvoie pas ; ne pas en demander).
-3. Avec Gramps Web configuré, présenter ensemble `gramps_version` (API, Gramps, plage testée, fonctions), `gramps_role`
-   (Editor attendu : un rôle plus faible interdit l'écriture, Owner/Admin est déconseillé) et `gramps_reglages`.
+3. Avec Gramps Web configuré, présenter ensemble les contrôles de version (API, Gramps, plage testée, fonctions),
+   de rôle (Editor attendu : un rôle plus faible interdit l'écriture, Owner/Admin est déconseillé) et de réglages.
 4. Pour une source au verdict **protection** : le dire tel quel (blocage anti-robot de cette adresse) et
    proposer la consultation dans le navigateur ; aucun contournement.
 5. Si la version du serveur diffère de celle du plugin, conseiller de redémarrer le serveur MCP (`/mcp`).
