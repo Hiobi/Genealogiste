@@ -288,6 +288,11 @@ class Proposals:
         after = write_gedcom(ctx.tree)
         if after == before:
             raise ProposalError("La proposition ne modifie rien.")
+        if ctx.tree.styles:  # #279 : le GEDCOM ne porte que le texte des notes
+            ctx.warnings.append(
+                f"format_texte markdown : {len(ctx.tree.styles)} note(s) mise(s) en forme (gras, italique, liens) "
+                "enregistrée(s) en texte brut, sans leur mise en forme : le backend fichier (GEDCOM) ne la conserve "
+                "pas ; seul le backend gramps l'écrit dans Gramps Web.")
         self.tokens.create({
             "jeton": token, "type": "modification", "empreinte_base": _digest(before), "resultat": after,
             "message": message, "operations": operations, "resume": ctx.summary, "references": ctx.refs})

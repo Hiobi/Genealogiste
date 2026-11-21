@@ -78,6 +78,8 @@ from ..models import (
 )
 from ..normalize.places import DEPARTEMENTS
 from ..statuts import COULEURS
+from .texte import ajuster, cible_interne, decrire, lien_interne, plages_valides
+from .texte import tag as lien_tag
 from .types import (
     MOD_COMPOSES,
     attribute,
@@ -888,15 +890,82 @@ def gramps_to_tree(db: GrampsDb) -> tuple[Tree, ReadInfo]:
 
 # ============================================================================ écriture : Genealogiste -> Gramps
 
-def proof_data(tree: Tree, strict: bool = False) -> dict:
-    """Notes et étiquettes générées (statut de preuve) : {clé : [(type, texte)]}, {uid : statut}."""
+def _lignes(texte: str) -> list[tuple[int, str]]:
+    """(début, ligne) de chaque ligne d'un texte (positions en points de code)."""
+    out, pos = [], 0
+    for ligne in texte.split("\n"):
+        out.append((pos, ligne))
+        pos += len(ligne) + 1
+    return out
+
+
+def _liens_fiche(texte: str, pid: str, facts: list[dict]) -> list[tuple]:
+    """Plages de la fiche de preuve d'une personne (#279) : « réf. I12 » -> la personne ; libellé de chaque fait
+    (« Naissance 1850 ») -> son événement (propriétaire : la personne ou la famille), « Filiation » -> la famille."""
+    lignes = _lignes(texte)
+    pos, l0 = lignes[0]
+    out = [(pos + len(l0) - len(pid), pos + len(l0), ("Person", pid))] if l0.endswith(" " + pid) else []
+    faits = [f for f in facts if f["fait"] != "nom"]
+    for (pos, ligne), f in zip(lignes[1:], faits, strict=False):
+        if " " not in ligne or " : " not in ligne:
+            break
+        a, b = pos + ligne.index(" ") + 1, pos + ligne.rindex(" : ")
+        if f.get("uid"):
+            out.append((a, b, ("Event", f.get("famille") or pid, f["uid"])))
+        elif f["fait"] == "filiation":
+            out.append((a, b, ("Family", f["famille"])))
+    return out
+
+
+def _liens_evenement(texte: str, tree: Tree, event: Event | None) -> list[tuple]:
+    """Plages du statut de preuve d'un événement (#279) : chaque acte cité mais non vu de la ligne « Acte(s) cité(s)
+    mais non vu(s) : … » -> titre de la source vers la source, cote/page vers la citation (titre vers la citation
+    si la citation n'a pas de page)."""
+    from ..citations import format_citation
+
+    if event is None:
+        return []
+    prefixe = "Acte(s) cité(s) mais non vu(s) : "
+    ligne = next(((p, ligne) for p, ligne in _lignes(texte) if ligne.startswith(prefixe)), None)
+    if ligne is None:
+        return []
+    pos = ligne[0] + len(prefixe)
+    out = []
+    for idx, c in enumerate(event.citations):
+        if c.consultation != "non_vu":
+            continue
+        item = format_citation(tree, c, False)
+        if texte[pos:pos + len(item)] != item:
+            return out  # gabarit inattendu : pas de lien hasardeux
+        src = tree.sources.get(c.source)
+        titre = (src.titre or f"source {src.id}") if src else ""
+        t0 = item.find(titre) if titre else -1
+        p0 = item.find(c.page, t0 + len(titre) if t0 >= 0 else 0) if c.page else -1
+        if t0 >= 0 and p0 >= 0:
+            out.append((pos + t0, pos + t0 + len(titre), ("Source", c.source)))
+            out.append((pos + p0, pos + p0 + len(c.page), ("Citation", idx)))
+        elif t0 >= 0:
+            out.append((pos + t0, pos + t0 + len(titre), ("Citation", idx)))
+        elif p0 >= 0:
+            out.append((pos + p0, pos + p0 + len(c.page), ("Citation", idx)))
+        pos += len(item) + 3
+    return out
+
+
+def proof_data(tree: Tree, strict: bool = False, liens: bool = False) -> dict:
+    """Notes et étiquettes générées (statut de preuve) : {clé : [(type, texte)]}, {uid : statut}. ``liens`` (#279) :
+    chaque note devient (type, texte, plages) où les plages ``(début, fin, cible)`` désignent les objets cités par
+    le texte (cible en clés Genealogiste, résolue en handles par l'écriture) ; le texte est inchangé."""
     from ..evidence import LABELS, assess_person
     from ..export.geneweb import ICON, _proof_line, proof_summary
 
-    notes: dict[tuple[str, str], list[tuple[str, str]]] = {}
+    notes: dict[tuple[str, str], list[tuple]] = {}
     status: dict[str, str] = {}
     best: dict[tuple[str, str], str] = {}
     filiations: dict[str, list[str]] = {}
+    fil_liens: dict[str, list[tuple]] = {}
+    evenements = {e.uid: e for o in (*tree.personnes.values(), *tree.familles.values()) for e in o.evenements} \
+        if liens else {}
     for pid in sorted(tree.personnes):
         facts = assess_person(tree, pid, strict)
         for f in facts:
@@ -905,12 +974,18 @@ def proof_data(tree: Tree, strict: bool = False) -> dict:
                     status[f["uid"]] = f["statut"]
                     line = _proof_line(f)
                     if line:
-                        notes.setdefault(("Event", f["uid"]), []).append(("Research", line))
+                        notes.setdefault(("Event", f["uid"]), []).append(
+                            ("Research", line, _liens_evenement(line, tree, evenements.get(f["uid"])))
+                            if liens else ("Research", line))
             if f["fait"] == "filiation":
-                filiations.setdefault(f["famille"], []).append(
-                    f"Filiation de {tree.personnes[pid].nom_principal.complet} : {ICON[f['statut']]} "
-                    f"{LABELS[f['statut']]}")
-        notes[("Person", pid)] = [("Research", proof_summary(pid, facts))]
+                nom = tree.personnes[pid].nom_principal.complet
+                lignes = filiations.setdefault(f["famille"], [])
+                debut = sum(len(x) + 1 for x in lignes) + len("Filiation de ")
+                fil_liens.setdefault(f["famille"], []).append((debut, debut + len(nom), ("Person", pid)))
+                lignes.append(f"Filiation de {nom} : {ICON[f['statut']]} {LABELS[f['statut']]}")
+        fiche = proof_summary(pid, facts)
+        notes[("Person", pid)] = [("Research", fiche, _liens_fiche(fiche, pid, facts)) if liens
+                                  else ("Research", fiche)]
         from ..statuts import RANG_VERSION as RANK
         for typ in ("BIRT", "DEAT"):
             cands = [(RANK.get(f.get("statut", "non_source"), 4), -f.get("points", 0), i, f["uid"])
@@ -918,14 +993,23 @@ def proof_data(tree: Tree, strict: bool = False) -> dict:
             if cands:
                 best[(pid, typ)] = min(cands)[3]
     for fid, lines in filiations.items():
-        notes[("Family", fid)] = [("Research", "\n".join(lines))]
+        notes[("Family", fid)] = [("Research", "\n".join(lines), [x for x in fil_liens[fid] if x[1] > x[0]])
+                                  if liens else ("Research", "\n".join(lines))]
     return {"notes": notes, "status": status, "best": best}
 
 
 class _Writer:
     def __init__(self, tree: Tree, base: GrampsDb | None, strict: bool, generated: bool,
-                 only: set[tuple[str, str]] | None = None, forme: str = marqueurs.GENEALOGISTE):
+                 only: set[tuple[str, str]] | None = None, forme: str = marqueurs.GENEALOGISTE,
+                 liens: bool = False, recalcul: bool = False):
         self.forme = forme  # forme écrite des marqueurs nouveaux ou modifiés (#182)
+        # #279 : liens internes gramps:// dans les notes générées (GENEALOGISTE_GRAMPS_NOTES_LIENS) ; ``recalcul`` :
+        # gramps_recalculer_notes, seul à faire passer une note inchangée d'une forme (avec / sans liens) à l'autre
+        self.liens, self.recalcul = liens, recalcul
+        self.liens_en_attente: list[tuple[str, str, list[tuple]]] = []  # (note, porteur, plages) résolues à la fin
+        self.cit_evt: dict[str, list[str]] = {}  # handle d'événement -> citations dans l'ordre du modèle
+        self.avis: list[str] = []  # mises en forme retirées ou refusées (jamais de perte silencieuse)
+        self.styled: list[str] = []  # notes mises en forme depuis du Markdown (liens internes à vérifier)
         self.t = tree
         self.base = base or GrampsDb()
         self.strict = strict
@@ -937,7 +1021,7 @@ class _Writer:
         self.reader = _Reader(self.base)  # lecture unitaire (comparaisons « même contenu »)
         self.reader._assos = {}
         self.out = GrampsDb()
-        self.gen = proof_data(tree, strict) if generated else {"notes": {}, "status": {}, "best": {}}
+        self.gen = proof_data(tree, strict, liens) if generated else {"notes": {}, "status": {}, "best": {}}
         self.generated = generated
         self.only = only  # None : toutes les notes générées recalculées ; sinon seulement ces objets (cls, clé)
         self.place_by_name: dict[str, str] = {}
@@ -1127,18 +1211,63 @@ class _Writer:
         obj["tag_list"] = self.tag_list([], c.tags)
         return obj
 
+    def markdown_styles(self, text: str) -> list[dict] | None:
+        """Mise en forme Markdown de la proposition (#279) pour ce texte de note : texte converti tel quel, ou contenu
+        une seule fois dans la note (texte complété par l'opération, par ex. mention « Non sourcé : … »)."""
+        if text in self.t.styles:
+            return copy.deepcopy(self.t.styles[text])
+        for cle in sorted(self.t.styles, key=len, reverse=True):
+            if cle and text.count(cle) == 1:
+                d = text.index(cle)
+                return [dict(t, ranges=[[a + d, b + d] for a, b in t["ranges"]]) for t in copy.deepcopy(
+                    self.t.styles[cle])]
+        return None
+
+    def styles(self, text: str, h: str) -> list[dict]:
+        """Mise en forme d'une note créée ou réécrite : celle du Markdown de la proposition, sinon aucune ; ses liens
+        internes sont vérifiés à la fin (:meth:`resolve_links`)."""
+        tags = self.markdown_styles(text)
+        if tags is None:
+            return []
+        self.styled.append(h)
+        return tags
+
     def plain_note(self, text: str, typ: str, key: str) -> str:
         h = det_handle("Note", key, typ, text)
         n = self.start("Note", h)
-        n["text"] = {"_class": "StyledText", "string": text, "tags": []}
+        n["text"] = {"_class": "StyledText", "string": text, "tags": self.styles(text, h)}
         n["type"] = gtype("NoteType", typ)
         self.out.put(n)
         self.stats["notes"] += 1
         return h
 
+    def rewrite_note(self, h: str, text: str) -> str:
+        """Note existante dont le texte change (#279) : même handle, étiquettes, type et confidentialité."""
+        n = self.start("Note", h)
+        self.restyle(n, text)
+        self.out.put(n)
+        self.stats["notes"] += 1
+        return h
+
+    def restyle(self, n: dict, text: str) -> None:
+        """Nouveau texte d'une note existante : mise en forme de la proposition (Markdown) si elle en a une, sinon
+        styles gardés sur le préfixe et le suffixe communs inchangés, les autres retirés et signalés."""
+        h = n["handle"]
+        old = (n.get("text") or {})
+        if self.markdown_styles(text) is not None:
+            tags, retires = self.styles(text, h), []
+        else:
+            tags, retires = ajuster(old.get("string") or "", copy.deepcopy(old.get("tags") or []), text)
+        if retires:
+            self.avis.append(f"Note {n.get('gramps_id') or h} réécrite : mise en forme retirée (plage modifiée) : "
+                             + " ; ".join(retires))
+        n["text"] = {**old, "_class": "StyledText", "string": text, "tags": tags}
+
     def notes(self, texts: list[str], base_handles: list[str] | None, typ: str, owner: str,
-              auto: list[tuple[str, str]] | None = None, url: str = "", keep: bool = False) -> list[str]:
-        """Notes d'un objet : manuelles réutilisées à l'identique, partagées (@N1@), générées (Genealogiste:auto)."""
+              auto: list[tuple] | None = None, url: str = "", keep: bool = False) -> list[str]:
+        """Notes d'un objet : manuelles réutilisées à l'identique, partagées (@N1@), générées (Genealogiste:auto).
+        Une note manuelle dont le texte change garde son handle (#279 : celles qui ne retrouvent pas leur texte
+        sont réécrites dans l'ordre, voir :meth:`rewrite_note`)."""
         base_handles = list(base_handles or [])
         if self.generated:  # note de preuve venue d'un GEDCOM : régénérée, jamais doublée en note manuelle (#15)
             texts = [t for t in texts if not looks_generated(t)]
@@ -1155,6 +1284,14 @@ class _Writer:
                 auto_avail.append(h)
             else:
                 avail.append((h, self.reader.note_text(n)))
+        hits: dict[int, str] = {}
+        for i, text in enumerate(texts):
+            if text.startswith("@") and text.endswith("@") and len(text) > 2:
+                continue
+            hit = next((x for x in avail if x[1] == text), None)
+            if hit:
+                avail.remove(hit)
+                hits[i] = hit[0]
         out = list(privees)
         for i, text in enumerate(texts):
             if text.startswith("@") and text.endswith("@") and len(text) > 2:
@@ -1162,13 +1299,13 @@ class _Writer:
                 if key in self.t.notes:
                     out.append(self.shared_note(key))
                 continue
-            hit = next((x for x in avail if x[1] == text), None)
-            if hit:
-                avail.remove(hit)
-                if hit[0] not in self.out.all("Note"):
-                    self.out.put(copy.deepcopy(self.base.get("Note", hit[0])))
+            if i in hits:
+                if hits[i] not in self.out.all("Note"):
+                    self.out.put(copy.deepcopy(self.base.get("Note", hits[i])))
                     self.stats["notes"] += 1
-                out.append(hit[0])
+                out.append(hits[i])
+            elif avail:
+                out.append(self.rewrite_note(avail.pop(0)[0], text))
             else:
                 out.append(self.plain_note(text, typ, f"{owner}:{i}"))
         if keep:  # notes générées non recalculées : conservées à l'identique (#16)
@@ -1177,7 +1314,7 @@ class _Writer:
                     self.out.put(copy.deepcopy(self.base.get("Note", h)))
                 out.append(h)
             auto_avail = []
-        for i, (atype, text) in enumerate(auto or []):
+        for i, (atype, text, *plages) in enumerate(auto or []):
             if not text:
                 continue
             h = auto_avail.pop(0) if auto_avail else det_handle("Note", "auto", owner, atype, str(i))
@@ -1191,12 +1328,15 @@ class _Writer:
             n["tag_list"] = [self.tag(SOSA_AUTO, AUTO_COLOR, 0)]
             self.out.put(n)
             self.stats["notes"] += 1
+            self.liens_en_attente.append((h, owner, plages[0] if plages else []))
             out.append(h)
         return _same_list(base_handles, out)
 
     def single(self, text: str, base_handles: list[str] | None, typ: str, owner: str,
-               auto: list[tuple[str, str]] | None = None, url: str = "", keep: bool = False) -> list[str]:
-        """Champ texte unique : la base est gardée telle quelle si son texte est inchangé."""
+               auto: list[tuple] | None = None, url: str = "", keep: bool = False) -> list[str]:
+        """Champ texte unique : la base est gardée telle quelle si son texte est inchangé. Sinon (#279) les notes
+        manuelles dont le texte reste en tête ou en queue du champ (séparateur « \\n\\n ») sont gardées, la première
+        des autres reçoit le texte du milieu (handle, étiquettes et type gardés), les suivantes sont retirées."""
         if self.generated and looks_generated(text):  # note de preuve venue d'un GEDCOM (#15)
             text = ""
         manual = [h for h in base_handles or [] if self.base.get("Note", h)
@@ -1208,19 +1348,101 @@ class _Writer:
                     self.out.put(copy.deepcopy(self.base.get("Note", h)))
             autos = [h for h in base_handles or [] if h not in manual]
             return _same_list(list(base_handles or []), manual + self.notes([], autos, typ, owner, auto, url, keep))
-        return self.notes([text] if text else [], base_handles, typ, owner, auto, url, keep)
+        if not manual or not text:
+            return self.notes([text] if text else [], base_handles, typ, owner, auto, url, keep)
+        textes = [self.reader.note_text(self.base.get("Note", h)) for h in manual]
+        tete, pos = 0, 0
+        while tete < len(manual) and text.startswith(textes[tete] + "\n\n", pos):
+            pos += len(textes[tete]) + 2
+            tete += 1
+        reste, queue = text[pos:], 0
+        while queue < len(manual) - tete and reste.endswith("\n\n" + textes[len(manual) - 1 - queue]):
+            reste = reste[:-len(textes[len(manual) - 1 - queue]) - 2]
+            queue += 1
+        milieu = manual[tete:len(manual) - queue]
+        garde = manual[:tete] + manual[len(manual) - queue:]
+        for h in garde:
+            if h not in self.out.all("Note"):
+                self.out.put(copy.deepcopy(self.base.get("Note", h)))
+        if milieu:
+            centre = [self.rewrite_note(milieu[0], reste)] if reste else []
+        else:
+            centre = [self.plain_note(reste, typ, f"{owner}:0")] if reste else []
+        autres = [h for h in base_handles or [] if h not in manual]
+        return _same_list(list(base_handles or []), manual[:tete] + centre + manual[len(manual) - queue:]
+                          + self.notes([], autres, typ, owner, auto, url, keep))
 
     def shared_note(self, key: str) -> str:
         h = self.handle("Note", key)
         if h not in self.out.all("Note"):
             n = self.start("Note", h, key)
-            if self.reader.note_text(n) != self.t.notes[key] or not self.base.get("Note", h):
-                n["text"] = {"_class": "StyledText", "string": self.t.notes[key], "tags": []}
+            if not self.base.get("Note", h):
+                n["text"] = {"_class": "StyledText", "string": self.t.notes[key], "tags": self.styles(self.t.notes[key], h)}
+            elif self.reader.note_text(n) != self.t.notes[key]:
+                self.restyle(n, self.t.notes[key])
             n["private"] = key in self.t.notes_privees
             n["tag_list"] = self.tag_list(n.get("tag_list"), self.t.notes_tags.get(key, []))
             self.out.put(n)
             self.stats["notes"] += 1
         return h
+
+    def resolve_links(self) -> None:
+        """Liens internes des notes générées (#279), une fois tous les objets écrits : un lien ne vise jamais un objet
+        absent. Une note dont le texte change, nouvelle, ou un recalcul (gramps_recalculer_notes) prennent la forme
+        voulue par GENEALOGISTE_GRAMPS_NOTES_LIENS ; une note inchangée garde sa forme (activer ou désactiver
+        l'option ne réécrit rien sans recalcul)."""
+        for nh, owner, plages in self.liens_en_attente:
+            n = self.out.get("Note", nh)
+            base = self.base.get("Note", nh)
+            texte = n["text"]["string"]
+            internes = [t for t in ((base or {}).get("text") or {}).get("tags") or []
+                        if tname(t.get("name")) == "link" and cible_interne(t.get("value"))]
+            if self.recalcul or base is None or self.reader.note_text(base) != texte:
+                liee = self.liens
+            else:
+                liee = bool(internes)
+            if not liee:
+                continue
+            voulus: dict[str, list[list[int]]] = {}
+            if self.liens:
+                for a, b, cible in plages:
+                    h = self.link_target(cible, owner)
+                    if h and 0 <= a < b <= len(texte):
+                        voulus.setdefault(lien_interne(h[0], h[1]), []).append([a, b])
+            else:  # option désactivée, note inchangée : liens existants gardés jusqu'au recalcul, s'ils visent un objet
+                for t in internes:
+                    cls, prop, val = cible_interne(t["value"])
+                    if prop == "handle" and self.out.get(cls, val) and plages_valides(texte, [t]):
+                        voulus.setdefault(t["value"], []).extend(t.get("ranges") or [])
+            liens = sorted((lien_tag("link", sorted(r), v) for v, r in voulus.items()),
+                           key=lambda t: (t["ranges"][0], t["value"]))
+            n["text"]["tags"] = n["text"]["tags"] + liens
+        ids = {}
+        for nh in dict.fromkeys(self.styled):
+            n = self.out.get("Note", nh)
+            garde = []
+            for t in n["text"]["tags"]:
+                c = cible_interne(t.get("value")) if tname(t.get("name")) == "link" else None
+                if c and c[1] == "gramps_id" and c[0] not in ids:
+                    ids[c[0]] = {o.get("gramps_id") for o in self.out.all(c[0]).values()}
+                if c and not (self.out.get(c[0], c[2]) if c[1] == "handle" else c[2] in ids[c[0]]):
+                    self.avis.append(f"Note {n.get('gramps_id') or nh} : lien interne {t['value']} retiré (aucun objet "
+                                     f"{c[0]} {c[2]} dans l'arbre) : " + decrire(t, n["text"]["string"]))
+                else:
+                    garde.append(t)
+            n["text"]["tags"] = garde
+
+    def link_target(self, cible: tuple, owner: str) -> tuple[str, str] | None:
+        """(classe, handle) d'une cible de :func:`proof_data`, si l'objet est écrit."""
+        cls = cible[0]
+        if cls == "Event":
+            h = self.ev_handle.get((cible[1], cible[2]))
+        elif cls == "Citation":
+            hs = self.cit_evt.get(owner) or []
+            h = hs[cible[1]] if cible[1] < len(hs) else None
+        else:
+            h = self.handle(cls, cible[1])
+        return (cls, h) if h and self.out.get(cls, h) else None
 
     def place(self, pl: Place | None, base_h: str) -> str:
         if not pl or not pl.nom:
@@ -1332,8 +1554,8 @@ class _Writer:
                     a.citations, (prev or {}).get("citation_list"), f"{h}:asso:{rang}")))
                 self.stats["temoins_nommes"] += 1
         self.set_attrs(obj, lambda t: t in (A_UID, A_STATUT, A_CAUSE, A_PAROISSE, A_PRECISION, A_ASSO), desired)
-        obj["citation_list"] = _same_list(obj.get("citation_list") or [],
-                                          self.citations(e.citations, obj.get("citation_list"), h))
+        self.cit_evt[h] = self.citations(e.citations, obj.get("citation_list"), h)
+        obj["citation_list"] = _same_list(obj.get("citation_list") or [], self.cit_evt[h])
         self.media_refs(obj, e.medias)
         regen = self.regen("Event", e.uid)
         obj["note_list"] = self.single(e.note, obj.get("note_list"), "Event Note", h, self.auto("Event", e.uid),
@@ -1646,6 +1868,7 @@ class _Writer:
             out.put(obj)
         for key in sorted(t.notes):
             self.shared_note(key)
+        self.resolve_links()
         return out
 
     def ref_index(self, p: Person, refs: list[dict], typ: str) -> int:
@@ -1657,13 +1880,18 @@ class _Writer:
 
 def tree_to_gramps(tree: Tree, base: GrampsDb | None = None, strict: bool = False,
                    generated: bool = True, only: set[tuple[str, str]] | None = None,
-                   structure: bool = False, forme: str = marqueurs.GENEALOGISTE) -> GrampsDb:
+                   structure: bool = False, forme: str = marqueurs.GENEALOGISTE, liens: bool = False,
+                   recalcul: bool = False, avis: list[str] | None = None) -> GrampsDb:
     """Arbre Genealogiste -> base Gramps (par-dessus ``base`` si fournie). ``generated`` : notes générées
     (Genealogiste:auto) ; ``forme`` : forme écrite des marqueurs nouveaux ou modifiés (#182) ; ``only`` :
     les recalculer seulement pour ces objets (cls, clé Genealogiste), celles des autres sont conservées telles quelles ;
-    ``structure`` : rattacher aussi les lieux à plat de la base à une hiérarchie."""
-    w = _Writer(tree, base, strict, generated, only, forme)
+    ``structure`` : rattacher aussi les lieux à plat de la base à une hiérarchie ; ``liens`` : liens internes
+    gramps:// dans les notes générées (#279) ; ``recalcul`` : recalcul explicite des notes (seul à changer la forme
+    d'une note générée inchangée) ; ``avis`` : reçoit les mises en forme retirées (texte modifié, lien invalide)."""
+    w = _Writer(tree, base, strict, generated, only, forme, liens, recalcul)
     out = w.build()
+    if avis is not None:
+        avis.extend(w.avis)
     if structure:
         w.structure_places()
     return out
@@ -1747,6 +1975,24 @@ def lignes_etiquettes(db: GrampsDb, items: list[dict]) -> list[str]:
             o = it.get("new") or it.get("old") or {}
             out.append(ligne_etiquettes(o.get("gramps_id") or f"{it['_class']} {it['handle']}", plus, moins))
     return out
+
+
+def _liens_internes(note: dict | None) -> set[tuple[str, int, int]]:
+    tags = (((note or {}).get("text") or {}).get("tags")) or []
+    return {(t["value"], a, b) for t in tags if tname(t.get("name")) == "link" and cible_interne(t.get("value"))
+            for a, b in t.get("ranges") or []}
+
+
+def liens_internes_changes(items: list[dict]) -> dict[str, int]:
+    """Bilan des liens internes gramps:// d'une transaction (#279) : notes qui en gagnent, qui en perdent."""
+    gagnent = perdent = 0
+    for it in items:
+        if it["_class"] != "Note":
+            continue
+        avant, apres = _liens_internes(it.get("old")), _liens_internes(it.get("new"))
+        gagnent += bool(apres - avant)
+        perdent += bool(avant - apres)
+    return {k: v for k, v in (("notes_avec_liens_ajoutes", gagnent), ("notes_avec_liens_retires", perdent)) if v}
 
 
 def etiquettes_en_double(db: GrampsDb) -> dict[str, list[str]]:

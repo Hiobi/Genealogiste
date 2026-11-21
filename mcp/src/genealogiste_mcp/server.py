@@ -131,6 +131,7 @@ class App:
                                          self.config.gramps_ttl,
                                          GitMirror(self.store) if self.config.git_mirror else None,
                                          notes_auto=self.config.gramps_notes_auto,
+                                         notes_liens=self.config.gramps_notes_liens,
                                          media_dir=self.config.media_racines[1:] if self.config.media_dir_conf else None,
                                          media=self.config.media_reference, forme=self.config.marqueurs)
 
@@ -2495,7 +2496,7 @@ def gramps_bascule_proposer() -> dict:
         return _gramps_guard(lambda: bascule_preview(app().gramps(), app().store, app().tokens,
                                                      app().config.strict_evidence,
                                                      app().config.gramps_notes_auto != "false",
-                                                     app().config.marqueurs))
+                                                     app().config.marqueurs, app().config.gramps_notes_liens))
     except ProposalError as exc:
         return {"erreur": str(exc)}
 

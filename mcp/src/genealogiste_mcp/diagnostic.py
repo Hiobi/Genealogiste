@@ -129,6 +129,8 @@ def controles_locaux(a, probleme: dict | None, config) -> list[dict]:
             "cache": str(config.cache_path), "medias": str(config.media_dir), "hors_ligne": config.offline,
             "gramps_url": _url_sans_identifiants(config.gramps_url),
             "gramps_password": "défini" if config.gramps_password else "absent",
+            "gramps_notes_auto": getattr(config, "gramps_notes_auto", "true"),
+            "gramps_notes_liens": getattr(config, "gramps_notes_liens", False),
             "matchid_token": "défini" if config.matchid_token else "absent",
             "wikitree_app_id": "défini" if config.wikitree_app_id else "absent",
             "mcp_token": "défini" if os.environ.get("MCP_TOKEN") else "absent",
