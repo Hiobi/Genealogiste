@@ -143,7 +143,9 @@ Sources : `gramps-web-api` tag `v3.26.0` (`5b3f890`) et `main` `9cbf933` ; `gram
 | `GET /api/name-groups/<surname>` | tout jeton valide | `{surname, group}` : le groupe, ou le patronyme lui-même sans regroupement |
 | `POST /api/name-groups/<surname>/<group>` | `EditNameGroup` (rôle **Editor**) | `set_name_group_mapping`, 201 `{surname, group}` ; pas de corps (paramètres dans l'URL) |
 
-Aucune route de suppression ni de modification d'un autre type (`DELETE` et `PUT` : 404 ou 405). La lecture existe
+Aucune route de suppression ni de modification d'un autre type : constaté sur les trois images de la matrice,
+`DELETE` et `PUT` répondent 405, `POST /api/name-groups/<surname>/` sans groupe 404, un `POST` avec le rôle Member 403
+(`{"code":403,"status":"Forbidden"}`). La lecture existe
 depuis l'API 0.1 (commit `b050663`, 2020-11-07, première étiquette `v0.1`), le droit `EditNameGroup` depuis `v0.6.0`
 (`d8f423d`, 2023-03-15) : clés `groupes_noms` et `groupes_noms_ecriture` de `FONCTIONS_API` (tableau des versions
 minimales ci-dessous), donc toujours disponibles dans la plage testée (API ≥ 3.13.0). Un patronyme qui contient « / »
@@ -160,11 +162,15 @@ groupe de noms ne peut pas le respecter, constaté dans le code amont **et** sur
    `POST`) ni dans le journal d'annulation d'un `POST /api/transactions/` (aucun élément de classe adaptée : un groupe
    de noms n'est pas un objet Gramps) ;
 2. **« aucun regroupement » inatteignable** : `set_name_group_mapping(nom, None)` supprime la clé, mais la route exige
-   un groupe non vide (le segment vide n'est pas routé : 404/405). Regrouper un patronyme sous lui-même
+   un groupe non vide (le segment vide n'est pas routé : 404). Regrouper un patronyme sous lui-même
    (`POST …/Dupond/Dupond`) laisse la clé **listée** par `GET /api/name-groups/` et écrite dans `<namemaps>` : l'état
    « aucun regroupement » n'est jamais restauré exactement ;
 3. **pas de détection de conflit** : aucun `old` comparé (contrairement à `POST /api/transactions/`) ; un
    regroupement changé entre la proposition et l'application ne serait pas vu par le serveur.
+
+Constaté le 2026-11-21 sur `26.5.1` (API 3.13.0), `26.11.0` (3.25.1) et `26.11.3` (3.26.0) : un `POST` répond 201
+et la lecture le rend, l'historique (`GET /api/transactions/history/`) est inchangé, `POST …/Dupond/Dupond` laisse
+`Dupond` listé, l'import d'un document de regroupements seuls répond 201 sans créer d'objet.
 
 Dans le doute, la voie sûre a été retenue : **lecture, export XML, import rapporté, et une proposition sous forme de
 liste à appliquer à la main**. Rien n'est écrit sur Gramps Web par ce lot.

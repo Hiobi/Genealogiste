@@ -333,6 +333,9 @@ Workflow `Intégration Gramps`, un job `Gramps Desktop <version>` par version (v
     au DTD et au RNG de la bibliothèque, importé sans erreur ni avertissement, ne crée aucun objet et pose exactement
     ses regroupements.
 
+Résultat du 2026-11-21 (#276) : 129 vérifications sur 129 réussies (GLib factice, 5.2.4, 6.0.8 et 6.1.0-beta2),
+dont, par version, les 2 du cas `groupes` (import et cycle) et `groupes:seuls` : les quatre regroupements relus par
+`get_name_group_mapping`, réexport de Gramps identique, document de regroupements seuls sans objet créé.
 Résultat du 2026-11-21 (#279) : 114 vérifications sur 114 réussies, dont les 6 du cas `notes` (import et cycle
 pour 5.2.4, 6.0.8 et 6.1.0-beta2) : dans chaque version, 32 liens internes résolus vers un objet présent sous le
 même handle et les onze styles relus à l'identique, `strikethrough` et `subscript` compris en 5.2.
