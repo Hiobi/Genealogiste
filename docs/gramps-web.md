@@ -226,6 +226,51 @@ Export Gramps XML (`export/gramps_xml.py`) : sérialise ces mêmes objets Gramps
 cibles, `.gramps` gzip, paquet `.gpkg`, import et vérifications : voir [Gramps Desktop](gramps.md#contenu-écrit)
 et [l'import depuis Gramps Desktop](gramps.md#import-depuis-gramps-desktop).
 
+### Blog (#261)
+
+La page Blog de Gramps Web n'a pas d'objet propre : un billet est une **source portant l'étiquette `Blog`**.
+Relevé dans le frontend gramps-web `v26.11.0` (`8df6820`, image épinglée ; identique en `v26.11.3`, `20c7655`,
+hors présentation) :
+
+| Billet | Gramps | Code |
+|---|---|---|
+| liste | `GET /api/sources/?rules={"rules":[{"name":"HasTag","values":["Blog"]}]}&sort=-change&extend=all` (6 par page) ; dernier billet du tableau de bord : même requête, `pagesize=1` | `GrampsjsViewBlog.js:174-190`, `GrampsjsViewRecentBlogPosts.js` |
+| étiquette | nom exact `Blog` (casse comprise) ; créée par `POST /api/tags/` si absente | `GrampsjsViewNewBlogPost.js:176-200` |
+| ordre, date affichée | `change` de la source (dernière modification), pas une date d'événement | `GrampsjsBlogPostPreview.js:89-95`, `GrampsjsBlogPost.js:104-113` |
+| titre, auteur | `title`, `author` de la source | `GrampsjsBlogPost.js:104-106` |
+| corps | **première note** (`extended.notes[0]`), relue par `GET /api/notes/?gramps_id=…&formats=html&format_options={"link_format":"/{obj_class}/{gramps_id}"}` ; aperçu de la liste : 250 premiers caractères du texte brut | `GrampsjsViewBlogPost.js:75-88`, `GrampsjsBlogPostPreview.js:101-115` |
+| type de note | aucun : l'interface crée la note sans `type` (Gramps : `General`, relevé sur l'API) ; la page ne filtre pas sur le type | `GrampsjsViewNewBlogPost.js:108-118, 142-174` |
+| images | premier `media_list` = aperçu (recadré par son `rect`), galerie si plus d'un média | `GrampsjsBlogPostPreview.js:117-131`, `GrampsjsBlogPost.js:128-136, 169-187` |
+| privé | interrupteur de la source ; la note du corps n’est privée comme la source qu’à partir de `v26.11.3` (`GrampsjsViewNewBlogPost.js:173` de cette version) | `GrampsjsViewNewBlogPost.js:142-174` |
+
+Écriture par Genealogiste (`ajouter_billet`, [opérations](operations.md#billets-du-blog-de-gramps-web-261)) :
+
+- une seule transaction (`POST /api/transactions/`, *Editor*) : `Source` (`private`, `tag_list` Blog,
+  `media_list` dans l'ordre demandé), `Note` du corps (type `Source Note`, privée comme la source, étiquetée
+  `Blog` comme le fait l'interface, texte stylé si `format_texte: markdown`), `Tag` `Blog` si absent, médias ;
+- le **corps reste la première note** : à chaque écriture d'un billet créé ou modifié, les notes générées
+  (`Genealogiste:auto`, « Lien : … » d'une source qui a une URL) passent après le corps ; un billet saisi dans
+  l'interface dont une note générée précède le corps est remis en ordre la première fois que Genealogiste le
+  modifie (avertissement « corps remis en première note ») ; tant qu'il ne change pas, il n'est jamais réécrit,
+  quel que soit `GENEALOGISTE_GRAMPS_NOTES_AUTO` (`true`, `modifies`) ou `gramps_recalculer_notes` ;
+- **confidentialité** : le corps et les notes générées d'un billet créé ou modifié prennent la confidentialité
+  de la source. Le corps privé d'un billet privé est lu dans le modèle (`Source.note`, il peut donc être
+  modifié ou retiré par `modifier_source`) ; toute autre note privée reste hors du modèle, intacte (c'est le
+  cas du corps privé d'un billet public : jamais publié par Genealogiste) ;
+- **compte Invité** (rôle 0, sans `ViewPrivate`) : la base lui est servie à travers le filtre du privé ; un
+  billet privé n'apparaît ni dans la liste, ni par son identifiant (`/api/sources/<handle>` : 404), et sa note
+  non plus (`/api/notes/?gramps_id=…` : 404). Un billet public et son corps lui sont lisibles. Gramps Web
+  ne masque pas les vivants par rôle : d'où le refus d'un billet public qui nomme une personne présumée vivante
+  ([sécurité](securite.md#billets-du-blog-de-gramps-web-261)). Les **médias** gardent leur propre
+  confidentialité : l'image d'un billet privé reste lisible par un Invité si le média est public ;
+- **synchronisation** : `gramps_synchroniser`, le miroir Git et `gramps_tirer` (mode fichier) lisent le billet
+  comme une source ordinaire (étiquette `_ETIQUETTE Blog`, `_RESN PRIVACY`, corps en `NOTE`, `OBJE` dans
+  l'ordre) : ni doublon ni écrasement ;
+- version : rien de plus que les étiquettes (#262) et le texte enrichi (#279) ; la page Blog existe dans
+  toutes les images de la [matrice](#compatibilité-des-versions). Vérifié par `make test-gramps-matrice`
+  (requêtes de la page, compte Invité, annulation) ; le **rendu dans le navigateur n'est pas automatisé** :
+  implémenté, non éprouvé visuellement.
+
 ### Dates (#272)
 
 Correspondance unique (`gramps/types.py` : `date_to_gramps`, `date_from_gramps`), utilisée par le mode direct,

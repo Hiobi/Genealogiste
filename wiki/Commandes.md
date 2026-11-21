@@ -26,6 +26,7 @@ Les commandes sont des workflows guidés : elles ne dispensent pas de lire les r
 | `organise <dossier> [triage]` | Proposer le classement et renommage de pièces, sans suppression |
 | `preuve <id> [fait]` | Rédiger un rapport argumenté sur une conclusion |
 | `recit <id>` | Produire un récit dont les faits sont sourcés |
+| `billet <id ou sujet> [public]` | Publier un récit sourcé dans le blog de Gramps Web (source étiquetée `Blog`, corps en première note, images) : privé par défaut, refusé s’il est public et nomme une personne présumée vivante ; backend gramps requis |
 | `journal` | Consulter recherches et historique des modifications |
 | `diagnostic [local]` | Contrôler configuration, dépendances, droits, caches, sources joignables, et pour Gramps Web version de l’API, rôle du compte et réglages, avec un remède par problème |
 

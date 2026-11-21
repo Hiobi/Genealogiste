@@ -28,6 +28,7 @@ test-gramps: ## Tests d'intégration sur un Gramps Web jetable (Docker, données
 	$(GW_TEST) exec -T grampsweb python3 -m gramps_webapi user add sosa-membre sosa-membre --role 1 || true
 	$(GW_TEST) exec -T grampsweb python3 -m gramps_webapi user add sosa-contributeur sosa-contributeur --role 2 || true
 	$(GW_TEST) exec -T grampsweb python3 -m gramps_webapi user add sosa-owner sosa-owner --role 4 || true
+	$(GW_TEST) exec -T grampsweb python3 -m gramps_webapi user add sosa-invite sosa-invite --role 0 || true
 	GENEALOGISTE_TEST_GRAMPS_URL=http://127.0.0.1:$(GW_PORT) GENEALOGISTE_TEST_GRAMPS_API=$(GRAMPSWEB_API) \
 	  $(UV) run pytest -m gramps_live tests/test_gramps_live.py; \
 	  status=$$?; $(GW_TEST) down -v; exit $$status
