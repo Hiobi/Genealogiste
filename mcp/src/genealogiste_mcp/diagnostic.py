@@ -133,6 +133,7 @@ def controles_locaux(a, probleme: dict | None, config) -> list[dict]:
             "gramps_notes_auto": getattr(config, "gramps_notes_auto", "true"),
             "gramps_notes_liens": getattr(config, "gramps_notes_liens", False),
             "gramps_taches": getattr(config, "gramps_taches", False),
+            "gramps_prive_vivants": getattr(config, "gramps_prive_vivants", "off"),
             "matchid_token": "défini" if config.matchid_token else "absent",
             "wikitree_app_id": "défini" if config.wikitree_app_id else "absent",
             "mcp_token": "défini" if os.environ.get("MCP_TOKEN") else "absent",
@@ -326,10 +327,13 @@ def controles_gramps(a) -> list[dict]:
     else:
         out.append(_controle_role_gramps(a, gramps_actif))
     if meta is not None:
-        out.append(_controle_reglages_gramps(a, meta))
+        reglages = _controle_reglages_gramps(a, meta)
+        out.append(reglages)
         out.append(_controle_chercheur(a, meta))
         if not injoignable:
             out.append(_controle_personne_reference(a, meta, gramps_actif))
+            from . import diagnostic_vivants  # #264 : comptes et gramps_id seulement
+            out += diagnostic_vivants.controles(a, (reglages.get("valeurs") or {}).get("inscription_libre"))
     if gramps_actif and not injoignable:
         out.append(_controle_medias_chemins(a, "gramps_medias_chemins"))
     return out

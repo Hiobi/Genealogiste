@@ -46,7 +46,11 @@ def test_ajouter_billet_compose_source_note_etiquette_medias_prive(tree):
     assert any(f"Billet {sid} : Les Martin de Rochefort, par Équipe fictive ; aperçu O2, galerie O2, O1" == x
                for x in ctx.summary)
     assert any(x.startswith(f"Billet {sid} « Les Martin de Rochefort » : privé") for x in ctx.summary)
-    assert ctx.warnings == []
+    # #264 : médias publics d'un billet privé signalés, avec l'opération qui les rend privés ; rien d'autre
+    assert ctx.warnings == [f"Billet {sid} privé : son média {m} est public (lisible par tout compte Invité (Guest) "
+                            f"de Gramps Web : objet, fichier et vignette). Le rendre privé : {{\"op\": "
+                            f"\"modifier_media\", \"id\": \"{m}\", \"champs\": {{\"prive\": true}}}}."
+                            for m in ("O2", "O1")]
     text = write_gedcom(ctx.tree)
     back = read_gedcom(text)[0].sources[sid]  # aller-retour GEDCOM : étiquettes, RESN, note, ordre des médias
     assert back.to_dict() == s.to_dict()

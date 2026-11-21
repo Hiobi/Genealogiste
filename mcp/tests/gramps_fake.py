@@ -24,6 +24,15 @@
   clés), ``PUT /api/metadata/researcher/`` (EditTree, Owner ; mise à jour PARTIELLE : seules les clés envoyées,
   clés inconnues refusées en 422), ``GET /api/name-formats/`` (lecture seule). Comme Gramps, aucune de ces écritures
   n'entre dans l'historique des transactions.
+- privé (#264) : un jeton sans ``ViewPrivate`` (rôle Invité) lit la base à travers le filtre du privé de
+  gramps-web-api (``api/access/sanitize.py``, ``db.py``) : objet principal privé introuvable (liste, handle,
+  ``gramps_id``, recherche : 404 sur une lecture directe), sous-objets privés retirés, références vers un objet
+  invisible retirées (``father_handle``/``mother_handle`` vidés, enfants, événements, médias, citations, notes),
+  citation d'une source invisible masquée, nom principal privé remplacé par « Private » ;
+- ``GET /api/living/<handle>`` (``probably_alive`` ; ``vivants`` : handle -> booléen, sinon vivant sans référence
+  de décès ; ``max_age_probably_alive`` et les autres paramètres sont relevés dans ``living_requetes`` ; réponse
+  selon ``vivants_100`` quand ``max_age_probably_alive=100``) ; ``GET /api/users/`` (droit ViewOtherUser, rôle Owner :
+  ``comptes``, liste de ``{"name", "role"}``).
 Défauts : compte Editor, API épinglée de docker-compose.test.yml. Données fictives uniquement.
 """
 
@@ -138,6 +147,10 @@ class FakeGrampsWeb:
         self.forced = False
         self.tasks: dict[str, dict] = {}
         self.files: dict[str, bytes] = {}  # fichiers des médias, par handle
+        self.vivants: dict[str, bool] = {}  # /api/living/<handle> (#264) : réponse imposée par handle
+        self.vivants_100: dict[str, bool] = {}  # réponse avec max_age_probably_alive=100
+        self.living_requetes: list[tuple[str, dict]] = []
+        self.comptes: list[dict] = [{"name": user, "role": role}]  # GET /api/users/ (Owner)
         self.router = respx.mock(assert_all_called=False)
         api = URL + "/api"
         r = self.router
@@ -161,6 +174,8 @@ class FakeGrampsWeb:
         r.post(api + "/transactions/").mock(side_effect=self._transaction)
         r.put(url__regex=re.escape(api) + r"/media/(?P<handle>[^/?]+)/file(\?.*)?$").mock(side_effect=self._file)
         r.get(api + "/search/").mock(side_effect=self._search)
+        r.get(api + "/users/").mock(side_effect=self._users)
+        r.get(url__regex=re.escape(api) + r"/living/(?P<handle>[^/?]+)(\?.*)?$").mock(side_effect=self._living)
         r.get(url__regex=re.escape(api) + r"/tasks/(?P<tid>[^/?]+)(\?.*)?$").mock(side_effect=self._task)
         r.get(url__regex=re.escape(api) + r"/(?P<plural>[a-z]+)/(\?.*)?$").mock(side_effect=self._list)
         r.get(url__regex=re.escape(api) + r"/(?P<plural>[a-z]+)/(?P<handle>[^/?]+)(\?.*)?$").mock(side_effect=self._get)
@@ -349,10 +364,81 @@ class FakeGrampsWeb:
         self.logins += 1
         return httpx.Response(200, json={"access_token": self._jeton("A1"), "refresh_token": "R1"})
 
+    # ------------------------------------------------------------------ privé (#264)
+    def _voit_prive(self, req) -> bool:
+        perms = jwt_payload(req.headers.get("Authorization", "").removeprefix("Bearer ")).get("permissions", [])
+        return "ViewPrivate" in perms
+
+    def _visible(self, cls: str, handle) -> bool:
+        if cls == "Tag":
+            return True
+        o = self.objects.get(cls, {}).get(handle) if handle else None
+        if o is None or o.get("private"):
+            return False
+        if cls == "Citation" and o.get("source_handle"):
+            return self._visible("Source", o["source_handle"])
+        return True
+
+    _LISTES = {"note_list": "Note", "citation_list": "Citation", "family_list": "Family",
+               "parent_family_list": "Family"}
+    _REFS = {"event_ref_list": "Event", "child_ref_list": "Person", "person_ref_list": "Person",
+             "media_list": "Media", "reporef_list": "Repository", "placeref_list": "Place"}
+    _CHAMPS = {"father_handle": "Person", "mother_handle": "Person", "source_handle": "Source"}
+
+    def _assainir(self, o):
+        """Comme ``sanitize`` de gramps-web-api : sous-objets privés et références vers l'invisible retirés."""
+        if isinstance(o, list):
+            return [self._assainir(x) for x in o if not (isinstance(x, dict) and x.get("private"))]
+        if not isinstance(o, dict):
+            return o
+        out = {}
+        for k, v in o.items():
+            if k in self._LISTES and isinstance(v, list):
+                out[k] = [h for h in v if self._visible(self._LISTES[k], h)]
+            elif k in self._CHAMPS:
+                out[k] = v if not v or self._visible(self._CHAMPS[k], v) else None
+            elif k in self._REFS and isinstance(v, list):
+                out[k] = [self._assainir(x) for x in v if isinstance(x, dict) and not x.get("private")
+                          and self._visible(self._REFS[k], x.get("ref"))]
+            else:
+                out[k] = self._assainir(v)
+        if o.get("_class") == "Person" and (o.get("primary_name") or {}).get("private"):
+            out["primary_name"] = {"_class": "Name", "first_name": "", "surname_list": [
+                {"_class": "Surname", "surname": "Private", "primary": True}], "private": False}
+        return out
+
+    def _lisibles(self, req, cls: str) -> dict[str, dict]:
+        objs = self.objects[cls]
+        if self._voit_prive(req):
+            return objs
+        return {h: self._assainir(o) for h, o in objs.items() if self._visible(cls, h)}
+
+    def _users(self, req):
+        if (r := self._auth(req)) is not None:
+            return r
+        if (r := self._droits(req, "ViewOtherUser")) is not None:
+            return r
+        return httpx.Response(200, json=[{"name": c["name"], "email": "", "full_name": "", "role": c["role"]}
+                                         for c in self.comptes])
+
+    def _living(self, req, handle):
+        if (r := self._auth(req)) is not None:
+            return r
+        params = dict(req.url.params)
+        self.living_requetes.append((handle, params))
+        if handle not in self._lisibles(req, "Person"):
+            return httpx.Response(404, json={"code": 404, "status": "Not Found"})
+        if params.get("max_age_probably_alive") == "100" and handle in self.vivants_100:
+            return httpx.Response(200, json={"living": self.vivants_100[handle]})
+        if handle in self.vivants:
+            return httpx.Response(200, json={"living": self.vivants[handle]})
+        p = self.objects["Person"][handle]
+        return httpx.Response(200, json={"living": p.get("death_ref_index", -1) < 0})
+
     def _list(self, req, plural):
         if (r := self._auth(req)) is not None:
             return r
-        objs = [simplify(o) for o in self.objects[PLURAL[plural]].values()]
+        objs = [simplify(o) for o in self._lisibles(req, PLURAL[plural]).values()]
         if (gid := req.url.params.get("gramps_id")) is not None:  # comme gramps-web-api : 404 si aucun objet
             objs = [o for o in objs if o.get("gramps_id") == gid]
             if not objs:
@@ -366,7 +452,7 @@ class FakeGrampsWeb:
     def _get(self, req, plural, handle):
         if (r := self._auth(req)) is not None:
             return r
-        o = self.objects[PLURAL[plural]].get(handle)
+        o = self._lisibles(req, PLURAL[plural]).get(handle)
         if not o:
             return httpx.Response(404, json={})
         o = simplify(o)
@@ -376,7 +462,8 @@ class FakeGrampsWeb:
 
     def _search(self, req):
         q = req.url.params.get("query", "").lower()
-        hits = [{"object_type": "person", "handle": h, "object": simplify(p)} for h, p in self.objects["Person"].items()
+        hits = [{"object_type": "person", "handle": h, "object": simplify(p)}
+                for h, p in self._lisibles(req, "Person").items()
                 if q in json.dumps(p["primary_name"], ensure_ascii=False).lower()]
         return httpx.Response(200, json=hits)
 
@@ -437,6 +524,8 @@ class FakeGrampsWeb:
             else:
                 new = copy.deepcopy(it["new"])
                 new["change"] = self.tick()
+                if new["_class"] == "Media":
+                    new.setdefault("thumb", None)  # comme gramps-web-api : stocké, renvoyé ici, absent des lectures
                 if new["_class"] != "Tag":
                     assert isinstance(new.get("gramps_id"), str), "gramps_id doit être une chaîne"
                 self.objects[it["_class"]][it["handle"]] = new

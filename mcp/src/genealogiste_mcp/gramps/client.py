@@ -357,6 +357,17 @@ class GrampsClient:
         from .reglages import formats_noms_normalises
 
         return formats_noms_normalises(self._ok(self.request("GET", "/name-formats/"), "lecture des formats de nom").json())
+    def living(self, handle: str, **params) -> bool | None:
+        """Calcul « probablement vivant » de Gramps (``GET /api/living/<handle>``, #264 ; ``probably_alive`` de
+        gramps.gen.utils.alive). Paramètres facultatifs ``max_age_probably_alive``, ``average_generation_gap``,
+        ``max_sibling_age_difference`` ; sans eux, réglages de Gramps (110, 20, 20 par défaut). None : personne
+        invisible ou absente (404)."""
+        r = self.request("GET", f"/living/{handle}", params={k: v for k, v in params.items() if v} or None)
+        if r.status_code == 404:
+            return None
+        data = self._ok(r, "calcul « vivant » de Gramps").json()
+        v = data.get("living") if isinstance(data, dict) else None
+        return v if isinstance(v, bool) else None
 
     def history(self, limite: int = 20) -> list[dict]:
         r = self._ok(self.request("GET", "/transactions/history/",

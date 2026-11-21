@@ -54,6 +54,7 @@ class Ctx:
         self.sources_cited: set[str] = set()
         self.warnings: list[str] = []
         self.citations_images: list[Citation] = []  # citations à images de la proposition (#246)
+        self.proteger: set[str] = set()  # vivants à marquer privés avec leurs données (#264, marquer_vivant prive)
 
     def r(self, value: str | None) -> str:
         if value and isinstance(value, str) and value.startswith("$"):
@@ -852,7 +853,7 @@ def op_ajouter_media(ctx: Ctx, o: dict) -> None:
     _etiqueter(ctx, m, o, mid, creation=True)
 
 
-MEDIA_CHAMPS = ("fichier", "titre", "format")
+MEDIA_CHAMPS = ("fichier", "titre", "format", "prive")
 
 
 def op_modifier_media(ctx: Ctx, o: dict) -> None:
@@ -892,6 +893,12 @@ def op_modifier_media(ctx: Ctx, o: dict) -> None:
         if k in champs and champs[k] != getattr(m, k):
             changes.append(f"{k} « {getattr(m, k)} » → « {champs[k]} »")
             setattr(m, k, champs[k])
+    if "prive" in champs:  # #264 : image d'un billet ou d'une tâche privés, invisible d'un compte Invité
+        if not isinstance(champs["prive"], bool):
+            raise OpError("modifier_media : prive : true ou false")
+        if champs["prive"] != m.prive:
+            changes.append("privé" if champs["prive"] else "public (lisible par un compte Invité de Gramps Web)")
+            m.prive = champs["prive"]
     for c in citations:
         m.citations.append(_citation(ctx, c))
     if citations:
@@ -1211,12 +1218,31 @@ def op_etiqueter(ctx: Ctx, o: dict) -> None:
 
 
 def op_marquer_vivant(ctx: Ctx, o: dict) -> None:
-    p = ctx.tree.person(ctx.r(o["id"]))
-    v = o.get("vivant", "")
-    if v not in ("Y", "N", ""):
-        raise OpError("vivant : Y, N ou ''")
-    p.vivant = v
-    ctx.summary.append(f"{p.label()} : vivant={v or 'déduit'}")
+    """Statut vivant forcé (Y, N) ou déduit (""). ``prive: true`` (#264) : la personne est marquée privée et, en
+    backend gramps, ses données propres aussi (événements, notes, citations, médias : périmètre de
+    gramps/vivants.py), le tout dans le diff de cette proposition ; refusé si la personne n'est pas présumée vivante.
+    Sans ``vivant`` avec ``prive`` : statut inchangé."""
+    pid = ctx.r(o["id"])
+    p = ctx.tree.person(pid)
+    prive = o.get("prive")
+    if prive is not None and prive is not True:
+        raise OpError("prive : true seulement (pose du privé d'un vivant) ; le retrait au décès est proposé par "
+                      "gramps_proteger_vivants, jamais par cette opération")
+    if "vivant" in o or prive is None:
+        v = o.get("vivant", "")
+        if v not in ("Y", "N", ""):
+            raise OpError("vivant : Y, N ou ''")
+        p.vivant = v
+        ctx.summary.append(f"{p.label()} : vivant={v or 'déduit'}")
+    if prive:
+        from ..privacy import is_living
+        st = is_living(ctx.tree, p)
+        if not st["vivant"]:
+            raise OpError(f"prive : {pid} n'est pas présumé(e) vivant(e) ({st['raison']}) ; le privé « parce que "
+                          "vivant » est réservé aux vivants")
+        p.prive = True
+        ctx.proteger.add(pid)
+        ctx.summary.append(f"{p.label()} : marqué(e) privé(e) (vivant) avec ses données propres")
 
 
 def op_remplacer_arbre(ctx: Ctx, o: dict) -> None:

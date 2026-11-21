@@ -17,6 +17,9 @@ Même contrat qu'en mode fichier : proposition -> diff -> accord explicite -> é
   journal d'intention et annulation, mais l'annulation est celle de Genealogiste (état antérieur mémorisé, conflit
   détecté), pas celle de l'historique du serveur (:meth:`GrampsBackend.propose_chercheur`,
   :meth:`GrampsBackend.propose_signets`).
+- Vivants marqués privés (#264) : pose et retrait du drapeau privé toujours par proposition
+  (:meth:`GrampsBackend.propose_protection` ; ``prive_vivants="propose"`` ou ``marquer_vivant`` ``prive`` : ajoutée
+  au diff de la proposition en cours) ; trace dans le journal local (module ``vivants``).
 - Journal local ``gramps-transactions.jsonl`` (pour l'annulation) ; miroir Git optionnel de l'arbre.
 """
 
@@ -199,7 +202,9 @@ class GrampsBackend:
     def __init__(self, client: GrampsClient, data_dir: Path, proposals_dir: Path, exiger_source: bool = True,
                  strict: bool = False, ttl: float = 30.0, mirror: GitMirror | None = None,
                  clock=time.monotonic, notes_auto: str = "true", media_dir=None,
-                 media=None, forme: str = "genealogiste", notes_liens: bool = False, taches: bool = False):
+                 media=None, forme: str = "genealogiste", notes_liens: bool = False, taches: bool = False,
+                 prive_vivants: str = "off"):
+        self.prive_vivants = prive_vivants  # off | propose (GENEALOGISTE_GRAMPS_PRIVE_VIVANTS, #264)
         self.taches = taches  # tâches de Gramps Web lues et écrites (GENEALOGISTE_GRAMPS_TACHES, #263)
         self.notes_liens = notes_liens  # liens internes gramps:// dans les notes générées (#279)
         self.forme = forme  # forme écrite des marqueurs (GENEALOGISTE_MARQUEURS, #182)
@@ -306,10 +311,15 @@ class GrampsBackend:
         new = tree_to_gramps(ctx.tree, base=db, strict=self.strict, generated=self.notes_auto != "false", only=only,
                              structure=structure, forme=self.forme, liens=self.notes_liens, recalcul=all_notes,
                              avis=avis, taches=self.taches)
+        protection = None
+        if ctx.proteger or self.prive_vivants == "propose":
+            new, protection = self._proteger_dans(db, tree, ctx, new)
         items = diff(db, new)
         if not items:
             raise ProposalError("La proposition ne modifie rien.")
         preview = self._preview(items, db)
+        if protection and protection["lignes"]:
+            preview["prive_vivants"] = protection["lignes"]
         medias = {i["handle"] for i in items if i["_class"] == "Media" and i["type"] != "delete"}
         if medias:
             todo, missing = media_pending(new, self.data_dir, medias, self.media_dir)
@@ -317,11 +327,16 @@ class GrampsBackend:
             if missing:
                 preview["fichiers_absents"] = missing
         warnings = list(ctx.warnings) + avis + self._doublons(db, items)
+        if protection:
+            warnings += protection["avertissements"]
         if w := self._massive(items, preview, len(operations)):
             warnings.append(w)
-        self.tokens.create({"jeton": token, "type": "transaction", "items": items, "message": message,
-                            "operations": operations, "resume": ctx.summary, "references": ctx.refs})
-        return {
+        record = {"jeton": token, "type": "transaction", "items": items, "message": message,
+                  "operations": operations, "resume": ctx.summary, "references": ctx.refs}
+        if protection and protection["enregistrement"]:
+            record["protection"] = protection["enregistrement"]
+        self.tokens.create(record)
+        out = {
             "jeton": token, "expire_dans_minutes": TTL_SECONDS // 60, "resume": ctx.summary,
             "references_creees": ctx.refs, "transaction_gramps": preview,
             "diff": tree_diff(write_gedcom(tree), write_gedcom(ctx.tree), "Gramps Web", targets(ctx, operations),
@@ -329,6 +344,170 @@ class GrampsBackend:
             "nouvelles_alertes_coherence": new_alerts(tree, ctx.tree),
             "avertissements": warnings, "message_de_transaction": message, "consigne": CONSIGNE,
         }
+        if protection:
+            out["prive_vivants"] = protection["bilan"]
+        return out
+
+    # ------------------------------------------------------------------ vivants et privé (#264)
+    def _proteger_dans(self, db: GrampsDb, tree: Tree, ctx, new: GrampsDb) -> tuple[GrampsDb, dict | None]:
+        """Pose du privé ajoutée au diff de la proposition en cours : vivants désignés par ``marquer_vivant``
+        ``prive: true`` et, en mode ``propose``, vivants touchés par la proposition (personnes modifiées, membres des
+        familles modifiées). Seuls des objets non privés dans Gramps sont marqués ; ligne par ligne dans le diff."""
+        from .. import privacy
+        from . import vivants as vv
+
+        presumes = privacy.living_ids(ctx.tree)
+        touches = {k[1] for k in touched_keys(tree, ctx.tree) if k[0] == "Person"}
+        concernes = set(ctx.proteger)
+        if self.prive_vivants == "propose":
+            concernes |= touches
+        gh = {o.get("gramps_id"): h for h, o in new.all("Person").items()}
+        cibles = {gh[p]: p for p in sorted(concernes & presumes) if p in gh}
+        avis = []
+        actives = vv.protections_actives(self.transactions(1_000_000))
+        anciens = sorted({m for k, x in actives.items() for m in x.get("motifs") or []
+                          if k[0] == "Person" and m in touches and m not in presumes})
+        if anciens:
+            avis.append(f"{', '.join(anciens)} : plus présumé(e)(s) vivant(e)(s) ; le privé posé par Genealogiste "
+                        "n'est pas retiré par cette proposition : gramps_proteger_vivants propose son retrait.")
+        if not cibles:
+            return new, ({"lignes": [], "enregistrement": [], "avertissements": avis, "bilan": {"personnes": []}}
+                         if avis else None)
+        per = vv.perimetre(new, cibles, billets=False,
+                           vivants={h: o.get("gramps_id") for h, o in new.all("Person").items()
+                                    if o.get("gramps_id") in presumes})
+        poser = dict(per["poser"])
+        for h, p in cibles.items():  # personne déjà marquée privée par l'opération : posée par le plugin aussi
+            b = db.get("Person", h)
+            if (b is None or not b.get("private")) and new.get("Person", h).get("private"):
+                poser.setdefault(("Person", h), [p])
+        out = vv.avec_prive(new, poser) if poser else new
+        for k, m in vv.notes_generees(out, ctx.tree, set(cibles.values()),
+                                      lambda c: bool((out.get(*c) or {}).get("private"))).items():
+            poser.setdefault(k, m)
+        out = vv.avec_prive(new, poser) if poser else new
+        lignes = vv.lignes(out, poser, "privé posé")
+        avis += [f"{c} {vv.gid(out, k)} : {r}" for k, r in sorted(per["partages"].items())
+                 for c in [k[0]]]
+        avis += [f"{k[0]} {vv.gid(out, k)} rendu privé : {r}" for k, r in sorted(per["masques"].items())]
+        notes = [k for k in poser if k[0] == "Note"]
+        if notes:
+            avis.append(vv.NOTES_HORS_MODELE.format(n=len(notes)))
+        bilan = {"personnes": sorted(cibles.values()), "objets": len(poser),
+                 "par_classe": vv.par_classe(poser), "partages": len(per["partages"])}
+        return out, {"lignes": lignes, "enregistrement": vv.enregistrement(out, poser), "avertissements": avis,
+                     "bilan": bilan}
+
+    def propose_protection(self, personnes: list[str] | None = None, limite: int = 100,
+                           retraits: bool = True) -> dict:
+        """Pose (et retrait, au décès) du drapeau privé des personnes présumées vivantes et de leurs données propres
+        (#264) : bilan, puis une transaction (jeton, accord explicite, journalisée et annulable). Idempotent : rien à
+        faire, pas de jeton. ``limite`` : personnes par lot (relancer pour la suite)."""
+        from .. import privacy
+        from . import vivants as vv
+
+        exiger_ecriture(self.client)
+        if limite < 1:
+            raise ProposalError("limite : 1 personne au moins par lot")
+        db = self.snapshot(fresh=True)
+        tree = self.load()
+        presumes = privacy.living_ids(tree)
+        inconnus = sorted(set(personnes or []) - set(tree.personnes))
+        if inconnus:
+            raise ProposalError(f"Personnes inconnues : {', '.join(inconnus)}")
+        gh = {o.get("gramps_id"): h for h, o in db.all("Person").items()}
+        tous = {gh[p]: p for p in sorted(presumes) if p in gh and (personnes is None or p in personnes)}
+        lies = {gh[p]: p for p in presumes if p in gh}
+        per = vv.perimetre(db, tous, billets=personnes is None, vivants=lies)
+        # ordre des lots : personnes encore publiques d'abord (une personne déjà privée n'y figure que pour une
+        # famille ou une donnée propre restée publique)
+        qui = sorted({m for v in per["poser"].values() for m in v if m in presumes},
+                     key=lambda p: (("Person", gh[p]) not in per["poser"], p))
+        reste = 0
+        garde = set(tous.values())
+        if len(qui) > limite:
+            garde = set(qui[:limite])
+            complet = per["poser"]
+            per = vv.perimetre(db, {h: p for h, p in tous.items() if p in garde}, billets=personnes is None,
+                               vivants=lies)
+            qui = qui[:limite]
+            reste = len({p for k, v in complet.items() if k not in per["poser"] for p in v if p in presumes})
+        poser = dict(per["poser"])
+        qui = sorted(qui)
+        apres0 = vv.avec_prive(db, poser, True)
+        for k, m in vv.notes_generees(db, tree, garde, lambda c: bool((apres0.get(*c) or {}).get("private"))
+                                      ).items():
+            poser.setdefault(k, m)
+        retirer: dict = {}
+        if retraits and personnes is None:
+            actives = vv.protections_actives(self.transactions(1_000_000))
+            retirer = vv.a_retirer(db, actives, presumes)
+            if retirer:  # jamais retiré s'il masque encore un vivant
+                encore = vv.perimetre(vv.avec_prive(db, retirer, False), tous, billets=True, vivants=lies)["poser"]
+                retirer = {k: v for k, v in retirer.items() if k not in encore}
+        apres = vv.avec_prive(vv.avec_prive(db, poser, True), retirer, False)
+        cibles_txt = set(tous.values())
+
+        def masques_apres(k) -> bool:
+            return bool((apres.get(*k) or {}).get("private"))
+
+        out: dict = {
+            "personnes_presumees_vivantes": len(presumes),
+            "vivants_non_prives": sum(1 for p in presumes if not tree.personnes[p].prive),
+            "a_proteger": {"personnes": qui, "objets": len(poser), "par_classe": vv.par_classe(poser),
+                           "reste_apres_ce_lot": reste},
+            "partages": [{"classe": k[0], "gramps_id": vv.gid(db, k), "raison": r}
+                         for k, r in sorted(per["partages"].items())],
+            "references_masquees": [{"classe": k[0], "gramps_id": vv.gid(db, k), "effet": r}
+                                    for k, r in sorted(per["masques"].items())],
+            "residus": [{k: v for k, v in x.items() if k != "handle"}
+                        for x in vv.residus(db, tree, cibles_txt, masques_apres)],
+            "retraits": {"personnes": sorted({p for v in retirer.values() for p in v}), "objets": len(retirer)},
+            "non_masquable": vv.NON_MASQUABLE,
+        }
+        if out["residus"]:
+            out["residus_conseil"] = ("Objets restant visibles d'un Invité dont le texte nomme une personne masquée : "
+                                      "rien n'est modifié ; corriger le texte, ou rendre l'objet privé dans Gramps Web "
+                                      "si voulu.")
+        notes = [k for k in poser if k[0] == "Note"]
+        if notes:
+            out["notes_hors_modele"] = vv.NOTES_HORS_MODELE.format(n=len(notes))
+        if not poser and not retirer:
+            out["note"] = ("Rien à faire : vivants et données propres déjà privés, aucun retrait à proposer."
+                           if not reste else "")
+            return out
+        items = [{"type": "update", "_class": c, "handle": h, "old": db.get(c, h), "new": apres.get(c, h)}
+                 for (c, h) in sorted(set(poser) | set(retirer), key=lambda k: (vv.ORDRE.get(k[0], 9), k[1]))]
+        message = (f"Protection des vivants dans Gramps Web (#264)\n\n{len(poser)} objet(s) rendu(s) privé(s) pour "
+                   f"{len(qui)} personne(s) présumée(s) vivante(s)"
+                   + (f" ; {len(retirer)} privé(s) posé(s) par Genealogiste retiré(s) (personnes plus présumées "
+                      "vivantes)" if retirer else "")
+                   + ". Seul le drapeau privé change.")
+        resume = ([f"Privé posé : {len(poser)} objet(s), personnes {', '.join(qui)}"] if poser else []) + \
+            ([f"Privé retiré : {len(retirer)} objet(s), personnes {', '.join(out['retraits']['personnes'])}"]
+             if retirer else [])
+        token = self.tokens.create({"type": "transaction", "items": items, "message": message, "operations": [],
+                                    "resume": resume, "references": {},
+                                    "protection": vv.enregistrement(db, poser),
+                                    "retrait_protection": [{"classe": c, "handle": h} for c, h in sorted(retirer)]})
+        preview = self._preview(items)
+        preview["prive_vivants"] = vv.lignes(db, poser, "privé posé") + vv.lignes(db, retirer, "privé retiré")
+        return {**out, "jeton": token, "expire_dans_minutes": TTL_SECONDS // 60, "transaction_gramps": preview,
+                "message_de_transaction": message, "consigne": CONSIGNE}
+
+    def etat_vivants(self) -> dict:
+        """Comptes pour le diagnostic et arbre_coherence (#264) : vivants, vivants non privés, privés posés par
+        Genealogiste à retirer (personnes plus présumées vivantes). Lecture seule, aucune requête de plus."""
+        from .. import privacy
+        from . import vivants as vv
+
+        db = self.snapshot(fresh=False)
+        tree = self.load()
+        presumes = privacy.living_ids(tree)
+        retirer = vv.a_retirer(db, vv.protections_actives(self.transactions(1_000_000)), presumes)
+        return {"vivants": len(presumes),
+                "vivants_non_prives": sorted(p for p in presumes if not tree.personnes[p].prive),
+                "a_retirer": sorted({p for v in retirer.values() for p in v}), "objets_a_retirer": len(retirer)}
 
     def propose_places(self) -> dict:
         """Lieux à plat (titre « Commune, Département, Pays ») rattachés à une hiérarchie Gramps (#11)."""
@@ -746,6 +925,9 @@ class GrampsBackend:
         message = (f"{record['message']}, validée explicitement par l'utilisateur (jeton {token})." if undo
                    else validated(record["message"], token))
         base = {"id": token, "type": kind, "message": message}
+        for cle in ("protection", "retrait_protection"):  # trace du privé posé ou retiré « parce que vivant » (#264)
+            if record.get(cle):
+                base[cle] = record[cle]
         if undo:
             base["annule"] = record["annule"]
         else:
