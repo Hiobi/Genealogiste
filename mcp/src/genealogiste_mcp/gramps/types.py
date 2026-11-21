@@ -15,6 +15,10 @@ Tout le plugin travaille en format brut ; :func:`to_raw` convertit une lecture (
 from __future__ import annotations
 
 import copy
+import functools
+import json
+import unicodedata
+from pathlib import Path
 from typing import Any
 
 from ..normalize.calendriers import SDN, YMD
@@ -256,6 +260,92 @@ def tname(t: Any) -> str:
     if t.get("value") == custom or cls not in _NAMES:
         return t.get("string", "")
     return _NAMES[cls].get(t.get("value"), t.get("string", ""))
+
+
+# ---------------------------------------------------------------------------- libellés (#273)
+#
+# Référentiel généré depuis les sources de Gramps 5.2, 6.0 et 6.1 (scripts/generer_types_gramps.py) : type standard
+# (chaîne XML) -> valeur, version d'apparition, libellés anglais et français par version. Un type PERSONNALISÉ dont la
+# chaîne est un libellé d'un type standard de sa classe (comparaison tolérante : casse, accents, espaces,
+# apostrophes) est compris comme ce type standard, s'il n'en désigne qu'un seul ; l'objet Gramps n'est jamais modifié
+# par la lecture. Écriture : type standard quand il existe (:func:`gtype_ecrit`). Détails : docs/gramps-web.md, « Types
+# personnalisés et libellés français ».
+
+REFERENTIEL: dict = json.loads((Path(__file__).parent.parent / "referentiels" / "types_gramps.json")
+                               .read_text(encoding="utf-8"))
+# Libellés français écrits par Genealogiste avant #273 pour des rôles qui ont un type standard (rôle du modèle sans
+# précision : models.ROLE_LABELS) : toujours lus comme ce type standard.
+ANCIENS_LIBELLES: dict[str, dict[str, str]] = {
+    "EventRoleType": {"Père": "Father", "Mère": "Mother", "Enfant": "Child", "Ami": "Friend", "Voisin": "Neighbor",
+                      "Plusieurs": "Multiple birth"},
+}
+_HORS_CORRESPONDANCE = {"Custom", ""}  # « Personnalisé » et le type vide ne désignent aucun type standard
+_APOSTROPHES = str.maketrans({"’": "'", "ʼ": "'", "‘": "'", "`": "'", "´": "'"})
+
+
+def cle_libelle(s: str) -> str:
+    """Forme de comparaison d'un libellé : sans casse, accents ni variation d'espaces ou d'apostrophes."""
+    s = unicodedata.normalize("NFKD", (s or "").translate(_APOSTROPHES))
+    s = "".join(c for c in s if not unicodedata.combining(c))
+    return " ".join(s.casefold().split())
+
+
+def _index_libelles() -> dict[str, dict[str, set[str]]]:
+    out: dict[str, dict[str, set[str]]] = {}
+    for cls, c in REFERENTIEL["classes"].items():
+        idx = out.setdefault(cls, {})
+        for xml, e in c["types"].items():
+            if xml in _HORS_CORRESPONDANCE:
+                continue
+            for lib in {xml, *e["en"].values(), *e["fr"].values()}:
+                if cle_libelle(lib):
+                    idx.setdefault(cle_libelle(lib), set()).add(xml)
+    for cls, table in ANCIENS_LIBELLES.items():
+        for lib, xml in table.items():
+            out[cls].setdefault(cle_libelle(lib), set()).add(xml)
+    return out
+
+
+LIBELLES = _index_libelles()
+
+
+@functools.lru_cache(maxsize=8192)
+def _candidats(cls: str, chaine: str) -> tuple[str, ...]:
+    return tuple(sorted(LIBELLES.get(cls, {}).get(cle_libelle(chaine), ())))
+
+
+def candidats(cls: str, chaine: str) -> list[str]:
+    """Types standard de la classe dont ``chaine`` est un libellé (tolérant) ; plusieurs : ambigu."""
+    return list(_candidats(cls, chaine))
+
+
+def type_standard(cls: str, chaine: str) -> str | None:
+    """Type standard (chaîne XML) que désigne sans ambiguïté la chaîne d'un type personnalisé, sinon None."""
+    c = candidats(cls, chaine)
+    return c[0] if len(c) == 1 else None
+
+
+def est_personnalise(t: Any) -> bool:
+    return isinstance(t, dict) and t.get("_class") in TYPES and t.get("value") == TYPES[t["_class"]][0]
+
+
+def tcanon(t: Any, cls: str | None = None) -> str:
+    """Type tel que le comprend le modèle : chaîne XML du type standard, y compris pour un type personnalisé dont la
+    chaîne est un libellé non ambigu de ce type (« Baptême » -> « Baptism ») ; sinon la chaîne personnalisée."""
+    name = tname(t)
+    cls = t.get("_class") if isinstance(t, dict) else cls
+    if not cls or not name or (isinstance(t, dict) and not est_personnalise(t)):
+        return name
+    if isinstance(t, str) and name in TYPES.get(cls, (0, 0, {}))[2]:
+        return name
+    return type_standard(cls, name) or name
+
+
+def gtype_ecrit(cls: str, name: str) -> dict:
+    """Type écrit par Genealogiste pour un objet nouveau ou dont le type change : standard quand il existe (libellé
+    reconnu compris), personnalisé seulement sinon."""
+    std = name if name in TYPES[cls][2] else type_standard(cls, name)
+    return gtype(cls, std if std is not None else name)
 
 
 # ---------------------------------------------------------------------------- gabarits (objets complets)

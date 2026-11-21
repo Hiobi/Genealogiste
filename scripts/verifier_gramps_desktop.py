@@ -134,6 +134,9 @@ class Cas:
     # écart au schéma de la bibliothèque admis pour ce cas, par version : (motif, remplacement) appliqués au fichier
     # avant validation, tout le reste étant validé strictement
     schema_admis: dict[str, tuple[tuple[bytes, bytes], ...]] = field(default_factory=dict)
+    # retouche de la base Gramps exportée (objets attendus compris) : ce qu'une base Gramps Web contient et que le
+    # modèle n'écrit pas (types personnalisés saisis en français, #273)
+    retoucher: Callable[[object], None] | None = None
 
 
 def produire_xml(version_xml: str, compresse: bool = False) -> Callable[[object, Path], Path]:
@@ -210,6 +213,68 @@ def avec_dates(tree, dossier: Path):
     return tree
 
 
+# --- types (#273) : rôles ajoutés par Gramps 6.0 et types personnalisés saisis en français ----------------
+
+ROLES_TYPES = ("FATH", "MOTH", "PARENT", "CHIL", "MULTIPLE", "FRIEND", "NGHBR", "OFFICIATOR", "WITN", "GODP")
+ROLES_60 = ("Father", "Mother", "Parent", "Child", "Multiple birth", "Friend", "Neighbor", "Officiator")
+TYPES_FRANCAIS = (("EventType", "Baptême"), ("EventType", "Recensement"), ("EventRoleType", "Témoin"),
+                  ("AttributeType", "Âge"), ("PlaceType", "Paroisse"))
+
+
+def avec_types(tree, dossier: Path):
+    """Copie de l'arbre avec une personne fictive dont le baptême a dix intervenants de l'arbre, un par rôle du
+    modèle ayant un type standard (les huit de Gramps 6.0, témoin, parrain), et un recensement."""
+    from genealogiste_mcp.models import Association, Event, Name, Person
+
+    tree = copy.deepcopy(tree)
+    p = Person(id="ITYPES273", noms=[Name(prenoms="Types", nom="ROLES")], uid="personne-types-273")
+    p.evenements = [Event(type="BAPM", uid="bapteme-types-273", associations=[
+        Association(personne=f"ITYPES273R{i}", role=r) for i, r in enumerate(ROLES_TYPES)]),
+        Event(type="CENS", uid="recensement-types-273")]
+    tree.personnes[p.id] = p
+    for i, r in enumerate(ROLES_TYPES):
+        tree.personnes[f"ITYPES273R{i}"] = Person(id=f"ITYPES273R{i}", noms=[Name(prenoms=f"Intervenant {r}",
+                                                                                 nom="ROLES")], uid=f"role-273-{i}")
+    return tree
+
+
+def types_francais(db) -> None:
+    """Types personnalisés en français, comme dans une base Gramps Web saisie par un francophone : baptême
+    « Baptême » (attribut de référence « Âge ») dans une paroisse « Paroisse », recensement « Recensement », témoin
+    « Témoin » (rôle personnalisé)."""
+    from genealogiste_mcp.gramps.types import TYPES, attribute, blank, tname
+
+    def perso(cls: str, s: str) -> dict:
+        return {"_class": cls, "value": TYPES[cls][0], "string": s}
+    lieu = blank("Place", "lieutypes273", "PTYPES273")
+    lieu.update(title="Saint-Exemple", place_type=perso("PlaceType", "Paroisse"))
+    lieu["name"]["value"] = "Saint-Exemple"
+    db.put(lieu)
+    p = next(o for o in db.all("Person").values() if o["gramps_id"] == "ITYPES273")
+    for r in p["event_ref_list"]:
+        ev = db.get("Event", r["ref"])
+        if tname(ev["type"]) == "Baptism":
+            ev.update(type=perso("EventType", "Baptême"), place="lieutypes273")
+            r["attribute_list"].append({**attribute("Age", "2 jours"), "type": perso("AttributeType", "Âge")})
+        elif tname(ev["type"]) == "Census":
+            ev["type"] = perso("EventType", "Recensement")
+    for o in db.all("Person").values():
+        for r in o["event_ref_list"]:
+            if o["gramps_id"].startswith("ITYPES273R") and tname(r["role"]) == "Witness":
+                r["role"] = perso("EventRoleType", "Témoin")
+
+
+def produire_types(tree, dossier: Path) -> Path:
+    from genealogiste_mcp.export.gramps_xml import db_to_xml
+    from genealogiste_mcp.gramps.mapping import tree_to_gramps_stats
+
+    db, _ = tree_to_gramps_stats(tree, None, False)
+    types_francais(db)
+    chemin = dossier / "genealogiste.gramps"
+    chemin.write_text(db_to_xml(db, "1.7.1"), encoding="utf-8")
+    return chemin
+
+
 # DTD et RNG de Gramps 5.2 et 6.0 : dateval type sans from/to (ajoutés par 6.1), que leur code lit et écrit pourtant
 # (MOD_FROM / MOD_TO depuis 5.2) ; validés comme « about », seul écart admis
 FROM_TO_HORS_SCHEMA = ((rb'(<dateval [^>]*type=")(?:from|to)"', rb'\1about"'),)
@@ -224,6 +289,9 @@ CAS: list[Cas] = [
     Cas("dates", "Gramps XML 1.7.1 : un événement par forme de date de l'inventaire #272 (mcp/tests/dates_gramps.py)",
         produire_xml("1.7.1"), enrichir=avec_dates, arbres=("famille.ged",),
         schema_admis={"5.2": FROM_TO_HORS_SCHEMA, "6.0": FROM_TO_HORS_SCHEMA}),
+    Cas("types", "Gramps XML 1.7.1 : les huit rôles d'événement de Gramps 6.0 (lus comme personnalisés par 5.2) et "
+        "des types personnalisés saisis en français (#273)", produire_types, enrichir=avec_types,
+        arbres=("famille.ged",), retoucher=types_francais),
 ]
 
 
@@ -369,6 +437,8 @@ def preparer_cas(travail: Path) -> list[tuple[str, Cas, Path, dict[str, list[str
             dossier.mkdir(parents=True)
             tree = cas.enrichir(origine, dossier) if cas.enrichir else origine
             db, _ = tree_to_gramps_stats(tree, None, False)
+            if cas.retoucher:
+                cas.retoucher(db)
             attendu = {cls: sorted(handle_gramps(h) for h in db.all(cls)) for cls in CLASSES}
             attendu[MODELE] = [o for cls in CLASSES for o in db.all(cls).values()]  # objets JSON exportés
             fichier = cas.produire(tree, dossier)
@@ -595,7 +665,46 @@ def controle_dates(cas: Cas, version: str, attendu: dict, rapport: dict) -> list
     return ecarts[:10]
 
 
-CONTROLES: list[Controle] = [controle_reexport, controle_medias, controle_champs, controle_lecture, controle_dates]
+def controle_types(cas: Cas, version: str, attendu: dict, rapport: dict) -> list[str]:
+    """#273 : ce que la bibliothèque fait des types (rôles de 6.0 standard en 6.x, personnalisés en 5.2 ; libellés
+    français toujours personnalisés), puis import par Genealogiste du réexport de Gramps : types GEDCOM attendus,
+    rôles des intervenants, et aucune perte comptée à cause d'un libellé."""
+    if cas.nom != "types":
+        return []
+    from genealogiste_mcp.gramps.lecture_xml import importer
+
+    vus = {(c, s): perso for c, s, perso in rapport.get("types", [])}
+    ecarts = [f"{c} « {s} » : {'absent' if (c, s) not in vus else 'standard'} après import, personnalisé attendu"
+              for c, s in TYPES_FRANCAIS if vus.get((c, s)) is not True]
+    perso_60 = version == "5.2"  # 5.2 ne connaît pas ces rôles : set_from_xml_str en fait des personnalisés
+    ecarts += [f"rôle {r} : personnalisé={vus.get(('EventRoleType', r))}, attendu {perso_60}"
+               for r in ROLES_60 if vus.get(("EventRoleType", r)) is not perso_60]
+    print(f"   {version} : rôles de Gramps 6.0 lus comme types {'PERSONNALISÉS' if perso_60 else 'standard'} ; "
+          f"libellés français gardés personnalisés", flush=True)
+    if "reexport" not in rapport:
+        return ecarts + ["réexport absent"]
+    with tempfile.TemporaryDirectory(prefix="types273-") as tmp:
+        tree, info, _ = importer(Path(rapport["reexport"]), Path(tmp), "banc")
+    p = next((x for x in tree.personnes.values() if x.nom_principal.nom == "ROLES" and x.nom_principal.prenoms
+              == "Types"), None)
+    if p is None:
+        return ecarts + ["personne ITYPES273 absente après import Genealogiste"]
+    types = sorted(e.type for e in p.evenements)
+    if types != ["BAPM", "CENS"]:
+        ecarts.append(f"types GEDCOM {types}, attendu BAPM et CENS")
+    bapteme = next((e for e in p.evenements if e.type == "BAPM"), None)
+    if bapteme is not None:
+        roles = [a.role for a in bapteme.associations]
+        if roles != list(ROLES_TYPES):
+            ecarts.append(f"rôles relus {roles}")
+        if bapteme.age != "2 jours":
+            ecarts.append(f"âge (attribut « Âge ») relu {bapteme.age!r}")
+    pertes = [k for k in info["non_repris"] if "Âge" in k or "[Age]" in k or "role" in k or k.endswith(".type")]
+    return ecarts + ([f"pertes dues aux types : {pertes}"] if pertes else [])
+
+
+CONTROLES: list[Controle] = [controle_reexport, controle_medias, controle_champs, controle_lecture, controle_dates,
+                             controle_types]
 
 
 def comparer_cycle(premier: dict, second: dict, contexte: str, ecrit_par_gramps: bool = True) -> list[str]:

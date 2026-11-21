@@ -64,6 +64,22 @@ vérifié avec la bibliothèque 5.2.4 sur les 1 220 formes de date écrites en X
   comme chez Gramps).
 - date textuelle au texte vide : lue, mais absente du réexport de 5.2.
 
+### Types et versions de Gramps (#273)
+
+Types standard par version (référentiel `referentiels/types_gramps.json`, tiré des sources de Gramps ; détail et
+règle de lecture : [Gramps Web](gramps-web.md#types-personnalisés-et-libellés-français-273)) : de 5.2 à 6.0, seuls
+huit rôles d'événement s'ajoutent (Father, Mother, Parent, Child, Multiple birth, Friend, Neighbor, Officiator) ;
+rien de 6.0 à 6.1. Genealogiste écrit ces rôles en type standard ; en Gramps XML, un type standard s'écrit par sa
+chaîne XML anglaise. Constaté avec la bibliothèque (cas `types` du banc, 2026-11-21) :
+
+- Gramps 6.0.8 et 6.1.0-beta2 lisent les huit rôles comme types **standard** ;
+- Gramps 5.2.4 les lit comme rôles **personnalisés** portant la même chaîne (« Father »…) : aucune perte, la
+  chaîne revient telle quelle au réexport, mais ce ne sont pas des types standard pour 5.2 (filtres, traduction).
+  Pas de repli vers un autre rôle : relus par Genealogiste, ils redonnent les rôles du modèle ;
+- un type personnalisé en français (« Baptême », « Témoin », « Paroisse », attribut « Âge ») reste personnalisé
+  dans les trois versions : Gramps ne traduit jamais une chaîne XML à l'import. Genealogiste le lit comme le type
+  standard qu'il désigne (`BAPM`, `WITN`, âge), et `non_repris` ne le compte pas comme perdu.
+
 ### Contenu écrit
 
 Le XML est produit depuis les objets Gramps du module de correspondance unique (`gramps/mapping.py`) et en écrit
@@ -159,8 +175,9 @@ compteur, pas un diff : une valeur gardée sous une autre forme (hiérarchie de 
 texte stylé, ordonnances LDS, attributs utilisateur (âge, profession…), suffixe, titre et nom d'usage,
 patronymes multiples, rectangles des références de médias, notes privées, plusieurs dépôts d'une source, et
 les métadonnées (chercheur, dossier des médias, personne de référence, formats de noms, signets,
-regroupements). Leur reprise relève du lot 2 du jalon M6 (#273, #277, #279) ; les étiquettes des autres
-objets sont reprises depuis #262. Dates d'événement (#272) : toutes les formes de Gramps sont reprises à
+regroupements). Leur reprise relève du lot 2 du jalon M6 (#277, #279) ; les étiquettes des autres
+objets sont reprises depuis #262, et un type personnalisé qui est le libellé d'un type standard (« Baptême »,
+attribut « Âge ») est repris comme ce type depuis #273 (un attribut est compté sous son type standard). Dates d'événement (#272) : toutes les formes de Gramps sont reprises à
 l'identique ; une forme qui ne le serait pas (double datation sur un point sans année) est comptée sous
 `Event.date[forme non reprise]`. Comme l'import de Gramps, une date que `Date.set` refuse (30 février, plage au
 début vide…) devient une date textuelle portant l'élément XML, et une date à double datation passe en julien.
@@ -237,8 +254,16 @@ Workflow `Intégration Gramps`, un job `Gramps Desktop <version>` par version (v
     1 225 formes soumises à `Date.set` de la bibliothèque (acceptée ou refusée comme `date_acceptee`, même
     valeur de tri, même affichage `DateDisplayEn`), et les formes que Gramps refuse (`REFUSEES`) importées par
     Gramps comme Genealogiste les lit. `--fixtures` écrit la référence `dates-gramps-<version>.json`.
+14. types (#273) : cas `types`, un baptême dont dix intervenants de l'arbre portent les huit rôles de Gramps 6.0,
+    le témoin et le parrain, plus des types personnalisés saisis en français (événements « Baptême » et
+    « Recensement », rôle « Témoin », attribut de référence « Âge », lieu « Paroisse »), exporté en 1.7.1. La
+    sonde relève chaque type importé (classe, chaîne XML, personnalisé ou non, par l'API de la bibliothèque, 5.2
+    comprise) : rôles de 6.0 standard en 6.x et personnalisés en 5.2, libellés français personnalisés partout
+    (`controle_types`) ; le réexport de Gramps, importé par Genealogiste, redonne `BAPM`, `CENS`, les dix rôles du
+    modèle et l'âge, sans perte due à un type.
 
-Résultat du 2026-11-21 (#272) : 96 vérifications sur 96 réussies en local (GLib factice) pour 5.2, 6.0 et 6.1 :
+Résultat du 2026-11-21 (#273) : 102 vérifications sur 102 réussies, dont les 6 du cas `types` (import et cycle
+pour 5.2, 6.0 et 6.1). Résultat du 2026-11-21 (#272) : 96 vérifications sur 96 réussies en local (GLib factice) pour 5.2, 6.0 et 6.1 :
 39 imports des formes de l'export (dont 3 refus attendus de 1.7.2 par Gramps 5.2, et le cas `dates` : 1 233
 dates relues sans écart non nommé par version), 36 cycles, 12 sur l'arbre fictif (lecture et cycle), 3 références
 de dates (1 225 formes chacune, aucun écart) et 6 arbres d'exemple. Écarts connus comptés : 5.2, 14 plages à

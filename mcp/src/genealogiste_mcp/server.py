@@ -1172,9 +1172,33 @@ def arbre_statut_preuve(id: str, fait: str = "") -> list[dict]:
 
 @mcp.tool()
 def arbre_coherence(id: str = "") -> list[dict]:
-    """Contrôles biologiques et chronologiques (une personne ou tout l'arbre)."""
-    t = app().tree()
-    return coherence.check_person(t, id) if id else coherence.check_tree(t)
+    """Contrôles biologiques et chronologiques (une personne ou tout l'arbre). Tout l'arbre en mode gramps : aussi
+    les types personnalisés qui doublonnent un type standard de Gramps (« Baptême » pour Baptism…), par classe avec
+    le nombre d'objets, et les libellés ambigus (normalisation : gramps_normaliser_types)."""
+    a = app()
+    t = a.tree()
+    if id:
+        return coherence.check_person(t, id)
+    out = coherence.check_tree(t)
+    if a.config.backend == "gramps":
+        out += _types_en_doublon(a)
+    return out
+
+
+def _types_en_doublon(a) -> list[dict]:
+    """Alertes « type personnalisé en doublon » (#273) sur la base Gramps Web déjà lue (aucune écriture)."""
+    from .gramps.mapping import types_en_doublon
+
+    d = types_en_doublon(a.backend.snapshot(fresh=False))
+    out = [{"niveau": "info", "code": "type_personnalise_doublon", "personne": "",
+            "message": f"{x['classe']} personnalisé « {x['chaine']} » ({x['objets']} objet(s), {x['occurrences']} "
+                       f"occurrence(s)) = type standard {x['standard']} (« {x['libelle']} ») : lu comme tel ; "
+                       "gramps_normaliser_types pour l'écrire en type standard.", **x} for x in d["doublons"]]
+    out += [{"niveau": "info", "code": "type_personnalise_ambigu", "personne": "",
+             "message": f"{x['classe']} personnalisé « {x['chaine']} » ({x['objets']} objet(s)) : libellé de "
+                        f"plusieurs types standard ({', '.join(x['candidats'])}), gardé tel quel, jamais tranché.",
+             **x} for x in d["ambigus"]]
+    return out
 
 
 @mcp.tool()
@@ -2510,6 +2534,24 @@ def gramps_structurer_lieux() -> dict:
         return {"erreur": "Disponible en mode gramps (GENEALOGISTE_BACKEND=gramps)."}
     try:
         return _gramps_guard(app().backend.propose_places)
+    except ProposalError as exc:
+        return {"erreur": str(exc)}
+
+
+@mcp.tool()
+def gramps_normaliser_types(classes: list[str] | None = None) -> dict:
+    """Mode gramps : prépare la normalisation des types personnalisés qui doublonnent un type standard de Gramps
+    (#273 : événement « Baptême » -> Baptism, rôle « Témoin » -> Witness, lieu « Paroisse » -> Parish…, libellés
+    du catalogue français de Gramps comparés sans casse ni accents). classes : limiter à ces classes Gramps
+    (EventType, EventRoleType, AttributeType, NoteType, PlaceType, NameType, NameOriginType, FamilyRelType,
+    ChildRefType, RepositoryType, SourceMediaType, UrlType, SrcAttributeType). Une seule transaction : seul le type
+    change (handles, identifiants, valeurs, citations, positions inchangés) ; bilan par classe et par type, libellés
+    ambigus listés sans être tranchés. Jeton pour arbre_appliquer après accord explicite ; journalisée, annulable
+    par arbre_annuler_modification. Sans rien à normaliser : pas de jeton."""
+    if app().config.backend != "gramps":
+        return {"erreur": "Disponible en mode gramps (GENEALOGISTE_BACKEND=gramps)."}
+    try:
+        return _gramps_guard(lambda: app().backend.propose_types(classes))
     except ProposalError as exc:
         return {"erreur": str(exc)}
 

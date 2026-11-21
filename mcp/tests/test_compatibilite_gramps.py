@@ -127,7 +127,7 @@ def test_version_desktop_inconnue_refusee(desktop):
 def test_cas_desktop_de_l_export_268(desktop):
     """Formes remises à Gramps : 1.7.1, 1.7.2 (refusée par 5.2 seulement), .gramps gzip, .gpkg avec média."""
     cas = {c.nom: c for c in desktop["CAS"]}
-    assert set(cas) == {"xml-1.7.1", "xml-1.7.2", "gramps-gzip", "gpkg", "dates"}
+    assert set(cas) == {"xml-1.7.1", "xml-1.7.2", "gramps-gzip", "gpkg", "dates", "types"}
     assert cas["xml-1.7.2"].refus_attendu == {"5.2"}
     assert all(not c.refus_attendu for n, c in cas.items() if n != "xml-1.7.2")
     assert cas["gpkg"].enrichir and cas["gpkg"].avertissements_admis
@@ -152,6 +152,32 @@ def test_cas_dates_272(desktop):
     assert desktop["ecarts_date"](plage, texte)
 
 
+def test_cas_types_273(desktop, tmp_path):
+    """#273 : rôles de Gramps 6.0 (standard en 6.x, personnalisés en 5.2) et types personnalisés français dans
+    l'export ; controle_types vérifie le relevé de la sonde puis l'import du réexport par Genealogiste."""
+    from genealogiste_mcp.gedcom.mapping import read_gedcom
+    from genealogiste_mcp.gramps.lecture_xml import lire_fichier
+    from genealogiste_mcp.gramps.types import tname
+
+    cas = {c.nom: c for c in desktop["CAS"]}["types"]
+    assert cas.arbres == ("famille.ged",) and desktop["controle_types"] in desktop["CONTROLES"]
+    origine = read_gedcom((ROOT / "mcp/tests/fixtures/famille.ged").read_text(encoding="utf-8"))[0]
+    fichier = cas.produire(cas.enrichir(origine, tmp_path), tmp_path)
+    db = lire_fichier(fichier).db
+    roles = {tname(r["role"]) for p in db.all("Person").values() for r in p["event_ref_list"]}
+    assert set(desktop["ROLES_60"]) <= roles and "Témoin" in roles
+    perso = {(t["_class"], t["string"]) for e in db.all("Event").values() for t in [e["type"]] if t["value"] == 0}
+    assert {("EventType", "Baptême"), ("EventType", "Recensement")} <= perso
+    # relevé de la sonde simulé : 5.2 lit les rôles de 6.0 comme personnalisés, 6.x comme standard
+    rapport = {"types": [[c, s, True] for c, s in desktop["TYPES_FRANCAIS"]]
+               + [["EventRoleType", r, True] for r in desktop["ROLES_60"]]}
+    ecarts = desktop["controle_types"](cas, "5.2", {}, rapport)
+    assert ecarts == ["réexport absent"]
+    assert any("Father" in e for e in desktop["controle_types"](cas, "6.0", {}, rapport))
+    rapport["reexport"] = str(fichier)
+    assert desktop["controle_types"](cas, "5.2", {}, rapport) == []
+
+
 def test_cas_desktop_produisent_des_fichiers_lisibles(desktop, tmp_path):
     import tarfile
 
@@ -164,6 +190,8 @@ def test_cas_desktop_produisent_des_fichiers_lisibles(desktop, tmp_path):
         dossier.mkdir()
         tree = forme.enrichir(origine, dossier) if forme.enrichir else origine
         db, _ = tree_to_gramps_stats(tree, None, False)
+        if forme.retoucher:
+            forme.retoucher(db)
         fichier = forme.produire(tree, dossier)
         attendu = {k: sorted(db.all(k)) for k in desktop["CLASSES"]}
         assert desktop["comparer"](attendu, desktop["inventaire_xml"](fichier), forme.nom) == []

@@ -9,6 +9,8 @@ Même contrat qu'en mode fichier : proposition -> diff -> accord explicite -> é
   nouvel accord ; jamais ``force``.
 - Annulation : transaction inverse (``undo``) de la transaction enregistrée, après accord.
 - Notes de preuve ``Genealogiste:auto`` (historique ``Sosa:auto``) recalculées à chaque écriture (et sur demande).
+- Types personnalisés qui doublonnent un type standard normalisés par une transaction explicite
+  (:meth:`GrampsBackend.propose_types`, #273).
 - Marqueurs ``Sosa-*`` / ``Sosa:auto`` migrés vers ``Genealogiste-*`` / ``Genealogiste:auto`` par une transaction
   explicite (:meth:`GrampsBackend.propose_marqueurs`, #182).
 - Journal local ``gramps-transactions.jsonl`` (pour l'annulation) ; miroir Git optionnel de l'arbre.
@@ -52,6 +54,7 @@ from .mapping import (
     gramps_to_tree,
     lignes_etiquettes,
     migrer_marqueurs,
+    normaliser_types,
     proof_only,
     summarize,
     touched_keys,
@@ -347,6 +350,36 @@ class GrampsBackend:
                                     "operations": [], "resume": ["Migration des marqueurs Sosa → Genealogiste"],
                                     "references": {}})
         return {**out, "jeton": token, "expire_dans_minutes": TTL_SECONDS // 60, **self._preview(items)}
+
+    def propose_types(self, classes: list[str] | None = None) -> dict:
+        """Normalisation des types personnalisés qui doublonnent un type standard (#273) : une transaction (jeton,
+        accord explicite, journalisée et annulable) où seul le type change. Renvoie {jeton?, bilan_types, ambigus,
+        transaction_gramps}. Sans rien à normaliser : pas de jeton."""
+        exiger_ecriture(self.client)
+        db = self.snapshot(fresh=True)
+        try:
+            items, bilan = normaliser_types(db, classes)
+        except ValueError as exc:
+            raise ProposalError(str(exc)) from exc
+        out: dict = {"bilan_types": bilan["par_classe"], "ambigus": bilan["ambigus"]}
+        if bilan["ambigus"]:
+            out["ambigus_conseil"] = ("Libellés qui désignent plusieurs types standard (ex. « Officiant » : Celebrant "
+                                      "ou Officiator) : laissés tels quels, jamais tranchés. Choisir le type dans "
+                                      "Gramps Web si voulu.")
+        if not items:
+            out["note"] = "Rien à normaliser : aucun type personnalisé ne doublonne un type standard."
+            return out
+        n = sum(len(v) for v in bilan["par_classe"].values())
+        message = (f"Normalisation des types personnalisés (#273)\n\n{n} libellé(s) personnalisé(s) remplacé(s) par "
+                   "le type standard de Gramps qu'ils désignent ; seul le type change (handles, identifiants, "
+                   "valeurs, citations et positions inchangés).")
+        resume = [f"Normalisation des types : {cls} « {s} » -> {x['standard']} ({x['objets']} objet(s))"
+                  for cls, v in sorted(bilan["par_classe"].items()) for s, x in sorted(v.items())]
+        token = self.tokens.create({"type": "transaction", "items": items, "message": message, "operations": [],
+                                    "resume": resume, "references": {}})
+        return {**out, "jeton": token, "expire_dans_minutes": TTL_SECONDS // 60,
+                "transaction_gramps": self._preview(items, db), "message_de_transaction": message,
+                "consigne": CONSIGNE}
 
     def _check(self, db: GrampsDb, items: list[dict], side: str = "old") -> None:
         """Conflit si un objet a changé depuis la proposition (comparaison locale, puis par le serveur)."""
