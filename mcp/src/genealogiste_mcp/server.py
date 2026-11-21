@@ -2452,7 +2452,8 @@ def enquete_ouvrir(sujet: str, personnes: list[str] | None = None, id: str = "",
     signets=True (mode gramps, #282) : prépare AUSSI la proposition de mettre en signet de Gramps les personnes de
     l'enquête (jeton pour arbre_appliquer après accord explicite, clé « signets » ; jamais appliquée seule ; seuls
     les signets posés par le plugin seront proposés au retrait à la clôture ; ce sont les signets de la base, menu
-    Signets de Gramps Desktop : l'interface de Gramps Web ne les affiche pas). Local seulement, rien n'est envoyé au réseau."""
+    Signets de Gramps Desktop : l'interface de Gramps Web ne les affiche pas). Rien n'est envoyé à une source externe
+    (signets=True lit seulement l'instance Gramps Web de l'utilisateur)."""
     def run():
         res = app().enquetes.ouvrir(sujet, personnes, id, budget)
         if signets:
