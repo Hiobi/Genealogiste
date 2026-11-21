@@ -5,7 +5,8 @@ Règle (mode pondéré, par défaut) :
     original (acte + table décennale, relevé d'association, index en ligne) ne comptent qu'une fois ;
   - poids d'un groupe = meilleure citation : 2 si source originale + information primaire + preuve
     directe, 1 sinon ; 0 pour une source composite (arbre en ligne : piste, pas preuve), une preuve négative ou
-    un billet du blog de Gramps Web (source étiquetée Blog, #261 : récit, jamais une source indépendante) ;
+    un objet d'interface de Gramps Web (billet du blog, source étiquetée Blog, #261 : récit ; tâche, source
+    étiquetée ToDo, #263 : plan de recherche ; jamais une source indépendante) ;
   - confirmé : ≥3 points ET ≥2 groupes indépendants ; probable : ≥2 points ; hypothèse : ≥1 point ;
   - contradictoire : valeurs incompatibles pour un même fait unique ; réfuté : forçage manuel justifié.
 Mode strict (GENEALOGISTE_STRICT=1) : chaque groupe vaut 1 ; confirmé = 3 groupes, probable = 2, hypothèse = 1.
@@ -20,7 +21,9 @@ from .citations import format_citation
 from .models import UNIQUE_EVENTS, Citation, Event, Tree
 from .normalize.dates import compare, parse_date
 from .normalize.places import place_similarity
+from .objets_interface import est_objet_interface
 from .statuts import LABELS
+from .taches import est_tache
 
 _ABREV = {"v": "vue", "vues": "vue", "view": "vue", "page": "p", "pages": "p", "pp": "p", "fo": "f", "folio": "f",
           "fol": "f", "acte": "n", "no": "n", "num": "n", "numero": "n"}
@@ -100,7 +103,7 @@ def citation_weight(c: Citation, tree: Tree, strict: bool = False) -> float:
     """
     src = tree.sources.get(c.source)
     stype = c.type_source if c.type_source != "indeterminee" else (src.type_source if src else "indeterminee")
-    if c.consultation == "non_vu" or stype == "composite" or c.preuve == "negative" or est_billet(src):
+    if c.consultation == "non_vu" or stype == "composite" or c.preuve == "negative" or est_objet_interface(src):
         return 0.0
     if c.consultation in ("index", "transcription") and stype == "originale":
         stype = "derivee"
@@ -180,6 +183,10 @@ def assess_citations(citations: list[Citation], tree: Tree, strict: bool = False
     if billets := sorted({c.source for c in citations if est_billet(tree.sources.get(c.source))}):
         out["billets_cites"] = [f"{sid} : billet du blog (récit), jamais compté comme preuve ; citer ses sources"
                                 for sid in billets]
+    if taches := sorted({c.source for c in citations if est_tache(tree.sources.get(c.source))
+                         and not est_billet(tree.sources.get(c.source))}):
+        out["taches_citees"] = [f"{sid} : tâche de Gramps Web (plan de recherche), jamais comptée comme preuve ; "
+                                "citer la source consultée" for sid in taches]
     if citations and not any(c.consultation for c in citations):
         out["avertissement"] = "Préciser pour chaque citation ce qui a été vu (original, image, index, non vu)."
     return out

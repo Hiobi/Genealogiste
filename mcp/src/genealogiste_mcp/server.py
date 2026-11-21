@@ -28,6 +28,7 @@ from . import (
     sondage,
 )
 from . import pdf_markdown as pdf_md
+from . import taches as taches_gramps
 from .archives import communicability_online
 from .auth import BearerAuth, Sante, bind_problem
 from .billets import est_billet
@@ -136,7 +137,12 @@ class App:
                                          notes_auto=self.config.gramps_notes_auto,
                                          notes_liens=self.config.gramps_notes_liens,
                                          media_dir=self.config.media_racines[1:] if self.config.media_dir_conf else None,
-                                         media=self.config.media_reference, forme=self.config.marqueurs)
+                                         media=self.config.media_reference, forme=self.config.marqueurs,
+                                         taches=self.config.gramps_taches)
+
+    def taches_actives(self) -> bool:
+        """Tâches de Gramps Web lues et écrites (#263) : backend gramps et GENEALOGISTE_GRAMPS_TACHES=true."""
+        return self.config.backend == "gramps" and self.config.gramps_taches
 
     def gramps(self):
         """Client Gramps Web (compte dédié, identifiants de l'environnement)."""
@@ -1190,7 +1196,8 @@ def _recherche_sources(t, texte: str, etiquette: str, limite: int) -> list[dict]
         if pli and pli not in f"{s.titre} {s.auteur}".casefold():
             continue
         out.append({"id": sid, "titre": s.titre, "auteur": s.auteur, "prive": s.prive, "etiquettes": list(s.tags),
-                    "medias": list(s.medias), "billet": est_billet(s)})
+                    "medias": list(s.medias), "billet": est_billet(s),
+                    **({"tache": taches_gramps.etat(s)} if taches_gramps.est_tache(s) else {})})
     return out[:limite]
 
 
@@ -1295,12 +1302,30 @@ def arbre_descendance(id: str, generations: int = 3, format: str = "liste") -> A
 
 
 @mcp.tool()
-def arbre_lacunes(id: str = "") -> dict:
+def arbre_lacunes(id: str = "", taches: bool = False) -> dict:
     """Faits manquants ou faibles + plan de recherche priorisé (une personne, ou classement de tout l'arbre).
     medias_a_lier : images jointes à une citation mais absentes de la personne, de l'événement ou de la source
-    qu'elle prouve, avec l'opération modifier_media (lier_a) à soumettre par arbre_proposer."""
+    qu'elle prouve, avec l'opération modifier_media (lier_a) à soumettre par arbre_proposer.
+    taches=true (avec id, GENEALOGISTE_GRAMPS_TACHES) : taches_a_proposer, une opération ajouter_tache par action
+    (priorité Gramps calculée de la priorité de lacune : 0-1 haute, 2 moyenne, 3 basse), à soumettre par
+    arbre_proposer ; rien n'est écrit."""
     t = app().tree()
-    return gaps(t, id, app().config.strict_evidence) if id else tree_gaps(t, app().config.strict_evidence)
+    out = gaps(t, id, app().config.strict_evidence) if id else tree_gaps(t, app().config.strict_evidence)
+    if taches:
+        if not app().taches_actives():
+            out["taches_a_proposer"] = {"erreur": taches_gramps.DESACTIVE}
+        elif not id:
+            out["taches_a_proposer"] = {"erreur": "préciser id : tâches proposées pour une personne à la fois"}
+        else:
+            out["taches_a_proposer"] = {
+                "operations": taches_gramps.operations_lacunes(out, id),
+                "titre": f"Tâches de recherche : {out['personne']}",
+                "justification": "Plan de lacunes (arbre_lacunes) rendu visible dans la vue Tâches de Gramps Web ; "
+                                 "priorité Gramps calculée de la priorité de lacune ; tâches privées.",
+                "consigne": "Proposer seulement les actions retenues par l'utilisateur (arbre_proposer, diff, "
+                            "accord, arbre_appliquer) ; vérifier d'abord les tâches existantes "
+                            "(arbre_recherche(etiquette=\"ToDo\", objet=\"source\"))."}
+    return out
 
 
 @mcp.tool()
@@ -1378,12 +1403,15 @@ def arbre_proposer(operations: list[dict], titre: str, justification: str, sourc
     jeton. Opérations : ajouter_personne, modifier_personne, supprimer_personne, ajouter_nom, ajouter_evenement,
     modifier_evenement, supprimer_evenement, ajouter_famille, lier_enfant, delier_enfant, lier_conjoint,
     ajouter_source, modifier_source, supprimer_source, fusionner_sources, ajouter_depot, ajouter_citation,
-    supprimer_citation, ajouter_media, modifier_media, ajouter_billet (blog de Gramps Web), ajouter_association,
+    supprimer_citation, ajouter_media, modifier_media, ajouter_billet (blog de Gramps Web), ajouter_tache et
+    modifier_tache (tâches de Gramps Web, GENEALOGISTE_GRAMPS_TACHES), ajouter_association,
     supprimer_association, fusionner_personnes, scinder_personne, definir_statut, marquer_vivant, etiqueter.
     Étiquettes : tags (ajout) sur les ajouts et modifications, tags_retrait sur les modifications, etiqueter
     pour tout objet existant (famille, dépôt, note, citation…).
     Texte des notes : brut par défaut ; format_texte="markdown" sur l'opération pour **gras**, *italique* et
     [liens](https://…) (mise en forme écrite dans Gramps Web en mode gramps, annoncée comme perdue en mode fichier).
+    Tâche (ajouter_tache : titre, description, statut Open|In Progress|Blocked|Done, priorite haute|moyenne|basse,
+    personnes, enquete + element) : privée par défaut, même garde des vivants que le billet.
     Billet du blog (ajouter_billet, ou source étiquetée Blog) : privé par défaut ; public refusé s'il nomme une
     personne présumée vivante. Règle de métier : tout événement ou filiation exige une citation, sauf
     non_source=true + motif.
@@ -1580,8 +1608,8 @@ def propositions_deposer(operations: list[dict], titre: str, justification: str,
     def valider() -> dict:
         tree = a.tree()
         ctx = prepare(tree, operations, titre, justification, sources, a.config.exiger_source,
-                      a.config.media_reference, a.backend.name)[0]
-        if write_gedcom(ctx.tree) == write_gedcom(tree):
+                      a.config.media_reference, a.backend.name, a.taches_actives())[0]
+        if write_gedcom(ctx.tree) == write_gedcom(tree) and not taches_gramps.lignes(tree, ctx.tree):
             raise ProposalError("La proposition ne modifie rien.")
         return {"ctx": ctx, "tree": tree}
 
@@ -2334,6 +2362,7 @@ def enquete_noter(enquete: str, piste: dict | None = None, registre: dict | None
     registre : {id? | source (ARK, URL de visionneuse ou manifeste) | cote, service, titre, piste, nb_vues,
       bornes: [de, a], vues_lues: [n | [de, a]], lectures: [{vue, date, date_fin, type, numero, note}], verdict, statut}.
     tache (manuelle, pour l'utilisateur) : {id?, description, service, piste, url, statut: a_faire|faite|abandonnee}
+      ; piste ou tache : tache_gramps = id de la tâche de Gramps Web liée (#263, "" pour délier)
       (un défi anti-robot rencontré avec enquete=<id> en crée une d'office).
     requete (faite hors outil suivi, ex. Geneanet) : {outil, parametres, resultat: positif|negatif|erreur|manuel,
       resume, journal?, piste}.
@@ -2352,21 +2381,42 @@ def enquete_etat(enquete: str = "") -> dict:
         e = app().enquetes
         if not enquete:
             return {"enquetes": e.lister()}
-        return {**e.lire(enquete), "coherence_journal": e.coherence(enquete) or "ok"}
+        return _taches_enquete({**e.lire(enquete), "coherence_journal": e.coherence(enquete) or "ok"}, enquete)
     return _enquete(run)
 
 
+def _taches_enquete(out: dict, enquete: str, proposer: bool = False, elements: list[str] | None = None) -> dict:
+    """#263, réglage activé seulement : correspondance pistes / tâches manuelles <-> tâches de Gramps Web (liens,
+    écarts signalés, jamais corrigés ici) et, sur demande, opérations ajouter_tache prêtes. Lecture seule."""
+    if not app().taches_actives():
+        return out
+    try:
+        e, tree = app().enquetes.lire(enquete), app().tree()
+        out["taches_gramps"] = taches_gramps.correspondance(e, tree)
+        if proposer:
+            out["taches_a_proposer"] = taches_gramps.operations_enquete(e, tree, elements)
+    except Exception as exc:  # noqa: BLE001 — l'état d'enquête reste lisible si Gramps Web ne répond pas
+        out["taches_gramps"] = {"erreur": f"tâches de Gramps Web illisibles : {exc}"}
+    return out
+
+
 @mcp.tool()
-def enquete_reprendre(enquete: str = "") -> dict:
+def enquete_reprendre(enquete: str = "", taches: bool = False, elements: list[str] | None = None) -> dict:
     """Reprise après interruption, sans relire le journal : actions restantes dans l'ordre (a_faire : outil et
     paramètres prêts ; d'abord les appels refusés faute de budget), pistes ouvertes, registres en cours (vues
     restantes), tâches manuelles en attente, demandes déjà faites à ne pas relancer (deja_fait), budget
-    restant et blocage éventuel. Sans enquete : liste des enquêtes ouvertes ou bloquées."""
+    restant et blocage éventuel. Sans enquete : liste des enquêtes ouvertes ou bloquées.
+    GENEALOGISTE_GRAMPS_TACHES : taches_gramps (pistes et tâches manuelles liées aux tâches de Gramps Web, écarts
+    ouvert/terminé signalés) ; taches=true : taches_a_proposer, opérations ajouter_tache prêtes pour les éléments
+    ouverts sans tâche (ou ceux d'elements : p1, t2…), à soumettre par arbre_proposer. Rien n'est écrit."""
     def run():
         e = app().enquetes
         if not enquete:
             return {"enquetes": [x for x in e.lister() if x["statut"] in ("ouverte", "bloque")]}
-        return e.reprendre(enquete)
+        out = e.reprendre(enquete)
+        if taches and not app().taches_actives():
+            out["taches_a_proposer"] = {"erreur": taches_gramps.DESACTIVE}
+        return _taches_enquete(out, enquete, taches, elements)
     return _enquete(run)
 
 
@@ -2550,7 +2600,7 @@ def gramps_personne(handle: str) -> dict:
         p = db.get("Person", handle)
         if not p:
             return {"erreur": f"Personne Gramps inconnue : {handle}"}
-        t = gramps_to_tree(db)[0]
+        t = gramps_to_tree(db, app().taches_actives())[0]
         pid = p["gramps_id"]
         data = _profile(t, pid)
         data["faits"] = evidence.assess_person(t, pid, app().config.strict_evidence)
@@ -2786,14 +2836,22 @@ def gramps_relocaliser_medias(ancien_prefixe: str, nouveau_prefixe: str) -> dict
 @mcp.tool()
 def gramps_synchroniser() -> dict:
     """Mode gramps : relit les modifications faites dans Gramps Web depuis la dernière lecture (incrémental) ;
-    avec le miroir Git, les commite (« Modifications externes »)."""
+    avec le miroir Git, les commite (« Modifications externes »). GENEALOGISTE_GRAMPS_TACHES : taches_ecarts, écarts
+    ouvert/terminé entre les enquêtes non closes et leurs tâches de Gramps Web (signalés, jamais corrigés)."""
     if app().config.backend != "gramps":
         return {"erreur": "Disponible en mode gramps (GENEALOGISTE_BACKEND=gramps)."}
 
     def run():
         b = app().backend
         b.snapshot(fresh=True)
-        return {"modifications": b.last_refresh, "objets": b.db.count(), "miroir_git": bool(b.mirror)}
+        out = {"modifications": b.last_refresh, "objets": b.db.count(), "miroir_git": bool(b.mirror)}
+        if app().taches_actives():  # #263 : écarts entre enquêtes ouvertes et tâches de Gramps Web, signalés
+            tree, ecarts = b.load(), []
+            for x in app().enquetes.lister():
+                if x.get("statut") != "close":
+                    ecarts += taches_gramps.correspondance(app().enquetes.lire(x["id"]), tree)["ecarts"]
+            out["taches_ecarts"] = ecarts
+        return out
     return _gramps_guard(run)
 
 

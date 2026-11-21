@@ -54,6 +54,14 @@ def test_notes_liens_invalide(env_neuf, monkeypatch):
     assert "true | false" in d["erreur"]
 
 
+def test_taches_invalide(env_neuf, monkeypatch):
+    """#263 : valeur inconnue refusée au démarrage (jamais de tâches activées par erreur)."""
+    monkeypatch.setenv("GENEALOGISTE_GRAMPS_TACHES", "parfois")
+    d = _charge(_appel("arbre_info"))
+    assert d["cause"] == "configuration" and d["variable"] == "GENEALOGISTE_GRAMPS_TACHES"
+    assert "true | false" in d["erreur"]
+
+
 def test_gramps_injoignable(env_neuf, monkeypatch):
     monkeypatch.setenv("GENEALOGISTE_BACKEND", "gramps")
     monkeypatch.setenv("GENEALOGISTE_GRAMPS_URL", "http://127.0.0.1:9")

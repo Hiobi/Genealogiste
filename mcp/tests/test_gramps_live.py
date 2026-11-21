@@ -879,3 +879,137 @@ def test_groupes_de_noms_outil_export_et_import_sur_vrai_gramps_web(client, load
         assert groupes["Dupond"] == "Dupond"  # déjà regroupé : jamais écrasé (Gramps avertit seulement)
     finally:
         server.set_app(None)
+
+
+# ---------------------------------------------------------------------------- #263 : tâches
+
+_ORDRE_STATUT = {"Open": 1, "In Progress": 2, "Blocked": 3, "Done": 5}  # taskConstants.js : STATUS_ORDER
+
+
+def _vue_taches(c) -> list[dict]:
+    """Requête exacte de la vue Tâches (gramps-web v26.11.0 et v26.11.3, src/views/GrampsjsViewTasks.js:74-89)."""
+    regles = {"rules": [{"name": "HasTag", "values": ["ToDo"]}]}
+    rep = c.request("GET", "/sources/", params={"rules": json.dumps(regles), "locale": "fr", "sort": "-gramps_id",
+                                                 "extend": "tag_list"})
+    assert rep.status_code == 200, rep.text
+    return rep.json()
+
+
+def _vue_tache(c, gid: str) -> dict:
+    """Page d'une tâche (GrampsjsViewSource.getUrl : gramps_id, profile=all, backlinks, extend=all)."""
+    rep = c.request("GET", "/sources/", params={"gramps_id": gid, "locale": "fr", "profile": "all",
+                                                 "backlinks": "true", "extend": "all"})
+    assert rep.status_code == 200, rep.text
+    return rep.json()[0]
+
+
+def _attribut(tache: dict, typ: str):
+    """taskAttribute (taskConstants.js) : valeur du premier attribut de ce type."""
+    from genealogiste_mcp.gramps.types import tname
+    return next((a["value"] for a in tache.get("attribute_list") or [] if tname(a["type"]) == typ), None)
+
+
+def _put_comme_l_interface(c, tache: dict, cle: str, valeur: str) -> None:
+    """GrampsjsViewTasks._handleUpdateAttribute : objet complet sans extended/profile/backlinks/formatted, attribut
+    retiré puis remis en fin, PUT /api/sources/<handle>."""
+    corps = {k: v for k, v in tache.items() if k not in ("extended", "profile", "backlinks", "formatted")}
+    corps["attribute_list"] = [*[a for a in corps["attribute_list"] if a["type"] != cle],
+                               {"_class": "SrcAttribute", "type": cle, "value": valeur}]
+    rep = c.request("PUT", f"/sources/{tache['handle']}", json=corps)
+    assert rep.status_code == 200, rep.text
+
+
+def test_taches_sur_vrai_gramps_web(client, loaded, tmp_path):
+    """Tâches créées par arbre_proposer/arbre_appliquer (privée par défaut, publique sur demande), vérifiées par
+    les requêtes de la vue Tâches et de la page d'une tâche (statut, priorité, description), lues par un compte
+    Invité (privée invisible) ; statut et priorité changés comme l'interface (PUT, aussi en lot) relus sans
+    réécriture, écart avec l'enquête signalé ; refus d'une tâche publique nommant un vivant ; annulations."""
+    from genealogiste_mcp import taches
+    from genealogiste_mcp.gramps.types import tname
+
+    b = GrampsBackend(client, tmp_path, tmp_path / ".propositions", ttl=0, taches=True)
+    p1 = b.propose([{"op": "ajouter_tache", "ref": "t", "titre": "Mariage MARTIN × DUPONT (263)",
+                     "description": "**Table décennale** 1843-1852 d'abord.", "format_texte": "markdown",
+                     "priorite": "haute", "personnes": ["I1"], "enquete": "enquete-263", "element": "t1"}],
+                   "Tâche", "Plan de recherche (test).")
+    print("tâche privée, proposition :", p1["resume"], p1["transaction_gramps"]["bilan"], p1["avertissements"])
+    assert "+1 _ETIQUETTE ToDo" in p1["diff"] and "+1 _RESN PRIVACY" in p1["diff"]
+    r1 = b.apply(p1["jeton"])
+    prive_id = p1["references_creees"]["t"]
+    p2 = b.propose([{"op": "ajouter_tache", "ref": "t", "titre": "Relevé public (263)", "description": "Relevé.",
+                     "statut": "In Progress", "priorite": "basse", "prive": False}], "Tâche publique", "Plan (test).")
+    r2 = b.apply(p2["jeton"])
+    public_id = p2["references_creees"]["t"]
+    with pytest.raises(ProposalError, match="I9"):  # publique nommant un vivant : refusée avant tout envoi
+        b.propose([{"op": "ajouter_tache", "titre": "Refusée", "description": "Lucas MARTIN, né en 1990.",
+                    "prive": False}], "Tâche", "Essai (test).")
+    # vue Tâches, compte Editor : les deux tâches, statut et priorité lus comme le frontend
+    liste = _vue_taches(client)
+    print("vue Tâches (Editor) :", [(s["gramps_id"], s["title"], _attribut(s, "Status"), _attribut(s, "Priority"),
+                                     s["private"]) for s in liste])
+    assert [s["gramps_id"] for s in liste] == sorted([prive_id, public_id], reverse=True)  # -gramps_id
+    vus = {s["gramps_id"]: s for s in liste}
+    assert (_attribut(vus[prive_id], "Status"), _attribut(vus[prive_id], "Priority")) == ("Open", "1")
+    assert (_attribut(vus[public_id], "Status"), _attribut(vus[public_id], "Priority")) == ("In Progress", "9")
+    assert [taches.libelle_priorite(_attribut(vus[x], "Priority")) for x in (prive_id, public_id)] == ["haute", "basse"]
+    assert all("ToDo" in [t["name"] for t in s["extended"]["tags"]] for s in liste)
+    tri = sorted(liste, key=lambda s: _ORDRE_STATUT.get(_attribut(s, "Status"), 4))  # sortTasks (statut)
+    assert [s["gramps_id"] for s in tri] == [prive_id, public_id]
+    page = _vue_tache(client, prive_id)
+    n0 = page["extended"]["notes"][0]  # taskNote : première note de note_list
+    print("description :", tname(n0["type"]), n0["private"], n0["text"]["string"][:80])
+    assert page["note_list"][0] == n0["handle"] and tname(n0["type"]) == "To Do" and n0["private"] is True
+    assert n0["text"]["string"].startswith("Table décennale 1843-1852 d'abord.")
+    assert "Jean MARTIN (I1)" in n0["text"]["string"] and "Enquête Genealogiste : enquete-263 · t1" in n0["text"]["string"]
+    assert "ToDo" in [client.request("GET", f"/tags/{h}").json()["name"] for h in n0["tag_list"]]
+    # compte Invité : la tâche privée et sa description sont invisibles
+    time.sleep(1.1)  # /token/ : 1 requête par seconde
+    invite = GrampsClient(URL, "sosa-invite", "sosa-invite")
+    print("vue Tâches (Invité) :", [s["gramps_id"] for s in _vue_taches(invite)])
+    assert [s["gramps_id"] for s in _vue_taches(invite)] == [public_id]
+    # relu par le plugin : rien à réécrire
+    db = client.load_all()
+    t, _ = gramps_to_tree(db, taches=True)
+    assert t.sources[prive_id].tache == {"statut": "Open", "priorite": "1"} and t.sources[prive_id].prive
+    assert diff(db, tree_to_gramps(t, base=db, taches=True)) == []
+    # statut changé comme l'interface (une tâche), puis priorité en lot (deux tâches, une requête chacune)
+    _put_comme_l_interface(client, vus[prive_id], "Status", "Done")
+    for s in _vue_taches(client):
+        _put_comme_l_interface(client, s, "Priority", "5")
+    liste = {s["gramps_id"]: s for s in _vue_taches(client)}
+    assert [_attribut(liste[x], "Status") for x in (prive_id, public_id)] == ["Done", "In Progress"]
+    assert {_attribut(s, "Priority") for s in liste.values()} == {"5"}
+    db = client.load_all()
+    t, _ = gramps_to_tree(db, taches=True)
+    assert t.sources[prive_id].tache == {"statut": "Done", "priorite": "5"}
+    assert diff(db, tree_to_gramps(t, base=db, taches=True)) == []  # aucune réécriture parasite
+    print("attributs après l'interface :", [(tname(a["type"]), a["value"]) for a in db.get(
+        "Source", vus[prive_id]["handle"])["attribute_list"]])
+    # écart avec l'enquête : tâche close dans Gramps Web, élément encore ouvert (signalé, rien d'écrit)
+    e = {"id": "enquete-263", "pistes": [], "taches_manuelles": [{"id": "t1", "statut": "a_faire",
+                                                                  "description": "Table décennale"}]}
+    corr = taches.correspondance(e, t)
+    print("correspondance :", corr["ecarts"])
+    assert [(x["element"], x["tache"]) for x in corr["ecarts"]] == [("t1", prive_id)] and corr["a_memoriser"]
+    # le plugin rouvre la tâche (proposition), relue par la vue Tâches
+    r3 = b.apply(b.propose([{"op": "modifier_tache", "id": prive_id, "statut": "Open"}], "Réouverture",
+                           "Écart (test).")["jeton"])
+    assert _attribut({s["gramps_id"]: s for s in _vue_taches(client)}[prive_id], "Status") == "Open"
+    # annulations : la réouverture (statut Done de l'interface rétabli) ; une tâche intacte, créée puis annulée ;
+    # la création d'une tâche modifiée depuis dans l'interface est en conflit (refus attendu), nettoyée à la main
+    b.apply(b.propose_undo(r3["transaction"])["jeton"])
+    assert _attribut({s["gramps_id"]: s for s in _vue_taches(client)}[prive_id], "Status") == "Done"
+    p4 = b.propose([{"op": "ajouter_tache", "ref": "t", "titre": "Annulée (263)"}], "Tâche", "Plan (test).")
+    r4 = b.apply(p4["jeton"])
+    assert p4["references_creees"]["t"] in [s["gramps_id"] for s in _vue_taches(client)]
+    b.apply(b.propose_undo(r4["transaction"])["jeton"])
+    assert sorted(s["gramps_id"] for s in _vue_taches(client)) == sorted([prive_id, public_id])
+    for r in (r1, r2):
+        with pytest.raises(Exception, match="(?i)conflit|modifi"):
+            b.apply(b.propose_undo(r["transaction"])["jeton"])
+    db = client.load_all()
+    for gid in (prive_id, public_id):
+        src = next(s for s in db.all("Source").values() if s["gramps_id"] == gid)
+        for cls, h in [("sources", src["handle"])] + [("notes", n) for n in src["note_list"]]:
+            assert client.request("DELETE", f"/{cls}/{h}").status_code == 200
+    assert _vue_taches(client) == []

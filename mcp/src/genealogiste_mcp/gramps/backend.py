@@ -29,6 +29,7 @@ from ..etiquettes import lignes_arbres
 from ..fichiers import ajouter_jsonl, lire_jsonl
 from ..gedcom.mapping import write_gedcom
 from ..models import Tree
+from ..taches import lignes as lignes_taches
 from ..tree.proposals import (
     CONSIGNE,
     TTL_SECONDS,
@@ -193,7 +194,8 @@ class GrampsBackend:
     def __init__(self, client: GrampsClient, data_dir: Path, proposals_dir: Path, exiger_source: bool = True,
                  strict: bool = False, ttl: float = 30.0, mirror: GitMirror | None = None,
                  clock=time.monotonic, notes_auto: str = "true", media_dir=None,
-                 media=None, forme: str = "genealogiste", notes_liens: bool = False):
+                 media=None, forme: str = "genealogiste", notes_liens: bool = False, taches: bool = False):
+        self.taches = taches  # tâches de Gramps Web lues et écrites (GENEALOGISTE_GRAMPS_TACHES, #263)
         self.notes_liens = notes_liens  # liens internes gramps:// dans les notes générées (#279)
         self.forme = forme  # forme écrite des marqueurs (GENEALOGISTE_MARQUEURS, #182)
         self.client = client
@@ -237,7 +239,7 @@ class GrampsBackend:
         """Modifications constatées hors de Genealogiste : commitées dans le miroir Git à la synchronisation."""
         self._tree = None
         if self.mirror:
-            self._tree = gramps_to_tree(self.db)[0]
+            self._tree = gramps_to_tree(self.db, self.taches)[0]
             self.mirror.sync(self._tree, f"{title}\n\nÉtat de l'arbre Gramps Web constaté le {_now()} "
                              f"(modifications hors de Genealogiste : interface ou autre client) : "
                              f"{json.dumps(self.last_refresh, ensure_ascii=False)}")
@@ -245,7 +247,7 @@ class GrampsBackend:
     def load(self, fresh: bool = False) -> Tree:
         db = self.snapshot(fresh=fresh)  # rafraîchie seulement si périmée (ttl) ou demandée
         if self._tree is None:
-            self._tree = gramps_to_tree(db)[0]
+            self._tree = gramps_to_tree(db, self.taches)[0]
         return self._tree
 
     def info(self) -> dict:
@@ -293,12 +295,12 @@ class GrampsBackend:
         db = self.snapshot(fresh=True)
         tree = self.load()
         ctx, token, message = prepare(tree, operations, titre, justification, sources, self.exiger_source,
-                                      self.media, self.name)
+                                      self.media, self.name, self.taches)
         only = touched_keys(tree, ctx.tree) if self.notes_auto == "modifies" and not all_notes else None
         avis: list[str] = []
         new = tree_to_gramps(ctx.tree, base=db, strict=self.strict, generated=self.notes_auto != "false", only=only,
                              structure=structure, forme=self.forme, liens=self.notes_liens, recalcul=all_notes,
-                             avis=avis)
+                             avis=avis, taches=self.taches)
         items = diff(db, new)
         if not items:
             raise ProposalError("La proposition ne modifie rien.")
@@ -318,7 +320,7 @@ class GrampsBackend:
             "jeton": token, "expire_dans_minutes": TTL_SECONDS // 60, "resume": ctx.summary,
             "references_creees": ctx.refs, "transaction_gramps": preview,
             "diff": tree_diff(write_gedcom(tree), write_gedcom(ctx.tree), "Gramps Web", targets(ctx, operations),
-                              lignes_arbres(tree, ctx.tree)),
+                              lignes_arbres(tree, ctx.tree) + lignes_taches(tree, ctx.tree)),
             "nouvelles_alertes_coherence": new_alerts(tree, ctx.tree),
             "avertissements": warnings, "message_de_transaction": message, "consigne": CONSIGNE,
         }

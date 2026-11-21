@@ -62,5 +62,11 @@ conclusions déposées dans la file de propositions, compte rendu à format fixe
        `consultation` précisée, témoins et parrains en `associations`), présentée en diff.
        Si la validation est différée, la déposer avec `propositions_deposer(..., enquete=<id>)` (file durable,
        au lieu d'un jeton d'une heure) : l'enquête d'origine reste liée.
+   - **tâches de Gramps Web** (mode interactif, backend gramps, `GENEALOGISTE_GRAMPS_TACHES=true`, sur demande) :
+     `enquete_reprendre(id, taches=true)` → `taches_a_proposer` (pistes et tâches manuelles ouvertes sans tâche) ;
+     `arbre_proposer` (diff, accord), puis mémoriser chaque lien `enquete_noter(id, tache|piste={id,
+     tache_gramps})`. Les écarts (`taches_gramps.ecarts` : tâche close dans Gramps Web, élément ouvert, ou
+     l'inverse) sont montrés à l'utilisateur, qui choisit le sens (`vers_gramps` par `arbre_proposer`,
+     `vers_enquete` par `enquete_noter`) ; jamais en mode autonome.
 6. N'appliquer (`arbre_appliquer`) qu'après accord explicite de l'utilisateur, jamais en mode autonome ;
    proposer ensuite `/genealogiste:export geneweb` pour publier dans GeneWeb.

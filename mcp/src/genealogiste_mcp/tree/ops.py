@@ -11,7 +11,7 @@ import re
 from datetime import date
 from pathlib import PurePosixPath
 
-from .. import ark, billets, etiquettes
+from .. import ark, billets, etiquettes, objets_interface, taches
 from ..models import (
     CONSULTATIONS,
     EVENT_LABELS,
@@ -43,9 +43,10 @@ class OpError(ValueError):
 
 
 class Ctx:
-    def __init__(self, tree: Tree, exiger_source: bool = True, media=None, backend: str = ""):
+    def __init__(self, tree: Tree, exiger_source: bool = True, media=None, backend: str = "", taches: bool = False):
         self.tree = tree
         self.backend = backend  # « fichier » | « gramps » | "" (inconnu : tests, validation à sec)
+        self.taches = taches  # tâches de Gramps Web (GENEALOGISTE_GRAMPS_TACHES, #263)
         self.exiger_source = exiger_source
         self.media = media  # fichier -> référence normalisée (Config.media_reference) ; None : pas de contrôle
         self.refs: dict[str, str] = {}
@@ -472,6 +473,10 @@ def op_ajouter_source(ctx: Ctx, o: dict) -> None:
     _etiqueter(ctx, s, o, sid, creation=True)
     if billets.est_billet(s) and "prive" not in o:  # #261 : billet créé par le plugin, jamais public par défaut
         s.prive = True
+    if ctx.taches and taches.TODO in s.tags:  # #263 : tâche créée comme le fait l'interface, privée par défaut
+        s.tache = {"statut": taches.STATUT_DEFAUT, "priorite": taches.PRIORITE_DEFAUT}
+        if "prive" not in o:
+            s.prive = True
 
 
 BILLET_CHAMPS = ("op", "ref", "titre", "auteur", "texte", "medias", "prive", "tags")
@@ -515,6 +520,121 @@ def op_ajouter_billet(ctx: Ctx, o: dict) -> None:
         else " ; sans image"
     ctx.summary.append(f"Billet {sid} : {titre}" + (f", par {s.auteur}" if s.auteur else "") + images)
     _etiqueter(ctx, s, {"tags": [billets.BLOG, *_noms_etiquettes(o.get("tags"), "tags")]}, sid, creation=True)
+
+
+TACHE_CHAMPS = ("op", "ref", "titre", "description", "statut", "priorite", "prive", "tags", "personnes", "enquete",
+                "element")
+MODIFIER_TACHE_CHAMPS = ("op", "id", "titre", "description", "statut", "priorite", "prive", "tags", "tags_retrait")
+
+
+def _tache_permise(ctx: Ctx) -> None:
+    if ctx.backend == "fichier":
+        raise OpError("les tâches sont une page de Gramps Web : refusé en backend fichier (GEDCOM). Passer en "
+                      "GENEALOGISTE_BACKEND=gramps avec GENEALOGISTE_GRAMPS_TACHES=true")
+    if not ctx.taches:
+        raise OpError(taches.DESACTIVE)
+
+
+def _champ_tache(fn, valeur):
+    try:
+        return fn(valeur)
+    except taches.TacheError as exc:
+        raise OpError(str(exc)) from exc
+
+
+def _avec_suffixe(ctx: Ctx, texte: str, suffixe: str) -> str:
+    """Texte + lignes ajoutées en fin ; la mise en forme Markdown du texte (#279, indexée par le texte) suit."""
+    if not suffixe:
+        return texte
+    out = f"{texte}\n\n{suffixe}" if texte else suffixe
+    if texte in ctx.tree.styles:
+        ctx.tree.styles[out] = ctx.tree.styles[texte]
+    return out
+
+
+def op_ajouter_tache(ctx: Ctx, o: dict) -> None:
+    """Tâche de Gramps Web (#263) : source étiquetée ToDo (titre), attributs Priority et Status (défaut 5 et Open,
+    comme l'interface), description en première note (type To Do, étiquetée ToDo), privée sauf « prive: false ».
+    ``personnes`` : identifiants des personnes concernées, nommées dans la description (l'interface ne relie pas
+    une tâche à d'autres objets) ; ``enquete`` + ``element`` : référence de l'élément d'enquête d'origine."""
+    _tache_permise(ctx)
+    inconnus = sorted(set(o) - set(TACHE_CHAMPS))
+    if inconnus:
+        raise OpError(f"champs inconnus {inconnus} (acceptés : {', '.join(TACHE_CHAMPS[2:])})")
+    titre, description = o.get("titre"), o.get("description") or ""
+    if not isinstance(titre, str) or not titre.strip():
+        raise OpError("titre requis (titre de la tâche)")
+    if not isinstance(description, str):
+        raise OpError("description : texte (première note de la tâche)")
+    prive = o.get("prive", True)
+    if not isinstance(prive, bool):
+        raise OpError("prive : true (défaut) ou false")
+    statut = _champ_tache(taches.statut, o["statut"]) if "statut" in o else taches.STATUT_DEFAUT
+    priorite = _champ_tache(taches.priorite, o["priorite"]) if "priorite" in o else taches.PRIORITE_DEFAUT
+    personnes = o.get("personnes") or []
+    if not isinstance(personnes, list):
+        raise OpError("personnes : liste d'identifiants (I…)")
+    ids = [ctx.r(p) for p in personnes]
+    for pid in ids:
+        if pid not in ctx.tree.personnes:
+            raise OpError(f"personne inconnue : {pid}")
+    enquete, element = o.get("enquete") or "", o.get("element") or ""
+    if bool(enquete) != bool(element):
+        raise OpError("enquete et element vont ensemble (ex. enquete: \"deces-jean-martin\", element: \"t1\")")
+    if enquete and not taches.reference(taches.ligne_reference(enquete, element)):
+        raise OpError("element : t1, t2… (tâche manuelle) ou p1, p2… (piste) ; enquete : identifiant d'enquête")
+    lignes = []
+    if ids:
+        lignes.append("Personnes concernées : " + ", ".join(
+            f"{ctx.tree.personnes[p].nom_principal.complet} ({p})" for p in dict.fromkeys(ids)))
+    if enquete:
+        lignes.append(taches.ligne_reference(enquete, element))
+    texte = _avec_suffixe(ctx, description.strip(), "\n".join(lignes))
+    sid = ctx.tree.next_id("sources")
+    s = Source(id=sid, titre=titre.strip(), note=texte, prive=prive,
+               tache={"statut": statut, "priorite": priorite})
+    ctx.tree.sources[sid] = s
+    if o.get("ref"):
+        ctx.refs[o["ref"]] = sid
+    ctx.summary.append(f"Tâche {sid} : {s.titre}" + (f" (enquête {enquete}, {element})" if enquete else ""))
+    _etiqueter(ctx, s, {"tags": [taches.TODO, *_noms_etiquettes(o.get("tags"), "tags")]}, sid, creation=True)
+
+
+def op_modifier_tache(ctx: Ctx, o: dict) -> None:
+    """Statut, priorité, titre, description ou confidentialité d'une tâche existante (#263). ``description``
+    remplace le texte de la tâche ; la ligne de référence d'enquête éventuelle est gardée."""
+    _tache_permise(ctx)
+    inconnus = sorted(set(o) - set(MODIFIER_TACHE_CHAMPS))
+    if inconnus:
+        raise OpError(f"champs inconnus {inconnus} (acceptés : {', '.join(MODIFIER_TACHE_CHAMPS[2:])})")
+    sid = ctx.r(o["id"])
+    s = ctx.tree.sources.get(sid)
+    if s is None:
+        raise OpError(f"Source inconnue : {sid}")
+    if not taches.est_tache(s):
+        raise OpError(f"{sid} n'est pas une tâche (source sans l'étiquette ToDo) : etiqueter pour en faire une")
+    avant = dict(s.tache)
+    if "statut" in o:
+        s.tache["statut"] = _champ_tache(taches.statut, o["statut"])
+    if "priorite" in o:
+        s.tache["priorite"] = _champ_tache(taches.priorite, o["priorite"])
+    if "titre" in o:
+        if not isinstance(o["titre"], str) or not o["titre"].strip():
+            raise OpError("titre : texte non vide")
+        s.titre = o["titre"].strip()
+    if "description" in o:
+        if not isinstance(o["description"], str):
+            raise OpError("description : texte")
+        ref = taches.reference(s.note)
+        s.note = _avec_suffixe(ctx, o["description"].strip(), taches.ligne_reference(*ref) if ref else "")
+    if "prive" in o:
+        if not isinstance(o["prive"], bool):
+            raise OpError("prive : true ou false")
+        s.prive = o["prive"]
+    changes = [f"{k} {avant.get(k) or '∅'} → {s.tache[k]}" for k in ("statut", "priorite")
+               if avant.get(k, "") != s.tache.get(k, "")]
+    ctx.summary.append(f"Tâche {sid} modifiée" + (f" : {', '.join(changes)}" if changes else ""))
+    _etiqueter(ctx, s, o, sid)
 
 
 def op_modifier_source(ctx: Ctx, o: dict) -> None:
@@ -1205,7 +1325,7 @@ OPS = {name[3:]: fn for name, fn in globals().items() if name.startswith("op_")}
 
 
 FORMATS_TEXTE = ("texte", "markdown")
-CHAMPS_NOTE = ("note", "texte", "notes", "notes_ajout")  # textes de note, à toute profondeur de l'opération
+CHAMPS_NOTE = ("note", "texte", "notes", "notes_ajout", "description")  # textes de note (description : tâche, #263)
 
 
 def _markdown(ctx: Ctx, o: dict) -> dict:
@@ -1245,10 +1365,12 @@ def _markdown(ctx: Ctx, o: dict) -> dict:
     return walk(o)
 
 
-def apply_ops(tree: Tree, ops: list[dict], exiger_source: bool = True, media=None, backend: str = "") -> Ctx:
+def apply_ops(tree: Tree, ops: list[dict], exiger_source: bool = True, media=None, backend: str = "",
+              taches_actives: bool = False) -> Ctx:
     """Applique les opérations sur une COPIE de l'arbre ; lève OpError si l'une échoue. media : résolution des
-    fichiers d'ajouter_media (Config.media_reference) ; backend : « fichier » ou « gramps » (billets, #261)."""
-    ctx = Ctx(copy.deepcopy(tree), exiger_source, media, backend)
+    fichiers d'ajouter_media (Config.media_reference) ; backend : « fichier » ou « gramps » (billets, #261) ;
+    taches_actives : GENEALOGISTE_GRAMPS_TACHES (#263)."""
+    ctx = Ctx(copy.deepcopy(tree), exiger_source, media, backend, taches_actives)
     for i, o in enumerate(ops, 1):
         name = o.get("op")
         if name not in OPS:
@@ -1265,7 +1387,9 @@ def apply_ops(tree: Tree, ops: list[dict], exiger_source: bool = True, media=Non
     problems = introduced(tree, ctx.tree)
     if problems:
         raise OpError("Proposition refusée, elle romprait l'intégrité de l'arbre : " + " ; ".join(problems[:10]))
-    refus, avis, resume = billets.controler(tree, ctx.tree)  # #261 : billets créés ou modifiés
+    if ctx.taches:  # #263 : étiquette ToDo posée ou retirée = tâche créée ou défaite
+        taches.normaliser(ctx.tree, tree)
+    refus, avis, resume = objets_interface.controler(tree, ctx.tree)  # #261, #263 : billets et tâches
     if refus:
         raise OpError(" ; ".join(refus))
     ctx.summary += resume
