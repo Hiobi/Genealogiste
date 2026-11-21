@@ -37,7 +37,7 @@ from .cache import Cache
 from .chemins import CheminRefuse, nom_simple, sous
 from .config import Config, load_config
 from .enquetes import EnqueteError, Enquetes
-from .export import charts, gramps_xml
+from .export import charts, chemins_medias, gramps_xml
 from .export.fiche import fiche_markdown, gaps, tree_gaps
 from .export.geneweb import to_geneweb
 from .export.rapport import proof_report
@@ -1776,12 +1776,14 @@ def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", gene
     t = complet = a.tree()
     hidden: set[str] = set()
     rapport: dict = {}
+    reduits: dict = {}
     if masquer_vivants:
         t, hidden, rapport = privacy.publication(t)
+        if format in ("gedcom7", "gedcom551"):  # export public : aucun chemin absolu de ce poste dans FILE (#307)
+            t, reduits = chemins_medias.reduire_chemins_arbre(t)
     membres: dict = {}
     bilan_medias: dict = {}
     bilan_base: dict = {}
-    reduits: dict = {}
     if format == "gedcom7":
         content = write_gedcom(t, 7, fiche)
     elif format == "gedcom551":
@@ -1831,7 +1833,7 @@ def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", gene
         content = charts.svg_descendants(t, id, generations, hidden)
     else:
         content = fiche_markdown(t, id, a.config.strict_evidence, masquer_vivants)
-    if masquer_vivants and format in ("gramps", "gpkg"):  # garde-fou : ni répertoire personnel ni de données
+    if masquer_vivants:  # garde-fou, tous formats (#307) : ni répertoire personnel ni de données dans le contenu
         prives = [str(x) for x in (Path.home(), a.config.data_dir) if len(str(x)) > 3]
         if any(x in content for x in prives):
             return {"erreur": "Export public refusé : le répertoire personnel ou le répertoire de données de ce poste "
