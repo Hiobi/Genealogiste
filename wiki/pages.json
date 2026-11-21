@@ -48,6 +48,12 @@
     "groupe": "Commencer"
   },
   {
+    "slug": "Gramps-Desktop",
+    "source": "docs/gramps.md",
+    "titre": "Gramps Desktop",
+    "groupe": "Commencer"
+  },
+  {
     "slug": "Docker-et-Portainer",
     "source": "wiki/Docker-et-Portainer.md",
     "titre": "Docker et Portainer",

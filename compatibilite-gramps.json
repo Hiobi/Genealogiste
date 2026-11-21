@@ -1,0 +1,51 @@
+{
+  "commentaire": "Matrice de compatibilité Gramps testée en CI (#267). Source unique : images Gramps Web épinglées par empreinte (make test-gramps-matrice, .github/workflows/gramps.yml) et bibliothèques Gramps Desktop (make test-gramps-desktop). Plage d'API : genealogiste_mcp/gramps/compatibilite.py, documentation : docs/gramps-web.md et docs/gramps.md ; test_compatibilite_gramps.py vérifie leur concordance.",
+  "gramps_web": [
+    {
+      "role": "plancher",
+      "tag": "26.5.1",
+      "api": "3.13.0",
+      "gramps": "6.0",
+      "image": "ghcr.io/gramps-project/grampsweb@sha256:d420d9d34b975c21b2fdd35be7f4dcf6ba182d1b945e9b4610d6297f24e433ae"
+    },
+    {
+      "role": "epinglee",
+      "tag": "26.11.0",
+      "api": "3.25.1",
+      "gramps": "6.0",
+      "image": "ghcr.io/gramps-project/grampsweb@sha256:dbd20a8ba954e19ae8ed17e5e1537d55a3d16ccef6adf7a8fe8cb783bab81411"
+    },
+    {
+      "role": "plafond",
+      "tag": "26.11.3",
+      "api": "3.26.0",
+      "gramps": "6.0",
+      "image": "ghcr.io/gramps-project/grampsweb@sha256:bf672745c0428ec37f398f51a89e07a0dabe4f2abc1038fd0952e358ae0228a3"
+    }
+  ],
+  "gramps_desktop": [
+    {
+      "version": "5.2",
+      "xml": "1.7.1",
+      "pypi": "gramps==5.2.4",
+      "gi": true
+    },
+    {
+      "version": "6.0",
+      "xml": "1.7.2",
+      "pypi": "gramps==6.0.8",
+      "gi": true
+    },
+    {
+      "version": "6.1",
+      "xml": "1.7.2",
+      "git": {
+        "depot": "https://github.com/gramps-project/gramps.git",
+        "tag": "v6.1.0-beta2",
+        "commit": "2153e4fa4b0e4ddf7542f1c064c7820bc345a482"
+      },
+      "dependances": ["orjson"],
+      "gi": false
+    }
+  ]
+}

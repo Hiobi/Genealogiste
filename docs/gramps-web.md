@@ -166,6 +166,107 @@ Le dépôt est local par défaut. `GENEALOGISTE_GIT_REMOTE` ajoute un push aprè
 - `make test` : faux serveur Gramps Web (`tests/gramps_fake.py`, respx) fidèle au contrat de l'API
   (format des lectures, contrôle de `old`, `undo`, tâches de fond).
 - `make test-gramps` : vrai Gramps Web jetable (`docker-compose.test.yml`, sans volume), données fictives.
+- `make test-gramps-matrice` : `make test-gramps` sur chaque image de la matrice ci-dessous.
+
+## Compatibilité des versions
+
+Relevé du 2026-11-21. Source unique : [compatibilite-gramps.json](../compatibilite-gramps.json) (images
+épinglées par empreinte), reprise par la CI et par `genealogiste_mcp/gramps/compatibilite.py` (plage testée,
+utilisée par le diagnostic). Un test vérifie que le fichier, ces constantes, le compose de test et cette page
+concordent. Gramps Desktop (fichiers Gramps XML) : voir [Gramps Desktop](gramps.md).
+
+**Plage prise en charge : gramps-web-api 3.13.0 à 3.26.0 (API ≥ 3.13.0).**
+
+| Image `grampsweb` | gramps-web-api | Gramps | Statut | Empreinte (`ghcr.io/gramps-project/grampsweb@…`) |
+|---|---|---|---|---|
+| `26.5.1` | 3.13.0 | 6.0 | prise en charge, **testée en CI** (plancher) | `sha256:d420d9d34b975c21b2fdd35be7f4dcf6ba182d1b945e9b4610d6297f24e433ae` |
+| `26.11.0` | 3.25.1 | 6.0 | prise en charge, **testée en CI** (image par défaut de `make test-gramps`) | `sha256:dbd20a8ba954e19ae8ed17e5e1537d55a3d16ccef6adf7a8fe8cb783bab81411` |
+| `26.11.3` | 3.26.0 | 6.0 | prise en charge, **testée en CI** (plafond) | `sha256:bf672745c0428ec37f398f51a89e07a0dabe4f2abc1038fd0952e358ae0228a3` |
+| `26.5.2` à `26.11.2` | 3.13.1 à 3.25.x | 6.0 | prise en charge (dans la plage), non testée une à une | — |
+| `v25.5.0` à `26.5.0` | 3.0.0 à 3.12.2 | 6.0 | **non prise en charge** : écriture refusée (voir ci-dessous) | — |
+| avant `v25.5.0` | 2.x et antérieures | 5.2 | **non prise en charge** : format JSON des objets de Gramps 5.2 | — |
+| après `26.11.3` | > 3.26.0 | — | non testée : à valider par la matrice avant d'élargir la plage | — |
+
+Pourquoi 3.13.0 : Genealogiste envoie le message de chaque transaction en paramètre (`POST
+/api/transactions/?message=…`), paramètre apparu dans gramps-web-api 3.13.0. Les API 3.0.0 à 3.12.x répondent
+`HTTP 422 query: message: Unknown field` : aucune écriture possible (chargement, proposition, annulation). Les
+lectures fonctionnent. Essai réel : `v25.5.0` (API 3.0.0) et `26.5.0` (API 3.12.2) échouent, `26.5.1` (API
+3.13.0) passe tous les tests d'intégration. Genealogiste n'est pas adapté à ces versions : mettre Gramps Web à
+jour.
+
+Toutes les images Gramps Web 3.x embarquent Gramps **6.0** : gramps-web-api exige `gramps>=6.0.4,<6.1.0`
+(`>=6.0.1` jusqu'à 3.2.0). Gramps 6.1 n'est donc pas disponible dans Gramps Web ; il n'est testé qu'à travers
+la bibliothèque Gramps Desktop ([Gramps Desktop](gramps.md)).
+
+### Correspondance image ↔ API
+
+Relevée par comparaison des couches des images (l'image Gramps Web = image gramps-web-api + interface) ; pour
+les trois images testées, le test d'intégration vérifie aussi la version lue dans `GET /api/metadata/`.
+
+| `grampsweb` | API | | `grampsweb` | API |
+|---|---|---|---|---|
+| `v25.5.0`, `v25.5.1` | 3.0.0 | | `26.5.1` | 3.13.0 |
+| `v25.5.2` | 3.1.0 | | `26.5.2` | 3.13.1 |
+| `v25.6.0`, `25.7.0` à `25.7.3` | 3.2.0 | | `26.5.3` | 3.14.1 |
+| `25.8.0`, `25.9.0` | 3.3.0 | | `26.6.0` | 3.15.0 |
+| `25.10.0.1`, `25.10.1` | 3.4.0 | | `26.6.1` | 3.16.0 |
+| `25.10.2` | 3.4.1 | | `26.6.2` | 3.17.0 |
+| `25.11.0` à `25.11.2` | 3.5.0 | | `26.7.0` | 3.18.0 |
+| `25.12.0` | 3.6.0 | | `26.7.1` | 3.19.0 |
+| `26.1.0` | 3.7.1 | | `26.8.0` | 3.20.1 |
+| `26.1.1`, `26.2.0` | 3.7.1.1 | | `26.8.1` | 3.21.1 |
+| `26.3.0` à `26.3.1.1` | 3.9.0 | | `26.9.0` | 3.22.0 |
+| `26.4.0` | 3.10.0 | | `26.9.1` | 3.22.1 |
+| `26.4.1` | 3.11.1 | | `26.10.0`, `26.10.1` | 3.23.1 |
+| `26.4.2` | 3.12.0 | | `26.10.2` | 3.24.0 |
+| `26.4.3` | 3.12.1 | | `26.11.0` | 3.25.1 |
+| `26.5.0` | 3.12.2 | | `26.11.1`, `26.11.2` | inconnue (probablement 3.25.x) |
+| | | | `26.11.3` | 3.26.0 |
+
+### Version minimale par fonction
+
+Clés de `FONCTIONS_API` (`genealogiste_mcp/gramps/compatibilite.py`). « Utilisée » : Genealogiste en dépend
+aujourd'hui ; « prévue » : fonction envisagée (lots du jalon M6), à conditionner à la version lue par le
+diagnostic.
+
+| Fonction | Clé | API minimale | Usage |
+|---|---|---|---|
+| transaction atomique `POST /api/transactions/` | `transactions` | 0.2.0 | utilisée |
+| annulation par transaction inverse (`undo=1`) | `transactions_undo` | 1.0.0 | utilisée |
+| historique des transactions | `transactions_historique` | 2.2.0 | prévue (diagnostic) |
+| transaction en tâche de fond (`background=1`) | `transactions_fond` | 2.7.0 | utilisée (gros lots) |
+| objets JSON de Gramps 6.0 | `objets_json_gramps6` | 3.0.0 | utilisée |
+| annuler depuis l'historique du serveur | `historique_annuler` | 3.4.0 | prévue |
+| modifier le chercheur (`PUT /api/metadata/researcher/`) | `chercheur_modifier` | 3.9.0 | prévue |
+| message de transaction (`message=`) | `transactions_message` | 3.13.0 | **utilisée : fixe le plancher** |
+| réglages de l'arbre (`/api/trees/<id>/config`) | `arbre_config` | 3.13.0 | prévue |
+| fusion native (`/api/<objets>/merge/`) | `fusion` | 3.15.0 | prévue |
+| vérification de l'arbre (`/api/trees/-/verify`) | `verification` | 3.17.0 | prévue |
+| requête d'objets (`POST /api/<objets>/query/`) | `requete_objets` | 3.21.0 | prévue |
+| historique par objet (onglet Révisions) | `historique_objet` | 3.22.0 | prévue |
+| règle `MatchesQuery` (`oql` retiré) | `regle_matches_query` | 3.23.0 | prévue |
+| verrous de tâches (409 `task_locked`) | `verrous_taches` | 3.24.0 | prévue |
+| `edit-by-handle` (`gql` retiré) | `edit_by_handle` | 3.26.0 | prévue |
+
+La recherche sémantique a été retirée de l'API en 3.25 ; Genealogiste ne l'utilise pas.
+
+### Lancer la matrice
+
+```bash
+make test-gramps                     # image par défaut (26.11.0, API 3.25.1)
+make test-gramps GRAMPSWEB_IMAGE=ghcr.io/gramps-project/grampsweb@sha256:… GRAMPSWEB_API=3.26.0
+make test-gramps-matrice             # les trois images, bilan final ; ROLES="plancher plafond" pour filtrer
+COMPOSE_PROJECT_NAME=gw-essai make test-gramps-matrice GW_PORT=5067   # à côté d'une autre pile de test
+```
+
+`GRAMPSWEB_API` fait vérifier la version servie par l'image et son appartenance à la plage. Chaque lancement
+détruit le conteneur et ses volumes (`down -v`), même après un échec.
+
+En CI, le workflow `Intégration Gramps` (`.github/workflows/gramps.yml`) lance un job par image et un job par
+version de Gramps Desktop : sur les PR et les pushes vers `main` qui touchent l'intégration Gramps (code
+`gramps/`, export Gramps XML, GEDCOM, fixtures, matrice, compose, Makefile), chaque mercredi (nouvelles
+versions publiées, dérive des registres) et sur demande. Un échec sur une version prise en charge fait échouer
+le workflow.
 
 ## Médias (images d'actes)
 

@@ -2,7 +2,7 @@
 MCP := mcp
 UV  := uv --directory $(MCP)
 
-.PHONY: version help install hooks profil-campagnetest sauvegarde restauration test-archives test-gramps test-codex lint format check run run-http docker-build docker-up docker-gramps docker-down validate clean verifier-archives verifier-telechargements
+.PHONY: version help install hooks profil-campagne test sauvegarde restauration test-archives test-gramps test-gramps-matrice test-gramps-desktop test-codex lint format check run run-http docker-build docker-up docker-gramps docker-down validate clean verifier-archives verifier-telechargements
 
 help: ## Liste des cibles
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-14s %s\n", $$1, $$2}'
@@ -16,14 +16,25 @@ test: ## Lance les tests pytest (APIs mockées, aucun accès réseau)
 test-codex: ## Recette native Codex CLI 0.166 à 0.169, fournisseur local et données fictives
 	python3 scripts/verifier_codex.py
 
-GW_TEST := docker compose -f docker-compose.test.yml
+# Image : GRAMPSWEB_IMAGE (défaut : l'image épinglée de docker-compose.test.yml) ; GRAMPSWEB_API = version d'API
+# attendue (vérifiée par le test). Port et projet Compose isolables : GW_PORT=5067 COMPOSE_PROJECT_NAME=…
 GW_PORT ?= 5056
+GW_TEST = GRAMPSWEB_TEST_PORT=$(GW_PORT) $(if $(GRAMPSWEB_IMAGE),GRAMPSWEB_IMAGE=$(GRAMPSWEB_IMAGE)) \
+	docker compose -f docker-compose.test.yml
 
-test-gramps: ## Tests d'intégration sur un Gramps Web jetable (Docker, données fictives)
+test-gramps: ## Tests d'intégration sur un Gramps Web jetable (Docker, données fictives ; GRAMPSWEB_IMAGE=…)
 	$(GW_TEST) up -d --wait
 	$(GW_TEST) exec -T grampsweb python3 -m gramps_webapi user add sosa-test sosa-test --role 3 || true
-	GENEALOGISTE_TEST_GRAMPS_URL=http://127.0.0.1:$(GW_PORT) $(UV) run pytest -m gramps_live tests/test_gramps_live.py; \
+	GENEALOGISTE_TEST_GRAMPS_URL=http://127.0.0.1:$(GW_PORT) GENEALOGISTE_TEST_GRAMPS_API=$(GRAMPSWEB_API) \
+	  $(UV) run pytest -m gramps_live tests/test_gramps_live.py; \
 	  status=$$?; $(GW_TEST) down -v; exit $$status
+
+test-gramps-matrice: ## test-gramps sur chaque image de compatibilite-gramps.json (ROLES="plancher plafond" pour filtrer)
+	python3 scripts/matrice_gramps.py web $(ROLES)
+
+test-gramps-desktop: ## Export Gramps XML relu par Gramps Desktop 5.2/6.0/6.1 sans interface (GRAMPS_DESKTOP=6.0, GI=systeme)
+	$(UV) run python ../scripts/verifier_gramps_desktop.py $(foreach v,$(GRAMPS_DESKTOP),--version $(v)) \
+	  --gi $(or $(GI),auto) $(if $(PYTHON),--python $(PYTHON))
 
 test-archives: ## Recette de contrat sur les services d'archives réels (réseau, quelques requêtes par service)
 	GENEALOGISTE_TEST_ARCHIVES=1 GENEALOGISTE_RECETTE_ECRIRE=$(or $(ECRIRE),1) $(UV) run pytest -m archives_live tests/test_archives_live.py -rs

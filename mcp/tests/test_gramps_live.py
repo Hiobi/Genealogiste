@@ -44,6 +44,18 @@ def fixtures_dir():
     return Path(__file__).parent / "fixtures"
 
 
+def test_version_api_de_l_image(client):
+    """#267 : l'image testée sert bien l'API annoncée par compatibilite-gramps.json, dans la plage testée."""
+    from genealogiste_mcp.gramps.compatibilite import verdict_api
+    meta = client.request("GET", "/metadata/").json()
+    version = meta["gramps_webapi"]["version"]
+    print("gramps-web-api", version, "gramps", meta.get("gramps", {}).get("version"))
+    attendu = os.environ.get("GENEALOGISTE_TEST_GRAMPS_API")
+    if attendu:
+        assert version == attendu
+        assert verdict_api(version) == "testee"
+
+
 def test_round_trip_through_real_api(client, loaded):
     from test_gramps_mapping import merged_places, normalize
     back, _ = gramps_to_tree(client.load_all())

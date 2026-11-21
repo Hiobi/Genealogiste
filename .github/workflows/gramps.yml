@@ -1,19 +1,85 @@
 name: Intégration Gramps
 
+# Matrice de compatibilité (#267) lue dans compatibilite-gramps.json : Gramps Web (images épinglées par
+# empreinte : plancher, épinglée, plafond) et Gramps Desktop sans interface (bibliothèque gramps 5.2, 6.0, 6.1).
+# Chaque version est un job distinct : un échec sur une version prise en charge fait échouer le workflow.
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - compatibilite-gramps.json
+      - docker-compose.test.yml
+      - Makefile
+      - .github/workflows/gramps.yml
+      - scripts/matrice_gramps.py
+      - scripts/verifier_gramps_desktop.py
+      - scripts/sonde_gramps_desktop.py
+      - mcp/uv.lock
+      - mcp/src/genealogiste_mcp/gramps/**
+      - mcp/src/genealogiste_mcp/export/gramps_xml.py
+      - mcp/src/genealogiste_mcp/gedcom/**
+      - mcp/src/genealogiste_mcp/models.py
+      - mcp/tests/test_gramps_live.py
+      - mcp/tests/fixtures/*.ged
+  push:
+    branches: [main]
+    paths:
+      - compatibilite-gramps.json
+      - docker-compose.test.yml
+      - Makefile
+      - .github/workflows/gramps.yml
+      - scripts/matrice_gramps.py
+      - scripts/verifier_gramps_desktop.py
+      - scripts/sonde_gramps_desktop.py
+      - mcp/uv.lock
+      - mcp/src/genealogiste_mcp/gramps/**
+      - mcp/src/genealogiste_mcp/export/gramps_xml.py
+      - mcp/src/genealogiste_mcp/gedcom/**
+      - mcp/src/genealogiste_mcp/models.py
+      - mcp/tests/test_gramps_live.py
+      - mcp/tests/fixtures/*.ged
+  schedule:
+    - cron: "23 5 * * 3"  # chaque mercredi : nouvelles versions upstream, dérives des registres
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: gramps-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   UV_LOCKED: "true"
 
 jobs:
-  gramps:
-    name: Gramps Web jetable
+  matrice:
+    name: Lire la matrice
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      web: ${{ steps.lire.outputs.web }}
+      desktop: ${{ steps.lire.outputs.desktop }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: lire
+        run: |
+          echo "web=$(python3 scripts/matrice_gramps.py github-web)" >> "$GITHUB_OUTPUT"
+          echo "desktop=$(python3 scripts/matrice_gramps.py github-desktop)" >> "$GITHUB_OUTPUT"
+
+  gramps-web:
+    name: Gramps Web ${{ matrix.tag }} (API ${{ matrix.api }})
+    needs: matrice
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.matrice.outputs.web) }}
+    env:
+      GRAMPSWEB_IMAGE: ${{ matrix.image }}
+      GRAMPSWEB_API: ${{ matrix.api }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -27,9 +93,38 @@ jobs:
       - name: Installer les dépendances verrouillées
         run: uv --directory mcp sync --locked
       - name: Tester avec des données fictives
-        run: make test-gramps
+        run: make test-gramps GRAMPSWEB_IMAGE="$GRAMPSWEB_IMAGE" GRAMPSWEB_API="$GRAMPSWEB_API"
         env:
           UV_OFFLINE: "true"
       - name: Nettoyer les conteneurs même après un échec
         if: always()
         run: docker compose -f docker-compose.test.yml down -v
+
+  gramps-desktop:
+    name: Gramps Desktop ${{ matrix.version }}
+    needs: matrice
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.matrice.outputs.desktop) }}
+    env:
+      GRAMPS_DESKTOP: ${{ matrix.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: "0.11.14"
+          python-version: "3.11"
+          enable-cache: true
+          cache-dependency-glob: mcp/uv.lock
+      - name: Installer PyGObject du système (Gramps 5.2 et 6.0 importent GLib)
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends python3-gi gir1.2-glib-2.0 gir1.2-gtk-3.0
+      - name: Installer les dépendances verrouillées
+        run: uv --directory mcp sync --locked
+      - name: Relire l'export Gramps XML avec la bibliothèque Gramps
+        run: make test-gramps-desktop GRAMPS_DESKTOP="$GRAMPS_DESKTOP" GI=systeme PYTHON=/usr/bin/python3
