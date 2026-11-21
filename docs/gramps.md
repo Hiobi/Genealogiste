@@ -299,7 +299,7 @@ n'est pas retrouvé par Desktop. À vérifier avec l'addon réel avant de s'y fi
 
 - Export public (`masquer_vivants=True`, défaut) : un chemin de média absolu ou sortant (`..`) est réduit à son nom
   de fichier dans `<file src>` et dans `Genealogiste-Fichier` (`chemins_absolus_reduits` du résultat : nombre et
-  identifiants) ; export refusé si le répertoire personnel ou de données du poste y figure encore. Export privé
+  identifiants ; règle commune avec GEDCOM, #307) ; export refusé si le répertoire personnel ou de données du poste y figure encore. Export privé
   (`masquer_vivants=False`) : le `path` reste tel qu'enregistré, absolu compris ; le diagnostic le signale
   (`hors_racines`).
 - `chemin_base_medias` n'est pas vérifié contre un dossier réel : c'est le chemin d'une autre machine.

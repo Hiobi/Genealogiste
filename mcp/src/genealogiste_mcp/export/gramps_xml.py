@@ -38,6 +38,7 @@ from ..chemins import CheminAmbigu, CheminRefuse, localiser
 from ..gramps.mapping import A_FICHIER, GrampsDb, tree_to_gramps_stats
 from ..gramps.types import TYPES, gtype, tname
 from ..models import Tree
+from .chemins_medias import ABSOLU_WINDOWS, nom_fichier, sensible
 
 # ============================================================================ versions
 
@@ -611,7 +612,7 @@ def preparer_gpkg(db: GrampsDb, racines: Iterable[Path]) -> tuple[GrampsDb, dict
     return db, membres, bilan
 
 
-_ABSOLU_WINDOWS = re.compile(r"^(?:[A-Za-z]:[\\/]|\\\\[^\\/])")
+_ABSOLU_WINDOWS = ABSOLU_WINDOWS
 
 
 def verifier_chemin_base_medias(chemin: str) -> str:
@@ -643,24 +644,17 @@ def reduire_chemins_absolus(db: GrampsDb) -> tuple[GrampsDb, dict]:
     db = db.copy()
     reduits: list[str] = []
 
-    def sensible(c: str) -> bool:
-        return (c.startswith(("/", "~", "\\")) or bool(_ABSOLU_WINDOWS.match(c))
-                or ".." in re.split(r"[\\/]+", c))
-
-    def nom(c: str) -> str:
-        return next((x for x in reversed(re.split(r"[\\/]+", c)) if x not in ("", ".", "..")), "")
-
     for m in sorted(db.all("Media").values(), key=lambda o: (o.get("gramps_id") or "", o["handle"])):
         attrs = [a for a in m.get("attribute_list") or [] if tname(a.get("type")) in (A_FICHIER, "Sosa-Fichier")]
         valeurs = [m.get("path") or "", *[a.get("value") or "" for a in attrs]]
-        if not any(v and "://" not in v and sensible(v) for v in valeurs):
+        if not any(sensible(v) for v in valeurs):
             continue
-        if m.get("path") and "://" not in m["path"] and sensible(m["path"]):
-            m["path"] = nom(m["path"])
+        if sensible(m.get("path") or ""):
+            m["path"] = nom_fichier(m["path"])
         for a in attrs:
             v = a.get("value") or ""
-            if v and "://" not in v and sensible(v):
-                a["value"] = nom(v)
+            if sensible(v):
+                a["value"] = nom_fichier(v)
         reduits.append(m.get("gramps_id") or m["handle"])
     return db, {"nombre": len(reduits), "medias": reduits}
 
