@@ -28,7 +28,27 @@ pour octet, à celui des versions précédentes.
 comme les autres extensions ; export GeneWeb : omise, comme toutes les extensions.
 
 Lieux : le code INSEE est stocké en `EXID` avec `TYPE http://id.insee.fr/geo/commune` (`_INSEE` en 5.5.1).
-Export 5.5.1 : `UID` → `_UID`, calendriers en échappements `@#DJULIAN@` / `@#DFRENCH R@`.
+Export 5.5.1 : `UID` → `_UID`, calendriers en échappements `@#DJULIAN@` / `@#DFRENCH R@` / `@#DHEBREW@`.
+
+## Dates Gramps (#272)
+
+Valeur de `DATE` étendue pour ce que Gramps représente et que GEDCOM 7 n'exprime pas ; une date du modèle relue
+par Genealogiste redonne exactement la date Gramps d'origine (table complète : [Gramps Web](gramps-web.md#dates-272)).
+Aucune n'apparaît dans un arbre qui ne vient pas de Gramps : les fichiers existants ne changent pas. Ces formes
+restent lisibles ; un logiciel qui ne les connaît pas les garde comme texte de date.
+
+| Forme | Exemple | Sens (Gramps) |
+|---|---|---|
+| calendrier d'extension `_PERSIAN`, `_ISLAMIC`, `_SWEDISH` (`calendar` de GEDCOM 7 = `extTag`) | `_PERSIAN 12 FARVA 1300` | calendriers persan, islamique, suédois. Mois persans : `FARVA ORDIB KHORD TIR MORDA SHAHR MEHR ABAN AZAR DEY BAHMA ESFAN` ; islamiques : `MUHAR SAFAR RABIA RABIT JUMAA JUMAT RAJAB SHAAB RAMAD SHAWW DHUAQ DHUAH` ; suédois : `JAN` à `DEC` |
+| qualité avant un qualificatif | `EST BEF 1850`, `CAL BET 1850 AND 1860` | qualité estimée / calculée combinée à avant, après, vers, depuis, jusqu'à, entre, de… à (GEDCOM 7 n'admet `EST`/`CAL` que seuls ; forme relue par l'import GEDCOM de Gramps) |
+| double datation `AAAA/AA` | `JULIAN 12 FEB 1721/22` | année ancien style / nouveau style (syntaxe GEDCOM 5.5.1) ; l'année retenue est la seconde (1722), comme dans Gramps |
+| nouvel an `(Mar1)`, `(Mar25)`, `(Sep1)`, `(M-J)` après la date | `12 FEB 1721 (Mar25)` | année commençant le 1er mars, le 25 mars, le 1er septembre ou au mois-jour donné (grégorien, julien, suédois) ; une phrase éventuelle suit : `1850 (Mar25) (texte)` |
+| `?` pour un élément inconnu | `12 ? 1850`, `12 MAR ?`, `BET 1850 AND ?`, `JULIAN ?` | jour sans mois, année inconnue, bout de plage vide, date sans valeur portant un calendrier, un modificateur ou une qualité |
+| date textuelle entre parenthèses | `(1850)`, `()` | texte d'une date textuelle de Gramps qui serait sinon relu comme une date (ou vide, ou aux espaces de bord) ; sans parenthèses dans tous les autres cas |
+
+Phrase : `DATE 1850` + `PHRASE texte` (GEDCOM 7) est lu `1850 (texte)` et `DATE` + `PHRASE texte` seul `(texte)` ;
+l'écriture GEDCOM 7 garde la chaîne du modèle. Export 5.5.1 : `B.C.` pour `BCE`, `@#DHEBREW@`, et une date
+simple avec phrase en `INT 1850 (texte)`.
 
 ## Témoins, parrains, intervenants (`ASSO`, standard)
 

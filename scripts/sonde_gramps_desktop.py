@@ -16,7 +16,11 @@ sinon un module `GLib` factice limité aux fonctions de chemins ; `gramps.gui.pl
 remplacé par un module factice (les classes d'options ne servent qu'à l'interface). Le rapport indique le
 mode utilisé.
 
-Usage : python sonde_gramps_desktop.py --rapport r.json [--reexporter DOSSIER] f1.gramps [f2.gramps …]
+Option ``--dates`` (#272) : inventaire de formes de date soumis à ``Date.set`` de la bibliothèque (acceptée ou
+refusée, valeur de tri, affichage anglais ISO), pour comparaison avec la correspondance de Genealogiste.
+
+Usage : python sonde_gramps_desktop.py --rapport r.json [--reexporter DOSSIER] [--dates formes.json]
+        f1.gramps [f2.gramps …]
 """
 
 from __future__ import annotations
@@ -341,11 +345,41 @@ def generer(dossier: str, user) -> dict:
     return sortie
 
 
+def dates_reference(chemin: str) -> dict:
+    """Formes de date de l'inventaire #272 (fichier JSON [[nom, Date JSON], …]) soumises à la bibliothèque :
+    ``Date.set`` (acceptée ou DateError), valeur de tri calculée, affichage anglais au format ISO par défaut
+    (``DateDisplayEn``). Une date textuelle passe par ``set(modifier=MOD_TEXTONLY, text=…)``."""
+    from gramps.gen.datehandler._datedisplay import DateDisplayEn
+    from gramps.gen.errors import DateError
+    from gramps.gen.lib import Date
+
+    affichage = DateDisplayEn()
+    out = {}
+    with open(chemin, encoding="utf-8") as f:
+        formes = json.load(f)
+    for nom, d in formes:
+        x = Date()
+        ny = d["newyear"]
+        try:
+            if d["modifier"] == Date.MOD_TEXTONLY:
+                x.set(modifier=Date.MOD_TEXTONLY, text=d["text"])
+            else:
+                x.set(d["quality"], d["modifier"], d["calendar"], tuple(d["dateval"]),
+                      newyear=tuple(ny) if isinstance(ny, list) else ny)
+        except DateError:
+            out[nom] = {"acceptee": False}
+            continue
+        out[nom] = {"acceptee": True, "sortval": x.sortval, "affichage": affichage.display(x),
+                    "calendar": x.calendar, "dateval": list(x.dateval)}
+    return out
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--rapport", required=True)
     parser.add_argument("--reexporter", help="dossier où réécrire chaque fichier importé (Gramps XML)")
     parser.add_argument("--generer", help="dossier où écrire l'arbre fictif exporté par Gramps (.gramps, .gpkg)")
+    parser.add_argument("--dates", help="inventaire de formes de date (JSON) : Date.set, tri et affichage (#272)")
     parser.add_argument("fichiers", nargs="*")
     args = parser.parse_args()
     # Gramps réécrit sys.argv pendant son initialisation (constfunc.has_display) : arguments déjà lus.
@@ -385,6 +419,8 @@ def main() -> int:
             self.avertissements.append(f"{title} | {warning}".strip(" |"))
 
     fichiers = list(args.fichiers)
+    if args.dates:
+        rapport["dates"] = dates_reference(args.dates)
     if args.generer:
         user = Utilisateur()
         try:

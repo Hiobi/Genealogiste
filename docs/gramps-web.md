@@ -120,7 +120,7 @@ Module unique, utilisé par l'export Gramps XML et par le mode direct, testé al
 | lieu | titre « Commune, Département, Pays », code INSEE, coordonnées ; paroisse en attribut d'événement |
 | âge | attribut `Age` de la référence d'événement |
 | cause, précision du type | attributs `Cause`, `Précision` |
-| date GEDCOM 7 | date Gramps (calendrier, qualificatif, qualité) ; la chaîne GEDCOM est gardée dans `text` |
+| date GEDCOM 7 (et extensions) | date Gramps : calendrier, modificateur, qualité, valeur, nouvel an ; table complète ci-dessous ([Dates](#dates-272)) |
 | étiquettes (`tags`) de personne, famille, événement, citation, source, dépôt, média, note partagée | `tag_list` (handles) + objets `Tag` ; voir « Étiquettes » ci-dessous |
 
 Une personne, un événement ou une note créés dans l'interface Gramps sont lus sans attribut `Genealogiste-*` et
@@ -169,6 +169,67 @@ Export Gramps XML (`export/gramps_xml.py`) : sérialise ces mêmes objets Gramps
 `gramps/lecture_xml.py`) relit dans l'autre sens, puis convertit par ce même module (`gramps_to_tree`). Versions
 cibles, `.gramps` gzip, paquet `.gpkg`, import et vérifications : voir [Gramps Desktop](gramps.md#contenu-écrit)
 et [l'import depuis Gramps Desktop](gramps.md#import-depuis-gramps-desktop).
+
+### Dates (#272)
+
+Correspondance unique (`gramps/types.py` : `date_to_gramps`, `date_from_gramps`), utilisée par le mode direct,
+l'export et l'import Gramps XML. Le modèle garde une date GEDCOM 7 ; ce que GEDCOM 7 n'exprime pas s'écrit avec
+les extensions de date de [docs/gedcom-extensions.md](gedcom-extensions.md#dates-gramps-272), relues à
+l'identique. **Critère : une date lue dans Gramps est réécrite à l'identique tant qu'elle n'est pas modifiée.**
+En mode direct, une date non modifiée garde son objet d'origine (texte compris) ; sans état lu (import Gramps XML
+puis export, bascule), tout ce que l'objet Date porte revient identique : calendrier, modificateur, qualité,
+valeur (double datation comprise), nouvel an, texte d'une date textuelle et valeur de tri recalculée comme
+Gramps (calendriers de `gcalendar.py` portés dans `normalize/calendriers.py`). Vérifié sur 1 225 formes
+(`mcp/tests/dates_gramps.py`) : avant #272, 1 135 ne revenaient pas à l'identique sans état lu ; aucune depuis.
+
+| Forme Gramps (JSON ; Gramps XML) | Date du modèle (GEDCOM 7) | Statut |
+|---|---|---|
+| grégorien (`calendar` 0) ; sans `cformat` | `12 MAR 1850`, `MAR 1850`, `1850` | GEDCOM 7, exact |
+| julien (1) ; `cformat="Julian"` | `JULIAN 12 FEB 1721` (5.5.1 : `@#DJULIAN@`) | GEDCOM 7, exact |
+| hébreu (2) ; `cformat="Hebrew"` | `HEBREW 10 NSN 5600`, mois 1 à 13 = `TSH CSH KSL TVT SHV ADR ADS NSN IYR SVN TMZ AAV ELL` (5.5.1 : `@#DHEBREW@`) | GEDCOM 7, exact |
+| républicain (3) ; `cformat="French Republican"` | `FRENCH_R 12 VEND 3`, mois 13 = `COMP` (5.5.1 : `@#DFRENCH R@`) | GEDCOM 7, exact |
+| persan (4), islamique (5), suédois (6) | `_PERSIAN 12 FARVA 1300`, `_ISLAMIC 12 MUHAR 1300`, `_SWEDISH 12 MAR 1705` | extension, exact |
+| aucun modificateur (0) ; `<dateval val>` | `12 MAR 1850` | GEDCOM 7, exact |
+| before (1), after (2), about (3) ; `type="before|after|about"` | `BEF …`, `AFT …`, `ABT …` | GEDCOM 7, exact |
+| from (7), to (8) seuls ; `type="from|to"` | `FROM 1850`, `TO 1850` | GEDCOM 7, exact (Gramps 5.2 à 6.1 ; hors DTD avant 6.1 : [Gramps Desktop](gramps.md#dates-et-gramps-52)) |
+| range (4) ; `<daterange start stop>` | `BET 1850 AND 1860` | GEDCOM 7, exact |
+| span (5) ; `<datespan start stop>` | `FROM 1850 TO 1860` | GEDCOM 7, exact |
+| plage aux bornes dans l'ordre inverse | `BET 1860 AND 1850` | exact (Gramps l'admet ; le modèle la signale à la cohérence) |
+| estimated (1), calculated (2) seuls ; `quality=` | `EST 1850`, `CAL 1850` | GEDCOM 7, exact |
+| qualité + modificateur | `EST BEF 1850`, `CAL ABT 1850`, `EST BET 1850 AND 1860`, `CAL FROM 1850 TO 1860` | extension (lue telle quelle par l'import GEDCOM de Gramps), exact |
+| année négative ; `val="-0100"` | `100 BCE`, `BET 120 BCE AND 100 BCE` (5.5.1 : `B.C.`) | GEDCOM 7, exact |
+| jour sans mois ; `val="1850-??-12"` | `12 ? 1850` | extension, exact |
+| année inconnue ; `val="????-03-12"` | `12 MAR ?`, `MAR ?` | extension, exact |
+| bout vide d'une plage ; `stop=""` | `BET 1850 AND ?`, `FROM 1850 TO ?` | extension, exact |
+| date vide portant un calendrier, un modificateur ou une qualité (JSON seulement : Gramps XML ne l'écrit pas) | `JULIAN ?`, `BEF ?`, `EST ?`, `BET ? AND ?` | extension, exact |
+| double datation (`dateval[3]`, année nouveau style : 1722) ; `dualdated="1"` | `JULIAN 12 FEB 1721/22` | extension (syntaxe GEDCOM 5.5.1), exact ; Gramps la range toujours en julien |
+| double datation d'un seul bout d'une plage | `BET JULIAN 1721/22 AND JULIAN 1725` | exact en JSON ; Gramps XML n'a qu'un `dualdated` pour les deux bouts (celui du début), comme chez Gramps |
+| nouvel an Mar1 (1), Mar25 (2), Sep1 (3), (mois, jour) ; `newyear=` | suffixe `12 FEB 1721 (Mar25)`, `JULIAN 12 OCT 1721 (4-15)` | extension, exact (grégorien, julien, suédois seulement, comme Gramps) |
+| date textuelle (`modifier` 6) ; `<datestr val>` | le texte : `vers la Saint-Jean` ; entre parenthèses s'il serait relu autrement : `(1850)`, `()`, `(  espaces  )` | exact |
+| `sortval` | recalculée comme Gramps (`Date._calc_sort_value`, `_adjust_newyear`) | exact (comparée à Gramps 5.2.4, 6.0.8, 6.1.0-beta2) |
+| `text` d'une date non textuelle | gardé comme date du modèle s'il relit exactement les mêmes champs (`abt 1850`, phrase `1850 (vers Pâques)`) | écrit dans `text` seulement s'il diffère de la forme canonique (sinon `text` vide, comme après un import Gramps XML) ; Gramps XML ne l'écrit pas |
+| date que `Date.set` de Gramps refuse (30 février, plage au début vide, deux calendriers…) | à l'écriture : date textuelle portant la chaîne ; à l'import XML : date textuelle portant l'élément XML, comme Gramps | conforme à Gramps |
+
+Écart connu de Gramps Web (API ≥ 3.25, gramps-web-api#869) : le serveur recalcule `sortval` à chaque écriture
+par `Date.recalc_sort_value`, sans le décalage de nouvel an qu'applique `Date.set` (Gramps Desktop,
+Genealogiste) ; une date à nouvel an décalé postérieure à la coupure y garde donc une valeur de tri d'un an plus
+tardive. Sans effet sur la date elle-même, relue et réécrite à l'identique (vérifié par `make test-gramps`).
+
+Non représentable, signalé : le `text` d'une date non textuelle qui ne relit pas les mêmes champs (saisie dans
+une autre langue, texte périmé après modification dans Gramps Web) est remplacé par la forme du modèle à la
+première écriture sans état lu ; `format` (format d'affichage) n'est pas porté ; une date sans valeur ni attribut
+qui garde un texte est lue comme date textuelle (comme l'export GEDCOM de Gramps) ; une double datation sur un
+point sans année est perdue (comptée dans `non_repris` de l'import : `Event.date[forme non reprise]`).
+
+`convertir_date` renvoie aussi `gramps` : `date` (objet Date JSON de Gramps Web), `xml` (élément Gramps XML) et
+`affichage` (affichage de Gramps en anglais, format ISO par défaut, identique à `DateDisplayEn` sur les 1 220
+formes acceptées de l'inventaire).
+
+Lecture GEDCOM 5.5.1, alignée sur ce que Gramps écrit et relit : double datation `1721/22` (année nouveau style
+1722, et non plus 1721), `@#DHEBREW@`, `B.C.`, phrase d'une date `INT 1850 (texte)` gardée (`1850 (texte)`) ; en
+GEDCOM 7, `DATE` + `PHRASE` donne `1850 (texte)`. Les 502 rendus 5.5.1 de l'inventaire en calendrier grégorien,
+julien, hébreu ou républicain sans `?` sont relus par l'import GEDCOM de Gramps 6.0.8 : 483 à l'identique ; les
+autres sont des limites de Gramps (année double seule `1699/00`, nouvel an d'une plage).
 
 ### Marqueurs historiques (`Sosa-*`, `Sosa:auto`)
 

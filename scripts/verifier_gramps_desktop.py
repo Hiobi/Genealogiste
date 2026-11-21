@@ -130,6 +130,10 @@ class Cas:
     refus_attendu: frozenset[str] = field(default_factory=frozenset)  # versions Gramps qui doivent refuser
     enrichir: Callable[[object, Path], object] | None = None  # (Tree, dossier) -> arbre exporté (copie)
     avertissements_admis: tuple[str, ...] = ()  # débuts d'avertissements Gramps attendus pour ce cas
+    arbres: tuple[str, ...] = ()  # arbres du dépôt auxquels le cas s'applique (défaut : tous)
+    # écart au schéma de la bibliothèque admis pour ce cas, par version : (motif, remplacement) appliqués au fichier
+    # avant validation, tout le reste étant validé strictement
+    schema_admis: dict[str, tuple[tuple[bytes, bytes], ...]] = field(default_factory=dict)
 
 
 def produire_xml(version_xml: str, compresse: bool = False) -> Callable[[object, Path], Path]:
@@ -175,6 +179,41 @@ def produire_gpkg(tree, dossier: Path) -> Path:
     return chemin
 
 
+TESTS = ROOT / "mcp" / "tests"
+
+
+def inventaire_dates() -> list[tuple[str, dict]]:
+    """Inventaire des formes de date Gramps (#272, mcp/tests/dates_gramps.py)."""
+    sys.path.insert(0, str(TESTS))
+    try:
+        import dates_gramps
+    finally:
+        sys.path.remove(str(TESTS))
+    return dates_gramps.inventaire()
+
+
+def avec_dates(tree, dossier: Path):
+    """Copie de l'arbre avec une personne fictive portant un événement par forme de date de l'inventaire #272
+    écrite en Gramps XML (les dates vides porteuses d'un attribut, que Gramps XML n'écrit pas, en sont exclues) :
+    date du modèle = ``date_from_gramps`` de la forme ; l'export la reconvertit par ``date_to_gramps``."""
+    from genealogiste_mcp.export.gramps_xml import date_xml
+    from genealogiste_mcp.gramps.types import date_from_gramps
+    from genealogiste_mcp.models import Event, Name, Person
+
+    tree = copy.deepcopy(tree)
+    p = Person(id="IDATES272", noms=[Name(prenoms="Formes", nom="DATES")], uid="personne-dates-272")
+    for nom, d in inventaire_dates():
+        if date_xml(d):
+            p.evenements.append(Event(type="EVEN", type_detail=f"Forme {nom}", date=date_from_gramps(d),
+                                      uid=f"forme-{nom}"))
+    tree.personnes[p.id] = p
+    return tree
+
+
+# DTD et RNG de Gramps 5.2 et 6.0 : dateval type sans from/to (ajoutés par 6.1), que leur code lit et écrit pourtant
+# (MOD_FROM / MOD_TO depuis 5.2) ; validés comme « about », seul écart admis
+FROM_TO_HORS_SCHEMA = ((rb'(<dateval [^>]*type=")(?:from|to)"', rb'\1about"'),)
+
 CAS: list[Cas] = [
     Cas("xml-1.7.1", "Gramps XML 1.7.1 non compressé (défaut d'arbre_exporter, format gramps)", produire_xml("1.7.1")),
     Cas("xml-1.7.2", "Gramps XML 1.7.2 non compressé (version_xml=1.7.2) : refusé par Gramps 5.2",
@@ -182,6 +221,9 @@ CAS: list[Cas] = [
     Cas("gramps-gzip", "Gramps XML 1.7.1 compressé gzip (compresse=True)", produire_xml("1.7.1", True)),
     Cas("gpkg", "paquet .gpkg : data.gramps (1.7.1, gzip) + un média local", produire_gpkg, enrichir=avec_media,
         avertissements_admis=("Base path for relative media set",)),
+    Cas("dates", "Gramps XML 1.7.1 : un événement par forme de date de l'inventaire #272 (mcp/tests/dates_gramps.py)",
+        produire_xml("1.7.1"), enrichir=avec_dates, arbres=("famille.ged",),
+        schema_admis={"5.2": FROM_TO_HORS_SCHEMA, "6.0": FROM_TO_HORS_SCHEMA}),
 ]
 
 
@@ -207,7 +249,7 @@ def controle_reexport(cas: Cas, version: str, attendu: dict[str, list[str]], rap
 
 def controle_medias(cas: Cas, version: str, attendu: dict[str, list[str]], rapport: dict) -> list[str]:
     """Médias d'un paquet : chaque fichier empaqueté est retrouvé par Gramps à son chemin relatif."""
-    if cas.enrichir is None:
+    if cas.enrichir is not avec_media:
         return []
     trouves = {m["chemin"] for m in rapport.get("medias", []) if m["fichier"]}
     return [] if MEDIA_TEST in trouves else [f"média {MEDIA_TEST} introuvable après import : {rapport.get('medias')}"]
@@ -259,6 +301,8 @@ def controle_champs(cas: Cas, version: str, attendu: dict, rapport: dict) -> lis
     ecarts = []
     for o in attendu.get(MODELE, []):
         h = handle_gramps(o["handle"])
+        if o["_class"] == "Event" and o.get("date"):  # écarts connus de Gramps sur les dates (#272)
+            o = {**o, "date": date_attendue(o["date"], version, ("import",))}
         if h in importes:
             ecarts += list(_ecarts(_normaliser({**o, "handle": h}), _normaliser(importes[h]), f"{o['_class']}:{h}"))
     return ecarts[:10]
@@ -319,6 +363,8 @@ def preparer_cas(travail: Path) -> list[tuple[str, Cas, Path, dict[str, list[str
     for arbre in ARBRES:
         origine = read_gedcom((FIXTURES / arbre).read_text(encoding="utf-8"))[0]
         for cas in CAS:
+            if cas.arbres and arbre not in cas.arbres:
+                continue
             dossier = travail / "entrees" / cas.nom / Path(arbre).stem
             dossier.mkdir(parents=True)
             tree = cas.enrichir(origine, dossier) if cas.enrichir else origine
@@ -431,7 +477,125 @@ def controle_lecture(cas: Cas, version: str, attendu: dict, rapport: dict) -> li
     return ecarts
 
 
-CONTROLES: list[Controle] = [controle_reexport, controle_medias, controle_champs, controle_lecture]
+# Écarts connus de Gramps sur les dates (#272), par version : (motif, forme concernée, date que Gramps en fait).
+# Gramps 5.2 ne lit pas une année négative dans daterange / datespan (importxml, corrigé en 6.0) : Date.set refuse
+# la valeur et l'import garde l'élément XML comme date textuelle. Signalé par l'export (avertissements_dates).
+def _negatif_compose(d: dict) -> bool:
+    return d.get("modifier") in (4, 5) and any(y < 0 for y in list(d.get("dateval") or [])[2:7:4])
+
+
+def _texte_xml(d: dict) -> dict:
+    from genealogiste_mcp.export.gramps_xml import date_xml
+    from genealogiste_mcp.gramps.types import blank_date
+
+    return {**blank_date(), "modifier": 6, "text": date_xml(d)}
+
+
+def _double_partielle(d: dict) -> bool:
+    v = list(d.get("dateval") or [])
+    return d.get("modifier") in (4, 5) and len(v) >= 8 and bool(v[3]) != bool(v[7])
+
+
+def _double_unique(d: dict) -> dict:
+    v = list(d["dateval"])
+    return {**d, "dateval": v[:7] + [v[3]]}
+
+
+def _espaces(d: dict) -> bool:
+    return d.get("modifier") == 6 and (d.get("text") or "") != (d.get("text") or "").strip()
+
+
+# « * » : toutes les versions (limites du format Gramps XML lui-même, pas de la correspondance). Étape : « import »
+# (ce que Gramps fait du fichier exporté) ou « écriture » (ce que son réexport perd en plus).
+EcartDate = tuple[str, str, Callable[[dict], bool], Callable[[dict], dict]]
+ECARTS_DATES: dict[str, list[EcartDate]] = {
+    "*": [("double datation d'un seul bout d'une plage : un seul attribut dualdated en XML (celui du début)",
+           "import", _double_partielle, _double_unique),
+          ("texte d'une date textuelle : espaces de bord retirés par l'écriture XML de Gramps",
+           "écriture", _espaces, lambda d: {**d, "text": d["text"].strip()})],
+    "5.2": [("année négative dans une plage ou un intervalle : date textuelle portant l'élément XML",
+             "import", _negatif_compose, _texte_xml),
+            ("date textuelle au texte vide : absente du réexport de Gramps 5.2 (date vide)",
+             "écriture", lambda d: d.get("modifier") == 6 and not d.get("text"), lambda d: _date_vide())],
+}
+
+
+def _date_vide() -> dict:
+    from genealogiste_mcp.gramps.types import blank_date
+
+    return blank_date()
+
+
+def date_attendue(d: dict, version: str, etapes: tuple[str, ...] = ("import", "écriture"),
+                  connus: dict | None = None) -> dict:
+    """Date que Gramps ``version`` rend d'une date exportée, écarts connus (``ECARTS_DATES``) appliqués."""
+    for motif, etape, concerne, transforme in ECARTS_DATES["*"] + ECARTS_DATES.get(version, []):
+        if etape in etapes and concerne(d):
+            d = transforme(d)
+            if connus is not None:
+                connus[motif] = connus.get(motif, 0) + 1
+    return d
+CHAMPS_DATE = ("calendar", "modifier", "quality", "dateval", "newyear")
+
+
+def ecarts_date(a: dict, b: dict) -> list[str]:
+    """Écarts entre deux dates Gramps sur ce que le Gramps XML porte (texte d'une date non textuelle exclu)."""
+    def norm(d: dict, k: str):
+        v = d.get(k)
+        if k == "dateval":
+            v = list(v or [])[:8 if d.get("modifier") in (4, 5) else 4]
+        if k == "newyear":
+            v = list(v) if isinstance(v, (list, tuple)) else v or 0
+        return v
+    out = [f"{k} {norm(a, k)!r} -> {norm(b, k)!r}" for k in CHAMPS_DATE if norm(a, k) != norm(b, k)]
+    if 6 in (a.get("modifier"), b.get("modifier")) and (a.get("text") or "") != (b.get("text") or ""):
+        out.append(f"text {a.get('text')!r} -> {b.get('text')!r}")
+    return out
+
+
+def controle_dates(cas: Cas, version: str, attendu: dict, rapport: dict) -> list[str]:
+    """Dates d'événement (#272) : Gramps -> modèle -> Gramps sans écart. Chaque date exportée revient du réexport de
+    Gramps, relue par Genealogiste, identique (ou transformée comme ``ECARTS_DATES`` le prévoit, jamais tolérée en
+    bloc) ; elle repasse par le modèle à l'identique (``date_reprise``) et redonne la même date GEDCOM 7 ; en 6.x,
+    la valeur de tri calculée par Gramps est celle de Genealogiste."""
+    from genealogiste_mcp.gramps.lecture_xml import LectureGrampsError
+    from genealogiste_mcp.gramps.lecture_xml import lire_xml as lire
+    from genealogiste_mcp.gramps.types import date_from_gramps, date_reprise, valeur_tri
+
+    if "reexport" not in rapport:
+        return []
+    try:
+        relu = lire(Path(rapport["reexport"]).read_bytes()).db
+    except LectureGrampsError as exc:
+        return [f"dates : réexport illisible ({exc})"]
+    importes = {o["handle"]: o["date"] for o in rapport.get("objets", []) if o["_class"] == "Event"}
+    ecarts, connus, n = [], {}, 0
+    for o in attendu.get(MODELE, []):
+        if o["_class"] != "Event":
+            continue
+        h = handle_gramps(o["handle"])
+        d = date_attendue(o["date"], version, connus=connus)
+        r = relu.get("Event", h)
+        if r is None:
+            continue
+        n += 1
+        r = r["date"]
+        e = ecarts_date(d, r)
+        if not date_reprise(r):
+            e.append("non reprise par le modèle")
+        elif date_from_gramps(r) != date_from_gramps(d):
+            e.append(f"GEDCOM 7 {date_from_gramps(d)!r} -> {date_from_gramps(r)!r}")
+        if h in importes and importes[h].get("sortval") != valeur_tri(d):
+            e.append(f"sortval Gramps {importes[h].get('sortval')} / Genealogiste {valeur_tri(d)}")
+        if e:
+            ecarts.append(f"date {h} ({o.get('gramps_id')}) : {' ; '.join(e)}")
+    if cas.nom == "dates":
+        print(f"   {version} : {n} dates relues après réexport par Gramps, {len(ecarts)} en écart ; écarts connus : "
+              + (" ; ".join(f"{m} ({k})" for m, k in connus.items()) or "aucun"), flush=True)
+    return ecarts[:10]
+
+
+CONTROLES: list[Controle] = [controle_reexport, controle_medias, controle_champs, controle_lecture, controle_dates]
 
 
 def comparer_cycle(premier: dict, second: dict, contexte: str, ecrit_par_gramps: bool = True) -> list[str]:
@@ -455,7 +619,7 @@ def comparer_cycle(premier: dict, second: dict, contexte: str, ecrit_par_gramps:
 # --- environnement d'exécution de la sonde ---------------------------------------------------------------
 
 def lancer_sonde(exe: Path, env_sup: dict, sortie: Path, fichiers: list[Path], reexporter: bool = True,
-                 generer: Path | None = None) -> tuple[dict | None, str]:
+                 generer: Path | None = None, dates: Path | None = None) -> tuple[dict | None, str]:
     """Lance la sonde dans l'environnement isolé ; renvoie (rapport, erreur)."""
     sortie.mkdir(parents=True, exist_ok=True)
     rapport_json = sortie / "rapport.json"
@@ -474,6 +638,8 @@ def lancer_sonde(exe: Path, env_sup: dict, sortie: Path, fichiers: list[Path], r
     if generer is not None:
         generer.mkdir(parents=True, exist_ok=True)
         cmd += ["--generer", str(generer)]
+    if dates is not None:
+        cmd += ["--dates", str(dates)]
     proc = subprocess.run([*cmd, *map(str, fichiers)], env=env, capture_output=True, text=True)
     if proc.returncode or not rapport_json.exists():
         return None, "sonde en échec : " + " / ".join((proc.stderr or proc.stdout).strip().splitlines()[-5:])
@@ -505,7 +671,10 @@ def verifier_version(entree: dict, lots, travail: Path, cache: Path, python: str
         for arbre, fichier, attendu in entrees:
             r = rapport["fichiers"][fichier.name]
             refus = version in cas.refus_attendu
-            schema = valider_schemas(lire_xml(fichier), rapport["schemas"])
+            brut = lire_xml(fichier)
+            for motif, remplacement in cas.schema_admis.get(version, ()):
+                brut = re.sub(motif, remplacement, brut)
+            schema = valider_schemas(brut, rapport["schemas"])
             if refus:
                 ecarts = schema + ([] if not r["importe"] else ["import accepté alors qu'un refus est attendu"])
                 ecarts += [] if "older version" in " ".join(r["erreurs"]) else [f"refus inattendu : {r['erreurs']}"]
@@ -532,9 +701,92 @@ def verifier_version(entree: dict, lots, travail: Path, cache: Path, python: str
                 resultats.append(Resultat(version, arbre, f"cycle:{cas.nom}", not ecarts, " ; ".join(ecarts),
                                           {cls: len(h) for cls, h in premier["handles"].items() if h}))
     resultats += verifier_generes(entree, exe, env_sup, travail, fixtures)
+    resultats += verifier_reference_dates(entree, exe, env_sup, travail, fixtures)
     if exemple:
         resultats += verifier_exemple(entree, exe, env_sup, travail, cache)
     return resultats
+
+
+# --- dates (#272) : Date.set, valeur de tri et affichage de la bibliothèque, formes refusées --------------
+
+def _xml_refusees() -> tuple[str, list[str]]:
+    """Gramps XML 1.7.1 : un événement par forme que Gramps refuse (``dates_gramps.REFUSEES``), élément brut."""
+    from genealogiste_mcp.export.gramps_xml import db_to_xml
+    from genealogiste_mcp.gramps.mapping import GrampsDb
+    from genealogiste_mcp.gramps.types import blank, date_to_gramps
+
+    sys.path.insert(0, str(TESTS))
+    try:
+        from dates_gramps import REFUSEES
+    finally:
+        sys.path.remove(str(TESTS))
+    objets = []
+    for i, _ in enumerate(REFUSEES):
+        e = blank("Event", f"refus{i:03d}", f"E{i:04d}")
+        e["date"] = date_to_gramps(str(1001 + i))
+        objets.append(e)
+    xml = db_to_xml(GrampsDb.from_objects(objets), "1.7.1")
+    for i, element in enumerate(REFUSEES):
+        xml = xml.replace(f'<dateval val="{1001 + i}"/>', element, 1)
+    return xml, list(REFUSEES)
+
+
+def verifier_reference_dates(entree: dict, exe: Path, env_sup: dict, travail: Path, fixtures: Path | None
+                             ) -> list[Resultat]:
+    """Inventaire #272 soumis à la bibliothèque : chaque forme acceptée ou refusée par ``Date.set`` comme
+    ``date_acceptee`` le prévoit (dates vides : refusées par Gramps, admises en JSON par Genealogiste), même valeur
+    de tri et même affichage (anglais, ISO) que Genealogiste ; formes refusées (``REFUSEES``) importées par
+    Gramps comme Genealogiste les lit (date textuelle portant l'élément XML)."""
+    from genealogiste_mcp.gramps.lecture_xml import LectureGrampsError
+    from genealogiste_mcp.gramps.lecture_xml import lire_xml as lire
+    from genealogiste_mcp.gramps.types import affichage_gramps, date_acceptee, valeur_tri
+
+    version = entree["version"]
+    sortie = travail / f"gramps-{version}" / "dates-reference"
+    sortie.mkdir(parents=True, exist_ok=True)
+    formes = inventaire_dates()
+    (sortie / "formes.json").write_text(json.dumps(formes), encoding="utf-8")
+    xml, refusees = _xml_refusees()
+    fichier = sortie / "refusees.gramps"
+    fichier.write_text(xml, encoding="utf-8")
+    rapport, erreur = lancer_sonde(exe, env_sup, sortie, [fichier], True, dates=sortie / "formes.json")
+    if rapport is None:
+        return [Resultat(version, "inventaire", "dates:reference", False, erreur)]
+    ecarts = []
+    for nom, d in formes:
+        r = rapport["dates"][nom]
+        vide = not any(list(d["dateval"])[:3]) and not any(list(d["dateval"])[4:7]) and d["modifier"] != 6
+        if r["acceptee"] != (not vide and date_acceptee(d)):
+            ecarts.append(f"{nom} : acceptée par Gramps {r['acceptee']}, par Genealogiste {not r['acceptee']}")
+        elif r["acceptee"]:
+            for cle, gramps, nous in (("sortval", r["sortval"], valeur_tri(d)),
+                                      ("affichage", r["affichage"], affichage_gramps(d)),
+                                      ("valeur", [r["calendar"], r["dateval"]], [d["calendar"], list(d["dateval"])])):
+                if gramps != nous:
+                    ecarts.append(f"{nom} : {cle} Gramps {gramps!r}, Genealogiste {nous!r}")
+    imp = rapport["fichiers"][fichier.name]
+    if not imp.get("importe") or "reexport" not in imp:
+        ecarts.append(f"formes refusées : import {imp.get('erreurs')}")
+    else:
+        try:
+            gramps, nous = lire(Path(imp["reexport"]).read_bytes()).db, lire(xml.encode()).db
+            for h, e in sorted(nous.all("Event").items()):
+                g = gramps.get("Event", h)
+                ecart = ecarts_date(e["date"], g["date"]) if g else ["absent après import"]
+                if ecart or e["date"].get("modifier") != 6:
+                    ecarts.append(f"{h} : {' ; '.join(ecart) or 'non textuelle'}")
+        except LectureGrampsError as exc:
+            ecarts.append(f"formes refusées : réexport illisible ({exc})")
+    if fixtures is not None:
+        ref = {nom: ([True, r["sortval"], r["affichage"]] if r["acceptee"] else [False])
+               for nom, r in rapport["dates"].items()}
+        (fixtures / f"dates-gramps-{rapport['gramps']}.json").write_text(
+            json.dumps(ref, ensure_ascii=False, indent=0) + "\n", encoding="utf-8")
+    acceptees = sum(1 for r in rapport["dates"].values() if r["acceptee"])
+    print(f"   {version} : {len(formes)} formes soumises à Date.set ({acceptees} acceptées), {len(refusees)} formes "
+          f"refusées importées ; {len(ecarts)} écart(s)", flush=True)
+    return [Resultat(version, "inventaire", "dates:reference", not ecarts, " ; ".join(ecarts[:10]),
+                     {"formes": len(formes), "refusees": len(refusees)})]
 
 
 # --- arbre fictif écrit par la bibliothèque Gramps (fixtures « comme Gramps Desktop ») -------------------

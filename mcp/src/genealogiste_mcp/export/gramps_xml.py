@@ -362,6 +362,23 @@ def date_xml(dt: dict | None) -> str:
     return f'<dateval val="{iso}"{typ}{extra}/>'
 
 
+def avertissements_dates(db: GrampsDb, version_xml: str) -> list[str]:
+    """Pièges connus de Gramps 5.2 (cible de 1.7.1) sur les dates écrites, signalés à l'export plutôt que laissés
+    à un import silencieusement dégradé (#272) : 5.2 ne lit pas une année avant notre ère dans ``daterange`` /
+    ``datespan`` (date textuelle). ``dateval val=""``, qui fait échouer l'import de 5.2, n'est jamais écrit (une
+    date sans valeur n'est pas écrite, comme chez Gramps)."""
+    if version_xml != "1.7.1":
+        return []
+    ids = sorted(o.get("gramps_id") or o["handle"] for o in db.all("Event").values()
+                 if (o.get("date") or {}).get("modifier") in (4, 5)
+                 and any(y < 0 for y in list(o["date"].get("dateval") or [])[2:7:4]))
+    if not ids:
+        return []
+    return [f"Gramps 5.2 lit comme date textuelle une plage ou un intervalle avec une année avant notre ère "
+            f"({len(ids)} événement(s) : {', '.join(ids[:10])}{' …' if len(ids) > 10 else ''}) ; Gramps 6.0 et 6.1 "
+            "les lisent (version_xml 1.7.1 ou 1.7.2)."]
+
+
 # ============================================================================ écriture générique
 
 def _valeur(o: dict, cle: str) -> Any:

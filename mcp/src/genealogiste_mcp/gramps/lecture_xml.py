@@ -25,7 +25,6 @@ from __future__ import annotations
 
 import gzip
 import io
-import math
 import re
 import shutil
 import tarfile
@@ -35,10 +34,22 @@ from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
 from typing import Any
 from xml.parsers import expat
+from xml.sax.saxutils import escape
 
 from ..export import gramps_xml as gx
 from .mapping import A_FICHIER, GrampsDb
-from .types import TYPES, blank, blank_date, blank_name, gtype, surname, tname
+from .types import (
+    TYPES,
+    blank,
+    blank_date,
+    blank_name,
+    date_acceptee,
+    date_reprise,
+    gtype,
+    surname,
+    tname,
+    valeur_tri,
+)
 
 # ============================================================================ limites
 
@@ -246,7 +257,9 @@ _ATTRS_DATE = {"dateval": {"val", "type", "quality", "cformat", "dualdated", "ne
 
 
 def lire_date(n: Noeud) -> dict:
-    """Élément de date -> Date JSON (inverse exact de :func:`gx.date_xml`), sortval recalculée comme Gramps."""
+    """Élément de date -> Date JSON (inverse exact de :func:`gx.date_xml`), sortval recalculée, comme l'import de
+    Gramps (``importxml.start_dateval`` / ``start_compound_date``) : double datation rangée en julien, date que
+    ``Date.set`` refuse (jour impossible, plage au début vide…) gardée comme date textuelle portant son XML."""
     _verifier_attrs(n, _ATTRS_DATE[n.tag])
     d = blank_date()
     a = n.attrib
@@ -271,131 +284,13 @@ def lire_date(n: Noeud) -> dict:
     else:
         d["modifier"] = 4 if n.tag == "daterange" else 5
         d["dateval"] = [*_point(a.get("start", ""), n), slash, *_point(a.get("stop", ""), n), slash]
+    if slash and d["calendar"] != 1:  # Date.set : une date à double datation passe en julien
+        d["calendar"] = 1
+    if not date_acceptee(d):  # Date.set la refuse : Gramps garde le XML comme date textuelle (avertissement)
+        attrs = " ".join(f'{k}="{escape(v, {chr(34): "&quot;"})}"' for k, v in a.items())
+        return {**blank_date(), "modifier": 6, "text": f"<{n.tag} {attrs}/>"}
     d["sortval"] = valeur_tri(d)
     return d
-
-
-# --- valeur de tri : calendriers de Gramps (gramps/gen/lib/gcalendar.py, GPL-2.0-or-later) -----------------
-
-def _gregorien(y: int, m: int, d: int) -> int:
-    y += 4801 if y < 0 else 4800
-    if m > 2:
-        m -= 3
-    else:
-        m += 9
-        y -= 1
-    return ((y // 100) * 146097) // 4 + ((y % 100) * 1461) // 4 + (m * 153 + 2) // 5 + d - 32045
-
-
-def _julien(y: int, m: int, d: int) -> int:
-    y += 4801 if y < 0 else 4800
-    if m > 2:
-        m -= 3
-    else:
-        m += 9
-        y -= 1
-    return (y * 1461) // 4 + (m * 153 + 2) // 5 + d - 32083
-
-
-def _republicain(y: int, m: int, d: int) -> int:
-    return (y * 1461) // 4 + (m - 1) * 30 + d + 2375474
-
-
-def _persan(y: int, m: int, d: int) -> int:
-    epbase = y - 474 if y >= 0 else y - 473
-    epyear = 474 + epbase % 2820
-    v1 = (m - 1) * 31 if m <= 7 else (m - 1) * 30 + 6
-    return int(math.ceil(v1 + ((epyear * 682) - 110) // 2816 + (epyear - 1) * 365 + d
-                         + (epbase // 2820) * 1029983 + 1948320.5 - 1))
-
-
-def _islamique(y: int, m: int, d: int) -> int:
-    return int(math.ceil((d + math.ceil(29.5 * (m - 1)) + (y - 1) * 354 + math.floor((3 + 11 * y) // 30)
-                          + 1948439.5) - 1))
-
-
-def _suedois(y: int, m: int, d: int) -> int:
-    if (1700, 3, 1) <= (y, m, d) <= (1712, 2, 30):
-        return _julien(y, m, d) - 1
-    return _gregorien(y, m, d) if (1753, 3, 1) <= (y, m, d) else _julien(y, m, d)
-
-
-_H_JOUR, _H_LUNE = 25920, 29 * 25920 + 13753
-_H_CYCLE = _H_LUNE * (12 * 19 + 7)
-_H_MOIS_AN = (12, 12, 13, 12, 12, 13, 12, 13, 12, 12, 13, 12, 12, 13, 12, 12, 13, 12, 13)
-_H_DECALAGE = (0, 12, 24, 37, 49, 61, 74, 86, 99, 111, 123, 136, 148, 160, 173, 185, 197, 210, 222)
-
-
-def _tishri1(an_meton: int, jour: int, halakim: int) -> int:
-    dow = jour % 7
-    bissextile = an_meton in (2, 5, 7, 10, 13, 16, 18)
-    precedente = an_meton in (3, 6, 8, 11, 14, 17, 0)
-    if halakim >= 18 * 1080 or (not bissextile and dow == 2 and halakim >= 9 * 1080 + 204) \
-            or (precedente and dow == 1 and halakim >= 15 * 1080 + 589):
-        jour += 1
-        dow = (dow + 1) % 7
-    return jour + (1 if dow in (3, 5, 0) else 0)
-
-
-def _molad(cycle: int) -> tuple[int, int]:
-    r1 = 31524 + cycle * (_H_CYCLE & 0xFFFF)
-    r2 = (r1 >> 16) + cycle * ((_H_CYCLE >> 16) & 0xFFFF)
-    d2 = r2 // _H_JOUR
-    r2 -= d2 * _H_JOUR
-    r1 = (r2 << 16) | (r1 & 0xFFFF)
-    d1 = r1 // _H_JOUR
-    return (d2 << 16) | d1, r1 - d1 * _H_JOUR
-
-
-def _debut_annee(y: int) -> tuple[int, int, int, int]:
-    an = (y - 1) % 19
-    jour, hal = _molad((y - 1) // 19)
-    hal += _H_LUNE * _H_DECALAGE[an]
-    jour, hal = jour + hal // _H_JOUR, hal % _H_JOUR
-    return an, jour, hal, _tishri1(an, jour, hal)
-
-
-def _hebreu(y: int, m: int, d: int) -> int:
-    if m in (1, 2):
-        t1 = _debut_annee(y)[3]
-        sdn = t1 + d - 1 if m == 1 else t1 + d + 29
-    elif m == 3:
-        an, jour, hal, t1 = _debut_annee(y)
-        hal += _H_LUNE * _H_MOIS_AN[an]
-        jour, hal = jour + hal // _H_JOUR, hal % _H_JOUR
-        sdn = t1 + d + (59 if _tishri1((an + 1) % 19, jour, hal) - t1 in (355, 385) else 58)
-    elif m in (4, 5, 6):
-        apres = _debut_annee(y + 1)[3]
-        adar = 29 if _H_MOIS_AN[(y - 1) % 19] == 12 else 59
-        sdn = apres + d - adar - {4: 237, 5: 208, 6: 178}[m]
-    elif 7 <= m <= 13:
-        sdn = _debut_annee(y + 1)[3] + d - {7: 207, 8: 178, 9: 148, 10: 119, 11: 89, 12: 60, 13: 30}[m]
-    else:
-        return 0
-    return sdn + 347997
-
-
-_CALENDRIERS_TRI = (_gregorien, _julien, _hebreu, _republicain, _persan, _islamique, _suedois)
-
-
-def valeur_tri(d: dict) -> int:
-    """``Date.sortval`` comme Gramps : jour julien du premier point (année 0 -> 1, mois et jour 0 -> 1) dans le
-    calendrier de la date, décalé d'un an si le nouvel an tombe avant le mois et le jour ; 0 pour une date vide
-    ou textuelle."""
-    if d.get("modifier") == 6:
-        return 0
-    jour, mois, an = (list(d.get("dateval") or []) + [0, 0, 0])[:3]
-    if an == mois == jour == 0:
-        return 0
-    conv = _CALENDRIERS_TRI[d.get("calendar", 0)]
-
-    def sdn(y: int) -> int:
-        return conv(y if y != 0 else 1, max(mois, 1), max(jour, 1))
-    ny = d.get("newyear") or 0
-    coupure = {1: (3, 1), 2: (3, 25), 3: (9, 1)}.get(ny) if not isinstance(ny, list) else tuple(ny)
-    if coupure and coupure != (0, 0) and (mois, jour) >= coupure:
-        return sdn(an - 1)
-    return sdn(an)
 
 
 # ============================================================================ lecture générique (tables SPEC_*)
@@ -972,6 +867,11 @@ def pertes(source: GrampsDb, apres: GrampsDb, meta: gx.Metadonnees | None = None
 
     a, b = compter_contenu(source, auto_tags(source)), compter_contenu(apres, auto_tags(apres))
     out = {k: v - b.get(k, 0) for k, v in sorted(a.items()) if v > b.get(k, 0)}
+    # date d'événement que le modèle ne restitue pas à l'identique (forme non représentable, #272) : comptée à part,
+    # le chemin « Event.date » ne comptant que les dates présentes
+    autres = sum(1 for e in source.all("Event").values() if not _vide(e.get("date")) and not date_reprise(e["date"]))
+    if autres:
+        out["Event.date[forme non reprise]"] = autres
     if meta is not None:
         for nom, v in (("Métadonnées.chercheur", len([x for x in meta.chercheur.values() if x])),
                        ("Métadonnées.mediapath", int(bool(meta.mediapath))),

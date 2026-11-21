@@ -28,3 +28,8 @@ dates de modification sont celles de la génération.
 
 `valeurs-tri-gramps-6.0.8.json` : `[calendrier, jour, mois, année, nouvel an, sortval]` de 202 dates des sept
 calendriers, valeurs de tri calculées par `gramps.gen.lib.Date.set` de Gramps 6.0.8 (nombres seulement).
+
+`dates-gramps-6.0.8.json` (#272) : pour chaque forme de date de l'inventaire `tests/dates_gramps.py` (nom stable),
+`[true, sortval, affichage]` si `gramps.gen.lib.Date.set` de Gramps 6.0.8 l'accepte (valeur de tri et affichage
+anglais `DateDisplayEn`, format ISO), `[false]` sinon. Écrit par le banc Desktop (`--fixtures`), qui compare aussi
+5.2.4 et 6.1.0-beta2 à chaque exécution.
