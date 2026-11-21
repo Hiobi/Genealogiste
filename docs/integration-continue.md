@@ -13,7 +13,7 @@ empêche aussi les commandes Make de le réécrire silencieusement.
   `claude plugin validate .claude-plugin/plugin.json` pour le manifeste du plugin.
 
 Les tests ordinaires utilisent des données fictives, HTTP simulé et DNS simulé.
-Les six tests `gramps_live` sont ignorés sans URL de test. Les dépendances sont téléchargées
+Les tests `gramps_live` sont ignorés sans URL de test. Les dépendances sont téléchargées
 avant les tests ; uv passe ensuite hors ligne. Aucun secret d'API ni compte Claude n'est requis.
 
 Le validateur Claude Code est installé via l'installateur officiel, en version 2.1.319.
@@ -30,13 +30,18 @@ PR obligatoire et contrôles requis `Tests Python 3.11`, `Tests Python 3.13`,
 `Ruff et manifestes`. Éviter de renommer ces jobs sans adapter la règle.
 L'ajout des workflows ne configure pas automatiquement cette protection GitHub.
 
-## Gramps Web sur demande
+## Matrice Gramps (#267)
 
-Dans Actions, choisir `Intégration Gramps`, puis `Run workflow`. Ce workflow est disponible
-une fois son fichier présent sur la branche par défaut ; il n'est pas requis pour les PR.
-Il lance `make test-gramps` sur Docker avec un arbre fictif jetable, puis détruit les conteneurs
-et volumes, y compris après un échec. Il reprend l'image du compose de test (épinglée par empreinte) :
-il ne certifie pas une version Gramps de production.
+Le workflow `Intégration Gramps` (`.github/workflows/gramps.yml`) lit `compatibilite-gramps.json` et lance un job
+par version : `Gramps Web <image> (API <version>)` pour chaque image épinglée par empreinte (plancher, image par
+défaut, plafond ; `make test-gramps` sur un arbre fictif jetable, conteneurs et volumes détruits même après un
+échec) et `Gramps Desktop <version>` pour les bibliothèques Gramps 5.2, 6.0 et 6.1 (`make test-gramps-desktop`,
+PyGObject des paquets Ubuntu). `fail-fast` est désactivé : chaque version rend son verdict.
+
+Déclenchement : PR et pushes vers `main` qui touchent l'intégration Gramps (liste de chemins du workflow), chaque
+mercredi et sur demande (`Run workflow`). Il n'est pas déclaré requis pour les PR : un workflow filtré par chemins
+reste en attente sur les PR qu'il ignore. Versions, plage et limites : [Gramps Web](gramps-web.md#compatibilité-des-versions)
+et [Gramps Desktop](gramps.md).
 
 ## Recette archives planifiée (#143)
 

@@ -33,7 +33,7 @@ Public MCP tools and business operations use French, accent-free `snake_case`, s
 
 Name tests `test_*.py` and functions `test_*`. Use pytest, `respx`, mocked DNS, and isolated `app`/`app_famille` fixtures. Add behavioral regression tests for fixes; no numerical coverage threshold is configured.
 
-Run one module with `uv --directory mcp run pytest tests/test_tree_ops.py`. `make test-gramps` uses disposable Docker services; `make test-archives` explicitly contacts real archives.
+Run one module with `uv --directory mcp run pytest tests/test_tree_ops.py`. `make test-gramps` uses disposable Docker services (`make test-gramps-matrice` for every pinned image, `make test-gramps-desktop` for Gramps Desktop libraries; versions in `compatibilite-gramps.json`); `make test-archives` explicitly contacts real archives.
 
 ## Commit & Pull Request Guidelines
 

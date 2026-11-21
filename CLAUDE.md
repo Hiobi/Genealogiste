@@ -19,7 +19,9 @@ Toutes passent par `uv --directory mcp` (lancer depuis la racine) :
 make install        # uv sync
 make test           # pytest, APIs mockées, aucun accès réseau
 make lint           # ruff check src tests   (make format pour --fix)
-make test-gramps    # intégration sur Gramps Web jetable (Docker, docker-compose.test.yml)
+make test-gramps    # intégration sur Gramps Web jetable (Docker, docker-compose.test.yml ; GRAMPSWEB_IMAGE=…)
+make test-gramps-matrice  # test-gramps sur chaque image de compatibilite-gramps.json
+make test-gramps-desktop  # export Gramps XML relu par Gramps Desktop 5.2/6.0/6.1 (venvs isolés hors uv.lock)
 make check          # configuration effective + état de l'arbre
 make run / run-http # serveur MCP stdio / HTTP :8765
 make validate       # claude plugin validate .
@@ -76,7 +78,7 @@ Claude Code ne propose une mise à jour que si la version change. `make version 
 ## Docs de référence
 
 `docs/` : `operations.md` (ops d'édition), `gedcom-extensions.md` (classification des citations),
-`securite.md` (confinement fichiers, politique réseau, vivants, `MCP_TOKEN`), `gramps-web.md`, `pieces.md`,
+`securite.md` (confinement fichiers, politique réseau, vivants, `MCP_TOKEN`), `gramps-web.md` (et matrice de versions), `gramps.md`, `pieces.md`,
 `notes.md`, `geneweb.md`, `enquetes.md` (état de recherche reprenable). Variables d'environnement : `README.md` et `.env.example`.
 
 ## Distribution Codex
