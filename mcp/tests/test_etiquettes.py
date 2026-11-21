@@ -246,7 +246,7 @@ def test_gramps_pose_retrait_annulation(gapp, fake):
            {"op": "etiqueter", "cible": {"type": "evenement", "uid": NAISSANCE_I1}, "tags": ["Blog"]},
            {"op": "etiqueter", "cible": {"type": "citation", "porteur": {"type": "evenement", "uid": NAISSANCE_I1},
                                          "source": "S2"}, "tags": ["ToDo"]},
-           {"op": "etiqueter", "cible": {"type": "source", "id": "S1"}, "tags": ["Blog"]},
+           {"op": "etiqueter", "cible": {"type": "source", "id": "S1"}, "tags": ["ToDo"]},  # Blog : billet (#261)
            {"op": "etiqueter", "cible": {"type": "depot", "id": "R1"}, "tags": ["ToDo"]}]
     p = server.arbre_proposer(ops, "Étiquettes", "Suivi (test).")
     tg = p["transaction_gramps"]

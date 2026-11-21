@@ -30,6 +30,7 @@ from . import (
 from . import pdf_markdown as pdf_md
 from .archives import communicability_online
 from .auth import BearerAuth, Sante, bind_problem
+from .billets import est_billet
 from .budget import PlafondJour, mesurer
 from .cache import Cache
 from .chemins import CheminRefuse, nom_simple, sous
@@ -1110,11 +1111,16 @@ def arbre_info() -> dict:
 
 @mcp.tool()
 def arbre_recherche(texte: str = "", nom: str = "", prenom: str = "", ne_vers: str = "", limite: int = 30,
-                    etiquette: str = "") -> list[dict]:
+                    etiquette: str = "", objet: str = "personne") -> list[dict]:
     """Cherche dans l'arbre local (nom/prénom normalisés, variantes, ±2 ans). etiquette : seulement les personnes
     portant cette étiquette (nom exact, sensible à la casse), seule ou avec les autres critères. Chaque résultat
-    donne ses étiquettes."""
+    donne ses étiquettes. objet="source" : les sources au lieu des personnes (texte : extrait du titre ou de
+    l'auteur), par exemple les billets du blog de Gramps Web avec etiquette="Blog"."""
     t = app().tree()
+    if objet == "source":
+        return _recherche_sources(t, texte or nom, etiquette, limite)
+    if objet != "personne":
+        return [{"erreur": f"objet {objet!r} : personne (défaut) ou source"}]
     out = []
     q = {"nom": nom, "prenoms": prenom, "naissance": {"date": ne_vers}}
     if texte and not (nom or prenom):
@@ -1131,6 +1137,20 @@ def arbre_recherche(texte: str = "", nom: str = "", prenom: str = "", ne_vers: s
                     "naissance": prof["naissance"], "deces": prof["deces"], "score": res["score"],
                     "etiquettes": list(t.personnes[pid].tags)})
     out.sort(key=lambda r: -r["score"])
+    return out[:limite]
+
+
+def _recherche_sources(t, texte: str, etiquette: str, limite: int) -> list[dict]:
+    """Sources (titre, auteur, étiquettes, confidentialité, médias dans l'ordre) ; billets du blog signalés (#261)."""
+    pli = texte.casefold().strip()
+    out = []
+    for sid, s in sorted(t.sources.items(), key=lambda kv: (len(kv[0]), kv[0])):
+        if etiquette and etiquette not in s.tags:
+            continue
+        if pli and pli not in f"{s.titre} {s.auteur}".casefold():
+            continue
+        out.append({"id": sid, "titre": s.titre, "auteur": s.auteur, "prive": s.prive, "etiquettes": list(s.tags),
+                    "medias": list(s.medias), "billet": est_billet(s)})
     return out[:limite]
 
 
@@ -1318,13 +1338,15 @@ def arbre_proposer(operations: list[dict], titre: str, justification: str, sourc
     jeton. Opérations : ajouter_personne, modifier_personne, supprimer_personne, ajouter_nom, ajouter_evenement,
     modifier_evenement, supprimer_evenement, ajouter_famille, lier_enfant, delier_enfant, lier_conjoint,
     ajouter_source, modifier_source, supprimer_source, fusionner_sources, ajouter_depot, ajouter_citation,
-    supprimer_citation, ajouter_media, modifier_media, ajouter_association,
+    supprimer_citation, ajouter_media, modifier_media, ajouter_billet (blog de Gramps Web), ajouter_association,
     supprimer_association, fusionner_personnes, scinder_personne, definir_statut, marquer_vivant, etiqueter.
     Étiquettes : tags (ajout) sur les ajouts et modifications, tags_retrait sur les modifications, etiqueter
     pour tout objet existant (famille, dépôt, note, citation…).
     Texte des notes : brut par défaut ; format_texte="markdown" sur l'opération pour **gras**, *italique* et
     [liens](https://…) (mise en forme écrite dans Gramps Web en mode gramps, annoncée comme perdue en mode fichier).
-    Règle de métier : tout événement ou filiation exige une citation, sauf non_source=true + motif.
+    Billet du blog (ajouter_billet, ou source étiquetée Blog) : privé par défaut ; public refusé s'il nomme une
+    personne présumée vivante. Règle de métier : tout événement ou filiation exige une citation, sauf
+    non_source=true + motif.
     Citation : préciser 'consultation' (original | image | transcription | index | non_vu). Référencer un objet créé dans la même proposition par
     "$ref". Voir docs/operations.md."""
     try:
@@ -1514,7 +1536,7 @@ def propositions_deposer(operations: list[dict], titre: str, justification: str,
     def valider() -> dict:
         tree = a.tree()
         ctx = prepare(tree, operations, titre, justification, sources, a.config.exiger_source,
-                      a.config.media_reference)[0]
+                      a.config.media_reference, a.backend.name)[0]
         if write_gedcom(ctx.tree) == write_gedcom(tree):
             raise ProposalError("La proposition ne modifie rien.")
         return {"ctx": ctx, "tree": tree}

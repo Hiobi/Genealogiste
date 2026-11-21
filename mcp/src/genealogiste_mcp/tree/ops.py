@@ -11,7 +11,7 @@ import re
 from datetime import date
 from pathlib import PurePosixPath
 
-from .. import ark, etiquettes
+from .. import ark, billets, etiquettes
 from ..models import (
     CONSULTATIONS,
     EVENT_LABELS,
@@ -43,8 +43,9 @@ class OpError(ValueError):
 
 
 class Ctx:
-    def __init__(self, tree: Tree, exiger_source: bool = True, media=None):
+    def __init__(self, tree: Tree, exiger_source: bool = True, media=None, backend: str = ""):
         self.tree = tree
+        self.backend = backend  # « fichier » | « gramps » | "" (inconnu : tests, validation à sec)
         self.exiger_source = exiger_source
         self.media = media  # fichier -> référence normalisée (Config.media_reference) ; None : pas de contrôle
         self.refs: dict[str, str] = {}
@@ -469,6 +470,51 @@ def op_ajouter_source(ctx: Ctx, o: dict) -> None:
     ctx.sources_cited.add(sid)
     ctx.summary.append(f"Source {sid} : {s.titre}" + (f" (cote {s.cote})" if s.cote else ""))
     _etiqueter(ctx, s, o, sid, creation=True)
+    if billets.est_billet(s) and "prive" not in o:  # #261 : billet créé par le plugin, jamais public par défaut
+        s.prive = True
+
+
+BILLET_CHAMPS = ("op", "ref", "titre", "auteur", "texte", "medias", "prive", "tags")
+
+
+def op_ajouter_billet(ctx: Ctx, o: dict) -> None:
+    """Billet du blog de Gramps Web (#261) : source étiquetée Blog (titre, auteur), corps en première note,
+    médias dans l'ordre donné (le premier sert d'aperçu), privé sauf « prive: false »."""
+    if ctx.backend == "fichier":
+        raise OpError("le blog est une page de Gramps Web : billet refusé en backend fichier (GEDCOM). Passer en "
+                      "GENEALOGISTE_BACKEND=gramps, ou créer une simple source étiquetée (ajouter_source, "
+                      "tags: [\"Blog\"]), sans effet hors de Gramps Web")
+    inconnus = sorted(set(o) - set(BILLET_CHAMPS))
+    if inconnus:
+        raise OpError(f"champs inconnus {inconnus} (acceptés : {', '.join(BILLET_CHAMPS[2:])})")
+    titre, texte = o.get("titre"), o.get("texte")
+    if not isinstance(titre, str) or not titre.strip():
+        raise OpError("titre requis (titre de la source, titre du billet)")
+    if not isinstance(texte, str) or not texte.strip():
+        raise OpError("texte requis (corps du billet : première note de la source)")
+    prive = o.get("prive", True)
+    if not isinstance(prive, bool):
+        raise OpError("prive : true (défaut) ou false")
+    medias = o.get("medias") or []
+    if not isinstance(medias, list):
+        raise OpError("medias : liste d'identifiants O… ou de $ref d'ajouter_media (le premier sert d'aperçu)")
+    ids = []
+    for m in medias:
+        mid = ctx.r(m)
+        if mid not in ctx.tree.medias:
+            raise OpError(f"média inconnu : {m}")
+        if mid in ids:
+            raise OpError(f"média {mid} donné deux fois")
+        ids.append(mid)
+    sid = ctx.tree.next_id("sources")
+    s = Source(id=sid, titre=titre, auteur=o.get("auteur") or "", note=texte, prive=prive, medias=ids)
+    ctx.tree.sources[sid] = s
+    if o.get("ref"):
+        ctx.refs[o["ref"]] = sid
+    images = (f" ; aperçu {ids[0]}" + (f", galerie {', '.join(ids)}" if len(ids) > 1 else "")) if ids \
+        else " ; sans image"
+    ctx.summary.append(f"Billet {sid} : {titre}" + (f", par {s.auteur}" if s.auteur else "") + images)
+    _etiqueter(ctx, s, {"tags": [billets.BLOG, *_noms_etiquettes(o.get("tags"), "tags")]}, sid, creation=True)
 
 
 def op_modifier_source(ctx: Ctx, o: dict) -> None:
@@ -1199,10 +1245,10 @@ def _markdown(ctx: Ctx, o: dict) -> dict:
     return walk(o)
 
 
-def apply_ops(tree: Tree, ops: list[dict], exiger_source: bool = True, media=None) -> Ctx:
+def apply_ops(tree: Tree, ops: list[dict], exiger_source: bool = True, media=None, backend: str = "") -> Ctx:
     """Applique les opérations sur une COPIE de l'arbre ; lève OpError si l'une échoue. media : résolution des
-    fichiers d'ajouter_media (Config.media_reference)."""
-    ctx = Ctx(copy.deepcopy(tree), exiger_source, media)
+    fichiers d'ajouter_media (Config.media_reference) ; backend : « fichier » ou « gramps » (billets, #261)."""
+    ctx = Ctx(copy.deepcopy(tree), exiger_source, media, backend)
     for i, o in enumerate(ops, 1):
         name = o.get("op")
         if name not in OPS:
@@ -1219,4 +1265,9 @@ def apply_ops(tree: Tree, ops: list[dict], exiger_source: bool = True, media=Non
     problems = introduced(tree, ctx.tree)
     if problems:
         raise OpError("Proposition refusée, elle romprait l'intégrité de l'arbre : " + " ; ".join(problems[:10]))
+    refus, avis, resume = billets.controler(tree, ctx.tree)  # #261 : billets créés ou modifiés
+    if refus:
+        raise OpError(" ; ".join(refus))
+    ctx.summary += resume
+    ctx.warnings += avis
     return ctx

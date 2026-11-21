@@ -293,7 +293,7 @@ class GrampsBackend:
         db = self.snapshot(fresh=True)
         tree = self.load()
         ctx, token, message = prepare(tree, operations, titre, justification, sources, self.exiger_source,
-                                      self.media)
+                                      self.media, self.name)
         only = touched_keys(tree, ctx.tree) if self.notes_auto == "modifies" and not all_notes else None
         avis: list[str] = []
         new = tree_to_gramps(ctx.tree, base=db, strict=self.strict, generated=self.notes_auto != "false", only=only,
@@ -503,6 +503,12 @@ class GrampsBackend:
                     if todo:
                         out["medias"] = media_upload(self.client, todo)
                         self._reload_media(todo)
+                        # état après envoi (somme et chemin attribués par le serveur) : l'annulation le compare à
+                        # l'état courant au lieu de celui de la transaction (#261 : billet avec image annulable)
+                        envoyes = {t["handle"]: self.db.get("Media", t["handle"]) for t in todo
+                                   if self.db.get("Media", t["handle"]) is not None}
+                        if envoyes:
+                            self._log({"id": token, "medias_apres_envoi": envoyes})
                     etapes["medias"] = "ok"
                 except Exception as exc:  # noqa: BLE001
                     etapes["medias"] = f"échec : {exc}"
@@ -586,7 +592,10 @@ class GrampsBackend:
         db = self.snapshot(fresh=True)
         title = entry["message"].splitlines()[0] if entry.get("message") else reference
         message = f"Annulation : {title}\n\nAnnulation de la transaction {reference}"
-        token = self.tokens.create({"type": "annulation", "annule": reference, "items": entry["items"],
+        envoyes = entry.get("medias_apres_envoi") or {}
+        items = [{**i, "new": envoyes[i["handle"]]} if i["_class"] == "Media" and i.get("new") is not None
+                 and i["handle"] in envoyes else i for i in entry["items"]]
+        token = self.tokens.create({"type": "annulation", "annule": reference, "items": items,
                                     "message": message, "resume": [f"Annulation de {reference} : {title}"]})
         inverse = self._preview(entry["items"])
         rev = {"add": "delete", "delete": "add"}

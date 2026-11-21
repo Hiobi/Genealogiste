@@ -265,7 +265,7 @@ def base_etiquetee(tree):
     db.get("Event", eh)["tag_list"] = ["tagverif", *db.get("Event", eh)["tag_list"]]  # + statut de preuve
     ch = db.get("Event", eh)["citation_list"][0]
     db.get("Citation", ch)["tag_list"] = ["tagtodo"]
-    _par_id(db, "Source", "S1")["tag_list"] = ["tagblog"]
+    _par_id(db, "Source", "S4")["tag_list"] = ["tagblog"]  # S4 composite : billet sans effet sur la preuve (#261)
     _par_id(db, "Repository", "R1")["tag_list"] = ["tagverif"]
     _par_id(db, "Media", "O1")["tag_list"] = ["tagtodo", "tagblog"]
     _par_id(db, "Note", "N1")["tag_list"] = ["tagtodo"]
@@ -279,7 +279,7 @@ def test_etiquettes_lues_sur_toutes_les_classes(tree):
     assert t.familles["F1"].tags == ["Blog"]
     naissance = t.personnes["I1"].evenements[0]
     assert naissance.tags == ["À vérifier"] and naissance.citations[0].tags == ["ToDo"]
-    assert t.sources["S1"].tags == ["Blog"] and t.depots["R1"].tags == ["À vérifier"]
+    assert t.sources["S4"].tags == ["Blog"] and t.depots["R1"].tags == ["À vérifier"]
     assert t.medias["O1"].tags == ["ToDo", "Blog"] and t.notes_tags == {"N1": ["ToDo"]}
     assert t.personnes["I2"].tags == [] and t.sources["S2"].tags == []
 
