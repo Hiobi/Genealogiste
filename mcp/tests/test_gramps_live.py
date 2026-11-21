@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 
 import pytest
 
@@ -182,7 +183,8 @@ def _app_gramps(tmp_path, user, password):
     from genealogiste_mcp.config import Config
     cfg = Config(data_dir=tmp_path / "donnees", cache_path=tmp_path / "cache.sqlite", backend="gramps",
                  gramps_url=URL, gramps_user=user, gramps_password=password, gramps_ttl=0)
-    return server.App(cfg, sleeper=lambda s: None)
+    # vraie pause : /token/ est limité à 1 requête par seconde et par adresse, tous comptes confondus
+    return server.App(cfg, sleeper=time.sleep)
 
 
 def test_diagnostic_sur_le_vrai_gramps_web(tmp_path):
@@ -215,7 +217,8 @@ def test_compte_sans_droit_d_ecriture(compte, role, nom, tmp_path):
     from genealogiste_mcp.gramps.client import GrampsError
     a = _app_gramps(tmp_path, compte, compte)
     r = next(c for c in diagnostic.controles_gramps(a) if c["controle"] == "gramps_role")
-    assert (r["etat"], r["role"], r["role_nom"]) == ("erreur", role, nom) and "Editor" in r["remede"]
+    assert (r["etat"], r.get("role"), r.get("role_nom")) == ("erreur", role, nom), r
+    assert "Editor" in r["remede"]
     c = a.gramps()
     assert c.role() == role and "EditObject" not in (c.permissions() or set())
     with pytest.raises(GrampsError, match="Editor"):
