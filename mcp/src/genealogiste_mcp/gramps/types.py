@@ -17,7 +17,17 @@ from __future__ import annotations
 import copy
 from typing import Any
 
-from ..normalize.dates import GenDate, parse_gedcom_date
+from ..normalize.calendriers import SDN, YMD
+from ..normalize.dates import (
+    CALENDRIERS,
+    MONTHS,
+    DatePoint,
+    GenDate,
+    analyser_gedcom,
+    coupure,
+    nouvel_an_texte,
+    parse_gedcom_date,
+)
 
 TYPES: dict[str, tuple[int, int, dict[str, int]]] = {
     'EventType': (0, 12, {'Unknown': -1,
@@ -332,76 +342,228 @@ def event_ref(handle: str, role: str, attributes: list[dict] | None = None,
 
 
 # ---------------------------------------------------------------------------- dates
+#
+# Correspondance unique date GEDCOM 7 (modèle) <-> Date Gramps (#272), utilisée par le mapping Gramps Web, l'import
+# et l'export Gramps XML. Table complète : docs/gramps-web.md, « Dates ». Ce que GEDCOM 7 n'exprime pas (calendriers
+# persan, islamique, suédois ; double datation ; nouvel an ; qualité combinée à un qualificatif ; année ou mois
+# inconnus) s'écrit avec les extensions de docs/gedcom-extensions.md, « Dates Gramps », relues à l'identique.
 
-CALENDARS = {"GREGORIAN": 0, "JULIAN": 1, "FRENCH_R": 3}
+CALENDARS = {nom: i for i, nom in enumerate(CALENDRIERS)}
 CAL_NAMES = {v: k for k, v in CALENDARS.items()}
 MODIFIERS = {None: 0, "BEF": 1, "AFT": 2, "ABT": 3, "BET": 4, "FROMTO": 5, "FROM": 7, "TO": 8}
 MOD_NAMES = {v: k for k, v in MODIFIERS.items()}
 QUALITIES = {"EST": 1, "CAL": 2}
+QUAL_NAMES = {v: k for k, v in QUALITIES.items()}
 MOD_TEXTONLY = 6
+MOD_COMPOSES = (4, 5)
+CAL_NOUVEL_AN = (0, 1, 6)  # calendriers dont Gramps admet un nouvel an décalé (calendar_has_fixed_newyear)
 
 
-def _point(p) -> list:
-    return [p.day or 0, p.month or 0, p.year, False]
+def _val(d: dict) -> list:
+    val = list(d.get("dateval") or [0, 0, 0, False])
+    return val + [0, 0, 0, False] * ((8 - len(val)) // 4)
+
+
+def _ny(ny: Any) -> Any:
+    """Nouvel an comparable : code entier, ou [mois, jour]."""
+    if isinstance(ny, (list, tuple)):
+        return list(ny) if tuple(ny) != (0, 0) else 0
+    return ny or 0
+
+
+def valeur_tri(d: dict) -> int:
+    """``Date.sortval`` comme Gramps (``_calc_sort_value``, ``_adjust_newyear``) : jour julien du premier point
+    (année 0 -> 1, mois et jour 0 -> 1) dans le calendrier de la date, année diminuée d'un si le nouvel an tombe
+    avant le mois et le jour ; 0 pour une date vide ou textuelle."""
+    if d.get("modifier") == MOD_TEXTONLY:
+        return 0
+    jour, mois, an = _val(d)[:3]
+    if an == mois == jour == 0:
+        return 0
+    sdn = SDN[d.get("calendar", 0)]
+    c = coupure(d.get("newyear") or 0)
+    if c and (mois, jour) >= c:
+        an -= 1
+    return sdn(an if an != 0 else 1, max(mois, 1), max(jour, 1))
+
+
+def date_acceptee(d: dict) -> bool:
+    """La date passe le contrôle de ``Date.set`` de Gramps (sinon DateError : Gramps en fait une date textuelle à
+    l'import XML) : constantes connues, nouvel an admis par le calendrier, et chaque point retrouvé à l'identique
+    après conversion par son numéro de jour (jour ou mois 0 admis pour 1, année 0 pour 1)."""
+    mod, cal = d.get("modifier", 0), d.get("calendar", 0)
+    if mod == MOD_TEXTONLY:
+        return True
+    if mod not in MOD_NAMES or d.get("quality", 0) not in (0, 1, 2) or cal not in CAL_NAMES:
+        return False
+    ny = _ny(d.get("newyear"))
+    if ny and cal not in CAL_NOUVEL_AN:
+        return False
+    val = _val(d)
+    delta = -1 if valeur_tri(d) != valeur_tri({**d, "newyear": 0}) else 0
+    points = [(valeur_tri(d), val[:3])]
+    if mod in MOD_COMPOSES:
+        j, m, a = val[4:7]
+        points.append((SDN[cal](a if a != 0 else 1, max(m, 1), max(j, 1)), val[4:7]))
+    for sdn, (jour, mois, an) in points:
+        ry, rm, rd = YMD[cal](sdn)
+        for adj, orig in ((rd, jour), (rm, mois)):
+            if adj != orig and not (orig == 0 and adj == 1):
+                return False
+        if ry - delta != an and not (an == 0 and ry - delta == 1):
+            return False
+    return True
+
+
+def _ambigu(t: str) -> bool:
+    """Le texte d'une date textuelle serait relu autrement (date vide, date analysable, espaces de bord) :
+    il s'écrit alors entre parenthèses."""
+    return (t == "" or t != t.strip() or analyser_gedcom(t) is not None
+            or (t.startswith("(") and t.endswith(")") and _ambigu(t[1:-1])))
+
+
+def texte_vers_gedcom(t: str) -> str:
+    """Texte d'une date textuelle de Gramps -> date du modèle (entre parenthèses seulement si nécessaire)."""
+    return f"({t})" if _ambigu(t) else t
+
+
+def texte_seul(value: str) -> str | None:
+    """Date du modèle écrite comme texte de Gramps entre parenthèses -> ce texte ; None sinon."""
+    if value.startswith("(") and value.endswith(")") and _ambigu(value[1:-1]):
+        return value[1:-1]
+    return None
+
+
+def _champs(g: GenDate) -> dict | None:
+    """Date analysée -> champs Gramps (calendrier, modificateur, qualité, valeur, nouvel an), ou None si Gramps
+    ne la représente pas (deux calendriers dans un intervalle, nouvel an dans un calendrier qui l'interdit)."""
+    if g is None or g.start.calendar not in CALENDARS or (g.end and g.end.calendar != g.start.calendar):
+        return None
+    cal, q = CALENDARS[g.start.calendar], g.qualifier
+    if g.newyear and cal not in CAL_NOUVEL_AN:
+        return None
+
+    def pt(p) -> list:
+        return [p.day or 0, p.month or 0, p.year, p.dual]
+    out = {"calendar": cal, "modifier": MODIFIERS[q] if q not in QUALITIES else 0,
+           "quality": QUALITIES.get(g.quality or (q if q in QUALITIES else None), 0),
+           "dateval": pt(g.start) + (pt(g.end) if q in ("BET", "FROMTO") else []),
+           "newyear": list(g.newyear) if isinstance(g.newyear, tuple) else g.newyear}
+    if out["dateval"][3] and cal != 1:  # Date.set : une date à double datation passe en julien
+        out["calendar"] = 1
+    return out
+
+
+def gramps_vers_gedcom(d: dict) -> str | None:
+    """Champs d'une date Gramps (non textuelle) -> date du modèle, forme canonique ; None si un champ est hors des
+    valeurs de Gramps."""
+    cal, mod, qual = CAL_NAMES.get(d.get("calendar", 0)), d.get("modifier", 0), d.get("quality", 0)
+    if cal is None or mod not in MOD_NAMES or qual not in (0, 1, 2):
+        return None
+    val = _val(d)
+    mois = MONTHS[cal]
+
+    def pt(jour, m, an, slash) -> DatePoint:
+        if not (0 <= m <= len(mois) and 0 <= jour <= 31):
+            raise ValueError
+        return DatePoint(cal, an, m or None, jour or None, bool(slash) and bool(an))
+    try:
+        start = pt(*val[:4])
+        end = pt(*val[4:8]) if mod in MOD_COMPOSES else None
+    except ValueError:
+        return None
+    q, quality = MOD_NAMES[mod], QUAL_NAMES.get(qual)
+    if q is None and quality:
+        q, quality = quality, None
+    ny = d.get("newyear") or 0
+    ny = tuple(ny) if isinstance(ny, (list, tuple)) else ny
+    return GenDate("", q, start, end, quality=quality, newyear=ny if coupure(ny) else 0).gedcom(7)
 
 
 def date_to_gramps(value: str) -> dict:
-    """Date GEDCOM 7 -> Date Gramps. La chaîne GEDCOM est conservée dans ``text`` pour l'aller-retour."""
+    """Date du modèle (GEDCOM 7 et extensions) -> Date Gramps. ``text`` ne garde la chaîne que si elle n'est pas la
+    forme canonique des champs (orthographe d'origine, phrase) ; une date que Gramps refuserait devient textuelle."""
     d = blank_date()
     if not value:
         return d
-    g = parse_gedcom_date(value)
-    if not g or g.start.calendar not in CALENDARS or (g.end and g.end.calendar != g.start.calendar):
+    texte = texte_seul(value)
+    if texte is not None:
+        d.update(modifier=MOD_TEXTONLY, text=texte)
+        return d
+    champs = _champs(analyser_gedcom(value))
+    vide = champs is not None and not any(_val(champs)[:3]) and not any(_val(champs)[4:7])
+    if champs is None or not (vide or date_acceptee(champs)):
         d.update(modifier=MOD_TEXTONLY, text=value)
         return d
-    q = g.qualifier
-    d["calendar"] = CALENDARS[g.start.calendar]
-    d["modifier"] = MODIFIERS.get(q, 0) if q not in QUALITIES else 0
-    d["quality"] = QUALITIES.get(q, 0)
-    d["dateval"] = _point(g.start) + (_point(g.end) if q in ("BET", "FROMTO") and g.end else [])
-    d["text"] = value
-    d["sortval"] = g.start.bounds()[0]
+    d.update(champs)
+    d["sortval"] = valeur_tri(d)
+    d["text"] = "" if gramps_vers_gedcom(d) == value else value
     return d
 
 
-def _same(g: GenDate, d: dict) -> bool:
-    ref = date_to_gramps(g.original)
-    return all(ref[k] == d.get(k) for k in ("calendar", "modifier", "quality", "dateval"))
+def _memes_champs(a: dict, b: dict) -> bool:
+    return (all(a.get(k, 0) == b.get(k, 0) for k in ("calendar", "modifier", "quality"))
+            and _val(a)[:8 if a.get("modifier") in MOD_COMPOSES else 4]
+            == _val(b)[:8 if b.get("modifier") in MOD_COMPOSES else 4]
+            and _ny(a.get("newyear")) == _ny(b.get("newyear")))
 
 
 def date_from_gramps(d: dict | None) -> str:
-    """Date Gramps -> date GEDCOM 7 (texte conservé tel quel s'il correspond encore à la date)."""
+    """Date Gramps -> date du modèle : texte gardé tel quel s'il correspond encore exactement aux champs, sinon
+    forme canonique (extensions comprises) ; date textuelle : son texte, entre parenthèses s'il ressemble à une
+    date."""
     if not d:
         return ""
     text = d.get("text") or ""
     mod = d.get("modifier", 0)
-    val = list(d.get("dateval") or [0, 0, 0, False])
     if mod == MOD_TEXTONLY:
-        return text
-    if not any(val[:3]):
-        return text if text and not parse_gedcom_date(text) else ""
+        return texte_vers_gedcom(text)
+    val = _val(d)
+    if not any(val[:3]) and not any(val[4:7]) and not (d.get("calendar") or mod or d.get("quality")
+                                                       or _ny(d.get("newyear"))):
+        return text if text and not parse_gedcom_date(text) and texte_seul(text) is None else ""
     if text:
-        g = parse_gedcom_date(text)
-        if g and _same(g, d):
+        champs = _champs(analyser_gedcom(text))
+        if champs is not None and _memes_champs(champs, d):
             return text
-    cal = CAL_NAMES.get(d.get("calendar", 0))
-    if cal is None:  # calendrier non géré (hébreu, persan…) : texte de Gramps
-        return text
-    from ..normalize.dates import DatePoint
+    s = gramps_vers_gedcom(d)
+    return text if s is None else s
 
-    def pt(day, month, year):
-        return DatePoint(cal, year, month or None, day or None)
 
-    try:
-        start = pt(*val[:3])
-        start.bounds()
-        q = MOD_NAMES.get(mod)
-        if d.get("quality") in (1, 2) and q is None:
-            q = "EST" if d["quality"] == 1 else "CAL"
-        end = pt(*val[4:7]) if q in ("BET", "FROMTO") and len(val) >= 7 else None
-        return GenDate("", q, start, end).gedcom(7)
-    except (ValueError, IndexError):
-        return text
+def date_reprise(d: dict) -> bool:
+    """La date Gramps revient à l'identique après passage par le modèle, pour tout ce que le Gramps XML porte
+    (calendrier, modificateur, qualité, valeur et double datation, nouvel an ; texte d'une date textuelle)."""
+    r = date_to_gramps(date_from_gramps(d))
+    if d.get("modifier") == MOD_TEXTONLY or r.get("modifier") == MOD_TEXTONLY:
+        return r.get("modifier") == d.get("modifier") and (r.get("text") or "") == (d.get("text") or "")
+    return _memes_champs(r, d)
+
+
+def affichage_gramps(d: dict) -> str:
+    """Affichage de Gramps (langue anglaise, format ISO par défaut : ``DateDisplay.display_formatted``)."""
+    mod = d.get("modifier", 0)
+    if mod == MOD_TEXTONLY:
+        return d.get("text") or ""
+    val = _val(d)
+    if not any(val[:3]):
+        return ""
+
+    def iso(jour, mois, an, slash) -> str:
+        y = abs(an)
+        if slash:
+            y = f"{y - 1}/{y % (1000 if (y - 1) % 100 == 99 else 100 if (y - 1) % 10 == 9 else 10)}"
+        s = str(y) if not (jour or mois) else f"{y}-{mois:02d}" if not jour else f"{y}-{mois:02d}-{jour:02d}"
+        return f"{s} B.C.E." if an < 0 else s
+    qual = ("", "estimated ", "calculated ")[d.get("quality", 0)]
+    extras = [x for x in (("", "Julian", "Hebrew", "French Republican", "Persian", "Islamic", "Swedish")
+                          [d.get("calendar", 0)], nouvel_an_texte(_ny(d.get("newyear")))) if x]
+    scal = f" ({', '.join(extras)})" if extras else ""
+    if mod == 5:
+        return f"{qual}from {iso(*val[:4])} to {iso(*val[4:8])}{scal}"
+    if mod == 4:
+        return f"{qual}between {iso(*val[:4])} and {iso(*val[4:8])}{scal}"
+    prefixe = {1: "before ", 2: "after ", 3: "about ", 7: "from ", 8: "to "}.get(mod, "")
+    return f"{qual}{prefixe}{iso(*val[:4])}{scal}"
 
 
 # ---------------------------------------------------------------------------- format simplifié -> brut

@@ -28,7 +28,7 @@ from ..models import (
     Tree,
     new_uid,
 )
-from ..normalize.dates import parse_gedcom_date
+from ..normalize.dates import analyser_gedcom, parse_gedcom_date
 from .core import Node, parse_lines, serialize, strip_xref
 
 EXT_DOC = "https://github.com/Hiobi/Genealogiste/blob/main/docs/gedcom-extensions.md"
@@ -138,13 +138,21 @@ class _Reader:
         self.inline: dict[str, str] = {}
 
     # -- utilitaires --------------------------------------------------------
-    def date(self, value: str) -> str:
-        if not value:
+    def date(self, n: Node | None) -> str:
+        """DATE -> date du modèle. GEDCOM 7 : valeur telle quelle, PHRASE en suffixe « (phrase) » ; 5.5.1 : forme
+        GEDCOM 7 (calendriers, double datation 1721/22, B.C. -> BCE, phrase d'une date INT gardée)."""
+        if n is None:
             return ""
+        value = n.value
         if self.version >= 7:
+            phrase = n.val("PHRASE")
+            if phrase:
+                return f"{value} ({phrase})" if value else f"({phrase})"
             return value
-        g = parse_gedcom_date(value)
-        return g.gedcom(7) if g else value
+        g = parse_gedcom_date(value) if value else None
+        if not g:
+            return value
+        return g.gedcom(7) + (f" ({g.phrase})" if g.phrase else "")
 
     def inline_source(self, text: str) -> str:
         """SOUR sans pointeur (5.5.1 « SOUR texte ») -> enregistrement source créé une fois."""
@@ -253,7 +261,7 @@ class _Reader:
             elif c.tag not in known and _not_private(c) and _non_etiquette(c):
                 extra.append(c.to_dict())
         return Event(
-            type=n.tag, date=self.date(n.val("DATE")), lieu=self.place(n.first("PLAC")),
+            type=n.tag, date=self.date(n.first("DATE")), lieu=self.place(n.first("PLAC")),
             valeur=n.value if n.value != "Y" else "", type_detail=n.val("TYPE"), age=n.val("AGE"),
             cause=n.val("CAUS"), note="\n".join(x.value for x in n.all("NOTE")),
             citations=[self.citation(c) for c in n.all("SOUR")], associations=assos,
@@ -490,10 +498,15 @@ def _w_statut(parent: Node, a: Assertion | None) -> None:
 
 
 def _w_date(value: str, version: int) -> str:
+    """Date du modèle -> DATE. 5.5.1 : échappements de calendrier, B.C., phrase d'une date simple en ``INT``."""
     if version >= 7 or not value:
         return value
-    g = parse_gedcom_date(value)
-    return g.gedcom(5) if g else value
+    g = analyser_gedcom(value)  # forme seule : une date que Gramps admet (année inconnue…) garde ses échappements
+    if not g:
+        return value
+    if g.phrase and g.qualifier is None and not g.quality:
+        return f"INT {g.gedcom(5)} ({g.phrase})"
+    return g.gedcom(5) + (f" ({g.phrase})" if g.phrase else "")
 
 
 def _w_association(parent: Node, a: Association, version: int, level: int) -> str | None:

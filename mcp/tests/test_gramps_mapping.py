@@ -101,7 +101,8 @@ def test_ids_uid_and_generated_notes(tree):
     assert research and all(tname(n["type"]) in ("Research", "Source Note") for n in research)
     birth = db.get("Event", next(r["ref"] for r in jean["event_ref_list"]
                                  if tname(db.get("Event", r["ref"])["type"]) == "Birth"))
-    assert birth["date"]["dateval"] == [12, 3, 1820, False] and birth["date"]["text"] == "12 MAR 1820"
+    # forme canonique : text vide, comme une date lue en Gramps XML (#272)
+    assert birth["date"]["dateval"] == [12, 3, 1820, False] and birth["date"]["text"] == ""
 
 
 def test_named_and_linked_witnesses_round_trip(tree):

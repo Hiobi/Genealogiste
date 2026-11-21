@@ -252,7 +252,7 @@ def test_dates():
     assert '<dateval val="1700-03-03" quality="calculated" cformat="Julian" dualdated="1" newyear="Mar25"/>' in xml
     assert '<dateval val="1750-07-14" type="about" quality="estimated"/>' in xml
     assert '<dateval val="1790-??-05"/>' in xml                       # jour gardé quand le mois est inconnu
-    assert '<datespan start="" stop="1720" cformat="Julian" newyear="Mar1"/>' in xml  # début vide
+    assert '<datespan start="1720" stop="" cformat="Julian" newyear="Mar1"/>' in xml  # fin vide
     assert '<dateval val="1760" type="from"/>' in xml
     assert '<dateval val="1770-01" type="to" newyear="3-25"/>' in xml
     assert '<daterange start="1790-01-01" stop="1791-12-31" quality="calculated"/>' in xml

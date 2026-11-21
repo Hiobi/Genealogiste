@@ -48,6 +48,22 @@ communs avec Gramps 5.2 et lus par 5.2, 6.0 et 6.1 : citations de référence d'
 modificateurs `from`/`to`. Les styles de note `strikethrough` et `subscript` de Gramps 6 sont écrits comme Gramps
 le fait, hors de toute DTD publiée.
 
+### Dates et Gramps 5.2
+
+Correspondance complète des dates : [Gramps Web](gramps-web.md#dates-272). Pour Gramps 5.2 (cible de 1.7.1),
+vérifié avec la bibliothèque 5.2.4 sur les 1 220 formes de date écrites en XML de l'inventaire
+(`mcp/tests/dates_gramps.py`, cas `dates` du banc) :
+
+- `from` / `to` seuls (`<dateval type="from|to">`) : **aucun repli**, écrits tels quels. Gramps 5.2 les lit et les
+  réécrit à l'identique (`MOD_FROM` / `MOD_TO` existent depuis 5.2) ; seules les DTD et RNG de 5.2 et 6.0 ne les
+  listent pas (ajoutés par 6.1, sans changement de version XML). C'est le seul écart de schéma admis par le banc.
+- année négative dans une plage ou un intervalle (`<daterange start="-0120" …>`) : l'import de 5.2 ne la lit pas
+  et en fait une date textuelle portant l'élément XML (corrigé en 6.0). L'export 1.7.1 le **signale**
+  (`avertissements_dates` du résultat d'`arbre_exporter`) ; Gramps 6.0 et 6.1 la lisent.
+- `<dateval val="">` fait échouer l'import de 5.2 : **jamais écrit** (une date sans valeur n'est pas écrite,
+  comme chez Gramps).
+- date textuelle au texte vide : lue, mais absente du réexport de 5.2.
+
 ### Contenu écrit
 
 Le XML est produit depuis les objets Gramps du module de correspondance unique (`gramps/mapping.py`) et en écrit
@@ -143,8 +159,11 @@ compteur, pas un diff : une valeur gardée sous une autre forme (hiérarchie de 
 texte stylé, ordonnances LDS, attributs utilisateur (âge, profession…), suffixe, titre et nom d'usage,
 patronymes multiples, rectangles des références de médias, notes privées, plusieurs dépôts d'une source, et
 les métadonnées (chercheur, dossier des médias, personne de référence, formats de noms, signets,
-regroupements). Leur reprise relève du lot 2 du jalon M6 (#272, #273, #277, #279) ; les étiquettes des autres
-objets sont reprises depuis #262.
+regroupements). Leur reprise relève du lot 2 du jalon M6 (#273, #277, #279) ; les étiquettes des autres
+objets sont reprises depuis #262. Dates d'événement (#272) : toutes les formes de Gramps sont reprises à
+l'identique ; une forme qui ne le serait pas (double datation sur un point sans année) est comptée sous
+`Event.date[forme non reprise]`. Comme l'import de Gramps, une date que `Date.set` refuse (30 février, plage au
+début vide…) devient une date textuelle portant l'élément XML, et une date à double datation passe en julien.
 
 ### Aller-retour sans perte
 
@@ -207,6 +226,17 @@ Workflow `Intégration Gramps`, un job `Gramps Desktop <version>` par version (v
     empreinte SHA-256, jamais copiés dans le dépôt : aller-retour XML sans perte ; en 6.x, objets relus
     identiques à ceux que Gramps importe de l'original ; réécriture 1.7.1 réimportée par chaque version (5.2
     comprise, qui refuse l'original en 1.7.2) avec les mêmes objets. `--sans-exemple` pour s'en passer.
+13. dates (#272) : cas `dates`, un événement par forme de date de l'inventaire (`mcp/tests/dates_gramps.py`,
+    1 220 formes écrites en XML : 7 calendriers, tous les modificateurs et qualités, double datation, nouvel an,
+    jour sans mois, année inconnue ou négative, bout vide, dates textuelles) exporté en 1.7.1 ; chaque date
+    revient du réexport de Gramps, relue par Genealogiste, **identique**, repasse par le modèle à l'identique et
+    redonne la même date GEDCOM 7 (`controle_dates`) ; en 6.x, valeur de tri de Gramps = celle de Genealogiste.
+    Seuls écarts admis, nommés dans `ECARTS_DATES` et comptés à chaque exécution : limites du format XML (un
+    seul `dualdated` par plage ; espaces de bord d'un texte retirés par l'écriture de Gramps) et pièges de 5.2
+    (ci-dessus). Validation DTD/RNG stricte, `from`/`to` exceptés pour 5.2 et 6.0. Puis `dates:reference` : les
+    1 225 formes soumises à `Date.set` de la bibliothèque (acceptée ou refusée comme `date_acceptee`, même
+    valeur de tri, même affichage `DateDisplayEn`), et les formes que Gramps refuse (`REFUSEES`) importées par
+    Gramps comme Genealogiste les lit. `--fixtures` écrit la référence `dates-gramps-<version>.json`.
 
 Résultat du 2026-11-21 : 87 vérifications sur 87 réussies en local (GLib factice) pour 5.2, 6.0 et 6.1 :
 36 imports des formes de l'export (dont 3 refus attendus de 1.7.2 par Gramps 5.2), 33 cycles, 12 sur l'arbre fictif
@@ -259,10 +289,14 @@ environnement ; elle n'importe que la bibliothèque standard et `gramps`.
 `scripts/verifier_gramps_desktop.py` expose deux points d'extension :
 
 - `CAS` : formes de fichier remises à Gramps (`Cas(nom, description, produire, refus_attendu, enrichir,
-  avertissements_admis)`) ; `refus_attendu` liste les versions qui doivent refuser le fichier (1.7.2 dans
-  Gramps 5.2), `enrichir` ajoute à l'arbre ce que le cas exige (média du `.gpkg`) ;
-- `CONTROLES` : contrôles supplémentaires sur chaque import réussi (réexport de Gramps, médias, champs, et
-  relecture par l'import de Genealogiste, `controle_lecture`, qui prépare le cycle complet).
+  avertissements_admis, arbres, schema_admis)`) ; `refus_attendu` liste les versions qui doivent refuser le
+  fichier (1.7.2 dans Gramps 5.2), `enrichir` ajoute à l'arbre ce que le cas exige (média du `.gpkg`, formes de
+  date), `arbres` restreint le cas à certains arbres, `schema_admis` nomme l'écart de schéma admis par version ;
+- `CONTROLES` : contrôles supplémentaires sur chaque import réussi (réexport de Gramps, médias, champs,
+  relecture par l'import de Genealogiste, `controle_lecture`, qui prépare le cycle complet, et dates,
+  `controle_dates`) ;
+- `ECARTS_DATES` : écarts connus de Gramps sur les dates, par version (`*` : toutes), chacun avec la date que
+  Gramps rend réellement ; tout autre écart échoue.
 
 La sonde sait aussi construire l'arbre fictif par l'API de Gramps et l'exporter (`--generer`) ; le banc
 télécharge les arbres d'exemple épinglés (`EXEMPLE` : commit et empreintes).

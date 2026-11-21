@@ -127,10 +127,29 @@ def test_version_desktop_inconnue_refusee(desktop):
 def test_cas_desktop_de_l_export_268(desktop):
     """Formes remises à Gramps : 1.7.1, 1.7.2 (refusée par 5.2 seulement), .gramps gzip, .gpkg avec média."""
     cas = {c.nom: c for c in desktop["CAS"]}
-    assert set(cas) == {"xml-1.7.1", "xml-1.7.2", "gramps-gzip", "gpkg"}
+    assert set(cas) == {"xml-1.7.1", "xml-1.7.2", "gramps-gzip", "gpkg", "dates"}
     assert cas["xml-1.7.2"].refus_attendu == {"5.2"}
     assert all(not c.refus_attendu for n, c in cas.items() if n != "xml-1.7.2")
     assert cas["gpkg"].enrichir and cas["gpkg"].avertissements_admis
+
+
+def test_cas_dates_272(desktop):
+    """#272 : inventaire des formes de date exporté (un événement par forme), relu après réexport par chaque
+    version ; seuls écarts admis, nommés : from/to hors DTD de 5.2 et 6.0, limites du format XML, piège de 5.2."""
+    cas = {c.nom: c for c in desktop["CAS"]}["dates"]
+    assert cas.arbres == ("famille.ged",) and set(cas.schema_admis) == {"5.2", "6.0"}
+    assert desktop["controle_dates"] in desktop["CONTROLES"]
+    ecarts = desktop["ECARTS_DATES"]
+    assert set(ecarts) == {"*", "5.2"} and len(ecarts["*"]) == 2 and len(ecarts["5.2"]) == 2
+    from genealogiste_mcp.gramps.types import date_to_gramps
+
+    plage = date_to_gramps("BET 120 BCE AND 100 BCE")
+    assert desktop["date_attendue"](plage, "6.0") == plage
+    texte = desktop["date_attendue"](plage, "5.2")
+    assert texte["modifier"] == 6 and texte["text"] == '<daterange start="-120" stop="-100"/>'
+    double = date_to_gramps("BET JULIAN 1721/22 AND JULIAN 1725")
+    assert desktop["date_attendue"](double, "6.1")["dateval"][7] is True
+    assert desktop["ecarts_date"](plage, texte)
 
 
 def test_cas_desktop_produisent_des_fichiers_lisibles(desktop, tmp_path):

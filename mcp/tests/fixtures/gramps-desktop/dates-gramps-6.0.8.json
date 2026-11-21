@@ -1,0 +1,6117 @@
+{
+"c0-m0-q0-jma": [
+true,
+2396829,
+"1850-03-12"
+],
+"c0-m0-q0-ma": [
+true,
+2396818,
+"1850-03"
+],
+"c0-m0-q0-a": [
+true,
+2396759,
+"1850"
+],
+"c0-m0-q0-j-sans-mois": [
+true,
+2396770,
+"1850-00-12"
+],
+"c0-m0-q0-annee-inconnue": [
+true,
+1721496,
+"0-03-12"
+],
+"c0-m0-q0-mois-seul": [
+true,
+1721485,
+"0-03"
+],
+"c0-m0-q0-negatif": [
+true,
+1045797,
+"1850-03-12 B.C.E."
+],
+"c0-m0-q0-negatif-a": [
+true,
+1045727,
+"1850 B.C.E."
+],
+"c0-m0-q1-jma": [
+true,
+2396829,
+"estimated 1850-03-12"
+],
+"c0-m0-q1-ma": [
+true,
+2396818,
+"estimated 1850-03"
+],
+"c0-m0-q1-a": [
+true,
+2396759,
+"estimated 1850"
+],
+"c0-m0-q1-j-sans-mois": [
+true,
+2396770,
+"estimated 1850-00-12"
+],
+"c0-m0-q1-annee-inconnue": [
+true,
+1721496,
+"estimated 0-03-12"
+],
+"c0-m0-q1-mois-seul": [
+true,
+1721485,
+"estimated 0-03"
+],
+"c0-m0-q1-negatif": [
+true,
+1045797,
+"estimated 1850-03-12 B.C.E."
+],
+"c0-m0-q1-negatif-a": [
+true,
+1045727,
+"estimated 1850 B.C.E."
+],
+"c0-m0-q2-jma": [
+true,
+2396829,
+"calculated 1850-03-12"
+],
+"c0-m0-q2-ma": [
+true,
+2396818,
+"calculated 1850-03"
+],
+"c0-m0-q2-a": [
+true,
+2396759,
+"calculated 1850"
+],
+"c0-m0-q2-j-sans-mois": [
+true,
+2396770,
+"calculated 1850-00-12"
+],
+"c0-m0-q2-annee-inconnue": [
+true,
+1721496,
+"calculated 0-03-12"
+],
+"c0-m0-q2-mois-seul": [
+true,
+1721485,
+"calculated 0-03"
+],
+"c0-m0-q2-negatif": [
+true,
+1045797,
+"calculated 1850-03-12 B.C.E."
+],
+"c0-m0-q2-negatif-a": [
+true,
+1045727,
+"calculated 1850 B.C.E."
+],
+"c0-m1-q0-jma": [
+true,
+2396829,
+"before 1850-03-12"
+],
+"c0-m1-q0-ma": [
+true,
+2396818,
+"before 1850-03"
+],
+"c0-m1-q0-a": [
+true,
+2396759,
+"before 1850"
+],
+"c0-m1-q0-j-sans-mois": [
+true,
+2396770,
+"before 1850-00-12"
+],
+"c0-m1-q0-annee-inconnue": [
+true,
+1721496,
+"before 0-03-12"
+],
+"c0-m1-q0-mois-seul": [
+true,
+1721485,
+"before 0-03"
+],
+"c0-m1-q0-negatif": [
+true,
+1045797,
+"before 1850-03-12 B.C.E."
+],
+"c0-m1-q0-negatif-a": [
+true,
+1045727,
+"before 1850 B.C.E."
+],
+"c0-m1-q1-jma": [
+true,
+2396829,
+"estimated before 1850-03-12"
+],
+"c0-m1-q1-ma": [
+true,
+2396818,
+"estimated before 1850-03"
+],
+"c0-m1-q1-a": [
+true,
+2396759,
+"estimated before 1850"
+],
+"c0-m1-q1-j-sans-mois": [
+true,
+2396770,
+"estimated before 1850-00-12"
+],
+"c0-m1-q1-annee-inconnue": [
+true,
+1721496,
+"estimated before 0-03-12"
+],
+"c0-m1-q1-mois-seul": [
+true,
+1721485,
+"estimated before 0-03"
+],
+"c0-m1-q1-negatif": [
+true,
+1045797,
+"estimated before 1850-03-12 B.C.E."
+],
+"c0-m1-q1-negatif-a": [
+true,
+1045727,
+"estimated before 1850 B.C.E."
+],
+"c0-m1-q2-jma": [
+true,
+2396829,
+"calculated before 1850-03-12"
+],
+"c0-m1-q2-ma": [
+true,
+2396818,
+"calculated before 1850-03"
+],
+"c0-m1-q2-a": [
+true,
+2396759,
+"calculated before 1850"
+],
+"c0-m1-q2-j-sans-mois": [
+true,
+2396770,
+"calculated before 1850-00-12"
+],
+"c0-m1-q2-annee-inconnue": [
+true,
+1721496,
+"calculated before 0-03-12"
+],
+"c0-m1-q2-mois-seul": [
+true,
+1721485,
+"calculated before 0-03"
+],
+"c0-m1-q2-negatif": [
+true,
+1045797,
+"calculated before 1850-03-12 B.C.E."
+],
+"c0-m1-q2-negatif-a": [
+true,
+1045727,
+"calculated before 1850 B.C.E."
+],
+"c0-m2-q0-jma": [
+true,
+2396829,
+"after 1850-03-12"
+],
+"c0-m2-q0-ma": [
+true,
+2396818,
+"after 1850-03"
+],
+"c0-m2-q0-a": [
+true,
+2396759,
+"after 1850"
+],
+"c0-m2-q0-j-sans-mois": [
+true,
+2396770,
+"after 1850-00-12"
+],
+"c0-m2-q0-annee-inconnue": [
+true,
+1721496,
+"after 0-03-12"
+],
+"c0-m2-q0-mois-seul": [
+true,
+1721485,
+"after 0-03"
+],
+"c0-m2-q0-negatif": [
+true,
+1045797,
+"after 1850-03-12 B.C.E."
+],
+"c0-m2-q0-negatif-a": [
+true,
+1045727,
+"after 1850 B.C.E."
+],
+"c0-m2-q1-jma": [
+true,
+2396829,
+"estimated after 1850-03-12"
+],
+"c0-m2-q1-ma": [
+true,
+2396818,
+"estimated after 1850-03"
+],
+"c0-m2-q1-a": [
+true,
+2396759,
+"estimated after 1850"
+],
+"c0-m2-q1-j-sans-mois": [
+true,
+2396770,
+"estimated after 1850-00-12"
+],
+"c0-m2-q1-annee-inconnue": [
+true,
+1721496,
+"estimated after 0-03-12"
+],
+"c0-m2-q1-mois-seul": [
+true,
+1721485,
+"estimated after 0-03"
+],
+"c0-m2-q1-negatif": [
+true,
+1045797,
+"estimated after 1850-03-12 B.C.E."
+],
+"c0-m2-q1-negatif-a": [
+true,
+1045727,
+"estimated after 1850 B.C.E."
+],
+"c0-m2-q2-jma": [
+true,
+2396829,
+"calculated after 1850-03-12"
+],
+"c0-m2-q2-ma": [
+true,
+2396818,
+"calculated after 1850-03"
+],
+"c0-m2-q2-a": [
+true,
+2396759,
+"calculated after 1850"
+],
+"c0-m2-q2-j-sans-mois": [
+true,
+2396770,
+"calculated after 1850-00-12"
+],
+"c0-m2-q2-annee-inconnue": [
+true,
+1721496,
+"calculated after 0-03-12"
+],
+"c0-m2-q2-mois-seul": [
+true,
+1721485,
+"calculated after 0-03"
+],
+"c0-m2-q2-negatif": [
+true,
+1045797,
+"calculated after 1850-03-12 B.C.E."
+],
+"c0-m2-q2-negatif-a": [
+true,
+1045727,
+"calculated after 1850 B.C.E."
+],
+"c0-m3-q0-jma": [
+true,
+2396829,
+"about 1850-03-12"
+],
+"c0-m3-q0-ma": [
+true,
+2396818,
+"about 1850-03"
+],
+"c0-m3-q0-a": [
+true,
+2396759,
+"about 1850"
+],
+"c0-m3-q0-j-sans-mois": [
+true,
+2396770,
+"about 1850-00-12"
+],
+"c0-m3-q0-annee-inconnue": [
+true,
+1721496,
+"about 0-03-12"
+],
+"c0-m3-q0-mois-seul": [
+true,
+1721485,
+"about 0-03"
+],
+"c0-m3-q0-negatif": [
+true,
+1045797,
+"about 1850-03-12 B.C.E."
+],
+"c0-m3-q0-negatif-a": [
+true,
+1045727,
+"about 1850 B.C.E."
+],
+"c0-m3-q1-jma": [
+true,
+2396829,
+"estimated about 1850-03-12"
+],
+"c0-m3-q1-ma": [
+true,
+2396818,
+"estimated about 1850-03"
+],
+"c0-m3-q1-a": [
+true,
+2396759,
+"estimated about 1850"
+],
+"c0-m3-q1-j-sans-mois": [
+true,
+2396770,
+"estimated about 1850-00-12"
+],
+"c0-m3-q1-annee-inconnue": [
+true,
+1721496,
+"estimated about 0-03-12"
+],
+"c0-m3-q1-mois-seul": [
+true,
+1721485,
+"estimated about 0-03"
+],
+"c0-m3-q1-negatif": [
+true,
+1045797,
+"estimated about 1850-03-12 B.C.E."
+],
+"c0-m3-q1-negatif-a": [
+true,
+1045727,
+"estimated about 1850 B.C.E."
+],
+"c0-m3-q2-jma": [
+true,
+2396829,
+"calculated about 1850-03-12"
+],
+"c0-m3-q2-ma": [
+true,
+2396818,
+"calculated about 1850-03"
+],
+"c0-m3-q2-a": [
+true,
+2396759,
+"calculated about 1850"
+],
+"c0-m3-q2-j-sans-mois": [
+true,
+2396770,
+"calculated about 1850-00-12"
+],
+"c0-m3-q2-annee-inconnue": [
+true,
+1721496,
+"calculated about 0-03-12"
+],
+"c0-m3-q2-mois-seul": [
+true,
+1721485,
+"calculated about 0-03"
+],
+"c0-m3-q2-negatif": [
+true,
+1045797,
+"calculated about 1850-03-12 B.C.E."
+],
+"c0-m3-q2-negatif-a": [
+true,
+1045727,
+"calculated about 1850 B.C.E."
+],
+"c0-m7-q0-jma": [
+true,
+2396829,
+"from 1850-03-12"
+],
+"c0-m7-q0-ma": [
+true,
+2396818,
+"from 1850-03"
+],
+"c0-m7-q0-a": [
+true,
+2396759,
+"from 1850"
+],
+"c0-m7-q0-j-sans-mois": [
+true,
+2396770,
+"from 1850-00-12"
+],
+"c0-m7-q0-annee-inconnue": [
+true,
+1721496,
+"from 0-03-12"
+],
+"c0-m7-q0-mois-seul": [
+true,
+1721485,
+"from 0-03"
+],
+"c0-m7-q0-negatif": [
+true,
+1045797,
+"from 1850-03-12 B.C.E."
+],
+"c0-m7-q0-negatif-a": [
+true,
+1045727,
+"from 1850 B.C.E."
+],
+"c0-m7-q1-jma": [
+true,
+2396829,
+"estimated from 1850-03-12"
+],
+"c0-m7-q1-ma": [
+true,
+2396818,
+"estimated from 1850-03"
+],
+"c0-m7-q1-a": [
+true,
+2396759,
+"estimated from 1850"
+],
+"c0-m7-q1-j-sans-mois": [
+true,
+2396770,
+"estimated from 1850-00-12"
+],
+"c0-m7-q1-annee-inconnue": [
+true,
+1721496,
+"estimated from 0-03-12"
+],
+"c0-m7-q1-mois-seul": [
+true,
+1721485,
+"estimated from 0-03"
+],
+"c0-m7-q1-negatif": [
+true,
+1045797,
+"estimated from 1850-03-12 B.C.E."
+],
+"c0-m7-q1-negatif-a": [
+true,
+1045727,
+"estimated from 1850 B.C.E."
+],
+"c0-m7-q2-jma": [
+true,
+2396829,
+"calculated from 1850-03-12"
+],
+"c0-m7-q2-ma": [
+true,
+2396818,
+"calculated from 1850-03"
+],
+"c0-m7-q2-a": [
+true,
+2396759,
+"calculated from 1850"
+],
+"c0-m7-q2-j-sans-mois": [
+true,
+2396770,
+"calculated from 1850-00-12"
+],
+"c0-m7-q2-annee-inconnue": [
+true,
+1721496,
+"calculated from 0-03-12"
+],
+"c0-m7-q2-mois-seul": [
+true,
+1721485,
+"calculated from 0-03"
+],
+"c0-m7-q2-negatif": [
+true,
+1045797,
+"calculated from 1850-03-12 B.C.E."
+],
+"c0-m7-q2-negatif-a": [
+true,
+1045727,
+"calculated from 1850 B.C.E."
+],
+"c0-m8-q0-jma": [
+true,
+2396829,
+"to 1850-03-12"
+],
+"c0-m8-q0-ma": [
+true,
+2396818,
+"to 1850-03"
+],
+"c0-m8-q0-a": [
+true,
+2396759,
+"to 1850"
+],
+"c0-m8-q0-j-sans-mois": [
+true,
+2396770,
+"to 1850-00-12"
+],
+"c0-m8-q0-annee-inconnue": [
+true,
+1721496,
+"to 0-03-12"
+],
+"c0-m8-q0-mois-seul": [
+true,
+1721485,
+"to 0-03"
+],
+"c0-m8-q0-negatif": [
+true,
+1045797,
+"to 1850-03-12 B.C.E."
+],
+"c0-m8-q0-negatif-a": [
+true,
+1045727,
+"to 1850 B.C.E."
+],
+"c0-m8-q1-jma": [
+true,
+2396829,
+"estimated to 1850-03-12"
+],
+"c0-m8-q1-ma": [
+true,
+2396818,
+"estimated to 1850-03"
+],
+"c0-m8-q1-a": [
+true,
+2396759,
+"estimated to 1850"
+],
+"c0-m8-q1-j-sans-mois": [
+true,
+2396770,
+"estimated to 1850-00-12"
+],
+"c0-m8-q1-annee-inconnue": [
+true,
+1721496,
+"estimated to 0-03-12"
+],
+"c0-m8-q1-mois-seul": [
+true,
+1721485,
+"estimated to 0-03"
+],
+"c0-m8-q1-negatif": [
+true,
+1045797,
+"estimated to 1850-03-12 B.C.E."
+],
+"c0-m8-q1-negatif-a": [
+true,
+1045727,
+"estimated to 1850 B.C.E."
+],
+"c0-m8-q2-jma": [
+true,
+2396829,
+"calculated to 1850-03-12"
+],
+"c0-m8-q2-ma": [
+true,
+2396818,
+"calculated to 1850-03"
+],
+"c0-m8-q2-a": [
+true,
+2396759,
+"calculated to 1850"
+],
+"c0-m8-q2-j-sans-mois": [
+true,
+2396770,
+"calculated to 1850-00-12"
+],
+"c0-m8-q2-annee-inconnue": [
+true,
+1721496,
+"calculated to 0-03-12"
+],
+"c0-m8-q2-mois-seul": [
+true,
+1721485,
+"calculated to 0-03"
+],
+"c0-m8-q2-negatif": [
+true,
+1045797,
+"calculated to 1850-03-12 B.C.E."
+],
+"c0-m8-q2-negatif-a": [
+true,
+1045727,
+"calculated to 1850 B.C.E."
+],
+"c1-m0-q0-jma": [
+true,
+2349696,
+"1721-02-12 (Julian)"
+],
+"c1-m0-q0-ma": [
+true,
+2349685,
+"1721-02 (Julian)"
+],
+"c1-m0-q0-a": [
+true,
+2349654,
+"1721 (Julian)"
+],
+"c1-m0-q0-j-sans-mois": [
+true,
+2349665,
+"1721-00-12 (Julian)"
+],
+"c1-m0-q0-annee-inconnue": [
+true,
+1721466,
+"0-02-12 (Julian)"
+],
+"c1-m0-q0-mois-seul": [
+true,
+1721455,
+"0-02 (Julian)"
+],
+"c1-m0-q0-negatif": [
+true,
+1092870,
+"1721-02-12 B.C.E. (Julian)"
+],
+"c1-m0-q0-negatif-a": [
+true,
+1092828,
+"1721 B.C.E. (Julian)"
+],
+"c1-m0-q1-jma": [
+true,
+2349696,
+"estimated 1721-02-12 (Julian)"
+],
+"c1-m0-q1-ma": [
+true,
+2349685,
+"estimated 1721-02 (Julian)"
+],
+"c1-m0-q1-a": [
+true,
+2349654,
+"estimated 1721 (Julian)"
+],
+"c1-m0-q1-j-sans-mois": [
+true,
+2349665,
+"estimated 1721-00-12 (Julian)"
+],
+"c1-m0-q1-annee-inconnue": [
+true,
+1721466,
+"estimated 0-02-12 (Julian)"
+],
+"c1-m0-q1-mois-seul": [
+true,
+1721455,
+"estimated 0-02 (Julian)"
+],
+"c1-m0-q1-negatif": [
+true,
+1092870,
+"estimated 1721-02-12 B.C.E. (Julian)"
+],
+"c1-m0-q1-negatif-a": [
+true,
+1092828,
+"estimated 1721 B.C.E. (Julian)"
+],
+"c1-m0-q2-jma": [
+true,
+2349696,
+"calculated 1721-02-12 (Julian)"
+],
+"c1-m0-q2-ma": [
+true,
+2349685,
+"calculated 1721-02 (Julian)"
+],
+"c1-m0-q2-a": [
+true,
+2349654,
+"calculated 1721 (Julian)"
+],
+"c1-m0-q2-j-sans-mois": [
+true,
+2349665,
+"calculated 1721-00-12 (Julian)"
+],
+"c1-m0-q2-annee-inconnue": [
+true,
+1721466,
+"calculated 0-02-12 (Julian)"
+],
+"c1-m0-q2-mois-seul": [
+true,
+1721455,
+"calculated 0-02 (Julian)"
+],
+"c1-m0-q2-negatif": [
+true,
+1092870,
+"calculated 1721-02-12 B.C.E. (Julian)"
+],
+"c1-m0-q2-negatif-a": [
+true,
+1092828,
+"calculated 1721 B.C.E. (Julian)"
+],
+"c1-m1-q0-jma": [
+true,
+2349696,
+"before 1721-02-12 (Julian)"
+],
+"c1-m1-q0-ma": [
+true,
+2349685,
+"before 1721-02 (Julian)"
+],
+"c1-m1-q0-a": [
+true,
+2349654,
+"before 1721 (Julian)"
+],
+"c1-m1-q0-j-sans-mois": [
+true,
+2349665,
+"before 1721-00-12 (Julian)"
+],
+"c1-m1-q0-annee-inconnue": [
+true,
+1721466,
+"before 0-02-12 (Julian)"
+],
+"c1-m1-q0-mois-seul": [
+true,
+1721455,
+"before 0-02 (Julian)"
+],
+"c1-m1-q0-negatif": [
+true,
+1092870,
+"before 1721-02-12 B.C.E. (Julian)"
+],
+"c1-m1-q0-negatif-a": [
+true,
+1092828,
+"before 1721 B.C.E. (Julian)"
+],
+"c1-m1-q1-jma": [
+true,
+2349696,
+"estimated before 1721-02-12 (Julian)"
+],
+"c1-m1-q1-ma": [
+true,
+2349685,
+"estimated before 1721-02 (Julian)"
+],
+"c1-m1-q1-a": [
+true,
+2349654,
+"estimated before 1721 (Julian)"
+],
+"c1-m1-q1-j-sans-mois": [
+true,
+2349665,
+"estimated before 1721-00-12 (Julian)"
+],
+"c1-m1-q1-annee-inconnue": [
+true,
+1721466,
+"estimated before 0-02-12 (Julian)"
+],
+"c1-m1-q1-mois-seul": [
+true,
+1721455,
+"estimated before 0-02 (Julian)"
+],
+"c1-m1-q1-negatif": [
+true,
+1092870,
+"estimated before 1721-02-12 B.C.E. (Julian)"
+],
+"c1-m1-q1-negatif-a": [
+true,
+1092828,
+"estimated before 1721 B.C.E. (Julian)"
+],
+"c1-m1-q2-jma": [
+true,
+2349696,
+"calculated before 1721-02-12 (Julian)"
+],
+"c1-m1-q2-ma": [
+true,
+2349685,
+"calculated before 1721-02 (Julian)"
+],
+"c1-m1-q2-a": [
+true,
+2349654,
+"calculated before 1721 (Julian)"
+],
+"c1-m1-q2-j-sans-mois": [
+true,
+2349665,
+"calculated before 1721-00-12 (Julian)"
+],
+"c1-m1-q2-annee-inconnue": [
+true,
+1721466,
+"calculated before 0-02-12 (Julian)"
+],
+"c1-m1-q2-mois-seul": [
+true,
+1721455,
+"calculated before 0-02 (Julian)"
+],
+"c1-m1-q2-negatif": [
+true,
+1092870,
+"calculated before 1721-02-12 B.C.E. (Julian)"
+],
+"c1-m1-q2-negatif-a": [
+true,
+1092828,
+"calculated before 1721 B.C.E. (Julian)"
+],
+"c1-m2-q0-jma": [
+true,
+2349696,
+"after 1721-02-12 (Julian)"
+],
+"c1-m2-q0-ma": [
+true,
+2349685,
+"after 1721-02 (Julian)"
+],
+"c1-m2-q0-a": [
+true,
+2349654,
+"after 1721 (Julian)"
+],
+"c1-m2-q0-j-sans-mois": [
+true,
+2349665,
+"after 1721-00-12 (Julian)"
+],
+"c1-m2-q0-annee-inconnue": [
+true,
+1721466,
+"after 0-02-12 (Julian)"
+],
+"c1-m2-q0-mois-seul": [
+true,
+1721455,
+"after 0-02 (Julian)"
+],
+"c1-m2-q0-negatif": [
+true,
+1092870,
+"after 1721-02-12 B.C.E. (Julian)"
+],
+"c1-m2-q0-negatif-a": [
+true,
+1092828,
+"after 1721 B.C.E. (Julian)"
+],
+"c1-m2-q1-jma": [
+true,
+2349696,
+"estimated after 1721-02-12 (Julian)"
+],
+"c1-m2-q1-ma": [
+true,
+2349685,
+"estimated after 1721-02 (Julian)"
+],
+"c1-m2-q1-a": [
+true,
+2349654,
+"estimated after 1721 (Julian)"
+],
+"c1-m2-q1-j-sans-mois": [
+true,
+2349665,
+"estimated after 1721-00-12 (Julian)"
+],
+"c1-m2-q1-annee-inconnue": [
+true,
+1721466,
+"estimated after 0-02-12 (Julian)"
+],
+"c1-m2-q1-mois-seul": [
+true,
+1721455,
+"estimated after 0-02 (Julian)"
+],
+"c1-m2-q1-negatif": [
+true,
+1092870,
+"estimated after 1721-02-12 B.C.E. (Julian)"
+],
+"c1-m2-q1-negatif-a": [
+true,
+1092828,
+"estimated after 1721 B.C.E. (Julian)"
+],
+"c1-m2-q2-jma": [
+true,
+2349696,
+"calculated after 1721-02-12 (Julian)"
+],
+"c1-m2-q2-ma": [
+true,
+2349685,
+"calculated after 1721-02 (Julian)"
+],
+"c1-m2-q2-a": [
+true,
+2349654,
+"calculated after 1721 (Julian)"
+],
+"c1-m2-q2-j-sans-mois": [
+true,
+2349665,
+"calculated after 1721-00-12 (Julian)"
+],
+"c1-m2-q2-annee-inconnue": [
+true,
+1721466,
+"calculated after 0-02-12 (Julian)"
+],
+"c1-m2-q2-mois-seul": [
+true,
+1721455,
+"calculated after 0-02 (Julian)"
+],
+"c1-m2-q2-negatif": [
+true,
+1092870,
+"calculated after 1721-02-12 B.C.E. (Julian)"
+],
+"c1-m2-q2-negatif-a": [
+true,
+1092828,
+"calculated after 1721 B.C.E. (Julian)"
+],
+"c1-m3-q0-jma": [
+true,
+2349696,
+"about 1721-02-12 (Julian)"
+],
+"c1-m3-q0-ma": [
+true,
+2349685,
+"about 1721-02 (Julian)"
+],
+"c1-m3-q0-a": [
+true,
+2349654,
+"about 1721 (Julian)"
+],
+"c1-m3-q0-j-sans-mois": [
+true,
+2349665,
+"about 1721-00-12 (Julian)"
+],
+"c1-m3-q0-annee-inconnue": [
+true,
+1721466,
+"about 0-02-12 (Julian)"
+],
+"c1-m3-q0-mois-seul": [
+true,
+1721455,
+"about 0-02 (Julian)"
+],
+"c1-m3-q0-negatif": [
+true,
+1092870,
+"about 1721-02-12 B.C.E. (Julian)"
+],
+"c1-m3-q0-negatif-a": [
+true,
+1092828,
+"about 1721 B.C.E. (Julian)"
+],
+"c1-m3-q1-jma": [
+true,
+2349696,
+"estimated about 1721-02-12 (Julian)"
+],
+"c1-m3-q1-ma": [
+true,
+2349685,
+"estimated about 1721-02 (Julian)"
+],
+"c1-m3-q1-a": [
+true,
+2349654,
+"estimated about 1721 (Julian)"
+],
+"c1-m3-q1-j-sans-mois": [
+true,
+2349665,
+"estimated about 1721-00-12 (Julian)"
+],
+"c1-m3-q1-annee-inconnue": [
+true,
+1721466,
+"estimated about 0-02-12 (Julian)"
+],
+"c1-m3-q1-mois-seul": [
+true,
+1721455,
+"estimated about 0-02 (Julian)"
+],
+"c1-m3-q1-negatif": [
+true,
+1092870,
+"estimated about 1721-02-12 B.C.E. (Julian)"
+],
+"c1-m3-q1-negatif-a": [
+true,
+1092828,
+"estimated about 1721 B.C.E. (Julian)"
+],
+"c1-m3-q2-jma": [
+true,
+2349696,
+"calculated about 1721-02-12 (Julian)"
+],
+"c1-m3-q2-ma": [
+true,
+2349685,
+"calculated about 1721-02 (Julian)"
+],
+"c1-m3-q2-a": [
+true,
+2349654,
+"calculated about 1721 (Julian)"
+],
+"c1-m3-q2-j-sans-mois": [
+true,
+2349665,
+"calculated about 1721-00-12 (Julian)"
+],
+"c1-m3-q2-annee-inconnue": [
+true,
+1721466,
+"calculated about 0-02-12 (Julian)"
+],
+"c1-m3-q2-mois-seul": [
+true,
+1721455,
+"calculated about 0-02 (Julian)"
+],
+"c1-m3-q2-negatif": [
+true,
+1092870,
+"calculated about 1721-02-12 B.C.E. (Julian)"
+],
+"c1-m3-q2-negatif-a": [
+true,
+1092828,
+"calculated about 1721 B.C.E. (Julian)"
+],
+"c1-m7-q0-jma": [
+true,
+2349696,
+"from 1721-02-12 (Julian)"
+],
+"c1-m7-q0-ma": [
+true,
+2349685,
+"from 1721-02 (Julian)"
+],
+"c1-m7-q0-a": [
+true,
+2349654,
+"from 1721 (Julian)"
+],
+"c1-m7-q0-j-sans-mois": [
+true,
+2349665,
+"from 1721-00-12 (Julian)"
+],
+"c1-m7-q0-annee-inconnue": [
+true,
+1721466,
+"from 0-02-12 (Julian)"
+],
+"c1-m7-q0-mois-seul": [
+true,
+1721455,
+"from 0-02 (Julian)"
+],
+"c1-m7-q0-negatif": [
+true,
+1092870,
+"from 1721-02-12 B.C.E. (Julian)"
+],
+"c1-m7-q0-negatif-a": [
+true,
+1092828,
+"from 1721 B.C.E. (Julian)"
+],
+"c1-m7-q1-jma": [
+true,
+2349696,
+"estimated from 1721-02-12 (Julian)"
+],
+"c1-m7-q1-ma": [
+true,
+2349685,
+"estimated from 1721-02 (Julian)"
+],
+"c1-m7-q1-a": [
+true,
+2349654,
+"estimated from 1721 (Julian)"
+],
+"c1-m7-q1-j-sans-mois": [
+true,
+2349665,
+"estimated from 1721-00-12 (Julian)"
+],
+"c1-m7-q1-annee-inconnue": [
+true,
+1721466,
+"estimated from 0-02-12 (Julian)"
+],
+"c1-m7-q1-mois-seul": [
+true,
+1721455,
+"estimated from 0-02 (Julian)"
+],
+"c1-m7-q1-negatif": [
+true,
+1092870,
+"estimated from 1721-02-12 B.C.E. (Julian)"
+],
+"c1-m7-q1-negatif-a": [
+true,
+1092828,
+"estimated from 1721 B.C.E. (Julian)"
+],
+"c1-m7-q2-jma": [
+true,
+2349696,
+"calculated from 1721-02-12 (Julian)"
+],
+"c1-m7-q2-ma": [
+true,
+2349685,
+"calculated from 1721-02 (Julian)"
+],
+"c1-m7-q2-a": [
+true,
+2349654,
+"calculated from 1721 (Julian)"
+],
+"c1-m7-q2-j-sans-mois": [
+true,
+2349665,
+"calculated from 1721-00-12 (Julian)"
+],
+"c1-m7-q2-annee-inconnue": [
+true,
+1721466,
+"calculated from 0-02-12 (Julian)"
+],
+"c1-m7-q2-mois-seul": [
+true,
+1721455,
+"calculated from 0-02 (Julian)"
+],
+"c1-m7-q2-negatif": [
+true,
+1092870,
+"calculated from 1721-02-12 B.C.E. (Julian)"
+],
+"c1-m7-q2-negatif-a": [
+true,
+1092828,
+"calculated from 1721 B.C.E. (Julian)"
+],
+"c1-m8-q0-jma": [
+true,
+2349696,
+"to 1721-02-12 (Julian)"
+],
+"c1-m8-q0-ma": [
+true,
+2349685,
+"to 1721-02 (Julian)"
+],
+"c1-m8-q0-a": [
+true,
+2349654,
+"to 1721 (Julian)"
+],
+"c1-m8-q0-j-sans-mois": [
+true,
+2349665,
+"to 1721-00-12 (Julian)"
+],
+"c1-m8-q0-annee-inconnue": [
+true,
+1721466,
+"to 0-02-12 (Julian)"
+],
+"c1-m8-q0-mois-seul": [
+true,
+1721455,
+"to 0-02 (Julian)"
+],
+"c1-m8-q0-negatif": [
+true,
+1092870,
+"to 1721-02-12 B.C.E. (Julian)"
+],
+"c1-m8-q0-negatif-a": [
+true,
+1092828,
+"to 1721 B.C.E. (Julian)"
+],
+"c1-m8-q1-jma": [
+true,
+2349696,
+"estimated to 1721-02-12 (Julian)"
+],
+"c1-m8-q1-ma": [
+true,
+2349685,
+"estimated to 1721-02 (Julian)"
+],
+"c1-m8-q1-a": [
+true,
+2349654,
+"estimated to 1721 (Julian)"
+],
+"c1-m8-q1-j-sans-mois": [
+true,
+2349665,
+"estimated to 1721-00-12 (Julian)"
+],
+"c1-m8-q1-annee-inconnue": [
+true,
+1721466,
+"estimated to 0-02-12 (Julian)"
+],
+"c1-m8-q1-mois-seul": [
+true,
+1721455,
+"estimated to 0-02 (Julian)"
+],
+"c1-m8-q1-negatif": [
+true,
+1092870,
+"estimated to 1721-02-12 B.C.E. (Julian)"
+],
+"c1-m8-q1-negatif-a": [
+true,
+1092828,
+"estimated to 1721 B.C.E. (Julian)"
+],
+"c1-m8-q2-jma": [
+true,
+2349696,
+"calculated to 1721-02-12 (Julian)"
+],
+"c1-m8-q2-ma": [
+true,
+2349685,
+"calculated to 1721-02 (Julian)"
+],
+"c1-m8-q2-a": [
+true,
+2349654,
+"calculated to 1721 (Julian)"
+],
+"c1-m8-q2-j-sans-mois": [
+true,
+2349665,
+"calculated to 1721-00-12 (Julian)"
+],
+"c1-m8-q2-annee-inconnue": [
+true,
+1721466,
+"calculated to 0-02-12 (Julian)"
+],
+"c1-m8-q2-mois-seul": [
+true,
+1721455,
+"calculated to 0-02 (Julian)"
+],
+"c1-m8-q2-negatif": [
+true,
+1092870,
+"calculated to 1721-02-12 B.C.E. (Julian)"
+],
+"c1-m8-q2-negatif-a": [
+true,
+1092828,
+"calculated to 1721 B.C.E. (Julian)"
+],
+"c2-m0-q0-jma": [
+true,
+2393209,
+"5600-08-10 (Hebrew)"
+],
+"c2-m0-q0-ma": [
+true,
+2393200,
+"5600-08 (Hebrew)"
+],
+"c2-m0-q0-a": [
+true,
+2392992,
+"5600 (Hebrew)"
+],
+"c2-m0-q0-j-sans-mois": [
+true,
+2393001,
+"5600-00-10 (Hebrew)"
+],
+"c2-m0-q0-annee-inconnue": [
+true,
+348185,
+"0-08-10 (Hebrew)"
+],
+"c2-m0-q0-mois-seul": [
+true,
+348176,
+"0-08 (Hebrew)"
+],
+"c2-m0-q1-jma": [
+true,
+2393209,
+"estimated 5600-08-10 (Hebrew)"
+],
+"c2-m0-q1-ma": [
+true,
+2393200,
+"estimated 5600-08 (Hebrew)"
+],
+"c2-m0-q1-a": [
+true,
+2392992,
+"estimated 5600 (Hebrew)"
+],
+"c2-m0-q1-j-sans-mois": [
+true,
+2393001,
+"estimated 5600-00-10 (Hebrew)"
+],
+"c2-m0-q1-annee-inconnue": [
+true,
+348185,
+"estimated 0-08-10 (Hebrew)"
+],
+"c2-m0-q1-mois-seul": [
+true,
+348176,
+"estimated 0-08 (Hebrew)"
+],
+"c2-m0-q2-jma": [
+true,
+2393209,
+"calculated 5600-08-10 (Hebrew)"
+],
+"c2-m0-q2-ma": [
+true,
+2393200,
+"calculated 5600-08 (Hebrew)"
+],
+"c2-m0-q2-a": [
+true,
+2392992,
+"calculated 5600 (Hebrew)"
+],
+"c2-m0-q2-j-sans-mois": [
+true,
+2393001,
+"calculated 5600-00-10 (Hebrew)"
+],
+"c2-m0-q2-annee-inconnue": [
+true,
+348185,
+"calculated 0-08-10 (Hebrew)"
+],
+"c2-m0-q2-mois-seul": [
+true,
+348176,
+"calculated 0-08 (Hebrew)"
+],
+"c2-m1-q0-jma": [
+true,
+2393209,
+"before 5600-08-10 (Hebrew)"
+],
+"c2-m1-q0-ma": [
+true,
+2393200,
+"before 5600-08 (Hebrew)"
+],
+"c2-m1-q0-a": [
+true,
+2392992,
+"before 5600 (Hebrew)"
+],
+"c2-m1-q0-j-sans-mois": [
+true,
+2393001,
+"before 5600-00-10 (Hebrew)"
+],
+"c2-m1-q0-annee-inconnue": [
+true,
+348185,
+"before 0-08-10 (Hebrew)"
+],
+"c2-m1-q0-mois-seul": [
+true,
+348176,
+"before 0-08 (Hebrew)"
+],
+"c2-m1-q1-jma": [
+true,
+2393209,
+"estimated before 5600-08-10 (Hebrew)"
+],
+"c2-m1-q1-ma": [
+true,
+2393200,
+"estimated before 5600-08 (Hebrew)"
+],
+"c2-m1-q1-a": [
+true,
+2392992,
+"estimated before 5600 (Hebrew)"
+],
+"c2-m1-q1-j-sans-mois": [
+true,
+2393001,
+"estimated before 5600-00-10 (Hebrew)"
+],
+"c2-m1-q1-annee-inconnue": [
+true,
+348185,
+"estimated before 0-08-10 (Hebrew)"
+],
+"c2-m1-q1-mois-seul": [
+true,
+348176,
+"estimated before 0-08 (Hebrew)"
+],
+"c2-m1-q2-jma": [
+true,
+2393209,
+"calculated before 5600-08-10 (Hebrew)"
+],
+"c2-m1-q2-ma": [
+true,
+2393200,
+"calculated before 5600-08 (Hebrew)"
+],
+"c2-m1-q2-a": [
+true,
+2392992,
+"calculated before 5600 (Hebrew)"
+],
+"c2-m1-q2-j-sans-mois": [
+true,
+2393001,
+"calculated before 5600-00-10 (Hebrew)"
+],
+"c2-m1-q2-annee-inconnue": [
+true,
+348185,
+"calculated before 0-08-10 (Hebrew)"
+],
+"c2-m1-q2-mois-seul": [
+true,
+348176,
+"calculated before 0-08 (Hebrew)"
+],
+"c2-m2-q0-jma": [
+true,
+2393209,
+"after 5600-08-10 (Hebrew)"
+],
+"c2-m2-q0-ma": [
+true,
+2393200,
+"after 5600-08 (Hebrew)"
+],
+"c2-m2-q0-a": [
+true,
+2392992,
+"after 5600 (Hebrew)"
+],
+"c2-m2-q0-j-sans-mois": [
+true,
+2393001,
+"after 5600-00-10 (Hebrew)"
+],
+"c2-m2-q0-annee-inconnue": [
+true,
+348185,
+"after 0-08-10 (Hebrew)"
+],
+"c2-m2-q0-mois-seul": [
+true,
+348176,
+"after 0-08 (Hebrew)"
+],
+"c2-m2-q1-jma": [
+true,
+2393209,
+"estimated after 5600-08-10 (Hebrew)"
+],
+"c2-m2-q1-ma": [
+true,
+2393200,
+"estimated after 5600-08 (Hebrew)"
+],
+"c2-m2-q1-a": [
+true,
+2392992,
+"estimated after 5600 (Hebrew)"
+],
+"c2-m2-q1-j-sans-mois": [
+true,
+2393001,
+"estimated after 5600-00-10 (Hebrew)"
+],
+"c2-m2-q1-annee-inconnue": [
+true,
+348185,
+"estimated after 0-08-10 (Hebrew)"
+],
+"c2-m2-q1-mois-seul": [
+true,
+348176,
+"estimated after 0-08 (Hebrew)"
+],
+"c2-m2-q2-jma": [
+true,
+2393209,
+"calculated after 5600-08-10 (Hebrew)"
+],
+"c2-m2-q2-ma": [
+true,
+2393200,
+"calculated after 5600-08 (Hebrew)"
+],
+"c2-m2-q2-a": [
+true,
+2392992,
+"calculated after 5600 (Hebrew)"
+],
+"c2-m2-q2-j-sans-mois": [
+true,
+2393001,
+"calculated after 5600-00-10 (Hebrew)"
+],
+"c2-m2-q2-annee-inconnue": [
+true,
+348185,
+"calculated after 0-08-10 (Hebrew)"
+],
+"c2-m2-q2-mois-seul": [
+true,
+348176,
+"calculated after 0-08 (Hebrew)"
+],
+"c2-m3-q0-jma": [
+true,
+2393209,
+"about 5600-08-10 (Hebrew)"
+],
+"c2-m3-q0-ma": [
+true,
+2393200,
+"about 5600-08 (Hebrew)"
+],
+"c2-m3-q0-a": [
+true,
+2392992,
+"about 5600 (Hebrew)"
+],
+"c2-m3-q0-j-sans-mois": [
+true,
+2393001,
+"about 5600-00-10 (Hebrew)"
+],
+"c2-m3-q0-annee-inconnue": [
+true,
+348185,
+"about 0-08-10 (Hebrew)"
+],
+"c2-m3-q0-mois-seul": [
+true,
+348176,
+"about 0-08 (Hebrew)"
+],
+"c2-m3-q1-jma": [
+true,
+2393209,
+"estimated about 5600-08-10 (Hebrew)"
+],
+"c2-m3-q1-ma": [
+true,
+2393200,
+"estimated about 5600-08 (Hebrew)"
+],
+"c2-m3-q1-a": [
+true,
+2392992,
+"estimated about 5600 (Hebrew)"
+],
+"c2-m3-q1-j-sans-mois": [
+true,
+2393001,
+"estimated about 5600-00-10 (Hebrew)"
+],
+"c2-m3-q1-annee-inconnue": [
+true,
+348185,
+"estimated about 0-08-10 (Hebrew)"
+],
+"c2-m3-q1-mois-seul": [
+true,
+348176,
+"estimated about 0-08 (Hebrew)"
+],
+"c2-m3-q2-jma": [
+true,
+2393209,
+"calculated about 5600-08-10 (Hebrew)"
+],
+"c2-m3-q2-ma": [
+true,
+2393200,
+"calculated about 5600-08 (Hebrew)"
+],
+"c2-m3-q2-a": [
+true,
+2392992,
+"calculated about 5600 (Hebrew)"
+],
+"c2-m3-q2-j-sans-mois": [
+true,
+2393001,
+"calculated about 5600-00-10 (Hebrew)"
+],
+"c2-m3-q2-annee-inconnue": [
+true,
+348185,
+"calculated about 0-08-10 (Hebrew)"
+],
+"c2-m3-q2-mois-seul": [
+true,
+348176,
+"calculated about 0-08 (Hebrew)"
+],
+"c2-m7-q0-jma": [
+true,
+2393209,
+"from 5600-08-10 (Hebrew)"
+],
+"c2-m7-q0-ma": [
+true,
+2393200,
+"from 5600-08 (Hebrew)"
+],
+"c2-m7-q0-a": [
+true,
+2392992,
+"from 5600 (Hebrew)"
+],
+"c2-m7-q0-j-sans-mois": [
+true,
+2393001,
+"from 5600-00-10 (Hebrew)"
+],
+"c2-m7-q0-annee-inconnue": [
+true,
+348185,
+"from 0-08-10 (Hebrew)"
+],
+"c2-m7-q0-mois-seul": [
+true,
+348176,
+"from 0-08 (Hebrew)"
+],
+"c2-m7-q1-jma": [
+true,
+2393209,
+"estimated from 5600-08-10 (Hebrew)"
+],
+"c2-m7-q1-ma": [
+true,
+2393200,
+"estimated from 5600-08 (Hebrew)"
+],
+"c2-m7-q1-a": [
+true,
+2392992,
+"estimated from 5600 (Hebrew)"
+],
+"c2-m7-q1-j-sans-mois": [
+true,
+2393001,
+"estimated from 5600-00-10 (Hebrew)"
+],
+"c2-m7-q1-annee-inconnue": [
+true,
+348185,
+"estimated from 0-08-10 (Hebrew)"
+],
+"c2-m7-q1-mois-seul": [
+true,
+348176,
+"estimated from 0-08 (Hebrew)"
+],
+"c2-m7-q2-jma": [
+true,
+2393209,
+"calculated from 5600-08-10 (Hebrew)"
+],
+"c2-m7-q2-ma": [
+true,
+2393200,
+"calculated from 5600-08 (Hebrew)"
+],
+"c2-m7-q2-a": [
+true,
+2392992,
+"calculated from 5600 (Hebrew)"
+],
+"c2-m7-q2-j-sans-mois": [
+true,
+2393001,
+"calculated from 5600-00-10 (Hebrew)"
+],
+"c2-m7-q2-annee-inconnue": [
+true,
+348185,
+"calculated from 0-08-10 (Hebrew)"
+],
+"c2-m7-q2-mois-seul": [
+true,
+348176,
+"calculated from 0-08 (Hebrew)"
+],
+"c2-m8-q0-jma": [
+true,
+2393209,
+"to 5600-08-10 (Hebrew)"
+],
+"c2-m8-q0-ma": [
+true,
+2393200,
+"to 5600-08 (Hebrew)"
+],
+"c2-m8-q0-a": [
+true,
+2392992,
+"to 5600 (Hebrew)"
+],
+"c2-m8-q0-j-sans-mois": [
+true,
+2393001,
+"to 5600-00-10 (Hebrew)"
+],
+"c2-m8-q0-annee-inconnue": [
+true,
+348185,
+"to 0-08-10 (Hebrew)"
+],
+"c2-m8-q0-mois-seul": [
+true,
+348176,
+"to 0-08 (Hebrew)"
+],
+"c2-m8-q1-jma": [
+true,
+2393209,
+"estimated to 5600-08-10 (Hebrew)"
+],
+"c2-m8-q1-ma": [
+true,
+2393200,
+"estimated to 5600-08 (Hebrew)"
+],
+"c2-m8-q1-a": [
+true,
+2392992,
+"estimated to 5600 (Hebrew)"
+],
+"c2-m8-q1-j-sans-mois": [
+true,
+2393001,
+"estimated to 5600-00-10 (Hebrew)"
+],
+"c2-m8-q1-annee-inconnue": [
+true,
+348185,
+"estimated to 0-08-10 (Hebrew)"
+],
+"c2-m8-q1-mois-seul": [
+true,
+348176,
+"estimated to 0-08 (Hebrew)"
+],
+"c2-m8-q2-jma": [
+true,
+2393209,
+"calculated to 5600-08-10 (Hebrew)"
+],
+"c2-m8-q2-ma": [
+true,
+2393200,
+"calculated to 5600-08 (Hebrew)"
+],
+"c2-m8-q2-a": [
+true,
+2392992,
+"calculated to 5600 (Hebrew)"
+],
+"c2-m8-q2-j-sans-mois": [
+true,
+2393001,
+"calculated to 5600-00-10 (Hebrew)"
+],
+"c2-m8-q2-annee-inconnue": [
+true,
+348185,
+"calculated to 0-08-10 (Hebrew)"
+],
+"c2-m8-q2-mois-seul": [
+true,
+348176,
+"calculated to 0-08 (Hebrew)"
+],
+"c3-m0-q0-jma": [
+true,
+2376581,
+"3-01-12 (French Republican)"
+],
+"c3-m0-q0-ma": [
+true,
+2376570,
+"3-01 (French Republican)"
+],
+"c3-m0-q0-a": [
+true,
+2376570,
+"3 (French Republican)"
+],
+"c3-m0-q0-j-sans-mois": [
+true,
+2376581,
+"3-00-12 (French Republican)"
+],
+"c3-m0-q0-annee-inconnue": [
+true,
+2375851,
+"0-01-12 (French Republican)"
+],
+"c3-m0-q0-mois-seul": [
+true,
+2375840,
+"0-01 (French Republican)"
+],
+"c3-m0-q1-jma": [
+true,
+2376581,
+"estimated 3-01-12 (French Republican)"
+],
+"c3-m0-q1-ma": [
+true,
+2376570,
+"estimated 3-01 (French Republican)"
+],
+"c3-m0-q1-a": [
+true,
+2376570,
+"estimated 3 (French Republican)"
+],
+"c3-m0-q1-j-sans-mois": [
+true,
+2376581,
+"estimated 3-00-12 (French Republican)"
+],
+"c3-m0-q1-annee-inconnue": [
+true,
+2375851,
+"estimated 0-01-12 (French Republican)"
+],
+"c3-m0-q1-mois-seul": [
+true,
+2375840,
+"estimated 0-01 (French Republican)"
+],
+"c3-m0-q2-jma": [
+true,
+2376581,
+"calculated 3-01-12 (French Republican)"
+],
+"c3-m0-q2-ma": [
+true,
+2376570,
+"calculated 3-01 (French Republican)"
+],
+"c3-m0-q2-a": [
+true,
+2376570,
+"calculated 3 (French Republican)"
+],
+"c3-m0-q2-j-sans-mois": [
+true,
+2376581,
+"calculated 3-00-12 (French Republican)"
+],
+"c3-m0-q2-annee-inconnue": [
+true,
+2375851,
+"calculated 0-01-12 (French Republican)"
+],
+"c3-m0-q2-mois-seul": [
+true,
+2375840,
+"calculated 0-01 (French Republican)"
+],
+"c3-m1-q0-jma": [
+true,
+2376581,
+"before 3-01-12 (French Republican)"
+],
+"c3-m1-q0-ma": [
+true,
+2376570,
+"before 3-01 (French Republican)"
+],
+"c3-m1-q0-a": [
+true,
+2376570,
+"before 3 (French Republican)"
+],
+"c3-m1-q0-j-sans-mois": [
+true,
+2376581,
+"before 3-00-12 (French Republican)"
+],
+"c3-m1-q0-annee-inconnue": [
+true,
+2375851,
+"before 0-01-12 (French Republican)"
+],
+"c3-m1-q0-mois-seul": [
+true,
+2375840,
+"before 0-01 (French Republican)"
+],
+"c3-m1-q1-jma": [
+true,
+2376581,
+"estimated before 3-01-12 (French Republican)"
+],
+"c3-m1-q1-ma": [
+true,
+2376570,
+"estimated before 3-01 (French Republican)"
+],
+"c3-m1-q1-a": [
+true,
+2376570,
+"estimated before 3 (French Republican)"
+],
+"c3-m1-q1-j-sans-mois": [
+true,
+2376581,
+"estimated before 3-00-12 (French Republican)"
+],
+"c3-m1-q1-annee-inconnue": [
+true,
+2375851,
+"estimated before 0-01-12 (French Republican)"
+],
+"c3-m1-q1-mois-seul": [
+true,
+2375840,
+"estimated before 0-01 (French Republican)"
+],
+"c3-m1-q2-jma": [
+true,
+2376581,
+"calculated before 3-01-12 (French Republican)"
+],
+"c3-m1-q2-ma": [
+true,
+2376570,
+"calculated before 3-01 (French Republican)"
+],
+"c3-m1-q2-a": [
+true,
+2376570,
+"calculated before 3 (French Republican)"
+],
+"c3-m1-q2-j-sans-mois": [
+true,
+2376581,
+"calculated before 3-00-12 (French Republican)"
+],
+"c3-m1-q2-annee-inconnue": [
+true,
+2375851,
+"calculated before 0-01-12 (French Republican)"
+],
+"c3-m1-q2-mois-seul": [
+true,
+2375840,
+"calculated before 0-01 (French Republican)"
+],
+"c3-m2-q0-jma": [
+true,
+2376581,
+"after 3-01-12 (French Republican)"
+],
+"c3-m2-q0-ma": [
+true,
+2376570,
+"after 3-01 (French Republican)"
+],
+"c3-m2-q0-a": [
+true,
+2376570,
+"after 3 (French Republican)"
+],
+"c3-m2-q0-j-sans-mois": [
+true,
+2376581,
+"after 3-00-12 (French Republican)"
+],
+"c3-m2-q0-annee-inconnue": [
+true,
+2375851,
+"after 0-01-12 (French Republican)"
+],
+"c3-m2-q0-mois-seul": [
+true,
+2375840,
+"after 0-01 (French Republican)"
+],
+"c3-m2-q1-jma": [
+true,
+2376581,
+"estimated after 3-01-12 (French Republican)"
+],
+"c3-m2-q1-ma": [
+true,
+2376570,
+"estimated after 3-01 (French Republican)"
+],
+"c3-m2-q1-a": [
+true,
+2376570,
+"estimated after 3 (French Republican)"
+],
+"c3-m2-q1-j-sans-mois": [
+true,
+2376581,
+"estimated after 3-00-12 (French Republican)"
+],
+"c3-m2-q1-annee-inconnue": [
+true,
+2375851,
+"estimated after 0-01-12 (French Republican)"
+],
+"c3-m2-q1-mois-seul": [
+true,
+2375840,
+"estimated after 0-01 (French Republican)"
+],
+"c3-m2-q2-jma": [
+true,
+2376581,
+"calculated after 3-01-12 (French Republican)"
+],
+"c3-m2-q2-ma": [
+true,
+2376570,
+"calculated after 3-01 (French Republican)"
+],
+"c3-m2-q2-a": [
+true,
+2376570,
+"calculated after 3 (French Republican)"
+],
+"c3-m2-q2-j-sans-mois": [
+true,
+2376581,
+"calculated after 3-00-12 (French Republican)"
+],
+"c3-m2-q2-annee-inconnue": [
+true,
+2375851,
+"calculated after 0-01-12 (French Republican)"
+],
+"c3-m2-q2-mois-seul": [
+true,
+2375840,
+"calculated after 0-01 (French Republican)"
+],
+"c3-m3-q0-jma": [
+true,
+2376581,
+"about 3-01-12 (French Republican)"
+],
+"c3-m3-q0-ma": [
+true,
+2376570,
+"about 3-01 (French Republican)"
+],
+"c3-m3-q0-a": [
+true,
+2376570,
+"about 3 (French Republican)"
+],
+"c3-m3-q0-j-sans-mois": [
+true,
+2376581,
+"about 3-00-12 (French Republican)"
+],
+"c3-m3-q0-annee-inconnue": [
+true,
+2375851,
+"about 0-01-12 (French Republican)"
+],
+"c3-m3-q0-mois-seul": [
+true,
+2375840,
+"about 0-01 (French Republican)"
+],
+"c3-m3-q1-jma": [
+true,
+2376581,
+"estimated about 3-01-12 (French Republican)"
+],
+"c3-m3-q1-ma": [
+true,
+2376570,
+"estimated about 3-01 (French Republican)"
+],
+"c3-m3-q1-a": [
+true,
+2376570,
+"estimated about 3 (French Republican)"
+],
+"c3-m3-q1-j-sans-mois": [
+true,
+2376581,
+"estimated about 3-00-12 (French Republican)"
+],
+"c3-m3-q1-annee-inconnue": [
+true,
+2375851,
+"estimated about 0-01-12 (French Republican)"
+],
+"c3-m3-q1-mois-seul": [
+true,
+2375840,
+"estimated about 0-01 (French Republican)"
+],
+"c3-m3-q2-jma": [
+true,
+2376581,
+"calculated about 3-01-12 (French Republican)"
+],
+"c3-m3-q2-ma": [
+true,
+2376570,
+"calculated about 3-01 (French Republican)"
+],
+"c3-m3-q2-a": [
+true,
+2376570,
+"calculated about 3 (French Republican)"
+],
+"c3-m3-q2-j-sans-mois": [
+true,
+2376581,
+"calculated about 3-00-12 (French Republican)"
+],
+"c3-m3-q2-annee-inconnue": [
+true,
+2375851,
+"calculated about 0-01-12 (French Republican)"
+],
+"c3-m3-q2-mois-seul": [
+true,
+2375840,
+"calculated about 0-01 (French Republican)"
+],
+"c3-m7-q0-jma": [
+true,
+2376581,
+"from 3-01-12 (French Republican)"
+],
+"c3-m7-q0-ma": [
+true,
+2376570,
+"from 3-01 (French Republican)"
+],
+"c3-m7-q0-a": [
+true,
+2376570,
+"from 3 (French Republican)"
+],
+"c3-m7-q0-j-sans-mois": [
+true,
+2376581,
+"from 3-00-12 (French Republican)"
+],
+"c3-m7-q0-annee-inconnue": [
+true,
+2375851,
+"from 0-01-12 (French Republican)"
+],
+"c3-m7-q0-mois-seul": [
+true,
+2375840,
+"from 0-01 (French Republican)"
+],
+"c3-m7-q1-jma": [
+true,
+2376581,
+"estimated from 3-01-12 (French Republican)"
+],
+"c3-m7-q1-ma": [
+true,
+2376570,
+"estimated from 3-01 (French Republican)"
+],
+"c3-m7-q1-a": [
+true,
+2376570,
+"estimated from 3 (French Republican)"
+],
+"c3-m7-q1-j-sans-mois": [
+true,
+2376581,
+"estimated from 3-00-12 (French Republican)"
+],
+"c3-m7-q1-annee-inconnue": [
+true,
+2375851,
+"estimated from 0-01-12 (French Republican)"
+],
+"c3-m7-q1-mois-seul": [
+true,
+2375840,
+"estimated from 0-01 (French Republican)"
+],
+"c3-m7-q2-jma": [
+true,
+2376581,
+"calculated from 3-01-12 (French Republican)"
+],
+"c3-m7-q2-ma": [
+true,
+2376570,
+"calculated from 3-01 (French Republican)"
+],
+"c3-m7-q2-a": [
+true,
+2376570,
+"calculated from 3 (French Republican)"
+],
+"c3-m7-q2-j-sans-mois": [
+true,
+2376581,
+"calculated from 3-00-12 (French Republican)"
+],
+"c3-m7-q2-annee-inconnue": [
+true,
+2375851,
+"calculated from 0-01-12 (French Republican)"
+],
+"c3-m7-q2-mois-seul": [
+true,
+2375840,
+"calculated from 0-01 (French Republican)"
+],
+"c3-m8-q0-jma": [
+true,
+2376581,
+"to 3-01-12 (French Republican)"
+],
+"c3-m8-q0-ma": [
+true,
+2376570,
+"to 3-01 (French Republican)"
+],
+"c3-m8-q0-a": [
+true,
+2376570,
+"to 3 (French Republican)"
+],
+"c3-m8-q0-j-sans-mois": [
+true,
+2376581,
+"to 3-00-12 (French Republican)"
+],
+"c3-m8-q0-annee-inconnue": [
+true,
+2375851,
+"to 0-01-12 (French Republican)"
+],
+"c3-m8-q0-mois-seul": [
+true,
+2375840,
+"to 0-01 (French Republican)"
+],
+"c3-m8-q1-jma": [
+true,
+2376581,
+"estimated to 3-01-12 (French Republican)"
+],
+"c3-m8-q1-ma": [
+true,
+2376570,
+"estimated to 3-01 (French Republican)"
+],
+"c3-m8-q1-a": [
+true,
+2376570,
+"estimated to 3 (French Republican)"
+],
+"c3-m8-q1-j-sans-mois": [
+true,
+2376581,
+"estimated to 3-00-12 (French Republican)"
+],
+"c3-m8-q1-annee-inconnue": [
+true,
+2375851,
+"estimated to 0-01-12 (French Republican)"
+],
+"c3-m8-q1-mois-seul": [
+true,
+2375840,
+"estimated to 0-01 (French Republican)"
+],
+"c3-m8-q2-jma": [
+true,
+2376581,
+"calculated to 3-01-12 (French Republican)"
+],
+"c3-m8-q2-ma": [
+true,
+2376570,
+"calculated to 3-01 (French Republican)"
+],
+"c3-m8-q2-a": [
+true,
+2376570,
+"calculated to 3 (French Republican)"
+],
+"c3-m8-q2-j-sans-mois": [
+true,
+2376581,
+"calculated to 3-00-12 (French Republican)"
+],
+"c3-m8-q2-annee-inconnue": [
+true,
+2375851,
+"calculated to 0-01-12 (French Republican)"
+],
+"c3-m8-q2-mois-seul": [
+true,
+2375840,
+"calculated to 0-01 (French Republican)"
+],
+"c4-m0-q0-jma": [
+true,
+2422781,
+"1300-01-12 (Persian)"
+],
+"c4-m0-q0-ma": [
+true,
+2422770,
+"1300-01 (Persian)"
+],
+"c4-m0-q0-a": [
+true,
+2422770,
+"1300 (Persian)"
+],
+"c4-m0-q0-j-sans-mois": [
+true,
+2422781,
+"1300-00-12 (Persian)"
+],
+"c4-m0-q0-annee-inconnue": [
+true,
+1948332,
+"0-01-12 (Persian)"
+],
+"c4-m0-q0-mois-seul": [
+true,
+1948321,
+"0-01 (Persian)"
+],
+"c4-m0-q1-jma": [
+true,
+2422781,
+"estimated 1300-01-12 (Persian)"
+],
+"c4-m0-q1-ma": [
+true,
+2422770,
+"estimated 1300-01 (Persian)"
+],
+"c4-m0-q1-a": [
+true,
+2422770,
+"estimated 1300 (Persian)"
+],
+"c4-m0-q1-j-sans-mois": [
+true,
+2422781,
+"estimated 1300-00-12 (Persian)"
+],
+"c4-m0-q1-annee-inconnue": [
+true,
+1948332,
+"estimated 0-01-12 (Persian)"
+],
+"c4-m0-q1-mois-seul": [
+true,
+1948321,
+"estimated 0-01 (Persian)"
+],
+"c4-m0-q2-jma": [
+true,
+2422781,
+"calculated 1300-01-12 (Persian)"
+],
+"c4-m0-q2-ma": [
+true,
+2422770,
+"calculated 1300-01 (Persian)"
+],
+"c4-m0-q2-a": [
+true,
+2422770,
+"calculated 1300 (Persian)"
+],
+"c4-m0-q2-j-sans-mois": [
+true,
+2422781,
+"calculated 1300-00-12 (Persian)"
+],
+"c4-m0-q2-annee-inconnue": [
+true,
+1948332,
+"calculated 0-01-12 (Persian)"
+],
+"c4-m0-q2-mois-seul": [
+true,
+1948321,
+"calculated 0-01 (Persian)"
+],
+"c4-m1-q0-jma": [
+true,
+2422781,
+"before 1300-01-12 (Persian)"
+],
+"c4-m1-q0-ma": [
+true,
+2422770,
+"before 1300-01 (Persian)"
+],
+"c4-m1-q0-a": [
+true,
+2422770,
+"before 1300 (Persian)"
+],
+"c4-m1-q0-j-sans-mois": [
+true,
+2422781,
+"before 1300-00-12 (Persian)"
+],
+"c4-m1-q0-annee-inconnue": [
+true,
+1948332,
+"before 0-01-12 (Persian)"
+],
+"c4-m1-q0-mois-seul": [
+true,
+1948321,
+"before 0-01 (Persian)"
+],
+"c4-m1-q1-jma": [
+true,
+2422781,
+"estimated before 1300-01-12 (Persian)"
+],
+"c4-m1-q1-ma": [
+true,
+2422770,
+"estimated before 1300-01 (Persian)"
+],
+"c4-m1-q1-a": [
+true,
+2422770,
+"estimated before 1300 (Persian)"
+],
+"c4-m1-q1-j-sans-mois": [
+true,
+2422781,
+"estimated before 1300-00-12 (Persian)"
+],
+"c4-m1-q1-annee-inconnue": [
+true,
+1948332,
+"estimated before 0-01-12 (Persian)"
+],
+"c4-m1-q1-mois-seul": [
+true,
+1948321,
+"estimated before 0-01 (Persian)"
+],
+"c4-m1-q2-jma": [
+true,
+2422781,
+"calculated before 1300-01-12 (Persian)"
+],
+"c4-m1-q2-ma": [
+true,
+2422770,
+"calculated before 1300-01 (Persian)"
+],
+"c4-m1-q2-a": [
+true,
+2422770,
+"calculated before 1300 (Persian)"
+],
+"c4-m1-q2-j-sans-mois": [
+true,
+2422781,
+"calculated before 1300-00-12 (Persian)"
+],
+"c4-m1-q2-annee-inconnue": [
+true,
+1948332,
+"calculated before 0-01-12 (Persian)"
+],
+"c4-m1-q2-mois-seul": [
+true,
+1948321,
+"calculated before 0-01 (Persian)"
+],
+"c4-m2-q0-jma": [
+true,
+2422781,
+"after 1300-01-12 (Persian)"
+],
+"c4-m2-q0-ma": [
+true,
+2422770,
+"after 1300-01 (Persian)"
+],
+"c4-m2-q0-a": [
+true,
+2422770,
+"after 1300 (Persian)"
+],
+"c4-m2-q0-j-sans-mois": [
+true,
+2422781,
+"after 1300-00-12 (Persian)"
+],
+"c4-m2-q0-annee-inconnue": [
+true,
+1948332,
+"after 0-01-12 (Persian)"
+],
+"c4-m2-q0-mois-seul": [
+true,
+1948321,
+"after 0-01 (Persian)"
+],
+"c4-m2-q1-jma": [
+true,
+2422781,
+"estimated after 1300-01-12 (Persian)"
+],
+"c4-m2-q1-ma": [
+true,
+2422770,
+"estimated after 1300-01 (Persian)"
+],
+"c4-m2-q1-a": [
+true,
+2422770,
+"estimated after 1300 (Persian)"
+],
+"c4-m2-q1-j-sans-mois": [
+true,
+2422781,
+"estimated after 1300-00-12 (Persian)"
+],
+"c4-m2-q1-annee-inconnue": [
+true,
+1948332,
+"estimated after 0-01-12 (Persian)"
+],
+"c4-m2-q1-mois-seul": [
+true,
+1948321,
+"estimated after 0-01 (Persian)"
+],
+"c4-m2-q2-jma": [
+true,
+2422781,
+"calculated after 1300-01-12 (Persian)"
+],
+"c4-m2-q2-ma": [
+true,
+2422770,
+"calculated after 1300-01 (Persian)"
+],
+"c4-m2-q2-a": [
+true,
+2422770,
+"calculated after 1300 (Persian)"
+],
+"c4-m2-q2-j-sans-mois": [
+true,
+2422781,
+"calculated after 1300-00-12 (Persian)"
+],
+"c4-m2-q2-annee-inconnue": [
+true,
+1948332,
+"calculated after 0-01-12 (Persian)"
+],
+"c4-m2-q2-mois-seul": [
+true,
+1948321,
+"calculated after 0-01 (Persian)"
+],
+"c4-m3-q0-jma": [
+true,
+2422781,
+"about 1300-01-12 (Persian)"
+],
+"c4-m3-q0-ma": [
+true,
+2422770,
+"about 1300-01 (Persian)"
+],
+"c4-m3-q0-a": [
+true,
+2422770,
+"about 1300 (Persian)"
+],
+"c4-m3-q0-j-sans-mois": [
+true,
+2422781,
+"about 1300-00-12 (Persian)"
+],
+"c4-m3-q0-annee-inconnue": [
+true,
+1948332,
+"about 0-01-12 (Persian)"
+],
+"c4-m3-q0-mois-seul": [
+true,
+1948321,
+"about 0-01 (Persian)"
+],
+"c4-m3-q1-jma": [
+true,
+2422781,
+"estimated about 1300-01-12 (Persian)"
+],
+"c4-m3-q1-ma": [
+true,
+2422770,
+"estimated about 1300-01 (Persian)"
+],
+"c4-m3-q1-a": [
+true,
+2422770,
+"estimated about 1300 (Persian)"
+],
+"c4-m3-q1-j-sans-mois": [
+true,
+2422781,
+"estimated about 1300-00-12 (Persian)"
+],
+"c4-m3-q1-annee-inconnue": [
+true,
+1948332,
+"estimated about 0-01-12 (Persian)"
+],
+"c4-m3-q1-mois-seul": [
+true,
+1948321,
+"estimated about 0-01 (Persian)"
+],
+"c4-m3-q2-jma": [
+true,
+2422781,
+"calculated about 1300-01-12 (Persian)"
+],
+"c4-m3-q2-ma": [
+true,
+2422770,
+"calculated about 1300-01 (Persian)"
+],
+"c4-m3-q2-a": [
+true,
+2422770,
+"calculated about 1300 (Persian)"
+],
+"c4-m3-q2-j-sans-mois": [
+true,
+2422781,
+"calculated about 1300-00-12 (Persian)"
+],
+"c4-m3-q2-annee-inconnue": [
+true,
+1948332,
+"calculated about 0-01-12 (Persian)"
+],
+"c4-m3-q2-mois-seul": [
+true,
+1948321,
+"calculated about 0-01 (Persian)"
+],
+"c4-m7-q0-jma": [
+true,
+2422781,
+"from 1300-01-12 (Persian)"
+],
+"c4-m7-q0-ma": [
+true,
+2422770,
+"from 1300-01 (Persian)"
+],
+"c4-m7-q0-a": [
+true,
+2422770,
+"from 1300 (Persian)"
+],
+"c4-m7-q0-j-sans-mois": [
+true,
+2422781,
+"from 1300-00-12 (Persian)"
+],
+"c4-m7-q0-annee-inconnue": [
+true,
+1948332,
+"from 0-01-12 (Persian)"
+],
+"c4-m7-q0-mois-seul": [
+true,
+1948321,
+"from 0-01 (Persian)"
+],
+"c4-m7-q1-jma": [
+true,
+2422781,
+"estimated from 1300-01-12 (Persian)"
+],
+"c4-m7-q1-ma": [
+true,
+2422770,
+"estimated from 1300-01 (Persian)"
+],
+"c4-m7-q1-a": [
+true,
+2422770,
+"estimated from 1300 (Persian)"
+],
+"c4-m7-q1-j-sans-mois": [
+true,
+2422781,
+"estimated from 1300-00-12 (Persian)"
+],
+"c4-m7-q1-annee-inconnue": [
+true,
+1948332,
+"estimated from 0-01-12 (Persian)"
+],
+"c4-m7-q1-mois-seul": [
+true,
+1948321,
+"estimated from 0-01 (Persian)"
+],
+"c4-m7-q2-jma": [
+true,
+2422781,
+"calculated from 1300-01-12 (Persian)"
+],
+"c4-m7-q2-ma": [
+true,
+2422770,
+"calculated from 1300-01 (Persian)"
+],
+"c4-m7-q2-a": [
+true,
+2422770,
+"calculated from 1300 (Persian)"
+],
+"c4-m7-q2-j-sans-mois": [
+true,
+2422781,
+"calculated from 1300-00-12 (Persian)"
+],
+"c4-m7-q2-annee-inconnue": [
+true,
+1948332,
+"calculated from 0-01-12 (Persian)"
+],
+"c4-m7-q2-mois-seul": [
+true,
+1948321,
+"calculated from 0-01 (Persian)"
+],
+"c4-m8-q0-jma": [
+true,
+2422781,
+"to 1300-01-12 (Persian)"
+],
+"c4-m8-q0-ma": [
+true,
+2422770,
+"to 1300-01 (Persian)"
+],
+"c4-m8-q0-a": [
+true,
+2422770,
+"to 1300 (Persian)"
+],
+"c4-m8-q0-j-sans-mois": [
+true,
+2422781,
+"to 1300-00-12 (Persian)"
+],
+"c4-m8-q0-annee-inconnue": [
+true,
+1948332,
+"to 0-01-12 (Persian)"
+],
+"c4-m8-q0-mois-seul": [
+true,
+1948321,
+"to 0-01 (Persian)"
+],
+"c4-m8-q1-jma": [
+true,
+2422781,
+"estimated to 1300-01-12 (Persian)"
+],
+"c4-m8-q1-ma": [
+true,
+2422770,
+"estimated to 1300-01 (Persian)"
+],
+"c4-m8-q1-a": [
+true,
+2422770,
+"estimated to 1300 (Persian)"
+],
+"c4-m8-q1-j-sans-mois": [
+true,
+2422781,
+"estimated to 1300-00-12 (Persian)"
+],
+"c4-m8-q1-annee-inconnue": [
+true,
+1948332,
+"estimated to 0-01-12 (Persian)"
+],
+"c4-m8-q1-mois-seul": [
+true,
+1948321,
+"estimated to 0-01 (Persian)"
+],
+"c4-m8-q2-jma": [
+true,
+2422781,
+"calculated to 1300-01-12 (Persian)"
+],
+"c4-m8-q2-ma": [
+true,
+2422770,
+"calculated to 1300-01 (Persian)"
+],
+"c4-m8-q2-a": [
+true,
+2422770,
+"calculated to 1300 (Persian)"
+],
+"c4-m8-q2-j-sans-mois": [
+true,
+2422781,
+"calculated to 1300-00-12 (Persian)"
+],
+"c4-m8-q2-annee-inconnue": [
+true,
+1948332,
+"calculated to 0-01-12 (Persian)"
+],
+"c4-m8-q2-mois-seul": [
+true,
+1948321,
+"calculated to 0-01 (Persian)"
+],
+"c5-m0-q0-jma": [
+true,
+2408773,
+"1300-01-12 (Islamic)"
+],
+"c5-m0-q0-ma": [
+true,
+2408762,
+"1300-01 (Islamic)"
+],
+"c5-m0-q0-a": [
+true,
+2408762,
+"1300 (Islamic)"
+],
+"c5-m0-q0-j-sans-mois": [
+true,
+2408773,
+"1300-00-12 (Islamic)"
+],
+"c5-m0-q0-annee-inconnue": [
+true,
+1948451,
+"0-01-12 (Islamic)"
+],
+"c5-m0-q0-mois-seul": [
+true,
+1948440,
+"0-01 (Islamic)"
+],
+"c5-m0-q1-jma": [
+true,
+2408773,
+"estimated 1300-01-12 (Islamic)"
+],
+"c5-m0-q1-ma": [
+true,
+2408762,
+"estimated 1300-01 (Islamic)"
+],
+"c5-m0-q1-a": [
+true,
+2408762,
+"estimated 1300 (Islamic)"
+],
+"c5-m0-q1-j-sans-mois": [
+true,
+2408773,
+"estimated 1300-00-12 (Islamic)"
+],
+"c5-m0-q1-annee-inconnue": [
+true,
+1948451,
+"estimated 0-01-12 (Islamic)"
+],
+"c5-m0-q1-mois-seul": [
+true,
+1948440,
+"estimated 0-01 (Islamic)"
+],
+"c5-m0-q2-jma": [
+true,
+2408773,
+"calculated 1300-01-12 (Islamic)"
+],
+"c5-m0-q2-ma": [
+true,
+2408762,
+"calculated 1300-01 (Islamic)"
+],
+"c5-m0-q2-a": [
+true,
+2408762,
+"calculated 1300 (Islamic)"
+],
+"c5-m0-q2-j-sans-mois": [
+true,
+2408773,
+"calculated 1300-00-12 (Islamic)"
+],
+"c5-m0-q2-annee-inconnue": [
+true,
+1948451,
+"calculated 0-01-12 (Islamic)"
+],
+"c5-m0-q2-mois-seul": [
+true,
+1948440,
+"calculated 0-01 (Islamic)"
+],
+"c5-m1-q0-jma": [
+true,
+2408773,
+"before 1300-01-12 (Islamic)"
+],
+"c5-m1-q0-ma": [
+true,
+2408762,
+"before 1300-01 (Islamic)"
+],
+"c5-m1-q0-a": [
+true,
+2408762,
+"before 1300 (Islamic)"
+],
+"c5-m1-q0-j-sans-mois": [
+true,
+2408773,
+"before 1300-00-12 (Islamic)"
+],
+"c5-m1-q0-annee-inconnue": [
+true,
+1948451,
+"before 0-01-12 (Islamic)"
+],
+"c5-m1-q0-mois-seul": [
+true,
+1948440,
+"before 0-01 (Islamic)"
+],
+"c5-m1-q1-jma": [
+true,
+2408773,
+"estimated before 1300-01-12 (Islamic)"
+],
+"c5-m1-q1-ma": [
+true,
+2408762,
+"estimated before 1300-01 (Islamic)"
+],
+"c5-m1-q1-a": [
+true,
+2408762,
+"estimated before 1300 (Islamic)"
+],
+"c5-m1-q1-j-sans-mois": [
+true,
+2408773,
+"estimated before 1300-00-12 (Islamic)"
+],
+"c5-m1-q1-annee-inconnue": [
+true,
+1948451,
+"estimated before 0-01-12 (Islamic)"
+],
+"c5-m1-q1-mois-seul": [
+true,
+1948440,
+"estimated before 0-01 (Islamic)"
+],
+"c5-m1-q2-jma": [
+true,
+2408773,
+"calculated before 1300-01-12 (Islamic)"
+],
+"c5-m1-q2-ma": [
+true,
+2408762,
+"calculated before 1300-01 (Islamic)"
+],
+"c5-m1-q2-a": [
+true,
+2408762,
+"calculated before 1300 (Islamic)"
+],
+"c5-m1-q2-j-sans-mois": [
+true,
+2408773,
+"calculated before 1300-00-12 (Islamic)"
+],
+"c5-m1-q2-annee-inconnue": [
+true,
+1948451,
+"calculated before 0-01-12 (Islamic)"
+],
+"c5-m1-q2-mois-seul": [
+true,
+1948440,
+"calculated before 0-01 (Islamic)"
+],
+"c5-m2-q0-jma": [
+true,
+2408773,
+"after 1300-01-12 (Islamic)"
+],
+"c5-m2-q0-ma": [
+true,
+2408762,
+"after 1300-01 (Islamic)"
+],
+"c5-m2-q0-a": [
+true,
+2408762,
+"after 1300 (Islamic)"
+],
+"c5-m2-q0-j-sans-mois": [
+true,
+2408773,
+"after 1300-00-12 (Islamic)"
+],
+"c5-m2-q0-annee-inconnue": [
+true,
+1948451,
+"after 0-01-12 (Islamic)"
+],
+"c5-m2-q0-mois-seul": [
+true,
+1948440,
+"after 0-01 (Islamic)"
+],
+"c5-m2-q1-jma": [
+true,
+2408773,
+"estimated after 1300-01-12 (Islamic)"
+],
+"c5-m2-q1-ma": [
+true,
+2408762,
+"estimated after 1300-01 (Islamic)"
+],
+"c5-m2-q1-a": [
+true,
+2408762,
+"estimated after 1300 (Islamic)"
+],
+"c5-m2-q1-j-sans-mois": [
+true,
+2408773,
+"estimated after 1300-00-12 (Islamic)"
+],
+"c5-m2-q1-annee-inconnue": [
+true,
+1948451,
+"estimated after 0-01-12 (Islamic)"
+],
+"c5-m2-q1-mois-seul": [
+true,
+1948440,
+"estimated after 0-01 (Islamic)"
+],
+"c5-m2-q2-jma": [
+true,
+2408773,
+"calculated after 1300-01-12 (Islamic)"
+],
+"c5-m2-q2-ma": [
+true,
+2408762,
+"calculated after 1300-01 (Islamic)"
+],
+"c5-m2-q2-a": [
+true,
+2408762,
+"calculated after 1300 (Islamic)"
+],
+"c5-m2-q2-j-sans-mois": [
+true,
+2408773,
+"calculated after 1300-00-12 (Islamic)"
+],
+"c5-m2-q2-annee-inconnue": [
+true,
+1948451,
+"calculated after 0-01-12 (Islamic)"
+],
+"c5-m2-q2-mois-seul": [
+true,
+1948440,
+"calculated after 0-01 (Islamic)"
+],
+"c5-m3-q0-jma": [
+true,
+2408773,
+"about 1300-01-12 (Islamic)"
+],
+"c5-m3-q0-ma": [
+true,
+2408762,
+"about 1300-01 (Islamic)"
+],
+"c5-m3-q0-a": [
+true,
+2408762,
+"about 1300 (Islamic)"
+],
+"c5-m3-q0-j-sans-mois": [
+true,
+2408773,
+"about 1300-00-12 (Islamic)"
+],
+"c5-m3-q0-annee-inconnue": [
+true,
+1948451,
+"about 0-01-12 (Islamic)"
+],
+"c5-m3-q0-mois-seul": [
+true,
+1948440,
+"about 0-01 (Islamic)"
+],
+"c5-m3-q1-jma": [
+true,
+2408773,
+"estimated about 1300-01-12 (Islamic)"
+],
+"c5-m3-q1-ma": [
+true,
+2408762,
+"estimated about 1300-01 (Islamic)"
+],
+"c5-m3-q1-a": [
+true,
+2408762,
+"estimated about 1300 (Islamic)"
+],
+"c5-m3-q1-j-sans-mois": [
+true,
+2408773,
+"estimated about 1300-00-12 (Islamic)"
+],
+"c5-m3-q1-annee-inconnue": [
+true,
+1948451,
+"estimated about 0-01-12 (Islamic)"
+],
+"c5-m3-q1-mois-seul": [
+true,
+1948440,
+"estimated about 0-01 (Islamic)"
+],
+"c5-m3-q2-jma": [
+true,
+2408773,
+"calculated about 1300-01-12 (Islamic)"
+],
+"c5-m3-q2-ma": [
+true,
+2408762,
+"calculated about 1300-01 (Islamic)"
+],
+"c5-m3-q2-a": [
+true,
+2408762,
+"calculated about 1300 (Islamic)"
+],
+"c5-m3-q2-j-sans-mois": [
+true,
+2408773,
+"calculated about 1300-00-12 (Islamic)"
+],
+"c5-m3-q2-annee-inconnue": [
+true,
+1948451,
+"calculated about 0-01-12 (Islamic)"
+],
+"c5-m3-q2-mois-seul": [
+true,
+1948440,
+"calculated about 0-01 (Islamic)"
+],
+"c5-m7-q0-jma": [
+true,
+2408773,
+"from 1300-01-12 (Islamic)"
+],
+"c5-m7-q0-ma": [
+true,
+2408762,
+"from 1300-01 (Islamic)"
+],
+"c5-m7-q0-a": [
+true,
+2408762,
+"from 1300 (Islamic)"
+],
+"c5-m7-q0-j-sans-mois": [
+true,
+2408773,
+"from 1300-00-12 (Islamic)"
+],
+"c5-m7-q0-annee-inconnue": [
+true,
+1948451,
+"from 0-01-12 (Islamic)"
+],
+"c5-m7-q0-mois-seul": [
+true,
+1948440,
+"from 0-01 (Islamic)"
+],
+"c5-m7-q1-jma": [
+true,
+2408773,
+"estimated from 1300-01-12 (Islamic)"
+],
+"c5-m7-q1-ma": [
+true,
+2408762,
+"estimated from 1300-01 (Islamic)"
+],
+"c5-m7-q1-a": [
+true,
+2408762,
+"estimated from 1300 (Islamic)"
+],
+"c5-m7-q1-j-sans-mois": [
+true,
+2408773,
+"estimated from 1300-00-12 (Islamic)"
+],
+"c5-m7-q1-annee-inconnue": [
+true,
+1948451,
+"estimated from 0-01-12 (Islamic)"
+],
+"c5-m7-q1-mois-seul": [
+true,
+1948440,
+"estimated from 0-01 (Islamic)"
+],
+"c5-m7-q2-jma": [
+true,
+2408773,
+"calculated from 1300-01-12 (Islamic)"
+],
+"c5-m7-q2-ma": [
+true,
+2408762,
+"calculated from 1300-01 (Islamic)"
+],
+"c5-m7-q2-a": [
+true,
+2408762,
+"calculated from 1300 (Islamic)"
+],
+"c5-m7-q2-j-sans-mois": [
+true,
+2408773,
+"calculated from 1300-00-12 (Islamic)"
+],
+"c5-m7-q2-annee-inconnue": [
+true,
+1948451,
+"calculated from 0-01-12 (Islamic)"
+],
+"c5-m7-q2-mois-seul": [
+true,
+1948440,
+"calculated from 0-01 (Islamic)"
+],
+"c5-m8-q0-jma": [
+true,
+2408773,
+"to 1300-01-12 (Islamic)"
+],
+"c5-m8-q0-ma": [
+true,
+2408762,
+"to 1300-01 (Islamic)"
+],
+"c5-m8-q0-a": [
+true,
+2408762,
+"to 1300 (Islamic)"
+],
+"c5-m8-q0-j-sans-mois": [
+true,
+2408773,
+"to 1300-00-12 (Islamic)"
+],
+"c5-m8-q0-annee-inconnue": [
+true,
+1948451,
+"to 0-01-12 (Islamic)"
+],
+"c5-m8-q0-mois-seul": [
+true,
+1948440,
+"to 0-01 (Islamic)"
+],
+"c5-m8-q1-jma": [
+true,
+2408773,
+"estimated to 1300-01-12 (Islamic)"
+],
+"c5-m8-q1-ma": [
+true,
+2408762,
+"estimated to 1300-01 (Islamic)"
+],
+"c5-m8-q1-a": [
+true,
+2408762,
+"estimated to 1300 (Islamic)"
+],
+"c5-m8-q1-j-sans-mois": [
+true,
+2408773,
+"estimated to 1300-00-12 (Islamic)"
+],
+"c5-m8-q1-annee-inconnue": [
+true,
+1948451,
+"estimated to 0-01-12 (Islamic)"
+],
+"c5-m8-q1-mois-seul": [
+true,
+1948440,
+"estimated to 0-01 (Islamic)"
+],
+"c5-m8-q2-jma": [
+true,
+2408773,
+"calculated to 1300-01-12 (Islamic)"
+],
+"c5-m8-q2-ma": [
+true,
+2408762,
+"calculated to 1300-01 (Islamic)"
+],
+"c5-m8-q2-a": [
+true,
+2408762,
+"calculated to 1300 (Islamic)"
+],
+"c5-m8-q2-j-sans-mois": [
+true,
+2408773,
+"calculated to 1300-00-12 (Islamic)"
+],
+"c5-m8-q2-annee-inconnue": [
+true,
+1948451,
+"calculated to 0-01-12 (Islamic)"
+],
+"c5-m8-q2-mois-seul": [
+true,
+1948440,
+"calculated to 0-01 (Islamic)"
+],
+"c6-m0-q0-jma": [
+true,
+2343879,
+"1705-03-12 (Swedish)"
+],
+"c6-m0-q0-ma": [
+true,
+2343868,
+"1705-03 (Swedish)"
+],
+"c6-m0-q0-a": [
+true,
+2343809,
+"1705 (Swedish)"
+],
+"c6-m0-q0-j-sans-mois": [
+true,
+2343820,
+"1705-00-12 (Swedish)"
+],
+"c6-m0-q0-annee-inconnue": [
+true,
+1721494,
+"0-03-12 (Swedish)"
+],
+"c6-m0-q0-mois-seul": [
+true,
+1721483,
+"0-03 (Swedish)"
+],
+"c6-m0-q1-jma": [
+true,
+2343879,
+"estimated 1705-03-12 (Swedish)"
+],
+"c6-m0-q1-ma": [
+true,
+2343868,
+"estimated 1705-03 (Swedish)"
+],
+"c6-m0-q1-a": [
+true,
+2343809,
+"estimated 1705 (Swedish)"
+],
+"c6-m0-q1-j-sans-mois": [
+true,
+2343820,
+"estimated 1705-00-12 (Swedish)"
+],
+"c6-m0-q1-annee-inconnue": [
+true,
+1721494,
+"estimated 0-03-12 (Swedish)"
+],
+"c6-m0-q1-mois-seul": [
+true,
+1721483,
+"estimated 0-03 (Swedish)"
+],
+"c6-m0-q2-jma": [
+true,
+2343879,
+"calculated 1705-03-12 (Swedish)"
+],
+"c6-m0-q2-ma": [
+true,
+2343868,
+"calculated 1705-03 (Swedish)"
+],
+"c6-m0-q2-a": [
+true,
+2343809,
+"calculated 1705 (Swedish)"
+],
+"c6-m0-q2-j-sans-mois": [
+true,
+2343820,
+"calculated 1705-00-12 (Swedish)"
+],
+"c6-m0-q2-annee-inconnue": [
+true,
+1721494,
+"calculated 0-03-12 (Swedish)"
+],
+"c6-m0-q2-mois-seul": [
+true,
+1721483,
+"calculated 0-03 (Swedish)"
+],
+"c6-m1-q0-jma": [
+true,
+2343879,
+"before 1705-03-12 (Swedish)"
+],
+"c6-m1-q0-ma": [
+true,
+2343868,
+"before 1705-03 (Swedish)"
+],
+"c6-m1-q0-a": [
+true,
+2343809,
+"before 1705 (Swedish)"
+],
+"c6-m1-q0-j-sans-mois": [
+true,
+2343820,
+"before 1705-00-12 (Swedish)"
+],
+"c6-m1-q0-annee-inconnue": [
+true,
+1721494,
+"before 0-03-12 (Swedish)"
+],
+"c6-m1-q0-mois-seul": [
+true,
+1721483,
+"before 0-03 (Swedish)"
+],
+"c6-m1-q1-jma": [
+true,
+2343879,
+"estimated before 1705-03-12 (Swedish)"
+],
+"c6-m1-q1-ma": [
+true,
+2343868,
+"estimated before 1705-03 (Swedish)"
+],
+"c6-m1-q1-a": [
+true,
+2343809,
+"estimated before 1705 (Swedish)"
+],
+"c6-m1-q1-j-sans-mois": [
+true,
+2343820,
+"estimated before 1705-00-12 (Swedish)"
+],
+"c6-m1-q1-annee-inconnue": [
+true,
+1721494,
+"estimated before 0-03-12 (Swedish)"
+],
+"c6-m1-q1-mois-seul": [
+true,
+1721483,
+"estimated before 0-03 (Swedish)"
+],
+"c6-m1-q2-jma": [
+true,
+2343879,
+"calculated before 1705-03-12 (Swedish)"
+],
+"c6-m1-q2-ma": [
+true,
+2343868,
+"calculated before 1705-03 (Swedish)"
+],
+"c6-m1-q2-a": [
+true,
+2343809,
+"calculated before 1705 (Swedish)"
+],
+"c6-m1-q2-j-sans-mois": [
+true,
+2343820,
+"calculated before 1705-00-12 (Swedish)"
+],
+"c6-m1-q2-annee-inconnue": [
+true,
+1721494,
+"calculated before 0-03-12 (Swedish)"
+],
+"c6-m1-q2-mois-seul": [
+true,
+1721483,
+"calculated before 0-03 (Swedish)"
+],
+"c6-m2-q0-jma": [
+true,
+2343879,
+"after 1705-03-12 (Swedish)"
+],
+"c6-m2-q0-ma": [
+true,
+2343868,
+"after 1705-03 (Swedish)"
+],
+"c6-m2-q0-a": [
+true,
+2343809,
+"after 1705 (Swedish)"
+],
+"c6-m2-q0-j-sans-mois": [
+true,
+2343820,
+"after 1705-00-12 (Swedish)"
+],
+"c6-m2-q0-annee-inconnue": [
+true,
+1721494,
+"after 0-03-12 (Swedish)"
+],
+"c6-m2-q0-mois-seul": [
+true,
+1721483,
+"after 0-03 (Swedish)"
+],
+"c6-m2-q1-jma": [
+true,
+2343879,
+"estimated after 1705-03-12 (Swedish)"
+],
+"c6-m2-q1-ma": [
+true,
+2343868,
+"estimated after 1705-03 (Swedish)"
+],
+"c6-m2-q1-a": [
+true,
+2343809,
+"estimated after 1705 (Swedish)"
+],
+"c6-m2-q1-j-sans-mois": [
+true,
+2343820,
+"estimated after 1705-00-12 (Swedish)"
+],
+"c6-m2-q1-annee-inconnue": [
+true,
+1721494,
+"estimated after 0-03-12 (Swedish)"
+],
+"c6-m2-q1-mois-seul": [
+true,
+1721483,
+"estimated after 0-03 (Swedish)"
+],
+"c6-m2-q2-jma": [
+true,
+2343879,
+"calculated after 1705-03-12 (Swedish)"
+],
+"c6-m2-q2-ma": [
+true,
+2343868,
+"calculated after 1705-03 (Swedish)"
+],
+"c6-m2-q2-a": [
+true,
+2343809,
+"calculated after 1705 (Swedish)"
+],
+"c6-m2-q2-j-sans-mois": [
+true,
+2343820,
+"calculated after 1705-00-12 (Swedish)"
+],
+"c6-m2-q2-annee-inconnue": [
+true,
+1721494,
+"calculated after 0-03-12 (Swedish)"
+],
+"c6-m2-q2-mois-seul": [
+true,
+1721483,
+"calculated after 0-03 (Swedish)"
+],
+"c6-m3-q0-jma": [
+true,
+2343879,
+"about 1705-03-12 (Swedish)"
+],
+"c6-m3-q0-ma": [
+true,
+2343868,
+"about 1705-03 (Swedish)"
+],
+"c6-m3-q0-a": [
+true,
+2343809,
+"about 1705 (Swedish)"
+],
+"c6-m3-q0-j-sans-mois": [
+true,
+2343820,
+"about 1705-00-12 (Swedish)"
+],
+"c6-m3-q0-annee-inconnue": [
+true,
+1721494,
+"about 0-03-12 (Swedish)"
+],
+"c6-m3-q0-mois-seul": [
+true,
+1721483,
+"about 0-03 (Swedish)"
+],
+"c6-m3-q1-jma": [
+true,
+2343879,
+"estimated about 1705-03-12 (Swedish)"
+],
+"c6-m3-q1-ma": [
+true,
+2343868,
+"estimated about 1705-03 (Swedish)"
+],
+"c6-m3-q1-a": [
+true,
+2343809,
+"estimated about 1705 (Swedish)"
+],
+"c6-m3-q1-j-sans-mois": [
+true,
+2343820,
+"estimated about 1705-00-12 (Swedish)"
+],
+"c6-m3-q1-annee-inconnue": [
+true,
+1721494,
+"estimated about 0-03-12 (Swedish)"
+],
+"c6-m3-q1-mois-seul": [
+true,
+1721483,
+"estimated about 0-03 (Swedish)"
+],
+"c6-m3-q2-jma": [
+true,
+2343879,
+"calculated about 1705-03-12 (Swedish)"
+],
+"c6-m3-q2-ma": [
+true,
+2343868,
+"calculated about 1705-03 (Swedish)"
+],
+"c6-m3-q2-a": [
+true,
+2343809,
+"calculated about 1705 (Swedish)"
+],
+"c6-m3-q2-j-sans-mois": [
+true,
+2343820,
+"calculated about 1705-00-12 (Swedish)"
+],
+"c6-m3-q2-annee-inconnue": [
+true,
+1721494,
+"calculated about 0-03-12 (Swedish)"
+],
+"c6-m3-q2-mois-seul": [
+true,
+1721483,
+"calculated about 0-03 (Swedish)"
+],
+"c6-m7-q0-jma": [
+true,
+2343879,
+"from 1705-03-12 (Swedish)"
+],
+"c6-m7-q0-ma": [
+true,
+2343868,
+"from 1705-03 (Swedish)"
+],
+"c6-m7-q0-a": [
+true,
+2343809,
+"from 1705 (Swedish)"
+],
+"c6-m7-q0-j-sans-mois": [
+true,
+2343820,
+"from 1705-00-12 (Swedish)"
+],
+"c6-m7-q0-annee-inconnue": [
+true,
+1721494,
+"from 0-03-12 (Swedish)"
+],
+"c6-m7-q0-mois-seul": [
+true,
+1721483,
+"from 0-03 (Swedish)"
+],
+"c6-m7-q1-jma": [
+true,
+2343879,
+"estimated from 1705-03-12 (Swedish)"
+],
+"c6-m7-q1-ma": [
+true,
+2343868,
+"estimated from 1705-03 (Swedish)"
+],
+"c6-m7-q1-a": [
+true,
+2343809,
+"estimated from 1705 (Swedish)"
+],
+"c6-m7-q1-j-sans-mois": [
+true,
+2343820,
+"estimated from 1705-00-12 (Swedish)"
+],
+"c6-m7-q1-annee-inconnue": [
+true,
+1721494,
+"estimated from 0-03-12 (Swedish)"
+],
+"c6-m7-q1-mois-seul": [
+true,
+1721483,
+"estimated from 0-03 (Swedish)"
+],
+"c6-m7-q2-jma": [
+true,
+2343879,
+"calculated from 1705-03-12 (Swedish)"
+],
+"c6-m7-q2-ma": [
+true,
+2343868,
+"calculated from 1705-03 (Swedish)"
+],
+"c6-m7-q2-a": [
+true,
+2343809,
+"calculated from 1705 (Swedish)"
+],
+"c6-m7-q2-j-sans-mois": [
+true,
+2343820,
+"calculated from 1705-00-12 (Swedish)"
+],
+"c6-m7-q2-annee-inconnue": [
+true,
+1721494,
+"calculated from 0-03-12 (Swedish)"
+],
+"c6-m7-q2-mois-seul": [
+true,
+1721483,
+"calculated from 0-03 (Swedish)"
+],
+"c6-m8-q0-jma": [
+true,
+2343879,
+"to 1705-03-12 (Swedish)"
+],
+"c6-m8-q0-ma": [
+true,
+2343868,
+"to 1705-03 (Swedish)"
+],
+"c6-m8-q0-a": [
+true,
+2343809,
+"to 1705 (Swedish)"
+],
+"c6-m8-q0-j-sans-mois": [
+true,
+2343820,
+"to 1705-00-12 (Swedish)"
+],
+"c6-m8-q0-annee-inconnue": [
+true,
+1721494,
+"to 0-03-12 (Swedish)"
+],
+"c6-m8-q0-mois-seul": [
+true,
+1721483,
+"to 0-03 (Swedish)"
+],
+"c6-m8-q1-jma": [
+true,
+2343879,
+"estimated to 1705-03-12 (Swedish)"
+],
+"c6-m8-q1-ma": [
+true,
+2343868,
+"estimated to 1705-03 (Swedish)"
+],
+"c6-m8-q1-a": [
+true,
+2343809,
+"estimated to 1705 (Swedish)"
+],
+"c6-m8-q1-j-sans-mois": [
+true,
+2343820,
+"estimated to 1705-00-12 (Swedish)"
+],
+"c6-m8-q1-annee-inconnue": [
+true,
+1721494,
+"estimated to 0-03-12 (Swedish)"
+],
+"c6-m8-q1-mois-seul": [
+true,
+1721483,
+"estimated to 0-03 (Swedish)"
+],
+"c6-m8-q2-jma": [
+true,
+2343879,
+"calculated to 1705-03-12 (Swedish)"
+],
+"c6-m8-q2-ma": [
+true,
+2343868,
+"calculated to 1705-03 (Swedish)"
+],
+"c6-m8-q2-a": [
+true,
+2343809,
+"calculated to 1705 (Swedish)"
+],
+"c6-m8-q2-j-sans-mois": [
+true,
+2343820,
+"calculated to 1705-00-12 (Swedish)"
+],
+"c6-m8-q2-annee-inconnue": [
+true,
+1721494,
+"calculated to 0-03-12 (Swedish)"
+],
+"c6-m8-q2-mois-seul": [
+true,
+1721483,
+"calculated to 0-03 (Swedish)"
+],
+"c0-m4-q0-jma": [
+true,
+2396829,
+"between 1850-03-12 and 1860-06-05"
+],
+"c0-m4-q0-a": [
+true,
+2396759,
+"between 1850 and 1860"
+],
+"c0-m4-q0-fin-vide": [
+true,
+2396829,
+"between 1850-03-12 and 0"
+],
+"c0-m4-q0-inverse": [
+true,
+2400567,
+"between 1860-06-05 and 1850-03-12"
+],
+"c0-m4-q0-annee-inconnue": [
+true,
+1721496,
+"between 0-03-12 and 0-06-05"
+],
+"c0-m4-q0-negatif": [
+true,
+1042145,
+"between 1860-03-12 B.C.E. and 1850-06-05 B.C.E."
+],
+"c0-m4-q1-jma": [
+true,
+2396829,
+"estimated between 1850-03-12 and 1860-06-05"
+],
+"c0-m4-q1-a": [
+true,
+2396759,
+"estimated between 1850 and 1860"
+],
+"c0-m4-q1-fin-vide": [
+true,
+2396829,
+"estimated between 1850-03-12 and 0"
+],
+"c0-m4-q1-inverse": [
+true,
+2400567,
+"estimated between 1860-06-05 and 1850-03-12"
+],
+"c0-m4-q1-annee-inconnue": [
+true,
+1721496,
+"estimated between 0-03-12 and 0-06-05"
+],
+"c0-m4-q1-negatif": [
+true,
+1042145,
+"estimated between 1860-03-12 B.C.E. and 1850-06-05 B.C.E."
+],
+"c0-m4-q2-jma": [
+true,
+2396829,
+"calculated between 1850-03-12 and 1860-06-05"
+],
+"c0-m4-q2-a": [
+true,
+2396759,
+"calculated between 1850 and 1860"
+],
+"c0-m4-q2-fin-vide": [
+true,
+2396829,
+"calculated between 1850-03-12 and 0"
+],
+"c0-m4-q2-inverse": [
+true,
+2400567,
+"calculated between 1860-06-05 and 1850-03-12"
+],
+"c0-m4-q2-annee-inconnue": [
+true,
+1721496,
+"calculated between 0-03-12 and 0-06-05"
+],
+"c0-m4-q2-negatif": [
+true,
+1042145,
+"calculated between 1860-03-12 B.C.E. and 1850-06-05 B.C.E."
+],
+"c0-m5-q0-jma": [
+true,
+2396829,
+"from 1850-03-12 to 1860-06-05"
+],
+"c0-m5-q0-a": [
+true,
+2396759,
+"from 1850 to 1860"
+],
+"c0-m5-q0-fin-vide": [
+true,
+2396829,
+"from 1850-03-12 to 0"
+],
+"c0-m5-q0-inverse": [
+true,
+2400567,
+"from 1860-06-05 to 1850-03-12"
+],
+"c0-m5-q0-annee-inconnue": [
+true,
+1721496,
+"from 0-03-12 to 0-06-05"
+],
+"c0-m5-q0-negatif": [
+true,
+1042145,
+"from 1860-03-12 B.C.E. to 1850-06-05 B.C.E."
+],
+"c0-m5-q1-jma": [
+true,
+2396829,
+"estimated from 1850-03-12 to 1860-06-05"
+],
+"c0-m5-q1-a": [
+true,
+2396759,
+"estimated from 1850 to 1860"
+],
+"c0-m5-q1-fin-vide": [
+true,
+2396829,
+"estimated from 1850-03-12 to 0"
+],
+"c0-m5-q1-inverse": [
+true,
+2400567,
+"estimated from 1860-06-05 to 1850-03-12"
+],
+"c0-m5-q1-annee-inconnue": [
+true,
+1721496,
+"estimated from 0-03-12 to 0-06-05"
+],
+"c0-m5-q1-negatif": [
+true,
+1042145,
+"estimated from 1860-03-12 B.C.E. to 1850-06-05 B.C.E."
+],
+"c0-m5-q2-jma": [
+true,
+2396829,
+"calculated from 1850-03-12 to 1860-06-05"
+],
+"c0-m5-q2-a": [
+true,
+2396759,
+"calculated from 1850 to 1860"
+],
+"c0-m5-q2-fin-vide": [
+true,
+2396829,
+"calculated from 1850-03-12 to 0"
+],
+"c0-m5-q2-inverse": [
+true,
+2400567,
+"calculated from 1860-06-05 to 1850-03-12"
+],
+"c0-m5-q2-annee-inconnue": [
+true,
+1721496,
+"calculated from 0-03-12 to 0-06-05"
+],
+"c0-m5-q2-negatif": [
+true,
+1042145,
+"calculated from 1860-03-12 B.C.E. to 1850-06-05 B.C.E."
+],
+"c1-m4-q0-jma": [
+true,
+2349696,
+"between 1721-02-12 and 1725-06-05 (Julian)"
+],
+"c1-m4-q0-a": [
+true,
+2349654,
+"between 1721 and 1725 (Julian)"
+],
+"c1-m4-q0-fin-vide": [
+true,
+2349696,
+"between 1721-02-12 and 0 (Julian)"
+],
+"c1-m4-q0-inverse": [
+true,
+2351270,
+"between 1725-06-05 and 1721-02-12 (Julian)"
+],
+"c1-m4-q0-annee-inconnue": [
+true,
+1721466,
+"between 0-02-12 and 0-06-05 (Julian)"
+],
+"c1-m4-q0-negatif": [
+true,
+1091409,
+"between 1725-02-12 B.C.E. and 1721-06-05 B.C.E. (Julian)"
+],
+"c1-m4-q1-jma": [
+true,
+2349696,
+"estimated between 1721-02-12 and 1725-06-05 (Julian)"
+],
+"c1-m4-q1-a": [
+true,
+2349654,
+"estimated between 1721 and 1725 (Julian)"
+],
+"c1-m4-q1-fin-vide": [
+true,
+2349696,
+"estimated between 1721-02-12 and 0 (Julian)"
+],
+"c1-m4-q1-inverse": [
+true,
+2351270,
+"estimated between 1725-06-05 and 1721-02-12 (Julian)"
+],
+"c1-m4-q1-annee-inconnue": [
+true,
+1721466,
+"estimated between 0-02-12 and 0-06-05 (Julian)"
+],
+"c1-m4-q1-negatif": [
+true,
+1091409,
+"estimated between 1725-02-12 B.C.E. and 1721-06-05 B.C.E. (Julian)"
+],
+"c1-m4-q2-jma": [
+true,
+2349696,
+"calculated between 1721-02-12 and 1725-06-05 (Julian)"
+],
+"c1-m4-q2-a": [
+true,
+2349654,
+"calculated between 1721 and 1725 (Julian)"
+],
+"c1-m4-q2-fin-vide": [
+true,
+2349696,
+"calculated between 1721-02-12 and 0 (Julian)"
+],
+"c1-m4-q2-inverse": [
+true,
+2351270,
+"calculated between 1725-06-05 and 1721-02-12 (Julian)"
+],
+"c1-m4-q2-annee-inconnue": [
+true,
+1721466,
+"calculated between 0-02-12 and 0-06-05 (Julian)"
+],
+"c1-m4-q2-negatif": [
+true,
+1091409,
+"calculated between 1725-02-12 B.C.E. and 1721-06-05 B.C.E. (Julian)"
+],
+"c1-m5-q0-jma": [
+true,
+2349696,
+"from 1721-02-12 to 1725-06-05 (Julian)"
+],
+"c1-m5-q0-a": [
+true,
+2349654,
+"from 1721 to 1725 (Julian)"
+],
+"c1-m5-q0-fin-vide": [
+true,
+2349696,
+"from 1721-02-12 to 0 (Julian)"
+],
+"c1-m5-q0-inverse": [
+true,
+2351270,
+"from 1725-06-05 to 1721-02-12 (Julian)"
+],
+"c1-m5-q0-annee-inconnue": [
+true,
+1721466,
+"from 0-02-12 to 0-06-05 (Julian)"
+],
+"c1-m5-q0-negatif": [
+true,
+1091409,
+"from 1725-02-12 B.C.E. to 1721-06-05 B.C.E. (Julian)"
+],
+"c1-m5-q1-jma": [
+true,
+2349696,
+"estimated from 1721-02-12 to 1725-06-05 (Julian)"
+],
+"c1-m5-q1-a": [
+true,
+2349654,
+"estimated from 1721 to 1725 (Julian)"
+],
+"c1-m5-q1-fin-vide": [
+true,
+2349696,
+"estimated from 1721-02-12 to 0 (Julian)"
+],
+"c1-m5-q1-inverse": [
+true,
+2351270,
+"estimated from 1725-06-05 to 1721-02-12 (Julian)"
+],
+"c1-m5-q1-annee-inconnue": [
+true,
+1721466,
+"estimated from 0-02-12 to 0-06-05 (Julian)"
+],
+"c1-m5-q1-negatif": [
+true,
+1091409,
+"estimated from 1725-02-12 B.C.E. to 1721-06-05 B.C.E. (Julian)"
+],
+"c1-m5-q2-jma": [
+true,
+2349696,
+"calculated from 1721-02-12 to 1725-06-05 (Julian)"
+],
+"c1-m5-q2-a": [
+true,
+2349654,
+"calculated from 1721 to 1725 (Julian)"
+],
+"c1-m5-q2-fin-vide": [
+true,
+2349696,
+"calculated from 1721-02-12 to 0 (Julian)"
+],
+"c1-m5-q2-inverse": [
+true,
+2351270,
+"calculated from 1725-06-05 to 1721-02-12 (Julian)"
+],
+"c1-m5-q2-annee-inconnue": [
+true,
+1721466,
+"calculated from 0-02-12 to 0-06-05 (Julian)"
+],
+"c1-m5-q2-negatif": [
+true,
+1091409,
+"calculated from 1725-02-12 B.C.E. to 1721-06-05 B.C.E. (Julian)"
+],
+"c2-m4-q0-jma": [
+true,
+2393209,
+"between 5600-08-10 and 5602-01-15 (Hebrew)"
+],
+"c2-m4-q0-a": [
+true,
+2392992,
+"between 5600 and 5602 (Hebrew)"
+],
+"c2-m4-q0-fin-vide": [
+true,
+2393209,
+"between 5600-08-10 and 0 (Hebrew)"
+],
+"c2-m4-q0-inverse": [
+true,
+2393744,
+"between 5602-01-15 and 5600-08-10 (Hebrew)"
+],
+"c2-m4-q0-annee-inconnue": [
+true,
+348185,
+"between 0-08-10 and 0-01-15 (Hebrew)"
+],
+"c2-m4-q1-jma": [
+true,
+2393209,
+"estimated between 5600-08-10 and 5602-01-15 (Hebrew)"
+],
+"c2-m4-q1-a": [
+true,
+2392992,
+"estimated between 5600 and 5602 (Hebrew)"
+],
+"c2-m4-q1-fin-vide": [
+true,
+2393209,
+"estimated between 5600-08-10 and 0 (Hebrew)"
+],
+"c2-m4-q1-inverse": [
+true,
+2393744,
+"estimated between 5602-01-15 and 5600-08-10 (Hebrew)"
+],
+"c2-m4-q1-annee-inconnue": [
+true,
+348185,
+"estimated between 0-08-10 and 0-01-15 (Hebrew)"
+],
+"c2-m4-q2-jma": [
+true,
+2393209,
+"calculated between 5600-08-10 and 5602-01-15 (Hebrew)"
+],
+"c2-m4-q2-a": [
+true,
+2392992,
+"calculated between 5600 and 5602 (Hebrew)"
+],
+"c2-m4-q2-fin-vide": [
+true,
+2393209,
+"calculated between 5600-08-10 and 0 (Hebrew)"
+],
+"c2-m4-q2-inverse": [
+true,
+2393744,
+"calculated between 5602-01-15 and 5600-08-10 (Hebrew)"
+],
+"c2-m4-q2-annee-inconnue": [
+true,
+348185,
+"calculated between 0-08-10 and 0-01-15 (Hebrew)"
+],
+"c2-m5-q0-jma": [
+true,
+2393209,
+"from 5600-08-10 to 5602-01-15 (Hebrew)"
+],
+"c2-m5-q0-a": [
+true,
+2392992,
+"from 5600 to 5602 (Hebrew)"
+],
+"c2-m5-q0-fin-vide": [
+true,
+2393209,
+"from 5600-08-10 to 0 (Hebrew)"
+],
+"c2-m5-q0-inverse": [
+true,
+2393744,
+"from 5602-01-15 to 5600-08-10 (Hebrew)"
+],
+"c2-m5-q0-annee-inconnue": [
+true,
+348185,
+"from 0-08-10 to 0-01-15 (Hebrew)"
+],
+"c2-m5-q1-jma": [
+true,
+2393209,
+"estimated from 5600-08-10 to 5602-01-15 (Hebrew)"
+],
+"c2-m5-q1-a": [
+true,
+2392992,
+"estimated from 5600 to 5602 (Hebrew)"
+],
+"c2-m5-q1-fin-vide": [
+true,
+2393209,
+"estimated from 5600-08-10 to 0 (Hebrew)"
+],
+"c2-m5-q1-inverse": [
+true,
+2393744,
+"estimated from 5602-01-15 to 5600-08-10 (Hebrew)"
+],
+"c2-m5-q1-annee-inconnue": [
+true,
+348185,
+"estimated from 0-08-10 to 0-01-15 (Hebrew)"
+],
+"c2-m5-q2-jma": [
+true,
+2393209,
+"calculated from 5600-08-10 to 5602-01-15 (Hebrew)"
+],
+"c2-m5-q2-a": [
+true,
+2392992,
+"calculated from 5600 to 5602 (Hebrew)"
+],
+"c2-m5-q2-fin-vide": [
+true,
+2393209,
+"calculated from 5600-08-10 to 0 (Hebrew)"
+],
+"c2-m5-q2-inverse": [
+true,
+2393744,
+"calculated from 5602-01-15 to 5600-08-10 (Hebrew)"
+],
+"c2-m5-q2-annee-inconnue": [
+true,
+348185,
+"calculated from 0-08-10 to 0-01-15 (Hebrew)"
+],
+"c3-m4-q0-jma": [
+true,
+2376581,
+"between 3-01-12 and 3-13-04 (French Republican)"
+],
+"c3-m4-q0-a": [
+true,
+2376570,
+"between 3 and 3 (French Republican)"
+],
+"c3-m4-q0-fin-vide": [
+true,
+2376581,
+"between 3-01-12 and 0 (French Republican)"
+],
+"c3-m4-q0-inverse": [
+true,
+2376933,
+"between 3-13-04 and 3-01-12 (French Republican)"
+],
+"c3-m4-q0-annee-inconnue": [
+true,
+2375851,
+"between 0-01-12 and 0-13-04 (French Republican)"
+],
+"c3-m4-q1-jma": [
+true,
+2376581,
+"estimated between 3-01-12 and 3-13-04 (French Republican)"
+],
+"c3-m4-q1-a": [
+true,
+2376570,
+"estimated between 3 and 3 (French Republican)"
+],
+"c3-m4-q1-fin-vide": [
+true,
+2376581,
+"estimated between 3-01-12 and 0 (French Republican)"
+],
+"c3-m4-q1-inverse": [
+true,
+2376933,
+"estimated between 3-13-04 and 3-01-12 (French Republican)"
+],
+"c3-m4-q1-annee-inconnue": [
+true,
+2375851,
+"estimated between 0-01-12 and 0-13-04 (French Republican)"
+],
+"c3-m4-q2-jma": [
+true,
+2376581,
+"calculated between 3-01-12 and 3-13-04 (French Republican)"
+],
+"c3-m4-q2-a": [
+true,
+2376570,
+"calculated between 3 and 3 (French Republican)"
+],
+"c3-m4-q2-fin-vide": [
+true,
+2376581,
+"calculated between 3-01-12 and 0 (French Republican)"
+],
+"c3-m4-q2-inverse": [
+true,
+2376933,
+"calculated between 3-13-04 and 3-01-12 (French Republican)"
+],
+"c3-m4-q2-annee-inconnue": [
+true,
+2375851,
+"calculated between 0-01-12 and 0-13-04 (French Republican)"
+],
+"c3-m5-q0-jma": [
+true,
+2376581,
+"from 3-01-12 to 3-13-04 (French Republican)"
+],
+"c3-m5-q0-a": [
+true,
+2376570,
+"from 3 to 3 (French Republican)"
+],
+"c3-m5-q0-fin-vide": [
+true,
+2376581,
+"from 3-01-12 to 0 (French Republican)"
+],
+"c3-m5-q0-inverse": [
+true,
+2376933,
+"from 3-13-04 to 3-01-12 (French Republican)"
+],
+"c3-m5-q0-annee-inconnue": [
+true,
+2375851,
+"from 0-01-12 to 0-13-04 (French Republican)"
+],
+"c3-m5-q1-jma": [
+true,
+2376581,
+"estimated from 3-01-12 to 3-13-04 (French Republican)"
+],
+"c3-m5-q1-a": [
+true,
+2376570,
+"estimated from 3 to 3 (French Republican)"
+],
+"c3-m5-q1-fin-vide": [
+true,
+2376581,
+"estimated from 3-01-12 to 0 (French Republican)"
+],
+"c3-m5-q1-inverse": [
+true,
+2376933,
+"estimated from 3-13-04 to 3-01-12 (French Republican)"
+],
+"c3-m5-q1-annee-inconnue": [
+true,
+2375851,
+"estimated from 0-01-12 to 0-13-04 (French Republican)"
+],
+"c3-m5-q2-jma": [
+true,
+2376581,
+"calculated from 3-01-12 to 3-13-04 (French Republican)"
+],
+"c3-m5-q2-a": [
+true,
+2376570,
+"calculated from 3 to 3 (French Republican)"
+],
+"c3-m5-q2-fin-vide": [
+true,
+2376581,
+"calculated from 3-01-12 to 0 (French Republican)"
+],
+"c3-m5-q2-inverse": [
+true,
+2376933,
+"calculated from 3-13-04 to 3-01-12 (French Republican)"
+],
+"c3-m5-q2-annee-inconnue": [
+true,
+2375851,
+"calculated from 0-01-12 to 0-13-04 (French Republican)"
+],
+"c4-m4-q0-jma": [
+true,
+2422781,
+"between 1300-01-12 and 1301-06-05 (Persian)"
+],
+"c4-m4-q0-a": [
+true,
+2422770,
+"between 1300 and 1301 (Persian)"
+],
+"c4-m4-q0-fin-vide": [
+true,
+2422781,
+"between 1300-01-12 and 0 (Persian)"
+],
+"c4-m4-q0-inverse": [
+true,
+2423295,
+"between 1301-06-05 and 1300-01-12 (Persian)"
+],
+"c4-m4-q0-annee-inconnue": [
+true,
+1948332,
+"between 0-01-12 and 0-06-05 (Persian)"
+],
+"c4-m4-q1-jma": [
+true,
+2422781,
+"estimated between 1300-01-12 and 1301-06-05 (Persian)"
+],
+"c4-m4-q1-a": [
+true,
+2422770,
+"estimated between 1300 and 1301 (Persian)"
+],
+"c4-m4-q1-fin-vide": [
+true,
+2422781,
+"estimated between 1300-01-12 and 0 (Persian)"
+],
+"c4-m4-q1-inverse": [
+true,
+2423295,
+"estimated between 1301-06-05 and 1300-01-12 (Persian)"
+],
+"c4-m4-q1-annee-inconnue": [
+true,
+1948332,
+"estimated between 0-01-12 and 0-06-05 (Persian)"
+],
+"c4-m4-q2-jma": [
+true,
+2422781,
+"calculated between 1300-01-12 and 1301-06-05 (Persian)"
+],
+"c4-m4-q2-a": [
+true,
+2422770,
+"calculated between 1300 and 1301 (Persian)"
+],
+"c4-m4-q2-fin-vide": [
+true,
+2422781,
+"calculated between 1300-01-12 and 0 (Persian)"
+],
+"c4-m4-q2-inverse": [
+true,
+2423295,
+"calculated between 1301-06-05 and 1300-01-12 (Persian)"
+],
+"c4-m4-q2-annee-inconnue": [
+true,
+1948332,
+"calculated between 0-01-12 and 0-06-05 (Persian)"
+],
+"c4-m5-q0-jma": [
+true,
+2422781,
+"from 1300-01-12 to 1301-06-05 (Persian)"
+],
+"c4-m5-q0-a": [
+true,
+2422770,
+"from 1300 to 1301 (Persian)"
+],
+"c4-m5-q0-fin-vide": [
+true,
+2422781,
+"from 1300-01-12 to 0 (Persian)"
+],
+"c4-m5-q0-inverse": [
+true,
+2423295,
+"from 1301-06-05 to 1300-01-12 (Persian)"
+],
+"c4-m5-q0-annee-inconnue": [
+true,
+1948332,
+"from 0-01-12 to 0-06-05 (Persian)"
+],
+"c4-m5-q1-jma": [
+true,
+2422781,
+"estimated from 1300-01-12 to 1301-06-05 (Persian)"
+],
+"c4-m5-q1-a": [
+true,
+2422770,
+"estimated from 1300 to 1301 (Persian)"
+],
+"c4-m5-q1-fin-vide": [
+true,
+2422781,
+"estimated from 1300-01-12 to 0 (Persian)"
+],
+"c4-m5-q1-inverse": [
+true,
+2423295,
+"estimated from 1301-06-05 to 1300-01-12 (Persian)"
+],
+"c4-m5-q1-annee-inconnue": [
+true,
+1948332,
+"estimated from 0-01-12 to 0-06-05 (Persian)"
+],
+"c4-m5-q2-jma": [
+true,
+2422781,
+"calculated from 1300-01-12 to 1301-06-05 (Persian)"
+],
+"c4-m5-q2-a": [
+true,
+2422770,
+"calculated from 1300 to 1301 (Persian)"
+],
+"c4-m5-q2-fin-vide": [
+true,
+2422781,
+"calculated from 1300-01-12 to 0 (Persian)"
+],
+"c4-m5-q2-inverse": [
+true,
+2423295,
+"calculated from 1301-06-05 to 1300-01-12 (Persian)"
+],
+"c4-m5-q2-annee-inconnue": [
+true,
+1948332,
+"calculated from 0-01-12 to 0-06-05 (Persian)"
+],
+"c5-m4-q0-jma": [
+true,
+2408773,
+"between 1300-01-12 and 1301-06-05 (Islamic)"
+],
+"c5-m4-q0-a": [
+true,
+2408762,
+"between 1300 and 1301 (Islamic)"
+],
+"c5-m4-q0-fin-vide": [
+true,
+2408773,
+"between 1300-01-12 and 0 (Islamic)"
+],
+"c5-m4-q0-inverse": [
+true,
+2409269,
+"between 1301-06-05 and 1300-01-12 (Islamic)"
+],
+"c5-m4-q0-annee-inconnue": [
+true,
+1948451,
+"between 0-01-12 and 0-06-05 (Islamic)"
+],
+"c5-m4-q1-jma": [
+true,
+2408773,
+"estimated between 1300-01-12 and 1301-06-05 (Islamic)"
+],
+"c5-m4-q1-a": [
+true,
+2408762,
+"estimated between 1300 and 1301 (Islamic)"
+],
+"c5-m4-q1-fin-vide": [
+true,
+2408773,
+"estimated between 1300-01-12 and 0 (Islamic)"
+],
+"c5-m4-q1-inverse": [
+true,
+2409269,
+"estimated between 1301-06-05 and 1300-01-12 (Islamic)"
+],
+"c5-m4-q1-annee-inconnue": [
+true,
+1948451,
+"estimated between 0-01-12 and 0-06-05 (Islamic)"
+],
+"c5-m4-q2-jma": [
+true,
+2408773,
+"calculated between 1300-01-12 and 1301-06-05 (Islamic)"
+],
+"c5-m4-q2-a": [
+true,
+2408762,
+"calculated between 1300 and 1301 (Islamic)"
+],
+"c5-m4-q2-fin-vide": [
+true,
+2408773,
+"calculated between 1300-01-12 and 0 (Islamic)"
+],
+"c5-m4-q2-inverse": [
+true,
+2409269,
+"calculated between 1301-06-05 and 1300-01-12 (Islamic)"
+],
+"c5-m4-q2-annee-inconnue": [
+true,
+1948451,
+"calculated between 0-01-12 and 0-06-05 (Islamic)"
+],
+"c5-m5-q0-jma": [
+true,
+2408773,
+"from 1300-01-12 to 1301-06-05 (Islamic)"
+],
+"c5-m5-q0-a": [
+true,
+2408762,
+"from 1300 to 1301 (Islamic)"
+],
+"c5-m5-q0-fin-vide": [
+true,
+2408773,
+"from 1300-01-12 to 0 (Islamic)"
+],
+"c5-m5-q0-inverse": [
+true,
+2409269,
+"from 1301-06-05 to 1300-01-12 (Islamic)"
+],
+"c5-m5-q0-annee-inconnue": [
+true,
+1948451,
+"from 0-01-12 to 0-06-05 (Islamic)"
+],
+"c5-m5-q1-jma": [
+true,
+2408773,
+"estimated from 1300-01-12 to 1301-06-05 (Islamic)"
+],
+"c5-m5-q1-a": [
+true,
+2408762,
+"estimated from 1300 to 1301 (Islamic)"
+],
+"c5-m5-q1-fin-vide": [
+true,
+2408773,
+"estimated from 1300-01-12 to 0 (Islamic)"
+],
+"c5-m5-q1-inverse": [
+true,
+2409269,
+"estimated from 1301-06-05 to 1300-01-12 (Islamic)"
+],
+"c5-m5-q1-annee-inconnue": [
+true,
+1948451,
+"estimated from 0-01-12 to 0-06-05 (Islamic)"
+],
+"c5-m5-q2-jma": [
+true,
+2408773,
+"calculated from 1300-01-12 to 1301-06-05 (Islamic)"
+],
+"c5-m5-q2-a": [
+true,
+2408762,
+"calculated from 1300 to 1301 (Islamic)"
+],
+"c5-m5-q2-fin-vide": [
+true,
+2408773,
+"calculated from 1300-01-12 to 0 (Islamic)"
+],
+"c5-m5-q2-inverse": [
+true,
+2409269,
+"calculated from 1301-06-05 to 1300-01-12 (Islamic)"
+],
+"c5-m5-q2-annee-inconnue": [
+true,
+1948451,
+"calculated from 0-01-12 to 0-06-05 (Islamic)"
+],
+"c6-m4-q0-jma": [
+true,
+2343879,
+"between 1705-03-12 and 1710-01-01 (Swedish)"
+],
+"c6-m4-q0-a": [
+true,
+2343809,
+"between 1705 and 1710 (Swedish)"
+],
+"c6-m4-q0-fin-vide": [
+true,
+2343879,
+"between 1705-03-12 and 0 (Swedish)"
+],
+"c6-m4-q0-inverse": [
+true,
+2345635,
+"between 1710-01-01 and 1705-03-12 (Swedish)"
+],
+"c6-m4-q0-annee-inconnue": [
+true,
+1721494,
+"between 0-03-12 and 0-01-01 (Swedish)"
+],
+"c6-m4-q1-jma": [
+true,
+2343879,
+"estimated between 1705-03-12 and 1710-01-01 (Swedish)"
+],
+"c6-m4-q1-a": [
+true,
+2343809,
+"estimated between 1705 and 1710 (Swedish)"
+],
+"c6-m4-q1-fin-vide": [
+true,
+2343879,
+"estimated between 1705-03-12 and 0 (Swedish)"
+],
+"c6-m4-q1-inverse": [
+true,
+2345635,
+"estimated between 1710-01-01 and 1705-03-12 (Swedish)"
+],
+"c6-m4-q1-annee-inconnue": [
+true,
+1721494,
+"estimated between 0-03-12 and 0-01-01 (Swedish)"
+],
+"c6-m4-q2-jma": [
+true,
+2343879,
+"calculated between 1705-03-12 and 1710-01-01 (Swedish)"
+],
+"c6-m4-q2-a": [
+true,
+2343809,
+"calculated between 1705 and 1710 (Swedish)"
+],
+"c6-m4-q2-fin-vide": [
+true,
+2343879,
+"calculated between 1705-03-12 and 0 (Swedish)"
+],
+"c6-m4-q2-inverse": [
+true,
+2345635,
+"calculated between 1710-01-01 and 1705-03-12 (Swedish)"
+],
+"c6-m4-q2-annee-inconnue": [
+true,
+1721494,
+"calculated between 0-03-12 and 0-01-01 (Swedish)"
+],
+"c6-m5-q0-jma": [
+true,
+2343879,
+"from 1705-03-12 to 1710-01-01 (Swedish)"
+],
+"c6-m5-q0-a": [
+true,
+2343809,
+"from 1705 to 1710 (Swedish)"
+],
+"c6-m5-q0-fin-vide": [
+true,
+2343879,
+"from 1705-03-12 to 0 (Swedish)"
+],
+"c6-m5-q0-inverse": [
+true,
+2345635,
+"from 1710-01-01 to 1705-03-12 (Swedish)"
+],
+"c6-m5-q0-annee-inconnue": [
+true,
+1721494,
+"from 0-03-12 to 0-01-01 (Swedish)"
+],
+"c6-m5-q1-jma": [
+true,
+2343879,
+"estimated from 1705-03-12 to 1710-01-01 (Swedish)"
+],
+"c6-m5-q1-a": [
+true,
+2343809,
+"estimated from 1705 to 1710 (Swedish)"
+],
+"c6-m5-q1-fin-vide": [
+true,
+2343879,
+"estimated from 1705-03-12 to 0 (Swedish)"
+],
+"c6-m5-q1-inverse": [
+true,
+2345635,
+"estimated from 1710-01-01 to 1705-03-12 (Swedish)"
+],
+"c6-m5-q1-annee-inconnue": [
+true,
+1721494,
+"estimated from 0-03-12 to 0-01-01 (Swedish)"
+],
+"c6-m5-q2-jma": [
+true,
+2343879,
+"calculated from 1705-03-12 to 1710-01-01 (Swedish)"
+],
+"c6-m5-q2-a": [
+true,
+2343809,
+"calculated from 1705 to 1710 (Swedish)"
+],
+"c6-m5-q2-fin-vide": [
+true,
+2343879,
+"calculated from 1705-03-12 to 0 (Swedish)"
+],
+"c6-m5-q2-inverse": [
+true,
+2345635,
+"calculated from 1710-01-01 to 1705-03-12 (Swedish)"
+],
+"c6-m5-q2-annee-inconnue": [
+true,
+1721494,
+"calculated from 0-03-12 to 0-01-01 (Swedish)"
+],
+"double-m0-q0": [
+true,
+2350061,
+"1721/2-02-12 (Julian)"
+],
+"double-a-m0-q0": [
+true,
+2341983,
+"1699/700 (Julian)"
+],
+"double-m0-q1": [
+true,
+2350061,
+"estimated 1721/2-02-12 (Julian)"
+],
+"double-a-m0-q1": [
+true,
+2341983,
+"estimated 1699/700 (Julian)"
+],
+"double-m0-q2": [
+true,
+2350061,
+"calculated 1721/2-02-12 (Julian)"
+],
+"double-a-m0-q2": [
+true,
+2341983,
+"calculated 1699/700 (Julian)"
+],
+"double-m1-q0": [
+true,
+2350061,
+"before 1721/2-02-12 (Julian)"
+],
+"double-a-m1-q0": [
+true,
+2341983,
+"before 1699/700 (Julian)"
+],
+"double-m1-q1": [
+true,
+2350061,
+"estimated before 1721/2-02-12 (Julian)"
+],
+"double-a-m1-q1": [
+true,
+2341983,
+"estimated before 1699/700 (Julian)"
+],
+"double-m1-q2": [
+true,
+2350061,
+"calculated before 1721/2-02-12 (Julian)"
+],
+"double-a-m1-q2": [
+true,
+2341983,
+"calculated before 1699/700 (Julian)"
+],
+"double-m3-q0": [
+true,
+2350061,
+"about 1721/2-02-12 (Julian)"
+],
+"double-a-m3-q0": [
+true,
+2341983,
+"about 1699/700 (Julian)"
+],
+"double-m3-q1": [
+true,
+2350061,
+"estimated about 1721/2-02-12 (Julian)"
+],
+"double-a-m3-q1": [
+true,
+2341983,
+"estimated about 1699/700 (Julian)"
+],
+"double-m3-q2": [
+true,
+2350061,
+"calculated about 1721/2-02-12 (Julian)"
+],
+"double-a-m3-q2": [
+true,
+2341983,
+"calculated about 1699/700 (Julian)"
+],
+"double-m7-q0": [
+true,
+2350061,
+"from 1721/2-02-12 (Julian)"
+],
+"double-a-m7-q0": [
+true,
+2341983,
+"from 1699/700 (Julian)"
+],
+"double-m7-q1": [
+true,
+2350061,
+"estimated from 1721/2-02-12 (Julian)"
+],
+"double-a-m7-q1": [
+true,
+2341983,
+"estimated from 1699/700 (Julian)"
+],
+"double-m7-q2": [
+true,
+2350061,
+"calculated from 1721/2-02-12 (Julian)"
+],
+"double-a-m7-q2": [
+true,
+2341983,
+"calculated from 1699/700 (Julian)"
+],
+"double-m8-q0": [
+true,
+2350061,
+"to 1721/2-02-12 (Julian)"
+],
+"double-a-m8-q0": [
+true,
+2341983,
+"to 1699/700 (Julian)"
+],
+"double-m8-q1": [
+true,
+2350061,
+"estimated to 1721/2-02-12 (Julian)"
+],
+"double-a-m8-q1": [
+true,
+2341983,
+"estimated to 1699/700 (Julian)"
+],
+"double-m8-q2": [
+true,
+2350061,
+"calculated to 1721/2-02-12 (Julian)"
+],
+"double-a-m8-q2": [
+true,
+2341983,
+"calculated to 1699/700 (Julian)"
+],
+"double-m4": [
+true,
+2350061,
+"between 1721/2-02-12 and 1724/5-01-05 (Julian)"
+],
+"double-debut-m4": [
+true,
+2350061,
+"between 1721/2-02-12 and 1725-06-05 (Julian)"
+],
+"double-negatif-m4": [
+true,
+1091409,
+"between 1724/5-02-12 B.C.E. and 1721/2-01-05 B.C.E. (Julian)"
+],
+"double-m5": [
+true,
+2350061,
+"from 1721/2-02-12 to 1724/5-01-05 (Julian)"
+],
+"double-debut-m5": [
+true,
+2350061,
+"from 1721/2-02-12 to 1725-06-05 (Julian)"
+],
+"double-negatif-m5": [
+true,
+1091409,
+"from 1724/5-02-12 B.C.E. to 1721/2-01-05 B.C.E. (Julian)"
+],
+"double-negatif": [
+true,
+1092505,
+"1721/2-02-12 B.C.E. (Julian)"
+],
+"ny1-c0-fev-m0-q0": [
+true,
+2396801,
+"1850-02-12 (Mar1)"
+],
+"ny1-c0-fev-m3-q1": [
+true,
+2396801,
+"estimated about 1850-02-12 (Mar1)"
+],
+"ny1-c0-fev-m8-q2": [
+true,
+2396801,
+"calculated to 1850-02-12 (Mar1)"
+],
+"ny1-c0-oct-m0-q0": [
+true,
+2396678,
+"1850-10-12 (Mar1)"
+],
+"ny1-c0-oct-m3-q1": [
+true,
+2396678,
+"estimated about 1850-10-12 (Mar1)"
+],
+"ny1-c0-oct-m8-q2": [
+true,
+2396678,
+"calculated to 1850-10-12 (Mar1)"
+],
+"ny1-c0-a-m0-q0": [
+true,
+2396759,
+"1850 (Mar1)"
+],
+"ny1-c0-a-m3-q1": [
+true,
+2396759,
+"estimated about 1850 (Mar1)"
+],
+"ny1-c0-a-m8-q2": [
+true,
+2396759,
+"calculated to 1850 (Mar1)"
+],
+"ny1-c0-m4": [
+true,
+2396801,
+"between 1850-02-12 and 1860-06-05 (Mar1)"
+],
+"ny2-c0-fev-m0-q0": [
+true,
+2396801,
+"1850-02-12 (Mar25)"
+],
+"ny2-c0-fev-m3-q1": [
+true,
+2396801,
+"estimated about 1850-02-12 (Mar25)"
+],
+"ny2-c0-fev-m8-q2": [
+true,
+2396801,
+"calculated to 1850-02-12 (Mar25)"
+],
+"ny2-c0-oct-m0-q0": [
+true,
+2396678,
+"1850-10-12 (Mar25)"
+],
+"ny2-c0-oct-m3-q1": [
+true,
+2396678,
+"estimated about 1850-10-12 (Mar25)"
+],
+"ny2-c0-oct-m8-q2": [
+true,
+2396678,
+"calculated to 1850-10-12 (Mar25)"
+],
+"ny2-c0-a-m0-q0": [
+true,
+2396759,
+"1850 (Mar25)"
+],
+"ny2-c0-a-m3-q1": [
+true,
+2396759,
+"estimated about 1850 (Mar25)"
+],
+"ny2-c0-a-m8-q2": [
+true,
+2396759,
+"calculated to 1850 (Mar25)"
+],
+"ny2-c0-m4": [
+true,
+2396801,
+"between 1850-02-12 and 1860-06-05 (Mar25)"
+],
+"ny3-c0-fev-m0-q0": [
+true,
+2396801,
+"1850-02-12 (Sep1)"
+],
+"ny3-c0-fev-m3-q1": [
+true,
+2396801,
+"estimated about 1850-02-12 (Sep1)"
+],
+"ny3-c0-fev-m8-q2": [
+true,
+2396801,
+"calculated to 1850-02-12 (Sep1)"
+],
+"ny3-c0-oct-m0-q0": [
+true,
+2396678,
+"1850-10-12 (Sep1)"
+],
+"ny3-c0-oct-m3-q1": [
+true,
+2396678,
+"estimated about 1850-10-12 (Sep1)"
+],
+"ny3-c0-oct-m8-q2": [
+true,
+2396678,
+"calculated to 1850-10-12 (Sep1)"
+],
+"ny3-c0-a-m0-q0": [
+true,
+2396759,
+"1850 (Sep1)"
+],
+"ny3-c0-a-m3-q1": [
+true,
+2396759,
+"estimated about 1850 (Sep1)"
+],
+"ny3-c0-a-m8-q2": [
+true,
+2396759,
+"calculated to 1850 (Sep1)"
+],
+"ny3-c0-m4": [
+true,
+2396801,
+"between 1850-02-12 and 1860-06-05 (Sep1)"
+],
+"ny4-15-c0-fev-m0-q0": [
+true,
+2396801,
+"1850-02-12 (4-15)"
+],
+"ny4-15-c0-fev-m3-q1": [
+true,
+2396801,
+"estimated about 1850-02-12 (4-15)"
+],
+"ny4-15-c0-fev-m8-q2": [
+true,
+2396801,
+"calculated to 1850-02-12 (4-15)"
+],
+"ny4-15-c0-oct-m0-q0": [
+true,
+2396678,
+"1850-10-12 (4-15)"
+],
+"ny4-15-c0-oct-m3-q1": [
+true,
+2396678,
+"estimated about 1850-10-12 (4-15)"
+],
+"ny4-15-c0-oct-m8-q2": [
+true,
+2396678,
+"calculated to 1850-10-12 (4-15)"
+],
+"ny4-15-c0-a-m0-q0": [
+true,
+2396759,
+"1850 (4-15)"
+],
+"ny4-15-c0-a-m3-q1": [
+true,
+2396759,
+"estimated about 1850 (4-15)"
+],
+"ny4-15-c0-a-m8-q2": [
+true,
+2396759,
+"calculated to 1850 (4-15)"
+],
+"ny4-15-c0-m4": [
+true,
+2396801,
+"between 1850-02-12 and 1860-06-05 (4-15)"
+],
+"ny1-c1-fev-m0-q0": [
+true,
+2349696,
+"1721-02-12 (Julian, Mar1)"
+],
+"ny1-c1-fev-m3-q1": [
+true,
+2349696,
+"estimated about 1721-02-12 (Julian, Mar1)"
+],
+"ny1-c1-fev-m8-q2": [
+true,
+2349696,
+"calculated to 1721-02-12 (Julian, Mar1)"
+],
+"ny1-c1-oct-m0-q0": [
+true,
+2349573,
+"1721-10-12 (Julian, Mar1)"
+],
+"ny1-c1-oct-m3-q1": [
+true,
+2349573,
+"estimated about 1721-10-12 (Julian, Mar1)"
+],
+"ny1-c1-oct-m8-q2": [
+true,
+2349573,
+"calculated to 1721-10-12 (Julian, Mar1)"
+],
+"ny1-c1-a-m0-q0": [
+true,
+2349654,
+"1721 (Julian, Mar1)"
+],
+"ny1-c1-a-m3-q1": [
+true,
+2349654,
+"estimated about 1721 (Julian, Mar1)"
+],
+"ny1-c1-a-m8-q2": [
+true,
+2349654,
+"calculated to 1721 (Julian, Mar1)"
+],
+"ny1-c1-m4": [
+true,
+2349696,
+"between 1721-02-12 and 1725-06-05 (Julian, Mar1)"
+],
+"ny1-double": [
+true,
+2350061,
+"1721/2-02-12 (Julian, Mar1)"
+],
+"ny2-c1-fev-m0-q0": [
+true,
+2349696,
+"1721-02-12 (Julian, Mar25)"
+],
+"ny2-c1-fev-m3-q1": [
+true,
+2349696,
+"estimated about 1721-02-12 (Julian, Mar25)"
+],
+"ny2-c1-fev-m8-q2": [
+true,
+2349696,
+"calculated to 1721-02-12 (Julian, Mar25)"
+],
+"ny2-c1-oct-m0-q0": [
+true,
+2349573,
+"1721-10-12 (Julian, Mar25)"
+],
+"ny2-c1-oct-m3-q1": [
+true,
+2349573,
+"estimated about 1721-10-12 (Julian, Mar25)"
+],
+"ny2-c1-oct-m8-q2": [
+true,
+2349573,
+"calculated to 1721-10-12 (Julian, Mar25)"
+],
+"ny2-c1-a-m0-q0": [
+true,
+2349654,
+"1721 (Julian, Mar25)"
+],
+"ny2-c1-a-m3-q1": [
+true,
+2349654,
+"estimated about 1721 (Julian, Mar25)"
+],
+"ny2-c1-a-m8-q2": [
+true,
+2349654,
+"calculated to 1721 (Julian, Mar25)"
+],
+"ny2-c1-m4": [
+true,
+2349696,
+"between 1721-02-12 and 1725-06-05 (Julian, Mar25)"
+],
+"ny2-double": [
+true,
+2350061,
+"1721/2-02-12 (Julian, Mar25)"
+],
+"ny3-c1-fev-m0-q0": [
+true,
+2349696,
+"1721-02-12 (Julian, Sep1)"
+],
+"ny3-c1-fev-m3-q1": [
+true,
+2349696,
+"estimated about 1721-02-12 (Julian, Sep1)"
+],
+"ny3-c1-fev-m8-q2": [
+true,
+2349696,
+"calculated to 1721-02-12 (Julian, Sep1)"
+],
+"ny3-c1-oct-m0-q0": [
+true,
+2349573,
+"1721-10-12 (Julian, Sep1)"
+],
+"ny3-c1-oct-m3-q1": [
+true,
+2349573,
+"estimated about 1721-10-12 (Julian, Sep1)"
+],
+"ny3-c1-oct-m8-q2": [
+true,
+2349573,
+"calculated to 1721-10-12 (Julian, Sep1)"
+],
+"ny3-c1-a-m0-q0": [
+true,
+2349654,
+"1721 (Julian, Sep1)"
+],
+"ny3-c1-a-m3-q1": [
+true,
+2349654,
+"estimated about 1721 (Julian, Sep1)"
+],
+"ny3-c1-a-m8-q2": [
+true,
+2349654,
+"calculated to 1721 (Julian, Sep1)"
+],
+"ny3-c1-m4": [
+true,
+2349696,
+"between 1721-02-12 and 1725-06-05 (Julian, Sep1)"
+],
+"ny3-double": [
+true,
+2350061,
+"1721/2-02-12 (Julian, Sep1)"
+],
+"ny4-15-c1-fev-m0-q0": [
+true,
+2349696,
+"1721-02-12 (Julian, 4-15)"
+],
+"ny4-15-c1-fev-m3-q1": [
+true,
+2349696,
+"estimated about 1721-02-12 (Julian, 4-15)"
+],
+"ny4-15-c1-fev-m8-q2": [
+true,
+2349696,
+"calculated to 1721-02-12 (Julian, 4-15)"
+],
+"ny4-15-c1-oct-m0-q0": [
+true,
+2349573,
+"1721-10-12 (Julian, 4-15)"
+],
+"ny4-15-c1-oct-m3-q1": [
+true,
+2349573,
+"estimated about 1721-10-12 (Julian, 4-15)"
+],
+"ny4-15-c1-oct-m8-q2": [
+true,
+2349573,
+"calculated to 1721-10-12 (Julian, 4-15)"
+],
+"ny4-15-c1-a-m0-q0": [
+true,
+2349654,
+"1721 (Julian, 4-15)"
+],
+"ny4-15-c1-a-m3-q1": [
+true,
+2349654,
+"estimated about 1721 (Julian, 4-15)"
+],
+"ny4-15-c1-a-m8-q2": [
+true,
+2349654,
+"calculated to 1721 (Julian, 4-15)"
+],
+"ny4-15-c1-m4": [
+true,
+2349696,
+"between 1721-02-12 and 1725-06-05 (Julian, 4-15)"
+],
+"ny4-15-double": [
+true,
+2350061,
+"1721/2-02-12 (Julian, 4-15)"
+],
+"ny1-c6-fev-m0-q0": [
+true,
+2343851,
+"1705-02-12 (Swedish, Mar1)"
+],
+"ny1-c6-fev-m3-q1": [
+true,
+2343851,
+"estimated about 1705-02-12 (Swedish, Mar1)"
+],
+"ny1-c6-fev-m8-q2": [
+true,
+2343851,
+"calculated to 1705-02-12 (Swedish, Mar1)"
+],
+"ny1-c6-oct-m0-q0": [
+true,
+2343728,
+"1705-10-12 (Swedish, Mar1)"
+],
+"ny1-c6-oct-m3-q1": [
+true,
+2343728,
+"estimated about 1705-10-12 (Swedish, Mar1)"
+],
+"ny1-c6-oct-m8-q2": [
+true,
+2343728,
+"calculated to 1705-10-12 (Swedish, Mar1)"
+],
+"ny1-c6-a-m0-q0": [
+true,
+2343809,
+"1705 (Swedish, Mar1)"
+],
+"ny1-c6-a-m3-q1": [
+true,
+2343809,
+"estimated about 1705 (Swedish, Mar1)"
+],
+"ny1-c6-a-m8-q2": [
+true,
+2343809,
+"calculated to 1705 (Swedish, Mar1)"
+],
+"ny1-c6-m4": [
+true,
+2343851,
+"between 1705-02-12 and 1710-01-01 (Swedish, Mar1)"
+],
+"ny2-c6-fev-m0-q0": [
+true,
+2343851,
+"1705-02-12 (Swedish, Mar25)"
+],
+"ny2-c6-fev-m3-q1": [
+true,
+2343851,
+"estimated about 1705-02-12 (Swedish, Mar25)"
+],
+"ny2-c6-fev-m8-q2": [
+true,
+2343851,
+"calculated to 1705-02-12 (Swedish, Mar25)"
+],
+"ny2-c6-oct-m0-q0": [
+true,
+2343728,
+"1705-10-12 (Swedish, Mar25)"
+],
+"ny2-c6-oct-m3-q1": [
+true,
+2343728,
+"estimated about 1705-10-12 (Swedish, Mar25)"
+],
+"ny2-c6-oct-m8-q2": [
+true,
+2343728,
+"calculated to 1705-10-12 (Swedish, Mar25)"
+],
+"ny2-c6-a-m0-q0": [
+true,
+2343809,
+"1705 (Swedish, Mar25)"
+],
+"ny2-c6-a-m3-q1": [
+true,
+2343809,
+"estimated about 1705 (Swedish, Mar25)"
+],
+"ny2-c6-a-m8-q2": [
+true,
+2343809,
+"calculated to 1705 (Swedish, Mar25)"
+],
+"ny2-c6-m4": [
+true,
+2343851,
+"between 1705-02-12 and 1710-01-01 (Swedish, Mar25)"
+],
+"ny3-c6-fev-m0-q0": [
+true,
+2343851,
+"1705-02-12 (Swedish, Sep1)"
+],
+"ny3-c6-fev-m3-q1": [
+true,
+2343851,
+"estimated about 1705-02-12 (Swedish, Sep1)"
+],
+"ny3-c6-fev-m8-q2": [
+true,
+2343851,
+"calculated to 1705-02-12 (Swedish, Sep1)"
+],
+"ny3-c6-oct-m0-q0": [
+true,
+2343728,
+"1705-10-12 (Swedish, Sep1)"
+],
+"ny3-c6-oct-m3-q1": [
+true,
+2343728,
+"estimated about 1705-10-12 (Swedish, Sep1)"
+],
+"ny3-c6-oct-m8-q2": [
+true,
+2343728,
+"calculated to 1705-10-12 (Swedish, Sep1)"
+],
+"ny3-c6-a-m0-q0": [
+true,
+2343809,
+"1705 (Swedish, Sep1)"
+],
+"ny3-c6-a-m3-q1": [
+true,
+2343809,
+"estimated about 1705 (Swedish, Sep1)"
+],
+"ny3-c6-a-m8-q2": [
+true,
+2343809,
+"calculated to 1705 (Swedish, Sep1)"
+],
+"ny3-c6-m4": [
+true,
+2343851,
+"between 1705-02-12 and 1710-01-01 (Swedish, Sep1)"
+],
+"ny4-15-c6-fev-m0-q0": [
+true,
+2343851,
+"1705-02-12 (Swedish, 4-15)"
+],
+"ny4-15-c6-fev-m3-q1": [
+true,
+2343851,
+"estimated about 1705-02-12 (Swedish, 4-15)"
+],
+"ny4-15-c6-fev-m8-q2": [
+true,
+2343851,
+"calculated to 1705-02-12 (Swedish, 4-15)"
+],
+"ny4-15-c6-oct-m0-q0": [
+true,
+2343728,
+"1705-10-12 (Swedish, 4-15)"
+],
+"ny4-15-c6-oct-m3-q1": [
+true,
+2343728,
+"estimated about 1705-10-12 (Swedish, 4-15)"
+],
+"ny4-15-c6-oct-m8-q2": [
+true,
+2343728,
+"calculated to 1705-10-12 (Swedish, 4-15)"
+],
+"ny4-15-c6-a-m0-q0": [
+true,
+2343809,
+"1705 (Swedish, 4-15)"
+],
+"ny4-15-c6-a-m3-q1": [
+true,
+2343809,
+"estimated about 1705 (Swedish, 4-15)"
+],
+"ny4-15-c6-a-m8-q2": [
+true,
+2343809,
+"calculated to 1705 (Swedish, 4-15)"
+],
+"ny4-15-c6-m4": [
+true,
+2343851,
+"between 1705-02-12 and 1710-01-01 (Swedish, 4-15)"
+],
+"texte-0": [
+true,
+0,
+"vers la Saint-Jean"
+],
+"texte-1": [
+true,
+0,
+"1850"
+],
+"texte-2": [
+true,
+0,
+"ABT 1850"
+],
+"texte-3": [
+true,
+0,
+"(entre parenthèses)"
+],
+"texte-4": [
+true,
+0,
+"12 mars 1850"
+],
+"texte-5": [
+true,
+0,
+""
+],
+"texte-6": [
+true,
+0,
+"  espaces  "
+],
+"texte-7": [
+true,
+0,
+"INT 1850 (texte)"
+],
+"texte-8": [
+true,
+0,
+"<dateval val=\"1850-02-30\"/>"
+],
+"vide-c1": [
+false
+],
+"vide-m1": [
+false
+],
+"vide-q1": [
+false
+],
+"vide-m4": [
+false
+],
+"vide": [
+false
+]
+}

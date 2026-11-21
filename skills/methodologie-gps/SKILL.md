@@ -47,7 +47,8 @@ parents. Âge au décès = information secondaire. Table décennale = dérivée 
 - **Noms** : `normaliser_nom` / `comparer_noms` — variantes orthographiques (Lefebvre/Lefèvre), latin des
   registres (Joannes → Jean, déclinaisons), particules, surnoms « dit », prénom d'usage ⊂ prénoms de baptême.
 - **Dates** : tolérance ±2 ans pour un âge déclaré ; `convertir_date` pour le **calendrier républicain**
-  (1792-1805) et le **julien** (avant 1582, Alsace/Lorraine plus tard) ; `naissance_depuis_age` pour
+  (1792-1805) et le **julien** (avant 1582, Alsace/Lorraine plus tard), double datation `1721/22`, et la
+  forme Gramps de la date (`gramps` : objet JSON, élément XML, affichage) ; `naissance_depuis_age` pour
   recalculer une naissance depuis l'âge au décès/mariage/recensement.
 - **Lieux** : `normaliser_lieu`, `geo_commune`, `geo_historique` (communes fusionnées, paroisse ↔ commune).
 - **Cohérence biologique** : `arbre_coherence` (mère 12–55 ans, père 14–85, naissance après décès de la mère,

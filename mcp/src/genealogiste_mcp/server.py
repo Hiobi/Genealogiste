@@ -1021,8 +1021,17 @@ def variantes_noms(nom: str, prenom: str = "") -> dict:
 @mcp.tool()
 def convertir_date(date_texte: str) -> dict:
     """Analyse/convertit une date : GEDCOM, texte français, républicain (« 12 vendémiaire an III »), julien.
-    Renvoie équivalents grégorien/républicain/julien, intervalle et forme GEDCOM 7 / 5.5.1."""
-    return d.convert(date_texte)
+    Renvoie équivalents grégorien/républicain/julien, intervalle et forme GEDCOM 7 / 5.5.1, et `gramps` : la date
+    au format Gramps (`date` : objet Date JSON de Gramps Web, `xml` : élément Gramps XML, `affichage` : affichage
+    de Gramps en anglais, format ISO), correspondance de docs/gramps-web.md."""
+    from .gramps.types import affichage_gramps, date_to_gramps
+
+    out = d.convert(date_texte)
+    if "erreur" not in out:
+        brut = (date_texte or "").strip()
+        dt = date_to_gramps(brut if d.analyser_gedcom(brut) else out["gedcom"])
+        out["gramps"] = {"date": dt, "xml": gramps_xml.date_xml(dt), "affichage": affichage_gramps(dt)}
+    return out
 
 
 @mcp.tool()
@@ -1640,6 +1649,9 @@ def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", gene
             "arbre vide : un second import duplique tout)")
         if version_xml != "1.7.1":
             res["avertissement"] = f"Gramps XML {version_xml} : refusé par Gramps 5.2 (1.7.1 est lu par 5.2 à 6.1)."
+        dates = gramps_xml.avertissements_dates(db, version_xml)
+        if dates:
+            res["avertissements_dates"] = dates
     if format == "gpkg":
         res["medias"] = bilan_medias
     return res
