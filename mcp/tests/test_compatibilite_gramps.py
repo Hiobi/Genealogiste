@@ -312,6 +312,31 @@ def test_sens_inverse_branche_sur_le_banc(desktop):
             set(desktop["FORMATS_GENERES"])
 
 
+def test_reecriture_neutre_de_l_exemple_branchee_sur_le_banc(desktop):
+    """#315 : le cas « exemple » de chaque version vérifie que l'arbre d'exemple réécrit par-dessus lui-même sans
+    opération ne donne aucun élément de transaction ; le contrôle signale tout objet écrit."""
+    import inspect
+
+    from genealogiste_mcp.gramps.lecture_xml import lire_fichier
+    from genealogiste_mcp.gramps.mapping import tree_to_gramps
+
+    controle = desktop["controle_reecriture_neutre"]
+    assert "controle_reecriture_neutre(lu.db)" in inspect.getsource(desktop["verifier_exemple"])
+    db = lire_fichier(ROOT / "mcp/tests/fixtures/gramps-desktop/gramps-6.1/famille.gramps").db
+    assert controle(db) == []
+
+    def parasite(tree, base, **options):  # écrivain fautif : un attribut posé sur un objet inchangé
+        out = tree_to_gramps(tree, base=base, **options)
+        p = next(iter(out.all("Person").values()))
+        p["attribute_list"] = [*p["attribute_list"], {"_class": "Attribute", "private": False, "citation_list": [],
+                                                      "note_list": [], "type": "Genealogiste-Association",
+                                                      "value": "1 | OTHER | | |"}]
+        return out
+
+    ecarts = controle(db, parasite)
+    assert len(ecarts) == 3 and all("update Person" in e and "attribute_list" in e for e in ecarts)
+
+
 def test_controle_lecture_et_ecarts_admis(desktop, tmp_path):
     """Relecture du réexport : aller-retour XML et objets champ par champ ; seuls écarts admis, ceux de l'écriture
     de Gramps (espaces de bord retirés par fix, somme de contrôle calculée)."""

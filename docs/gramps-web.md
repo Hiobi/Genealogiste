@@ -442,6 +442,29 @@ réécrits **à l'identique** tant que Genealogiste ne les modifie pas. Ce que G
 alternatifs et rattachements datés des lieux — posés seulement par `gramps_dater_lieux`, voir
 [#277](#noms-et-rattachements-datés-277) —, médias d'événements, notes isolées…) est conservé tel quel.
 
+**Règle (#315) : aucune écriture sur un objet dont le modèle n'a pas changé** — ni attribut `Genealogiste-*`
+ajouté, ni objet recréé, ni champ non modélisé perdu ; une proposition n'envoie que les objets qu'elle touche (et,
+selon `GENEALOGISTE_GRAMPS_NOTES_AUTO`, les notes et étiquettes de preuve générées). En particulier :
+
+- `personref` saisie dans l'interface (parrain sans attribut `Genealogiste-Association`) : réécrite telle quelle,
+  citations et relation comprises, tant que les associations de la personne ne changent pas ; quand elles changent,
+  l'attribut structuré est écrit et les citations de la `personref` sont reprises (jamais recréées) ;
+- citations d'une **référence** d'événement propre (rôle Primary d'une personne, Family d'une famille) : hors
+  modèle, conservées ; attribut `Age` de la référence d'un événement familial : lu et réécrit comme celui d'une
+  personne, ses citations conservées tant que la valeur ne change pas ;
+- attributs lus par Genealogiste (`Cause`, `Paroisse`, `Précision`, `Genealogiste-UID`, `Genealogiste-Fichier`…)
+  cités, privés ou annotés dans Gramps : gardés tels quels tant que leur valeur ne change pas (seules les
+  citations de `Genealogiste-Association` font partie du modèle) ;
+- média : `Genealogiste-Fichier` n'est posé que si le chemin du modèle diffère du `path` de Gramps (média créé ou
+  déplacé par Genealogiste) ; un média de l'interface relu tel quel ne reçoit rien ;
+- événement retenu (`birth_ref_index`, `death_ref_index`) d'une personne inchangée dont les notes de preuve ne
+  sont pas recalculées : conservé. Quand elles le sont (`GENEALOGISTE_GRAMPS_NOTES_AUTO=true`, défaut, ou personne
+  touchée), il suit la naissance / le décès le mieux prouvé, comme avant.
+
+Vérifié par `tests/test_gramps_aller_retour_neutre.py` (une fixture synthétique par cas, propriété sur toutes les
+bases de fixtures, vraie proposition sur un autre objet) et, sur l'arbre d'exemple de Gramps, par le banc Desktop
+(cas `exemple`, `controle_reecriture_neutre`).
+
 ### Étiquettes (#262)
 
 - **Lecture** : `tag_list` (handles) → noms, dans l'ordre, sans doublon de nom. Les étiquettes gérées

@@ -16,7 +16,9 @@ réexporte. Invariants vérifiés pour chaque cas et chaque version :
 - médias : chaque fichier empaqueté est retrouvé par Gramps après import ;
 - mêmes objets que l'export, classe par classe (personnes, familles, événements, sources, citations, lieux,
   notes, dépôts, médias, étiquettes) : mêmes nombres et mêmes handles ;
-- réexport par Gramps (aller-retour) : mêmes nombres et mêmes handles.
+- réexport par Gramps (aller-retour) : mêmes nombres et mêmes handles ;
+- arbre d'exemple de Gramps (`example.gramps`, `data.gramps`, téléchargés au commit épinglé) : relu, puis réécrit
+  par-dessus lui-même sans opération, aucun élément de transaction (#315, `controle_reecriture_neutre`).
 
 Points d'extension : ajouter un `Cas` à `CAS` (autre forme de fichier ; `refus_attendu` pour une version qui
 doit refuser le fichier), et un contrôle à `CONTROLES` (ex. relire le réexport de Gramps avec l'import
@@ -1578,10 +1580,42 @@ def arbre_exemple(cache: Path) -> dict[str, Path]:
     return out
 
 
+def controle_reecriture_neutre(db, ecrire: Callable | None = None) -> list[str]:
+    """#315 : base relue puis réécrite par-dessus elle-même sans opération (notes générées désactivées, recalculées
+    pour aucun objet, recalculées pour toute la base hors notes et étiquettes de preuve seules) : aucun élément de
+    transaction. ``ecrire`` : écrivain substitué (tests du banc)."""
+    from genealogiste_mcp.gramps.mapping import (
+        diff,
+        etiquettes_gerees,
+        gramps_to_tree,
+        proof_only,
+        tree_to_gramps,
+    )
+
+    ecrire = ecrire or tree_to_gramps
+    tree, _ = gramps_to_tree(db)
+    ecarts = []
+    for libelle, options in (("sans notes générées", {"generated": False}),
+                             ("notes d'aucun objet", {"generated": True, "only": set()}),
+                             ("notes de toute la base", {"generated": True})):
+        items = diff(db, ecrire(tree, base=db, **options))
+        gerees = etiquettes_gerees(db, items)
+        for i in items:
+            if options.get("generated") and proof_only(i, gerees):
+                continue
+            o, n = i.get("old") or {}, i.get("new") or {}
+            champs = sorted(k for k in set(o) | set(n) if k != "change" and o.get(k) != n.get(k)) \
+                if i["type"] == "update" else []
+            ecarts.append(f"réécriture sans opération ({libelle}) : {i['type']} {i['_class']} "
+                          f"{(n or o).get('gramps_id')} {','.join(champs)}".rstrip())
+    return ecarts
+
+
 def verifier_exemple(entree: dict, exe: Path, env_sup: dict, travail: Path, cache: Path) -> list[Resultat]:
     """Arbre d'exemple de Gramps (Gramps XML 1.7.2 écrit par Gramps) : relu par Genealogiste, aller-retour XML
-    sans perte, objets identiques champ par champ à ceux que Gramps 6.x importe, réécrit en 1.7.1 et réimporté
-    par chaque version (cycle complet ; 5.2 ne lit que la réécriture : l'original est en 1.7.2)."""
+    sans perte, réécriture par-dessus lui-même sans opération sans aucun élément de transaction (#315), objets
+    identiques champ par champ à ceux que Gramps 6.x importe, réécrit en 1.7.1 et réimporté par chaque version
+    (cycle complet ; 5.2 ne lit que la réécriture : l'original est en 1.7.2)."""
     from genealogiste_mcp.export.gramps_xml import db_to_xml
     from genealogiste_mcp.gramps.lecture_xml import comparer_xml, lire_fichier
 
@@ -1593,6 +1627,7 @@ def verifier_exemple(entree: dict, exe: Path, env_sup: dict, travail: Path, cach
         lu = lire_fichier(chemin)
         reecrit = db_to_xml(lu.db, lu.version_xml, lu.meta).encode()
         ecarts = [f"aller-retour XML : {e}" for e in comparer_xml(chemin.read_bytes(), reecrit)]
+        ecarts += controle_reecriture_neutre(lu.db)
         cycle = sortie / f"{chemin.stem}-cycle.gramps"
         cycle.write_text(db_to_xml(lu.db, "1.7.1", lu.meta), encoding="utf-8")
         a_importer = [cycle] + ([chemin] if version != "5.2" else [])
