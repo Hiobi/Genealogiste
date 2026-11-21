@@ -53,7 +53,8 @@ Workflow `Intégration Gramps`, un job `Gramps Desktop <version>` par version (v
    selon ses préférences ; les handles, eux, sont conservés) ;
 4. aller-retour : réexport en Gramps XML par Gramps (`GrampsXmlWriter`), mêmes nombres et mêmes handles.
 
-Résultat du 2026-11-21 (local) : 9 vérifications sur 9 réussies.
+Résultat du 2026-11-21 : 9 vérifications sur 9 réussies, en local (GLib factice) et en CI (ubuntu-latest, PyGObject
+système).
 
 | Arbre | Personnes | Familles | Événements | Sources | Citations | Lieux | Notes | Dépôts | Étiquettes |
 |---|---|---|---|---|---|---|---|---|---|
