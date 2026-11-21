@@ -127,10 +127,18 @@ def test_version_desktop_inconnue_refusee(desktop):
 def test_cas_desktop_de_l_export_268(desktop):
     """Formes remises à Gramps : 1.7.1, 1.7.2 (refusée par 5.2 seulement), .gramps gzip, .gpkg avec média."""
     cas = {c.nom: c for c in desktop["CAS"]}
-    assert set(cas) == {"xml-1.7.1", "xml-1.7.2", "gramps-gzip", "gpkg", "dates", "types", "lieux"}
+    assert set(cas) == {"xml-1.7.1", "xml-1.7.2", "gramps-gzip", "gpkg", "dates", "types", "lieux", "notes"}
     assert cas["xml-1.7.2"].refus_attendu == {"5.2"}
     assert all(not c.refus_attendu for n, c in cas.items() if n != "xml-1.7.2")
     assert cas["gpkg"].enrichir and cas["gpkg"].avertissements_admis
+
+
+def test_cas_notes_279(desktop):
+    """#279 : notes stylées et liens internes relus par chaque version ; seul écart de schéma admis : styles
+    strikethrough et subscript, absents des DTD et RNG livrés."""
+    cas = {c.nom: c for c in desktop["CAS"]}["notes"]
+    assert cas.arbres == ("famille.ged",) and set(cas.schema_admis) == {"5.2", "6.0", "6.1"}
+    assert desktop["controle_notes"] in desktop["CONTROLES"]
 
 
 def test_cas_dates_272(desktop):

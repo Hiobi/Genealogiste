@@ -4,6 +4,9 @@ Chaque opération est un objet `{"op": "...", ...}`. Les créations acceptent `"
 suivantes de la même proposition désignent l'objet par `"$x"`. Dates : GEDCOM 7 ou texte français
 (converti). Lieu : chaîne « Commune, Département, France » ou `{nom, code_insee, latitude, longitude, paroisse}`.
 
+Texte des notes : brut par défaut ; `"format_texte": "markdown"` sur l'opération pour gras, italique et liens
+([texte enrichi](#texte-enrichi-des-notes-279)).
+
 Citation : `{source, page, texte, qualite (0-3), type_source, information, preuve, consultation, note, tags}` —
 `consultation` : `original` | `image` | `transcription` | `index` | `non_vu`.
 
@@ -70,10 +73,25 @@ média ou une note partagée (`N…`). Ce sont les étiquettes de Gramps Web (`B
   (`etiquettes`) et filtre par `etiquette` (nom exact). Exports publics : même politique que les notes
   ([sécurité](securite.md)).
 - Étiquettes des lieux et des notes « en ligne » (note de personne, d'événement…) : non modélisées, conservées
-  dans Gramps Web tant que l'objet ne change pas.
+  dans Gramps Web, y compris quand le texte de la note change (#279 : même note, même handle).
 
 Exemple : `{"op": "etiqueter", "cible": {"type": "citation", "porteur": {"type": "evenement", "uid": "…"},
 "source": "S1", "page": "acte n° 45"}, "tags": ["À vérifier"]}`.
+
+### Texte enrichi des notes (#279)
+
+`format_texte` (au niveau de l'opération, toute opération qui écrit une note) : `texte` (défaut, rien n'est
+interprété : un `*` reste un `*`) ou `markdown`. En `markdown`, les textes de note de l'opération (`note`,
+`texte` de citation, `notes`, `notes_ajout`, y compris dans les citations, événements et `champs` imbriqués) sont
+lus comme du Markdown simple : `**gras**`, `*italique*` ou `_italique_`, `[texte](https://…)`, `mailto:`, lien
+interne `[texte](gramps://Person/handle/<handle>)` ou `gramps://Person/gramps_id/I12` ; `\*`, `\_`, `\[`, `\]`,
+`\\` échappent. Rien d'autre n'est interprété (titres, listes, tableaux, HTML restent du texte), un lien à schéma
+refusé (`javascript:`…) reste du texte. Le texte de la note est le texte sans marqueurs ; la mise en forme est
+écrite dans Gramps Web (mode gramps). En mode fichier, le GEDCOM ne garde que le texte : la perte de mise en forme
+est annoncée dans `avertissements`. Détails, règle des plages et liens internes des notes de preuve :
+[Gramps Web](gramps-web.md#texte-enrichi-et-liens-internes-279). (Ne pas confondre avec `format` d'un média.)
+
+Exemple : `{"op": "ajouter_source", "titre": "Billet", "note": "**Acte** vu, voir [la fiche](gramps://Person/gramps_id/I1)", "format_texte": "markdown"}`.
 
 ### Fichier d'un média (`ajouter_media`)
 

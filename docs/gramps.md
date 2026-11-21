@@ -153,6 +153,9 @@ correspondance du mode direct ; l'arbre obtenu suit ensuite exactement le chemin
   dépôts, médias et notes partagées (extension GEDCOM `_ETIQUETTE`) ; celles des lieux et des notes « en
   ligne », et une étiquette qui n'étiquette rien, restent comptées dans `non_repris` (couleur et priorité ne
   sont pas reprises : l'arbre ne garde que les noms) ;
+- mise en forme des notes (gras, liens, couleurs… : `StyledText` de Gramps, #279) : l'arbre ne garde que le texte,
+  les styles sont comptés dans `non_repris` (`Note.text.tags[]`) ; en mode gramps elle reste dans Gramps Web
+  ([texte enrichi](gramps-web.md#texte-enrichi-et-liens-internes-279)) ;
 - le drapeau `priv` de Gramps devient `prive` là où le modèle le porte (personne, famille, événement, source,
   citation, média, note) ; l'import ne pose ni ne retire aucune protection. Il est local : rien ne part vers
   l'extérieur ;
@@ -281,7 +284,18 @@ Workflow `Intégration Gramps`, un job `Gramps Desktop <version>` par version (v
     relève pour chaque événement le lieu affiché par `PlaceDisplay.display_event` et le nom seul
     (`get_location_list(...)[0][0]`) ; `controle_lieux` les compare au nom d'époque attendu (12 événements),
     puis relit le réexport de Gramps : noms datés présents, noms de lieu relus par Genealogiste inchangés.
+16. notes stylées et liens internes (#279) : cas `notes`, notes de preuve recalculées avec liens internes
+    (`GENEALOGISTE_GRAMPS_NOTES_LIENS`) et une note manuelle de personne portant les onze styles de Gramps (dont
+    émojis et accents dans les plages, deux liens internes et un lien externe), exportées en 1.7.1. En 6.x,
+    `controle_champs` et `controle_lecture` comparent chaque `StyledText` champ par champ ; dans les trois
+    versions, `controle_notes` relit le réexport de Gramps : texte et styles identiques (nom, valeur, plages en
+    points de code), les onze noms présents (5.2 comprise), chaque lien `gramps://Classe/handle/…` vers un objet
+    présent sous le même handle. `strikethrough` et `subscript`, absents du DTD et du RNG livrés, sont le seul
+    écart de schéma admis pour ce cas.
 
+Résultat du 2026-11-21 (#279) : 114 vérifications sur 114 réussies, dont les 6 du cas `notes` (import et cycle
+pour 5.2.4, 6.0.8 et 6.1.0-beta2) : dans chaque version, 32 liens internes résolus vers un objet présent sous le
+même handle et les onze styles relus à l'identique, `strikethrough` et `subscript` compris en 5.2.
 Résultat du 2026-11-21 (#277) : 108 vérifications sur 108 réussies, dont les 6 du cas `lieux` (import et cycle
 pour 5.2.4, 6.0.8 et 6.1.0-beta2) : dans les trois versions, les 12 événements contrôlés affichent le nom d'époque
 attendu (`display_event` et `get_location_list`). Résultat du 2026-11-21 (#273) : 102 vérifications sur 102 réussies, dont les 6 du cas `types` (import et cycle

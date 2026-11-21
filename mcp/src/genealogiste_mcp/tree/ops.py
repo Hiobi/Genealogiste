@@ -1158,6 +1158,47 @@ def _lier_images_citees(ctx: Ctx) -> None:
 OPS = {name[3:]: fn for name, fn in globals().items() if name.startswith("op_")}
 
 
+FORMATS_TEXTE = ("texte", "markdown")
+CHAMPS_NOTE = ("note", "texte", "notes", "notes_ajout")  # textes de note, à toute profondeur de l'opération
+
+
+def _markdown(ctx: Ctx, o: dict) -> dict:
+    """``format_texte: "markdown"`` (#279) : les textes de note de l'opération (``note``, ``texte`` de citation,
+    ``notes``, ``notes_ajout``, y compris dans les citations, événements et ``champs`` imbriqués) sont convertis
+    en texte brut + mise en forme (gras, italique, liens) ; la mise en forme est retenue pour le backend gramps
+    (``Tree.styles``). Défaut ``texte`` : rien n'est interprété."""
+    fmt = o.get("format_texte", "texte")
+    if fmt not in FORMATS_TEXTE:
+        raise OpError(f"format_texte {fmt!r} : valeurs possibles {' | '.join(FORMATS_TEXTE)}")
+    o = {k: v for k, v in o.items() if k != "format_texte"}
+    if fmt == "texte":
+        return o
+    from ..gramps.texte import depuis_markdown
+
+    def conv(v: str) -> str:
+        st = depuis_markdown(v)
+        if st["tags"]:
+            ctx.tree.styles[st["string"]] = st["tags"]
+        return st["string"]
+
+    def walk(x):
+        if isinstance(x, dict):
+            out = {}
+            for k, v in x.items():
+                if k in CHAMPS_NOTE and isinstance(v, str):
+                    out[k] = conv(v)
+                elif k in CHAMPS_NOTE and isinstance(v, list):
+                    out[k] = [conv(n) if isinstance(n, str) else walk(n) for n in v]
+                else:
+                    out[k] = walk(v)
+            return out
+        if isinstance(x, list):
+            return [walk(v) for v in x]
+        return x
+
+    return walk(o)
+
+
 def apply_ops(tree: Tree, ops: list[dict], exiger_source: bool = True, media=None) -> Ctx:
     """Applique les opérations sur une COPIE de l'arbre ; lève OpError si l'une échoue. media : résolution des
     fichiers d'ajouter_media (Config.media_reference)."""
@@ -1167,7 +1208,7 @@ def apply_ops(tree: Tree, ops: list[dict], exiger_source: bool = True, media=Non
         if name not in OPS:
             raise OpError(f"Opération {i} inconnue : {name!r}. Disponibles : {', '.join(sorted(OPS))}")
         try:
-            OPS[name](ctx, o)
+            OPS[name](ctx, _markdown(ctx, o))
         except OpError as exc:
             raise OpError(f"Opération {i} ({name}) : {exc}") from exc
         except KeyError as exc:

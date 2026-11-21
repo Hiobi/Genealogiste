@@ -292,6 +292,9 @@ class Tree:
     notes: dict[str, str] = field(default_factory=dict)  # enregistrements NOTE/SNOTE partagés
     notes_privees: set[str] = field(default_factory=set)  # notes partagées marquées privées
     notes_tags: dict[str, list[str]] = field(default_factory=dict)  # étiquettes des notes partagées (#262)
+    # mise en forme des notes écrites en Markdown dans la proposition en cours (#279) : texte brut -> tags
+    # StyledText ; jamais sérialisée (GEDCOM), appliquée par le backend gramps aux notes créées ou réécrites
+    styles: dict[str, list[dict]] = field(default_factory=dict, compare=False, repr=False)
     header_extra: list = field(default_factory=list)
     extra_records: list = field(default_factory=list)
 

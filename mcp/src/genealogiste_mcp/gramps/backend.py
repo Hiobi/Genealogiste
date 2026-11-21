@@ -54,6 +54,7 @@ from .mapping import (
     etiquettes_en_double,
     etiquettes_gerees,
     gramps_to_tree,
+    liens_internes_changes,
     lignes_etiquettes,
     migrer_marqueurs,
     normaliser_types,
@@ -192,7 +193,8 @@ class GrampsBackend:
     def __init__(self, client: GrampsClient, data_dir: Path, proposals_dir: Path, exiger_source: bool = True,
                  strict: bool = False, ttl: float = 30.0, mirror: GitMirror | None = None,
                  clock=time.monotonic, notes_auto: str = "true", media_dir=None,
-                 media=None, forme: str = "genealogiste"):
+                 media=None, forme: str = "genealogiste", notes_liens: bool = False):
+        self.notes_liens = notes_liens  # liens internes gramps:// dans les notes générées (#279)
         self.forme = forme  # forme écrite des marqueurs (GENEALOGISTE_MARQUEURS, #182)
         self.client = client
         self.media = media  # résolution des fichiers d'ajouter_media (Config.media_reference)
@@ -260,6 +262,8 @@ class GrampsBackend:
             out["dont_notes_de_preuve_seules"] = sum(proof_only(i, gerees) for i in items)
             if lignes := lignes_etiquettes(db, items):  # #262 : une ligne par objet étiqueté
                 out["etiquettes"] = lignes
+        if liens := liens_internes_changes(items):  # #279 : notes dont les liens internes gramps:// changent
+            out["liens_internes"] = liens
         return out
 
     @staticmethod
@@ -278,7 +282,8 @@ class GrampsBackend:
         proof = preview.get("dont_notes_de_preuve_seules", 0)
         return (f"Transaction massive : {len(items)} objets Gramps pour {n_ops} opération(s), dont {proof} portant "
                 f"seulement sur des notes de preuve générées (Genealogiste:auto) et {len(items) - proof} réellement modifiés. "
-                "Cause probable : première écriture sur cette base ou recalcul global des notes de preuve. "
+                "Cause probable : première écriture sur cette base, recalcul global des notes de preuve ou "
+                "changement de GENEALOGISTE_GRAMPS_NOTES_LIENS (liens internes ajoutés ou retirés par ce recalcul). "
                 "Pour l'éviter : GENEALOGISTE_GRAMPS_NOTES_AUTO=modifies (recalcul limité aux objets touchés) "
                 "ou false (aucune note générée).")
 
@@ -290,8 +295,10 @@ class GrampsBackend:
         ctx, token, message = prepare(tree, operations, titre, justification, sources, self.exiger_source,
                                       self.media)
         only = touched_keys(tree, ctx.tree) if self.notes_auto == "modifies" and not all_notes else None
+        avis: list[str] = []
         new = tree_to_gramps(ctx.tree, base=db, strict=self.strict, generated=self.notes_auto != "false", only=only,
-                             structure=structure, forme=self.forme)
+                             structure=structure, forme=self.forme, liens=self.notes_liens, recalcul=all_notes,
+                             avis=avis)
         items = diff(db, new)
         if not items:
             raise ProposalError("La proposition ne modifie rien.")
@@ -302,7 +309,7 @@ class GrampsBackend:
             preview["fichiers_a_envoyer"] = [f"{t['id']} : {t['fichier']} ({t['taille_octets']} octets)" for t in todo]
             if missing:
                 preview["fichiers_absents"] = missing
-        warnings = list(ctx.warnings) + self._doublons(db, items)
+        warnings = list(ctx.warnings) + avis + self._doublons(db, items)
         if w := self._massive(items, preview, len(operations)):
             warnings.append(w)
         self.tokens.create({"jeton": token, "type": "transaction", "items": items, "message": message,
@@ -625,7 +632,7 @@ class GrampsBackend:
 # ============================================================================ bascule fichier -> Gramps Web
 
 def bascule_preview(client: GrampsClient, store: TreeStore, tokens: TokenStore, strict: bool,
-                    generated: bool = True, forme: str = "genealogiste") -> dict:
+                    generated: bool = True, forme: str = "genealogiste", liens: bool = False) -> dict:
     """Prépare l'envoi de l'arbre local complet dans un arbre Gramps Web vide (vivants inclus : instance
     privée). Après accord, Gramps Web devient la référence et arbre.ged est figé."""
     if store.frozen():
@@ -638,7 +645,7 @@ def bascule_preview(client: GrampsClient, store: TreeStore, tokens: TokenStore, 
         raise ProposalError(f"L'arbre Gramps Web n'est pas vide ({occupied}) : la bascule exige un arbre vide "
                             "(pas de synchronisation bidirectionnelle).")
     tree = store.load()
-    new = tree_to_gramps(tree, base=remote, strict=strict, generated=generated, forme=forme)
+    new = tree_to_gramps(tree, base=remote, strict=strict, generated=generated, forme=forme, liens=liens)
     items = diff(remote, new)
     if not items:
         raise ProposalError("Arbre local vide : rien à basculer.")

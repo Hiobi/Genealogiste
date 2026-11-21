@@ -1,5 +1,9 @@
 # Notes de recherche Markdown (Obsidian, LLM)
 
+> À ne pas confondre avec les notes de l'arbre (notes de personne, d'événement, de source… de GEDCOM ou de
+> Gramps Web) : en mode gramps, leur mise en forme (gras, italique, liens) est préservée et peut s'écrire en
+> Markdown simple (`format_texte`, [opérations](operations.md#texte-enrichi-des-notes-279)).
+
 Espace de travail humain à côté de l'arbre : hypothèses, pistes, courriers, actes en attente. Les fiches sont
 lisibles et modifiables dans **Obsidian** et servent de contexte aux agents (`notes_lire`). **L'arbre reste la
 référence** : rien n'est écrit dans l'arbre depuis les notes (`arbre_proposer` → accord → `arbre_appliquer`).

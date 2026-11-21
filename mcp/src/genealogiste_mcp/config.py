@@ -75,6 +75,7 @@ class Config:
     gramps_password: str = ""
     gramps_ttl: float = 30.0  # secondes entre deux rafraîchissements en lecture (mode gramps)
     gramps_notes_auto: str = "true"  # notes de preuve Genealogiste:auto : true (toute la base) | modifies | false
+    gramps_notes_liens: bool = False  # liens internes gramps:// dans ces notes (#279) ; changement : par recalcul
     git_mirror: bool = False  # mode gramps : miroir GEDCOM 7 versionné de l'arbre Gramps
     git_remote: str = ""  # dépôt distant optionnel (privé !) du répertoire de données
     strict_evidence: bool = False
@@ -256,6 +257,17 @@ def notes_auto_mode(value: str | None) -> str:
     return NOTES_AUTO[v]
 
 
+def notes_liens(value: str | None) -> bool:
+    """GENEALOGISTE_GRAMPS_NOTES_LIENS (#279) : liens internes gramps:// dans les notes de preuve générées ; faux
+    par défaut, valeur inconnue refusée (pas de bascule silencieuse)."""
+    v = (value or "").strip().lower()
+    if not v:
+        return False
+    if v not in NOTES_AUTO or NOTES_AUTO[v] == "modifies":
+        raise ValueError(f"GENEALOGISTE_GRAMPS_NOTES_LIENS={value!r} : valeurs possibles true | false")
+    return NOTES_AUTO[v] == "true"
+
+
 ECRITURE = {"autorisee": "autorisee", "autorisée": "autorisee", "interdite": "interdite"}
 
 
@@ -394,6 +406,7 @@ def load_config() -> Config:
         gramps_password=env("GENEALOGISTE_GRAMPS_PASSWORD", ""),
         gramps_ttl=float(env("GENEALOGISTE_GRAMPS_TTL", "30") or 30),
         gramps_notes_auto=notes_auto_mode(env("GENEALOGISTE_GRAMPS_NOTES_AUTO")),
+        gramps_notes_liens=notes_liens(env("GENEALOGISTE_GRAMPS_NOTES_LIENS")),
         git_mirror=_bool(env("GENEALOGISTE_GIT_MIRROR"), False),
         git_remote=env("GENEALOGISTE_GIT_REMOTE", ""),
         strict_evidence=env("GENEALOGISTE_STRICT", "0") in ("1", "true", "oui"),

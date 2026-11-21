@@ -46,6 +46,14 @@ def test_backend_invalide(env_neuf, monkeypatch):
     assert "fichier | gramps" in d["erreur"] and "make check" in d["remede"]
 
 
+def test_notes_liens_invalide(env_neuf, monkeypatch):
+    """#279 : valeur inconnue refusée au démarrage (pas de bascule silencieuse des notes de preuve)."""
+    monkeypatch.setenv("GENEALOGISTE_GRAMPS_NOTES_LIENS", "parfois")
+    d = _charge(_appel("arbre_info"))
+    assert d["cause"] == "configuration" and d["variable"] == "GENEALOGISTE_GRAMPS_NOTES_LIENS"
+    assert "true | false" in d["erreur"]
+
+
 def test_gramps_injoignable(env_neuf, monkeypatch):
     monkeypatch.setenv("GENEALOGISTE_BACKEND", "gramps")
     monkeypatch.setenv("GENEALOGISTE_GRAMPS_URL", "http://127.0.0.1:9")

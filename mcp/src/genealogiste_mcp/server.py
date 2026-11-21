@@ -131,6 +131,7 @@ class App:
                                          self.config.gramps_ttl,
                                          GitMirror(self.store) if self.config.git_mirror else None,
                                          notes_auto=self.config.gramps_notes_auto,
+                                         notes_liens=self.config.gramps_notes_liens,
                                          media_dir=self.config.media_racines[1:] if self.config.media_dir_conf else None,
                                          media=self.config.media_reference, forme=self.config.marqueurs)
 
@@ -1321,6 +1322,8 @@ def arbre_proposer(operations: list[dict], titre: str, justification: str, sourc
     supprimer_association, fusionner_personnes, scinder_personne, definir_statut, marquer_vivant, etiqueter.
     Étiquettes : tags (ajout) sur les ajouts et modifications, tags_retrait sur les modifications, etiqueter
     pour tout objet existant (famille, dépôt, note, citation…).
+    Texte des notes : brut par défaut ; format_texte="markdown" sur l'opération pour **gras**, *italique* et
+    [liens](https://…) (mise en forme écrite dans Gramps Web en mode gramps, annoncée comme perdue en mode fichier).
     Règle de métier : tout événement ou filiation exige une citation, sauf non_source=true + motif.
     Citation : préciser 'consultation' (original | image | transcription | index | non_vu). Référencer un objet créé dans la même proposition par
     "$ref". Voir docs/operations.md."""
@@ -2495,7 +2498,7 @@ def gramps_bascule_proposer() -> dict:
         return _gramps_guard(lambda: bascule_preview(app().gramps(), app().store, app().tokens,
                                                      app().config.strict_evidence,
                                                      app().config.gramps_notes_auto != "false",
-                                                     app().config.marqueurs))
+                                                     app().config.marqueurs, app().config.gramps_notes_liens))
     except ProposalError as exc:
         return {"erreur": str(exc)}
 
@@ -2516,7 +2519,9 @@ def gramps_bascule_appliquer(jeton: str) -> dict:
 @mcp.tool()
 def gramps_recalculer_notes() -> dict:
     """Mode gramps : prépare le recalcul des notes et étiquettes de preuve générées (Genealogiste:auto), par ex. après
-    des modifications faites dans l'interface. Les notes manuelles ne sont jamais touchées. Jeton à valider."""
+    des modifications faites dans l'interface. Les notes manuelles ne sont jamais touchées. Seul moyen de faire passer
+    toutes les notes à la forme voulue par GENEALOGISTE_GRAMPS_NOTES_LIENS (liens internes ajoutés ou retirés,
+    bilan transaction_gramps.liens_internes). Jeton à valider."""
     if app().config.backend != "gramps":
         return {"erreur": "Disponible en mode gramps (GENEALOGISTE_BACKEND=gramps)."}
     try:

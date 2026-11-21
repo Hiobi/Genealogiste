@@ -108,6 +108,9 @@ Pour **Codex CLI**, suivre le [guide d’installation et d’approbation](https:
 le paquet fournit les skills ; un profil séparé active le MCP avec confirmation native de chaque outil.
 Le mode fichier fonctionne sans Gramps Web ni Obsidian. L’ancien exporteur FamilySearch est désactivé ;
 un GEDCOM obtenu séparément peut être importé.
+Avec Gramps Web, la mise en forme de vos notes est préservée ; `GENEALOGISTE_GRAMPS_NOTES_LIENS=true` (désactivé par
+défaut) ajoute des liens cliquables aux notes de preuve, après un recalcul que vous validez
+([texte enrichi](docs/gramps-web.md#texte-enrichi-et-liens-internes-279)).
 
 Pour contribuer : [CONTRIBUTING.md](CONTRIBUTING.md), [architecture et conventions](CLAUDE.md),
 [tests et CI](docs/integration-continue.md). Licence : [GPL-3.0](LICENSE).
