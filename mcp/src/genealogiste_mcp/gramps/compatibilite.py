@@ -39,6 +39,7 @@ FONCTIONS_API: dict[str, Version] = {
     "regle_matches_query": (3, 23, 0),     # règle MatchesQuery ; `oql` retiré
     "verrous_taches": (3, 24, 0),          # 409 task_locked
     "edit_by_handle": (3, 26, 0),          # /api/objects/edit-by-handle/ ; `gql` retiré
+    "inscription_libre": (3, 26, 0),       # GET /api/register/config/ (sans authentification)
 }
 
 _VERSION = re.compile(r"^\s*v?(\d+)\.(\d+)(?:\.(\d+))?")

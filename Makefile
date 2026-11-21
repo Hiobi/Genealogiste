@@ -25,6 +25,8 @@ GW_TEST = GRAMPSWEB_TEST_PORT=$(GW_PORT) $(if $(GRAMPSWEB_IMAGE),GRAMPSWEB_IMAGE
 test-gramps: ## Tests d'intégration sur un Gramps Web jetable (Docker, données fictives ; GRAMPSWEB_IMAGE=…)
 	$(GW_TEST) up -d --wait
 	$(GW_TEST) exec -T grampsweb python3 -m gramps_webapi user add sosa-test sosa-test --role 3 || true
+	$(GW_TEST) exec -T grampsweb python3 -m gramps_webapi user add sosa-membre sosa-membre --role 1 || true
+	$(GW_TEST) exec -T grampsweb python3 -m gramps_webapi user add sosa-contributeur sosa-contributeur --role 2 || true
 	GENEALOGISTE_TEST_GRAMPS_URL=http://127.0.0.1:$(GW_PORT) GENEALOGISTE_TEST_GRAMPS_API=$(GRAMPSWEB_API) \
 	  $(UV) run pytest -m gramps_live tests/test_gramps_live.py; \
 	  status=$$?; $(GW_TEST) down -v; exit $$status

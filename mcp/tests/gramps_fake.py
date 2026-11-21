@@ -4,15 +4,25 @@
 - ``POST /api/transactions/`` : lot atomique, ``old`` comparé à la base (clés de ``old`` seulement, ``change``
   ignoré, comme ``gramps.gen.merge.diff.diff_items``) -> HTTP 400 « Object has changed » ; ``undo`` inverse
   le lot ; ``background`` -> 202 + ``/api/tasks/<id>`` ; ``force`` jamais attendu (vérifié) ;
-- historique des messages de transaction, pour vérifier la traçabilité.
-Données fictives uniquement.
+- historique des messages de transaction, pour vérifier la traçabilité ;
+- comptes à rôle paramétrable (Guest 0 à Admin 5) : le jeton est un JWT à la forme réelle
+  ``{"permissions": [...], "tree": ..., "exp": ...}`` (gramps_webapi ``token.py`` ; le rôle n'y figure pas), valable
+  15 minutes (horloge injectable), rafraîchi avec les mêmes revendications relues d'après le rôle courant ;
+  transactions et envoi de fichier refusés en 403 sans AddObject/EditObject/DeleteObject (corps flask-smorest
+  ``{"code": 403, "status": "Forbidden"}``) ;
+- ``GET /api/metadata/`` (versions, ``server.task_queue``…), ``GET /api/users/-/`` (rôle), ``GET /api/register/config/``
+  (API >= 3.26.0 seulement) ; ``limite_jeton=True`` : ``/token/`` et ``/token/refresh/`` limités à 1 requête par
+  seconde (429), sur l'horloge injectable ; version d'API paramétrable, ``message=`` refusé en 422 avant 3.13.0.
+Défauts : compte Editor, API épinglée de docker-compose.test.yml. Données fictives uniquement.
 """
 
 from __future__ import annotations
 
+import base64
 import copy
 import json
 import re
+import time
 
 import httpx
 import respx
@@ -21,6 +31,33 @@ from genealogiste_mcp.gramps.types import CLASSES, tname
 
 URL = "http://gramps.test"
 PLURAL = {v: k for k, v in CLASSES.items()}
+
+# gramps_webapi/auth/const.py : droits cumulés par rôle (seuls ceux utiles aux tests sont énumérés).
+ROLE_NOMS = {0: "Guest", 1: "Member", 2: "Contributor", 3: "Editor", 4: "Owner", 5: "Admin"}
+_MEMBER = {"EditOwnUser", "ViewPrivate"}
+_CONTRIBUTOR = _MEMBER | {"AddObject"}
+_EDITOR = _CONTRIBUTOR | {"EditObject", "DeleteObject", "EditNameGroup", "EditCustomFilter"}
+_OWNER = _EDITOR | {"AddUser", "DeleteUser", "EditOtherUser", "EditUserRole", "ViewOtherUser", "ImportFile",
+                    "ManageBackups", "TriggerReindex", "EditTree", "RepairTree", "UpgradeSchema",
+                    "EditTreeMinRoleAI", "BatchDeleteObjects"}
+PERMISSIONS = {0: {"EditOwnUser"}, 1: _MEMBER, 2: _CONTRIBUTOR, 3: _EDITOR, 4: _OWNER,
+               5: _OWNER | {"ViewSettings", "EditSettings", "AddTree", "MakeAdmin"}}
+DUREE_JETON = 900  # JWT_ACCESS_TOKEN_EXPIRES = 15 min
+
+
+def version_tuple(v: str) -> tuple[int, int, int]:
+    n = [int(x) for x in v.split(".")[:3]]
+    return (n[0], n[1], n[2] if len(n) > 2 else 0)
+
+
+def jwt_payload(token: str) -> dict:
+    parts = token.split(".")
+    if len(parts) != 3:
+        return {}
+    try:
+        return json.loads(base64.urlsafe_b64decode(parts[1] + "=" * (-len(parts[1]) % 4)))
+    except ValueError:
+        return {}
 
 
 def simplify(o):
@@ -59,9 +96,18 @@ def differs(old, cur) -> bool:
 
 
 class FakeGrampsWeb:
-    def __init__(self, user: str = "sosa", password: str = "secret", tree: str = ""):
+    def __init__(self, user: str = "sosa", password: str = "secret", tree: str = "", role: int = 3,
+                 api_version: str = "3.25.1", gramps_version: str = "6.0.8", task_queue: bool = False,
+                 multi_tree: bool = False, inscription_libre: bool = False, horloge=time.time,
+                 limite_jeton: bool = False):
         self.user, self.password = user, password
-        self.tree = tree  # si défini : jeton de type JWT portant la revendication « tree » (comme Gramps Web)
+        self.tree = tree  # si défini : le jeton porte la revendication « tree » (toujours présente en réalité)
+        self.role = role  # modifiable en cours de test : relu au renouvellement du jeton, pas avant
+        self.api_version, self.gramps_version = api_version, gramps_version
+        self.task_queue, self.multi_tree, self.inscription_libre = task_queue, multi_tree, inscription_libre
+        self.horloge = horloge  # injectable : expiration du jeton (15 min) sans attendre
+        self.logins = self.refreshes = 0
+        self.limite_jeton, self._dernier_jeton = limite_jeton, float("-inf")
         self.objects: dict[str, dict[str, dict]] = {c: {} for c in CLASSES}
         self.clock = 1_000
         self.messages: list[str] = []
@@ -73,7 +119,10 @@ class FakeGrampsWeb:
         api = URL + "/api"
         r = self.router
         r.post(api + "/token/").mock(side_effect=self._token)
-        r.post(api + "/token/refresh/").mock(side_effect=lambda req: httpx.Response(200, json={"access_token": "A2"}))
+        r.post(api + "/token/refresh/").mock(side_effect=self._refresh)
+        r.get(api + "/metadata/").mock(side_effect=self._metadata)
+        r.get(api + "/users/-/").mock(side_effect=self._me)
+        r.get(api + "/register/config/").mock(side_effect=self._register_config)
         r.post(api + "/transactions/").mock(side_effect=self._transaction)
         r.put(url__regex=re.escape(api) + r"/media/(?P<handle>[^/?]+)/file(\?.*)?$").mock(side_effect=self._file)
         r.get(api + "/search/").mock(side_effect=self._search)
@@ -110,20 +159,78 @@ class FakeGrampsWeb:
 
     # ------------------------------------------------------------------ routes
     def _auth(self, req) -> httpx.Response | None:
-        if not req.headers.get("Authorization", "").startswith("Bearer A"):
+        bearer = req.headers.get("Authorization", "")
+        if not bearer.startswith("Bearer A"):
             return httpx.Response(401, json={"error": {"code": 401, "message": "unauthorized"}})
+        exp = jwt_payload(bearer.removeprefix("Bearer ")).get("exp")
+        if exp is not None and self.horloge() >= exp:  # flask-jwt-extended : jeton expiré = 401
+            return httpx.Response(401, json={"msg": "Token has expired"})
         return None
 
+    def _jeton(self, prefixe: str) -> str:
+        """JWT à la forme réelle : droits du rôle courant, arbre, expiration (rôle absent du jeton)."""
+        claims = {"permissions": sorted(PERMISSIONS.get(self.role, set())), "exp": int(self.horloge()) + DUREE_JETON}
+        if self.tree:
+            claims["tree"] = self.tree
+        payload = base64.urlsafe_b64encode(json.dumps(claims).encode()).decode().rstrip("=")
+        return f"{prefixe}.{payload}.signature"
+
+    def _droits(self, req, *exiges: str) -> httpx.Response | None:
+        """403 (abort(403) de flask-smorest) si le jeton ne porte pas tous les droits exigés."""
+        perms = set(jwt_payload(req.headers.get("Authorization", "").removeprefix("Bearer ")).get("permissions", []))
+        if not set(exiges) <= perms:
+            return httpx.Response(403, json={"code": 403, "status": "Forbidden"})
+        return None
+
+    def _limite(self) -> httpx.Response | None:
+        """flask-limiter ``1/second`` sur les deux routes de jeton (réponse 429)."""
+        if not self.limite_jeton:
+            return None
+        maintenant, depuis = self.horloge(), self._dernier_jeton
+        self._dernier_jeton = maintenant
+        if maintenant - depuis < 1:
+            return httpx.Response(429, json={"code": 429, "status": "Too Many Requests"})
+        return None
+
+    def _refresh(self, req):
+        if (r := self._limite()) is not None:
+            return r
+        self.refreshes += 1
+        return httpx.Response(200, json={"access_token": self._jeton("A2")})
+
+    def _metadata(self, req):
+        if (r := self._auth(req)) is not None:
+            return r
+        counts = {c.lower(): len(o) for c, o in self.objects.items() if c != "Tag"}
+        return httpx.Response(200, json={
+            "database": {"id": "fake", "name": "Sosa-tests", "type": "sqlite"},
+            "default_person": "",
+            "gramps": {"version": self.gramps_version},
+            "gramps_webapi": {"schema": self.api_version, "version": self.api_version},
+            "object_counts": counts,
+            "server": {"multi_tree": self.multi_tree, "task_queue": self.task_queue, "ocr": False,
+                       "semantic_search": False, "chat": False, "email": False, "backups": False}})
+
+    def _me(self, req):
+        if (r := self._auth(req)) is not None:
+            return r
+        return httpx.Response(200, json={"name": self.user, "email": "", "full_name": "", "role": self.role,
+                                         "tree": self.tree, "user_id": "u1"})
+
+    def _register_config(self, req):
+        """Ajouté en API 3.26.0 ; sans authentification ; route absente avant."""
+        if version_tuple(self.api_version) < (3, 26, 0):
+            return httpx.Response(404, json={"code": 404, "status": "Not Found"})
+        return httpx.Response(200, json={"enabled": self.inscription_libre})
+
     def _token(self, req):
+        if (r := self._limite()) is not None:
+            return r
         data = json.loads(req.content)
         if (data.get("username"), data.get("password")) != (self.user, self.password):
-            return httpx.Response(403, json={"error": {"code": 403, "message": "Wrong username or password"}})
-        access = "A1"
-        if self.tree:
-            import base64
-            payload = base64.urlsafe_b64encode(json.dumps({"tree": self.tree}).encode()).decode().rstrip("=")
-            access = f"A1.{payload}.signature"
-        return httpx.Response(200, json={"access_token": access, "refresh_token": "R1"})
+            return httpx.Response(403, json={"error": {"code": 403, "message": "Invalid username or password"}})
+        self.logins += 1
+        return httpx.Response(200, json={"access_token": self._jeton("A1"), "refresh_token": "R1"})
 
     def _list(self, req, plural):
         if (r := self._auth(req)) is not None:
@@ -152,6 +259,8 @@ class FakeGrampsWeb:
         import hashlib
         if (r := self._auth(req)) is not None:
             return r
+        if (r := self._droits(req, "EditObject")) is not None:
+            return r
         obj = self.objects["Media"].get(handle)
         if obj is None:
             return httpx.Response(404, json={})
@@ -172,7 +281,12 @@ class FakeGrampsWeb:
     def _transaction(self, req):
         if (r := self._auth(req)) is not None:
             return r
+        if (r := self._droits(req, "AddObject", "EditObject", "DeleteObject")) is not None:
+            return r
         params = req.url.params
+        if "message" in params and version_tuple(self.api_version) < (3, 13, 0):
+            return httpx.Response(422, json={"code": 422, "errors": {"query": {"message": ["Unknown field."]}},
+                                             "status": "Unprocessable Entity"})
         if params.get("force") in ("1", "true"):
             self.forced = True
         payload = json.loads(req.content)
