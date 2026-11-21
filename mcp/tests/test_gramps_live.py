@@ -1072,3 +1072,212 @@ def test_taches_sur_vrai_gramps_web(client, loaded, tmp_path):
         for cls, h in [("sources", src["handle"])] + [("notes", n) for n in src["note_list"]]:
             assert client.request("DELETE", f"/{cls}/{h}").status_code == 200
     assert _vue_taches(client) == []
+
+
+# ---------------------------------------------------------------------------- #282 : chercheur, signets, formats de nom
+
+CHERCHEUR_FICTIF = {"name": "Chercheur Fictif", "addr": "1 rue Inventée", "locality": "Lieu-dit Fictif",
+                    "city": "Villefictive", "county": "Comtéfictif", "state": "Étatfictif", "country": "Francefictive",
+                    "postal": "00000", "phone": "0100000000", "email": "chercheur@example.org",
+                    "street": "2 rue Seconde"}
+
+
+def _app_role(tmp_path, nom, user):
+    from genealogiste_mcp import server
+    time.sleep(1.1)  # /token/ : 1 requête par seconde
+    a = _app_gramps(tmp_path / nom, user, user)
+    server.set_app(a)
+    return a
+
+
+def test_reglages_lecture_et_hors_historique_sur_vrai_gramps_web(client, loaded, tmp_path):
+    """Constats sur lesquels repose le contrat de #282 : routes de lecture, onze champs du chercheur (vide à l'état
+    neuf), signets par espace, formats de nom ; aucune de ces écritures n'entre dans l'historique des transactions."""
+    from genealogiste_mcp import server
+    from genealogiste_mcp.gramps import reglages as rg
+    from genealogiste_mcp.gramps.compatibilite import FONCTIONS_API, version_api
+    meta = client.request("GET", "/metadata/").json()
+    v = version_api(meta["gramps_webapi"]["version"])
+    assert v >= FONCTIONS_API["chercheur_modifier"] and v >= FONCTIONS_API["signets_ecriture"]
+    assert sorted(meta["researcher"]) == sorted(rg.CHERCHEUR_CLES)  # les onze champs, chaînes
+    assert client.chercheur() == {k: "" for k in rg.CHERCHEUR_CLES} == client.request(
+        "GET", "/metadata/researcher/").json()
+    assert client.signets_tous() == {e: [] for e in rg.ESPACES.values()}
+    assert sorted(client.request("GET", "/bookmarks/").json()) == sorted(rg.ESPACES.values())
+    assert client.request("GET", "/bookmarks/gens").status_code == 404
+    assert client.formats_noms() == []  # arbre neuf : aucun format personnalisé
+    r = client.request("PUT", "/metadata/researcher/", json={"nom": "X"})
+    print("clé inconnue :", r.status_code, r.text.strip()[:160])
+    assert r.status_code == 422
+    # PUT du chercheur : le rôle Editor est refusé
+    assert client.request("PUT", "/metadata/researcher/", json={"name": "X"}).status_code == 403
+    a = _app_role(tmp_path, "ro", "sosa-owner")
+    try:
+        r = server.gramps_reglages()
+        print("gramps_reglages (réel) :", r)
+        assert r["chercheur"] == {"renseigne": False, "champs_renseignes": []} and r["signets"] == {}
+        assert r["droits"] == {"chercheur_modifiable": True, "signets_modifiables": True} and "jeton" not in r
+        histo = _historique(client)
+        owner = a.backend.client
+        assert owner.request("PUT", "/metadata/researcher/", json={"name": "Essai"}).status_code == 200
+        assert owner.chercheur()["name"] == "Essai"
+        assert owner.request("PUT", "/metadata/researcher/", json={k: "" for k in rg.CHERCHEUR_CLES}).status_code == 200
+        assert owner.chercheur() == {k: "" for k in rg.CHERCHEUR_CLES}  # « vide » restauré exactement
+        assert _historique(client) == histo  # hors transaction : rien dans l'historique du serveur
+    finally:
+        server.set_app(None)
+
+
+def test_chercheur_proposition_application_annulation_sur_vrai_gramps_web(client, loaded, tmp_path):
+    from genealogiste_mcp import server
+    from genealogiste_mcp.gramps import reglages as rg
+    vide = {k: "" for k in rg.CHERCHEUR_CLES}
+    histo = _historique(client)
+    _app_role(tmp_path, "ed", "sosa-test")
+    try:  # compte Editor : refusé avant tout calcul
+        r = server.gramps_reglages(chercheur=CHERCHEUR_FICTIF)
+        assert "Owner" in r["erreur"] and client.chercheur() == vide
+    finally:
+        server.set_app(None)
+    a = _app_role(tmp_path, "ow", "sosa-owner")
+    try:
+        prop = server.gramps_reglages(chercheur=CHERCHEUR_FICTIF)
+        assert {d["champ"] for d in prop["diff"]} == set(CHERCHEUR_FICTIF) and client.chercheur() == vide
+        res = server.arbre_appliquer(prop["jeton"])
+        print("application :", {k: res[k] for k in ("relecture", "champs_modifies")})
+        assert res["relecture"] == "conforme" and client.chercheur() == {**vide, **CHERCHEUR_FICTIF}
+        assert _historique(client) == histo
+        journal = [e for e in a.backend.transactions() if e["id"] == prop["jeton"]][0]
+        assert journal["etat"] == "terminee" and journal["avant"] == vide
+        # annulation par Genealogiste : état initial EXACT, y compris les champs vides
+        und = server.arbre_annuler_modification(prop["jeton"])
+        assert "jeton" in und and client.chercheur() == {**vide, **CHERCHEUR_FICTIF}
+        assert "erreur" not in server.arbre_appliquer(und["jeton"]) and client.chercheur() == vide
+        # conflit : fiche modifiée dans l'interface entre la proposition et l'application
+        prop2 = server.gramps_reglages(chercheur={"name": "Voulu Fictif"})
+        a.backend.client.request("PUT", "/metadata/researcher/", json={"name": "Ailleurs Fictif"})
+        assert "Conflit" in server.arbre_appliquer(prop2["jeton"])["erreur"]
+        assert client.chercheur()["name"] == "Ailleurs Fictif"
+        a.backend.client.request("PUT", "/metadata/researcher/", json={"name": ""})
+        assert client.chercheur() == vide and _historique(client) == histo
+    finally:
+        server.set_app(None)
+
+
+def test_signets_proposition_application_annulation_sur_vrai_gramps_web(client, loaded, tmp_path):
+    from genealogiste_mcp import server
+    from genealogiste_mcp.gramps import reglages as rg
+    db = client.load_all()
+    hp = {o["gramps_id"]: h for h, o in db.all("Person").items()}
+    hf = {o["gramps_id"]: h for h, o in db.all("Family").items()}
+    histo = _historique(client)
+    _app_role(tmp_path, "sg", "sosa-test")
+    try:
+        assert client.signets_tous() == {e: [] for e in rg.ESPACES.values()}
+        client.signet_poser("people", hp["I5"])  # signet de l'utilisateur, déjà là
+        prop = server.gramps_reglages(signets={"ajouter": [{"cible": "person", "id": "I1"},
+                                                            {"cible": "family", "id": "F1"}]})
+        assert prop["diff"] == ["+ signet person I1", "+ signet family F1"]
+        assert client.signets("people") == [hp["I5"]]  # la proposition n'écrit rien
+        res = server.arbre_appliquer(prop["jeton"])
+        print("signets appliqués :", res["relecture"], client.signets("people"))
+        assert res["relecture"] == "conforme"
+        assert client.signets("people") == [hp["I5"], hp["I1"]]  # en fin de liste
+        assert client.signets("families") == [hf["F1"]] and _historique(client) == histo
+        # l'outil de lecture donne des identifiants, jamais de noms
+        lu = server.gramps_reglages()
+        assert lu["signets"]["person"] == [{"id": "I5", "handle": hp["I5"]}, {"id": "I1", "handle": hp["I1"]}]
+        # conflit : signet ajouté dans l'interface entre la proposition et l'application
+        p2 = server.gramps_reglages(signets={"ajouter": [{"cible": "person", "id": "I2"}]})
+        client.signet_poser("people", hp["I3"])
+        assert "Conflit" in server.arbre_appliquer(p2["jeton"])["erreur"]
+        client.signet_retirer("people", hp["I3"])
+        # annulation : état initial exact (signet de l'utilisateur intact)
+        und = server.arbre_annuler_modification(prop["jeton"])
+        assert und["ordre_restitue"] is True
+        server.arbre_appliquer(und["jeton"])
+        assert client.signets("people") == [hp["I5"]] and client.signets("families") == []
+        # retrait puis annulation : mêmes signets, I5 revient en fin de liste
+        client.signet_poser("people", hp["I1"])
+        p3 = server.gramps_reglages(signets={"retirer": [{"cible": "person", "id": "I5"}]})
+        server.arbre_appliquer(p3["jeton"])
+        assert client.signets("people") == [hp["I1"]]
+        u3 = server.arbre_annuler_modification(p3["jeton"])
+        assert u3["ordre_restitue"] is False
+        server.arbre_appliquer(u3["jeton"])
+        assert client.signets("people") == [hp["I1"], hp["I5"]]
+        assert _historique(client) == histo
+    finally:
+        server.set_app(None)
+        for h in client.signets("people"):
+            client.signet_retirer("people", h)
+        assert client.signets_tous() == {e: [] for e in rg.ESPACES.values()}
+
+
+def test_signets_d_enquete_sur_vrai_gramps_web(client, loaded, tmp_path):
+    from genealogiste_mcp import server
+    hp = {o["gramps_id"]: h for h, o in client.load_all().all("Person").items()}
+    _app_role(tmp_path, "enq", "sosa-test")
+    try:
+        client.signet_poser("people", hp["I2"])  # signet de l'utilisateur
+        e = server.enquete_ouvrir("Enquête 282", ["I1", "I2"], signets=True)
+        assert e["signets"]["diff"] == ["+ signet person I1"] and client.signets("people") == [hp["I2"]]
+        server.arbre_appliquer(e["signets"]["jeton"])
+        assert client.signets("people") == [hp["I2"], hp["I1"]]
+        assert server.enquete_noter(e["id"], statut="close")["signets_a_retirer"]["nombre"] == 1
+        ret = server.gramps_reglages(signets={"enquete": e["id"], "action": "retirer"})
+        server.arbre_appliquer(ret["jeton"])
+        assert client.signets("people") == [hp["I2"]]  # le signet de l'utilisateur reste
+    finally:
+        server.set_app(None)
+        for h in client.signets("people"):
+            client.signet_retirer("people", h)
+
+
+def test_formats_de_nom_chercheur_et_signets_import_export_sur_vrai_gramps_web(client, loaded, tmp_path):
+    """Formats de nom : aucune route d'écriture ; un format posé par un import XML (Owner) est lu par
+    GET /name-formats/ et réécrit à l'export. Fiche du chercheur d'un fichier : ignorée par Gramps sur un arbre non
+    vide (importxml : import_researcher seulement si la base est vide). Export privé relu : signets et formats."""
+    from genealogiste_mcp import server
+    from genealogiste_mcp.export.gramps_xml import Metadonnees, db_to_xml
+    from genealogiste_mcp.gramps import lecture_xml as lx
+    from genealogiste_mcp.gramps.mapping import GrampsDb
+    for methode, chemin in (("POST", "/name-formats/"), ("PUT", "/name-formats/"), ("DELETE", "/name-formats/")):
+        assert client.request(methode, chemin, json={}).status_code in (404, 405)
+    time.sleep(1.1)
+    owner = GrampsClient(URL, "sosa-owner", "sosa-owner")
+    avant_cherch = client.chercheur()
+    meta = Metadonnees(chercheur={"resname": "Fichier Fictif"},
+                       formats_noms=[(-1, "Prénom NOM", "%f %S", True), (-2, "Nom, prénom", "%s, %f", False)])
+    xml = db_to_xml(GrampsDb(), "1.7.1", meta).encode()
+    rep = owner.request("POST", "/importers/gramps/file", content=xml,
+                        headers={"Content-Type": "application/octet-stream"})
+    print("import formats + chercheur :", rep.status_code, rep.text[:160])
+    assert rep.status_code in (200, 201, 202)
+    formats = client.formats_noms()
+    print("formats lus :", formats)
+    # importxml.start_format : ``active = bool(attrs.get("active", True))`` : « 0 » est une chaîne non vide, donc vraie ;
+    # un format désactivé dans le fichier est activé par l'import de Gramps (constat amont, docs/gramps-web.md)
+    assert [(n, f, a) for _, n, f, a in formats][-2:] == [("Prénom NOM", "%f %S", True), ("Nom, prénom", "%s, %f", True)]
+    assert client.chercheur() == avant_cherch  # fiche du fichier ignorée : l'arbre n'était pas vide
+    _app_role(tmp_path, "exp", "sosa-test")
+    try:
+        hp = {o["gramps_id"]: h for h, o in client.load_all().all("Person").items()}
+        client.signet_poser("people", hp["I3"])
+        client.signet_poser("people", hp["I1"])
+        out = tmp_path / "prive.gramps"
+        r = server.arbre_exporter(format="gramps", chemin=str(out), masquer_vivants=False)
+        print("export privé :", {k: r[k] for k in ("signets", "formats_de_noms")})
+        lu = lx.lire_xml(out.read_bytes())
+        assert [lu.db.get("Person", h)["gramps_id"] for c, h in lu.meta.signets if c == "person"] == ["I3", "I1"]
+        assert [(n, f, ac) for _, n, f, ac in lu.meta.formats_noms][-2:] == [("Prénom NOM", "%f %S", True),
+                                                                              ("Nom, prénom", "%s, %f", True)]
+        assert "Fichier Fictif" not in out.read_text(encoding="utf-8")
+        pub = tmp_path / "public.gramps"  # export public : formats écrits, aucune coordonnée
+        server.arbre_exporter(format="gramps", chemin=str(pub))
+        brut = pub.read_text(encoding="utf-8")
+        assert "<name-formats>" in brut and "<researcher/>" in brut
+    finally:
+        server.set_app(None)
+        for h in client.signets("people"):
+            client.signet_retirer("people", h)

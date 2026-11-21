@@ -128,7 +128,7 @@ def test_cas_desktop_de_l_export_268(desktop):
     """Formes remises à Gramps : 1.7.1, 1.7.2 (refusée par 5.2 seulement), .gramps gzip, .gpkg avec média."""
     cas = {c.nom: c for c in desktop["CAS"]}
     assert set(cas) == {"xml-1.7.1", "xml-1.7.2", "gramps-gzip", "gpkg", "dates", "types", "lieux", "notes", "reference",
-                       "groupes", "mediapath", "sans-mediapath", "gpkg-mediapath"}
+                       "groupes", "reglages", "mediapath", "sans-mediapath", "gpkg-mediapath"}
     assert cas["xml-1.7.2"].refus_attendu == {"5.2"}
     assert all(not c.refus_attendu for n, c in cas.items() if n != "xml-1.7.2")
     assert cas["gpkg"].enrichir and cas["gpkg"].avertissements_admis
@@ -172,6 +172,34 @@ def test_cas_groupes_276(desktop, tmp_path):
     autre = {c.nom: c for c in desktop["CAS"]}["xml-1.7.1"]
     assert controle(autre, "6.0", {}, {"regroupements": {}}) == []
     assert controle(autre, "6.0", {}, {"regroupements": {"X": "Y"}})  # invention
+
+
+def test_cas_reglages_282(desktop, tmp_path):
+    """#282 : fiche du chercheur, signets et formats de nom écrits par l'export réel, relus par la base de chaque
+    version ; le contrôle voit un écart (champ, signet ou format manquant, invention, bool("0") de Gramps)."""
+    from genealogiste_mcp.gedcom.mapping import read_gedcom
+    from genealogiste_mcp.gramps.lecture_xml import lire_xml
+
+    cas = {c.nom: c for c in desktop["CAS"]}["reglages"]
+    assert cas.arbres == ("famille.ged",) and desktop["controle_reglages"] in desktop["CONTROLES"]
+    origine = read_gedcom((desktop["FIXTURES"] / "famille.ged").read_text(encoding="utf-8"))[0]
+    lu = lire_xml(cas.produire(origine, tmp_path).read_bytes())
+    attendu = {e: h for e, h in desktop["SIGNETS_ATTENDUS"].items()}
+    assert [c for c, _ in lu.meta.signets] == ["person", "person", "family", "source"] and attendu["people"]
+    assert lu.meta.chercheur["resname"] == "Chercheur Fictif" and "resstreet" not in lu.meta.chercheur
+    assert len(lu.meta.formats_noms) == 2
+    rapport = {"chercheur": {**{k: v for k, v in desktop["FICHE_BANC"].items()}, "street": "", "county": ""},
+               "signets": attendu, "formats_noms": [list(f[:3]) + [True] for f in desktop["FORMATS_BANC"]]}
+    controle = desktop["controle_reglages"]
+    assert controle(cas, "6.0", {}, rapport) == []
+    assert controle(cas, "6.0", {}, {**rapport, "signets": {}})  # signets absents après l'import
+    assert controle(cas, "6.0", {}, {**rapport, "chercheur": {**rapport["chercheur"], "name": ""}})
+    assert controle(cas, "6.0", {}, {**rapport, "formats_noms": rapport["formats_noms"][:1]})
+    assert controle(cas, "6.0", {}, {**rapport, "formats_noms": [[*f[:3], False] for f in rapport["formats_noms"]]})
+    autre = {c.nom: c for c in desktop["CAS"]}["xml-1.7.1"]
+    vide = {"chercheur": {"name": ""}, "signets": {"people": []}, "formats_noms": []}
+    assert controle(autre, "6.0", {}, vide) == []
+    assert controle(autre, "6.0", {}, {**vide, "signets": {"people": ["h"]}})  # invention
 
 
 def test_cas_notes_279(desktop):

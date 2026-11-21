@@ -142,6 +142,28 @@ Correspondance des statuts : tâche manuelle `a_faire` ↔ tâche ouverte (`Open
 `faite` / `abandonnee` ↔ `Done` ; piste `trouve` / `negatif` ↔ `Done`, autres statuts ↔ ouverte. Réglage
 désactivé : aucun de ces blocs n'apparaît, les sorties sont inchangées.
 
+## Signets de Gramps (#282)
+
+Avec le backend gramps, les personnes d'une enquête peuvent être mises en **signet de la base Gramps** (menu Signets
+de Gramps Desktop ; l'interface de Gramps Web n'affiche pas ces signets : les siens sont un réglage du navigateur,
+voir [gramps-web.md](gramps-web.md#signets-fiche-du-chercheur-et-formats-de-nom-282)). Rien n'est automatique :
+
+1. **Proposer la pose** : `enquete_ouvrir(…, signets=True)` ajoute à la réponse la clé `signets` (une proposition :
+   `diff`, `jeton`), ou `gramps_reglages(signets={"enquete": id, "action": "poser"})` pour une enquête existante.
+   Seules les personnes **absentes** des signets sont proposées ; une personne déjà en signet est un signet de
+   l'utilisateur : signalée dans `notes`, jamais comptée, jamais retirée. Rien n'est écrit avant `arbre_appliquer` après
+   accord explicite.
+2. **Trace locale** : à l'application, `signets_poses` (handle et identifiant Gramps, date ; jamais un nom) est inscrit
+   dans le fichier de l'enquête (`enquete_etat`) ; aucun attribut n'est ajouté dans Gramps.
+3. **Retrait proposé à la clôture** : `enquete_noter(id, statut="close")` signale `signets_a_retirer` (nombre,
+   consigne) sans rien exécuter ; `gramps_reglages(signets={"enquete": id, "action": "retirer"})` propose le retrait des
+   **seuls** signets de la trace encore présents (un signet retiré à la main entre-temps n'est pas reproposé), après
+   accord. L'annulation d'une pose ou d'un retrait (`arbre_annuler_modification`) met la trace à jour ; un retrait annulé
+   remet le signet en fin de liste.
+
+Mode fichier : `signets=True` répond « disponibles en mode gramps » sans rien faire ; sans `signets`, `enquete_ouvrir`
+est inchangé.
+
 ## « Déjà fait le … »
 
 Tous les outils qui acceptent `enquete` (budget, ci-dessus) ajoutent `deja_fait` (liste avec `enquete`,

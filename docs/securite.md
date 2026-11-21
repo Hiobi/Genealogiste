@@ -87,6 +87,11 @@ Cas tranchés d'après le code :
   suivre proposition, accord, application, annulation ([gramps-web.md](gramps-web.md#groupes-de-noms-276)). Aucun
   patronyme regroupé n'est ajouté aux requêtes de `recherche_multi` (information locale, `groupe_de_noms`) ; l'export
   public ne nomme pas un patronyme de personne masquée dans `<namemaps>`.
+- `gramps_reglages` (#282) est une **proposition** : sans paramètre il ne fait que lire (fiche du chercheur : champs
+  renseignés, jamais les valeurs ; signets ; formats de nom) ; avec `chercheur` ou `signets` il prépare un jeton et un
+  diff, écrit par `arbre_appliquer` (confirmation) après accord explicite. Ces écritures sont hors transaction Gramps :
+  annulables par Genealogiste seulement (état antérieur mémorisé, conflit refusé),
+  [gramps-web.md](gramps-web.md#signets-fiche-du-chercheur-et-formats-de-nom-282). La fiche exige le rôle Owner.
 - `gramps_synchroniser` est une collecte : relecture de Gramps Web, sans écriture vers lui ; avec le miroir Git,
   les modifications externes constatées sont commitées (ajout à l'historique), comme lors de toute lecture
   rafraîchie de l'arbre en mode gramps.
@@ -223,6 +228,25 @@ le HTML rendu (bleach).
 `tests/test_outils.py` vérifie que tout outil réseau recevant un paramètre de personne figure dans la liste des
 outils gardés (exemptions justifiées : communes de l'API Géo, serveur Gramps Web de l'utilisateur), et
 `tests/test_vivants.py` qu'aucun de ces outils ne fait d'appel réseau pour un vivant.
+
+### Fiche du chercheur de Gramps (#282)
+
+La fiche du chercheur (nom, adresse, téléphone, courriel) est une donnée **personnelle** de l'utilisateur, stockée dans sa
+base Gramps. Règles :
+
+- **Jamais vers l'extérieur** : aucun outil réseau de sources externes (matchID, WikiTree, Wikidata, Gallica, archives…) ne
+  la lit ni ne la reçoit (`tests/test_gramps_reglages_export.py` : requêtes sortantes de `recherche_multi`, et garantie
+  statique sur `sources/`) ; elle ne passe par aucune garde « vivants » parce qu'elle n'est jamais envoyée.
+- **Jamais dans le diagnostic** : `gramps_chercheur` dit seulement « renseignée » ou « vide » et si le compte peut la
+  modifier. **Jamais dans le journal de recherche**, les résumés de propositions en attente, ni les rapports d'import
+  (`import.metadonnees` : renseignée ou non, nombre de champs). Seul `gramps-transactions.jsonl` (local, droits privés) en
+  garde l'état avant et après, nécessaire à l'annulation, comme il garde déjà les objets des transactions.
+- **Exports** : `SUBM` (GEDCOM) et `<researcher>` (Gramps XML) n'écrivent la fiche que dans un export **privé**
+  (`masquer_vivants=False`) ou sur demande explicite (`chercheur=True`, avertissement en export public). **Export public par
+  défaut : aucune coordonnée** (sortie inchangée octet pour octet). Un soumetteur `SUBM` importé d'un autre fichier n'est
+  jamais écrit dans un export public (la projection de publication exclut les enregistrements non interprétés).
+- **Valeurs fournies par l'utilisateur** : une modification de la fiche n'utilise que ce qu'il donne explicitement (jamais
+  l'environnement, git ni le système).
 
 ### Billets du blog de Gramps Web (#261)
 

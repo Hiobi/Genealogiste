@@ -10,6 +10,9 @@ Faits amont (gramps-web-api v3.26.0, gramps 6.0, docs/gramps-web.md « Signets, 
   « vide » (onze champs chaînes, chaîne vide admise) ;
 - signets : ``GET /api/bookmarks/<espace>`` (liste de handles, ordonnée), ``PUT``/``DELETE
   /api/bookmarks/<espace>/<handle>`` (EditObject, Editor, API >= 1.5.0) ; un ajout se place EN FIN de liste ;
+- l'interface de Gramps Web n'utilise PAS ces signets : ses signets sont un réglage du navigateur (``localStorage``,
+  clé ``bookmarks``, par arbre ; gramps-web ``src/api.js``, v26.5.1, v26.11.0 et v26.11.3, ajout #335 du 2023-12-27) ;
+  seuls Gramps Desktop (menu Signets) et les clients de l'API voient ceux de la base ;
 - formats de nom : ``GET /api/name-formats/`` seulement (aucune écriture) ; le format PAR DÉFAUT n'est pas dans la
   base : c'est la préférence ``preferences.name-format`` de la configuration de Gramps (poste Desktop, ou processus
   serveur de Gramps Web), illisible par l'API.

@@ -506,6 +506,24 @@ def main() -> int:
         # groupes de noms appliqués par l'import (#276) : <namemaps> -> set_name_group_mapping ; relus par la table de
         # la base (get_name_group_keys / get_name_group_mapping), jamais par le fichier
         res["regroupements"] = {k: db.get_name_group_mapping(k) for k in db.get_name_group_keys()}
+        # fiche du chercheur, signets et formats de nom appliqués par l'import (#282) : relus dans la base. La fiche
+        # n'est importée que dans une base VIDE (importxml : import_researcher = db.get_total() == 0), ce que fait
+        # import_as_dict ; le format XML ne porte ni « street » ni « county » (exportxml.py).
+        chercheur = db.get_researcher()
+        res["chercheur"] = {"name": chercheur.get_name(), "addr": chercheur.get_address(),
+                            "street": chercheur.get_street(), "locality": chercheur.get_locality(),
+                            "city": chercheur.get_city(), "county": chercheur.get_county(),
+                            "state": chercheur.get_state(), "country": chercheur.get_country(),
+                            "postal": chercheur.get_postal_code(), "phone": chercheur.get_phone(),
+                            "email": chercheur.get_email()}
+        res["signets"] = {"people": list(db.get_bookmarks().get()), "families": list(db.get_family_bookmarks().get()),
+                          "events": list(db.get_event_bookmarks().get()),
+                          "places": list(db.get_place_bookmarks().get()),
+                          "sources": list(db.get_source_bookmarks().get()),
+                          "citations": list(db.get_citation_bookmarks().get()),
+                          "repositories": list(db.get_repo_bookmarks().get()),
+                          "media": list(db.get_media_bookmarks().get()), "notes": list(db.get_note_bookmarks().get())}
+        res["formats_noms"] = [list(f) for f in db.name_formats]
         res["lieux_affiches"] = lieux_affiches(db)
         # médias : chemin enregistré et fichier trouvé par Gramps (paquet .gpkg : extrait à côté de l'arbre)
         res["medias"] = [{"chemin": m.get_path(), "fichier": os.path.isfile(media_path_full(db, m.get_path())),

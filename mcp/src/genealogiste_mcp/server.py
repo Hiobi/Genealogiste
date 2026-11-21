@@ -2451,7 +2451,8 @@ def enquete_ouvrir(sujet: str, personnes: list[str] | None = None, id: str = "",
     (--max-budget-usd). Compté côté serveur ; à l'épuisement, refus avant toute requête et enquête « bloque ».
     signets=True (mode gramps, #282) : prépare AUSSI la proposition de mettre en signet de Gramps les personnes de
     l'enquête (jeton pour arbre_appliquer après accord explicite, clé « signets » ; jamais appliquée seule ; seuls
-    les signets posés par le plugin seront proposés au retrait à la clôture). Local seulement, rien n'est envoyé au réseau."""
+    les signets posés par le plugin seront proposés au retrait à la clôture ; ce sont les signets de la base, menu
+    Signets de Gramps Desktop : l'interface de Gramps Web ne les affiche pas). Local seulement, rien n'est envoyé au réseau."""
     def run():
         res = app().enquetes.ouvrir(sujet, personnes, id, budget)
         if signets:
@@ -2898,7 +2899,9 @@ def gramps_reglages(chercheur: dict | None = None, signets: dict | None = None) 
     par l'utilisateur, chaîne vide pour vider un champ) : PROPOSITION (jeton + diff avant/après), rôle Owner requis.
     signets={ajouter: [{cible, id}], retirer: [{cible, id}]} (cible : person, family, event, place, source,
     citation, repository, media, note ; id : identifiant Gramps) ou {enquete, action: poser|retirer} (personnes d'une
-    enquête ; retrait limité aux signets que le plugin a posés) : PROPOSITION (jeton + diff), rôle Editor.
+    enquête ; retrait limité aux signets que le plugin a posés) : PROPOSITION (jeton + diff), rôle Editor. Ce sont les
+    signets de la BASE (menu Signets de Gramps Desktop) : l'interface de Gramps Web a les siens dans le navigateur et
+    n'affiche pas ceux-ci.
     Ces écritures sont HORS transaction Gramps (rien dans l'historique de Gramps Web) : proposition, accord explicite
     (arbre_appliquer), journal, annulation par Genealogiste (arbre_annuler_modification : état antérieur mémorisé,
     restauré, conflit refusé). Un retrait annulé remet le signet en fin de liste. docs/gramps-web.md."""

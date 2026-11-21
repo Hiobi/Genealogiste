@@ -264,9 +264,9 @@ class FakeGrampsWeb:
             return r
         corps = json.loads(req.content or b"{}")
         if set(corps) - set(CHERCHEUR_CLES) or not all(isinstance(v, str) for v in corps.values()):
-            return httpx.Response(422, json={"code": 422, "status": "Unprocessable Entity",
-                                             "errors": {"json": {k: ["Unknown field."] for k in corps
-                                                                 if k not in CHERCHEUR_CLES}}})
+            inconnues = {k: ["Unknown field."] for k in corps if k not in CHERCHEUR_CLES}
+            return httpx.Response(422, json={"error": {"code": 422, "message": "json: " + ", ".join(
+                f"{k}: Unknown field." for k in inconnues), "messages": {"json": inconnues}}})
         if (r := self._droits(req, "EditTree")) is not None:
             return r
         self.chercheur.update(corps)

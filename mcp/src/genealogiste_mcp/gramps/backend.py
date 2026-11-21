@@ -528,8 +528,10 @@ class GrampsBackend:
         if enquete:
             record["enquete"] = enquete
         token = self.tokens.create(record)
-        avert = ["Un signet appartient à la base Gramps : il est visible dans Gramps Desktop et dans Gramps Web "
-                 "(même base). L'ajout se place en fin de liste."]
+        avert = ["Ces signets sont ceux de la BASE Gramps : visibles dans Gramps Desktop (menu Signets), partagés par "
+                 "tout client de la base. L'interface de Gramps Web ne les affiche PAS : ses propres signets sont un "
+                 "réglage du navigateur (localStorage), que Genealogiste ne lit ni n'écrit. L'ajout se place en fin "
+                 "de liste."]
         if any(o["action"] == "retirer" for o in ops):
             avert.append("L'annulation d'un retrait remet le signet en fin de liste : l'ordre des signets de "
                          "l'utilisateur n'est pas restitué.")
