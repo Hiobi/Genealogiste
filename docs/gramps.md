@@ -102,9 +102,9 @@ URL, ordonnances LDS, attributs, rectangles des références de médias, texte s
 complètes (double datation, nouvel an, jour sans mois, date composée à un seul bout, comme `write_date` de Gramps).
 Restent hors du fichier, comme chez Gramps : `Date.text` (sauf date texte) et `Date.sortval`, recalculés, et
 `birth_ref_index`/`death_ref_index`, que Gramps déduit de l'ordre des références d'événement (la référence
-retenue passe en tête quand Gramps ne la retrouverait pas sinon). Les sections hors objets (signets,
-formats de noms) ont leur point d'extension (`Metadonnees`), vide tant que Genealogiste ne les gère pas ; les
-groupes de noms (`namemaps`) sont écrits depuis #276 (voir ci-dessous).
+retenue passe en tête quand Gramps ne la retrouverait pas sinon). Les sections hors objets ont leur point d'extension (`Metadonnees`) : fiche du chercheur, signets et formats de
+noms sont écrits depuis #282 et les groupes de noms (`namemaps`) depuis #276 (voir ci-dessous) ; chacun reste vide
+quand il n'y a rien à écrire.
 
 ### Personne de référence (`<people home>`, #274)
 
@@ -135,6 +135,26 @@ raison pour laquelle Genealogiste n'écrit pas les groupes de noms dans Gramps W
 [Groupes de noms](gramps-web.md#groupes-de-noms-276). Banc Gramps Desktop : cas `groupes` (le fichier exporté,
 puis `db.get_name_group_mapping` après l'import de chaque version) et `groupes:seuls` (le document de regroupements
 seuls de `gramps_grouper_noms`, importé sans création d'objet).
+
+### Fiche du chercheur, signets et formats de nom (`<researcher>`, `<bookmarks>`, `<name-formats>`, #282)
+
+- **`<researcher>`** (dans `<header>`) : `resname`, `resaddr`, `reslocality`, `rescity`, `resstate`, `rescountry`,
+  `respostal`, `resphone`, `resemail` — neuf champs ; `street` et `county` de la fiche n'existent pas dans le XML (ni
+  `exportxml.py` ni `importxml.py`). `<researcher/>` vide par défaut. `arbre_exporter` (formats `gramps` et `gpkg`, mode
+  gramps) y écrit la fiche de la base **seulement dans un export privé** (`masquer_vivants=False`) ou avec
+  `chercheur=True` ; l'export public par défaut garde `<researcher/>`. Gramps ne reprend la fiche d'un fichier que si
+  la base cible est vide (`import_researcher`).
+- **`<bookmarks><bookmark target="person" hlink="_handle"/>…</bookmarks>`** (après les objets, avant `<namemaps>`) : les
+  signets de la base, dans l'ordre, pour les personnes, familles, sources, dépôts, médias et notes de l'export ; export
+  public : le signet d'une personne ou famille masquée est retiré. Gramps exige que chaque `hlink` désigne un objet du
+  fichier (`start_bmark` : `KeyError` sinon) : l'écriture refuse un signet sans objet (`Métadonnees.verifier`).
+- **`<name-formats><format number="-1" name="…" fmt_str="%f %S" active="1"/></name-formats>`** (avant les objets) : les
+  formats de nom personnalisés de la base, aussi en export public. Gramps importe tout format **actif**
+  (`bool(attrs.get("active", True))` : `active="0"` est lu vrai) et renumérote un numéro déjà pris.
+- Import dans Genealogiste : `import.metadonnees` (fiche renseignée ou non, nombre de champs, de signets et de formats ;
+  jamais le contenu) ; l'arbre ne les conserve pas (comptés sous `non_repris`). Aller-retour XML → objets → XML conservé.
+- Banc Gramps Desktop : cas `reglages` (voir plus bas) ; détail, faits amont et contrat :
+  [Signets, fiche du chercheur et formats de nom](gramps-web.md#signets-fiche-du-chercheur-et-formats-de-nom-282).
 
 ### Paquet .gpkg
 
@@ -474,7 +494,17 @@ Workflow `Intégration Gramps`, un job `Gramps Desktop <version>` par version (v
     (`verifier_groupes_seuls`) : le document de `gramps_grouper_noms` (en-tête et `<namemaps>` seulement) est valide
     au DTD et au RNG de la bibliothèque, importé sans erreur ni avertissement, ne crée aucun objet et pose exactement
     ses regroupements.
-18. chemin de base des médias (#280) : cas `mediapath`, `sans-mediapath` et `gpkg-mediapath` (`famille.ged` et un
+18. fiche du chercheur, signets et formats de nom (#282) : cas `reglages`, `famille.ged` exportée avec une fiche fictive
+    (onze champs dont `street` et `county`), quatre signets (deux personnes, une famille, une source) et deux formats de
+    nom ; après l'import par la bibliothèque, `db.get_researcher()` rend les neuf champs du XML (`street` et `county`
+    vides), `db.get_bookmarks()` et les huit autres espaces rendent exactement les handles écrits dans l'ordre, et
+    `db.name_formats` les deux formats, tous deux **actifs** (`bool("0")` de l'importeur de Gramps) ; le réexport de Gramps
+    garde fiche, signets et formats (`controle_reglages`) ; dans les autres cas, rien n'est inventé. Puis `chercheur:ged`
+    (`verifier_soumetteur_gedcom`) : `famille.ged` exportée en GEDCOM 5.5.1 avec la fiche (`SUBM`) est importée par
+    l'import GEDCOM de la bibliothèque sans erreur ni avertissement, et `db.get_researcher()` rend nom, adresse, lieu-dit,
+    ville, état, code postal, pays, téléphone et courriel (`street` reçoit `ADR1`, `county` reste vide : le GEDCOM n'a pas de
+    comté).
+19. chemin de base des médias (#280) : cas `mediapath`, `sans-mediapath` et `gpkg-mediapath` (`famille.ged` et un
     média du « vault » de test, nom accentué, sous-dossiers). Exporté avec `<mediapath>` = racine du vault et chemin
     relatif, le média est retrouvé **directement** par `media_path_full(db, path)` après l'import de chaque version
     (sans extraction de paquet), le chemin de base de l'arbre est celui du fichier, la somme de contrôle est calculée
@@ -482,6 +512,9 @@ Workflow `Intégration Gramps`, un job `Gramps Desktop <version>` par version (v
     `<mediapath>` (export par défaut), le fichier n'est pas retrouvé, la somme reste vide et aucun chemin n'est
     inventé ; dans un paquet, le `<mediapath>` est ignoré (chemin de base = `<nom>.gpkg.media`).
 
+Résultat du 2026-11-21 (#282) : 156 vérifications sur 156 réussies (GLib factice, 5.2.4, 6.0.8 et 6.1.0-beta2), dont, par
+version, les 2 du cas `reglages` (import et cycle : fiche, signets et formats relus par la base, réexport de Gramps
+identique) et `chercheur:ged` (le `SUBM` du GEDCOM exporté relu par l'import GEDCOM de Gramps).
 Résultat du 2026-11-21 (#280) : 147 vérifications sur 147 réussies (GLib factice, 5.2.4, 6.0.8 et 6.1.0-beta2), dont
 les 6 de chacun des cas `mediapath`, `sans-mediapath` et `gpkg-mediapath` (import et cycle) pour chaque version.
 Résultat du 2026-11-21 (#276) : 129 vérifications sur 129 réussies (GLib factice, 5.2.4, 6.0.8 et 6.1.0-beta2),

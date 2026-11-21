@@ -4,7 +4,7 @@ argument-hint: <geneweb|gedcom7|gedcom551|gramps|gpkg|mermaid_asc|mermaid_desc|s
 ---
 Export : **$ARGUMENTS**
 
-`arbre_exporter(format, chemin, id, generations, masquer_vivants=True, version_xml="1.7.1", compresse=False, chemin_base_medias="")`. Les personnes présumées vivantes
+`arbre_exporter(format, chemin, id, generations, masquer_vivants=True, version_xml="1.7.1", compresse=False, chemin_base_medias="", chercheur=None)`. Les personnes présumées vivantes
 sont masquées par défaut (RGPD) ; ne désactiver le masquage que sur demande explicite et pour un usage
 strictement privé, en le rappelant. Indiquer le fichier produit, le nombre de vivants masqués et, pour
 Mermaid/fiche, afficher l'aperçu.
@@ -26,6 +26,13 @@ Gramps 6.x seul (`1.7.2`, refusé par 5.2) ; `compresse=True` donne le `.gramps`
 La racine Sosa configurée devient la personne de référence du fichier (`personne_reference` du résultat dit si
 `home` a été écrit ; jamais pour une racine masquée) : le dire à l'utilisateur.
 En mode gramps, les groupes de noms de Gramps sont écrits en `<namemaps>` (`groupes_de_noms` du résultat : nombre écrit, et en export public nombre retiré, sans nom) ; en mode fichier, aucun. Un groupe de noms ne fusionne aucune personne.
+
+**fiche du chercheur, signets, formats de nom** (mode gramps, #282) : `chercheur=None` (défaut) écrit la fiche de la base Gramps
+(`SUBM` en GEDCOM, `<researcher>` en Gramps XML) **seulement dans un export privé** (`masquer_vivants=False`), jamais dans un
+export public ; `chercheur=True` la demande explicitement (même en public : le rappeler, ce sont des coordonnées personnelles) ;
+`chercheur=False` l'exclut. Lire `chercheur` du résultat (écrit, champs absents du format, ou motif). Les signets de la base
+(`signets` : écrits, retirés pour objet masqué, non écrits) et ses formats de nom (`formats_de_noms`) sont écrits en gramps
+et gpkg. Ne jamais afficher la valeur de la fiche. Docs : docs/gramps-web.md.
 
 **gramps avec images** : `chemin_base_medias` (absolu, facultatif) écrit le chemin de base des médias (`<mediapath>`) et rend relatifs à lui les
 chemins des médias du vault : Gramps Desktop les retrouve directement si ce dossier est la racine du vault sur sa machine.

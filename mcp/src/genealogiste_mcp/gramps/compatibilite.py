@@ -42,6 +42,9 @@ FONCTIONS_API: dict[str, Version] = {
     "inscription_libre": (3, 26, 0),       # GET /api/register/config/ (sans authentification)
     "nom_lieu_date": (3, 26, 0),           # profil d'événement : place_name au nom de la date (#277)
     "groupes_noms": (0, 1, 0),             # GET /api/name-groups/ et /<patronyme> (lecture, #276)
+    "signets": (0, 1, 0),                  # GET /api/bookmarks/<espace> (lecture, #282)
+    "signets_ecriture": (1, 5, 0),         # PUT / DELETE /api/bookmarks/<espace>/<handle> : droit EditObject (Editor)
+    "formats_noms": (0, 1, 0),             # GET /api/name-formats/ (lecture seule, #282)
     "groupes_noms_ecriture": (0, 6, 0),    # POST /api/name-groups/<patronyme>/<groupe> : droit EditNameGroup (Editor)
 }
 

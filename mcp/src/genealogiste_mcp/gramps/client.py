@@ -310,6 +310,54 @@ class GrampsClient:
 
         return lire_reponse(self._ok(self.request("GET", "/name-groups/"), "lecture des groupes de noms").json())
 
+    # ------------------------------------------------------------------ réglages de la base (#282)
+    def chercheur(self) -> dict[str, str]:
+        """Fiche du chercheur (``researcher`` de ``GET /api/metadata/``), onze champs chaînes (vide si absent)."""
+        from .reglages import chercheur_normalise
+
+        data = self._ok(self.request("GET", "/metadata/"), "lecture de la fiche du chercheur").json()
+        return chercheur_normalise(data.get("researcher") if isinstance(data, dict) else None)
+
+    def chercheur_ecrire(self, champs: dict[str, str]) -> dict[str, str]:
+        """``PUT /api/metadata/researcher/`` (droit EditTree : rôle Owner) ; mise à jour partielle côté serveur, donc
+        ``champs`` porte les onze champs pour une restauration exacte. Hors transaction Gramps (rien dans l'historique
+        du serveur). Jamais rejouée. Renvoie la fiche relue dans la réponse."""
+        from .reglages import chercheur_normalise
+
+        r = self.request("PUT", "/metadata/researcher/", json=champs)
+        if r.status_code == 403:
+            raise GrampsError("Gramps Web : modification de la fiche du chercheur refusée (HTTP 403) : elle exige le "
+                              "rôle Owner (droit EditTree), au-dessus d'Editor. Utiliser un compte Owner ou la "
+                              "saisir dans Gramps (Desktop : Édition > Préférences > Chercheur).", 403)
+        return chercheur_normalise(self._ok(r, "modification de la fiche du chercheur").json())
+
+    def signets(self, espace: str) -> list[str]:
+        """Signets d'un espace (``GET /api/bookmarks/<espace>``) : handles, dans l'ordre de la base."""
+        data = self._ok(self.request("GET", f"/bookmarks/{espace}"), f"lecture des signets {espace}").json()
+        return [h for h in data if isinstance(h, str)] if isinstance(data, list) else []
+
+    def signets_tous(self) -> dict[str, list[str]]:
+        from .reglages import ESPACES
+
+        return {e: self.signets(e) for e in ESPACES.values()}
+
+    def signet_poser(self, espace: str, handle: str) -> None:
+        """``PUT /api/bookmarks/<espace>/<handle>`` (EditObject) : le signet va EN FIN de liste ; hors transaction."""
+        r = self.request("PUT", f"/bookmarks/{espace}/{handle}")
+        self._ok(self._refus_ecriture(r, f"ajout du signet {espace}"), f"ajout du signet {espace}")
+
+    def signet_retirer(self, espace: str, handle: str) -> None:
+        """``DELETE /api/bookmarks/<espace>/<handle>`` (EditObject) ; 404 si le signet n'existe pas ; hors transaction."""
+        r = self.request("DELETE", f"/bookmarks/{espace}/{handle}")
+        self._ok(self._refus_ecriture(r, f"retrait du signet {espace}"), f"retrait du signet {espace}")
+
+    def formats_noms(self) -> list[tuple[int, str, str, bool]]:
+        """Formats de nom personnalisés de la base (``GET /api/name-formats/``) : (numéro, nom, format, actif).
+        Lecture seule : aucune route d'écriture. Le format par défaut de l'arbre n'y figure pas (configuration)."""
+        from .reglages import formats_noms_normalises
+
+        return formats_noms_normalises(self._ok(self.request("GET", "/name-formats/"), "lecture des formats de nom").json())
+
     def history(self, limite: int = 20) -> list[dict]:
         r = self._ok(self.request("GET", "/transactions/history/",
                                   params={"sort": "-id", "page": 1, "pagesize": limite}), "historique")

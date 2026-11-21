@@ -21,7 +21,7 @@
         ]
       },
       {
-        "matcher": "mcp__.*genealogiste.*__(arbre_annuler_modification|arbre_annuler_proposition|arbre_importer_gedcom|arbre_proposer|gramps_bascule_proposer|gramps_dater_lieux|gramps_normaliser_types|gramps_recalculer_notes|gramps_relocaliser_medias|gramps_structurer_lieux|marqueurs_migrer_proposer|pieces_proposer|propositions_abandonner|propositions_deposer|propositions_reprendre)$",
+        "matcher": "mcp__.*genealogiste.*__(arbre_annuler_modification|arbre_annuler_proposition|arbre_importer_gedcom|arbre_proposer|gramps_bascule_proposer|gramps_dater_lieux|gramps_normaliser_types|gramps_recalculer_notes|gramps_reglages|gramps_relocaliser_medias|gramps_structurer_lieux|marqueurs_migrer_proposer|pieces_proposer|propositions_abandonner|propositions_deposer|propositions_reprendre)$",
         "hooks": [
           {
             "type": "command",

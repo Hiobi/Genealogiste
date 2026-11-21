@@ -311,6 +311,13 @@ class Enquetes:
                 out["modifie"].append(f"statut {statut}")
                 if statut != "bloque":
                     e.pop("blocage", None)
+                if statut == "close" and e.get("signets_poses"):  # #282 : jamais retirés seuls, à proposer
+                    out["signets_a_retirer"] = {
+                        "nombre": len(e["signets_poses"]),
+                        "consigne": ("Signets posés par le plugin pour cette enquête, encore dans Gramps : "
+                                     f"gramps_reglages(signets={{\"enquete\": \"{eid}\", \"action\": \"retirer\"}}) "
+                                     "propose leur retrait (diff, accord explicite) ; aucun n'est retiré seul, et les "
+                                     "signets de l'utilisateur ne sont jamais touchés.")}
             if limites:
                 self._budget(e)
                 e["budget"].update(limites)
@@ -324,6 +331,27 @@ class Enquetes:
             self._ecrire(e)
             self._crees = []
         return out
+
+    def trace_signets(self, eid: str, poses: list[dict] | None = None, retires: list[str] | None = None) -> dict:
+        """Signets de Gramps posés par le plugin pour cette enquête (#282) : trace locale ``signets_poses`` (handle et
+        identifiant Gramps, jamais un nom), mise à jour APRÈS l'application d'une proposition. Seuls ces signets
+        peuvent être proposés au retrait ; un signet de l'utilisateur n'y entre jamais."""
+        with verrou(self.data_dir, VERROU):
+            e = self._charger(eid)
+            trace = {t["handle"]: t for t in e.get("signets_poses", [])}
+            for t in poses or []:
+                trace.setdefault(t["handle"], {"handle": t["handle"], "id": t.get("id", ""), "pose": maintenant()})
+            for h in retires or []:
+                trace.pop(h, None)
+            if trace:
+                e["signets_poses"] = list(trace.values())
+            else:
+                e.pop("signets_poses", None)
+            self._ecrire(e)
+        return {"enquete": eid, "signets_poses": len(trace)}
+
+    def signets_poses(self, eid: str) -> list[dict]:
+        return list(self._charger(eid).get("signets_poses", []))
 
     def tache_blocage(self, eid: str, service: str, url: str, protection: str = "", journal: str = "") -> dict:
         """Défi anti-robot rencontré pendant l'enquête (#150) : tâche manuelle « à faire » pour l'utilisateur

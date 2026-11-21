@@ -21,6 +21,9 @@ conclusions déposées dans la file de propositions, compte rendu à format fixe
    collecte donne `budget.reste`. Au refus `motif: "budget"` (enquête `bloque`) : s'arrêter proprement, rendre
    le `compte_rendu` partiel ; en mode interactif, demander à l'utilisateur s'il relève le budget
    (`enquete_noter(id, budget={...})`) avant `enquete_reprendre(id)` ; en mode autonome, ne rien relever.
+   Mode gramps : `enquete_ouvrir(..., signets=True)` propose (jamais n'applique) de mettre en signet de la base Gramps les
+   personnes de l'enquête ; à la clôture (`enquete_noter(id, statut="close")`), `signets_a_retirer` signale ceux que le plugin a
+   posés, à retirer par `gramps_reglages(signets={"enquete": id, "action": "retirer"})` après accord (docs/enquetes.md).
 1. **Cadrage** : identifier le sujet (`arbre_recherche` si un nom est donné), puis `arbre_cercle(id, cercle)`
    (défaut `famille`). Les personnes présumées vivantes sont exclues de toute recherche externe.
    Annoncer en une ligne le périmètre (n personnes) avant de lancer.

@@ -13,6 +13,10 @@ Même contrat qu'en mode fichier : proposition -> diff -> accord explicite -> é
   (:meth:`GrampsBackend.propose_types`, #273).
 - Marqueurs ``Sosa-*`` / ``Sosa:auto`` migrés vers ``Genealogiste-*`` / ``Genealogiste:auto`` par une transaction
   explicite (:meth:`GrampsBackend.propose_marqueurs`, #182).
+- Réglages de la base écrits hors transaction Gramps (fiche du chercheur, signets : #282) : même contrat, par jeton,
+  journal d'intention et annulation, mais l'annulation est celle de Genealogiste (état antérieur mémorisé, conflit
+  détecté), pas celle de l'historique du serveur (:meth:`GrampsBackend.propose_chercheur`,
+  :meth:`GrampsBackend.propose_signets`).
 - Journal local ``gramps-transactions.jsonl`` (pour l'annulation) ; miroir Git optionnel de l'arbre.
 """
 
@@ -42,6 +46,7 @@ from ..tree.proposals import (
     validated,
 )
 from ..tree.store import TreeStore
+from . import reglages as rg
 from .client import ConflictError, GrampsClient, GrampsError
 from .mapping import (
     A_FICHIER,
@@ -413,6 +418,246 @@ class GrampsBackend:
         out["personnes"] = sum(attestes.values())
         return out
 
+    # ------------------------------------------------------------------ réglages de la base (#282)
+    def lire_reglages(self) -> dict:
+        """Fiche du chercheur (champs renseignés seulement, jamais les valeurs), signets (identifiants Gramps) et
+        formats de nom personnalisés de la base Gramps, en lecture seule."""
+        db = self.snapshot(fresh=True)
+        fiche = self.client.chercheur()
+        etat = self.client.signets_tous()
+        perms = self.client.permissions()
+        signets = {}
+        for espace, handles in etat.items():
+            cible = rg.CIBLES[espace]
+            signets[cible] = [{"id": rg.gramps_id_de(db, cible, h) or "(objet absent)", "handle": h} for h in handles]
+        return {
+            "chercheur": {"renseigne": rg.chercheur_renseigne(fiche), "champs_renseignes": rg.champs_renseignes(fiche)},
+            "signets": {c: v for c, v in signets.items() if v},
+            "formats_noms": [{"numero": n, "nom": nom, "format": fmt, "actif": act}
+                             for n, nom, fmt, act in self.client.formats_noms()],
+            "droits": {"chercheur_modifiable": perms is None or "EditTree" in perms,
+                       "signets_modifiables": perms is None or "EditObject" in perms},
+        }
+
+    @staticmethod
+    def _nature() -> str:
+        return ("Écriture HORS transaction Gramps : elle n'apparaît pas dans l'historique de Gramps Web (onglet "
+                "Révisions) et ce dernier ne peut pas l'annuler. L'annulation est celle de Genealogiste "
+                "(arbre_annuler_modification) : l'état antérieur est mémorisé et restauré tel quel, et l'annulation "
+                "est refusée si l'état a changé depuis (conflit).")
+
+    def propose_chercheur(self, champs: dict) -> dict:
+        """Fiche du chercheur : proposition (jeton, accord explicite) -> ``PUT /api/metadata/researcher/`` -> relecture.
+        Valeurs fournies par l'utilisateur seulement. Droit EditTree (Owner) requis, vérifié avant tout calcul."""
+        try:
+            champs = rg.valider_chercheur(champs)
+        except rg.ReglageError as exc:
+            raise ProposalError(str(exc)) from exc
+        exiger_ecriture(self.client)
+        perms = self.client.permissions()
+        if perms is not None and "EditTree" not in perms:
+            raise ProposalError("Écriture de la fiche du chercheur impossible : elle exige le rôle Owner (droit "
+                                "EditTree) ; le compte de Genealogiste est Editor. Utiliser un compte Owner, ou saisir "
+                                "la fiche dans Gramps (Desktop : Édition > Préférences > Chercheur).")
+        avant = self.client.chercheur()
+        apres = {**avant, **champs}
+        diff_ch = rg.diff_chercheur(avant, apres)
+        if not diff_ch:
+            raise ProposalError("La proposition ne modifie rien : la fiche a déjà ces valeurs.")
+        noms = ", ".join(x["champ"] for x in diff_ch)
+        message = (f"Fiche du chercheur de la base Gramps (#282)\n\nChamps modifiés : {noms}. Valeurs fournies par "
+                   "l'utilisateur.")
+        token = self.tokens.create({"type": "reglage", "reglage": "chercheur", "avant": avant, "apres": apres,
+                                    "message": message, "resume": [f"Fiche du chercheur : {noms}"]})
+        return {"jeton": token, "expire_dans_minutes": TTL_SECONDS // 60, "reglage": "chercheur",
+                "diff": diff_ch, "champs_modifies": [x["champ"] for x in diff_ch],
+                "avertissements": ["La fiche du chercheur est une donnée personnelle (nom, adresse, courriel) : elle "
+                                   "n'est jamais envoyée à une source externe, jamais écrite dans le diagnostic ni "
+                                   "dans les journaux de recherche, et n'entre dans un export que privé ou sur "
+                                   "demande (arbre_exporter, paramètre chercheur)."],
+                "nature": self._nature(), "consigne": CONSIGNE}
+
+    def operations_enquete(self, db: GrampsDb, personnes: list[str], action: str,
+                           trace: list[dict]) -> tuple[list[dict], list[str]]:
+        """Opérations de signets pour les personnes d'une enquête (ids de l'arbre = identifiants Gramps).
+
+        ``poser`` : un ajout par personne absente des signets (un signet existant n'est PAS à nous : jamais
+        compté, jamais retiré) ; ``retirer`` : seulement les signets de la trace du plugin encore présents.
+        Renvoie (opérations, notes)."""
+        etat = self.client.signets("people")
+        notes: list[str] = []
+        ops: list[dict] = []
+        if action == "poser":
+            for pid in personnes:
+                h = rg.handle_de(db, "person", pid)
+                if h is None:
+                    notes.append(f"{pid} : personne introuvable dans l'arbre Gramps, ignorée")
+                elif h in etat:
+                    notes.append(f"{pid} : déjà en signet (signet de l'utilisateur, non touché)")
+                else:
+                    ops.append({"action": "ajouter", "cible": "person", "id": pid, "handle": h})
+        else:
+            for t in trace:
+                if t.get("handle") in etat:
+                    ops.append({"action": "retirer", "cible": "person", "id": t.get("id") or t["handle"],
+                                "handle": t["handle"]})
+                else:
+                    notes.append(f"{t.get('id') or t.get('handle')} : déjà absent des signets, rien à retirer")
+        return ops, notes
+
+    def propose_signets(self, ajouter=None, retirer=None, operations: list[dict] | None = None,
+                        enquete: str = "", notes: list[str] | None = None) -> dict:
+        """Signets : proposition (jeton, accord explicite) -> PUT/DELETE par signet -> relecture. ``ajouter`` et
+        ``retirer`` : couples {cible, id} (identifiant Gramps) ; ``operations`` : déjà résolues (signets d'enquête).
+        L'ajout va en fin de liste ; l'annulation d'un retrait remet le signet en fin de liste (ordre non restitué)."""
+        exiger_ecriture(self.client)
+        db = self.snapshot(fresh=True)
+        try:
+            ops = operations if operations is not None else rg.resoudre_operations(db, ajouter, retirer)
+            if not ops:
+                raise ProposalError("La proposition ne modifie rien" + (" : " + " ; ".join(notes) if notes else "."))
+            avant = self.client.signets_tous()
+            apres = rg.appliquer_operations(avant, ops)
+        except rg.ReglageError as exc:
+            raise ProposalError(str(exc)) from exc
+        lignes = rg.lignes_signets(ops)
+        message = ("Signets de la base Gramps (#282)\n\n" + "\n".join(lignes)
+                   + (f"\nEnquête {enquete}." if enquete else ""))
+        record = {"type": "reglage", "reglage": "signets", "operations": ops, "avant": avant, "apres": apres,
+                  "message": message, "resume": lignes}
+        if enquete:
+            record["enquete"] = enquete
+        token = self.tokens.create(record)
+        avert = ["Ces signets sont ceux de la BASE Gramps : visibles dans Gramps Desktop (menu Signets), partagés par "
+                 "tout client de la base. L'interface de Gramps Web ne les affiche PAS : ses propres signets sont un "
+                 "réglage du navigateur (localStorage), que Genealogiste ne lit ni n'écrit. L'ajout se place en fin "
+                 "de liste."]
+        if any(o["action"] == "retirer" for o in ops):
+            avert.append("L'annulation d'un retrait remet le signet en fin de liste : l'ordre des signets de "
+                         "l'utilisateur n'est pas restitué.")
+        return {"jeton": token, "expire_dans_minutes": TTL_SECONDS // 60, "reglage": "signets",
+                "diff": lignes, "ajouts": sum(o["action"] == "ajouter" for o in ops),
+                "retraits": sum(o["action"] == "retirer" for o in ops), **({"enquete": enquete} if enquete else {}),
+                **({"notes": notes} if notes else {}), "avertissements": avert, "nature": self._nature(),
+                "consigne": CONSIGNE}
+
+    def _etat_reglage(self, reglage: str):
+        return self.client.chercheur() if reglage == "chercheur" else self.client.signets_tous()
+
+    @staticmethod
+    def _meme_etat(reglage: str, a, b) -> bool:
+        return a == b if reglage == "chercheur" else rg.etats_egaux(a, b)
+
+    def _ecrire_reglage(self, record: dict, faites: list) -> None:
+        """Écrit l'état cible, une opération à la fois (``faites`` : celles déjà acceptées). Jamais rejouée."""
+        if record["reglage"] == "chercheur":
+            self.client.chercheur_ecrire(record["apres"])
+            faites.append("chercheur")
+            return
+        for op in record["operations"]:
+            (self.client.signet_poser if op["action"] == "ajouter" else self.client.signet_retirer)(
+                rg.ESPACES[op["cible"]], op["handle"])
+            faites.append(op["handle"])
+
+    def _apply_reglage(self, token: str, record: dict) -> dict:
+        """Application d'une proposition de réglage (fiche, signets) ou de son annulation : journal d'intention AVANT
+        l'envoi, conflit refusé si l'état de la base n'est plus celui de la proposition, relecture après l'écriture."""
+        undo = record["type"] == "annulation_reglage"
+        reglage = record["reglage"]
+        exiger_ecriture(self.client)  # avant de consommer le jeton : un refus de droits ne le brûle pas
+        if reglage == "chercheur":
+            perms = self.client.permissions()
+            if perms is not None and "EditTree" not in perms:
+                raise ProposalError("Écriture de la fiche du chercheur impossible : rôle Owner (droit EditTree) requis.")
+        self.recover()
+        courant = self._etat_reglage(reglage)
+        if not self._meme_etat(reglage, courant, record["avant"]):
+            self.tokens.consume(token)
+            raise ProposalError(
+                f"Conflit : {'la fiche du chercheur' if reglage == 'chercheur' else 'les signets'} a changé dans la "
+                "base Gramps depuis la proposition (Gramps Desktop ou Web). Reformuler la proposition (nouvel état, "
+                "nouvel accord) ; rien n'a été écrit.")
+        message = f"{record['message']}, validée explicitement par l'utilisateur (jeton {token})."
+        base = {"id": token, "type": record["type"], "reglage": reglage, "message": message,
+                "resume": record["resume"], "avant": record["avant"], "apres": record["apres"], "items": []}
+        for cle in ("operations", "annule", "enquete"):
+            if cle in record:
+                base[cle] = record[cle]
+        self._log({**base, "etat": "intention"})
+        self.tokens.consume(token)
+        faites: list = []
+        try:
+            self._ecrire_reglage(record, faites)
+        except GrampsError as exc:
+            # statut HTTP connu et aucune opération acceptée : rien n'est écrit ; sinon issue incertaine (reprise)
+            etat = "refusee" if exc.status is not None and not faites else "indeterminee"
+            self._log({"id": token, "etat": etat, "erreur": str(exc)[:500]})
+            raise ProposalError(str(exc) + ("" if etat == "refusee" else
+                                            " Écriture partielle ou incertaine : relire les signets ; "
+                                            "arbre_statut_transaction donne l'état.")) from exc
+        except BaseException as exc:  # interruption : issue inconnue, reprise par recover()
+            self._log({"id": token, "etat": "indeterminee", "erreur": str(exc)[:500]})
+            raise
+        self._log({"id": token, "etat": "envoyee"})
+        out: dict = {"transaction": token, "reglage": reglage, "nature": self._nature()}
+        try:
+            relu = self._etat_reglage(reglage)
+            exact = self._meme_etat(reglage, relu, record["apres"])
+            memes = exact or (reglage == "signets" and rg.memes_signets(relu, record["apres"]))
+            out["relecture"] = "conforme" if exact else "ECART"
+            self._log({"id": token, "etat": "terminee", "verification": out["relecture"]})
+            if not memes:
+                out["avertissement"] = ("Écriture acceptée par Gramps Web mais la relecture diffère de l'état attendu : "
+                                        "vérifier dans Gramps (journalisée, annulable).")
+        except GrampsError as exc:
+            self._log({"id": token, "etat": "terminee", "verification": f"non relue : {exc}"[:300]})
+            out["relecture"] = "non relue"
+        if reglage == "chercheur":
+            out["champs_modifies"] = [x["champ"] for x in rg.diff_chercheur(record["avant"], record["apres"])]
+        else:
+            ops = record["operations"]
+            out["signets"] = {"ajoutes": [o["id"] for o in ops if o["action"] == "ajouter"],
+                              "retires": [o["id"] for o in ops if o["action"] == "retirer"]}
+            if record.get("enquete"):
+                out["trace_enquete"] = {"enquete": record["enquete"],
+                                        "poses": [{"handle": o["handle"], "id": o["id"]} for o in ops
+                                                  if o["action"] == "ajouter"],
+                                        "retires": [o["handle"] for o in ops if o["action"] == "retirer"]}
+        if undo:
+            out["annule"] = record["annule"]
+        return out
+
+    def _propose_undo_reglage(self, entry: dict) -> dict:
+        reference = entry["id"]
+        reglage = entry["reglage"]
+        courant = self._etat_reglage(reglage)
+        if not self._meme_etat(reglage, courant, entry["apres"]):
+            raise ProposalError(
+                f"Annulation impossible : {'la fiche du chercheur' if reglage == 'chercheur' else 'les signets'} "
+                f"n'est plus dans l'état écrit par {reference} (modifié depuis, dans Gramps). Rien n'est annulé ; "
+                "reformuler une modification.")
+        titre = entry["message"].splitlines()[0] if entry.get("message") else reference
+        message = f"Annulation : {titre}\n\nAnnulation de la modification {reference}"
+        record = {"type": "annulation_reglage", "reglage": reglage, "annule": reference, "message": message,
+                  "avant": entry["apres"], "apres": entry["avant"],
+                  "resume": [f"Annulation de {reference} : {titre}"]}
+        out = {"annule": {"id": reference, "titre": titre}, "reglage": reglage, "nature": self._nature()}
+        if reglage == "chercheur":
+            out["diff"] = rg.diff_chercheur(entry["apres"], entry["avant"])
+        else:
+            ops = rg.inverse(entry["operations"])
+            cible = rg.appliquer_operations(entry["apres"], ops)
+            record.update(operations=ops, apres=cible)
+            out["diff"] = rg.lignes_signets(ops)
+            out["ordre_restitue"] = rg.etats_egaux(cible, entry["avant"])
+            if not out["ordre_restitue"]:
+                out["avertissement"] = ("Un signet retiré revient en fin de liste : mêmes signets, ordre différent "
+                                        "de celui d'avant (Gramps n'a pas d'API pour réordonner).")
+        if entry.get("enquete"):
+            record["enquete"] = entry["enquete"]
+        token = self.tokens.create(record)
+        return {"jeton": token, "expire_dans_minutes": TTL_SECONDS // 60, **out, "consigne": CONSIGNE}
+
     def propose_place_history(self, chronologies, ignorer_non_dates: bool = False) -> dict:
         """Noms et rattachements datés des communes (#277) d'après le COG : ``chronologies(codes INSEE)`` renvoie
         l'enveloppe de :func:`sources.geo.chronologies` (requête journalisée). Une transaction (jeton, accord
@@ -485,6 +730,8 @@ class GrampsBackend:
         donc toujours retrouvable pour l'annulation, même si la suite échoue ou si le processus s'arrête."""
         record = self.tokens.peek(token)
         kind = record.get("type")
+        if kind in ("reglage", "annulation_reglage"):  # fiche du chercheur, signets (#282) : hors transaction Gramps
+            return self._apply_reglage(token, record)
         if kind not in ("annulation", "transaction"):
             raise ProposalError("Jeton d'un autre type (bascule : utiliser gramps_bascule_appliquer).")
         exiger_ecriture(self.client)  # avant de consommer le jeton : un refus de droits ne le brûle pas
@@ -559,6 +806,17 @@ class GrampsBackend:
         db = self.snapshot(fresh=True)
         out = []
         for e in pending:
+            if e["type"] in ("reglage", "annulation_reglage"):  # état de la base comparé à l'état avant / après
+                courant = self._etat_reglage(e["reglage"])
+                if self._meme_etat(e["reglage"], courant, e["apres"]):
+                    etat = "envoyee"
+                elif self._meme_etat(e["reglage"], courant, e["avant"]):
+                    etat = "non_envoyee"
+                else:
+                    etat = "partielle"
+                self._log({"id": e["id"], "etat": etat, "reprise": True})
+                out.append({"transaction": e["id"], "etat": etat})
+                continue
             side = "old" if e["type"] == "annulation" else "new"
             other = "new" if side == "old" else "old"
             def same(it, key):
@@ -607,12 +865,14 @@ class GrampsBackend:
         exiger_ecriture(self.client)
         self.recover()
         entry = next((e for e in reversed(self.transactions(1000)) if e["id"] == reference
-                      and e["type"] == "transaction" and self._effective(e)), None)
+                      and e["type"] in ("transaction", "reglage") and self._effective(e)), None)
         if not entry:
             raise ProposalError(f"Transaction inconnue dans gramps-transactions.jsonl : {reference!r}")
         if any(e.get("annule") == reference and self._effective(e) for e in self.transactions(1000)):
             raise ProposalError(f"La transaction {reference} a déjà été annulée.")
         db = self.snapshot(fresh=True)
+        if entry["type"] == "reglage":  # fiche du chercheur, signets (#282) : annulation propre à Genealogiste
+            return self._propose_undo_reglage(entry)
         title = entry["message"].splitlines()[0] if entry.get("message") else reference
         message = f"Annulation : {title}\n\nAnnulation de la transaction {reference}"
         envoyes = entry.get("medias_apres_envoi") or {}
@@ -657,7 +917,8 @@ class GrampsBackend:
         for e in reversed(self.transactions(limit)):
             out.append({"transaction": e["id"], "type": e["type"], "date": e["date"], "message": e.get("message", ""),
                         "objets": summarize(e.get("items", [])), "annule": e.get("annule"),
-                        "etat": e.get("etat", "envoyee"), **({"etapes": e["etapes"]} if e.get("etapes") else {})})
+                        "etat": e.get("etat", "envoyee"), **({"etapes": e["etapes"]} if e.get("etapes") else {}),
+                        **({"reglage": e["reglage"], "resume": e.get("resume", [])} if e.get("reglage") else {})})
         return out
 
 

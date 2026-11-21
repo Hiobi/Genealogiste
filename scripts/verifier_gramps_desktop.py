@@ -667,6 +667,74 @@ def controle_chemin_base(cas: Cas, version: str, attendu: dict, rapport: dict) -
     return ecarts
 
 
+# Fiche du chercheur, signets et formats de nom (#282) : export réel de ce que arbre_exporter écrit en mode gramps
+# (Metadonnees avec chercheur, signets, formats_noms), relu par la base de Gramps après l'import.
+FICHE_BANC = {"name": "Chercheur Fictif", "addr": "1 rue Inventée", "street": "2 rue Seconde",
+              "locality": "Lieu-dit Fictif", "city": "Villefictive", "county": "Comtéfictif", "state": "Étatfictif",
+              "country": "Francefictive", "postal": "00000", "phone": "0100000000", "email": "chercheur@example.org"}
+SIGNETS_BANC = (("person", "I3"), ("person", "I1"), ("family", "F1"), ("source", "S1"))
+FORMATS_BANC = [(-1, "Prénom NOM", "%f %S", True), (-2, "Nom, prénom", "%s, %f", False)]
+SIGNETS_ATTENDUS: dict[str, list[str]] = {}  # espace -> handles écrits (remplis à la production)
+
+
+def produire_reglages(tree, dossier: Path) -> Path:
+    """Export réel : le même chemin que arbre_exporter (chercheur_pour_xml, signets_pour_export, db_to_xml)."""
+    from genealogiste_mcp.export.gramps_xml import Metadonnees, db_to_xml
+    from genealogiste_mcp.gramps import reglages as rg
+    from genealogiste_mcp.gramps.mapping import tree_to_gramps_stats
+
+    db, _ = tree_to_gramps_stats(tree, None, False)
+    xml, _hors = rg.chercheur_pour_xml({k: FICHE_BANC.get(k, "") for k in rg.CHERCHEUR_CLES})
+    signets = []
+    SIGNETS_ATTENDUS.clear()
+    for cible, gid in SIGNETS_BANC:
+        h = next(o["handle"] for o in db.all(rg.CLASSE_DE_CIBLE[cible]).values() if o["gramps_id"] == gid)
+        signets.append((cible, h))
+        SIGNETS_ATTENDUS.setdefault(rg.ESPACES[cible], []).append(h)
+    chemin = dossier / "genealogiste.gramps"
+    chemin.write_text(db_to_xml(db, "1.7.1", Metadonnees(chercheur=xml, signets=signets, formats_noms=FORMATS_BANC)),
+                      encoding="utf-8")
+    return chemin
+
+
+def controle_reglages(cas: Cas, version: str, attendu: dict, rapport: dict) -> list[str]:
+    """#282 : ``db.get_researcher()``, ``db.get_bookmarks()`` (et les huit autres espaces) et ``db.name_formats``
+    rendent, après l'import par la vraie bibliothèque, ce que le fichier porte ; sans ces éléments, rien n'est
+    inventé. Faits de Gramps constatés ici : ``street`` et ``county`` ne sont pas dans le XML ; un format ``active="0"``
+    est importé actif (``bool("0")``, importxml.start_format) ; le réexport de Gramps garde les trois."""
+    chercheur = rapport.get("chercheur") or {}
+    signets = {e: h for e, h in (rapport.get("signets") or {}).items() if h}
+    formats = rapport.get("formats_noms") or []
+    if cas.nom != "reglages":
+        inventes = [x for x, v in (("chercheur", any(chercheur.values())), ("signets", bool(signets)),
+                                   ("formats de nom", bool(formats))) if v]
+        return [f"{', '.join(inventes)} inventé(s) par l'export du cas {cas.nom}"] if inventes else []
+    ecarts = []
+    attendu_ch = {k: (v if k not in ("street", "county") else "") for k, v in FICHE_BANC.items()}
+    if chercheur != attendu_ch:
+        ecarts.append(f"fiche du chercheur {chercheur} au lieu de {attendu_ch}")
+    if signets != SIGNETS_ATTENDUS:
+        ecarts.append(f"signets {signets} au lieu de {SIGNETS_ATTENDUS}")
+    relus = [(n, nom, fmt) for n, nom, fmt, _ in formats]
+    if relus != [(n, nom, fmt) for n, nom, fmt, _ in FORMATS_BANC]:
+        ecarts.append(f"formats de nom {formats} au lieu de {FORMATS_BANC}")
+    if [a for *_, a in formats] != [True, True]:
+        ecarts.append(f"actif des formats {[a for *_, a in formats]} : le banc ne démontre plus bool('0') de Gramps")
+    if "reexport" in rapport:
+        brut = lire_xml(Path(rapport["reexport"]))
+        if (b"<resname>Chercheur Fictif</resname>" not in brut or b"<resemail>chercheur@example.org</resemail>" not in brut
+                or b"rue Seconde" in brut or "Comtéfictif".encode() in brut):
+            ecarts.append("réexport de Gramps : fiche du chercheur différente")
+        for h in sum(SIGNETS_ATTENDUS.values(), []):
+            if f'hlink="_{h}"'.encode() not in brut or b"<bookmarks>" not in brut:
+                ecarts.append(f"réexport de Gramps : signet {h} absent")
+        if brut.count(b"<format ") != 2:
+            ecarts.append("réexport de Gramps : formats de nom différents")
+    print(f"   {version} : fiche {chercheur['name']!r} (street {chercheur['street']!r}, county {chercheur['county']!r}), "
+          f"signets {signets}, formats {formats}", flush=True)
+    return ecarts
+
+
 FROM_TO_HORS_SCHEMA = ((rb'(<dateval [^>]*type=")(?:from|to)"', rb'\1about"'),)
 
 CAS: list[Cas] = [
@@ -688,6 +756,8 @@ CAS: list[Cas] = [
         produire_reference, arbres=("famille.ged",)),
     Cas("groupes", "Gramps XML 1.7.1 avec <namemaps> : groupes de noms rendus par get_name_group_mapping (#276)",
         produire_groupes, arbres=("famille.ged",)),
+    Cas("reglages", "Gramps XML 1.7.1 avec fiche du chercheur, signets et formats de nom : relus par la base de Gramps "
+        "(#282)", produire_reglages, arbres=("famille.ged",)),
     Cas("mediapath", "Gramps XML 1.7.1 exporté avec chemin_base_medias = racine du vault : fichier retrouvé directement "
         "par media_path_full, sans extraction de paquet (#280)", produire_mediapath, enrichir=avec_media_vault,
         arbres=("famille.ged",)),
@@ -1113,7 +1183,7 @@ def controle_types(cas: Cas, version: str, attendu: dict, rapport: dict) -> list
 
 CONTROLES: list[Controle] = [controle_reexport, controle_medias, controle_champs, controle_lecture, controle_dates,
                              controle_types, controle_lieux, controle_notes,
-                             controle_reference, controle_groupes, controle_chemin_base]
+                             controle_reference, controle_groupes, controle_chemin_base, controle_reglages]
 
 
 def comparer_cycle(premier: dict, second: dict, contexte: str, ecrit_par_gramps: bool = True) -> list[str]:
@@ -1219,6 +1289,7 @@ def verifier_version(entree: dict, lots, travail: Path, cache: Path, python: str
                 resultats.append(Resultat(version, arbre, f"cycle:{cas.nom}", not ecarts, " ; ".join(ecarts),
                                           {cls: len(h) for cls, h in premier["handles"].items() if h}))
     resultats += verifier_groupes_seuls(entree, exe, env_sup, travail)
+    resultats += verifier_soumetteur_gedcom(entree, exe, env_sup, travail, fixtures)
     resultats += verifier_generes(entree, exe, env_sup, travail, fixtures)
     resultats += verifier_reference_dates(entree, exe, env_sup, travail, fixtures)
     if exemple:
@@ -1253,6 +1324,38 @@ def verifier_groupes_seuls(entree: dict, exe: Path, env_sup: dict, travail: Path
     print(f"   {version} : fichier de regroupements seuls importé, {len(r.get('regroupements') or {})} groupe(s) posé(s)",
           flush=True)
     return [Resultat(version, "inventaire", "groupes:seuls", not ecarts, " ; ".join(ecarts[:10]))]
+
+
+# --- fiche du chercheur en GEDCOM (#282) : SUBM relu par l'import GEDCOM réel de Gramps ------------------------------
+
+def verifier_soumetteur_gedcom(entree: dict, exe: Path, env_sup: dict, travail: Path,
+                               fixtures: Path | None = None) -> list[Resultat]:
+    """GEDCOM exporté avec fiche du chercheur (``write_gedcom(chercheur=…)``, GEDCOM 5.5.1) importé par la bibliothèque :
+    ``db.get_researcher()`` rend les champs du ``SUBM`` (``street`` reçoit ``ADR1`` : l'import de Gramps ne distingue pas
+    ``addr`` de ``street``, ``county`` n'existe pas en GEDCOM), sans erreur ni avertissement."""
+    from genealogiste_mcp.gedcom.mapping import read_gedcom, write_gedcom
+
+    version = entree["version"]
+    base = (fixtures or FIXTURES) / "famille.ged"
+    if not base.is_file():
+        return []
+    tree = read_gedcom(base.read_text(encoding="utf-8"))[0]
+    sortie = travail / f"gramps-{version}" / "soumetteur-gedcom"
+    sortie.mkdir(parents=True, exist_ok=True)
+    fichier = sortie / "chercheur.ged"
+    fichier.write_text(write_gedcom(tree, 5, dict(FICHE_BANC)), encoding="utf-8")
+    rapport, erreur = lancer_sonde(exe, env_sup, sortie, [fichier], False)
+    if rapport is None:
+        return [Resultat(version, "famille.ged", "chercheur:ged", False, erreur)]
+    r = rapport["fichiers"][fichier.name]
+    ecarts = list(r["erreurs"]) + list(r["avertissements"])
+    attendu = {**FICHE_BANC, "street": FICHE_BANC["addr"], "county": ""}
+    if not r.get("importe"):
+        ecarts.append("import refusé")
+    elif r["chercheur"] != attendu:
+        ecarts.append(f"fiche du chercheur {r['chercheur']} au lieu de {attendu}")
+    print(f"   {version} : GEDCOM avec SUBM importé, fiche {(r.get('chercheur') or {}).get('name')!r}", flush=True)
+    return [Resultat(version, "famille.ged", "chercheur:ged", not ecarts, " ; ".join(ecarts[:10]))]
 
 
 # --- dates (#272) : Date.set, valeur de tri et affichage de la bibliothèque, formes refusées --------------

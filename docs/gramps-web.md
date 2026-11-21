@@ -46,13 +46,14 @@ réglages : à éviter pour un compte dont les identifiants sont stockés (privi
   réessayer avec la même proposition. Les droits sont ceux du jeton d'accès (le rôle n'y figure pas : seulement
   la liste `permissions`) ; s'ils manquent, le jeton est renouvelé (au plus toutes les 5 secondes, car
   `/token/` et `/token/refresh/` sont limités à une requête par seconde) puis `GET /api/users/-/` donne le rôle.
+- **Fiche du chercheur** (#282) : son écriture exige le rôle **Owner** (`EditTree`), au-dessus d'Editor : `gramps_reglages(chercheur=…)` refuse un compte Editor avant tout calcul, avec la procédure manuelle. Les signets n'exigent qu'Editor (`EditObject`).
 - **Écriture refusée par le serveur** : un HTTP 403 est converti en « droits insuffisants : rôle Editor requis »,
   un HTTP 422 `message: Unknown field` (API < 3.13.0) en « mettre à jour Gramps Web (API 3.13.0 au moins) ».
   Forme réelle d'un 403 constatée sur les trois images de la matrice, avec des comptes *Member* et
   *Contributor* : `{"code":403,"status":"Forbidden"}` (`application/json`, format flask-smorest, sans clé
   `error.message`).
 
-`diagnostic` (réseau activé et `GENEALOGISTE_GRAMPS_URL` renseigné) ajoute à la joignabilité (`gramps_web`) quatre
+`diagnostic` (réseau activé et `GENEALOGISTE_GRAMPS_URL` renseigné) ajoute à la joignabilité (`gramps_web`) des
 contrôles, chacun indépendant : si `/api/metadata/` ou `/api/users/-/` échoue, le contrôle correspondant passe en
 `attention` avec le motif et les autres continuent. Aucun identifiant, jeton ni nom de personne n'y figure.
 
@@ -62,6 +63,7 @@ contrôles, chacun indépendant : si `/api/metadata/` ou `/api/users/-/` échoue
 | `gramps_role` | rôle du compte (`GET /api/users/-/`) | Editor : `ok` ; sous Editor : `erreur` en mode `gramps`, `attention` sinon ; Owner ou Admin : `attention` (« préférer Editor ») |
 | `gramps_reglages` | file de tâches (`server.task_queue`), multi-arbres (`server.multi_tree`), inscription libre | `ok` ; inscription libre ouverte : `attention`. L'inscription libre n'est lisible que depuis l'API 3.26.0 (`GET /api/register/config/`) : avant, « non vérifiable sur cette version ». `/api/config/` est réservé aux Admin : jamais appelé |
 | `gramps_personne_reference` | racine Sosa (`GENEALOGISTE_SOSA_RACINE`) comparée à la personne de référence de Gramps (`default_person` de `GET /api/metadata/`, traduite en `gramps_id` par `GET /api/people/<handle>?keys=gramps_id`, puis `GET /api/people/?gramps_id=…&keys=gramps_id` pour la racine ; aucun chargement de l'arbre) | même personne : `ok` ; différentes : `attention` avec les deux `gramps_id` ; Gramps sans personne de référence (ou référence supprimée) : `attention` ; racine introuvable dans l'arbre : `erreur` en mode `gramps`, `attention` sinon ; racine non définie : `ok` (information, avec une `suggestion` si Gramps a une référence). Jamais de nom de personne ; panne de lecture : `attention` avec le motif, le diagnostic continue |
+| `gramps_chercheur` | fiche du chercheur de la base (`researcher` de `GET /api/metadata/`, déjà lu : aucune requête de plus) | toujours `ok` : « renseignée » ou « vide » et `modifiable` (droit `EditTree`, rôle Owner) ; **jamais le contenu** (nom, adresse, courriel), ni le nombre ou le nom des champs |
 
 Le jeton d'accès Gramps Web dure 15 minutes ; sa revendication `exp` fixe le moment du renouvellement (30 secondes
 avant l'échéance), sans délai codé en dur. Le jeton renouvelé garde l'arbre et les droits.
@@ -239,6 +241,141 @@ avec Gramps 5.2, 6.0 et 6.1 (`data/grampsxml.dtd`, `.rng`) ; `type` ne peut valo
 (`write_namemaps`) n'écrit l'élément que s'il y a des regroupements ; l'importeur (`start_namemap`) pose chaque
 regroupement absent, n'écrase pas un regroupement présent et ignore la valeur `None` (fichiers corrompus par un
 ancien bogue). Genealogiste écrit les clés triées par patronyme et les valeurs telles que lues.
+
+## Signets, fiche du chercheur et formats de nom (#282)
+
+Trois réglages de la **base** Gramps (partagés par Gramps Desktop et Gramps Web quand c'est la même base), que
+Genealogiste lit, exporte et, pour deux d'entre eux, écrit sur proposition. Faits relevés dans le code amont
+(`gramps-web-api` tag `v3.26.0`, `5b3f890703537c828009656e7886a2f1e856c060` ; `gramps` 5.2 `14c01e5`, 6.0 `32aa296`,
+6.1 `e9c09a4` ; `gramps-web` `v26.5.1`, `v26.11.0` `8df6820`, `v26.11.3` `20c7655`) puis constatés sur les trois images
+de la matrice (`test_reglages_*`, `test_chercheur_*`, `test_signets_*`, `test_formats_de_nom_*` de `test_gramps_live.py`).
+
+### Faits amont
+
+| | Fiche du chercheur | Signets | Formats de nom |
+|---|---|---|---|
+| Lecture | `GET /api/metadata/` (`researcher`) ou `GET /api/metadata/researcher/` ; onze champs chaînes : `name`, `addr`, `street`, `locality`, `city`, `county`, `state`, `country`, `postal`, `phone`, `email` (vides à l'état neuf) | `GET /api/bookmarks/<espace>` (liste ordonnée de handles) et `GET /api/bookmarks/` (les neuf espaces : `people`, `families`, `events`, `places`, `sources`, `citations`, `repositories`, `media`, `notes`) ; autre espace : 404 | `GET /api/name-formats/` → `[{number, name, format, active}]` (formats **personnalisés** de la base ; vide à l'état neuf) |
+| Écriture | `PUT /api/metadata/researcher/`, corps JSON : mise à jour **partielle** (seules les clés envoyées), clé inconnue refusée (422), chaîne vide admise | `PUT /api/bookmarks/<espace>/<handle>` (ajoute **en fin de liste** ; 404 si l'objet n'existe pas) et `DELETE …` (404 si le signet n'existe pas) ; corps vide | **aucune** (ni POST, ni PUT, ni DELETE : 404/405) |
+| Droit, rôle | `EditTree` : **Owner** (4) au moins ; lecture : tout rôle | `EditObject` : **Editor** (3) ; lecture : tout rôle | lecture : tout rôle |
+| API d'apparition | lecture : v0.1 ; écriture : **3.9.0** (`7235b75`, 2026-03-27) | lecture : v0.1 (`a611816`, 2020-11-19) ; écriture : **1.5.0** (`10f8fd6`, 2023-12-18) | lecture : v0.1 (`a611816`) |
+| Dans l'historique des transactions ? | **non** : `set_researcher` ne passe par aucun `DbTxn` ; `GET /api/transactions/history/` inchangé | **non** : `bookmarks.append` / `remove`, aucun `DbTxn` ; historique inchangé | sans objet |
+| État antérieur lisible et restaurable exactement ? | **oui**, y compris « vide » : `PUT` des onze champs, chaînes vides comprises (constaté : relecture identique à l'état neuf) | **oui**, à l'ordre près : un ajout se défait exactement (`DELETE`) ; un retrait se défait par `PUT`, qui remet le signet **en fin de liste** (aucune route ne réordonne) | sans objet |
+| Détection de conflit côté serveur ? | non (aucun `old` comparé) | non | sans objet |
+| Persistance | métadonnées de la base, écrites à la fermeture de la base à la fin de la requête (`DbGeneric.close`, `_set_all_metadata` ; `api/util.py` ferme la base ouverte en écriture) ; relues par une requête suivante | idem | `name_formats` de la base |
+
+**Signets : ceux de la base, mais pas ceux de l'interface de Gramps Web.** `GET /api/bookmarks/` rend les signets
+de la **base** : ce sont ceux du menu Signets de Gramps Desktop, partagés par tout client de la même base. L'interface
+de Gramps Web, elle, **ne les utilise pas** : ses signets sont un réglage du **navigateur**
+(`localStorage['bookmarks']`, par arbre ; `gramps-web` `src/api.js`, présent à l'identique dans `v26.5.1`, `v26.11.0` et
+`v26.11.3`, ajouté par #335 le 2023-12-27 ; aucun appel à `/api/bookmarks` dans le code de l'interface). Un signet posé
+par Genealogiste est donc visible dans Gramps Desktop et pour les clients de l'API, **pas** dans le menu de Gramps Web ;
+et ceux de l'interface Web ne sont jamais lus ni écrits ici.
+
+**Fiche du chercheur : usage par Gramps.** L'export GEDCOM de Gramps écrit l'enregistrement `SUBM` (`NAME`, adresse en
+`ADDR` structurée, `PHON`, `EMAIL`) et le droit d'auteur de l'en-tête (`COPR`) d'après `db.get_researcher()`
+(`exportgedcom.py`, `_header` et `_submitter`) ; l'export Gramps XML écrit `<researcher>` (`exportxml.py`). L'interface de
+Gramps Web n'affiche la fiche que dans la page d'informations système, en lecture. À l'import XML, Gramps ne reprend la
+fiche du fichier que si la base cible est **vide** (`importxml.py` : `import_researcher = db.get_total() == 0`) ; une base
+Gramps Web vide au chargement reçoit sinon la fiche par défaut de la configuration du serveur (`dbloader.py`). Le format
+XML ne porte ni `street` ni `county` (`exportxml.py` écrit neuf champs) ; l'export GEDCOM de Gramps recopie `addr` dans
+`ADR1` et n'écrit pas `street`.
+
+**Format de nom par défaut de l'arbre : pas dans la base.** `GET /api/name-formats/` ne rend que les formats
+personnalisés enregistrés **dans** la base (`db.name_formats`, avec un indicateur `active`). Le format **par défaut**
+est la préférence `preferences.name-format` de la **configuration de Gramps** (`gramps.ini` du poste pour Gramps
+Desktop ; configuration du processus serveur pour Gramps Web : `dbloader.py` applique `name_displayer.set_default_format`
+d'après `config.get("preferences.name-format")`). Il n'est lisible ni par l'API ni par la base. Constat de l'import XML
+de Gramps (5.2, 6.0, 6.1) : `active = bool(attrs.get("active", True))`, donc un format écrit `active="0"` est importé
+**actif** (la chaîne « 0 » est vraie) ; un numéro déjà pris est remplacé par le premier numéro négatif libre.
+
+### Contrat retenu pour chaque écriture et pourquoi
+
+Règle commune : proposition (diff) → accord explicite → application, journal d'intention, annulation possible, jamais
+automatique. Ces écritures sont **hors transaction Gramps** : elles ne figurent pas dans l'historique de Gramps Web
+(onglet Révisions) et le serveur ne sait pas les défaire. Elles respectent pourtant le contrat parce que l'état
+antérieur est **lisible** et **restaurable exactement** par l'API, et que l'état est **relu** avant l'application :
+
+- **Fiche du chercheur : écriture proposée** (`gramps_reglages(chercheur={…})`). Le diff montre avant et après de
+  chaque champ modifié. Les valeurs sont celles que fournit l'utilisateur : rien n'est déduit de l'environnement, de
+  git, du système ni d'un export. L'état antérieur (onze champs) est mémorisé dans le jeton et le journal ; l'annulation
+  renvoie les onze champs (chaîne vide comprise) et redonne l'état initial **exact**. Rôle Owner exigé : refus avant
+  tout calcul pour un compte Editor, avec la procédure manuelle (Gramps Desktop : Édition > Préférences > Chercheur).
+- **Signets : écriture proposée** (`gramps_reglages(signets={…})`, et signets d'enquête). Un ajout se défait exactement ;
+  un retrait annulé remet le signet **en fin de liste** (ordre non restitué, annoncé dans la proposition d'annulation :
+  `ordre_restitue`). Seuls les signets nommés (ou ceux que le plugin a posés pour une enquête) sont touchés.
+- **Formats de nom : lecture seule** (aucune route d'écriture).
+
+**Journal d'intention et conflit.** `gramps-transactions.jsonl` reçoit l'`intention` (type `reglage`, état
+`avant` et `apres`) avant l'envoi, puis `envoyee` et `terminee` avec la vérification par relecture (`conforme`) ;
+`arbre_historique` et `arbre_statut_transaction` les montrent, `recover()` compare l'état de la base à l'état avant et
+après après une interruption (`envoyee`, `non_envoyee`, `partielle`). **Conflit** : le serveur n'en détecte pas ; avant
+d'appliquer et avant d'annuler, Genealogiste relit l'état et refuse (« Conflit », jeton consommé, rien écrit) s'il n'est
+plus celui de la proposition (fiche ou signets modifiés dans Gramps entre-temps). Cette comparaison est faite par le
+client en deux requêtes (lecture, puis écriture) : une modification faite par un autre client entre les deux n'est pas
+vue (fenêtre de quelques millisecondes, pas de verrou côté serveur). L'annulation est refusée si l'état n'est plus celui
+que l'écriture a laissé. **Données personnelles** : le journal des transactions (local, droits privés) garde l'état
+avant et après de la fiche, nécessaire à l'annulation, comme il garde déjà les objets des transactions ; ni le diagnostic,
+ni le journal de recherche, ni le résumé des propositions en attente ne contiennent une valeur de la fiche.
+
+### Ce que fait Genealogiste
+
+- **`gramps_reglages`** (mode gramps, classe **proposition**) : sans paramètre, **lecture** : fiche renseignée ou vide et
+  noms des champs renseignés (**jamais les valeurs**), signets par type d'objet (identifiants Gramps, jamais un nom),
+  formats de nom personnalisés (numéro, nom, format, actif), droits du compte et rappel que le format par défaut n'est
+  pas lisible. `chercheur={…}` ou `signets={ajouter, retirer}` ou `signets={enquete, action}` : proposition (jeton, diff)
+  pour `arbre_appliquer` après accord, annulable par `arbre_annuler_modification`.
+- **Exports** (`arbre_exporter`, mode gramps) :
+  - *fiche du chercheur* : `SUBM` (`gedcom7`, `gedcom551`) ou `<researcher>` (`gramps`, `gpkg`), écrit seulement dans un
+    export **privé** (`masquer_vivants=False`) ou sur demande explicite (`chercheur=True`, avec un avertissement en export
+    public) ; `chercheur=False` l'exclut. **Export public par défaut : aucune coordonnée**, sortie identique à celle d'avant
+    (octet pour octet en GEDCOM ; en Gramps XML, `<researcher/>` vide) ; fiche vide : rien d'écrit, motif donné. `street` et
+    `county` sont absents du Gramps XML (`champs_absents_du_format`) ; en GEDCOM, comme Gramps : `ADDR` (lignes adresse,
+    lieu-dit, ville, comté, état, code postal, pays), `ADR1` = `addr`, `ADR2`, `CITY`, `STAE`, `POST`, `CTRY`, `PHON`, `EMAIL`.
+    Un soumetteur importé d'un autre fichier cède la place à la fiche. Mode fichier : aucune fiche, rien d'inventé.
+    Le banc Gramps Desktop relit le `SUBM` par l'import GEDCOM réel (5.2.4, 6.0.8, 6.1.0-beta2 : `chercheur:ged`) et le
+    `<researcher>` par l'import XML (cas `reglages`).
+  - *signets* (`<bookmarks>`, gramps et gpkg) : ceux de la base, dans l'ordre, pour les personnes, familles, sources,
+    dépôts, médias et notes de l'export (retrouvés par leur identifiant Gramps) ; événements, lieux et citations (dont
+    l'identifiant ne se conserve pas à l'export) sont comptés `non_ecrits`. **Export public** : un signet vers une personne
+    ou une famille masquée est **retiré** (la personne reste un « Vivant » anonyme, aucun signet ne la désigne), les sources,
+    médias et notes privés ne sont plus dans l'export ; les compteurs `signets.retires` ne nomment rien.
+  - *formats de nom* (`<name-formats>`) : les formats personnalisés de la base, aussi en export public (aucune donnée de
+    personne).
+- **Import** (Gramps XML, `.gpkg`) : `import.metadonnees` rapporte `chercheur` (`renseigne`, nombre de `champs`, **jamais le
+  contenu**), le nombre de `signets` et de `formats_noms` ; rien n'est écrit dans l'arbre, la configuration ni Gramps Web ;
+  l'aller-retour XML → objets → XML conserve fiche, signets et formats (`Métadonnées.*` sous `non_repris`).
+- **Diagnostic** : contrôle `gramps_chercheur` : fiche **renseignée** ou **vide**, et `modifiable` (droit `EditTree`) ;
+  jamais un nom, une adresse ni un courriel, ni le nombre de champs. Toujours `ok` (une fiche vide n'est pas une anomalie).
+- **Signets d'une enquête** : voir [enquetes.md](enquetes.md#signets-de-gramps-282).
+- **Jamais vers l'extérieur** : aucun outil réseau (sources externes) ne reçoit ces champs ; `tests/test_gramps_reglages_export.py`
+  le vérifie (requêtes sortantes de `recherche_multi`, journal de recherche, et garantie statique : aucun module de `sources/`
+  ne mentionne la fiche).
+
+### Option non livrée : afficher les noms selon le format de l'arbre
+
+Fiches et récits gardent leur affichage actuel. Le « format par défaut de l'arbre » n'étant **pas** dans la base (voir
+plus haut), il ne peut pas être lu par l'API. L'option serait un réglage **du plugin** (variable d'environnement,
+défaut = affichage actuel inchangé octet pour octet) acceptant un format Gramps (`%s, %f`, `%f %S`…) dont il faudrait
+porter fidèlement les codes (`%t %f %p %n %l %s %m %y %c %x %o %g %u %a %e`, majuscules et variantes `%F`/`%S`…, texte
+littéral, nettoyage des espaces et ponctuations en trop de `gramps/gen/display/name.py`) et les valider contre la
+vraie bibliothèque dans le banc Desktop. C'est disproportionné pour ce lot (priorité basse) : à décider. Les formats
+personnalisés de la base sont néanmoins lus (`gramps_reglages`) et exportés.
+
+### Procédures manuelles
+
+- **Fiche du chercheur sans compte Owner** : Gramps Desktop, Édition > Préférences > Chercheur (le menu est celui de la
+  base ouverte) ; Gramps Web : pas d'écran de modification de la fiche (lecture seule dans les informations système).
+- **Formats de nom** : Gramps Desktop, Édition > Préférences > Affichage > Format du nom > Modifier ; un fichier Gramps
+  XML qui porte `<name-formats>` les ajoute à l'import (numéros renumérotés si déjà pris, tous importés actifs).
+- **Retrouver les signets posés pour une enquête** : `enquete_etat` (`signets_poses`, identifiants Gramps et handles).
+
+### Limites
+
+- Les signets de la base ne sont pas ceux de l'interface de Gramps Web (navigateur) : voir plus haut.
+- Écritures hors historique : annulables seulement par Genealogiste, tant que l'état n'a pas changé ; l'ordre des signets
+  d'un retrait annulé n'est pas restitué.
+- Conflit détecté par le client (relecture), sans verrou serveur.
+- Un format de nom ne s'écrit pas : aucune route ; et Gramps importe actif tout format d'un fichier.
 
 ## Fonctionnement
 
@@ -867,7 +1004,7 @@ diagnostic.
 | transaction en tâche de fond (`background=1`) | `transactions_fond` | 2.7.0 | utilisée (gros lots) |
 | objets JSON de Gramps 6.0 | `objets_json_gramps6` | 3.0.0 | utilisée |
 | annuler depuis l'historique du serveur | `historique_annuler` | 3.4.0 | prévue |
-| modifier le chercheur (`PUT /api/metadata/researcher/`) | `chercheur_modifier` | 3.9.0 | prévue |
+| modifier le chercheur (`PUT /api/metadata/researcher/`, droit `EditTree`) | `chercheur_modifier` | 3.9.0 | utilisée (#282 : proposition, accord, journal, annulation par Genealogiste ; rôle Owner) |
 | message de transaction (`message=`) | `transactions_message` | 3.13.0 | **utilisée : fixe le plancher** |
 | réglages de l'arbre (`/api/trees/<id>/config`) | `arbre_config` | 3.13.0 | prévue |
 | fusion native (`/api/<objets>/merge/`) | `fusion` | 3.15.0 | prévue |
@@ -879,6 +1016,9 @@ diagnostic.
 | `edit-by-handle` (`gql` retiré) | `edit_by_handle` | 3.26.0 | écartée pour les étiquettes (#262 : hors `/api/transactions/`, annulation non établie) |
 | inscription libre lisible (`GET /api/register/config/`) | `inscription_libre` | 3.26.0 | utilisée (diagnostic) |
 | nom du lieu à la date de l'événement (`place_name` du profil d'événement) | `nom_lieu_date` | 3.26.0 | constatée (#277) : avant, l'interface affiche le nom principal du lieu, `place` (`display_event`) a déjà le nom d'époque |
+| signets de la base, lecture (`GET /api/bookmarks/<espace>`) | `signets` | 0.1.0 | utilisée (#282 : export `<bookmarks>`, `gramps_reglages`) |
+| signets de la base, écriture (`PUT`/`DELETE /api/bookmarks/<espace>/<handle>`, droit `EditObject`) | `signets_ecriture` | 1.5.0 | utilisée (#282 : proposition, accord, journal, annulation par Genealogiste) |
+| formats de nom personnalisés, lecture (`GET /api/name-formats/`) | `formats_noms` | 0.1.0 | utilisée (#282 : `gramps_reglages`, export `<name-formats>`) ; aucune route d'écriture |
 | groupes de noms, lecture (`GET /api/name-groups/`) | `groupes_noms` | 0.1.0 | utilisée (#276 : `arbre_recherche`, export, `gramps_grouper_noms`) |
 | groupes de noms, écriture (`POST /api/name-groups/<patronyme>/<groupe>`, droit `EditNameGroup`) | `groupes_noms_ecriture` | 0.6.0 | écartée (#276) : hors historique, retour à « aucun regroupement » impossible |
 
