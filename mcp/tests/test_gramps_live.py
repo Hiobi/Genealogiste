@@ -236,3 +236,59 @@ def test_compte_sans_droit_d_ecriture(compte, role, nom, tmp_path):
     with pytest.raises(GrampsError) as exc:
         c.transaction([item], "essai")
     assert exc.value.status == 403 and "Editor" in str(exc.value) and "Corriger" in str(exc.value)
+
+
+# ---------------------------------------------------------------------------- #262 : étiquettes
+
+def test_etiquettes_pose_relecture_retrait_annulation(client, loaded, tmp_path):
+    """Étiquette existante (et en double) + nouvelle sur plusieurs classes, relue ; retrait ; annulations qui
+    restaurent les tag_list et retirent le Tag créé. Tag sans gramps_id et noms non uniques acceptés par l'API."""
+    existante = {"_class": "Tag", "handle": "tag262existante", "name": "Existante-262", "color": "#ef29ef29ef29",
+                 "priority": 40}
+    double = {**existante, "handle": "tag262double", "priority": 41, "color": "#000000000000"}
+    client.transaction([{"type": "add", "_class": "Tag", "handle": t["handle"], "old": None, "new": t}
+                        for t in (existante, double)], "Tests d'intégration : étiquettes existantes (#262)")
+    db0 = client.load_all()
+    assert {"tag262existante", "tag262double"} <= set(db0.all("Tag"))  # deux Tag de même nom acceptés
+    avant = {cls: {h: o.get("tag_list") for h, o in db0.all(cls).items()} for cls in db0.objects if cls != "Tag"}
+    b = GrampsBackend(client, tmp_path, tmp_path / ".propositions", ttl=0)
+    naissance = "11111111-1111-4111-8111-111111111111"
+    ops = [{"op": "etiqueter", "cible": {"type": "personne", "id": "I1"}, "tags": ["Existante-262", "Nouvelle-262"]},
+           {"op": "etiqueter", "cible": {"type": "famille", "id": "F1"}, "tags": ["Nouvelle-262"]},
+           {"op": "etiqueter", "cible": {"type": "evenement", "uid": naissance}, "tags": ["Existante-262"]},
+           {"op": "etiqueter", "cible": {"type": "citation", "porteur": {"type": "evenement", "uid": naissance},
+                                         "source": "S2"}, "tags": ["Nouvelle-262"]},
+           {"op": "etiqueter", "cible": {"type": "source", "id": "S1"}, "tags": ["Nouvelle-262"]},
+           {"op": "etiqueter", "cible": {"type": "depot", "id": "R1"}, "tags": ["Existante-262"]}]
+    p = b.propose(ops, "Étiquettes", "Essai d'étiquettes (test).")
+    tg = p["transaction_gramps"]
+    print("étiquettes, bilan réel :", tg["bilan"], tg["etiquettes"], p["avertissements"])
+    assert tg["bilan"]["Tag"]["add"] == 1 and len(tg["etiquettes"]) == 6
+    assert any("présente 2 fois" in w for w in p["avertissements"])
+    r = b.apply(p["jeton"])
+    db = client.load_all()
+    nouvelle = next(h for h, t in db.all("Tag").items() if t["name"] == "Nouvelle-262")
+    assert "gramps_id" not in db.get("Tag", nouvelle) or not db.get("Tag", nouvelle).get("gramps_id")
+    assert db.get("Tag", "tag262existante")["color"] == "#ef29ef29ef29"  # jamais touchée
+    t = b.load(fresh=True)
+    assert t.personnes["I1"].tags == ["Existante-262", "Nouvelle-262"] and t.familles["F1"].tags == ["Nouvelle-262"]
+    ev = next(e for e in t.personnes["I1"].evenements if e.uid == naissance)
+    assert ev.tags == ["Existante-262"] and [c.tags for c in ev.citations if c.source == "S2"] == [["Nouvelle-262"]]
+    assert t.sources["S1"].tags == ["Nouvelle-262"] and t.depots["R1"].tags == ["Existante-262"]
+    jean = next(o for o in db.all("Person").values() if o["gramps_id"] == "I1")
+    assert "tag262existante" in jean["tag_list"] and "tag262double" not in jean["tag_list"]  # priorité 40 d'abord
+    assert diff(db, tree_to_gramps(t, base=db)) == []  # relu puis réécrit : rien
+    # retrait : l'objet Tag reste
+    r2 = b.apply(b.propose([{"op": "modifier_personne", "id": "I1", "tags_retrait": ["Nouvelle-262"]}],
+                           "Retrait", "Essai (test).")["jeton"])
+    assert b.load(fresh=True).personnes["I1"].tags == ["Existante-262"] and nouvelle in client.load_all().all("Tag")
+    # annulations : retrait puis pose
+    u2 = b.propose_undo(r2["transaction"])
+    assert u2["transaction_inverse"]["etiquettes"] == ["étiquettes I1 : +Nouvelle-262"]
+    b.apply(u2["jeton"])
+    assert b.load(fresh=True).personnes["I1"].tags == ["Existante-262", "Nouvelle-262"]
+    b.apply(b.propose_undo(r["transaction"])["jeton"])
+    db2 = client.load_all()
+    apres = {cls: {h: o.get("tag_list") for h, o in db2.all(cls).items()} for cls in db2.objects if cls != "Tag"}
+    assert apres == avant and nouvelle not in db2.all("Tag")
+    assert {"tag262existante", "tag262double"} <= set(db2.all("Tag"))

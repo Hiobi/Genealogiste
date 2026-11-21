@@ -23,6 +23,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from ..chemins import CheminAmbigu, CheminRefuse, localiser
+from ..etiquettes import lignes_arbres
 from ..fichiers import ajouter_jsonl, lire_jsonl
 from ..gedcom.mapping import write_gedcom
 from ..models import Tree
@@ -45,9 +46,11 @@ from .mapping import (
     _attr_value,
     _strip_change,
     apply_items,
-    auto_tags,
     diff,
+    etiquettes_en_double,
+    etiquettes_gerees,
     gramps_to_tree,
+    lignes_etiquettes,
     migrer_marqueurs,
     proof_only,
     summarize,
@@ -248,9 +251,21 @@ class GrampsBackend:
         out = {"bilan": summarize(items), "objets": [_label(i) for i in items[:MAX_PREVIEW_OBJECTS]]
                + ([f"… {len(items) - MAX_PREVIEW_OBJECTS} autre(s)"] if len(items) > MAX_PREVIEW_OBJECTS else [])}
         if db is not None:
-            autos = auto_tags(db)
-            out["dont_notes_de_preuve_seules"] = sum(proof_only(i, autos) for i in items)
+            gerees = etiquettes_gerees(db, items)
+            out["dont_notes_de_preuve_seules"] = sum(proof_only(i, gerees) for i in items)
+            if lignes := lignes_etiquettes(db, items):  # #262 : une ligne par objet étiqueté
+                out["etiquettes"] = lignes
         return out
+
+    @staticmethod
+    def _doublons(db: GrampsDb, items: list[dict]) -> list[str]:
+        """Avertissement : étiquette posée dont le nom est porté par plusieurs objets Tag de Gramps Web."""
+        doubles = etiquettes_en_double(db)
+        poses = {h for it in items if it["_class"] != "Tag" and it.get("new")
+                 for h in set(it["new"].get("tag_list") or []) - set((it.get("old") or {}).get("tag_list") or [])}
+        return [f"Étiquette « {nom} » présente {len(hs)} fois dans Gramps Web (handles {', '.join(hs)}) : la première "
+                "dans l'ordre de priorité est utilisée ; rien n'est fusionné (à corriger dans Gramps Web si voulu)."
+                for nom, hs in sorted(doubles.items()) if hs[0] in poses]
 
     def _massive(self, items: list[dict], preview: dict, n_ops: int) -> str:
         if len(items) <= MASSIVE_OBJECTS or n_ops >= MASSIVE_OPERATIONS:
@@ -282,7 +297,7 @@ class GrampsBackend:
             preview["fichiers_a_envoyer"] = [f"{t['id']} : {t['fichier']} ({t['taille_octets']} octets)" for t in todo]
             if missing:
                 preview["fichiers_absents"] = missing
-        warnings = list(ctx.warnings)
+        warnings = list(ctx.warnings) + self._doublons(db, items)
         if w := self._massive(items, preview, len(operations)):
             warnings.append(w)
         self.tokens.create({"jeton": token, "type": "transaction", "items": items, "message": message,
@@ -290,7 +305,8 @@ class GrampsBackend:
         return {
             "jeton": token, "expire_dans_minutes": TTL_SECONDS // 60, "resume": ctx.summary,
             "references_creees": ctx.refs, "transaction_gramps": preview,
-            "diff": tree_diff(write_gedcom(tree), write_gedcom(ctx.tree), "Gramps Web", targets(ctx, operations)),
+            "diff": tree_diff(write_gedcom(tree), write_gedcom(ctx.tree), "Gramps Web", targets(ctx, operations),
+                              lignes_arbres(tree, ctx.tree)),
             "nouvelles_alertes_coherence": new_alerts(tree, ctx.tree),
             "avertissements": warnings, "message_de_transaction": message, "consigne": CONSIGNE,
         }
@@ -484,13 +500,18 @@ class GrampsBackend:
             raise ProposalError(f"Transaction inconnue dans gramps-transactions.jsonl : {reference!r}")
         if any(e.get("annule") == reference and self._effective(e) for e in self.transactions(1000)):
             raise ProposalError(f"La transaction {reference} a déjà été annulée.")
-        self.snapshot(fresh=True)
+        db = self.snapshot(fresh=True)
         title = entry["message"].splitlines()[0] if entry.get("message") else reference
         message = f"Annulation : {title}\n\nAnnulation de la transaction {reference}"
         token = self.tokens.create({"type": "annulation", "annule": reference, "items": entry["items"],
                                     "message": message, "resume": [f"Annulation de {reference} : {title}"]})
+        inverse = self._preview(entry["items"])
+        rev = {"add": "delete", "delete": "add"}
+        if lignes := lignes_etiquettes(db, [{**i, "type": rev.get(i["type"], "update"), "old": i.get("new"),
+                                             "new": i.get("old")} for i in entry["items"]]):
+            inverse["etiquettes"] = lignes  # étiquettes restaurées par l'annulation (#262)
         return {"jeton": token, "expire_dans_minutes": TTL_SECONDS // 60, "annule": {"id": reference, "titre": title},
-                "transaction_inverse": self._preview(entry["items"]), "consigne": CONSIGNE}
+                "transaction_inverse": inverse, "consigne": CONSIGNE}
 
     def cancel(self, token: str) -> bool:
         return self.tokens.cancel(token)

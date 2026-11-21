@@ -1099,8 +1099,11 @@ def arbre_info() -> dict:
 
 
 @mcp.tool()
-def arbre_recherche(texte: str = "", nom: str = "", prenom: str = "", ne_vers: str = "", limite: int = 30) -> list[dict]:
-    """Cherche dans l'arbre local (nom/prénom normalisés, variantes, ±2 ans)."""
+def arbre_recherche(texte: str = "", nom: str = "", prenom: str = "", ne_vers: str = "", limite: int = 30,
+                    etiquette: str = "") -> list[dict]:
+    """Cherche dans l'arbre local (nom/prénom normalisés, variantes, ±2 ans). etiquette : seulement les personnes
+    portant cette étiquette (nom exact, sensible à la casse), seule ou avec les autres critères. Chaque résultat
+    donne ses étiquettes."""
     t = app().tree()
     out = []
     q = {"nom": nom, "prenoms": prenom, "naissance": {"date": ne_vers}}
@@ -1108,12 +1111,15 @@ def arbre_recherche(texte: str = "", nom: str = "", prenom: str = "", ne_vers: s
         nn = normalize_name(texte)
         q["nom"], q["prenoms"] = nn["nom_original"], nn["prenoms"]
     for pid in t.personnes:
+        if etiquette and etiquette not in t.personnes[pid].tags:
+            continue
         prof = matching.profile_from_person(t, pid)
         if q["nom"] and surname_similarity(q["nom"], prof["nom"])["score"] < 0.85:
             continue
         res = matching.compare_profiles({k: v for k, v in q.items() if v}, prof)
         out.append({"id": pid, "nom": t.personnes[pid].nom_principal.complet,
-                    "naissance": prof["naissance"], "deces": prof["deces"], "score": res["score"]})
+                    "naissance": prof["naissance"], "deces": prof["deces"], "score": res["score"],
+                    "etiquettes": list(t.personnes[pid].tags)})
     out.sort(key=lambda r: -r["score"])
     return out[:limite]
 
@@ -1279,7 +1285,9 @@ def arbre_proposer(operations: list[dict], titre: str, justification: str, sourc
     modifier_evenement, supprimer_evenement, ajouter_famille, lier_enfant, delier_enfant, lier_conjoint,
     ajouter_source, modifier_source, supprimer_source, fusionner_sources, ajouter_depot, ajouter_citation,
     supprimer_citation, ajouter_media, modifier_media, ajouter_association,
-    supprimer_association, fusionner_personnes, scinder_personne, definir_statut, marquer_vivant.
+    supprimer_association, fusionner_personnes, scinder_personne, definir_statut, marquer_vivant, etiqueter.
+    Étiquettes : tags (ajout) sur les ajouts et modifications, tags_retrait sur les modifications, etiqueter
+    pour tout objet existant (famille, dépôt, note, citation…).
     Règle de métier : tout événement ou filiation exige une citation, sauf non_source=true + motif.
     Citation : préciser 'consultation' (original | image | transcription | index | non_vu). Référencer un objet créé dans la même proposition par
     "$ref". Voir docs/operations.md."""

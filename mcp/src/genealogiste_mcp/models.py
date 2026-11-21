@@ -93,6 +93,7 @@ class Citation(_Base):
     medias: list[str] = field(default_factory=list)  # images de l'acte (xref O1…) qui fondent la citation
     prive: bool = False  # marque « privé » (Gramps private, GEDCOM _RESN PRIVACY) : jamais publié
     extra: list = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)  # étiquettes (noms, ordre conservé ; hors étiquettes gérées, #262)
 
 
 @dataclass
@@ -144,6 +145,7 @@ class Event(_Base):
     extra: list = field(default_factory=list)
     prive: bool = False  # RESN PRIVACY / Gramps private : jamais publié
     medias: list[str] = field(default_factory=list)  # images de l'acte qui atteste l'événement (#222)
+    tags: list[str] = field(default_factory=list)  # étiquettes (noms, ordre conservé ; hors étiquettes gérées, #262)
 
 
 @dataclass
@@ -189,6 +191,7 @@ class Person(_Base):
     prive: bool = False  # RESN PRIVACY / Gramps private : masqué à la publication, vivant ou non
     uid: str = field(default_factory=new_uid)
     extra: list = field(default_factory=list)  # nœuds GEDCOM non interprétés (préservés)
+    tags: list[str] = field(default_factory=list)  # étiquettes (noms, ordre conservé ; hors étiquettes gérées, #262)
 
     @property
     def nom_principal(self) -> Name:
@@ -218,6 +221,7 @@ class Family(_Base):
     statut_manuel: Assertion | None = None
     extra: list = field(default_factory=list)
     prive: bool = False
+    tags: list[str] = field(default_factory=list)  # étiquettes (noms, ordre conservé ; hors étiquettes gérées, #262)
 
     def child(self, pid: str) -> ChildLink | None:
         return next((c for c in self.enfants if c.enfant == pid), None)
@@ -233,6 +237,7 @@ class Repository(_Base):
     sigle: str = ""  # AD17, AN, SHD…
     adresse: str = ""
     url: str = ""
+    tags: list[str] = field(default_factory=list)  # étiquettes (noms, ordre conservé ; hors étiquettes gérées, #262)
 
 
 @dataclass
@@ -251,6 +256,7 @@ class Source(_Base):
     extra: list = field(default_factory=list)
     prive: bool = False
     medias: list[str] = field(default_factory=list)  # images du registre, de la page de titre… (#222)
+    tags: list[str] = field(default_factory=list)  # étiquettes (noms, ordre conservé ; hors étiquettes gérées, #262)
 
 
 @dataclass
@@ -261,6 +267,7 @@ class Media(_Base):
     titre: str = ""
     citations: list[Citation] = field(default_factory=list)
     prive: bool = False
+    tags: list[str] = field(default_factory=list)  # étiquettes (noms, ordre conservé ; hors étiquettes gérées, #262)
 
 
 _NESTED = {
@@ -284,6 +291,7 @@ class Tree:
     medias: dict[str, Media] = field(default_factory=dict)
     notes: dict[str, str] = field(default_factory=dict)  # enregistrements NOTE/SNOTE partagés
     notes_privees: set[str] = field(default_factory=set)  # notes partagées marquées privées
+    notes_tags: dict[str, list[str]] = field(default_factory=dict)  # étiquettes des notes partagées (#262)
     header_extra: list = field(default_factory=list)
     extra_records: list = field(default_factory=list)
 

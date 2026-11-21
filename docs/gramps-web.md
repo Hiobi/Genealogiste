@@ -121,11 +121,43 @@ Module unique, utilisé par l'export Gramps XML et par le mode direct, testé al
 | âge | attribut `Age` de la référence d'événement |
 | cause, précision du type | attributs `Cause`, `Précision` |
 | date GEDCOM 7 | date Gramps (calendrier, qualificatif, qualité) ; la chaîne GEDCOM est gardée dans `text` |
+| étiquettes (`tags`) de personne, famille, événement, citation, source, dépôt, média, note partagée | `tag_list` (handles) + objets `Tag` ; voir « Étiquettes » ci-dessous |
 
 Une personne, un événement ou une note créés dans l'interface Gramps sont lus sans attribut `Genealogiste-*` et
 réécrits **à l'identique** tant que Genealogiste ne les modifie pas. Ce que Genealogiste ne modélise pas (adresses, URL,
-étiquettes, titres et suffixes de nom, noms alternatifs et dates des lieux, médias d'événements, notes isolées…) est
-conservé tel quel.
+étiquettes des lieux et des notes « en ligne », couleur et priorité des étiquettes, titres et suffixes de nom, noms
+alternatifs et dates des lieux, médias d'événements, notes isolées…) est conservé tel quel.
+
+### Étiquettes (#262)
+
+- **Lecture** : `tag_list` (handles) → noms, dans l'ordre, sans doublon de nom. Les étiquettes gérées
+  (`Genealogiste:auto`, `Sosa:auto`, « Preuve : … ») et les handles sans objet `Tag` restent hors du modèle.
+- **Écriture** par-dessus l'état lu : un objet non modifié est réécrit à l'identique (ordre de `tag_list`,
+  handles, étiquettes gérées et inconnues) ; couleur et priorité d'un `Tag` existant ne sont jamais touchées.
+  Une étiquette ajoutée va en fin de liste. Une étiquette inexistante est créée **dans la même transaction**
+  (objet `Tag` sans `gramps_id`, handle déterministe, couleur par défaut de Gramps `#000000000000`, priorité
+  suivant la plus haute de la base) : elle apparaît dans `transaction_gramps.bilan` (`Tag`). Retirer une
+  étiquette d'un objet ne supprime jamais l'objet `Tag`.
+- **Noms** : sensibles à la casse (l'API compare les noms à l'identique). L'API n'impose pas l'unicité : deux
+  `Tag` de même nom sont lus sans perte (un objet garde le handle qu'il porte) ; une étiquette posée réutilise
+  le premier dans l'ordre de priorité (puis de handle), avec un avertissement à la proposition ; rien n'est
+  fusionné.
+- **Diff concis** : `transaction_gramps.etiquettes`, une ligne par objet (`étiquettes I12 : +Blog −ToDo`,
+  `gramps_id` de l'objet) ; `transaction_inverse.etiquettes` à la préparation d'une annulation. Une
+  transaction qui pose ou retire une étiquette de l'utilisateur n'est jamais comptée dans
+  `dont_notes_de_preuve_seules`.
+- **Rôle** : créer un `Tag` par `POST /api/tags/` ne demande que *Contributor*, le modifier ou le supprimer
+  *Editor* ; contrairement à l'interface (Paramètres, réservés à Owner/Admin), l'API ne réserve pas les
+  étiquettes à Owner/Admin. Genealogiste n'utilise pas `/api/tags/` : l'étiquette part dans la transaction
+  ordinaire (`POST /api/transactions/`, *Editor*), journalisée et annulable. Un compte sans droit d'écriture
+  est donc refusé **à la proposition** (contrôle commun ci-dessus), jamais à l'application.
+- **Annulation** : la transaction inverse restaure les `tag_list` et retire les `Tag` créés par la transaction.
+- **Modification en lot** : `POST /api/objects/edit-by-handle/` (API ≥ 3.26.0, `add_tag` / `remove_tag`)
+  est **écartée** : hors de `/api/transactions/`, non disponible sur l'image épinglée (3.25.1), et son
+  annulation par `gramps-transactions.jsonl` n'est pas établie. Un gros lot reste une transaction ordinaire
+  (en tâche de fond au-delà du seuil habituel).
+- **Versions** : `Tag` sans `gramps_id` accepté par `POST /api/transactions/` depuis l'API 0.2.0 (clé
+  `transactions`) : aucune version minimale supplémentaire.
 
 Non mappé : les nœuds GEDCOM non interprétés (`extra`), perdus à l'aller-retour. Normalisations : type de
 nom `BIRTH` = nom de naissance, filiation `BIRTH` = filiation biologique, un même nom de lieu = un seul
@@ -289,7 +321,7 @@ diagnostic.
 | historique par objet (onglet Révisions) | `historique_objet` | 3.22.0 | prévue |
 | règle `MatchesQuery` (`oql` retiré) | `regle_matches_query` | 3.23.0 | prévue |
 | verrous de tâches (409 `task_locked`) | `verrous_taches` | 3.24.0 | prévue |
-| `edit-by-handle` (`gql` retiré) | `edit_by_handle` | 3.26.0 | prévue |
+| `edit-by-handle` (`gql` retiré) | `edit_by_handle` | 3.26.0 | écartée pour les étiquettes (#262 : hors `/api/transactions/`, annulation non établie) |
 | inscription libre lisible (`GET /api/register/config/`) | `inscription_libre` | 3.26.0 | utilisée (diagnostic) |
 
 La recherche sémantique a été retirée de l'API en 3.25 ; Genealogiste ne l'utilise pas.

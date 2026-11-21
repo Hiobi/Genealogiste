@@ -575,9 +575,11 @@ def verifier_lecture_genealogiste(chemin: Path, zone: Path) -> list[str]:
     verifier(mariage is not None and any(a.personne == "I0004" for a in mariage.associations),
              "témoin du mariage non repris")
     pertes = info["non_repris"]
-    for cle in ("Person.address_list[]", "Person.urls[]", "Note.text.tags[]", "Person.primary_name.suffix",
-                "Tag"):
+    for cle in ("Person.address_list[]", "Person.urls[]", "Note.text.tags[]", "Person.primary_name.suffix"):
         verifier(cle in pertes, f"perte non listée : {cle}")
+    # #262 : l'étiquette de l'utilisateur est reprise (Sosa:auto reste hors modèle)
+    verifier(p["I0001"].tags == ["À vérifier"], f"étiquette non reprise : {p['I0001'].tags}")
+    verifier(not any(k == "Tag" or "tag_list" in k for k in pertes), "étiquette comptée comme perdue")
     if FORMATS_GENERES[chemin.name] == "gpkg":
         fichiers = info["medias"]["fichiers"]
         verifier(len(fichiers) == 1 and (zone / fichiers[0]).is_file(), f"média non extrait : {info['medias']}")

@@ -105,6 +105,10 @@ correspondance du mode direct ; l'arbre obtenu suit ensuite exactement le chemin
   l'admet) reçoit un identifiant libre (`IX1`…), listé dans `import.identifiants_reattribues` ;
 - marqueurs reconnus : attributs `Genealogiste-*` et leur forme historique `Sosa-*` (UID, statuts, intervenants,
   fichier), étiquettes `Genealogiste:auto` / `Sosa:auto` (notes générées ignorées) ;
+- étiquettes de l'utilisateur (#262) reprises sur les personnes, familles, événements, citations, sources,
+  dépôts, médias et notes partagées (extension GEDCOM `_ETIQUETTE`) ; celles des lieux et des notes « en
+  ligne », et une étiquette qui n'étiquette rien, restent comptées dans `non_repris` (couleur et priorité ne
+  sont pas reprises : l'arbre ne garde que les noms) ;
 - le drapeau `priv` de Gramps devient `prive` là où le modèle le porte (personne, famille, événement, source,
   citation, média, note) ; l'import ne pose ni ne retire aucune protection. Il est local : rien ne part vers
   l'extérieur ;
@@ -135,11 +139,12 @@ le fichier lu à ce que l'arbre importé redonnerait (`Person.address_list[]: 1`
 `Place.alt_names[]: 8`, `Métadonnées.signets: 4`…), et la proposition porte un avertissement. C'est un
 compteur, pas un diff : une valeur gardée sous une autre forme (hiérarchie de lieux aplatie en titre
 « Commune, Département, Pays ») est comptée sous son ancien chemin. Sur l'arbre d'exemple de Gramps, par exemple :
-étiquettes, noms alternatifs et noms datés des lieux, hiérarchie et types de lieux, adresses, URL, texte
-stylé, ordonnances LDS, attributs utilisateur (âge, profession…), suffixe, titre et nom d'usage, patronymes
-multiples, rectangles des références de médias, notes privées, plusieurs dépôts d'une source, et les
-métadonnées (chercheur, dossier des médias, personne de référence, formats de noms, signets, regroupements).
-Leur reprise relève du lot 2 du jalon M6 (#262, #272, #273, #277, #279).
+étiquettes des lieux, noms alternatifs et noms datés des lieux, hiérarchie et types de lieux, adresses, URL,
+texte stylé, ordonnances LDS, attributs utilisateur (âge, profession…), suffixe, titre et nom d'usage,
+patronymes multiples, rectangles des références de médias, notes privées, plusieurs dépôts d'une source, et
+les métadonnées (chercheur, dossier des médias, personne de référence, formats de noms, signets,
+regroupements). Leur reprise relève du lot 2 du jalon M6 (#272, #273, #277, #279) ; les étiquettes des autres
+objets sont reprises depuis #262.
 
 ### Aller-retour sans perte
 

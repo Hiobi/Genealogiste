@@ -19,8 +19,8 @@ pour l'import Gramps de Genealogiste (#269, `tests/test_gramps_xml_import.py`) :
 Contenu (voir `generer` dans `scripts/sonde_gramps_desktop.py`) : attributs `Genealogiste-UID` et forme
 historique `Sosa-UID`, `Sosa-Statut`, `Sosa-Statut filiation I0003`, étiquette `Sosa:auto` sur une note générée,
 personne privée, témoin de mariage, parrain (`personref`), dates grégoriennes, juliennes et républicaines,
-lieux hiérarchiques, et ce que le modèle de Genealogiste ne représente pas (adresse, URL, note stylée,
-étiquette, suffixe, nom alternatif daté).
+lieux hiérarchiques, étiquette « À vérifier » sur une personne (reprise depuis #262), et ce que le modèle de
+Genealogiste ne représente pas (adresse, URL, note stylée, suffixe, nom alternatif daté).
 
 Régénérés le 2026-11-21 par `uv --directory mcp run python ../scripts/verifier_gramps_desktop.py --fixtures`
 (bibliothèques isolées du banc Desktop, GLib et Gtk factices) ; les handles et identifiants sont fixes, les

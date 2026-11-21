@@ -18,6 +18,7 @@ import time
 from pathlib import Path
 
 from ..coherence import check_tree
+from ..etiquettes import lignes_arbres
 from ..fichiers import verrou
 from ..gedcom.mapping import read_gedcom, write_gedcom
 from .ops import Ctx, OpError, apply_ops
@@ -179,14 +180,16 @@ def targets(ctx: Ctx, operations: list[dict]) -> set[str] | None:
     return out
 
 
-def tree_diff(before: str, after: str, label: str = "arbre.ged", cibles: set[str] | None = None) -> str:
+def tree_diff(before: str, after: str, label: str = "arbre.ged", cibles: set[str] | None = None,
+              etiquettes: list[str] | None = None) -> str:
     """Diff par enregistrement de niveau 0 (contexte confiné à l'enregistrement).
 
     Avec ``cibles``, seuls sont détaillés les enregistrements visés, ceux qui contiennent un événement visé (UID)
     et ceux dont les lignes modifiées citent une cible (famille d'une personne fusionnée, citation d'une source
     visée). Les notes (NOTE, SNOTE) non visées sont seulement comptées et nommées ; les autres enregistrements
     modifiés tiennent sur une ligne ``+a/-b``.
-    Sans ``cibles``, tout est détaillé. Chaque ligne est plafonnée à MAX_DIFF_LINE_CHARS caractères."""
+    Sans ``cibles``, tout est détaillé. Chaque ligne est plafonnée à MAX_DIFF_LINE_CHARS caractères.
+    ``etiquettes`` : diff concis des étiquettes (#262), une ligne ``@@ étiquettes I12 : +Blog −ToDo @@`` par objet."""
     old, new = _records(before), _records(after)
     out = [f"--- {label} (actuel)", f"+++ {label} (proposé)"]
     notes: list[str] = []
@@ -210,6 +213,7 @@ def tree_diff(before: str, after: str, label: str = "arbre.ged", cibles: set[str
             out.append(f"@@ {xref} (hors cible, détail omis) : +{plus}/-{len(changed) - plus} @@")
     if notes:
         out.append(f"@@ {len(notes)} note(s) hors cible modifiée(s), contenu omis : {', '.join(notes)} @@")
+    out += [_cap(f"@@ {x} @@") for x in etiquettes or []]
     truncated = len(out) > MAX_DIFF_LINES
     return "\n".join(out[:MAX_DIFF_LINES]) + ("\n… (diff tronqué)" if truncated else "")
 
@@ -289,7 +293,8 @@ class Proposals:
             "message": message, "operations": operations, "resume": ctx.summary, "references": ctx.refs})
         return {
             "jeton": token, "expire_dans_minutes": TTL_SECONDS // 60, "resume": ctx.summary,
-            "references_creees": ctx.refs, "diff": tree_diff(before, after, cibles=targets(ctx, operations)),
+            "references_creees": ctx.refs, "diff": tree_diff(before, after, cibles=targets(ctx, operations),
+                                                             etiquettes=lignes_arbres(tree, ctx.tree)),
             "nouvelles_alertes_coherence": new_alerts(tree, ctx.tree), "avertissements": ctx.warnings,
             "message_de_commit": message, "consigne": CONSIGNE,
         }

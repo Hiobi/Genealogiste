@@ -26,7 +26,13 @@ Correspondance (voir docs/gramps-web.md) :
 - sources : attributs URL, Type de source, Dérivée de ; dépôt et cote en référence de dépôt ;
 - lieux : titre « Commune, Département, Pays », code INSEE, coordonnées ; paroisse en attribut d'événement ;
 - notes générées (statut de preuve, fiche de preuve, lien de source) : étiquette ``Genealogiste:auto``,
-  recalculées à chaque écriture, ignorées à la lecture ; les notes manuelles ne sont jamais réécrites.
+  recalculées à chaque écriture, ignorées à la lecture ; les notes manuelles ne sont jamais réécrites ;
+- étiquettes (#262) : ``tag_list`` (handles) <-> ``tags`` (noms) des personnes, familles, événements, citations,
+  sources, dépôts, médias et notes partagées. Écriture par-dessus l'état lu : handles et ordre conservés, étiquettes
+  gérées (``Genealogiste:auto``, « Preuve : … ») et handles sans objet Tag intacts ; étiquette inconnue créée dans la
+  même transaction (couleur par défaut de Gramps, priorité suivante) ; nom en double dans la base : la première
+  dans l'ordre de priorité est réutilisée, jamais de fusion ; un retrait ne supprime jamais l'objet Tag. Les
+  étiquettes des lieux et des notes « en ligne » restent côté Gramps (conservées tant que l'objet est inchangé).
 
 Non mappés (perdus à l'aller-retour, voir ``NON_MAPPES``) : nœuds GEDCOM non interprétés (``extra``).
 Normalisations : type de nom BIRTH -> « » (nom de naissance), filiation BIRTH -> « », lieux homonymes
@@ -45,6 +51,8 @@ from dataclasses import asdict, dataclass, field
 from .. import marqueurs
 from ..citations import INFOS, PREUVES, VU
 from ..citations import TYPES as SOURCE_TYPE_LABELS
+from ..etiquettes import geree
+from ..etiquettes import ligne as ligne_etiquettes
 from ..models import (
     FAM_EVENTS,
     INDI_EVENTS,
@@ -298,8 +306,10 @@ def _mime(path: str) -> str:
 
 
 def _cit_key(c: Citation) -> str:
+    """Contenu d'une citation pour la réutiliser ; les étiquettes n'en font pas partie (mises à jour en place)."""
     d = asdict(c)
     d.pop("extra", None)
+    d.pop("tags", None)
     return json.dumps(d, sort_keys=True, ensure_ascii=False)
 
 
@@ -414,6 +424,9 @@ class _Reader:
         self.auto_tag = next((h for h in autos if db.get("Tag", h).get("name") == AUTO_TAG), next(iter(autos), ""))
         self.info.auto_tag = self.auto_tag
         self.status_tags = {h for h, tg in db.all("Tag").items() if (tg.get("name") or "").startswith(STATUS_TAG)}
+        # étiquettes de l'utilisateur (#262) : handle -> nom ; les étiquettes gérées restent hors du modèle
+        self.tag_names = {h: tg["name"] for h, tg in db.all("Tag").items()
+                          if tg.get("name") and not geree(tg["name"])}
         self.ids: dict[tuple[str, str], str] = {}
         prefixes = {"Person": "I", "Family": "F", "Source": "S", "Repository": "R", "Media": "O"}
         for cls, pre in prefixes.items():
@@ -425,6 +438,10 @@ class _Reader:
 
     def rep(self, cls: str, h: str) -> None:
         self.info.represented.add((cls, h))
+
+    def tags(self, obj: dict) -> list[str]:
+        """Noms des étiquettes de l'utilisateur d'un objet (ordre de tag_list, sans doublon de nom)."""
+        return list(dict.fromkeys(self.tag_names[h] for h in obj.get("tag_list") or [] if h in self.tag_names))
 
     def xid(self, cls: str, h: str | None) -> str:
         return self.ids.get((cls, h or ""), "")
@@ -457,6 +474,8 @@ class _Reader:
             else:
                 key = n.get("gramps_id") or h
                 self.t.notes[key] = self.note_text(n)
+                if self.tags(n):
+                    self.t.notes_tags[key] = self.tags(n)
                 shared.append(f"@{key}@")
         return texts, shared
 
@@ -493,7 +512,7 @@ class _Reader:
             consultation=_REV_VU.get(_attr_value(c, "Consulté"), _attr_value(c, "Consulté")),
             ark=_attr_value(c, "ARK"),
             medias=[x for x in (self.xid("Media", r.get("ref")) for r in c.get("media_list") or []) if x],
-            prive=bool(c.get("private")))
+            prive=bool(c.get("private")), tags=self.tags(c))
 
     def media_ids(self, obj: dict) -> list[str]:
         """Médias liés (media_list) d'une personne, famille, source ou d'un événement : identifiants O…."""
@@ -560,7 +579,7 @@ class _Reader:
                   type_detail=detail, age=_attr_value(ref, A_AGE), cause=_attr_value(ev, A_CAUSE),
                   note=self.single_note(ev.get("note_list")), citations=self.citations(ev.get("citation_list")), uid=uid,
                   statut_manuel=_statut_read(_attr_value(ev, A_STATUT)), prive=bool(ev.get("private")),
-                  medias=self.media_ids(ev))
+                  medias=self.media_ids(ev), tags=self.tags(ev))
         named = []
         for a in _attrs(ev):
             if _atype(a) == A_ASSO:
@@ -597,7 +616,7 @@ class _Reader:
                     statut_manuel=_statut_read(st)))
             person = Person(id=pid, noms=noms, sexe=GENDER_CODES.get(p.get("gender", 2), "U"),
                             uid=_attr_value(p, A_UID) or derived_uid(h), vivant=_attr_value(p, A_VIVANT),
-                            prive=bool(p.get("private")))
+                            prive=bool(p.get("private")), tags=self.tags(p))
             self.info.handles[("PersonUID", person.uid)] = h
             for ref in p.get("event_ref_list") or []:
                 role = tname(ref.get("role"))
@@ -637,7 +656,8 @@ class _Reader:
             fam = Family(id=fid, epoux=self.xid("Person", f.get("father_handle")),
                          epouse=self.xid("Person", f.get("mother_handle")),
                          uid=_attr_value(f, A_UID) or derived_uid(h),
-                         statut_manuel=_statut_read(_attr_value(f, A_STATUT)), prive=bool(f.get("private")))
+                         statut_manuel=_statut_read(_attr_value(f, A_STATUT)), prive=bool(f.get("private")),
+                         tags=self.tags(f))
             for cr in f.get("child_ref_list") or []:
                 cid = self.xid("Person", cr.get("ref"))
                 if not cid:
@@ -684,7 +704,7 @@ class _Reader:
                 depot=self.xid("Repository", repo.get("ref")), cote=repo.get("call_number") or "",
                 url=_attr_value(s, "URL"), ark=_attr_value(s, "ARK"), type_source=_REV_TYPES.get(_attr_value(s, "Type de source"), "indeterminee"),
                 original=orig, note=self.single_note(s.get("note_list")), prive=bool(s.get("private")),
-                medias=self.media_ids(s))
+                medias=self.media_ids(s), tags=self.tags(s))
         for h, r in sorted(db.all("Repository").items(), key=lambda kv: self.xid("Repository", kv[0])):
             rid = self.xid("Repository", h)
             self.rep("Repository", h)
@@ -697,14 +717,15 @@ class _Reader:
             addr = (r.get("address_list") or [{}])[0]
             url = (r.get("urls") or [{}])[0]
             t.depots[rid] = Repository(id=rid, nom="" if name == sigle else name, sigle=sigle,
-                                       adresse=addr.get("street") or "", url=url.get("path") or "")
+                                       adresse=addr.get("street") or "", url=url.get("path") or "",
+                                       tags=self.tags(r))
         for h, m in sorted(db.all("Media").items(), key=lambda kv: self.xid("Media", kv[0])):
             mid = self.xid("Media", h)
             self.rep("Media", h)
             t.medias[mid] = Media(id=mid, fichier=_attr_value(m, A_FICHIER) or m.get("path") or "",
                                   format=m.get("mime") or "",
                                   titre=m.get("desc") or "", citations=self.citations(m.get("citation_list")),
-                                  prive=bool(m.get("private")))
+                                  prive=bool(m.get("private")), tags=self.tags(m))
         # notes partagées non référencées (enregistrements NOTE du GEDCOM)
         referenced = {nh for cls in ORDER for o in db.all(cls).values() for nh in _note_refs(o)}
         for h, n in db.all("Note").items():
@@ -712,6 +733,8 @@ class _Reader:
                 continue
             self.rep("Note", h)
             t.notes[n["gramps_id"]] = self.note_text(n)
+            if self.tags(n):
+                t.notes_tags[n["gramps_id"]] = self.tags(n)
             if n.get("private"):
                 t.notes_privees.add(n["gramps_id"])
         for key, h in [((c, n.get("gramps_id")), hh) for c in ("Note",) for hh, n in db.all(c).items()]:
@@ -813,6 +836,12 @@ class _Writer:
             nm = self.reader.place_name(self.base.all("Place")[h])
             self.place_by_name.setdefault(nm, h)
         self.tags_by_name = {tg.get("name"): h for h, tg in self.base.all("Tag").items()}
+        # étiquettes de l'utilisateur (#262) : un nom -> la première dans l'ordre de priorité (doublons jamais fusionnés)
+        self.user_tags: dict[str, str] = {}
+        for h, tg in sorted(self.base.all("Tag").items(), key=lambda kv: (kv[1].get("priority") or 0, kv[0])):
+            if tg.get("name") and not geree(tg["name"]):
+                self.user_tags.setdefault(tg["name"], h)
+        self.next_priority = max([(tg.get("priority") or 0) for tg in self.base.all("Tag").values()] or [-1]) + 1
         self.used_tags: set[str] = set()
         self.event_content: dict[str, str] = {}
         self.stats = {"personnes": 0, "familles": 0, "evenements": 0, "citations": 0, "notes": 0,
@@ -851,6 +880,43 @@ class _Writer:
                 tg.update(name=name, color=_color12(color), priority=priority)
             self.out.put(tg)
         return h
+
+    def user_tag(self, name: str) -> str:
+        """Handle de l'étiquette de l'utilisateur ``name`` : existante (couleur, priorité intactes), sinon créée dans
+        la même transaction (handle déterministe, couleur par défaut de Gramps, priorité suivante)."""
+        h = self.user_tags.get(name)
+        if h:
+            if h not in self.out.all("Tag") and self.base.get("Tag", h):
+                self.out.put(copy.deepcopy(self.base.get("Tag", h)))
+            return h
+        h = det_handle("Tag", name)
+        while self.base.get("Tag", h) or self.out.get("Tag", h):  # handle pris (autre nom) : jamais réécrit
+            h = det_handle("Tag", name, h)
+        tg = blank("Tag", h)
+        tg.update(name=name, priority=self.next_priority)
+        self.next_priority += 1
+        self.user_tags[name] = h
+        self.out.put(tg)
+        return h
+
+    def tag_list(self, base_list: list[str] | None, names: list[str]) -> list[str]:
+        """tag_list écrit par-dessus l'état lu : handles et ordre conservés, étiquettes gérées et handles sans objet
+        Tag intacts ; étiquette retirée -> handle retiré (l'objet Tag reste) ; étiquette ajoutée -> en fin de liste."""
+        base_list = list(base_list or [])
+        keep, present = [], set()
+        for h in base_list:
+            tg = self.base.get("Tag", h)
+            name = (tg or {}).get("name") or ""
+            if tg is None or not name or geree(name):
+                keep.append(h)
+            elif name in names:
+                keep.append(h)
+                present.add(name)
+        for name in names:
+            if name not in present:
+                keep.append(self.user_tag(name))
+                present.add(name)
+        return _same_list(base_list, keep)
 
     def written(self, a: dict, forme: str | None = None) -> dict:
         """Attribut (type logique) dans la forme écrite."""
@@ -911,13 +977,14 @@ class _Writer:
             if hit:
                 avail.remove(hit)
                 h = hit[0]
+                bc = self.base.get("Citation", h)
                 if h not in self.out.all("Citation"):
-                    bc = self.base.get("Citation", h)
                     self.out.put(copy.deepcopy(bc))
                     for nh in bc.get("note_list") or []:
                         if self.base.get("Note", nh) and nh not in self.out.all("Note"):
                             self.out.put(copy.deepcopy(self.base.get("Note", nh)))
                     self.stats["citations"] += 1
+                self.out.get("Citation", h)["tag_list"] = self.tag_list(bc.get("tag_list"), c.tags)
             else:
                 h = det_handle("Citation", owner, str(i), key)
                 if h not in self.out.all("Citation"):
@@ -948,6 +1015,7 @@ class _Writer:
         obj["media_list"] = [{"_class": "MediaRef", "private": False, "citation_list": [], "note_list": [],
                               "ref": self.handle("Media", mid), "attribute_list": [], "rect": None}
                              for mid in c.medias if mid in self.t.medias]
+        obj["tag_list"] = self.tag_list([], c.tags)
         return obj
 
     def plain_note(self, text: str, typ: str, key: str) -> str:
@@ -1040,6 +1108,7 @@ class _Writer:
             if self.reader.note_text(n) != self.t.notes[key] or not self.base.get("Note", h):
                 n["text"] = {"_class": "StyledText", "string": self.t.notes[key], "tags": []}
             n["private"] = key in self.t.notes_privees
+            n["tag_list"] = self.tag_list(n.get("tag_list"), self.t.notes_tags.get(key, []))
             self.out.put(n)
             self.stats["notes"] += 1
         return h
@@ -1160,7 +1229,7 @@ class _Writer:
         regen = self.regen("Event", e.uid)
         obj["note_list"] = self.single(e.note, obj.get("note_list"), "Event Note", h, self.auto("Event", e.uid),
                                        keep=not regen)
-        tags = [x for x in obj.get("tag_list") or [] if not regen or x not in self.reader.status_tags]
+        tags = [x for x in self.tag_list(obj.get("tag_list"), e.tags) if not regen or x not in self.reader.status_tags]
         st = self.gen["status"].get(e.uid)
         if st and regen:
             from ..evidence import LABELS
@@ -1265,6 +1334,7 @@ class _Writer:
             self.media_refs(obj, f.medias)
             obj["note_list"] = self.notes(f.notes, obj.get("note_list"), "Family Note", h, self.auto("Family", fid),
                                           keep=not self.regen("Family", fid))
+            obj["tag_list"] = self.tag_list(obj.get("tag_list"), f.tags)
             fams[fid] = obj
             self.stats["familles"] += 1
         # personnes : noms, références (propres, témoins), associations, notes
@@ -1345,6 +1415,7 @@ class _Writer:
                            desired)
             obj["note_list"] = self.notes(p.notes, obj.get("note_list"), "Person Note", h, self.auto("Person", pid),
                                           keep=not self.regen("Person", pid))
+            obj["tag_list"] = self.tag_list(obj.get("tag_list"), p.tags)
             out.put(obj)
             self.stats["personnes"] += 1
         for obj in fams.values():
@@ -1377,6 +1448,7 @@ class _Writer:
                 self.stats["sources_url"] += 1
             obj["note_list"] = self.single(s.note, obj.get("note_list"), "Source Note", h, auto, url=s.url,
                                            keep=not regen)
+            obj["tag_list"] = self.tag_list(obj.get("tag_list"), s.tags)
             out.put(obj)
         for rid in sorted(t.depots):
             r = t.depots[rid]
@@ -1419,6 +1491,7 @@ class _Writer:
                 else:
                     sig = [self.plain_note(f"Sigle : {r.sigle}", "Repository Note", h)]
             obj["note_list"] = _same_list(base_notes, kept + sig)
+            obj["tag_list"] = self.tag_list(obj.get("tag_list"), r.tags)
             out.put(obj)
         for mid in sorted(t.medias):
             m = t.medias[mid]
@@ -1434,6 +1507,7 @@ class _Writer:
             self.set_attrs(obj, lambda x: x == A_FICHIER, [attribute(A_FICHIER, m.fichier)] if m.fichier else [])
             obj["citation_list"] = _same_list(obj.get("citation_list") or [],
                                               self.citations(m.citations, obj.get("citation_list"), h))
+            obj["tag_list"] = self.tag_list(obj.get("tag_list"), m.tags)
             out.put(obj)
         for key in sorted(t.notes):
             self.shared_note(key)
@@ -1489,7 +1563,9 @@ def touched_keys(before: Tree, after: Tree) -> set[tuple[str, str]]:
 
 
 def proof_only(item: dict, auto_tags: set[str]) -> bool:
-    """Élément de transaction qui ne porte que sur des notes ou étiquettes de preuve générées."""
+    """Élément de transaction qui ne porte que sur des notes ou étiquettes de preuve générées. ``auto_tags`` :
+    handles des étiquettes gérées (:func:`etiquettes_gerees`) ; une étiquette de l'utilisateur posée ou retirée
+    n'est jamais « de preuve seule »."""
     cls = item["_class"]
     obj = item.get("new") or item.get("old") or {}
     if cls == "Note":
@@ -1502,7 +1578,50 @@ def proof_only(item: dict, auto_tags: set[str]) -> bool:
         return False
     old, new = _strip_change(item["old"]), _strip_change(item["new"])
     keys = {k for k in set(old) | set(new) if old.get(k) != new.get(k)}
+    if "tag_list" in keys and not set(old.get("tag_list") or []) ^ set(new.get("tag_list") or []) <= auto_tags:
+        return False  # étiquette de l'utilisateur posée ou retirée (#262) : vraie modification
     return bool(keys) and keys <= {"note_list", "tag_list"}
+
+
+def etiquettes_gerees(db: GrampsDb, items: list[dict] | None = None) -> set[str]:
+    """Handles des étiquettes gérées par Genealogiste (notes générées, statut de preuve), y compris celles créées
+    par ``items``."""
+    tags = dict(db.all("Tag"))
+    for it in items or []:
+        if it["_class"] == "Tag" and it.get("new"):
+            tags[it["handle"]] = it["new"]
+    return {h for h, tg in tags.items() if geree(tg.get("name") or "")}
+
+
+def lignes_etiquettes(db: GrampsDb, items: list[dict]) -> list[str]:
+    """Diff concis des étiquettes de l'utilisateur d'une transaction : une ligne par objet (« étiquettes I12 :
+    +Blog −ToDo »)."""
+    noms = {h: tg.get("name") or "" for h, tg in db.all("Tag").items()}
+    for it in items:
+        if it["_class"] == "Tag":
+            noms[it["handle"]] = (it.get("new") or it.get("old") or {}).get("name") or ""
+    out = []
+    for it in items:
+        if it["_class"] == "Tag":
+            continue
+        avant = [noms[h] for h in (it.get("old") or {}).get("tag_list") or [] if h in noms and not geree(noms[h])]
+        apres = [noms[h] for h in (it.get("new") or {}).get("tag_list") or [] if h in noms and not geree(noms[h])]
+        plus = list(dict.fromkeys(x for x in apres if x not in avant))
+        moins = list(dict.fromkeys(x for x in avant if x not in apres))
+        if plus or moins:
+            o = it.get("new") or it.get("old") or {}
+            out.append(ligne_etiquettes(o.get("gramps_id") or f"{it['_class']} {it['handle']}", plus, moins))
+    return out
+
+
+def etiquettes_en_double(db: GrampsDb) -> dict[str, list[str]]:
+    """Noms d'étiquettes de l'utilisateur portés par plusieurs objets Tag (l'API n'impose pas l'unicité) : nom ->
+    handles dans l'ordre de priorité (le premier est celui que Genealogiste réutilise)."""
+    par_nom: dict[str, list[str]] = {}
+    for h, tg in sorted(db.all("Tag").items(), key=lambda kv: (kv[1].get("priority") or 0, kv[0])):
+        if tg.get("name") and not geree(tg["name"]):
+            par_nom.setdefault(tg["name"], []).append(h)
+    return {n: hs for n, hs in par_nom.items() if len(hs) > 1}
 
 
 def tree_to_gramps_stats(tree: Tree, base: GrampsDb | None = None, strict: bool = False,

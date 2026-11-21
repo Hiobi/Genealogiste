@@ -234,3 +234,140 @@ def test_event_shared_by_two_people_kept_shared():
     back, _ = gramps_to_tree(db)
     assert len(back.personnes["I2"].evenements) == 1
     assert diff(db, tree_to_gramps(back, base=db, generated=False)) == []
+
+
+# ---------------------------------------------------------------------------- #262 : étiquettes de tout objet
+
+def _tag(handle: str, name: str, priority: int = 0, color: str = "#123412341234") -> dict:
+    return {"_class": "Tag", "handle": handle, "change": 0, "name": name, "color": color, "priority": priority}
+
+
+def _par_id(db, cls: str, gid: str) -> dict:
+    return next(o for o in db.all(cls).values() if o.get("gramps_id") == gid)
+
+
+def base_etiquetee(tree):
+    """Base Gramps fictive : étiquettes de l'utilisateur (dont un nom en double), gérées, handle sans objet Tag, sur
+    chaque classe modélisée (personne, famille, événement, citation, source, dépôt, média, note partagée)."""
+    from genealogiste_mcp.models import Media
+    tree.medias["O1"] = Media(id="O1", fichier="medias/acte.jpg", titre="Acte fictif")
+    tree.notes["N1"] = "Note partagée fictive"
+    db = tree_to_gramps(tree)
+    for tg in (_tag("tagblog", "Blog", 1), _tag("tagtodo", "ToDo", 2), _tag("tagblog2", "Blog", 5),
+               _tag("tagverif", "À vérifier", 3)):
+        db.put(tg)
+    auto = next(h for h, t in db.all("Tag").items() if t["name"] == SOSA_AUTO)
+    jean = _par_id(db, "Person", "I1")
+    jean["tag_list"] = ["tagtodo", "fantome", auto, "tagblog"]  # ordre, handle inconnu et étiquette gérée gardés
+    _par_id(db, "Family", "F1")["tag_list"] = ["tagblog2"]  # doublon de nom : lu sans perte
+    eh = next(r["ref"] for r in jean["event_ref_list"] if tname(db.get("Event", r["ref"])["type"]) == "Birth")
+    db.get("Event", eh)["tag_list"] = ["tagverif", *db.get("Event", eh)["tag_list"]]  # + statut de preuve
+    ch = db.get("Event", eh)["citation_list"][0]
+    db.get("Citation", ch)["tag_list"] = ["tagtodo"]
+    _par_id(db, "Source", "S1")["tag_list"] = ["tagblog"]
+    _par_id(db, "Repository", "R1")["tag_list"] = ["tagverif"]
+    _par_id(db, "Media", "O1")["tag_list"] = ["tagtodo", "tagblog"]
+    _par_id(db, "Note", "N1")["tag_list"] = ["tagtodo"]
+    return db, eh, ch
+
+
+def test_etiquettes_lues_sur_toutes_les_classes(tree):
+    db, _, _ = base_etiquetee(tree)
+    t, _ = gramps_to_tree(db)
+    assert t.personnes["I1"].tags == ["ToDo", "Blog"]  # gérée et handle inconnu hors modèle
+    assert t.familles["F1"].tags == ["Blog"]
+    naissance = t.personnes["I1"].evenements[0]
+    assert naissance.tags == ["À vérifier"] and naissance.citations[0].tags == ["ToDo"]
+    assert t.sources["S1"].tags == ["Blog"] and t.depots["R1"].tags == ["À vérifier"]
+    assert t.medias["O1"].tags == ["ToDo", "Blog"] and t.notes_tags == {"N1": ["ToDo"]}
+    assert t.personnes["I2"].tags == [] and t.sources["S2"].tags == []
+
+
+def test_etiquettes_aller_retour_sans_perte(tree):
+    """Relire puis réécrire : aucune transaction ; ordre, handles, doublon, gérée, inconnue, couleur et priorité
+    intacts."""
+    db, _, _ = base_etiquetee(tree)
+    t, _ = gramps_to_tree(db)
+    again = tree_to_gramps(t, base=db)
+    assert diff(db, again) == []
+    assert again.get("Tag", "tagblog2") == db.get("Tag", "tagblog2")
+
+
+def test_etiquettes_aller_retour_gedcom_puis_gramps(tree):
+    """Gramps -> modèle -> GEDCOM 7 (_ETIQUETTE) -> modèle -> Gramps : aucune étiquette ni tag_list modifiée (les
+    uid des noms, absents du GEDCOM, sont régénérés : hors sujet ici)."""
+    from genealogiste_mcp.gedcom.mapping import write_gedcom
+    db, _, _ = base_etiquetee(tree)
+    t, _ = gramps_to_tree(db)
+    relu = read_gedcom(write_gedcom(t))[0]
+    assert relu.personnes["I1"].tags == ["ToDo", "Blog"] and relu.notes_tags == {"N1": ["ToDo"]}
+    items = diff(db, tree_to_gramps(relu, base=db))
+    assert not [i for i in items if i["_class"] == "Tag"
+                or (i["old"] or {}).get("tag_list") != (i["new"] or {}).get("tag_list")]
+
+
+def test_etiquettes_ajout_retrait_creation(tree):
+    from genealogiste_mcp.gramps.mapping import lignes_etiquettes
+    db, eh, ch = base_etiquetee(tree)
+    t, _ = gramps_to_tree(db)
+    ctx = apply_ops(t, [
+        {"op": "modifier_personne", "id": "I1", "tags": ["Généalogie bretonne"], "tags_retrait": ["ToDo"]},
+        {"op": "etiqueter", "cible": {"type": "famille", "id": "F1"}, "tags": ["ToDo"], "tags_retrait": ["Blog"]},
+        {"op": "etiqueter", "cible": {"type": "depot", "id": "R1"}, "tags": ["Blog"]},
+        {"op": "etiqueter", "cible": {"type": "note", "id": "N1"}, "tags_retrait": ["ToDo"]},
+        {"op": "etiqueter", "cible": {"type": "citation", "porteur": {"type": "evenement",
+                                                                    "uid": t.personnes["I1"].evenements[0].uid},
+                                      "source": "S1"}, "tags": ["Blog"]},
+    ])
+    new = tree_to_gramps(ctx.tree, base=db)
+    items = diff(db, new)
+    tags_crees = [i for i in items if i["_class"] == "Tag"]
+    suivante = max(tg["priority"] for tg in db.all("Tag").values()) + 1  # priorité suivante
+    assert [(i["type"], i["new"]["name"], i["new"]["color"], i["new"]["priority"]) for i in tags_crees] == \
+        [("add", "Généalogie bretonne", "#000000000000", suivante)]  # couleur par défaut de Gramps
+    assert "gramps_id" not in tags_crees[0]["new"]
+    hn = tags_crees[0]["handle"]
+    auto = _par_id(db, "Person", "I1")["tag_list"][2]
+    assert _par_id(new, "Person", "I1")["tag_list"] == ["fantome", auto, "tagblog", hn]
+    assert _par_id(new, "Family", "F1")["tag_list"] == ["tagtodo"]  # doublon retiré : l'objet Tag reste
+    assert _par_id(new, "Repository", "R1")["tag_list"] == ["tagverif", "tagblog"]  # Blog : priorité la plus haute
+    assert _par_id(new, "Note", "N1")["tag_list"] == []
+    assert new.get("Citation", ch)["tag_list"] == ["tagtodo", "tagblog"]  # citation mise à jour en place
+    assert not [i for i in items if i["type"] == "delete"]  # aucun objet supprimé, aucune étiquette
+    assert {"tagblog", "tagtodo", "tagblog2", "tagverif"} <= set(new.all("Tag"))
+    lignes = lignes_etiquettes(db, items)
+    assert "étiquettes I1 : +Généalogie bretonne −ToDo" in lignes and "étiquettes F1 : +ToDo −Blog" in lignes
+    assert len(lignes) == 5
+
+
+def test_etiquettes_gerees_refusees_et_non_proof_only(tree):
+    from genealogiste_mcp.gramps.mapping import etiquettes_gerees, proof_only
+    from genealogiste_mcp.tree.ops import OpError
+    for nom in (SOSA_AUTO, "Sosa:auto", "genealogiste:AUTO", "Preuve : confirmé", "", " Blog", "a\nb", "x" * 101):
+        with pytest.raises(OpError):
+            apply_ops(tree, [{"op": "modifier_personne", "id": "I1", "tags": [nom]}])
+        with pytest.raises(OpError):
+            apply_ops(tree, [{"op": "etiqueter", "cible": {"type": "personne", "id": "I1"}, "tags_retrait": [nom]}])
+    db, _, _ = base_etiquetee(tree)
+    t, _ = gramps_to_tree(db)
+    ctx = apply_ops(t, [{"op": "etiqueter", "cible": {"type": "personne", "id": "I2"}, "tags": ["Blog"]}])
+    new = tree_to_gramps(ctx.tree, base=db)
+    items = diff(db, new)
+    item = next(i for i in items if i["_class"] == "Person")
+    assert not proof_only(item, etiquettes_gerees(db, items))  # vraie modification, pas « note de preuve seule »
+
+
+def test_etiquette_creee_dans_la_transaction_et_reutilisee(tree):
+    """Deux objets reçoivent la même étiquette nouvelle : un seul Tag créé ; relecture puis réécriture stables."""
+    db = tree_to_gramps(tree)
+    t, _ = gramps_to_tree(db)
+    ctx = apply_ops(t, [{"op": "etiqueter", "cible": {"type": "personne", "id": "I1"}, "tags": ["Blog", "ToDo"]},
+                        {"op": "etiqueter", "cible": {"type": "source", "id": "S1"}, "tags": ["Blog"]}])
+    new = tree_to_gramps(ctx.tree, base=db)
+    crees = [i["new"] for i in diff(db, new) if i["_class"] == "Tag"]
+    assert sorted(x["name"] for x in crees) == ["Blog", "ToDo"]
+    assert len({x["priority"] for x in crees}) == 2
+    blog = next(x["handle"] for x in crees if x["name"] == "Blog")
+    assert blog in _par_id(new, "Source", "S1")["tag_list"]
+    back, _ = gramps_to_tree(new)
+    assert diff(new, tree_to_gramps(back, base=new)) == []
