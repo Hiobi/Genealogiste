@@ -503,6 +503,9 @@ def main() -> int:
         # personne de référence appliquée par l'import (#274) : <people home> -> set_default_person_handle
         ref = db.get_default_person()
         res["personne_reference"] = ({"handle": ref.get_handle(), "gramps_id": ref.get_gramps_id()} if ref else None)
+        # groupes de noms appliqués par l'import (#276) : <namemaps> -> set_name_group_mapping ; relus par la table de
+        # la base (get_name_group_keys / get_name_group_mapping), jamais par le fichier
+        res["regroupements"] = {k: db.get_name_group_mapping(k) for k in db.get_name_group_keys()}
         res["lieux_affiches"] = lieux_affiches(db)
         # médias : chemin enregistré et fichier trouvé par Gramps (paquet .gpkg : extrait à côté de l'arbre)
         res["medias"] = [{"chemin": m.get_path(), "fichier": os.path.isfile(media_path_full(db, m.get_path()))}

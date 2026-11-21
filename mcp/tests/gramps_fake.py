@@ -12,7 +12,12 @@
   ``{"code": 403, "status": "Forbidden"}``) ;
 - ``GET /api/metadata/`` (versions, ``server.task_queue``…), ``GET /api/users/-/`` (rôle), ``GET /api/register/config/``
   (API >= 3.26.0 seulement) ; ``limite_jeton=True`` : ``/token/`` et ``/token/refresh/`` limités à 1 requête par
-  seconde (429), sur l'horloge injectable ; version d'API paramétrable, ``message=`` refusé en 422 avant 3.13.0.
+  seconde (429), sur l'horloge injectable ; version d'API paramétrable, ``message=`` refusé en 422 avant 3.13.0 ;
+- groupes de noms (#276) : ``GET /api/name-groups/`` (seuls les patronymes regroupés, par ordre de nom),
+  ``GET /api/name-groups/<patronyme>`` (le groupe, ou le patronyme lui-même sans regroupement, comme
+  ``get_name_group_mapping``), ``POST /api/name-groups/<patronyme>/<groupe>`` (droit EditNameGroup, 201) ;
+  comme Gramps, un POST n'entre PAS dans l'historique des transactions et regrouper un nom sous lui-même laisse la
+  clé listée : aucune route ne retire un regroupement.
 Défauts : compte Editor, API épinglée de docker-compose.test.yml. Données fictives uniquement.
 """
 
@@ -23,6 +28,7 @@ import copy
 import json
 import re
 import time
+from urllib.parse import unquote
 
 import httpx
 import respx
@@ -111,6 +117,7 @@ class FakeGrampsWeb:
         self.limite_jeton, self._dernier_jeton = limite_jeton, float("-inf")
         self.objects: dict[str, dict[str, dict]] = {c: {} for c in CLASSES}
         self.clock = 1_000
+        self.name_groups: dict[str, str] = {}  # table name_group de Gramps : patronyme -> groupe (#276)
         self.messages: list[str] = []
         self.transactions: list[list[dict]] = []
         self.forced = False
@@ -124,6 +131,10 @@ class FakeGrampsWeb:
         r.get(api + "/metadata/").mock(side_effect=self._metadata)
         r.get(api + "/users/-/").mock(side_effect=self._me)
         r.get(api + "/register/config/").mock(side_effect=self._register_config)
+        r.get(api + "/name-groups/").mock(side_effect=self._groupes)
+        r.get(url__regex=re.escape(api) + r"/name-groups/(?P<surname>[^/?]+)$").mock(side_effect=self._groupe)
+        r.post(url__regex=re.escape(api) + r"/name-groups/(?P<surname>[^/?]+)/(?P<group>[^/?]+)$").mock(
+            side_effect=self._poser_groupe)
         r.post(api + "/transactions/").mock(side_effect=self._transaction)
         r.put(url__regex=re.escape(api) + r"/media/(?P<handle>[^/?]+)/file(\?.*)?$").mock(side_effect=self._file)
         r.get(api + "/search/").mock(side_effect=self._search)
@@ -217,6 +228,27 @@ class FakeGrampsWeb:
             return r
         return httpx.Response(200, json={"name": self.user, "email": "", "full_name": "", "role": self.role,
                                          "tree": self.tree, "user_id": "u1"})
+
+    def _groupes(self, req):
+        if (r := self._auth(req)) is not None:
+            return r
+        return httpx.Response(200, json=[{"surname": k, "group": v} for k, v in sorted(self.name_groups.items())])
+
+    def _groupe(self, req, surname):
+        if (r := self._auth(req)) is not None:
+            return r
+        surname = unquote(surname)
+        return httpx.Response(200, json={"surname": surname, "group": self.name_groups.get(surname, surname)})
+
+    def _poser_groupe(self, req, surname, group):
+        """POST /name-groups/<patronyme>/<groupe> : ``set_name_group_mapping``, hors transaction (pas d'historique)."""
+        if (r := self._auth(req)) is not None:
+            return r
+        if (r := self._droits(req, "EditNameGroup")) is not None:
+            return r
+        surname, group = unquote(surname), unquote(group)
+        self.name_groups[surname] = group
+        return httpx.Response(201, json={"surname": surname, "group": group})
 
     def _register_config(self, req):
         """Ajouté en API 3.26.0 ; sans authentification ; route absente avant."""

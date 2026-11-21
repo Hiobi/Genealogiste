@@ -9,7 +9,9 @@ sources ou variantes ; sinon :
 
 1. Interpréter les arguments (nom, prénom, date approximative « né vers », lieu) ; demander une précision
    seulement si le nom manque. Si la personne existe dans l'arbre (`arbre_recherche`), utiliser son id
-   (`personne=`) et refuser toute recherche externe si elle est présumée vivante.
+   (`personne=`) et refuser toute recherche externe si elle est présumée vivante. En mode gramps, les résultats
+   marqués `via_groupe_noms` sont des patronymes que Gramps regroupe avec le nom cherché (classement, pas preuve
+   d'identité) ; `groupe_de_noms` de `recherche_multi` les liste sans les envoyer aux sources.
 2. `recherche_multi(nom, prenom, ne_vers, lieu)` puis, si utile, variantes (`normaliser_nom`, latin, « dit »)
    et sources ciblées.
 3. Présenter un tableau classé par score : source, identité, naissance, décès, score et raisons principales,

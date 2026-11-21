@@ -14,6 +14,7 @@ Import : **$ARGUMENTS**
   avec `pieces_proposer(dossier=<zone_attente>, suivre_medias=true)` (docs/gramps.md#import-depuis-gramps-desktop).
   Si le fichier porte une personne de référence, présenter `import.personne_reference` (identifiant, état par rapport
   à `GENEALOGISTE_SOSA_RACINE`, suggestion) : ne jamais modifier la configuration ni le `.env` soi-même.
+  Si le fichier porte des groupes de noms (`<namemaps>`), présenter `import.regroupements` : lus et rapportés, **jamais appliqués** (aucune personne n'est fusionnée) ; en mode gramps, `gramps_grouper_noms` propose les groupes d'après les patronymes de l'arbre, à poser à la main (docs/gramps-web.md, « Groupes de noms »).
 - **FamilySearch** : l’ancien exporteur est désactivé pour sécurité. Importer un GEDCOM obtenu
   séparément ; ne jamais demander d’identifiants FamilySearch.
 - **Gramps Web** (mode fichier) : `gramps_tirer(mode)` lit l'arbre Gramps Web par l'API. Pour travailler en

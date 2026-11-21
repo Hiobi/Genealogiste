@@ -25,6 +25,7 @@ import dans un arbre non vide duplique tout (pour travailler en direct sur Gramp
 Gramps 6.x seul (`1.7.2`, refusé par 5.2) ; `compresse=True` donne le `.gramps` gzip natif de Gramps Desktop.
 La racine Sosa configurée devient la personne de référence du fichier (`personne_reference` du résultat dit si
 `home` a été écrit ; jamais pour une racine masquée) : le dire à l'utilisateur.
+En mode gramps, les groupes de noms de Gramps sont écrits en `<namemaps>` (`groupes_de_noms` du résultat : nombre écrit, et en export public nombre retiré, sans nom) ; en mode fichier, aucun. Un groupe de noms ne fusionne aucune personne.
 
 **gpkg** : paquet Gramps Desktop (XML + fichiers des médias locaux, chemins relatifs). Afficher le bilan
 `medias` : médias inclus, **manquants** (introuvables ou hors des répertoires autorisés, avec le motif) et

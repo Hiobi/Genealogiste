@@ -949,6 +949,19 @@ def rapport_personne_reference(db: GrampsDb, home: str | None, racine: str = "",
     return rap
 
 
+def rapport_regroupements(paires: list[tuple[str, str]]) -> dict:
+    """Groupes de noms (``<namemaps>``, #276) du fichier, rapportés sans rien appliquer : l'arbre Genealogiste ne les
+    conserve pas (ils appartiennent à la base Gramps) et Gramps Web ne sait pas défaire leur écriture. Chiffrés aussi
+    sous ``non_repris`` (« Métadonnées.regroupements »). Ce ne sont pas des fusions de personnes."""
+    return {"nombre": len(paires),
+            "regroupements": [{"patronyme": k, "groupe": v} for k, v in paires[:100]]
+            + ([{"patronyme": f"… {len(paires) - 100} autre(s)", "groupe": ""}] if len(paires) > 100 else []),
+            "consigne": ("Regroupements de patronymes du fichier (classement par nom de Gramps), lus et rapportés, "
+                         "non appliqués : Genealogiste n'écrit pas les groupes de noms. Pour les retrouver dans "
+                         "Gramps, réimporter le fichier dans Gramps lui-même (Desktop ou Web) ou les poser à la main "
+                         "(docs/gramps-web.md, « Groupes de noms »). Aucune personne n'est fusionnée.")}
+
+
 def importer(chemin: Path, data_dir: Path, horodatage: str, racine_sosa: str = "",
              mode: str = "remplacer") -> tuple[Any, dict, Path | None]:
     """Prépare l'import d'un fichier Gramps : lecture, médias d'un paquet extraits dans la zone d'attente
@@ -995,6 +1008,8 @@ def importer(chemin: Path, data_dir: Path, horodatage: str, racine_sosa: str = "
             info["personne_reference"] = ref
             if ref.get("avertissement"):
                 info["avertissements"].append(ref["avertissement"])
+        if lecture.meta.regroupements:
+            info["regroupements"] = rapport_regroupements(lecture.meta.regroupements)
         if reattribues:
             info["identifiants_reattribues"] = reattribues[:50] + (
                 [f"… {len(reattribues) - 50} autre(s)"] if len(reattribues) > 50 else [])

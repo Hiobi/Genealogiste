@@ -103,7 +103,8 @@ complètes (double datation, nouvel an, jour sans mois, date composée à un seu
 Restent hors du fichier, comme chez Gramps : `Date.text` (sauf date texte) et `Date.sortval`, recalculés, et
 `birth_ref_index`/`death_ref_index`, que Gramps déduit de l'ordre des références d'événement (la référence
 retenue passe en tête quand Gramps ne la retrouverait pas sinon). Les sections hors objets (signets,
-`namemaps`) ont leur point d'extension (`Metadonnees`), vide tant que Genealogiste ne les gère pas.
+formats de noms) ont leur point d'extension (`Metadonnees`), vide tant que Genealogiste ne les gère pas ; les
+groupes de noms (`namemaps`) sont écrits depuis #276 (voir ci-dessous).
 
 ### Personne de référence (`<people home>`, #274)
 
@@ -116,6 +117,24 @@ cible en avait déjà une (`importxml.py`, `start_people` puis `parse` : `set_de
 même règle en 5.2, 6.0 et 6.1). Le banc `make test-gramps-desktop` (cas `reference`) relit la personne de référence
 après import par chaque version. Procédure complète, dont la voie manuelle faute d'API Gramps Web :
 `docs/gramps-web.md`, « Personne de référence et racine Sosa ».
+
+### Groupes de noms (`<namemaps>`, #276)
+
+`<namemaps><map type="group_as" key="Dupond" value="DUPONT"/></namemaps>` regroupe des patronymes sous un nom de
+groupe (classement par nom de Gramps ; **ce n'est pas une fusion de personnes**). Dernier élément de `<database>`,
+même forme en XML 1.7.1 et 1.7.2, valide au DTD et au RNG de Gramps 5.2, 6.0 et 6.1. `arbre_exporter` (formats
+`gramps` et `gpkg`) l'écrit **en mode gramps** avec les regroupements lus dans Gramps Web
+(`GET /api/name-groups/`) ; **en mode fichier, rien** : l'arbre local n'a pas de groupes et Genealogiste n'en
+invente pas. Le résultat dit ce qui a été écrit (`groupes_de_noms.ecrits`). Export public (`masquer_vivants`) :
+un regroupement n'est écrit que si son patronyme figure dans l'export et que son groupe n'est pas un patronyme
+porté seulement par des personnes masquées ; un regroupement retiré n'est jamais nommé. À l'import dans Gramps,
+chaque regroupement absent est posé, un regroupement **déjà présent** n'est jamais écrasé (avertissement de Gramps).
+À l'import dans Genealogiste, les regroupements du fichier sont rapportés (`import.regroupements`, comptés sous
+`non_repris`) sans être appliqués, et l'aller-retour XML → objets → XML les conserve. Détail, routes de l'API et
+raison pour laquelle Genealogiste n'écrit pas les groupes de noms dans Gramps Web :
+[Groupes de noms](gramps-web.md#groupes-de-noms-276). Banc Gramps Desktop : cas `groupes` (le fichier exporté,
+puis `db.get_name_group_mapping` après l'import de chaque version) et `groupes:seuls` (le document de regroupements
+seuls de `gramps_grouper_noms`, importé sans création d'objet).
 
 ### Paquet .gpkg
 
@@ -306,6 +325,13 @@ Workflow `Intégration Gramps`, un job `Gramps Desktop <version>` par version (v
     points de code), les onze noms présents (5.2 comprise), chaque lien `gramps://Classe/handle/…` vers un objet
     présent sous le même handle. `strikethrough` et `subscript`, absents du DTD et du RNG livrés, sont le seul
     écart de schéma admis pour ce cas.
+17. groupes de noms (#276) : cas `groupes`, `famille.ged` exportée avec quatre regroupements (apostrophe, espace,
+    tréma, casse) en `<namemaps>` ; après l'import par la bibliothèque, `db.get_name_group_mapping` rend chaque
+    groupe et `db.get_name_group_keys` ne liste que ces quatre clés (`controle_groupes`) ; le réexport de Gramps
+    porte les mêmes `<map>` ; dans les autres cas, aucun groupe n'est inventé. Puis `groupes:seuls`
+    (`verifier_groupes_seuls`) : le document de `gramps_grouper_noms` (en-tête et `<namemaps>` seulement) est valide
+    au DTD et au RNG de la bibliothèque, importé sans erreur ni avertissement, ne crée aucun objet et pose exactement
+    ses regroupements.
 
 Résultat du 2026-11-21 (#279) : 114 vérifications sur 114 réussies, dont les 6 du cas `notes` (import et cycle
 pour 5.2.4, 6.0.8 et 6.1.0-beta2) : dans chaque version, 32 liens internes résolus vers un objet présent sous le

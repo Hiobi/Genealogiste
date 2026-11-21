@@ -127,7 +127,8 @@ def test_version_desktop_inconnue_refusee(desktop):
 def test_cas_desktop_de_l_export_268(desktop):
     """Formes remises à Gramps : 1.7.1, 1.7.2 (refusée par 5.2 seulement), .gramps gzip, .gpkg avec média."""
     cas = {c.nom: c for c in desktop["CAS"]}
-    assert set(cas) == {"xml-1.7.1", "xml-1.7.2", "gramps-gzip", "gpkg", "dates", "types", "lieux", "notes", "reference"}
+    assert set(cas) == {"xml-1.7.1", "xml-1.7.2", "gramps-gzip", "gpkg", "dates", "types", "lieux", "notes", "reference",
+                       "groupes"}
     assert cas["xml-1.7.2"].refus_attendu == {"5.2"}
     assert all(not c.refus_attendu for n, c in cas.items() if n != "xml-1.7.2")
     assert cas["gpkg"].enrichir and cas["gpkg"].avertissements_admis
@@ -138,6 +139,28 @@ def test_cas_reference_274(desktop):
     cas = {c.nom: c for c in desktop["CAS"]}["reference"]
     assert cas.arbres == ("famille.ged",) and desktop["controle_reference"] in desktop["CONTROLES"]
     assert desktop["RACINE_REFERENCE"] == "I3"
+
+
+def test_cas_groupes_276(desktop, tmp_path):
+    """#276 : <namemaps> relus par db.get_name_group_mapping après l'import de chaque version ; sans regroupement,
+    aucun groupe n'est inventé ; le contrôle voit un écart (groupe manquant, groupe inventé)."""
+    from genealogiste_mcp.gedcom.mapping import read_gedcom
+    from genealogiste_mcp.gramps.lecture_xml import lire_xml
+
+    cas = {c.nom: c for c in desktop["CAS"]}["groupes"]
+    assert cas.arbres == ("famille.ged",) and desktop["controle_groupes"] in desktop["CONTROLES"]
+    groupes = dict(desktop["REGROUPEMENTS"])
+    assert groupes["D'Aubigny"] == "Daubigny" and "Müller" in groupes  # apostrophe et tréma : échappement XML
+    origine = read_gedcom((desktop["FIXTURES"] / "famille.ged").read_text(encoding="utf-8"))[0]
+    fichier = cas.produire(origine, tmp_path)
+    assert dict(lire_xml(fichier.read_bytes()).meta.regroupements) == groupes
+    controle = desktop["controle_groupes"]
+    assert controle(cas, "6.0", {}, {"regroupements": groupes}) == []
+    assert controle(cas, "6.0", {}, {"regroupements": {}})  # groupes absents après l'import
+    assert controle(cas, "6.0", {}, {"regroupements": {**groupes, "X": "Y"}})
+    autre = {c.nom: c for c in desktop["CAS"]}["xml-1.7.1"]
+    assert controle(autre, "6.0", {}, {"regroupements": {}}) == []
+    assert controle(autre, "6.0", {}, {"regroupements": {"X": "Y"}})  # invention
 
 
 def test_cas_notes_279(desktop):
