@@ -61,7 +61,9 @@ service ne s'applique pas à ce fonds : passer par le lien de consultation, un l
   (dernière présence), matchID (≥ 1970), transcriptions de décès (militaires, hôpitaux).
 - **Filiation fragile** : contrat de mariage, inventaire après décès, déclaration de succession, tutelles.
 - **Commune disparue ou fusionnée** : `geo_historique` (COG INSEE depuis 1943) ; avant : dictionnaire
-  « Des villages de Cassini aux communes d'aujourd'hui » (EHESS).
+  « Des villages de Cassini aux communes d'aujourd'hui » (EHESS). En mode gramps, `gramps_dater_lieux` propose
+  les noms anciens et anciens départements datés des communes de l'arbre (Gramps affiche alors le nom d'époque
+  à la date de l'événement) : diff, accord, annulable ; jamais de fusion des lieux.
 - **Mobilité** : registres matricules (domiciles successifs), recensements, publications de bans.
 
 Détails par source : [references/sources-detaillees.md](references/sources-detaillees.md).

@@ -80,6 +80,18 @@ chaîne XML anglaise. Constaté avec la bibliothèque (cas `types` du banc, 2026
   dans les trois versions : Gramps ne traduit jamais une chaîne XML à l'import. Genealogiste le lit comme le type
   standard qu'il désigne (`BAPM`, `WITN`, âge), et `non_repris` ne le compte pas comme perdu.
 
+### Lieux datés (#277)
+
+Les noms alternatifs datés et les rattachements datés posés par `gramps_dater_lieux` (mode gramps,
+[Gramps Web](gramps-web.md#noms-et-rattachements-datés-277)) s'écrivent en `<pname value="…">` avec sa date
+(`dateval type="before"`/`"after"`, `datespan`) et `<placeref hlink="…">` daté, et se relisent à l'identique. La
+règle d'affichage (`get_location_list`, `Date.match_exact`) est la même dans les sources de 5.2, 6.0 et 6.1, et
+constatée avec chaque bibliothèque (cas `lieux` du banc) : `PlaceDisplay.display_event` rend le nom d'époque à la
+date de l'événement (« Charleville, Ardennes, France » en 1950, « Charleville-Mézières, Ardennes, France » en
+1980) et l'ancien département (« Boulogne-Billancourt, Seine, France » en 1950). Le modèle de Genealogiste n'a pas
+d'objet lieu : importés depuis un fichier Gramps, ces noms et rattachements datés ne sont pas repris dans l'arbre
+et restent comptés par `non_repris` (ci-dessous).
+
 ### Contenu écrit
 
 Le XML est produit depuis les objets Gramps du module de correspondance unique (`gramps/mapping.py`) et en écrit
@@ -175,7 +187,8 @@ compteur, pas un diff : une valeur gardée sous une autre forme (hiérarchie de 
 texte stylé, ordonnances LDS, attributs utilisateur (âge, profession…), suffixe, titre et nom d'usage,
 patronymes multiples, rectangles des références de médias, notes privées, plusieurs dépôts d'une source, et
 les métadonnées (chercheur, dossier des médias, personne de référence, formats de noms, signets,
-regroupements). Leur reprise relève du lot 2 du jalon M6 (#277, #279) ; les étiquettes des autres
+regroupements). Leur reprise relève du lot 2 du jalon M6 (#279) ; les noms et rattachements datés des lieux
+restent côté Gramps (#277 : posés dans Gramps Web par `gramps_dater_lieux`, pas dans le modèle) ; les étiquettes des autres
 objets sont reprises depuis #262, et un type personnalisé qui est le libellé d'un type standard (« Baptême »,
 attribut « Âge ») est repris comme ce type depuis #273 (un attribut est compté sous son type standard). Dates d'événement (#272) : toutes les formes de Gramps sont reprises à
 l'identique ; une forme qui ne le serait pas (double datation sur un point sans année) est comptée sous
@@ -261,8 +274,17 @@ Workflow `Intégration Gramps`, un job `Gramps Desktop <version>` par version (v
     comprise) : rôles de 6.0 standard en 6.x et personnalisés en 5.2, libellés français personnalisés partout
     (`controle_types`) ; le réexport de Gramps, importé par Genealogiste, redonne `BAPM`, `CENS`, les dix rôles du
     modèle et l'âge, sans perte due à un type.
+15. lieux datés (#277) : cas `lieux`, une personne fictive avec un événement en 1950, 1980 et 2020 dans des
+    communes réelles (fusion de Charleville-Mézières, commune nouvelle de Valserhône, Boulogne-Billancourt passée
+    de la Seine aux Hauts-de-Seine, Meythet déléguée d'Annecy, plus Mézières et Rochefort), dont les noms et
+    rattachements sont datés par `dater_lieux` d'après l'extrait du COG des tests, exporté en 1.7.1. La sonde
+    relève pour chaque événement le lieu affiché par `PlaceDisplay.display_event` et le nom seul
+    (`get_location_list(...)[0][0]`) ; `controle_lieux` les compare au nom d'époque attendu (12 événements),
+    puis relit le réexport de Gramps : noms datés présents, noms de lieu relus par Genealogiste inchangés.
 
-Résultat du 2026-11-21 (#273) : 102 vérifications sur 102 réussies, dont les 6 du cas `types` (import et cycle
+Résultat du 2026-11-21 (#277) : 108 vérifications sur 108 réussies, dont les 6 du cas `lieux` (import et cycle
+pour 5.2.4, 6.0.8 et 6.1.0-beta2) : dans les trois versions, les 12 événements contrôlés affichent le nom d'époque
+attendu (`display_event` et `get_location_list`). Résultat du 2026-11-21 (#273) : 102 vérifications sur 102 réussies, dont les 6 du cas `types` (import et cycle
 pour 5.2, 6.0 et 6.1). Résultat du 2026-11-21 (#272) : 96 vérifications sur 96 réussies en local (GLib factice) pour 5.2, 6.0 et 6.1 :
 39 imports des formes de l'export (dont 3 refus attendus de 1.7.2 par Gramps 5.2, et le cas `dates` : 1 233
 dates relues sans écart non nommé par version), 36 cycles, 12 sur l'arbre fictif (lecture et cycle), 3 références
