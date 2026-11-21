@@ -635,6 +635,36 @@ def verifier_chemin_base_medias(chemin: str) -> str:
     return chemin if not sans_fin or re.fullmatch(r"[A-Za-z]:", sans_fin) else sans_fin  # « / » et « C:\ » restent
 
 
+def reduire_chemins_absolus(db: GrampsDb) -> tuple[GrampsDb, dict]:
+    """Export public : copie de la base où le chemin d'un média, absolu (``/…``, ``~``, ``C:\\…``, UNC) ou sortant
+    (``..``), est réduit à son nom de fichier, dans ``path`` (``<file src>``) et dans l'attribut de fichier
+    (Genealogiste-Fichier, Sosa-Fichier). Un chemin relatif sans « .. » et une adresse web restent tels quels.
+    Renvoie la copie et le bilan ``{nombre, medias}`` (identifiants de médias seulement : jamais un chemin)."""
+    db = db.copy()
+    reduits: list[str] = []
+
+    def sensible(c: str) -> bool:
+        return (c.startswith(("/", "~", "\\")) or bool(_ABSOLU_WINDOWS.match(c))
+                or ".." in re.split(r"[\\/]+", c))
+
+    def nom(c: str) -> str:
+        return next((x for x in reversed(re.split(r"[\\/]+", c)) if x not in ("", ".", "..")), "")
+
+    for m in sorted(db.all("Media").values(), key=lambda o: (o.get("gramps_id") or "", o["handle"])):
+        attrs = [a for a in m.get("attribute_list") or [] if tname(a.get("type")) in (A_FICHIER, "Sosa-Fichier")]
+        valeurs = [m.get("path") or "", *[a.get("value") or "" for a in attrs]]
+        if not any(v and "://" not in v and sensible(v) for v in valeurs):
+            continue
+        if m.get("path") and "://" not in m["path"] and sensible(m["path"]):
+            m["path"] = nom(m["path"])
+        for a in attrs:
+            v = a.get("value") or ""
+            if v and "://" not in v and sensible(v):
+                a["value"] = nom(v)
+        reduits.append(m.get("gramps_id") or m["handle"])
+    return db, {"nombre": len(reduits), "medias": reduits}
+
+
 def chemins_relatifs_a_la_base(db: GrampsDb, racines: Iterable[Path], base: Path) -> tuple[GrampsDb, dict]:
     """Copie de la base où le ``path`` de chaque média local, résolu par la règle commune (:func:`localiser`), est
     relatif à ``base`` (racine de l'arborescence des pièces : ce que ``<mediapath>`` désigne côté Desktop) quand le

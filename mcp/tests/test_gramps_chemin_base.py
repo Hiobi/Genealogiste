@@ -386,3 +386,60 @@ def test_diagnostic_mode_gramps_chemin_serveur_et_attribut(tmp_path, fake, tree)
     assert (b["total"], b["resolus"], b["desktop_direct"], b["introuvables"], b["nom_serveur"]) == (3, 1, 1, 1, 1)
     assert b["echantillon"] == {"introuvables": ["O2"], "nom_serveur": ["O7"]}
     assert "Titre secret" not in repr(c)
+
+
+# ---------------------------------------------------------------- export public : aucun chemin absolu de la machine
+
+def _public(vapp, tmp_path):
+    """Arbre avec un média hors racines (chemin absolu du poste), un sortant « .. » et un relatif au vault."""
+    perso = tmp_path / "home" / "jeanne" / "scans"
+    _ecrire(perso / "acte.jpg")
+    _ecrire(vapp.vault / ACTE)
+    _medias(vapp, O1=str(perso / "acte.jpg"), O2="../../jeanne/secret/x.jpg", O3=ACTE, O4=r"C:\Users\jeanne\a.jpg",
+            O5="https://archives.example/v.jpg")
+    return perso
+
+
+def test_export_public_gramps_sans_chemin_absolu(vapp, tmp_path):
+    perso = _public(vapp, tmp_path)
+    sortie = tmp_path / "pub.gramps"
+    r = server.arbre_exporter("gramps", str(sortie))
+    assert "erreur" not in r, r
+    xml = _xml(sortie)
+    for secret in (str(perso), "jeanne", str(vapp.config.data_dir), str(vapp.vault), str(Path.home())):
+        assert secret not in xml, secret
+    assert 'src="acte.jpg"' in xml and 'src="x.jpg"' in xml and 'src="a.jpg"' in xml
+    assert f'src="{ACTE}"' in xml and "https://archives.example/v.jpg" in xml  # relatif et distant inchangés
+    assert xml.count('value="acte.jpg"') == 1  # attribut de fichier réduit comme <file src>
+    assert r["chemins_absolus_reduits"] == {"nombre": 3, "medias": ["O1", "O2", "O4"]}
+
+
+def test_export_prive_garde_les_chemins(vapp, tmp_path):
+    perso = _public(vapp, tmp_path)
+    sortie = tmp_path / "priv.gramps"
+    r = server.arbre_exporter("gramps", str(sortie), masquer_vivants=False)
+    assert str(perso / "acte.jpg") in _xml(sortie) and "chemins_absolus_reduits" not in r
+
+
+def test_export_public_gpkg_sans_chemin_absolu(vapp, tmp_path):
+    perso = _public(vapp, tmp_path)
+    sortie = tmp_path / "pub.gpkg"
+    r = server.arbre_exporter("gpkg", str(sortie))
+    with tarfile.open(sortie, "r:gz") as tar:
+        xml = gzip.decompress(tar.extractfile("data.gramps").read()).decode()
+        noms = tar.getnames()
+    for secret in (str(perso), "jeanne", str(vapp.config.data_dir), str(Path.home())):
+        assert secret not in xml and all(secret not in n for n in noms), secret
+    assert 'src="acte.jpg"' in xml and r["medias"]["manquants"]
+
+
+def test_garde_fou_repertoires_personnels(vapp, tmp_path, monkeypatch):
+    """Si un chemin personnel échappait à la réduction, l'export public est refusé, rien n'est écrit."""
+    _medias(vapp, O1=str(vapp.config.data_dir / "ailleurs" / "a.jpg"))
+    monkeypatch.setattr(gramps_xml, "reduire_chemins_absolus", lambda db: (db, {"nombre": 0, "medias": []}),
+                        raising=False)
+    sortie = tmp_path / "pub.gramps"
+    r = server.arbre_exporter("gramps", str(sortie))
+    assert "répertoire" in r["erreur"] and not sortie.exists()
+    sortie2 = tmp_path / "priv.gramps"
+    assert "erreur" not in server.arbre_exporter("gramps", str(sortie2), masquer_vivants=False)

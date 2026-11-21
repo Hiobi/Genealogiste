@@ -1747,6 +1747,7 @@ def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", gene
     membres: dict = {}
     bilan_medias: dict = {}
     bilan_base: dict = {}
+    reduits: dict = {}
     if format == "gedcom7":
         content = write_gedcom(t, 7)
     elif format == "gedcom551":
@@ -1757,6 +1758,8 @@ def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", gene
         db, stats = tree_to_gramps_stats(t, None, a.config.strict_evidence, forme=a.config.marqueurs)
         if format == "gpkg":  # médias résolus par la règle commune (racines autorisées), chemins relatifs
             db, membres, bilan_medias = gramps_xml.preparer_gpkg(db, a.config.media_racines)
+        elif masquer_vivants and format == "gramps":  # export public : aucun chemin absolu de ce poste
+            db, reduits = gramps_xml.reduire_chemins_absolus(db)
         elif base_medias:  # chemins relatifs à la racine du vault, comme <mediapath> (#280)
             db, bilan_base = gramps_xml.chemins_relatifs_a_la_base(db, a.config.media_racines, a.config.pieces_root)
         handle_ref, motif_ref = gramps_xml.personne_reference(db, a.config.sosa_racine, hidden)
@@ -1779,6 +1782,11 @@ def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", gene
         content = charts.svg_descendants(t, id, generations, hidden)
     else:
         content = fiche_markdown(t, id, a.config.strict_evidence, masquer_vivants)
+    if masquer_vivants and format in ("gramps", "gpkg"):  # garde-fou : ni répertoire personnel ni de données
+        prives = [str(x) for x in (Path.home(), a.config.data_dir) if len(str(x)) > 3]
+        if any(x in content for x in prives):
+            return {"erreur": "Export public refusé : le répertoire personnel ou le répertoire de données de ce poste "
+                              "figure encore dans le fichier (chemin de média). Rien n'a été écrit."}
     reste = privacy.residues(content, rapport.get("motifs", []))
     if format in ("gramps", "gpkg"):  # prénom et patronyme en éléments distincts (<first>, <surname>) : relus à plat
         import re as _re
@@ -1818,6 +1826,8 @@ def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", gene
             res["avertissements_dates"] = dates
     if format == "gpkg":
         res["medias"] = bilan_medias
+    if reduits.get("nombre"):
+        res["chemins_absolus_reduits"] = reduits
     if base_medias:
         res["chemin_base_medias"] = {
             "ecrit": base_medias, "medias": bilan_base,
