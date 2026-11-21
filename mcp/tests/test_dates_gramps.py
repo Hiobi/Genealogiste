@@ -268,3 +268,60 @@ def test_export_1_7_1_signale_les_pieges_de_gramps_5_2():
         assert '<dateval val=""' not in date_xml(d)
     assert '<dateval val=""' not in db_to_xml(GrampsDb.from_objects([{**blank("Event", "e3", "E3"),
                                                              "date": date_to_gramps("BEF ?")}]), "1.7.1")
+
+
+# ---------------------------------------------------------------------------- bases écrites avant #272
+
+# Forme écrite par les versions précédentes : text = chaîne GEDCOM (5.5.1 ou 7), champs inchangés ; une date que
+# ces versions ne savaient pas lire (BCE) était écrite en date textuelle.
+ANCIENNES = ["12 MAR 1850", "ABT 1820", "BET 1800 AND 1810", "FROM 1800 TO 1810", "JULIAN 5 MAR 1700",
+             "@#DJULIAN@ 5 MAR 1700", "FRENCH_R 3 VEND 3", "@#DFRENCH R@ 3 VEND 3", "INT 1820 (vers Pâques)",
+             "EST 1820", "BEF 1820", "TO 1820"]
+TEXTUELLES = ["vers la Saint-Jean", "100 BCE"]
+
+
+def _base_ancienne() -> GrampsDb:
+    """Base écrite par la correspondance (deux personnes, un événement par date), dates remises sous la forme que
+    les versions précédentes écrivaient."""
+    lignes = "".join(f"1 EVEN\n2 TYPE Forme\n2 DATE 1900\n2 _UID ancienne-{k}\n"
+                     for k in range(len(ANCIENNES + TEXTUELLES)))
+    tree = read_gedcom(f"0 HEAD\n1 GEDC\n2 VERS 7.0\n0 @I1@ INDI\n1 NAME A /X/\n{lignes}"
+                       "0 @I2@ INDI\n1 NAME B /Y/\n0 TRLR\n")[0]
+    db = tree_to_gramps(tree, generated=False)
+    par_uid = {e.uid: s for e, s in zip(tree.personnes["I1"].evenements, ANCIENNES + TEXTUELLES, strict=True)}
+    for ev in db.all("Event").values():
+        uid = next(a["value"] for a in ev["attribute_list"] if a["type"].get("string") == "Genealogiste-UID")
+        s = par_uid[uid]
+        ev["date"] = ({**date_to_gramps(s), "text": s} if s in ANCIENNES  # ce que date_to_gramps écrivait avant
+                      else {**date_to_gramps(""), "modifier": 6, "text": s})
+    return db
+
+
+def test_base_ancienne_reecrite_sans_diff_parasite():
+    """Base écrite avant #272 (text rempli) : (a) aucune opération : diff vide ; (b) autre personne, ou autres champs
+    de l'événement modifiés : objet date d'origine conservé tel quel ; (c) date modifiée : nouvelle forme."""
+    db = _base_ancienne()
+    tree, _ = gramps_to_tree(db)
+    # date textuelle dont le texte se lit désormais comme une date (BCE) : entre parenthèses, toujours textuelle
+    assert [e.date for e in tree.personnes["I1"].evenements] == ANCIENNES + ["vers la Saint-Jean", "(100 BCE)"]
+    assert diff(db, tree_to_gramps(tree, base=db, generated=False)) == []  # (a)
+    tree.personnes["I2"].sexe = "F"  # (b) proposition sans rapport : aucun événement dans la transaction
+    items = diff(db, tree_to_gramps(tree, base=db, generated=False))
+    assert items and not [x for x in items if x["_class"] == "Event"]
+    for e in tree.personnes["I1"].evenements:  # (b) autres champs de chaque événement
+        e.valeur, e.tags, e.cause = "modifié", ["À vérifier"], "cause fictive"
+    items = [x for x in diff(db, tree_to_gramps(tree, base=db, generated=False)) if x["_class"] == "Event"]
+    assert len(items) == len(ANCIENNES + TEXTUELLES)
+    assert all(x["new"]["date"] == x["old"]["date"] for x in items)
+    tree.personnes["I1"].evenements[0].date = "13 MAR 1850"  # (c)
+    new = tree_to_gramps(tree, base=db, generated=False)
+    d = next(o["date"] for o in new.all("Event").values() if o["date"]["dateval"][:3] == [13, 3, 1850])
+    assert d["dateval"] == [13, 3, 1850, False] and d["text"] == ""
+
+
+@pytest.mark.parametrize("s", [*ANCIENNES, *TEXTUELLES, "1850 (texte)"])
+def test_fichier_gramps_fichier_chaine_identique(s):
+    """Backend fichier : arbre.ged -> Gramps (sans état lu) -> relu : chaîne du modèle identique."""
+    tree = read_gedcom(f"0 HEAD\n1 GEDC\n2 VERS 7.0\n0 @I1@ INDI\n1 NAME A /X/\n1 BIRT\n2 DATE {s}\n0 TRLR\n")[0]
+    relu, _ = gramps_to_tree(tree_to_gramps(tree, generated=False))
+    assert relu.personnes["I1"].evenements[0].date == s
