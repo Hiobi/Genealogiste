@@ -1049,6 +1049,9 @@ class _Writer:
         # saisies dans l'interface réécrites telles quelles tant qu'elles ne changent pas)
         self.assos_base = {(o.id, e.uid): [a.to_dict() for a in e.associations]
                            for o in [*base_tree.personnes.values(), *base_tree.familles.values()] for e in o.evenements}
+        # #315 : modèle lu de chaque personne (personref saisies dans l'interface réécrites telles quelles, événement
+        # retenu conservé tant que la personne ne change pas)
+        self.personnes_base = {pid: p.to_dict() for pid, p in base_tree.personnes.items()}
         self.sources_base = base_tree.sources  # billets et tâches créés ou modifiés (#261, #263)
         self.reader = _Reader(self.base, taches)  # lecture unitaire (comparaisons « même contenu »)
         self.reader._assos = {}
@@ -1166,8 +1169,10 @@ class _Writer:
             if not owned(typ) or (typ in doubles and marqueurs.forme_de(tname(a.get("type"))) == marqueurs.SOSA):
                 keep.append(a)
                 continue
+            # citations comparées seulement là où le modèle les porte (intervenants) ; ailleurs, celles posées dans
+            # Gramps (et confidentialité, notes) restent tant que la valeur ne change pas (#315)
             same = next((d for d in pending if tname(d.get("type")) == typ and d.get("value") == a.get("value")
-                         and d.get("citation_list", []) == a.get("citation_list", [])), None)
+                         and (typ != A_ASSO or d.get("citation_list", []) == a.get("citation_list", []))), None)
             if same is not None:
                 pending.remove(same)
                 keep.append(a)
@@ -1652,16 +1657,18 @@ class _Writer:
         self.stats["evenements"] += 1
         return h
 
-    def ref_with(self, base_refs: list[dict], handle: str, role: str, attrs: list[dict] | None, cits: list[str],
-                 prev: dict | None | bool = False) -> dict:
+    def ref_with(self, base_refs: list[dict], handle: str, role: str, attrs: list[dict] | None,
+                 cits: list[str] | None, prev: dict | None | bool = False) -> dict:
         """Référence d'événement par-dessus celle de la base : ``prev`` donnée (ou None : nouvelle), sinon cherchée
         par rôle (libellés reconnus : « Principal » = Primary, #273) ; rôle de la base conservé. ``attrs`` None :
-        attributs de la base gardés tels quels."""
+        attributs de la base gardés tels quels ; ``cits`` None : citations de la référence gardées telles quelles
+        (référence propre d'une personne ou d'une famille : le modèle ne les porte pas, #315)."""
         if prev is False:
             prev = next((r for r in base_refs if r.get("ref") == handle and tcanon(r.get("role")) == role), None)
         ref = copy.deepcopy(prev) if prev else event_ref(handle, role)
         if attrs is None:
-            ref["citation_list"] = _same_list(ref.get("citation_list") or [], cits)
+            if cits is not None:
+                ref["citation_list"] = _same_list(ref.get("citation_list") or [], cits)
             return ref
         owned = {A_AGE, A_ASSO}
         keep = [a for a in ref.get("attribute_list") or [] if _atype(a) not in owned]
@@ -1670,7 +1677,8 @@ class _Writer:
         if [(_atype(a), a["value"]) for a in old_owned] == [(_atype(a), a["value"]) for a in new_owned]:
             new_owned = old_owned
         ref["attribute_list"] = keep + new_owned
-        ref["citation_list"] = _same_list(ref.get("citation_list") or [], cits)
+        if cits is not None:
+            ref["citation_list"] = _same_list(ref.get("citation_list") or [], cits)
         return ref
 
     # ------------------------------------------------------------------ construction
@@ -1695,7 +1703,7 @@ class _Writer:
             for e in p.evenements:
                 eh = self.event(e, pid, "Person")
                 age = [attribute(A_AGE, e.age)] if e.age else []
-                refs.append(self.ref_with(base_refs, eh, "Primary", age, []))
+                refs.append(self.ref_with(base_refs, eh, "Primary", age, None))
             own_refs[pid] = refs
             people[pid] = obj
         fams: dict[str, dict] = {}
@@ -1710,7 +1718,8 @@ class _Writer:
             refs = []
             for e in f.evenements:
                 eh = self.event(e, fid, "Family")
-                refs.append(self.ref_with(base_refs, eh, "Family", [], []))
+                age = [attribute(A_AGE, e.age)] if e.age else []  # #315 : l'âge est lu aussi sur une famille
+                refs.append(self.ref_with(base_refs, eh, "Family", age, None))
             carried = [r for r in base_refs if ("Event", r.get("ref")) not in self.info.represented]
             obj["event_ref_list"] = _same_list(base_refs, refs + carried)
             if not base.get("Family", h):
@@ -1804,8 +1813,12 @@ class _Writer:
             carried = [r for r in base_refs if ("Event", r.get("ref")) not in self.info.represented]
             refs = own_refs[pid] + witness_refs.get(pid, []) + carried
             obj["event_ref_list"] = _same_list(base_refs, refs)
-            obj["birth_ref_index"] = self.ref_index(p, obj["event_ref_list"], "BIRT")
-            obj["death_ref_index"] = self.ref_index(p, obj["event_ref_list"], "DEAT")
+            # #315 : événement retenu dans Gramps conservé pour une personne inchangée dont les notes de preuve ne sont
+            # pas recalculées (sinon : naissance / décès le mieux prouvé, ou le premier)
+            garde = base_obj if base_obj is not None and not self.regen("Person", pid) \
+                and self.personnes_base.get(pid) == p.to_dict() else None
+            for cle, typ in (("birth_ref_index", "BIRT"), ("death_ref_index", "DEAT")):
+                obj[cle] = self.ref_index(p, obj["event_ref_list"], typ, garde, cle)
             obj["family_list"] = _same_list(obj.get("family_list") or [],
                                             [self.handle("Family", f) for f in p.fams if f in t.familles])
             obj["parent_family_list"] = _same_list(obj.get("parent_family_list") or [],
@@ -1817,17 +1830,37 @@ class _Writer:
             base_attr = {a.get("value"): a for a in _attrs(obj) if _atype(a) == A_ASSO}
             desired, prefs = [], []
             base_prefs = obj.get("person_ref_list") or []
+            # #315 : personref saisie dans l'interface (sans attribut structuré), relue comme cette association, chez
+            # une personne aux associations inchangées : gardée telle quelle, sans attribut ajouté
+            lues = (self.personnes_base.get(pid) or {}).get("associations")
+            inchangees = base_obj is not None and lues == [a.to_dict() for a in p.associations]
+            lies = {asso_parse(v)[4] for v in base_attr}
+            utilisees: set[int] = set()
             for rang, a in enumerate(p.associations, 1):
                 val = asso_value(rang, a, with_ref=bool(a.personne))
                 prev = base_attr.get(val)
-                cits = self.citations(a.citations, (prev or {}).get("citation_list"), f"{h}:passo:{rang}")
+                rh = self.handle("Person", a.personne) if a.personne in t.personnes else ""
+                plain = None
+                if inchangees and prev is None and rh and a.personne not in lies:
+                    plain = next((x for x in base_prefs if x.get("ref") == rh and id(x) not in utilisees
+                                  and role_guess(x.get("rel") or "") == (a.role, a.detail)), None)
+                if plain is not None:
+                    utilisees.add(id(plain))
+                    pr = copy.deepcopy(plain)
+                    pr["citation_list"] = _same_list(pr.get("citation_list") or [], self.citations(
+                        a.citations, plain.get("citation_list"), f"{h}:passo:{rang}"))
+                    prefs.append(pr)
+                    self.stats["associations"] += 1
+                    continue
+                rel = a.detail or ROLE_LABELS.get(a.role, a.role)
+                base_pr = next((x for x in base_prefs if rh and x.get("ref") == rh and x.get("rel") == rel), None)
+                # citations reprises de l'attribut, sinon de la personref de la base (jamais recréées, #315)
+                cits = self.citations(a.citations, (prev or base_pr or {}).get("citation_list"), f"{h}:passo:{rang}")
                 desired.append(attribute(A_ASSO, val, cits))
-                if a.personne in t.personnes:
-                    rh = self.handle("Person", a.personne)
-                    rel = a.detail or ROLE_LABELS.get(a.role, a.role)
-                    pr = next((copy.deepcopy(x) for x in base_prefs if x.get("ref") == rh and x.get("rel") == rel),
-                              None) or {"_class": "PersonRef", "private": False, "citation_list": [],
-                                        "note_list": [], "ref": rh, "rel": rel}
+                if rh:
+                    pr = copy.deepcopy(base_pr) if base_pr else {
+                        "_class": "PersonRef", "private": False, "citation_list": [], "note_list": [], "ref": rh,
+                        "rel": rel}
                     pr["citation_list"] = cits
                     prefs.append(pr)
                     self.stats["associations"] += 1
@@ -1949,7 +1982,10 @@ class _Writer:
             elif m.format != (base.get("mime") or ""):  # fichier reçu : chemin et somme du serveur conservés (#193)
                 obj["mime"] = m.format or _mime(m.fichier)  # (nouveau contenu : renvoyé après la transaction)
             obj["desc"] = m.titre
-            self.set_attrs(obj, lambda x: x == A_FICHIER, [attribute(A_FICHIER, m.fichier)] if m.fichier else [])
+            # #315 : chemin local en attribut seulement s'il n'est pas déjà celui de Gramps (média créé ou déplacé
+            # par Genealogiste) ; un média de l'interface relu tel quel ne reçoit rien
+            fichier = m.fichier and (base is None or _attr(base, A_FICHIER) or m.fichier != (base.get("path") or ""))
+            self.set_attrs(obj, lambda x: x == A_FICHIER, [attribute(A_FICHIER, m.fichier)] if fichier else [])
             obj["citation_list"] = _same_list(obj.get("citation_list") or [],
                                               self.citations(m.citations, obj.get("citation_list"), h))
             obj["tag_list"] = self.tag_list(obj.get("tag_list"), m.tags)
@@ -1959,7 +1995,14 @@ class _Writer:
         self.resolve_links()
         return out
 
-    def ref_index(self, p: Person, refs: list[dict], typ: str) -> int:
+    def ref_index(self, p: Person, refs: list[dict], typ: str, garde: dict | None = None, cle: str = "") -> int:
+        if garde is not None:  # référence retenue de la base, retrouvée à l'identique dans la liste écrite
+            avant = garde.get("event_ref_list") or []
+            i = garde.get(cle, -1)
+            if i == -1:
+                return -1
+            if 0 <= i < len(avant) and avant[i] in refs:
+                return refs.index(avant[i])
         uid = self.gen["best"].get((p.id, typ)) or next((e.uid for e in p.evenements if e.type == typ), None)
         want = self.ev_handle.get((p.id, uid)) if uid else None
         return next((i for i, r in enumerate(refs) if want and r.get("ref") == want

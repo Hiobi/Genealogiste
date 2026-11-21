@@ -1466,3 +1466,90 @@ def test_formats_de_nom_chercheur_et_signets_import_export_sur_vrai_gramps_web(c
         server.set_app(None)
         for h in client.signets("people"):
             client.signet_retirer("people", h)
+
+
+def test_reecriture_neutre_et_proposition_sur_un_autre_objet_sur_vrai_gramps_web(client, loaded, tmp_path):
+    """#315 : objets créés comme l'interface (POST au format simplifié, fichier envoyé par POST /media/) couvrant
+    chaque cas corrigé — personref citée sans attribut Genealogiste-Association, citation d'une référence
+    d'événement, Age cité d'une référence familiale, attribut Cause cité et privé, média sans
+    Genealogiste-Fichier — relus puis réécrits sans diff ; une proposition sur un autre objet ne les met pas dans la
+    transaction, et après accord ils sont intacts côté serveur."""
+    import io
+
+    from PIL import Image
+
+    from genealogiste_mcp.gramps.mapping import etiquettes_gerees, proof_only
+    from genealogiste_mcp.gramps.types import blank
+
+    def ref(h, role, attrs=(), cits=()):
+        return {**blank_ref(), "ref": h, "role": role, "attribute_list": list(attrs), "citation_list": list(cits)}
+
+    def attr(typ, val, cits=(), prive=False):
+        return {"_class": "Attribute", "private": prive, "type": typ, "value": val, "citation_list": list(cits),
+                "note_list": []}
+
+    src = blank("Source", "neutre315src", "S3150")
+    src.update(title="Registre fictif #315")
+    cits = []
+    for i in range(1, 5):
+        c = blank("Citation", f"neutre315cit{i}", f"C315{i}")
+        c.update(source_handle="neutre315src", page=f"f° {i} (fictif)")
+        cits.append(c)
+    naiss = blank("Event", "neutre315naiss", "E3151")
+    naiss.update(type="Birth", attribute_list=[attr("Cause", "Cause fictive", ["neutre315cit4"], True)])
+    mariage = blank("Event", "neutre315mar", "E3152")
+    mariage.update(type="Marriage")
+    filleul = blank("Person", "neutre315filleul", "I3151")
+    filleul["primary_name"]["first_name"] = "Filleul"
+    filleul.update(gender=1, birth_ref_index=0, family_list=["neutre315fam"],
+                   event_ref_list=[ref("neutre315naiss", "Primary", cits=["neutre315cit2"])],
+                   person_ref_list=[{"_class": "PersonRef", "private": False, "ref": "neutre315parrain",
+                                     "rel": "Godfather", "citation_list": ["neutre315cit1"], "note_list": []}])
+    parrain = blank("Person", "neutre315parrain", "I3152")
+    parrain["primary_name"]["first_name"] = "Parrain"
+    parrain["gender"] = 1
+    autre = blank("Person", "neutre315autre", "I3153")
+    autre["primary_name"]["first_name"] = "Sans rapport"
+    autre["gender"] = 1
+    fam = blank("Family", "neutre315fam", "F3151")
+    fam.update(father_handle="neutre315filleul", type="Married",
+               event_ref_list=[ref("neutre315mar", "Family", [attr("Age", "23", ["neutre315cit3"])])])
+    for chemin, o in (("sources", src), *(("citations", c) for c in cits), ("events", naiss), ("events", mariage),
+                      ("people", parrain), ("people", autre), ("people", filleul), ("families", fam)):
+        rep = client.request("POST", f"/{chemin}/", json=o)
+        assert rep.status_code in (200, 201), rep.text
+    buf = io.BytesIO()
+    Image.new("L", (40, 30), 99).save(buf, "JPEG")
+    rep = client.request("POST", "/media/", content=buf.getvalue(), headers={"Content-Type": "image/jpeg"})
+    assert rep.status_code in (200, 201), rep.text
+    media = next(x["handle"] for x in rep.json() if x["_class"] == "Media")
+    nouveaux = {"neutre315src", *(c["handle"] for c in cits), "neutre315naiss", "neutre315mar", "neutre315filleul",
+                "neutre315parrain", "neutre315fam", media}
+
+    db = client.load_all()
+    assert not db.get("Media", media)["attribute_list"] and db.get("Media", media)["checksum"]
+    t, _ = gramps_to_tree(db)
+    assert t.familles["F3151"].evenements[0].age == "23"
+    assert [(a.personne, len(a.citations)) for a in t.personnes["I3151"].associations] == [("I3152", 1)]
+    for options in ({"generated": False}, {"generated": True, "only": set()}, {"generated": True}):
+        items = diff(db, tree_to_gramps(t, base=db, **options))
+        gerees = etiquettes_gerees(db, items)
+        assert [(x["_class"], x["handle"]) for x in items if x["handle"] in nouveaux and not proof_only(x, gerees)
+                ] == [], options
+
+    avant = {h: {k: v for k, v in o.items() if k != "change"} for cls in db.objects
+             for h, o in db.all(cls).items() if h in nouveaux}
+    for mode in ("modifies", "true"):
+        b = GrampsBackend(client, tmp_path, tmp_path / f".propositions-{mode}", ttl=0, notes_auto=mode)
+        sexe = "F" if b.load(fresh=True).personnes["I3153"].sexe == "M" else "M"
+        p = b.propose([{"op": "modifier_personne", "id": "I3153", "sexe": sexe}], "Sexe", "Correction fictive.")
+        items = b.tokens.peek(p["jeton"])["items"]
+        gerees = etiquettes_gerees(b.db, items)
+        assert [(x["_class"], x["handle"]) for x in items if x["handle"] in nouveaux and not proof_only(x, gerees)
+                ] == [], mode
+        b.apply(p["jeton"])
+    apres = client.load_all()
+    for h, o in avant.items():
+        a = next(x for cls in apres.objects for k, x in apres.all(cls).items() if k == h)
+        assert {k: v for k, v in a.items() if k not in ("change", "note_list", "tag_list")} == \
+            {k: v for k, v in o.items() if k not in ("note_list", "tag_list")}, h

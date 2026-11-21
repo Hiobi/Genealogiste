@@ -410,10 +410,11 @@ def _empreintes(fixtures, monkeypatch) -> dict:
 def test_option_desactivee_sortie_identique_a_main(fixtures, monkeypatch):
     """Empreintes relevées sur origin/main (a52885c, avant #279) avec le même tirage d'uid : l'option désactivée
     (défaut) ne change aucun objet, octet pour octet. À mettre à jour seulement si une évolution volontaire de la
-    correspondance change ces sorties."""
+    correspondance change ces sorties (#315 : « riche » réécrit par-dessus lui-même garde désormais citations de
+    références, personref, attributs cités et événement retenu ; les autres empreintes sont inchangées)."""
     assert _empreintes(fixtures, monkeypatch) == {
         "famille.ged": "8372ea8833f3c9c9", "legacy551.ged": "a8dbbf120e7fb1b5",
-        "geneweb7_gwb2ged.ged": "865c4c3928ab0b3b", "riche": "182a82642e90f4ae", "incremental": "acafe90ba6787dd1"}
+        "geneweb7_gwb2ged.ged": "865c4c3928ab0b3b", "riche": "67e04182a6743bca", "incremental": "acafe90ba6787dd1"}
 
 
 # ============================================================================ liens internes (option activée)
