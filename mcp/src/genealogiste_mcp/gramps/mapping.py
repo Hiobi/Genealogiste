@@ -1010,6 +1010,7 @@ class _Writer:
         self.cit_evt: dict[str, list[str]] = {}  # handle d'événement -> citations dans l'ordre du modèle
         self.avis: list[str] = []  # mises en forme retirées ou refusées (jamais de perte silencieuse)
         self.styled: list[str] = []  # notes mises en forme depuis du Markdown (liens internes à vérifier)
+        self.partagees: set[str] | None = None  # handles des notes partagées du modèle (calculés une fois)
         self.t = tree
         self.base = base or GrampsDb()
         self.strict = strict
@@ -1293,8 +1294,9 @@ class _Writer:
                 avail.remove(hit)
                 hits[i] = hit[0]
         out = list(privees)
-        partagees = {self.handle("Note", k) for k in self.t.notes}
-        libres = [h for h, _ in avail if h not in partagees]  # notes en ligne à réécrire (jamais une note partagée)
+        if self.partagees is None:
+            self.partagees = {self.handle("Note", k) for k in self.t.notes}
+        libres = [h for h, _ in avail if h not in self.partagees]  # notes en ligne à réécrire, jamais une partagée
         for i, text in enumerate(texts):
             if text.startswith("@") and text.endswith("@") and len(text) > 2:
                 key = text.strip("@")
