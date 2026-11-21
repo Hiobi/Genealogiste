@@ -353,7 +353,13 @@ def _controle_medias_chemins(a, nom: str) -> dict:
     from .chemins import CAUSES_MEDIAS, bilan_chemins_medias
 
     try:
-        entrees = [(i, m.fichier) for i, m in sorted(a.tree().medias.items())]
+        if a.config.backend == "gramps":  # lecture ciblée des seuls médias : l'arbre entier n'est pas chargé
+            from .gramps.mapping import A_FICHIER, _attr_value
+            medias = a.gramps().list("Media", keys="gramps_id,path,attribute_list")
+            entrees = sorted((m.get("gramps_id") or "?", _attr_value(m, A_FICHIER) or m.get("path") or "")
+                             for m in medias)
+        else:
+            entrees = [(i, m.fichier) for i, m in sorted(a.tree().medias.items())]
         b = bilan_chemins_medias(entrees, a.config.media_racines, a.config.pieces_root)
     except Exception as exc:  # noqa: BLE001
         return _ctl(nom, "attention", f"chemins des médias non vérifiés : {_motif(exc)}",

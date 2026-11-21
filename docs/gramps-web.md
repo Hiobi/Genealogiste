@@ -915,6 +915,12 @@ le workflow.
   (#193). Après accord, la transaction crée l'objet, puis chaque fichier est envoyé par
   `PUT /api/media/{handle}/file` (`If-Match` = somme MD5 lue) ; le serveur attribue chemin et somme.
 - Le chemin local est gardé dans l'attribut `Genealogiste-Fichier` (`Sosa-Fichier` dans une base non migrée) : le chemin du serveur n'est jamais réécrit.
+- Chemin et Gramps Web (#280) : à l'envoi d'un contenu nouveau (`PUT /media/{handle}/file`), le serveur range le fichier
+  à plat sous `<somme MD5><extension>` dans son propre dossier de médias et **remplace** `path` (et somme, type) ; le
+  chemin relatif d'origine n'existe plus que dans `Genealogiste-Fichier`. Un média sans fichier garde le `path` écrit, sans
+  somme. Aucune route n'expose le dossier de base du serveur. Conséquence pour Gramps Desktop (chemin de base = racine du
+  vault, procédure, addon de synchronisation non éprouvé) : [docs/gramps.md](gramps.md#chemin-de-base-des-médias-280). Le
+  contrôle `gramps_medias_chemins` du diagnostic compte les médias dont le chemin ne se résout pas.
 - `modifier_media` (`arbre_proposer`) change le fichier, le titre ou le format d'un média : le chemin et la
   somme du serveur sont conservés, `Genealogiste-Fichier` est réécrit, et un nouveau contenu (MD5 différent) est envoyé
   après la transaction (`fichiers_a_envoyer`) ; un simple déplacement n'envoie rien.

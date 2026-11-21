@@ -359,6 +359,7 @@ def test_diagnostic_mode_gramps_chemin_serveur_et_attribut(tmp_path, fake, tree)
     a.config = Config(**{**a.config.__dict__, "media_dir_conf": vault / "documents", "notes_dir": vault})
     try:
         res = server.diagnostic()
+        assert a.backend.db is None  # lecture ciblée des médias : l'arbre entier n'est pas chargé
     finally:
         server.set_app(None)
     c = _ctl(res, "gramps_medias_chemins")
