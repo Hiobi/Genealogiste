@@ -355,3 +355,95 @@ def test_controle_lecture_et_ecarts_admis(desktop, tmp_path):
     assert not list(ecarts({"checksum": ""}, {"checksum": "abc"}, "x", True))
     assert list(ecarts({"checksum": "abd"}, {"checksum": "abc"}, "x", True))
     assert list(ecarts({"a": 1}, {"a": 1, "b": 2}, "x"))  # clé en trop : écart (comparaison dans les deux sens)
+
+
+# --- téléchargement de l'arbre d'exemple : erreurs passagères (503 « Backend.max_conn reached » de GitHub) -----
+
+class _Reponse:
+    def __init__(self, brut: bytes):
+        self.brut = brut
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def read(self) -> bytes:
+        return self.brut
+
+
+def _ouvreur(suite: list):
+    """Ouvreur factice : chaque appel consomme l'élément suivant (exception levée, ou contenu renvoyé)."""
+    appels = []
+
+    def ouvrir(url, timeout=None):
+        appels.append(url)
+        x = suite.pop(0)
+        if isinstance(x, BaseException):
+            raise x
+        return _Reponse(x)
+    return ouvrir, appels
+
+
+def _http(code: int):
+    import urllib.error
+    return urllib.error.HTTPError("https://exemple.invalid/x", code, "Backend.max_conn reached", {}, None)
+
+
+def test_telechargement_reessaie_les_erreurs_passageres(desktop):
+    import urllib.error
+    ouvrir, appels = _ouvreur([_http(503), urllib.error.URLError("réseau"), b"contenu"])
+    pauses = []
+    assert desktop["telecharger"]("https://exemple.invalid/x", ouvrir, pauses.append) == b"contenu"
+    assert len(appels) == 3 and pauses == list(desktop["PAUSES_TELECHARGEMENT"][:2])
+
+
+def test_telechargement_echoue_aussitot_sur_erreur_definitive(desktop):
+    import urllib.error
+    ouvrir, appels = _ouvreur([_http(404), b"jamais"])
+    pauses = []
+    with pytest.raises(urllib.error.HTTPError):
+        desktop["telecharger"]("https://exemple.invalid/x", ouvrir, pauses.append)
+    assert len(appels) == 1 and pauses == []
+
+
+def test_telechargement_abandonne_apres_les_tentatives(desktop):
+    import urllib.error
+    n = desktop["TENTATIVES_TELECHARGEMENT"]
+    ouvrir, appels = _ouvreur([_http(503) for _ in range(n)])
+    pauses = []
+    with pytest.raises(urllib.error.HTTPError):
+        desktop["telecharger"]("https://exemple.invalid/x", ouvrir, pauses.append)
+    assert len(appels) == n and len(pauses) == n - 1
+
+
+def test_arbre_exemple_en_cache_sans_reseau(desktop, tmp_path):
+    """Fichiers déjà présents et conformes à l'empreinte : aucun téléchargement ; empreinte fausse : refus."""
+    import hashlib
+    exemple = desktop["EXEMPLE"]
+    dossier = tmp_path / "exemple" / exemple["commit"]
+    dossier.mkdir(parents=True)
+    for rel in exemple["fichiers"]:
+        (dossier / Path(rel).name).write_bytes(b"x")
+    fictif = {rel: hashlib.sha256(b"x").hexdigest() for rel in exemple["fichiers"]}
+    ouvrir, appels = _ouvreur([])
+    arbre_exemple = desktop["arbre_exemple"]
+    arbre_exemple.__globals__["EXEMPLE"] = {**exemple, "fichiers": fictif}
+    try:
+        assert set(arbre_exemple(tmp_path, ouvrir, lambda s: None)) == {Path(r).name for r in fictif}
+        assert appels == []
+        (dossier / Path(next(iter(fictif))).name).write_bytes(b"tronque")
+        ouvrir, appels = _ouvreur([b"autre"])
+        with pytest.raises(SystemExit, match="empreinte inattendue"):
+            arbre_exemple(tmp_path, ouvrir, lambda s: None)
+        assert len(appels) == 1
+    finally:
+        arbre_exemple.__globals__["EXEMPLE"] = exemple
+
+
+def test_cache_ci_de_l_arbre_exemple_suit_le_commit_epingle(desktop):
+    """La clé du cache CI porte le commit épinglé : changer d'arbre d'exemple invalide le cache."""
+    workflow = (ROOT / ".github/workflows/gramps.yml").read_text(encoding="utf-8")
+    assert "key: gramps-exemple-${{ runner.os }}-" + desktop["EXEMPLE"]["commit"][:8] + "\n" in workflow
+    assert "path: ~/.cache/genealogiste/gramps-desktop/exemple" in workflow

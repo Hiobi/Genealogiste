@@ -136,5 +136,12 @@ jobs:
           sudo apt-get install -y -q --no-install-recommends python3-gi gir1.2-glib-2.0 gir1.2-gtk-3.0
       - name: Installer les dépendances verrouillées
         run: uv --directory mcp sync --locked
+      # Arbres d'exemple de Gramps (épinglés par commit et SHA-256 dans scripts/verifier_gramps_desktop.py) :
+      # conservés entre exécutions pour ne pas dépendre de raw.githubusercontent.com à chaque job (503 passagers).
+      - name: Cache des arbres d'exemple de Gramps
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/genealogiste/gramps-desktop/exemple
+          key: gramps-exemple-${{ runner.os }}-2153e4fa
       - name: Relire l'export Gramps XML avec la bibliothèque Gramps
         run: make test-gramps-desktop GRAMPS_DESKTOP="$GRAMPS_DESKTOP" GI=systeme PYTHON=/usr/bin/python3
