@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import gzip
 import io
+import os
 import re
 import shutil
 import tarfile
@@ -962,8 +963,33 @@ def rapport_regroupements(paires: list[tuple[str, str]]) -> dict:
                          "(docs/gramps-web.md, « Groupes de noms »). Aucune personne n'est fusionnée.")}
 
 
+def rapport_mediapath(mediapath: str | None, base: Path | None = None) -> dict | None:
+    """``<mediapath>`` du fichier (#280), rapporté sans rien en faire : chemin d'une autre machine, donnée non fiable
+    de fichier tiers. Il n'est jamais joint à un chemin de média, jamais lu, jamais écrit dans la configuration. Seule
+    une comparaison de texte avec la racine du vault (``base``) dit s'il désigne le même dossier."""
+    if not mediapath or not mediapath.strip():
+        return None
+    valeur = "".join(c for c in mediapath if c.isprintable())[:300]
+    rap: dict = {"valeur": valeur,
+                 "usage": "rapporté seulement : jamais utilisé pour lire un fichier ni pour régler la configuration"}
+    if base is not None:
+        norm = lambda x: os.path.normcase(os.path.normpath(x))  # noqa: E731
+        rap["correspond_au_vault"] = norm(valeur) == norm(str(base))
+    return rap
+
+
+def bilan_medias_importes(db: GrampsDb, mediapath: str | None, racines, base: Path | None = None) -> dict:
+    """Médias du fichier lu : ``<mediapath>`` rapporté et, pour chaque chemin, où il se résout dans les racines
+    autorisées de cette machine (règle commune ``chemins.localiser``) ; rien n'est déplacé ni modifié."""
+    from ..chemins import bilan_chemins_medias
+
+    entrees = [(m.get("gramps_id") or m["handle"], m.get("path") or "") for m in db.all("Media").values()]
+    return {"mediapath": rapport_mediapath(mediapath, base),
+            "resolution": bilan_chemins_medias(sorted(entrees), racines, base)}
+
+
 def importer(chemin: Path, data_dir: Path, horodatage: str, racine_sosa: str = "",
-             mode: str = "remplacer") -> tuple[Any, dict, Path | None]:
+             mode: str = "remplacer", racines_media=None, base_media: Path | None = None) -> tuple[Any, dict, Path | None]:
     """Prépare l'import d'un fichier Gramps : lecture, médias d'un paquet extraits dans la zone d'attente
     ``<données>/imports/gramps/<nom>-<horodatage>/``, identifiants, conversion par :func:`gramps_to_tree`
     (correspondance unique) et bilan de ce que l'arbre Genealogiste ne reprend pas. Renvoie (arbre, info, zone
@@ -1003,6 +1029,8 @@ def importer(chemin: Path, data_dir: Path, horodatage: str, racine_sosa: str = "
             info["medias"] = {"chemins_repris": len(chemins),
                               "consigne": "Chemins des médias repris tels quels, fichiers non copiés (relatifs au "
                                           "dossier des médias de Gramps : « mediapath »)."}
+        info["medias"].update(bilan_medias_importes(db, lecture.meta.mediapath, racines_media or (data_dir,),
+                                                    base_media))
         reattribues = identifiants_importables(db)
         if (ref := rapport_personne_reference(db, lecture.meta.personne_reference, racine_sosa, mode)) is not None:
             info["personne_reference"] = ref

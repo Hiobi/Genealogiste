@@ -200,6 +200,8 @@ def controles_locaux(a, probleme: dict | None, config) -> list[dict]:
     if a is not None:
         out.append(_controle_debit(a))
         out.append(_controle_politique(a))
+        if config.backend != "gramps":  # mode gramps : arbre lu sur Gramps Web, dans les contrôles réseau
+            out.append(_controle_medias_chemins(a, "medias_chemins"))
         from .tree.proposals import TTL_SECONDS
         expirees = a.tokens.expirees()  # lecture seule : le diagnostic ne modifie rien
         valides = [p for p in a.tokens._lire_tous() if p[1].get("jeton") not in expirees]
@@ -327,7 +329,46 @@ def controles_gramps(a) -> list[dict]:
         out.append(_controle_reglages_gramps(a, meta))
         if not injoignable:
             out.append(_controle_personne_reference(a, meta, gramps_actif))
+    if gramps_actif and not injoignable:
+        out.append(_controle_medias_chemins(a, "gramps_medias_chemins"))
     return out
+
+
+_CAUSES_MEDIAS = {"introuvables": "fichier introuvable",
+                  "ambigus": "chemin ambigu (fichiers différents sous plusieurs racines)",
+                  "hors_racines": "hors des racines autorisées",
+                  "nom_serveur": "nom attribué par Gramps Web, sans fichier ici"}
+_REMEDE_MEDIAS = (
+    "Retrouver le fichier sous le vault (ou GENEALOGISTE_MEDIA_DIR) puis gramps_relocaliser_medias(ancien_prefixe, "
+    "nouveau_prefixe) pour réécrire le chemin ; un doublon différent sous deux racines se supprime ; un média "
+    "créé par l'interface de Gramps Web n'a pas de fichier local (docs/gramps.md, « Chemin de base des médias »).")
+
+
+def _controle_medias_chemins(a, nom: str) -> dict:
+    """Chemins de médias qui ne se résolvent pas dans le vault ni les racines autorisées (#280), par la règle commune.
+
+    Comptes par cause et identifiants (`gramps_id`) en échantillon : ni titre, ni nom de personne, ni chemin. Au plus
+    `LIMITE_MEDIAS` médias examinés ; aucune sortie des racines, aucun contenu de fichier lu hors le contrôle
+    d'ambiguïté. Un arbre illisible donne `attention`, sans faire échouer le diagnostic."""
+    from .chemins import CAUSES_MEDIAS, bilan_chemins_medias
+
+    try:
+        entrees = [(i, m.fichier) for i, m in sorted(a.tree().medias.items())]
+        b = bilan_chemins_medias(entrees, a.config.media_racines, a.config.pieces_root)
+    except Exception as exc:  # noqa: BLE001
+        return _ctl(nom, "attention", f"chemins des médias non vérifiés : {_motif(exc)}",
+                    "Relancer le diagnostic une fois l'arbre lisible.")
+    if not b["total"]:
+        return _ctl(nom, "ok", "aucun média dans l'arbre", bilan=b)
+    mauvais = {c: b[c] for c in (*CAUSES_MEDIAS, "nom_serveur") if b[c]}
+    detail = (f"{b['resolus']} chemin(s) résolu(s) sur {b['total']} média(s) ; {b['desktop_direct']} retrouvé(s) "
+              "directement par un Gramps Desktop dont le chemin de base est la racine du vault")
+    if b["non_verifies"]:
+        detail += f" ; {b['non_verifies']} non vérifié(s) (plafond de {b['examines']} examinés)"
+    if not mauvais:
+        return _ctl(nom, "ok", detail, bilan=b)
+    detail += " ; non résolus : " + ", ".join(f"{n} {_CAUSES_MEDIAS[c]}" for c, n in mauvais.items())
+    return _ctl(nom, "attention", detail, _REMEDE_MEDIAS, bilan=b)
 
 
 def _motif(exc: BaseException) -> str:

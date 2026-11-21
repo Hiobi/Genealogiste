@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import gzip
 import io
+import re
 import tarfile
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
@@ -608,6 +609,67 @@ def preparer_gpkg(db: GrampsDb, racines: Iterable[Path]) -> tuple[GrampsDb, dict
             a["value"] = arc
     bilan["inclus"] = len(membres)
     return db, membres, bilan
+
+
+_ABSOLU_WINDOWS = re.compile(r"^(?:[A-Za-z]:[\\/]|\\\\[^\\/])")
+
+
+def verifier_chemin_base_medias(chemin: str) -> str:
+    """Chemin de base des médias écrit dans ``<mediapath>`` (#280), validé : absolu (POSIX, ``C:\\…`` ou
+    ``\\\\serveur\\…``), sans retour à la ligne ni caractère de contrôle, sans composant « .. », sans accolade
+    (Gramps applique ``str.format`` au chemin : une accolade fait échouer l'import, ``expand_path``). Un chemin
+    relatif est refusé : Gramps le lirait relatif au dossier de la base, pas du vault. Le séparateur final est retiré."""
+    if not isinstance(chemin, str) or not chemin.strip():
+        raise ValueError("chemin_base_medias vide")
+    if chemin != chemin.strip() or any(ord(c) < 32 or ord(c) == 127 for c in chemin):
+        raise ValueError("chemin_base_medias : espace en bordure, retour à la ligne ou caractère de contrôle")
+    if "{" in chemin or "}" in chemin:
+        raise ValueError("chemin_base_medias : accolade refusée (Gramps applique str.format au chemin et refuserait "
+                         "l'import ; variables {GRAMPS_RESOURCES}… non écrites)")
+    if not (chemin.startswith("/") or _ABSOLU_WINDOWS.match(chemin)):
+        raise ValueError(f"chemin_base_medias doit être absolu (/…, C:\\… ou \\\\serveur\\…) : {chemin!r}. C'est le "
+                         "dossier où la machine qui ouvrira l'arbre trouve la racine du vault.")
+    if ".." in re.split(r"[\\/]+", chemin):
+        raise ValueError(f"chemin_base_medias : composant « .. » refusé ({chemin!r})")
+    sans_fin = chemin.rstrip("/\\")
+    return chemin if not sans_fin or re.fullmatch(r"[A-Za-z]:", sans_fin) else sans_fin  # « / » et « C:\ » restent
+
+
+def chemins_relatifs_a_la_base(db: GrampsDb, racines: Iterable[Path], base: Path) -> tuple[GrampsDb, dict]:
+    """Copie de la base où le ``path`` de chaque média local, résolu par la règle commune (:func:`localiser`), est
+    relatif à ``base`` (racine de l'arborescence des pièces : ce que ``<mediapath>`` désigne côté Desktop) quand le
+    fichier s'y trouve ; l'attribut Genealogiste-Fichier suit. Un média hors de la base, introuvable, ambigu ou
+    distant garde son chemin tel quel et est listé (identifiants seulement) : rien n'est inventé."""
+    base = Path(base).resolve()
+    racines = tuple(Path(r).resolve() for r in racines if r is not None)
+    db = db.copy()
+    bilan: dict = {"relatifs": 0, "distants": 0, "hors_base": [], "introuvables": [], "refuses": []}
+    for m in sorted(db.all("Media").values(), key=lambda o: (o.get("gramps_id") or "", o["handle"])):
+        a = _attr(m, A_FICHIER)
+        local = (a or {}).get("value") or m.get("path") or ""
+        ident = m.get("gramps_id") or m["handle"]
+        if not local:
+            continue
+        if "://" in local:
+            bilan["distants"] += 1
+            continue
+        try:
+            p = localiser(racines, local)
+        except CheminRefuse:  # ambigu, hors des racines
+            bilan["refuses"].append(ident)
+            continue
+        if not p.is_file():
+            bilan["introuvables"].append(ident)
+            continue
+        if not p.is_relative_to(base):
+            bilan["hors_base"].append(ident)
+            continue
+        rel = p.relative_to(base).as_posix()
+        m["path"] = rel
+        if a is not None:
+            a["value"] = rel
+        bilan["relatifs"] += 1
+    return db, bilan
 
 
 def _entree(nom: str, taille: int) -> tarfile.TarInfo:

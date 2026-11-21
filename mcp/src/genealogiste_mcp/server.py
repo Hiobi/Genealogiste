@@ -1547,7 +1547,8 @@ def _importer_gramps(p: Path, mode: str) -> dict:
     a = app()
     try:
         tree, info, zone = lecture_xml.importer(p, a.config.data_dir, datetime.now().strftime("%Y%m%d-%H%M%S"),
-                                                a.config.sosa_racine, mode)
+                                                a.config.sosa_racine, mode, a.config.media_racines,
+                                                a.config.pieces_root)
     except (lecture_xml.LectureGrampsError, OSError) as exc:  # OSError : lecture, zone d'attente
         a.journal.add("import", "gramps", {"fichier": str(p), "mode": mode}, "erreur")
         return {"erreur": f"Fichier Gramps refusé : {exc}"}
@@ -1693,7 +1694,8 @@ def propositions_abandonner(id: str, motif: str = "") -> dict:
 @mcp.tool()
 def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", generations: int = 4,
                    masquer_vivants: bool = True, temoins_en_personnes: bool = False,
-                   version_xml: str = gramps_xml.VERSION_XML_DEFAUT, compresse: bool = False) -> dict:
+                   version_xml: str = gramps_xml.VERSION_XML_DEFAUT, compresse: bool = False,
+                   chemin_base_medias: str = "") -> dict:
     """Export : gedcom7 | gedcom551 | geneweb | gramps | gpkg | mermaid_asc | mermaid_desc | svg_asc | svg_desc | fiche.
     geneweb : GEDCOM 5.5.1 pour ged2gwb, avec citations complètes, statut de preuve et témoins visibles dans
     GeneWeb (temoins_en_personnes=True crée une fiche pour chaque témoin seulement nommé).
@@ -1705,7 +1707,11 @@ def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", gene
     (<people home>), sauf si elle n'est pas configurée, absente ou masquée par l'export public ; en mode gramps, les
     groupes de noms de Gramps sont écrits (<namemaps>, #276) ; en mode fichier, aucun (rien n'est inventé) ; export
     public : seulement les regroupements dont le patronyme figure dans l'export, sans nom d'une personne masquée.
-    Vivants et objets privés masqués par défaut (RGPD) : sources, médias et notes liés à une personne masquée
+    gramps : chemin_base_medias (absolu, vide par défaut : aucun <mediapath>, rien de la machine n'est écrit) =
+    dossier où la machine qui ouvrira l'arbre trouve la racine du vault ; écrit dans l'en-tête (<mediapath>) et
+    les chemins des médias qui s'y trouvent deviennent relatifs à lui (Gramps Desktop les retrouve alors
+    directement). Chemin personnel : refusé avec masquer_vivants=True (export public) et pour gpkg (Gramps
+    ignore le <mediapath> d'un paquet). Vivants et objets privés masqués par défaut (RGPD) : sources, médias et notes liés à une personne masquée
     retirés avec leurs références, noms remplacés par « Vivant » dans les textes. chemin par défaut :
     <données>/exports/."""
     ext = {"gedcom7": "ged", "gedcom551": "ged", "geneweb": "ged", "gramps": "gramps", "gpkg": "gpkg",
@@ -1718,6 +1724,20 @@ def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", gene
         gramps_xml.verifier_version_xml(version_xml)
     except ValueError as exc:
         return {"erreur": str(exc)}
+    base_medias = ""
+    if chemin_base_medias:
+        if format != "gramps":
+            return {"erreur": "chemin_base_medias : format gramps seulement. " + (
+                "Gramps remet le chemin de base de l'arbre à l'import d'un .gpkg et range les médias dans "
+                "<arbre>.gpkg.media : le <mediapath> y serait ignoré (docs/gramps.md)." if format == "gpkg"
+                else "Sans objet pour ce format.")}
+        if masquer_vivants:
+            return {"erreur": "chemin_base_medias est un chemin personnel de votre machine : refusé dans un export "
+                              "public (masquer_vivants=True). masquer_vivants=False pour un fichier qui reste chez vous."}
+        try:
+            base_medias = gramps_xml.verifier_chemin_base_medias(chemin_base_medias)
+        except ValueError as exc:
+            return {"erreur": str(exc)}
     a = app()
     t = complet = a.tree()
     hidden: set[str] = set()
@@ -1726,6 +1746,7 @@ def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", gene
         t, hidden, rapport = privacy.publication(t)
     membres: dict = {}
     bilan_medias: dict = {}
+    bilan_base: dict = {}
     if format == "gedcom7":
         content = write_gedcom(t, 7)
     elif format == "gedcom551":
@@ -1736,6 +1757,8 @@ def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", gene
         db, stats = tree_to_gramps_stats(t, None, a.config.strict_evidence, forme=a.config.marqueurs)
         if format == "gpkg":  # médias résolus par la règle commune (racines autorisées), chemins relatifs
             db, membres, bilan_medias = gramps_xml.preparer_gpkg(db, a.config.media_racines)
+        elif base_medias:  # chemins relatifs à la racine du vault, comme <mediapath> (#280)
+            db, bilan_base = gramps_xml.chemins_relatifs_a_la_base(db, a.config.media_racines, a.config.pieces_root)
         handle_ref, motif_ref = gramps_xml.personne_reference(db, a.config.sosa_racine, hidden)
         try:  # groupes de noms (#276) : ceux de Gramps en mode gramps ; mode fichier : aucun, rien d'inventé
             table = a.backend.groupes_noms() if a.config.backend == "gramps" else {}
@@ -1745,7 +1768,7 @@ def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", gene
         if a.config.backend != "gramps":
             bilan_groupes = {"ecrits": 0, "source": "mode fichier : pas de groupes de noms (rien n'est inventé)"}
         content = gramps_xml.db_to_xml(db, version_xml, gramps_xml.Metadonnees(
-            personne_reference=handle_ref, regroupements=regroupements))
+            personne_reference=handle_ref, regroupements=regroupements, mediapath=base_medias or None))
     elif format == "mermaid_asc":
         content = charts.mermaid_ancestors(t, id, generations, hidden)
     elif format == "mermaid_desc":
@@ -1795,6 +1818,12 @@ def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", gene
             res["avertissements_dates"] = dates
     if format == "gpkg":
         res["medias"] = bilan_medias
+    if base_medias:
+        res["chemin_base_medias"] = {
+            "ecrit": base_medias, "medias": bilan_base,
+            "consigne": "Dans Gramps Desktop, ce dossier doit être la racine du vault (Préférences > Général > "
+                        "Chemin de base des médias) ; l'import le pose si l'arbre cible n'en a pas, sinon Gramps le "
+                        "refuse sans bloquer et garde le sien (docs/gramps.md, « Chemin de base des médias »)."}
     return res
 
 
