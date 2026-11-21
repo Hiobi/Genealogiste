@@ -1254,7 +1254,8 @@ GENEALOGISTE_GRAMPS_USER=sosa-dupont
 GENEALOGISTE_GRAMPS_PASSWORD=…
 ```
 
-Hors v1 : fusion native de Gramps (la fusion passe par `/fusionne`).
+Hors v1 : fusion native de Gramps (la fusion passe par `/fusionne`). Études du jalon M6 :
+[fusion native](etudes/gramps-fusion-native.md) (#278) et [vérification native](etudes/gramps-verification-native.md) (#275).
 
 ## Reprise des lectures
 
