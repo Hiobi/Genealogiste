@@ -3,8 +3,10 @@
 Bibliothèque standard + `gramps` uniquement : aucun import de genealogiste_mcp. Pilotée par
 `verifier_gramps_desktop.py`, qui lui passe une liste de fichiers à importer et lit son rapport JSON.
 
-Pour chaque fichier : import dans une base SQLite en mémoire (`import_as_dict`, comme Gramps en ligne de
-commande), relevé des handles par classe d'objets, erreurs et avertissements de Gramps, puis (option
+Pour chaque fichier (`.gramps` brut ou gzip, paquet `.gpkg` : plugin d'import choisi par Gramps selon
+l'extension) : import dans une base SQLite en mémoire (`import_as_dict`, comme Gramps en ligne de commande),
+relevé des handles par classe d'objets, des médias (chemin, fichier trouvé), des schémas DTD/RNG livrés avec la
+bibliothèque, erreurs et avertissements de Gramps, puis (option
 `--reexporter`) réexport en Gramps XML non compressé par `GrampsXmlWriter`, pour l'aller-retour.
 
 Gramps sans interface : 5.2 et 6.0 importent `gi.repository.GLib` dès `gramps.gen.const` ; l'export XML importe
@@ -93,6 +95,19 @@ def main() -> int:
 
     rapport["gramps"] = VERSION
     rapport["xml"] = libgrampsxml.GRAMPS_XML_VERSION
+    from gramps.gen.const import DATA_DIR, USER_PICTURES
+
+    # import .gpkg : médias extraits sous le dossier d'images de l'arbre, à défaut celui de l'utilisateur
+    # (GLib réel ou factice, selon la version : HOME, HOME/Pictures, GRAMPSHOME/gramps…) ; il doit exister.
+    os.makedirs(USER_PICTURES, exist_ok=True)
+    from gramps.gen.utils.file import media_path_full
+
+    # schémas livrés avec la bibliothèque : le banc valide les fichiers remis contre eux (#268)
+    rapport["schemas"] = {k: os.path.join(DATA_DIR, f"grampsxml.{k}") for k in ("dtd", "rng")}
+    try:
+        from gramps.gen.lib.json_utils import object_to_dict
+    except ImportError:  # Gramps 5.2 : pas de format JSON
+        object_to_dict = None
 
     class Utilisateur(User):
         def __init__(self) -> None:
@@ -123,6 +138,12 @@ def main() -> int:
             continue
         res["importe"] = True
         res["handles"] = {cls: sorted(getattr(db, meth)()) for cls, meth in CLASSES.items()}
+        # médias : chemin enregistré et fichier trouvé par Gramps (paquet .gpkg : extrait à côté de l'arbre)
+        res["medias"] = [{"chemin": m.get_path(), "fichier": os.path.isfile(media_path_full(db, m.get_path()))}
+                         for m in (db.get_media_from_handle(h) for h in db.get_media_handles())]
+        if object_to_dict:  # Gramps ≥ 6.0 : objets importés au format JSON, comparés champ par champ
+            res["objets"] = [object_to_dict(getattr(db, f"get_{cls.lower()}_from_handle")(h))
+                             for cls, meth in CLASSES.items() for h in getattr(db, meth)()]
         if args.reexporter:
             from gramps.plugins.export.exportxml import GrampsXmlWriter
 

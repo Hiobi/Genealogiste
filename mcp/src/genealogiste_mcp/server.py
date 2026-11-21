@@ -35,13 +35,13 @@ from .cache import Cache
 from .chemins import CheminRefuse, nom_simple, sous
 from .config import Config, load_config
 from .enquetes import EnqueteError, Enquetes
-from .export import charts
+from .export import charts, gramps_xml
 from .export.fiche import fiche_markdown, gaps, tree_gaps
 from .export.geneweb import to_geneweb
-from .export.gramps_xml import to_gramps_xml_stats
 from .export.rapport import proof_report
 from .fr_sources import next_source_hint
 from .gedcom.mapping import read_gedcom, write_gedcom
+from .gramps.mapping import tree_to_gramps_stats
 from .http import HttpClient, SourceError
 from .journal import Journal
 from .normalize import dates as d
@@ -1506,33 +1506,47 @@ def propositions_abandonner(id: str, motif: str = "") -> dict:
 
 @mcp.tool()
 def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", generations: int = 4,
-                   masquer_vivants: bool = True, temoins_en_personnes: bool = False) -> dict:
-    """Export : gedcom7 | gedcom551 | geneweb | gramps | mermaid_asc | mermaid_desc | svg_asc | svg_desc | fiche.
+                   masquer_vivants: bool = True, temoins_en_personnes: bool = False,
+                   version_xml: str = gramps_xml.VERSION_XML_DEFAUT, compresse: bool = False) -> dict:
+    """Export : gedcom7 | gedcom551 | geneweb | gramps | gpkg | mermaid_asc | mermaid_desc | svg_asc | svg_desc | fiche.
     geneweb : GEDCOM 5.5.1 pour ged2gwb, avec citations complètes, statut de preuve et témoins visibles dans
     GeneWeb (temoins_en_personnes=True crée une fiche pour chaque témoin seulement nommé).
+    gramps : Gramps XML (.gramps) ; version_xml 1.7.1 (défaut : Gramps 5.2, 6.0, 6.1) ou 1.7.2 (Gramps 6.x
+    seulement) ; compresse=True : gzip, forme native de Gramps Desktop (défaut : XML non compressé).
+    gpkg : paquet Gramps (XML + fichiers des médias locaux sous chemins relatifs) ; médias introuvables ou hors
+    des répertoires autorisés listés dans le résultat, jamais empaquetés.
     Vivants et objets privés masqués par défaut (RGPD) : sources, médias et notes liés à une personne masquée
     retirés avec leurs références, noms remplacés par « Vivant » dans les textes. chemin par défaut :
     <données>/exports/."""
+    ext = {"gedcom7": "ged", "gedcom551": "ged", "geneweb": "ged", "gramps": "gramps", "gpkg": "gpkg",
+           "mermaid_asc": "mmd", "mermaid_desc": "mmd", "svg_asc": "svg", "svg_desc": "svg", "fiche": "md"}
+    if format not in ext:
+        return {"erreur": f"format : {', '.join(ext)}"}
+    if format in ("mermaid_asc", "mermaid_desc", "svg_asc", "svg_desc", "fiche") and not id:
+        return {"erreur": "id requis pour ce format"}
+    try:
+        gramps_xml.verifier_version_xml(version_xml)
+    except ValueError as exc:
+        return {"erreur": str(exc)}
     a = app()
     t = a.tree()
     hidden: set[str] = set()
     rapport: dict = {}
     if masquer_vivants:
         t, hidden, rapport = privacy.publication(t)
-    ext = {"gedcom7": "ged", "gedcom551": "ged", "geneweb": "ged", "gramps": "gramps", "mermaid_asc": "mmd", "mermaid_desc": "mmd",
-           "svg_asc": "svg", "svg_desc": "svg", "fiche": "md"}
-    if format not in ext:
-        return {"erreur": f"format : {', '.join(ext)}"}
-    if format in ("mermaid_asc", "mermaid_desc", "svg_asc", "svg_desc", "fiche") and not id:
-        return {"erreur": "id requis pour ce format"}
+    membres: dict = {}
+    bilan_medias: dict = {}
     if format == "gedcom7":
         content = write_gedcom(t, 7)
     elif format == "gedcom551":
         content = write_gedcom(t, 5)
     elif format == "geneweb":
         content, stats = to_geneweb(t, a.config.strict_evidence, temoins_en_personnes)
-    elif format == "gramps":
-        content, stats = to_gramps_xml_stats(t, a.config.strict_evidence, a.config.marqueurs)
+    elif format in ("gramps", "gpkg"):
+        db, stats = tree_to_gramps_stats(t, None, a.config.strict_evidence, forme=a.config.marqueurs)
+        if format == "gpkg":  # médias résolus par la règle commune (racines autorisées), chemins relatifs
+            db, membres, bilan_medias = gramps_xml.preparer_gpkg(db, a.config.media_racines)
+        content = gramps_xml.db_to_xml(db, version_xml)
     elif format == "mermaid_asc":
         content = charts.mermaid_ancestors(t, id, generations, hidden)
     elif format == "mermaid_desc":
@@ -1544,23 +1558,54 @@ def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", gene
     else:
         content = fiche_markdown(t, id, a.config.strict_evidence, masquer_vivants)
     reste = privacy.residues(content, rapport.get("motifs", []))
+    if format in ("gramps", "gpkg"):  # prénom et patronyme en éléments distincts (<first>, <surname>) : relus à plat
+        import re as _re
+        reste += privacy.residues(_re.sub(r"<[^>]*>", " ", content), rapport.get("motifs", []))
     if reste:  # garde-fou : la projection a laissé passer une chaîne identifiante
         return {"erreur": "Export refusé : données identifiantes d'une personne masquée encore présentes "
                           f"({len(reste)} occurrence(s)). Rien n'a été écrit.", "occurrences": reste[:20]}
     out = Path(chemin).expanduser() if chemin else a.config.exports_dir / (
         f"{id or 'arbre'}-{format}-{date.today().isoformat()}.{ext[format]}")
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(content, encoding="utf-8")
-    res = {"fichier": str(out), "format": format, "octets": len(content.encode("utf-8")),
+    if format == "gpkg":
+        _ecrire_atomique(out, lambda f: gramps_xml.ecrire_gpkg(f, content, membres))
+    elif format == "gramps" and compresse:
+        out.write_bytes(gramps_xml.compresser(content))
+    else:
+        out.write_text(content, encoding="utf-8")
+    res = {"fichier": str(out), "format": format, "octets": out.stat().st_size,
            "vivants_masques": len(hidden), "retires": rapport.get("retires"), "apercu": content[:1500] if format.startswith(("mermaid", "fiche")) else None}
     if format == "geneweb":
         res["statistiques"] = stats
         res["import"] = f"ged2gwb {out.name} -o <base> -f   (voir docs/geneweb.md)"
-    if format == "gramps":
+    if format in ("gramps", "gpkg"):
         res["statistiques"] = stats
+        res["version_xml"] = version_xml
+        res["compresse"] = format == "gpkg" or compresse
         res["import"] = ("Gramps Web : Paramètres > Administration > Importer (arbre vide : un second import "
-                         "duplique tout)")
+                         "duplique tout)") if format == "gramps" else (
+            "Gramps Desktop : Arbre familial > Importer, fichier .gpkg (médias extraits dans <arbre>.gpkg.media ; "
+            "arbre vide : un second import duplique tout)")
+        if version_xml != "1.7.1":
+            res["avertissement"] = f"Gramps XML {version_xml} : refusé par Gramps 5.2 (1.7.1 est lu par 5.2 à 6.1)."
+    if format == "gpkg":
+        res["medias"] = bilan_medias
     return res
+
+
+def _ecrire_atomique(out: Path, ecrire) -> None:
+    """Fichier écrit à côté puis renommé : rien de partiel en cas d'erreur."""
+    import os
+    import tempfile
+
+    fd, tmp = tempfile.mkstemp(dir=out.parent, prefix=f".{out.name}.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "wb") as f:
+            ecrire(f)
+        os.replace(tmp, out)
+    except BaseException:
+        Path(tmp).unlink(missing_ok=True)
+        raise
 
 
 @mcp.tool()

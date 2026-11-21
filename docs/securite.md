@@ -55,7 +55,10 @@ Cas tranchés d'après le code :
 - `notes_lire` est une écriture : une fiche absente est générée, ce qui peut renommer des fiches de personnes,
   retirer des fiches de patronymes et réécrire l'index.
 - `cache_purger` est une écriture : suppression, et `coupe_circuit` lève la pause ou l'exclusion anti-robot qui borne la collecte.
-- `arbre_exporter` est une écriture : `chemin` libre, un fichier existant est remplacé.
+- `arbre_exporter` est une écriture : `chemin` libre, un fichier existant est remplacé. Le paquet `gpkg` lit
+  les fichiers des médias par la règle commune (`chemins.localiser` : racines autorisées, ni traversée ni lien
+  sortant, ambiguïté refusée), refuse en plus tout composant caché (`.env`, `.git`), n'écrit dans l'archive que
+  des noms relatifs sûrs et liste les fichiers non empaquetés ([gramps.md](gramps.md#paquet-gpkg)).
 - `gramps_recalculer_notes` et `gramps_structurer_lieux` ne font que préparer un diff et un jeton (proposition) ;
   l'écriture passe par `arbre_appliquer`.
 - En mode gramps, les propositions (`arbre_proposer`, `gramps_recalculer_notes`, `gramps_structurer_lieux`,
@@ -177,6 +180,8 @@ de l'arbre de travail.
 - Passe sur tous les textes : « Prénom Nom », « NOM Prénom », « Prénom /Nom/ » d'une personne masquée remplacés
   par « Vivant » (sans tenir compte des accents ni de la casse).
 - Garde-fou : si une de ces chaînes subsiste dans le fichier produit, l'export est refusé et rien n'est écrit.
+  Gramps XML et `.gpkg` sont aussi relus à plat (balises retirées), car prénom et patronyme y sont dans des
+  éléments distincts ; les médias d'une personne masquée ne sont pas empaquetés.
 
 `tests/test_publication.py` exporte un arbre piégé dans les quatre formats et vérifie qu'aucune chaîne
 identifiante ne subsiste.

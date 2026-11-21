@@ -10,6 +10,7 @@ Les exports masquent les personnes présumées vivantes et les objets privés pa
 | GEDCOM récent | `gedcom7` |
 | Logiciel demandant GEDCOM 5.5.1 | `gedcom551` |
 | Gramps / Gramps Web | `gramps` : XML natif, préférable à son import GEDCOM 7 pour les détails pris en charge |
+| Gramps Desktop avec les images | `gpkg` : XML et fichiers des médias dans une seule archive |
 | GeneWeb 7 | `geneweb`, puis suivre le [guide d’import](../docs/geneweb.md) |
 | Schéma ascendant/descendant | `mermaid_asc`, `mermaid_desc`, `svg_asc`, `svg_desc` |
 | Fiche de recherche | `fiche` |
@@ -19,6 +20,7 @@ Dans Claude Code :
 ```text
 /genealogiste:export gedcom7
 /genealogiste:export gramps
+/genealogiste:export gpkg
 /genealogiste:export svg_asc I1 4
 ```
 
@@ -40,6 +42,10 @@ Cette réduction est volontaire. Voir la [confidentialité](Confidentialite.md) 
 [description technique du masquage](../docs/securite.md).
 
 ## Réimporter ailleurs
+
+Le fichier `gramps` est lu par Gramps 5.2, 6.0 et 6.1 ; demander la version XML 1.7.2 seulement pour
+Gramps 6 (Gramps 5.2 la refuse), ou un fichier compressé si besoin. Pour un paquet `gpkg`, lire la liste
+des médias manquants : ils ne sont pas dans l’archive. Voir le [guide Gramps Desktop](../docs/gramps.md).
 
 Faire le premier essai dans une base vide ou jetable. Un second import dans un arbre Gramps non vide
 peut dupliquer les objets. Un export GEDCOM ne conserve pas forcément tous les détails d’un logiciel ;
