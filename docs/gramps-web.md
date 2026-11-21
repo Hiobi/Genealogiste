@@ -247,6 +247,7 @@ diagnostic.
 | règle `MatchesQuery` (`oql` retiré) | `regle_matches_query` | 3.23.0 | prévue |
 | verrous de tâches (409 `task_locked`) | `verrous_taches` | 3.24.0 | prévue |
 | `edit-by-handle` (`gql` retiré) | `edit_by_handle` | 3.26.0 | prévue |
+| inscription libre lisible (`GET /api/register/config/`) | `inscription_libre` | 3.26.0 | utilisée (diagnostic) |
 
 La recherche sémantique a été retirée de l'API en 3.25 ; Genealogiste ne l'utilise pas.
 
