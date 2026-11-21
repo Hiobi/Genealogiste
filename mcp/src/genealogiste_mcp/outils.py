@@ -100,7 +100,7 @@ OUTILS: dict[str, tuple[str, str]] = {  # nom -> (effet, classe)
     "arbre_proposer": (PROPOSITION, PROPOSITION),
     "arbre_annuler_proposition": (PROPOSITION, PROPOSITION),
     "arbre_annuler_modification": (PROPOSITION, PROPOSITION),
-    "arbre_importer_gedcom": (PROPOSITION, PROPOSITION),
+    "arbre_importer_gedcom": (PROPOSITION, PROPOSITION),  # GEDCOM, Gramps XML, .gpkg (médias en zone d'attente)
     "arbre_appliquer": (ECRITURE, ECRITURE),
     "arbre_exporter": (ECRITURE, ECRITURE),  # chemin libre, fichier existant remplacé
     # file de propositions (#154) : locale, aucune écriture de l'arbre (arbre_appliquer reste l'écriture)

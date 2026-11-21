@@ -22,6 +22,8 @@ on:
       - mcp/tests/fixtures/gramps-objets-riches.json
       - mcp/src/genealogiste_mcp/gedcom/**
       - mcp/src/genealogiste_mcp/models.py
+      - mcp/src/genealogiste_mcp/marqueurs.py
+      - mcp/src/genealogiste_mcp/normalize/**
       - mcp/tests/test_gramps_live.py
       - mcp/tests/fixtures/*.ged
   push:
@@ -42,6 +44,8 @@ on:
       - mcp/tests/fixtures/gramps-objets-riches.json
       - mcp/src/genealogiste_mcp/gedcom/**
       - mcp/src/genealogiste_mcp/models.py
+      - mcp/src/genealogiste_mcp/marqueurs.py
+      - mcp/src/genealogiste_mcp/normalize/**
       - mcp/tests/test_gramps_live.py
       - mcp/tests/fixtures/*.ged
   schedule:

@@ -4,7 +4,8 @@
 Gramps Desktop (Arbres familiaux > Importer) ou dans Gramps Web. Options (#268) : `version_xml="1.7.2"` (Gramps
 6.x seulement), `compresse=True` (`.gramps` gzip, forme native de Gramps Desktop) et format `gpkg` (paquet
 Gramps : XML et fichiers des médias, voir [plus bas](#paquet-gpkg)). Cette page dit quelles versions de Gramps Desktop relisent ce
-fichier et ce que la CI vérifie. Pour le mode direct sur Gramps Web (API, versions d'images) : voir
+fichier, comment importer dans Genealogiste un arbre exporté par Gramps Desktop
+([plus bas](#import-depuis-gramps-desktop), #269) et ce que la CI vérifie. Pour le mode direct sur Gramps Web (API, versions d'images) : voir
 [Gramps Web](gramps-web.md#compatibilité-des-versions).
 
 ## Versions
@@ -72,6 +73,97 @@ désigne le chemin relatif du fichier dans l'archive. Fichiers introuvables, ref
 publication avant l'empaquetage. Archive déterministe (date nulle, propriétaire 0, membres triés), écrite à côté
 puis renommée. À l'import, Gramps extrait les médias dans `<dossier des médias>/<nom>.gpkg.media/`.
 
+## Import depuis Gramps Desktop
+
+`arbre_importer_gedcom(chemin, mode)` (commande `/genealogiste:import`) lit aussi les fichiers de Gramps
+Desktop. Le format est reconnu **au contenu**, jamais à l'extension : GEDCOM, Gramps XML (`.gramps`,
+compressé gzip comme Gramps l'écrit par défaut, ou non) ou paquet `.gpkg` (tar gzip : `data.gramps` et les
+fichiers des médias). Même nom d'outil, même classe de permission (proposition) et même contrat que l'import
+GEDCOM : modes `ajouter` (renumérotation de toutes les références, doublons à recouper par
+`/genealogiste:recoupe`) et `remplacer`, diff et jeton, **rien n'est écrit sans accord explicite**
+(`arbre_appliquer`). En mode `gramps`, la proposition est une transaction Gramps Web, comme pour un GEDCOM.
+
+### Versions acceptées
+
+| Fichier | Résultat |
+|---|---|
+| Gramps XML 1.7.1 (Gramps 5.2) et 1.7.2 (Gramps 6.0, 6.1), espace de noms `http(s)://gramps-project.org/xml/<version>/` | lu |
+| Gramps XML 1.8.0 (objets ADN, branche master de Gramps, non publiée) | **refusé**, message explicite |
+| autre version (1.6.0 et antérieures, 2.x…), autre hôte (`www.gramps-project.org`), espace de noms absent ou étranger | **refusé** : la lecture des versions anciennes n'est pas vérifiée |
+| en-tête sans `<created version>` | **refusé**, comme par Gramps lui-même |
+
+### Un seul chemin de conversion
+
+Gramps XML → objets Gramps JSON → modèle Genealogiste. Le lecteur (`gramps/lecture_xml.py`) est le symétrique
+de l'export : il parcourt les **mêmes** tables `SPEC_*` (`Champ.genre`, `Conv.lire`), sans seconde table de
+correspondance. Les objets obtenus passent par `gramps_to_tree` (`gramps/mapping.py`), le module de
+correspondance du mode direct ; l'arbre obtenu suit ensuite exactement le chemin de l'import GEDCOM
+(opération `remplacer_arbre`). Conséquences :
+
+- les `gramps_id` de Gramps (`I0001`, `F0001`, `S0001`, `R0001`, `O0001`, `N0001`) deviennent les identifiants de
+  Genealogiste ; un identifiant vide, invalide comme référence GEDCOM (espace, `@`) ou en double (Gramps
+  l'admet) reçoit un identifiant libre (`IX1`…), listé dans `import.identifiants_reattribues` ;
+- marqueurs reconnus : attributs `Genealogiste-*` et leur forme historique `Sosa-*` (UID, statuts, intervenants,
+  fichier), étiquettes `Genealogiste:auto` / `Sosa:auto` (notes générées ignorées) ;
+- le drapeau `priv` de Gramps devient `prive` là où le modèle le porte (personne, famille, événement, source,
+  citation, média, note) ; l'import ne pose ni ne retire aucune protection. Il est local : rien ne part vers
+  l'extérieur ;
+- reconstruit comme Gramps à l'import, faute d'être dans le XML : `birth_ref_index` / `death_ref_index`
+  (première référence d'un événement Birth / Death de rôle Primary), `Date.sortval` (sept calendriers de Gramps
+  et nouvel an ; 202 dates comparées à Gramps 6.0.8), valeur entière de la taille de police d'une note stylée.
+
+### Médias
+
+- `.gramps` : les chemins des médias sont repris **tels quels**, fichiers non copiés. Ils sont relatifs au
+  dossier des médias de Gramps (`<mediapath>`), que Genealogiste ne reprend pas (compté dans `non_repris`).
+- `.gpkg` : les fichiers sont extraits dans une **zone d'attente** neuve du répertoire de données,
+  `<données>/imports/gramps/<nom>-<AAAAMMJJ-HHMMSS>/`, et le chemin de chaque média de la proposition y est
+  relocalisé (`import.medias.fichiers`). Rien n'est rangé dans le vault ni déplacé. Une fois l'import appliqué,
+  les ranger selon la convention : `pieces_proposer(dossier=<zone_attente>, suivre_medias=true)` (plan), puis,
+  après accord, `pieces_appliquer` et la proposition `modifier_media` qui suit ([pièces](pieces.md)). Un
+  import refusé ne laisse aucune zone ; une proposition abandonnée laisse la sienne, à supprimer à la main.
+  Limite : un paquet dont un membre porte un nom non portable (chemin absolu Windows `C:\…`, antislash) est
+  refusé en entier, comme un nom dangereux ; ranger les médias sous le dossier des médias de Gramps (chemins
+  relatifs) avant d'exporter.
+
+### Ce que l'arbre ne reprend pas
+
+Le modèle de Genealogiste (celui de GEDCOM 7) ne représente pas tout ce que Gramps sait écrire. Ce qui n'en
+fait pas partie n'est pas importé, **dans les deux modes** (l'import passe par le modèle), et n'est jamais
+perdu en silence : `import.non_repris` compte les valeurs en moins **par chemin de champ Gramps**, en comparant
+le fichier lu à ce que l'arbre importé redonnerait (`Person.address_list[]: 1`, `Note.text.tags[]: 38`,
+`Place.alt_names[]: 8`, `Métadonnées.signets: 4`…), et la proposition porte un avertissement. C'est un
+compteur, pas un diff : une valeur gardée sous une autre forme (hiérarchie de lieux aplatie en titre
+« Commune, Département, Pays ») est comptée sous son ancien chemin. Sur l'arbre d'exemple de Gramps, par exemple :
+étiquettes, noms alternatifs et noms datés des lieux, hiérarchie et types de lieux, adresses, URL, texte
+stylé, ordonnances LDS, attributs utilisateur (âge, profession…), suffixe, titre et nom d'usage, patronymes
+multiples, rectangles des références de médias, notes privées, plusieurs dépôts d'une source, et les
+métadonnées (chercheur, dossier des médias, personne de référence, formats de noms, signets, regroupements).
+Leur reprise relève du lot 2 du jalon M6 (#262, #272, #273, #277, #279).
+
+### Aller-retour sans perte
+
+Gramps XML → objets Gramps → Gramps XML redonne le même document, après cette normalisation
+(`lecture_xml.comparer_xml`) : mise en forme (espaces entre éléments, indentation), ordre des attributs, ordre
+des objets dans une section (Gramps les trie par handle, Genealogiste par identifiant) et élément `<created>`
+(date et version de Gramps qui a écrit le fichier). Le texte et les valeurs comptent, espaces compris. Vérifié
+sur `gramps-objets-riches.json` (octet pour octet), sur l'export de chaque fixture du dépôt, sur le réexport
+de chaque bibliothèque Gramps et sur les deux arbres d'exemple de Gramps (`example.gramps`, 2 157 personnes, et
+`data.gramps`, commit `2153e4fa4b0e4ddf7542f1c064c7820bc345a482`). Ce qui n'est pas rendu à l'identique :
+
+- l'élément `<created>` (réécrit : date du jour, version 5.2.0 ou 6.0.0 selon la version XML) ;
+- l'ordre des objets d'une section, l'ordre des enfants d'un objet (ramené à celui du DTD, que Gramps suit
+  déjà), la mise en forme, les commentaires XML ;
+- l'attribut `default` de `<people>` (ignoré par Gramps aussi ; signalé dans `import.avertissements`) ;
+- une personne sans `<name>` (Gramps en écrit toujours un) reçoit un nom vide ;
+- double datation d'une date composée : un seul attribut `dualdated` pour les deux bouts, comme chez Gramps ;
+- handles : seul le `_` initial est retiré (l'importeur de Gramps les retire tous ; jamais rencontré dans un
+  fichier de Gramps).
+
+Élément, attribut ou section inconnus du schéma (1.7.1 / 1.7.2), texte égaré, handle en double : **refus
+explicite** avec la ligne, plutôt qu'un abandon muet (Gramps, lui, les ignore). Choix fait pour ne rien perdre
+sans le dire ; un fichier écrit par Gramps 5.2 à 6.1 n'en contient pas.
+
 ## Ce que la CI vérifie
 
 Workflow `Intégration Gramps`, un job `Gramps Desktop <version>` par version (voir
@@ -93,10 +185,27 @@ Workflow `Intégration Gramps`, un job `Gramps Desktop <version>` par version (v
    `object_to_dict`), hors identifiants renumérotés, date de modification nulle remplacée par celle du fichier et
    champs recalculés (`Date.sortval`, `Date.text`, somme de contrôle) ;
 7. `.gpkg` : le média empaqueté est retrouvé par Gramps à son chemin relatif après extraction ;
-8. aller-retour : réexport en Gramps XML par Gramps (`GrampsXmlWriter`), mêmes nombres et mêmes handles.
+8. aller-retour : réexport en Gramps XML par Gramps (`GrampsXmlWriter`), mêmes nombres et mêmes handles ;
+9. sens inverse (#269, `controle_lecture`) : ce réexport est **relu par l'import de Genealogiste** ; aller-retour
+   XML sans perte (normalisation ci-dessus) ; en 6.0 et 6.1, chaque objet relu identique champ par champ à
+   l'objet importé par Gramps, `gramps_id`, `change` et `Date.sortval` compris (seuls écarts admis : ceux de
+   l'écriture de Gramps, qui retire les espaces de début et de fin des valeurs et calcule la somme de contrôle
+   d'un média) ; en 5.2, mêmes handles ;
+10. cycle complet (`cycle:<forme>`) : l'objet relu est réécrit par Genealogiste (1.7.1) puis réimporté par la
+    bibliothèque : mêmes handles et, en 6.x, mêmes objets champ par champ que le premier import ;
+11. arbre fictif écrit par la bibliothèque elle-même (`desktop:famille.gramps`, gzip, et `desktop:famille.gpkg`,
+    `PackageWriter`, avec un média) : relu par Genealogiste (version et format détectés, objets identiques à
+    ceux que Gramps importe, hors `gramps_id` que Gramps renumérote) ; import complet (`Genealogiste-*`,
+    `Sosa-*`, `Sosa:auto`, privé, témoin, statuts, média extrait, pertes listées) ; puis cycle complet. Ces
+    fichiers sont les fixtures `mcp/tests/fixtures/gramps-desktop/` (`--fixtures` pour les régénérer) ;
+12. arbres d'exemple de Gramps (`exemple`), téléchargés au commit de la bibliothèque 6.1 et vérifiés par
+    empreinte SHA-256, jamais copiés dans le dépôt : aller-retour XML sans perte ; en 6.x, objets relus
+    identiques à ceux que Gramps importe de l'original ; réécriture 1.7.1 réimportée par chaque version (5.2
+    comprise, qui refuse l'original en 1.7.2) avec les mêmes objets. `--sans-exemple` pour s'en passer.
 
-Résultat du 2026-11-21 : 36 vérifications sur 36 réussies en local (GLib factice ; 3 versions × 3 arbres × 4
-formes, dont 3 refus attendus de 1.7.2 par Gramps 5.2).
+Résultat du 2026-11-21 : 87 vérifications sur 87 réussies en local (GLib factice) pour 5.2, 6.0 et 6.1 :
+36 imports des formes de l'export (dont 3 refus attendus de 1.7.2 par Gramps 5.2), 33 cycles, 12 sur l'arbre fictif
+(lecture et cycle) et 6 arbres d'exemple.
 
 | Arbre | Personnes | Familles | Événements | Sources | Citations | Lieux | Notes | Dépôts | Étiquettes |
 |---|---|---|---|---|---|---|---|---|---|
@@ -110,8 +219,8 @@ schéma 1.7.1 (Gramps 5.1, copié dans `mcp/tests/fixtures/gramps-xml/`) et 1.7.
 2026-11-21 : importés sans erreur par Gramps 5.2.4 (1.7.1), ils reviennent de Gramps 6.0.8 et 6.1.0-beta2
 (1.7.1 et 1.7.2) identiques champ par champ, sauf trois cas que Gramps ne sait pas représenter : date composée sans début (relue comme date texte),
 décès retenu qui n'est pas un événement *Death* (non retenu), ordre des références quand la naissance retenue
-n'est pas la première (réordonné). Non vérifié : l'import d'un fichier Gramps dans Genealogiste (#269), l'export
-`.gpkg` de Gramps lui-même (exige GTK).
+n'est pas la première (réordonné). L'export `.gpkg` de Gramps lui-même est vérifié depuis #269 (point 11 :
+`PackageWriter` lancé avec un module Gtk factice, la boîte de dialogue n'étant pas utilisée).
 
 ## Lancer la vérification
 
@@ -147,8 +256,11 @@ environnement ; elle n'importe que la bibliothèque standard et `gramps`.
 - `CAS` : formes de fichier remises à Gramps (`Cas(nom, description, produire, refus_attendu, enrichir,
   avertissements_admis)`) ; `refus_attendu` liste les versions qui doivent refuser le fichier (1.7.2 dans
   Gramps 5.2), `enrichir` ajoute à l'arbre ce que le cas exige (média du `.gpkg`) ;
-- `CONTROLES` : contrôles supplémentaires sur chaque import réussi (le réexport de Gramps y est déjà comparé),
-  par exemple relire ce réexport avec l'import Gramps XML de Genealogiste (#269).
+- `CONTROLES` : contrôles supplémentaires sur chaque import réussi (réexport de Gramps, médias, champs, et
+  relecture par l'import de Genealogiste, `controle_lecture`, qui prépare le cycle complet).
+
+La sonde sait aussi construire l'arbre fictif par l'API de Gramps et l'exporter (`--generer`) ; le banc
+télécharge les arbres d'exemple épinglés (`EXEMPLE` : commit et empreintes).
 
 Une nouvelle version de Gramps s'ajoute dans `compatibilite-gramps.json`, `GRAMPS_DESKTOP_TESTES` et cette
 page ; le test `tests/test_compatibilite_gramps.py` signale tout oubli.

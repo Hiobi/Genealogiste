@@ -40,3 +40,19 @@ def test_controle_distribution_refuse_un_ajout_force(tmp_path):
     assert resultat.returncode == 1
     assert '.env' in resultat.stderr
     assert 'valeur-fictive' not in resultat.stderr + resultat.stdout
+
+
+@pytest.mark.parametrize("chemin, refuse", [
+    ("mcp/tests/fixtures/gramps-desktop/gramps-6.0/famille.gramps", False),
+    ("mcp/tests/fixtures/gramps-desktop/gramps-5.2/famille.gpkg", False),
+    ("mcp/tests/fixtures/gramps-desktop/gramps-6.0/vrai-arbre.gramps", True),
+    ("mcp/tests/fixtures/famille.gramps", True),
+    ("exports/famille.gpkg", True),
+    ("docs/arbre.gramps", True),
+])
+def test_seuls_les_fichiers_gramps_fictifs_sont_admis(chemin, refuse):
+    import runpy
+    from pathlib import Path
+
+    controle = runpy.run_path(str(Path(__file__).resolve().parents[2] / "scripts/verifier_distribution.py"))
+    assert controle["interdit"](chemin) is refuse

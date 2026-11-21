@@ -132,7 +132,8 @@ la déplacer avec `/genealogiste:organise`, jamais à la main.
 
 **Plan présenté**
 
-1. `/genealogiste:import <chemin.ged>` (`arbre_importer_gedcom`, mode `ajouter` par défaut) ou `gramps_tirer` :
+1. `/genealogiste:import <chemin.ged>` (`arbre_importer_gedcom`, mode `ajouter` par défaut ; aussi `.gramps` et
+   `.gpkg` de Gramps Desktop, [voir le guide](../docs/gramps.md#import-depuis-gramps-desktop)) ou `gramps_tirer` :
    bilan (personnes, familles, sources, avertissements) et extrait du diff. En mode `gramps`, pas d’import :
    l’arbre est lu directement.
 2. `arbre_coherence` et recoupement des doublons probables (`/genealogiste:recoupe`). Rien n’est fusionné

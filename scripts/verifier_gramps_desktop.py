@@ -264,9 +264,6 @@ def controle_champs(cas: Cas, version: str, attendu: dict, rapport: dict) -> lis
     return ecarts[:10]
 
 
-CONTROLES: list[Controle] = [controle_reexport, controle_medias, controle_champs]
-
-
 # --- environnements isolés ------------------------------------------------------------------------------
 
 def _run(cmd: list[str], **kw) -> None:
@@ -338,8 +335,153 @@ def preparer_cas(travail: Path) -> list[tuple[str, Cas, Path, dict[str, list[str
     return lots
 
 
-def verifier_version(entree: dict, lots, travail: Path, cache: Path, python: str, gi_systeme: bool
-                     ) -> list[Resultat]:
+# --- sens inverse (#269) : ce que Gramps écrit, relu par l'import de Genealogiste ------------------------
+
+# Champs JSON absents du XML (Gramps les ajoute ou les calcule sans les écrire) : seuls écarts admis entre un objet
+# importé par Gramps et le même objet relu par Genealogiste ; gramps_id, change et Date.sortval sont comparés.
+IGNORES_LECTURE = {"thumb", "complete", "familysearch_sync"}
+
+
+def _normaliser_lecture(o, cls: str = ""):
+    if isinstance(o, dict):
+        c = o.get("_class", cls)
+        return {k: _normaliser_lecture(v, c) for k, v in o.items()
+                if k not in IGNORES_LECTURE and not (c == "Date" and k == "format")
+                and not (c == "Date" and k == "text" and o.get("modifier") != 6)}
+    if isinstance(o, (list, tuple)):
+        return [_normaliser_lecture(x, cls) for x in o]
+    return o
+
+
+def _ecarts_stricts(a, b, chemin: str, ecrit_par_gramps: bool = False):
+    """Écarts dans les deux sens (clé manquante d'un côté ou de l'autre, valeur, longueur de liste).
+
+    ``ecrit_par_gramps`` : ``b`` a traversé l'écriture XML de Gramps (réexport), qui perd de son côté : espaces de
+    début et de fin des valeurs écrites par ``fix`` (attributs, champs de nom…) ; somme de contrôle d'un média
+    calculée par Gramps quand le fichier est trouvé. Ces deux écarts-là sont admis, et seulement eux."""
+    if isinstance(a, dict) and isinstance(b, dict):
+        for k in sorted(set(a) | set(b)):
+            if k not in b or k not in a:
+                yield f"{chemin}.{k} {'absent après lecture' if k not in b else 'en trop'}"
+            elif not (ecrit_par_gramps and k == "checksum" and not (a[k] and b[k])):
+                yield from _ecarts_stricts(a[k], b[k], f"{chemin}.{k}", ecrit_par_gramps)
+    elif isinstance(a, list) and isinstance(b, list):
+        if len(a) != len(b):
+            yield f"{chemin} : {len(a)} éléments, {len(b)} relus"
+        else:
+            for i, (x, y) in enumerate(zip(a, b, strict=True)):
+                yield from _ecarts_stricts(x, y, f"{chemin}[{i}]", ecrit_par_gramps)
+    elif a != b and not (ecrit_par_gramps and isinstance(a, str) and isinstance(b, str) and a.strip() == b):
+        yield f"{chemin} : Gramps {a!r}, Genealogiste {b!r}"
+
+
+def comparer_objets(reference: list[dict], db, contexte: str, ecrit_par_gramps: bool = False,
+                    ignorer: frozenset[str] = frozenset()) -> list[str]:
+    """Objets Gramps (object_to_dict) comparés champ par champ, dans les deux sens, à la base relue par
+    Genealogiste (GrampsDb) ; ``ecrit_par_gramps`` : voir :func:`_ecarts_stricts` ; ``ignorer`` : clés de premier
+    niveau hors comparaison (gramps_id que Gramps renumérote à l'import selon ses préférences)."""
+    ecarts = []
+    vus: dict[str, set[str]] = {cls: set() for cls in CLASSES}
+    for o in reference:
+        cls, h = o["_class"], o["handle"]
+        vus[cls].add(h)
+        g = db.get(cls, h)
+        if g is None:
+            ecarts.append(f"{contexte} : {cls}:{h} absent")
+            continue
+        a, b = ({k: v for k, v in x.items() if k not in ignorer} for x in (o, g))
+        ecarts += [f"{contexte} : {e}" for e in _ecarts_stricts(_normaliser_lecture(a), _normaliser_lecture(b),
+                                                                f"{cls}:{h}", ecrit_par_gramps)]
+    for cls in CLASSES:
+        en_trop = set(db.all(cls)) - vus[cls]
+        if en_trop:
+            ecarts.append(f"{contexte} : {cls} en trop {sorted(en_trop)[:3]}")
+    return ecarts[:10]
+
+
+def _handles(db) -> dict[str, list[str]]:
+    return {cls: sorted(db.all(cls)) for cls in CLASSES}
+
+
+def controle_lecture(cas: Cas, version: str, attendu: dict, rapport: dict) -> list[str]:
+    """Sens inverse : le réexport de Gramps relu par Genealogiste (aller-retour XML sans perte, objets identiques
+    champ par champ à ceux de Gramps en 6.x, mêmes handles en 5.2), puis réécrit en 1.7.1 pour le cycle complet
+    (réimport par Gramps, voir ``verifier_version``)."""
+    from genealogiste_mcp.export.gramps_xml import db_to_xml
+    from genealogiste_mcp.gramps.lecture_xml import LectureGrampsError, comparer_xml
+    from genealogiste_mcp.gramps.lecture_xml import lire_xml as lire
+
+    if "reexport" not in rapport:
+        return []
+    chemin = Path(rapport["reexport"])
+    brut = chemin.read_bytes()
+    try:
+        lu = lire(brut)
+    except LectureGrampsError as exc:
+        return [f"lecture Genealogiste du réexport refusée : {exc}"]
+    ecarts = [f"aller-retour XML : {e}" for e in comparer_xml(brut, db_to_xml(lu.db, lu.version_xml, lu.meta)
+                                                              .encode())]
+    if "objets" in rapport:  # objets importés par Gramps, puis réécrits par Gramps : voir _ecarts_stricts
+        ecarts += comparer_objets(rapport["objets"], lu.db, "lecture Genealogiste", ecrit_par_gramps=True)
+    else:
+        ecarts += comparer(rapport["handles"], _handles(lu.db), "lecture Genealogiste")
+    cycle = chemin.with_name(f"{chemin.name.split('.')[0]}-cycle.gramps")
+    cycle.write_text(db_to_xml(lu.db, "1.7.1", lu.meta), encoding="utf-8")
+    rapport["cycle"] = str(cycle)
+    return ecarts
+
+
+CONTROLES: list[Controle] = [controle_reexport, controle_medias, controle_champs, controle_lecture]
+
+
+def comparer_cycle(premier: dict, second: dict, contexte: str, ecrit_par_gramps: bool = True) -> list[str]:
+    """Second import par Gramps (du fichier réécrit par Genealogiste) identique au premier : handles, et en 6.x
+    chaque objet champ par champ (date de modification et identifiants compris). ``ecrit_par_gramps`` : le
+    fichier réécrit vient d'un réexport de Gramps (voir :func:`_ecarts_stricts`)."""
+    if not second.get("importe"):
+        return [f"{contexte} : réimport refusé {second.get('erreurs')}"]
+    ecarts = second["erreurs"] + [f"{contexte} avertissement : {a}" for a in second["avertissements"]]
+    ecarts += comparer(premier["handles"], second["handles"], contexte)
+    if "objets" in premier:
+        index = {o["handle"]: o for o in second.get("objets", [])}
+        for o in premier["objets"]:
+            h = o["handle"]
+            if h in index:
+                ecarts += [f"{contexte} : {e}" for e in _ecarts_stricts(
+                    _normaliser_lecture(o), _normaliser_lecture(index[h]), f"{o['_class']}:{h}", ecrit_par_gramps)]
+    return ecarts[:10]
+
+
+# --- environnement d'exécution de la sonde ---------------------------------------------------------------
+
+def lancer_sonde(exe: Path, env_sup: dict, sortie: Path, fichiers: list[Path], reexporter: bool = True,
+                 generer: Path | None = None) -> tuple[dict | None, str]:
+    """Lance la sonde dans l'environnement isolé ; renvoie (rapport, erreur)."""
+    sortie.mkdir(parents=True, exist_ok=True)
+    rapport_json = sortie / "rapport.json"
+    maison = sortie / "home"  # import .gpkg : médias extraits sous le dossier d'images de l'utilisateur
+    (maison / "Pictures").mkdir(parents=True, exist_ok=True)
+    env = {**os.environ, **env_sup, "GRAMPSHOME": str(maison), "HOME": str(maison),
+           "XDG_PICTURES_DIR": str(maison), "XDG_CONFIG_HOME": str(maison / ".config"),
+           "XDG_DATA_HOME": str(maison / ".local" / "share"), "LANGUAGE": "en", "LC_ALL": "C.UTF-8"}
+    # Gramps développe « {GRAMPS_RESOURCES} » du <mediapath> de son arbre d'exemple avec l'environnement (KeyError
+    # sinon) ; la bibliothèque installée ne retient cette variable que si elle désigne ses propres ressources.
+    env.setdefault("GRAMPS_RESOURCES", str(exe.parent.parent / "share"))
+    cmd = [str(exe), "-P", str(SONDE), "--rapport", str(rapport_json)]
+    if reexporter:
+        (sortie / "reexport").mkdir(exist_ok=True)
+        cmd += ["--reexporter", str(sortie / "reexport")]
+    if generer is not None:
+        generer.mkdir(parents=True, exist_ok=True)
+        cmd += ["--generer", str(generer)]
+    proc = subprocess.run([*cmd, *map(str, fichiers)], env=env, capture_output=True, text=True)
+    if proc.returncode or not rapport_json.exists():
+        return None, "sonde en échec : " + " / ".join((proc.stderr or proc.stdout).strip().splitlines()[-5:])
+    return json.loads(rapport_json.read_text(encoding="utf-8")), ""
+
+
+def verifier_version(entree: dict, lots, travail: Path, cache: Path, python: str, gi_systeme: bool,
+                     fixtures: Path | None = None, exemple: bool = True) -> list[Resultat]:
     version = entree["version"]
     print(f"\n== Gramps {version} ({entree.get('pypi') or entree['git']['tag']})", flush=True)
     exe, env_sup = environnement(entree, cache, python, gi_systeme)
@@ -347,22 +489,10 @@ def verifier_version(entree: dict, lots, travail: Path, cache: Path, python: str
     for cas in CAS:
         entrees = [(arbre, f, att) for arbre, c, f, att in lots if c is cas]
         sortie = travail / f"gramps-{version}" / cas.nom
-        (sortie / "reexport").mkdir(parents=True)
-        rapport_json = sortie / "rapport.json"
-        maison = sortie / "home"  # import .gpkg : médias extraits sous le dossier d'images de l'utilisateur
-        (maison / "Pictures").mkdir(parents=True)
-        env = {**os.environ, **env_sup, "GRAMPSHOME": str(maison), "HOME": str(maison),
-               "XDG_PICTURES_DIR": str(maison), "XDG_CONFIG_HOME": str(maison / ".config"),
-               "XDG_DATA_HOME": str(maison / ".local" / "share"), "LANGUAGE": "en", "LC_ALL": "C.UTF-8"}
-        proc = subprocess.run([str(exe), "-P", str(SONDE), "--rapport", str(rapport_json),
-                               "--reexporter", str(sortie / "reexport"), *[str(f) for _, f, _ in entrees]],
-                              env=env, capture_output=True, text=True)
-        if proc.returncode or not rapport_json.exists():
-            detail = (proc.stderr or proc.stdout).strip().splitlines()[-5:]
-            resultats += [Resultat(version, a, cas.nom, False, "sonde en échec : " + " / ".join(detail))
-                          for a, _, _ in entrees]
+        rapport, erreur = lancer_sonde(exe, env_sup, sortie, [f for _, f, _ in entrees])
+        if rapport is None:
+            resultats += [Resultat(version, a, cas.nom, False, erreur) for a, _, _ in entrees]
             continue
-        rapport = json.loads(rapport_json.read_text(encoding="utf-8"))
         if gi_systeme and entree.get("gi") and rapport["gi"] != "systeme":
             raise SystemExit(f"Gramps {version} : PyGObject système attendu, mode {rapport['gi']}")
         print(f"   gramps {rapport['gramps']}, XML {rapport['xml']}, gi {rapport['gi']}, "
@@ -371,6 +501,7 @@ def verifier_version(entree: dict, lots, travail: Path, cache: Path, python: str
             raise SystemExit(f"Gramps {version} attendu, {rapport['gramps']} chargé")
         if rapport["xml"] != entree["xml"]:
             raise SystemExit(f"Gramps {version} : XML {rapport['xml']} au lieu de {entree['xml']}")
+        cycles = []
         for arbre, fichier, attendu in entrees:
             r = rapport["fichiers"][fichier.name]
             refus = version in cas.refus_attendu
@@ -388,9 +519,197 @@ def verifier_version(entree: dict, lots, travail: Path, cache: Path, python: str
                 for controle in CONTROLES:
                     ecarts += controle(cas, version, attendu, r)
                 ok = not ecarts
+                if "cycle" in r:
+                    cycles.append((arbre, Path(r["cycle"]), r))
             nombres = {cls: len(h) for cls, h in (r.get("handles") or {}).items() if h}
             detail = ("refus attendu" if refus and ok else "") if ok else " ; ".join(ecarts)
             resultats.append(Resultat(version, arbre, cas.nom, ok, detail, nombres))
+        if cycles:  # cycle complet : Gramps -> Genealogiste -> Gramps
+            second, erreur = lancer_sonde(exe, env_sup, sortie / "cycle", [f for _, f, _ in cycles], False)
+            for arbre, f, premier in cycles:
+                ecarts = [erreur] if second is None else comparer_cycle(premier, second["fichiers"][f.name],
+                                                                        "réimport")
+                resultats.append(Resultat(version, arbre, f"cycle:{cas.nom}", not ecarts, " ; ".join(ecarts),
+                                          {cls: len(h) for cls, h in premier["handles"].items() if h}))
+    resultats += verifier_generes(entree, exe, env_sup, travail, fixtures)
+    if exemple:
+        resultats += verifier_exemple(entree, exe, env_sup, travail, cache)
+    return resultats
+
+
+# --- arbre fictif écrit par la bibliothèque Gramps (fixtures « comme Gramps Desktop ») -------------------
+
+FIXTURES_DESKTOP = FIXTURES / "gramps-desktop"
+FORMATS_GENERES = {"famille.gramps": "gramps-gzip", "famille.gpkg": "gpkg"}
+
+
+def verifier_lecture_genealogiste(chemin: Path, zone: Path) -> list[str]:
+    """Import complet par Genealogiste d'un arbre fictif écrit par Gramps : marqueurs Genealogiste-* et forme
+    historique Sosa-* / Sosa:auto reconnus, privé conservé, témoin, statuts, médias extraits, pertes listées."""
+    from genealogiste_mcp.gramps.lecture_xml import importer
+
+    tree, info, zone_creee = importer(chemin, zone, "banc")
+    ecarts = []
+
+    def verifier(cond: bool, motif: str) -> None:
+        if not cond:
+            ecarts.append(motif)
+    p = tree.personnes
+    verifier(set(p) == {"I0001", "I0002", "I0003", "I0004"}, f"personnes {sorted(p)}")
+    if ecarts:
+        return ecarts
+    verifier(p["I0001"].uid == "uid-jean-fictif", "Genealogiste-UID non repris")
+    verifier(p["I0002"].uid == "uid-marie-fictif", "Sosa-UID (forme historique) non repris")
+    verifier(p["I0002"].prive and not p["I0001"].prive, "drapeau privé non conservé")
+    naissance = p["I0003"].evenements[0]
+    verifier(naissance.statut_manuel is not None and naissance.statut_manuel.statut == "contradictoire",
+             "Sosa-Statut d'événement non repris")
+    verifier(not any("généré par Genealogiste" in n for n in [*p["I0001"].notes, *tree.notes.values()]),
+             "note étiquetée Sosa:auto reprise comme note manuelle")
+    verifier(any("Laboureur" in n for n in p["I0001"].notes), "note de personne perdue")
+    fam = tree.familles.get("F0001")
+    verifier(fam is not None and fam.enfants and fam.enfants[0].statut_manuel is not None
+             and fam.enfants[0].statut_manuel.statut == "probable", "Sosa-Statut filiation non repris")
+    mariage = fam.evenements[0] if fam and fam.evenements else None
+    verifier(mariage is not None and mariage.uid == "uid-mariage-fictif", "UID du mariage non repris")
+    verifier(mariage is not None and any(a.personne == "I0004" for a in mariage.associations),
+             "témoin du mariage non repris")
+    pertes = info["non_repris"]
+    for cle in ("Person.address_list[]", "Person.urls[]", "Note.text.tags[]", "Person.primary_name.suffix",
+                "Tag"):
+        verifier(cle in pertes, f"perte non listée : {cle}")
+    if FORMATS_GENERES[chemin.name] == "gpkg":
+        fichiers = info["medias"]["fichiers"]
+        verifier(len(fichiers) == 1 and (zone / fichiers[0]).is_file(), f"média non extrait : {info['medias']}")
+        verifier(fichiers and tree.medias["O0001"].fichier == fichiers[0], "chemin du média non relocalisé")
+    elif zone_creee is not None:
+        ecarts.append("zone d'attente créée pour un .gramps")
+    return ecarts
+
+
+def verifier_generes(entree: dict, exe: Path, env_sup: dict, travail: Path, fixtures: Path | None
+                     ) -> list[Resultat]:
+    """Arbre fictif construit et exporté par la bibliothèque Gramps (.gramps gzip et .gpkg), lu par
+    Genealogiste (objets identiques champ par champ à ceux que Gramps importe, import complet), réécrit puis
+    réimporté par Gramps (cycle complet)."""
+    from genealogiste_mcp.export.gramps_xml import db_to_xml
+    from genealogiste_mcp.gramps.lecture_xml import LectureGrampsError, lire_fichier
+
+    version = entree["version"]
+    sortie = travail / f"gramps-{version}" / "generes"
+    rapport, erreur = lancer_sonde(exe, env_sup, sortie, [], False, sortie / "fichiers")
+    if rapport is None or rapport.get("generation", {}).get("erreurs") or "generes" not in rapport:
+        detail = erreur or f"génération : {(rapport or {}).get('generation')}"
+        return [Resultat(version, "fictif", "desktop", False, detail)]
+    resultats, cycles = [], []
+    for nom, fmt in FORMATS_GENERES.items():
+        chemin = Path(rapport["generes"][nom])
+        r = rapport["fichiers"][nom]
+        try:
+            lu = lire_fichier(chemin)
+        except LectureGrampsError as exc:
+            resultats.append(Resultat(version, "fictif", f"desktop:{nom}", False, f"refusé : {exc}"))
+            continue
+        ecarts = [] if (lu.format, lu.version_xml) == (fmt, entree["xml"]) else \
+            [f"format {lu.format} {lu.version_xml}, attendu {fmt} {entree['xml']}"]
+        if not r["importe"]:
+            ecarts.append(f"Gramps ne relit pas son propre export : {r['erreurs']}")
+        elif "objets" in r:
+            ecarts += comparer_objets(r["objets"], lu.db, "lecture Genealogiste", ignorer=frozenset({"gramps_id"}))
+        else:
+            ecarts += comparer(r["handles"], _handles(lu.db), "lecture Genealogiste")
+        ecarts += verifier_lecture_genealogiste(chemin, sortie / f"donnees-{nom.replace('.', '-')}")
+        cycle = sortie / f"{chemin.stem}-{fmt}-cycle.gramps"
+        cycle.write_text(db_to_xml(lu.db, "1.7.1", lu.meta), encoding="utf-8")
+        if r["importe"]:
+            cycles.append((nom, cycle, r))
+        nombres = {cls: n for cls, n in lu.db.count().items() if n}
+        resultats.append(Resultat(version, "fictif", f"desktop:{nom}", not ecarts, " ; ".join(ecarts), nombres))
+        if fixtures is not None:
+            cible = fixtures / f"gramps-{version}"
+            cible.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(chemin, cible / nom)
+    if cycles:
+        second, erreur = lancer_sonde(exe, env_sup, sortie / "cycle", [c for _, c, _ in cycles], False)
+        for nom, cycle, premier in cycles:
+            ecarts = [erreur] if second is None else comparer_cycle(premier, second["fichiers"][cycle.name],
+                                                                    "réimport", ecrit_par_gramps=False)
+            resultats.append(Resultat(version, "fictif", f"cycle:desktop:{nom}", not ecarts, " ; ".join(ecarts)))
+    return resultats
+
+
+# --- arbre d'exemple de Gramps (téléchargé, épinglé par commit et empreinte ; jamais copié dans le dépôt) --
+
+EXEMPLE = {
+    "depot": "gramps-project/gramps",
+    "commit": "2153e4fa4b0e4ddf7542f1c064c7820bc345a482",  # v6.1.0-beta2, comme la bibliothèque 6.1 de la matrice
+    "fichiers": {
+        "example/gramps/data.gramps": "034411a79f8c2df617e1b09051d1445415792b468baf309957dd330cef6b0c26",
+        "example/gramps/example.gramps": "a93c5ebeecb89f0c34ba1606f73089f5c222844fb917fbff15b60adf7bdc3b39",
+    },
+}
+
+
+def arbre_exemple(cache: Path) -> dict[str, Path]:
+    """Arbres d'exemple de Gramps (GPL du dépôt Gramps, licence propre des données non précisée : jamais
+    versionnés ici), téléchargés une fois au commit épinglé et vérifiés par empreinte SHA-256."""
+    import hashlib
+    import urllib.request
+
+    dossier = cache / "exemple" / EXEMPLE["commit"]
+    out = {}
+    for rel, empreinte in EXEMPLE["fichiers"].items():
+        cible = dossier / Path(rel).name
+        if not cible.exists() or hashlib.sha256(cible.read_bytes()).hexdigest() != empreinte:
+            url = f"https://raw.githubusercontent.com/{EXEMPLE['depot']}/{EXEMPLE['commit']}/{rel}"
+            print(f"  téléchargement {url}", flush=True)
+            with urllib.request.urlopen(url, timeout=120) as rep:  # noqa: S310 - URL fixe, épinglée
+                brut = rep.read()
+            if hashlib.sha256(brut).hexdigest() != empreinte:
+                raise SystemExit(f"arbre d'exemple {rel} : empreinte inattendue")
+            dossier.mkdir(parents=True, exist_ok=True)
+            cible.write_bytes(brut)
+        out[cible.name] = cible
+    return out
+
+
+def verifier_exemple(entree: dict, exe: Path, env_sup: dict, travail: Path, cache: Path) -> list[Resultat]:
+    """Arbre d'exemple de Gramps (Gramps XML 1.7.2 écrit par Gramps) : relu par Genealogiste, aller-retour XML
+    sans perte, objets identiques champ par champ à ceux que Gramps 6.x importe, réécrit en 1.7.1 et réimporté
+    par chaque version (cycle complet ; 5.2 ne lit que la réécriture : l'original est en 1.7.2)."""
+    from genealogiste_mcp.export.gramps_xml import db_to_xml
+    from genealogiste_mcp.gramps.lecture_xml import comparer_xml, lire_fichier
+
+    version = entree["version"]
+    sortie = travail / f"gramps-{version}" / "exemple"
+    sortie.mkdir(parents=True, exist_ok=True)
+    resultats = []
+    for nom, chemin in arbre_exemple(cache).items():
+        lu = lire_fichier(chemin)
+        reecrit = db_to_xml(lu.db, lu.version_xml, lu.meta).encode()
+        ecarts = [f"aller-retour XML : {e}" for e in comparer_xml(chemin.read_bytes(), reecrit)]
+        cycle = sortie / f"{chemin.stem}-cycle.gramps"
+        cycle.write_text(db_to_xml(lu.db, "1.7.1", lu.meta), encoding="utf-8")
+        a_importer = [cycle] + ([chemin] if version != "5.2" else [])
+        rapport, erreur = lancer_sonde(exe, env_sup, sortie / chemin.stem, a_importer, False)
+        if rapport is None:
+            resultats.append(Resultat(version, nom, "exemple", False, erreur))
+            continue
+        r_cycle = rapport["fichiers"][cycle.name]
+        if version == "5.2":  # pas de format JSON : mêmes handles
+            ecarts += [] if r_cycle.get("importe") else [f"réimport refusé : {r_cycle.get('erreurs')}"]
+            ecarts += comparer(_handles(lu.db), r_cycle.get("handles") or {}, "réimport 5.2")
+            ecarts += r_cycle["erreurs"] + [f"avertissement : {a}" for a in r_cycle["avertissements"]]
+        else:
+            r_orig = rapport["fichiers"][chemin.name]
+            if not r_orig.get("importe"):
+                ecarts.append(f"original refusé par Gramps : {r_orig.get('erreurs')}")
+            else:
+                ecarts += comparer_objets(r_orig["objets"], lu.db, "lecture Genealogiste",
+                                          ignorer=frozenset({"gramps_id"}))
+                ecarts += comparer_cycle(r_orig, r_cycle, "réimport de la réécriture", ecrit_par_gramps=False)
+        nombres = {cls: n for cls, n in lu.db.count().items() if n}
+        resultats.append(Resultat(version, nom, "exemple", not ecarts, " ; ".join(ecarts[:10]), nombres))
     return resultats
 
 
@@ -403,6 +722,11 @@ def main(argv: list[str] | None = None) -> int:
                         help="systeme : venv --system-site-packages, PyGObject du système exigé pour 5.2 et 6.0")
     parser.add_argument("--cache", type=Path, default=CACHE)
     parser.add_argument("--rapport", type=Path, help="écrit aussi le résultat en JSON")
+    parser.add_argument("--sans-exemple", action="store_true",
+                        help="ne pas télécharger ni vérifier l'arbre d'exemple de Gramps")
+    parser.add_argument("--fixtures", type=Path, nargs="?", const=FIXTURES_DESKTOP,
+                        help="copie les arbres fictifs écrits par Gramps dans ce dossier (défaut : "
+                             "mcp/tests/fixtures/gramps-desktop)")
     args = parser.parse_args(argv)
 
     matrice = charger_matrice()["gramps_desktop"]
@@ -416,9 +740,10 @@ def main(argv: list[str] | None = None) -> int:
         travail = Path(tmp)
         lots = preparer_cas(travail)
         for entree in choisies:
-            resultats += verifier_version(entree, lots, travail, args.cache, args.python, args.gi == "systeme")
+            resultats += verifier_version(entree, lots, travail, args.cache, args.python, args.gi == "systeme",
+                                          args.fixtures, not args.sans_exemple)
 
-    print("\n| Gramps | arbre | cas | résultat | objets importés |\n|---|---|---|---|---|")
+    print("\n| Gramps | arbre | cas | résultat | objets |\n|---|---|---|---|---|")
     for r in resultats:
         nombres = ", ".join(f"{cls} {n}" for cls, n in r.nombres.items())
         etat = "ok" if r.ok else "ÉCHEC"

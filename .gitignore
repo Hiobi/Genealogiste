@@ -25,6 +25,8 @@ data/*
 !mcp/tests/fixtures/*.ged
 *.gramps
 *.gpkg
+!mcp/tests/fixtures/gramps-desktop/gramps-*/famille.gramps
+!mcp/tests/fixtures/gramps-desktop/gramps-*/famille.gpkg
 .propositions/
 medias/
 exports/

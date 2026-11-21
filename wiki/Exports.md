@@ -51,3 +51,8 @@ Faire le premier essai dans une base vide ou jetable. Un second import dans un a
 peut dupliquer les objets. Un export GEDCOM ne conserve pas forcément tous les détails d’un logiciel ;
 les [extensions](../docs/gedcom-extensions.md) et les guides Gramps/GeneWeb expliquent les choix.
 Ne pas utiliser des imports répétés pour simuler une synchronisation bidirectionnelle.
+
+Dans l’autre sens, `/genealogiste:import` lit un `.gramps` ou un `.gpkg` exporté par Gramps Desktop
+(Gramps 5.2 à 6.1) : diff et accord comme pour un GEDCOM, liste de ce que l’arbre ne reprend pas, médias
+d’un paquet mis en attente dans le répertoire de données. Voir
+l’[import depuis Gramps Desktop](../docs/gramps.md#import-depuis-gramps-desktop).

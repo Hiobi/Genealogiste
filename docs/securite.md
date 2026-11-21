@@ -14,6 +14,7 @@ Module `chemins.py` (#41, #51). Les chemins sont résolus (liens symboliques com
 | `matchid_appariement_statut(job, sortie)` | `sortie` facultative : fichier `.csv` du répertoire de données (chemin relatif à celui-ci, ou absolu à l'intérieur), hors `.git`. `arbre.ged`, `journal.jsonl` et les autres fichiers internes sont donc inatteignables. Contrôle fait avant l'appel réseau. |
 | Envoi des médias vers Gramps Web | Le fichier d'un média est cherché sous le répertoire des données puis, avec `GENEALOGISTE_MEDIA_DIR`, sous le répertoire des médias et l'arborescence des pièces (vault) : un chemin relatif est essayé contre chacune de ces racines, un chemin absolu doit s'y trouver. Un chemin qui sort de toutes (absolu ailleurs, traversant `../`, lien symbolique sortant) n'est jamais lu ; il est listé comme « hors du répertoire de données, refusé ». Un chemin relatif présent sous deux racines avec des contenus différents n'est ni lu ni envoyé (« Chemin ambigu », #193 ; règle dans `docs/operations.md`). |
 | `ajouter_media`, `modifier_media`, `gramps_relocaliser_medias` (propositions) | Même confinement (données, répertoire des médias, arborescence des pièces) : un chemin local hors de ces racines ou introuvable fait refuser la proposition ; une URL distante est gardée sans être lue. |
+| `arbre_importer_gedcom` sur un fichier Gramps (#269) | Format reconnu au contenu. **XML** : analyseur expat de la bibliothèque standard (aucune dépendance ajoutée) ; DTD interne, déclaration d'entité (générale, paramètre, non analysée), entité externe et notation refusées avant toute expansion (bombe d'entités, lecture de fichier ou requête réseau impossibles) ; le DOCTYPE externe de Gramps n'est jamais résolu ; XML décompressé borné à 512 Mio, décompression gzip arrêtée à la limite ; espace de noms étranger, préfixe, élément ou attribut inconnu : refus. **Paquet `.gpkg`** : membres inspectés avant toute écriture ; seuls des fichiers réguliers (lien symbolique ou physique, périphérique, FIFO : refus du paquet entier) ; noms relatifs sans `..`, composant caché (`.env`), antislash, NUL ni lecteur, uniques, un seul `data.gramps` ; 100 000 membres, 2 Gio par membre et 8 Gio au total au plus. Les médias sont copiés dans une zone d'attente **neuve** `<données>/imports/gramps/<nom>-<horodatage>/` (création exclusive, jamais d'écrasement, chemin final revérifié sous la zone), retirée si la lecture échoue ; jamais dans le vault ni ailleurs. |
 
 ## Confirmations (hooks)
 
@@ -59,6 +60,11 @@ Cas tranchés d'après le code :
   les fichiers des médias par la règle commune (`chemins.localiser` : racines autorisées, ni traversée ni lien
   sortant, ambiguïté refusée), refuse en plus tout composant caché (`.env`, `.git`), n'écrit dans l'archive que
   des noms relatifs sûrs et liste les fichiers non empaquetés ([gramps.md](gramps.md#paquet-gpkg)).
+- `arbre_importer_gedcom` reste une proposition, y compris pour un fichier Gramps : l'arbre n'est touché qu'à
+  `arbre_appliquer`. Pour un paquet `.gpkg`, la seule écriture est la copie additive des médias dans une zone
+  d'attente neuve du répertoire de données (rien n'est écrasé, déplacé ni rangé dans le vault : le rangement
+  passe par `pieces_proposer` puis `pieces_appliquer`, avec accord). La lecture est locale : aucune donnée
+  ne sort, personnes vivantes comprises.
 - `gramps_recalculer_notes` et `gramps_structurer_lieux` ne font que préparer un diff et un jeton (proposition) ;
   l'écriture passe par `arbre_appliquer`.
 - En mode gramps, les propositions (`arbre_proposer`, `gramps_recalculer_notes`, `gramps_structurer_lieux`,

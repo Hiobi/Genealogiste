@@ -11,6 +11,9 @@ def interdit(chemin: str) -> bool:
         return False
     if p.suffix.lower() == '.ged':
         return not (p.parent == PurePosixPath('mcp/tests/fixtures'))
+    if p.suffix.lower() in {'.gramps', '.gpkg'}:  # arbre fictif écrit par Gramps Desktop (#269), et rien d'autre
+        return not (p.parent.parent == PurePosixPath('mcp/tests/fixtures/gramps-desktop')
+                    and p.parent.name.startswith('gramps-') and p.stem == 'famille')
     return (p.name == '.env' or p.name.startswith('.env.')
             or p.suffix.lower() in {'.token', '.key', '.pem', '.p12', '.pfx', '.sqlite', '.db',
                                     '.sql', '.jsonl', '.gramps', '.gpkg'}

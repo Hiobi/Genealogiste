@@ -10,7 +10,8 @@ description: Rechercher une personne, importer un GEDCOM, préparer une édition
    - **Recherche** : consulter `arbre_personne`, `arbre_lacunes`, puis les sources appropriées.
      Appliquer `methodologie-gps`, `sources-francaises` et `droit-communicabilite` (période 1939-1945 : `seconde-guerre-mondiale`).
      Conserver les références, distinguer homonymes, hypothèses et faits cités.
-   - **Import** : `arbre_importer_gedcom` produit un bilan et un diff ; un import reste non vérifié.
+   - **Import** : `arbre_importer_gedcom` (GEDCOM, ou `.gramps` / `.gpkg` de Gramps Desktop) produit un bilan
+     et un diff ; un import reste non vérifié ; pour Gramps, présenter aussi `import.non_repris`.
    - **Acte** : pour retrouver un acte depuis une personne, suivre le parcours `archives_service` (service et
      couverture) → recherche du registre (`ark_resoudre` pour un ARK déjà cité ; `archives_registres` pour
      AD59 et les services Mnesys du référentiel, avec commune, année, type d'acte et identifiant local `personne` ; sinon `liens_recherche`,
