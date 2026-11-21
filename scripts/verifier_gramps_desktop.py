@@ -1557,11 +1557,44 @@ EXEMPLE = {
 }
 
 
-def arbre_exemple(cache: Path) -> dict[str, Path]:
-    """Arbres d'exemple de Gramps (GPL du dépôt Gramps, licence propre des données non précisée : jamais
-    versionnés ici), téléchargés une fois au commit épinglé et vérifiés par empreinte SHA-256."""
-    import hashlib
+TENTATIVES_TELECHARGEMENT = 4
+PAUSES_TELECHARGEMENT = (5.0, 15.0, 45.0)  # secondes entre deux tentatives
+CODES_PASSAGERS = {408, 425, 429, 500, 502, 503, 504}  # ex. 503 « Backend.max_conn reached » de GitHub
+
+
+def telecharger(url: str, ouvrir: Callable | None = None, attendre: Callable[[float], None] | None = None) -> bytes:
+    """Contenu d'une URL fixe et épinglée ; nouvelles tentatives espacées sur erreur passagère (code HTTP de
+    ``CODES_PASSAGERS``, réseau, délai dépassé), échec immédiat sinon (404…). ``ouvrir`` et ``attendre`` : tests."""
+    import time
+    import urllib.error
     import urllib.request
+
+    ouvrir = ouvrir or urllib.request.urlopen
+    attendre = attendre or time.sleep
+    for essai in range(1, TENTATIVES_TELECHARGEMENT + 1):
+        try:
+            with ouvrir(url, timeout=120) as rep:  # noqa: S310 - URL fixe, épinglée
+                return rep.read()
+        except urllib.error.HTTPError as exc:
+            if exc.code not in CODES_PASSAGERS or essai == TENTATIVES_TELECHARGEMENT:
+                raise
+            motif = f"HTTP {exc.code}"
+        except (urllib.error.URLError, TimeoutError, ConnectionError) as exc:
+            if essai == TENTATIVES_TELECHARGEMENT:
+                raise
+            motif = type(exc).__name__
+        pause = PAUSES_TELECHARGEMENT[min(essai, len(PAUSES_TELECHARGEMENT)) - 1]
+        print(f"  {motif} : nouvelle tentative dans {pause:g} s ({essai + 1}/{TENTATIVES_TELECHARGEMENT})", flush=True)
+        attendre(pause)
+    raise AssertionError("inaccessible")
+
+
+def arbre_exemple(cache: Path, ouvrir: Callable | None = None,
+                  attendre: Callable[[float], None] | None = None) -> dict[str, Path]:
+    """Arbres d'exemple de Gramps (GPL du dépôt Gramps, licence propre des données non précisée : jamais
+    versionnés ici), téléchargés une fois au commit épinglé et vérifiés par empreinte SHA-256. En CI, le dossier
+    ``exemple/<commit>`` du cache est conservé entre les exécutions (``.github/workflows/gramps.yml``)."""
+    import hashlib
 
     dossier = cache / "exemple" / EXEMPLE["commit"]
     out = {}
@@ -1570,12 +1603,13 @@ def arbre_exemple(cache: Path) -> dict[str, Path]:
         if not cible.exists() or hashlib.sha256(cible.read_bytes()).hexdigest() != empreinte:
             url = f"https://raw.githubusercontent.com/{EXEMPLE['depot']}/{EXEMPLE['commit']}/{rel}"
             print(f"  téléchargement {url}", flush=True)
-            with urllib.request.urlopen(url, timeout=120) as rep:  # noqa: S310 - URL fixe, épinglée
-                brut = rep.read()
+            brut = telecharger(url, ouvrir, attendre)
             if hashlib.sha256(brut).hexdigest() != empreinte:
                 raise SystemExit(f"arbre d'exemple {rel} : empreinte inattendue")
             dossier.mkdir(parents=True, exist_ok=True)
-            cible.write_bytes(brut)
+            provisoire = cible.with_suffix(cible.suffix + ".part")
+            provisoire.write_bytes(brut)
+            provisoire.replace(cible)  # jamais de fichier tronqué dans le cache
         out[cible.name] = cible
     return out
 
