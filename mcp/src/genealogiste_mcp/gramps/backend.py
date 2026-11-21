@@ -495,6 +495,7 @@ class GrampsBackend:
         out.update({"annule": record["annule"]} if undo else
                    {"resume": record["resume"], "references_creees": record["references"]})
         etapes: dict[str, str] = {}
+        apres_envoi: dict[str, dict] = {}
         if not undo:
             medias = {i["handle"] for i in written if i["_class"] == "Media" and i["type"] != "delete"}
             if medias:  # fichiers des médias de la proposition acceptée (annoncés dans fichiers_a_envoyer)
@@ -505,10 +506,8 @@ class GrampsBackend:
                         self._reload_media(todo)
                         # état après envoi (somme et chemin attribués par le serveur) : l'annulation le compare à
                         # l'état courant au lieu de celui de la transaction (#261 : billet avec image annulable)
-                        envoyes = {t["handle"]: self.db.get("Media", t["handle"]) for t in todo
-                                   if self.db.get("Media", t["handle"]) is not None}
-                        if envoyes:
-                            self._log({"id": token, "medias_apres_envoi": envoyes})
+                        apres_envoi = {t["handle"]: self.db.get("Media", t["handle"]) for t in todo
+                                       if self.db.get("Media", t["handle"]) is not None}
                     etapes["medias"] = "ok"
                 except Exception as exc:  # noqa: BLE001
                     etapes["medias"] = f"échec : {exc}"
@@ -520,7 +519,8 @@ class GrampsBackend:
             out["miroir_git"] = None
             etapes["miroir_git"] = f"échec : {exc}"
         echecs = {k: v for k, v in etapes.items() if v != "ok"}
-        self._log({"id": token, "etat": "terminee" if not echecs else "complements_en_echec", "etapes": etapes})
+        self._log({"id": token, "etat": "terminee" if not echecs else "complements_en_echec", "etapes": etapes,
+                   **({"medias_apres_envoi": apres_envoi} if apres_envoi else {})})
         if echecs:
             out["avertissement"] = ("Transaction enregistrée dans Gramps Web et journalisée (annulable), mais "
                                     f"étapes complémentaires en échec : {echecs}. Relancer : "
