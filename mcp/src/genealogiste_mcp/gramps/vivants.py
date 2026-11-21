@@ -134,9 +134,12 @@ def perimetre(db, cibles: dict[str, str], billets: bool = True, vivants: dict[st
         return out
 
     def marquer(cle: Cle, m: set[str]) -> bool:
+        """Vrai si l'objet est ajouté ou si ses motifs grandissent (un objet déjà privé transmet aussi ses motifs :
+        une note ajoutée depuis à une citation déjà privée d'un vivant est trouvée)."""
+        avant = set(motifs.get(cle, set()))
         motifs.setdefault(cle, set()).update(m)
         if cle in prive or cle in poser:
-            return False
+            return motifs[cle] != avant
         poser[cle] = set(m)
         return True
 
@@ -184,10 +187,13 @@ def perimetre(db, cibles: dict[str, str], billets: bool = True, vivants: dict[st
         for cls in ("Citation", "Source", "Media", "Note"):
             for h in db.all(cls):
                 cle = (cls, h)
-                if cle in poser or cle in prive:
+                if cle in poser:
                     continue
                 m = motif_de(cle)
                 if not m:
+                    continue
+                if cle in prive:
+                    change = marquer(cle, m) or change
                     continue
                 if cls == "Source" and _interface(db, h):
                     continue
@@ -201,7 +207,7 @@ def perimetre(db, cibles: dict[str, str], billets: bool = True, vivants: dict[st
                     change = True
     for cle in poser:
         partages.pop(cle, None)
-    return {"poser": {k: sorted(v) for k, v in poser.items()},
+    return {"poser": {k: sorted(motifs.get(k) or v) for k, v in poser.items()},
             "partages": {k: v for k, v in partages.items() if k not in prive},
             "masques": masques}
 

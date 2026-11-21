@@ -251,6 +251,20 @@ def test_idempotent_et_aller_retour_sans_reecriture(gapp, fake):
         "private")) for it in items)
 
 
+def test_objet_ajoute_depuis_sous_un_objet_deja_prive(gapp, fake):
+    """Une note ajoutée dans l'interface à la citation (déjà privée) d'un vivant protégé est trouvée au passage
+    suivant : un objet privé transmet le motif de ses référents."""
+    server.arbre_appliquer(server.gramps_proteger_vivants()["jeton"])
+    cit = next(c for c in fake.objects["Citation"].values() if c["page"] == "Livret de famille, page 1")
+    assert cit["private"]
+    fake.put({"_class": "Note", "handle": "noteajouteeinterface0001", "gramps_id": "N900", "private": False,
+              "text": {"_class": "StyledText", "string": "Ajoutée dans l'interface.", "tags": []}, "format": 0,
+              "type": {"_class": "NoteType", "value": 1, "string": ""}, "tag_list": []})
+    fake.ui_edit("Citation", cit["gramps_id"], lambda o: o["note_list"].append("noteajouteeinterface0001"))
+    r = server.gramps_proteger_vivants()
+    assert r["transaction_gramps"]["prive_vivants"] == ["Note N900 : privé posé (I10)"]
+
+
 def test_limite_par_lot_puis_suite(gapp, fake):
     r = server.gramps_proteger_vivants(limite=2)
     # reste : I14, I9, et I10 (famille F10, masquable quand I9 le sera)
