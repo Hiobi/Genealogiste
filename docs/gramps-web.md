@@ -258,7 +258,7 @@ hors présentation) :
   modifié ou retiré par `modifier_source`) ; toute autre note privée reste hors du modèle, intacte (c'est le
   cas du corps privé d'un billet public : jamais publié par Genealogiste) ;
 - **compte Invité** (rôle 0, sans `ViewPrivate`) : la base lui est servie à travers le filtre du privé ; un
-  billet privé n'apparaît ni dans la liste, ni par son identifiant (`/api/sources/<handle>` : 404), et sa note
+  billet privé n'apparaît ni dans la liste, ni par son identifiant (`/api/sources/<handle>` : 404 ; `200 {}`, objet vide, sur l'API 3.13.0), et sa note
   non plus (`/api/notes/?gramps_id=…` : 404). Un billet public et son corps lui sont lisibles. Gramps Web
   ne masque pas les vivants par rôle : d'où le refus d'un billet public qui nomme une personne présumée vivante
   ([sécurité](securite.md#billets-du-blog-de-gramps-web-261)). Les **médias** gardent leur propre

@@ -758,7 +758,9 @@ def test_billet_blog_sur_vrai_gramps_web(client, loaded, tmp_path):
     assert _corps_blog(invite, vus[0])[0]["formatted"]["html"].strip()
     rep = invite.request("GET", "/notes/", params={"gramps_id": n0["gramps_id"]})
     assert rep.status_code == 404 or rep.json() == []  # 404 relevé sur 3.25.1 : note privée introuvable
-    assert invite.request("GET", f"/sources/{pv['handle']}").status_code in (403, 404)
+    direct = invite.request("GET", f"/sources/{pv['handle']}")
+    print("billet privé lu par son handle (Invité) :", direct.status_code, direct.text[:600])
+    assert direct.status_code in (403, 404) or direct.json() == {}  # API 3.13.0 : 200 et objet vide, rien ne fuit
     # relecture par le plugin : corps du billet privé dans le modèle, rien à réécrire
     db = client.load_all()
     t, _ = gramps_to_tree(db)
