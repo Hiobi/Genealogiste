@@ -118,6 +118,126 @@ Après l'une de ces voies, relancer `diagnostic` : `gramps_personne_reference` r
 racine Sosa. Pour l'inverse (aligner la racine Sosa sur Gramps), régler `GENEALOGISTE_SOSA_RACINE` à la main avec la
 valeur de `suggestion`.
 
+## Groupes de noms (#276)
+
+Gramps classe les personnes par **nom de groupe** dans ses vues par nom, ses index et ses rapports : `Dupond` peut
+être rangé sous `DUPONT`. **Un groupe de noms n'est pas une fusion de personnes** : aucune personne, aucun nom,
+aucun événement n'est touché ; seul change le classement affiché. Deux niveaux existent dans Gramps :
+
+- le **regroupement global** de la base, table `name_group` (patronyme → nom de groupe) ; `get_name_group_mapping`
+  rend le groupe, ou le patronyme lui-même s'il n'est pas regroupé. Les clés sont **sensibles à la casse**
+  (`Dupont` et `DUPONT` sont deux clés). C'est lui que lit `GET /api/name-groups/` ;
+- `group_as` du **nom d'une personne** (champ `group` du nom dans le XML) : propre à ce nom, il **prime** sur le
+  regroupement global (`gramps.gen.display.name.name_grouping_name` : « si `group_as` est défini, l'utiliser ; sinon
+  le regroupement du patronyme principal ; sinon le patronyme »). Le champ du nom n'est pas un regroupement global.
+
+### Routes de l'API (relevé amont)
+
+Sources : `gramps-web-api` tag `v3.26.0` (`5b3f890`) et `main` `9cbf933` ; `gramps_webapi/api/resources/name_groups.py`,
+`api/__init__.py` l. 689-705, `auth/const.py` ; `gramps` `maintenance/gramps52` (`14c01e5`), `gramps60` (`32aa296`),
+`gramps61` (`e9c09a4`) : `plugins/db/dbapi/dbapi.py`, `plugins/export/exportxml.py`, `plugins/importer/importxml.py`.
+
+| Route | Droit | Effet |
+|---|---|---|
+| `GET /api/name-groups/` | tout jeton valide | `[{surname, group}]` : seuls les patronymes **regroupés** (`get_name_group_keys`), par ordre de nom |
+| `GET /api/name-groups/<surname>` | tout jeton valide | `{surname, group}` : le groupe, ou le patronyme lui-même sans regroupement |
+| `POST /api/name-groups/<surname>/<group>` | `EditNameGroup` (rôle **Editor**) | `set_name_group_mapping`, 201 `{surname, group}` ; pas de corps (paramètres dans l'URL) |
+
+Aucune route de suppression ni de modification d'un autre type : constaté sur les trois images de la matrice,
+`DELETE` et `PUT` répondent 405, `POST /api/name-groups/<surname>/` sans groupe 404, un `POST` avec le rôle Member 403
+(`{"code":403,"status":"Forbidden"}`). La lecture existe
+depuis l'API 0.1 (commit `b050663`, 2020-11-07, première étiquette `v0.1`), le droit `EditNameGroup` depuis `v0.6.0`
+(`d8f423d`, 2023-03-15) : clés `groupes_noms` et `groupes_noms_ecriture` de `FONCTIONS_API` (tableau des versions
+minimales ci-dessous), donc toujours disponibles dans la plage testée (API ≥ 3.13.0). Un patronyme qui contient « / »
+ne peut pas être un segment d'URL (convertisseur `string` de Flask) : il ne peut pas être regroupé par cette route.
+
+### Pourquoi Genealogiste n'écrit pas les groupes de noms
+
+Le contrat est : proposition (diff) → accord explicite → application, journalisée, **annulable**. L'écriture d'un
+groupe de noms ne peut pas le respecter, constaté dans le code amont **et** sur chaque image de la matrice
+(`test_groupes_de_noms_lecture_ecriture_et_irreversibilite_sur_vrai_gramps_web`) :
+
+1. **hors historique** : `set_name_group_mapping` fait son propre `INSERT`/`UPDATE` et `commit` SQL ; la route ne
+   passe par aucun `DbTxn`. L'écriture n'entre donc ni dans `GET /api/transactions/history/` (inchangé après un
+   `POST`) ni dans le journal d'annulation d'un `POST /api/transactions/` (aucun élément de classe adaptée : un groupe
+   de noms n'est pas un objet Gramps) ;
+2. **« aucun regroupement » inatteignable** : `set_name_group_mapping(nom, None)` supprime la clé, mais la route exige
+   un groupe non vide (le segment vide n'est pas routé : 404). Regrouper un patronyme sous lui-même
+   (`POST …/Dupond/Dupond`) laisse la clé **listée** par `GET /api/name-groups/` et écrite dans `<namemaps>` : l'état
+   « aucun regroupement » n'est jamais restauré exactement ;
+3. **pas de détection de conflit** : aucun `old` comparé (contrairement à `POST /api/transactions/`) ; un
+   regroupement changé entre la proposition et l'application ne serait pas vu par le serveur.
+
+Constaté le 2026-11-21 sur `26.5.1` (API 3.13.0), `26.11.0` (3.25.1) et `26.11.3` (3.26.0) : un `POST` répond 201
+et la lecture le rend, l'historique (`GET /api/transactions/history/`) est inchangé, `POST …/Dupond/Dupond` laisse
+`Dupond` listé, l'import d'un document de regroupements seuls répond 201 sans créer d'objet.
+
+Dans le doute, la voie sûre a été retenue : **lecture, export XML, import rapporté, et une proposition sous forme de
+liste à appliquer à la main**. Rien n'est écrit sur Gramps Web par ce lot.
+
+### Ce que fait Genealogiste
+
+- **Lecture** : `GrampsClient.name_groups()` (`GET /api/name-groups/`), mode gramps seulement ; en mode fichier, pas
+  de groupes (rien n'est inventé).
+- **`gramps_grouper_noms`** (mode gramps, classe **lecture** : aucun jeton, aucune écriture) : propose des groupes
+  d'après les **patronymes réellement attestés** (patronyme principal du nom principal de chaque personne ; les
+  fiches `patronymes/` des notes sont générées depuis les mêmes patronymes). Critère volontairement étroit :
+  `typographie` (casse, accents, espaces, tirets, apostrophes, particule agglutinée : `LE GRAND`, `Legrand` ;
+  `Lefèvre`, `Lefevre`) et `transcription` d'un tréma ou ß (`Müller`, `Mueller`, `Strauß`, `Strauss`). **Jamais** de
+  rapprochement phonétique, de diphtongue (`Meyer`, `Maier`), de finale (`Schmidt`, `Schmitt`), ni de forme latine :
+  ces patronymes proches sont listés en `candidats_non_retenus` (score de `comparer_noms`) pour examen humain. Le
+  nom de groupe est le regroupement existant s'il y en a un, sinon la forme la plus portée dans l'arbre (égalité :
+  ordre alphabétique, signalée dans `egalite`). Les **conflits** avec les regroupements existants (plusieurs
+  groupes pour une même famille d'écritures, ou un groupe étranger à cette famille) sont listés dans `conflits` et
+  **jamais tranchés** : rien n'est proposé pour eux. **Idempotent** : une fois les regroupements posés, l'outil
+  les rapporte en `deja_en_place` et `a_appliquer` est vide. Résultat : `groupes_proposes` (groupe, patronymes,
+  personnes, motif), `deja_en_place`, `conflits`, `a_appliquer` (la route de chaque regroupement),
+  `groupes_existants`, `xml_import` et `procedure`. `patronymes=[…]` limite aux familles d'écritures citées.
+  Les personnes dont le nom porte son propre `group_as` sont comptées par patronyme (`personnes_group_as_propre`) :
+  ce champ prime chez Gramps sur le regroupement global proposé.
+- **`arbre_recherche`** (mode gramps) : avec `groupes_noms=True` (défaut), les patronymes regroupés par Gramps sous
+  le même groupe que le nom cherché (ou le `group_as` du nom de la personne) sont **ajoutés** aux résultats,
+  marqués `via_groupe_noms: true`, listés après les autres (au plus `limite`). **Aucun résultat d'avant n'est
+  retiré** ; `groupes_noms=False` rend la recherche d'avant. Sans aucun groupe dans Gramps, ou en mode fichier : aucun
+  changement.
+- **`recherche_multi`** (mode gramps) : les groupes ne servent **qu'en local**. Quand le nom cherché a des patronymes
+  apparentés dans la table de Gramps, la réponse porte `groupe_de_noms` (`apparentes`, `envoyees_aux_sources: false`) :
+  rien n'est ajouté à la requête des sources externes (matchID, WikiTree, Wikidata, Gallica) ; chaque variante à
+  tenter fait l'objet d'un appel explicite, donc de la garde des personnes vivantes (`_garde`).
+- **Export** (`arbre_exporter`, formats `gramps` et `gpkg`) : en mode gramps, les regroupements lus dans Gramps sont
+  écrits en `<namemaps>` (`groupes_de_noms` dans le résultat) ; en mode fichier, aucun. **Export public**
+  (`masquer_vivants`) : un regroupement n'est écrit que si son patronyme figure dans l'export (une personne non
+  masquée le porte) **et** que son groupe n'est pas un patronyme porté seulement par des personnes masquées ; le
+  bilan ne nomme jamais un regroupement retiré (`retires_export_public` : un nombre).
+- **Import** (fichier Gramps XML ou `.gpkg`) : les `<namemaps>` sont lus et rapportés (`import.regroupements`, aussi
+  comptés sous `non_repris`, `Métadonnées.regroupements`), **jamais appliqués** ; l'aller-retour XML → objets → XML
+  les conserve (`lecture_xml.comparer_xml`).
+
+### Procédure : poser les regroupements proposés
+
+Après relecture de `a_appliquer`, au choix :
+
+1. **Gramps Web, par patronyme** (rôle Editor) : la route donnée pour chaque regroupement, par exemple
+   `curl -X POST -H "Authorization: Bearer <jeton d'accès>" "<url>/api/name-groups/LE%20GRAND/Legrand"`. Le jeton
+   s'obtient par `POST /api/token/`. Un patronyme à « / » ne peut pas être posé ainsi (voir ci-dessus).
+2. **Import d'un fichier de regroupements** (Gramps Desktop, ou Gramps Web avec le rôle Owner : Paramètres >
+   Administration > Importer) : enregistrer `xml_import` dans un fichier `.gramps` et l'importer. Le document ne porte
+   que l'en-tête et `<namemaps>` : **aucun objet n'est créé** (vérifié sur Gramps Web et par chaque bibliothèque
+   Gramps). Un regroupement **déjà présent** n'est jamais écrasé : Gramps avertit (« Gramps ignored a name
+   grouping ») et garde l'ancien.
+
+Défaire un regroupement n'est possible ni par l'API ni par l'import (ni par Genealogiste) : regrouper un patronyme
+sous lui-même rétablit l'affichage, pas l'état de la table (la clé reste listée et exportée). Retirer la clé relève
+d'un outil de Gramps lui-même, non éprouvé ici : à ne faire qu'en connaissance de cause.
+
+### Forme XML
+
+`<namemaps><map type="group_as" key="<patronyme>" value="<groupe>"/></namemaps>`, dernier élément de `<database>`
+(après `<bookmarks>`), identique en Gramps XML 1.7.1 (Gramps 5.2, 6.0, 6.1) et 1.7.2 (6.0, 6.1) : DTD et RNG livrés
+avec Gramps 5.2, 6.0 et 6.1 (`data/grampsxml.dtd`, `.rng`) ; `type` ne peut valoir que `group_as`. L'écrivain de Gramps
+(`write_namemaps`) n'écrit l'élément que s'il y a des regroupements ; l'importeur (`start_namemap`) pose chaque
+regroupement absent, n'écrase pas un regroupement présent et ignore la valeur `None` (fichiers corrompus par un
+ancien bogue). Genealogiste écrit les clés triées par patronyme et les valeurs telles que lues.
 
 ## Fonctionnement
 
@@ -703,6 +823,8 @@ diagnostic.
 | `edit-by-handle` (`gql` retiré) | `edit_by_handle` | 3.26.0 | écartée pour les étiquettes (#262 : hors `/api/transactions/`, annulation non établie) |
 | inscription libre lisible (`GET /api/register/config/`) | `inscription_libre` | 3.26.0 | utilisée (diagnostic) |
 | nom du lieu à la date de l'événement (`place_name` du profil d'événement) | `nom_lieu_date` | 3.26.0 | constatée (#277) : avant, l'interface affiche le nom principal du lieu, `place` (`display_event`) a déjà le nom d'époque |
+| groupes de noms, lecture (`GET /api/name-groups/`) | `groupes_noms` | 0.1.0 | utilisée (#276 : `arbre_recherche`, export, `gramps_grouper_noms`) |
+| groupes de noms, écriture (`POST /api/name-groups/<patronyme>/<groupe>`, droit `EditNameGroup`) | `groupes_noms_ecriture` | 0.6.0 | écartée (#276) : hors historique, retour à « aucun regroupement » impossible |
 
 La recherche sémantique a été retirée de l'API en 3.25 ; Genealogiste ne l'utilise pas.
 

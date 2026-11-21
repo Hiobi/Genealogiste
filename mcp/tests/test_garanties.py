@@ -98,3 +98,23 @@ def test_aucune_note_de_recherche(tmp_path, fixtures):
             assert residues(f.name + "\n" + f.read_text(encoding="utf-8"), pats) == [], f
     finally:
         server.set_app(None)
+
+
+def test_aucun_regroupement_de_noms_ne_nomme_un_patronyme_masque(avec_prive):
+    """#276 : un <namemaps> d'export public n'écrit ni clé ni groupe qui soit un patronyme porté seulement par des
+    personnes masquées (la table de Gramps est celle de toute la base, vivants et privés compris)."""
+    from genealogiste_mcp.gramps.groupes_noms import cle_typographique, regroupements_exportables
+    from genealogiste_mcp.privacy import publication
+
+    complet = avec_prive.store.load()
+    publie, masques, _ = publication(complet)
+    exportes = {cle_typographique(n.nom) for p in publie.personnes.values() for n in p.noms}
+    seulement_masques = {cle_typographique(n.nom) for pid in masques for n in complet.personnes[pid].noms} - exportes
+    assert seulement_masques, "la fixture doit comporter un patronyme porté seulement par des masqués"
+    noms = sorted({n.nom for p in complet.personnes.values() for n in p.noms if n.nom})
+    table = {a: noms[0] if a != noms[0] else noms[-1] for a in noms}
+    table.update({"Inconnu": noms[0], noms[0]: "Inconnu"})
+    paires, bilan = regroupements_exportables(table, complet, publie, masques, True)
+    for cle, valeur in paires:
+        assert cle_typographique(cle) in exportes and cle_typographique(valeur) not in seulement_masques
+    assert bilan["retires_export_public"] == len(table) - len(paires) > 0

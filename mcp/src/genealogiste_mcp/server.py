@@ -42,6 +42,8 @@ from .export.geneweb import to_geneweb
 from .export.rapport import proof_report
 from .fr_sources import next_source_hint
 from .gedcom.mapping import read_gedcom, write_gedcom
+from .gramps import groupes_noms as gn
+from .gramps.client import GrampsError
 from .gramps.mapping import tree_to_gramps_stats
 from .http import HttpClient, SourceError
 from .journal import Journal
@@ -235,6 +237,18 @@ def _garde(personne: str = "", nom: str = "", prenom: str = "", ne_vers: str = "
     """Politique de sortie réseau (privacy.external_guard) : appelée par TOUT outil qui envoie des noms ou un
     identifiant de personne à un service externe (vérifié par test_outils)."""
     return privacy.external_guard(app().tree(), personne, nom, prenom, ne_vers, texte)
+
+
+def _groupes_noms():
+    """Groupes de noms de Gramps (#276) en backend gramps, ``None`` sinon ou si Gramps Web ne répond pas : la
+    recherche locale ne dépend jamais de cette lecture facultative (backend fichier : aucun groupe, rien d'inventé)."""
+    a = app()
+    if a.config.backend != "gramps":
+        return None
+    try:
+        return gn.Groupes(a.backend.groupes_noms())  # même vide : group_as d'un nom prime encore (arbre_recherche)
+    except GrampsError:
+        return None
 
 
 def _suivi_enquete(outil: str, parametres: dict, out: dict, enquete: str = "", fenetre: list[int] | None = None,
@@ -695,6 +709,14 @@ def recherche_multi(nom: str, prenom: str = "", ne_vers: str = "", lieu: str = "
         "sources_secondaires": liens.search_links(nom, prenom, ne_vers, lieu, decede_vers)["liens"],
         "rappel": "Score = indice de correspondance, pas une preuve. Index et arbres en ligne : remonter à l'original.",
     }
+    if (groupes := _groupes_noms()) is not None and (apparentes := groupes.apparentes(nom)):
+        # #276 : information LOCALE (groupes de l'arbre Gramps de l'utilisateur), jamais envoyée aux sources ni
+        # ajoutée à la requête : chaque variante à tenter fait l'objet d'un appel explicite, donc de la garde (_garde)
+        out["groupe_de_noms"] = {
+            "patronyme": nom, "apparentes": apparentes, "envoyees_aux_sources": False,
+            "consigne": ("Patronymes regroupés par Gramps avec ce nom (groupes de noms) : classement de l'arbre, pas "
+                         "une preuve d'identité. Non interrogés ici ; pour en essayer un, relancer recherche_multi "
+                         "avec ce nom (la garde des vivants s'applique à chaque appel).")}
     out = _budget_apres(enquete, m, "recherche_multi", appel, out,
                         reste={**appel, "sources": restantes} if restantes else None)
     faites = sources if not restantes else list(by_source)
@@ -1111,12 +1133,18 @@ def arbre_info() -> dict:
 
 @mcp.tool()
 def arbre_recherche(texte: str = "", nom: str = "", prenom: str = "", ne_vers: str = "", limite: int = 30,
-                    etiquette: str = "", objet: str = "personne") -> list[dict]:
+                    etiquette: str = "", objet: str = "personne", groupes_noms: bool = True) -> list[dict]:
     """Cherche dans l'arbre local (nom/prénom normalisés, variantes, ±2 ans). etiquette : seulement les personnes
     portant cette étiquette (nom exact, sensible à la casse), seule ou avec les autres critères. Chaque résultat
     donne ses étiquettes. objet="source" : les sources au lieu des personnes (texte : extrait du titre ou de
-    l'auteur), par exemple les billets du blog de Gramps Web avec etiquette="Blog"."""
-    t = app().tree()
+    l'auteur), par exemple les billets du blog de Gramps Web avec etiquette="Blog". Mode gramps, groupes_noms=True
+    (défaut), pour les personnes : les patronymes regroupés par Gramps sous le même nom de groupe que le nom
+    cherché (name groups, #276 ; ou group_as du nom de la personne) sont AJOUTÉS, marqués via_groupe_noms=True ;
+    aucun résultat n'est retiré (au plus limite ajouts, listés après les autres) ; groupes_noms=False : recherche
+    d'avant. Mode fichier : pas de groupes, rien ne change. Un groupe de noms n'est pas une fusion : il ne prouve
+    aucune identité."""
+    a = app()
+    t = a.tree()
     if objet == "source":
         return _recherche_sources(t, texte or nom, etiquette, limite)
     if objet != "personne":
@@ -1126,18 +1154,30 @@ def arbre_recherche(texte: str = "", nom: str = "", prenom: str = "", ne_vers: s
     if texte and not (nom or prenom):
         nn = normalize_name(texte)
         q["nom"], q["prenoms"] = nn["nom_original"], nn["prenoms"]
+    groupes, group_as = (_groupes_noms() if groupes_noms and q["nom"] else None), {}
+    if groupes is not None:
+        group_as = {p["gramps_id"]: (p.get("primary_name") or {}).get("group_as") or ""
+                    for p in a.backend.snapshot(fresh=False).all("Person").values()}
+        cle_voulue = groupes.cle_groupe(q["nom"])
     for pid in t.personnes:
         if etiquette and etiquette not in t.personnes[pid].tags:
             continue
         prof = matching.profile_from_person(t, pid)
+        via_groupe = False
         if q["nom"] and surname_similarity(q["nom"], prof["nom"])["score"] < 0.85:
-            continue
+            if groupes is None:
+                continue
+            propre = group_as.get(pid, "")  # group_as du nom : prime sur le regroupement global (Gramps)
+            if not (gn.cle_typographique(propre) == cle_voulue if propre else groupes.meme_groupe(q["nom"], prof["nom"])):
+                continue
+            via_groupe = True
         res = matching.compare_profiles({k: v for k, v in q.items() if v}, prof)
         out.append({"id": pid, "nom": t.personnes[pid].nom_principal.complet,
                     "naissance": prof["naissance"], "deces": prof["deces"], "score": res["score"],
-                    "etiquettes": list(t.personnes[pid].tags)})
+                    "etiquettes": list(t.personnes[pid].tags), **({"via_groupe_noms": True} if via_groupe else {})})
     out.sort(key=lambda r: -r["score"])
-    return out[:limite]
+    # les ajouts « via groupe de noms » ne prennent jamais la place d'un résultat d'avant : listes séparées
+    return [r for r in out if not r.get("via_groupe_noms")][:limite] + [r for r in out if r.get("via_groupe_noms")][:limite]
 
 
 def _recherche_sources(t, texte: str, etiquette: str, limite: int) -> list[dict]:
@@ -1493,6 +1533,10 @@ def _importer_gramps(p: Path, mode: str) -> dict:
     ref = info.get("personne_reference") or {}
     if ref.get("suggestion"):
         prop.setdefault("avertissements", []).append(ref["suggestion"])
+    if info.get("regroupements"):
+        prop.setdefault("avertissements", []).append(
+            f"{info['regroupements']['nombre']} groupe(s) de noms (<namemaps>) lus, non appliqués : voir "
+            "import.regroupements (Genealogiste n'écrit pas les groupes de noms ; aucune personne fusionnée).")
     if info.get("non_repris"):
         prop.setdefault("avertissements", []).append(
             "Contenu Gramps non représenté par l'arbre Genealogiste, non importé : voir import.non_repris "
@@ -1630,7 +1674,9 @@ def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", gene
     gpkg : paquet Gramps (XML + fichiers des médias locaux sous chemins relatifs) ; médias introuvables ou hors
     des répertoires autorisés listés dans le résultat, jamais empaquetés.
     gramps/gpkg : la racine Sosa (GENEALOGISTE_SOSA_RACINE) devient la personne de référence du fichier
-    (<people home>), sauf si elle n'est pas configurée, absente ou masquée par l'export public.
+    (<people home>), sauf si elle n'est pas configurée, absente ou masquée par l'export public ; en mode gramps, les
+    groupes de noms de Gramps sont écrits (<namemaps>, #276) ; en mode fichier, aucun (rien n'est inventé) ; export
+    public : seulement les regroupements dont le patronyme figure dans l'export, sans nom d'une personne masquée.
     Vivants et objets privés masqués par défaut (RGPD) : sources, médias et notes liés à une personne masquée
     retirés avec leurs références, noms remplacés par « Vivant » dans les textes. chemin par défaut :
     <données>/exports/."""
@@ -1645,7 +1691,7 @@ def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", gene
     except ValueError as exc:
         return {"erreur": str(exc)}
     a = app()
-    t = a.tree()
+    t = complet = a.tree()
     hidden: set[str] = set()
     rapport: dict = {}
     if masquer_vivants:
@@ -1663,7 +1709,15 @@ def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", gene
         if format == "gpkg":  # médias résolus par la règle commune (racines autorisées), chemins relatifs
             db, membres, bilan_medias = gramps_xml.preparer_gpkg(db, a.config.media_racines)
         handle_ref, motif_ref = gramps_xml.personne_reference(db, a.config.sosa_racine, hidden)
-        content = gramps_xml.db_to_xml(db, version_xml, gramps_xml.Metadonnees(personne_reference=handle_ref))
+        try:  # groupes de noms (#276) : ceux de Gramps en mode gramps ; mode fichier : aucun, rien d'inventé
+            table = a.backend.groupes_noms() if a.config.backend == "gramps" else {}
+        except GrampsError as exc:
+            return {"erreur": f"Groupes de noms illisibles : {exc}. Rien n'a été écrit."}
+        regroupements, bilan_groupes = gn.regroupements_exportables(table, complet, t, hidden, masquer_vivants)
+        if a.config.backend != "gramps":
+            bilan_groupes = {"ecrits": 0, "source": "mode fichier : pas de groupes de noms (rien n'est inventé)"}
+        content = gramps_xml.db_to_xml(db, version_xml, gramps_xml.Metadonnees(
+            personne_reference=handle_ref, regroupements=regroupements))
     elif format == "mermaid_asc":
         content = charts.mermaid_ancestors(t, id, generations, hidden)
     elif format == "mermaid_desc":
@@ -1707,6 +1761,7 @@ def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", gene
             res["avertissement"] = f"Gramps XML {version_xml} : refusé par Gramps 5.2 (1.7.1 est lu par 5.2 à 6.1)."
         res["personne_reference"] = ({"ecrite": a.config.sosa_racine} if handle_ref else
                                      {"ecrite": None, "motif": motif_ref})
+        res["groupes_de_noms"] = bilan_groupes
         dates = gramps_xml.avertissements_dates(db, version_xml)
         if dates:
             res["avertissements_dates"] = dates
@@ -2614,6 +2669,47 @@ def gramps_normaliser_types(classes: list[str] | None = None) -> dict:
         return _gramps_guard(lambda: app().backend.propose_types(classes))
     except ProposalError as exc:
         return {"erreur": str(exc)}
+
+
+PROCEDURE_GROUPES_NOMS = (
+    "Genealogiste n'écrit PAS les groupes de noms : Gramps Web les pose hors de ses transactions (rien dans "
+    "l'historique à défaire) et ne sait pas revenir à « aucun regroupement » (docs/gramps-web.md, « Groupes de "
+    "noms »). À appliquer soi-même, après relecture : (1) Gramps Web, par patronyme : la route de a_appliquer (rôle "
+    "Editor), par exemple avec curl et un jeton d'accès, ou (2) Gramps (Desktop ou Web, rôle Owner) : enregistrer "
+    "xml_import dans un fichier .gramps et l'importer (il ne crée aucun objet, seulement les regroupements ; un "
+    "regroupement déjà présent n'est jamais écrasé : Gramps avertit). Un groupe de noms ne fusionne aucune "
+    "personne : il ne change que le classement dans les vues, index et rapports de Gramps.")
+
+
+@mcp.tool()
+def gramps_grouper_noms(patronymes: list[str] | None = None, candidats: bool = True) -> dict:
+    """Mode gramps : propose des groupes de noms (name groups de Gramps, #276) d'après les patronymes réellement
+    attestés dans l'arbre, LECTURE SEULE (aucun jeton, rien n'est écrit : Gramps Web ne sait ni inscrire un groupe
+    de noms dans son historique ni revenir à « aucun regroupement », donc l'écriture ne peut pas respecter
+    proposition, accord, annulation). Un groupe de noms n'est PAS une fusion de personnes : il ne change que le
+    classement par nom (vues, index, rapports de Gramps) ; personnes, noms et événements restent intacts.
+    Critère prudent, seulement des écritures qui ne diffèrent que par la casse, les accents, espaces, tirets et
+    apostrophes (LE GRAND, Legrand ; Lefèvre, Lefevre) ou par la transcription d'un tréma (Müller, Mueller, Muller) ;
+    jamais de rapprochement phonétique, de diphtongue, de finale ou de latin : ces patronymes proches sont listés en
+    candidats_non_retenus pour examen humain (candidats=False les omet). Résultat : groupes_proposes (groupe,
+    patronymes, personnes, motif), deja_en_place (idempotent : relancé après application, rien à appliquer),
+    conflits avec les regroupements existants (jamais tranchés, rien n'est proposé pour eux), a_appliquer (route
+    Gramps Web de chaque regroupement), xml_import (import Gramps Desktop ou Web) et la procédure. patronymes :
+    limiter aux familles d'écritures qui contiennent l'un de ces patronymes."""
+    if app().config.backend != "gramps":
+        return {"erreur": "Disponible en mode gramps (GENEALOGISTE_BACKEND=gramps) : les groupes de noms sont une "
+                          "table de la base Gramps ; le modèle fichier n'en a pas et n'en invente pas."}
+    try:
+        r = _gramps_guard(lambda: app().backend.bilan_groupes_noms(patronymes, candidats))
+    except ProposalError as exc:
+        return {"erreur": str(exc)}
+    if "erreur" in r:
+        return r
+    r["nature"] = "lecture : aucun jeton, rien n'est écrit dans Gramps Web"
+    if r["a_appliquer"]:
+        r["xml_import"] = gn.regroupements_xml([(x["patronyme"], x["groupe"]) for x in r["a_appliquer"]])
+    r["procedure"] = PROCEDURE_GROUPES_NOMS
+    return r
 
 
 @mcp.tool()

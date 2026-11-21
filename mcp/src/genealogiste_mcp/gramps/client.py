@@ -299,6 +299,17 @@ class GrampsClient:
                      "recherche")
         return r.json()
 
+    def name_groups(self) -> dict[str, str]:
+        """Regroupements globaux de patronymes (``GET /api/name-groups/``, #276) : {patronyme: nom de groupe}.
+
+        Lecture seule, ouverte à tout compte authentifié. L'API ne liste que les patronymes REGROUPÉS (table
+        ``name_group`` de Gramps) : un patronyme absent est son propre groupe. Genealogiste n'écrit jamais ces
+        regroupements (``POST /api/name-groups/<patronyme>/<groupe>`` n'entre pas dans l'historique des transactions
+        et ne sait pas revenir à « aucun regroupement » : docs/gramps-web.md, « Groupes de noms »)."""
+        from .groupes_noms import lire_reponse
+
+        return lire_reponse(self._ok(self.request("GET", "/name-groups/"), "lecture des groupes de noms").json())
+
     def history(self, limite: int = 20) -> list[dict]:
         r = self._ok(self.request("GET", "/transactions/history/",
                                   params={"sort": "-id", "page": 1, "pagesize": limite}), "historique")

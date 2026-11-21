@@ -522,6 +522,37 @@ def controle_reference(cas: Cas, version: str, attendu: dict, rapport: dict) -> 
     return ecarts
 
 
+# Groupes de noms du cas « groupes » (#276) : apostrophe, espace, tréma et casse (clés sensibles à la casse chez Gramps)
+REGROUPEMENTS = [("D'Aubigny", "Daubigny"), ("LE GRAND", "Legrand"), ("Müller", "Mueller"), ("Dupond", "DUPONT")]
+
+
+def produire_groupes(tree, dossier: Path) -> Path:
+    """Export réel avec groupes de noms : le même chemin que arbre_exporter (db_to_xml avec Metadonnees)."""
+    from genealogiste_mcp.export.gramps_xml import Metadonnees, db_to_xml
+    from genealogiste_mcp.gramps.mapping import tree_to_gramps_stats
+
+    db, _ = tree_to_gramps_stats(tree, None, False)
+    chemin = dossier / "genealogiste.gramps"
+    chemin.write_text(db_to_xml(db, "1.7.1", Metadonnees(regroupements=REGROUPEMENTS)), encoding="utf-8")
+    return chemin
+
+
+def controle_groupes(cas: Cas, version: str, attendu: dict, rapport: dict) -> list[str]:
+    """#276 : ``db.get_name_group_mapping`` rend, après l'import par la vraie bibliothèque, le groupe du fichier ; sans
+    ``<namemaps>``, aucun groupe n'est inventé ; le réexport de Gramps garde les mêmes ``<map>``."""
+    obtenu = rapport.get("regroupements") or {}
+    if cas.nom != "groupes":
+        return [f"groupes de noms {obtenu} inventés par l'export sans regroupement"] if obtenu else []
+    ecarts = [] if obtenu == dict(REGROUPEMENTS) else [f"groupes de noms {obtenu} au lieu de {dict(REGROUPEMENTS)}"]
+    if "reexport" in rapport:
+        cartes = re.findall(rb'<map type="group_as" key="([^"]*)" value="([^"]*)"', lire_xml(Path(rapport["reexport"])))
+        relu = {k.decode(): v.decode() for k, v in cartes}
+        if relu != dict(REGROUPEMENTS):
+            ecarts.append(f"réexport de Gramps : namemaps {relu}")
+    print(f"   {version} : groupes de noms rendus par get_name_group_mapping : {obtenu}", flush=True)
+    return ecarts
+
+
 FROM_TO_HORS_SCHEMA = ((rb'(<dateval [^>]*type=")(?:from|to)"', rb'\1about"'),)
 
 CAS: list[Cas] = [
@@ -541,6 +572,8 @@ CAS: list[Cas] = [
         "date de l'événement", produire_lieux, enrichir=avec_lieux, arbres=("famille.ged",), retoucher=dater),
     Cas("reference", "Gramps XML 1.7.1 exporté avec la racine Sosa I3 : <people home> appliqué par l'import (#274)",
         produire_reference, arbres=("famille.ged",)),
+    Cas("groupes", "Gramps XML 1.7.1 avec <namemaps> : groupes de noms rendus par get_name_group_mapping (#276)",
+        produire_groupes, arbres=("famille.ged",)),
     Cas("notes", "Gramps XML 1.7.1 : notes de preuve avec liens internes et note manuelle aux onze styles (#279)",
         produire_notes, arbres=("famille.ged",), retoucher=notes_stylees,
         schema_admis={v: STYLES_HORS_SCHEMA for v in ("5.2", "6.0", "6.1")}),
@@ -957,7 +990,7 @@ def controle_types(cas: Cas, version: str, attendu: dict, rapport: dict) -> list
 
 CONTROLES: list[Controle] = [controle_reexport, controle_medias, controle_champs, controle_lecture, controle_dates,
                              controle_types, controle_lieux, controle_notes,
-                             controle_reference]
+                             controle_reference, controle_groupes]
 
 
 def comparer_cycle(premier: dict, second: dict, contexte: str, ecrit_par_gramps: bool = True) -> list[str]:
@@ -1062,11 +1095,41 @@ def verifier_version(entree: dict, lots, travail: Path, cache: Path, python: str
                                                                         "réimport")
                 resultats.append(Resultat(version, arbre, f"cycle:{cas.nom}", not ecarts, " ; ".join(ecarts),
                                           {cls: len(h) for cls, h in premier["handles"].items() if h}))
+    resultats += verifier_groupes_seuls(entree, exe, env_sup, travail)
     resultats += verifier_generes(entree, exe, env_sup, travail, fixtures)
     resultats += verifier_reference_dates(entree, exe, env_sup, travail, fixtures)
     if exemple:
         resultats += verifier_exemple(entree, exe, env_sup, travail, cache)
     return resultats
+
+
+# --- groupes de noms seuls (#276) : la procédure manuelle « importer un fichier qui ne porte que <namemaps> » -------
+
+def verifier_groupes_seuls(entree: dict, exe: Path, env_sup: dict, travail: Path) -> list[Resultat]:
+    """Le document de ``gramps_grouper_noms`` (en-tête et ``<namemaps>`` seulement) est valide, importé par la
+    bibliothèque sans erreur ni avertissement, ne crée aucun objet et pose exactement ses regroupements."""
+    from genealogiste_mcp.gramps.groupes_noms import regroupements_xml
+
+    version = entree["version"]
+    sortie = travail / f"gramps-{version}" / "groupes-seuls"
+    sortie.mkdir(parents=True, exist_ok=True)
+    fichier = sortie / "groupes-seuls.gramps"
+    fichier.write_text(regroupements_xml(REGROUPEMENTS), encoding="utf-8")
+    rapport, erreur = lancer_sonde(exe, env_sup, sortie, [fichier], True)
+    if rapport is None:
+        return [Resultat(version, "inventaire", "groupes:seuls", False, erreur)]
+    r = rapport["fichiers"][fichier.name]
+    ecarts = valider_schemas(lire_xml(fichier), rapport["schemas"]) + r["erreurs"] + r["avertissements"]
+    if not r.get("importe"):
+        ecarts.append("import refusé")
+    else:
+        if any(r["handles"].values()):
+            ecarts.append(f"objets créés par un fichier de regroupements : {r['handles']}")
+        if r["regroupements"] != dict(REGROUPEMENTS):
+            ecarts.append(f"groupes {r['regroupements']} au lieu de {dict(REGROUPEMENTS)}")
+    print(f"   {version} : fichier de regroupements seuls importé, {len(r.get('regroupements') or {})} groupe(s) posé(s)",
+          flush=True)
+    return [Resultat(version, "inventaire", "groupes:seuls", not ecarts, " ; ".join(ecarts[:10]))]
 
 
 # --- dates (#272) : Date.set, valeur de tri et affichage de la bibliothèque, formes refusées --------------

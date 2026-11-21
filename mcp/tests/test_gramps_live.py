@@ -791,3 +791,91 @@ def test_billet_blog_sur_vrai_gramps_web(client, loaded, tmp_path):
     db = client.load_all()
     assert not [m for m in db.all("Media").values() if (m.get("desc") or "").endswith("(261)")]
     assert "Blog" not in {tg["name"] for tg in db.all("Tag").values()}
+
+# ---------------------------------------------------------------------------- #276 : groupes de noms
+
+def _historique(client) -> list[int]:
+    rep = client.request("GET", "/transactions/history/", params={"sort": "-id", "pagesize": 5})
+    return [e["id"] for e in rep.json()]
+
+
+def test_groupes_de_noms_lecture_ecriture_et_irreversibilite_sur_vrai_gramps_web(client, loaded, tmp_path):
+    """Constats sur lesquels repose le choix de ne PAS écrire les groupes de noms (docs/gramps-web.md) : le POST
+    n'entre pas dans l'historique des transactions, regrouper un nom sous lui-même laisse la clé listée, aucune
+    route ne retire un regroupement ; la lecture est ouverte à tous les rôles, l'écriture exige Editor."""
+    from genealogiste_mcp.gramps.compatibilite import FONCTIONS_API, version_api
+    assert version_api(client.request("GET", "/metadata/").json()["gramps_webapi"]["version"]) >= \
+        FONCTIONS_API["groupes_noms"]
+    assert client.name_groups() == {}  # arbre neuf : ni clé, ni regroupement (lecture réelle)
+    assert client.request("GET", "/name-groups/").json() == []
+    assert client.request("GET", "/name-groups/Dupond").json() == {"surname": "Dupond", "group": "Dupond"}
+    avant = _historique(client)
+    # écriture (rôle Editor)
+    r = client.request("POST", "/name-groups/Dupond/Dupont")
+    print("POST /name-groups/Dupond/Dupont :", r.status_code, r.text.strip())
+    assert r.status_code == 201 and r.json() == {"surname": "Dupond", "group": "Dupont"}
+    assert client.name_groups() == {"Dupond": "Dupont"}
+    # segments d'URL encodés : espace et apostrophe
+    assert client.request("POST", "/name-groups/LE%20GRAND/Legrand").status_code == 201
+    assert client.request("POST", "/name-groups/D%27Aubigny/Daubigny").status_code == 201
+    assert client.name_groups() == {"D'Aubigny": "Daubigny", "Dupond": "Dupont", "LE GRAND": "Legrand"}
+    # un nom contenant « / » ne peut pas être un segment (convertisseur string de Flask)
+    rs = client.request("POST", "/name-groups/A%2FB/C")
+    print("POST /name-groups/A%2FB/C :", rs.status_code)
+    assert rs.status_code in (404, 400) and "A/B" not in client.name_groups()
+    # pas d'entrée dans l'historique : rien à annuler par /transactions/history/<id>/undo
+    assert _historique(client) == avant
+    # « retour en arrière » : sous lui-même, la clé RESTE listée ; aucune route ne la retire
+    assert client.request("POST", "/name-groups/Dupond/Dupond").status_code == 201
+    assert client.name_groups()["Dupond"] == "Dupond"
+    assert client.request("GET", "/name-groups/Dupond").json() == {"surname": "Dupond", "group": "Dupond"}
+    for methode, chemin in (("DELETE", "/name-groups/Dupond"), ("PUT", "/name-groups/Dupond/Dupont"),
+                            ("DELETE", "/name-groups/Dupond/Dupond"), ("POST", "/name-groups/Dupond/")):
+        rep = client.request(methode, chemin)
+        print(methode, chemin, ":", rep.status_code)
+        assert rep.status_code in (404, 405), (methode, chemin, rep.status_code)
+    assert "Dupond" in client.name_groups() and _historique(client) == avant
+    # rôle Member : lecture permise, écriture refusée (EditNameGroup)
+    time.sleep(1.1)
+    membre = GrampsClient(URL, "sosa-membre", "sosa-membre")
+    assert membre.name_groups() == client.name_groups()
+    refus = membre.request("POST", "/name-groups/Interdit/Refuse")
+    print("POST name-groups, rôle Member :", refus.status_code, refus.text.strip())
+    assert refus.status_code == 403 and "Interdit" not in client.name_groups()
+
+
+def test_groupes_de_noms_outil_export_et_import_sur_vrai_gramps_web(client, loaded, tmp_path):
+    """Bilan et export sur le vrai arbre (rien n'est écrit par l'outil) puis procédure manuelle par import XML
+    (rôle Owner) : les regroupements du fichier sont posés, un regroupement existant n'est jamais écrasé."""
+    from genealogiste_mcp import server
+    from genealogiste_mcp.gramps import groupes_noms as gn
+    from genealogiste_mcp.gramps import lecture_xml as lx
+    a = _app_gramps(tmp_path, "sosa-test", "sosa-test")
+    server.set_app(a)
+    try:
+        avant = dict(client.name_groups())
+        histo = _historique(client)
+        r = server.gramps_grouper_noms()
+        print("gramps_grouper_noms (arbre réel) :", {k: r[k] for k in ("patronymes_examines", "personnes", "conflits")})
+        assert "erreur" not in r and "jeton" not in r and r["patronymes_examines"] >= 1
+        assert client.name_groups() == avant and _historique(client) == histo  # rien d'écrit
+        assert {e["patronyme"]: e["groupe"] for e in r["groupes_existants"]} == avant
+        out = tmp_path / "x.gramps"
+        e = server.arbre_exporter(format="gramps", chemin=str(out), masquer_vivants=False)
+        assert "erreur" not in e and e["groupes_de_noms"]["ecrits"] == len(avant)
+        lu = lx.lire_xml(out.read_bytes())
+        assert dict(lu.meta.regroupements) == avant
+        # procédure manuelle (2) : import d'un Gramps XML qui ne porte que des regroupements
+        time.sleep(1.1)
+        owner = GrampsClient(URL, "sosa-owner", "sosa-owner")
+        xml = gn.regroupements_xml([("SCHMIT", "Schmitt"), ("Dupond", "AUTRE")]).encode()
+        rep = owner.request("POST", "/importers/gramps/file", content=xml,
+                            headers={"Content-Type": "application/octet-stream"})
+        print("import namemaps seuls :", rep.status_code, rep.text[:200])
+        assert rep.status_code in (200, 201, 202), rep.text
+        groupes = client.name_groups()
+        print("groupes après l'import :", groupes)
+        assert groupes["SCHMIT"] == "Schmitt"  # posé par l'import
+        assert groupes["Dupond"] == "Dupond"  # déjà regroupé : jamais écrasé (Gramps avertit seulement)
+    finally:
+        server.set_app(None)

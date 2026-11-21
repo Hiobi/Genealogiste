@@ -107,7 +107,7 @@ def test_hooks_conditionnels(nom, tool_input, attendu):
     ("archives_planche", "collecte"), ("piece_archiver", "collecte"), ("archives_naviguer", "collecte"),
     # cas tranchés d'après le code
     ("gramps_recalculer_notes", "proposition"), ("gramps_structurer_lieux", "proposition"),
-    ("gramps_normaliser_types", "proposition"),
+    ("gramps_normaliser_types", "proposition"), ("gramps_grouper_noms", "lecture"),
     ("gramps_synchroniser", "collecte"), ("gramps_envoyer_medias", "ecriture"),
     ("media_enregistrer", "ecriture"), ("arbre_exporter", "ecriture"), ("cache_purger", "ecriture"),
     ("notes_generer", "ecriture"), ("notes_ajouter", "ecriture"), ("notes_lire", "ecriture"),

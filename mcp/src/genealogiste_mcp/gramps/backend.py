@@ -390,6 +390,27 @@ class GrampsBackend:
                 "transaction_gramps": self._preview(items, db), "message_de_transaction": message,
                 "consigne": CONSIGNE}
 
+    # ------------------------------------------------------------------ groupes de noms (#276), LECTURE SEULE
+    def groupes_noms(self) -> dict[str, str]:
+        """Regroupements globaux de patronymes de Gramps (``GET /api/name-groups/``) : {patronyme: groupe}."""
+        return self.client.name_groups()
+
+    def bilan_groupes_noms(self, patronymes: list[str] | None = None, candidats: bool = True) -> dict:
+        """Regroupements à proposer d'après les patronymes attestés (:func:`groupes_noms.proposer`), sans jeton et
+        sans rien écrire : Gramps Web n'inscrit pas l'écriture d'un groupe de noms dans son historique et ne sait pas
+        la défaire (docs/gramps-web.md, « Groupes de noms »), donc elle ne passe pas par proposition -> accord ->
+        application -> annulation. La liste ``a_appliquer`` est à poser à la main (procédure) ou par import XML."""
+        from . import groupes_noms as gn
+
+        db = self.snapshot(fresh=True)
+        existants = self.groupes_noms()
+        attestes, propres = gn.patronymes_attestes(db)
+        out = gn.proposer(attestes, existants, propres, patronymes, candidats)
+        out["groupes_existants"] = [{"patronyme": k, "groupe": v} for k, v in sorted(existants.items())]
+        out["patronymes_examines"] = len(attestes)
+        out["personnes"] = sum(attestes.values())
+        return out
+
     def propose_place_history(self, chronologies, ignorer_non_dates: bool = False) -> dict:
         """Noms et rattachements datés des communes (#277) d'après le COG : ``chronologies(codes INSEE)`` renvoie
         l'enveloppe de :func:`sources.geo.chronologies` (requête journalisée). Une transaction (jeton, accord
