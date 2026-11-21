@@ -149,6 +149,7 @@ OUTILS: dict[str, tuple[str, str]] = {  # nom -> (effet, classe)
     # groupes de noms (#276) : LECTURE SEULE. Lit l'arbre Gramps (comme arbre_*) et GET /api/name-groups/ ; aucun
     # jeton, rien d'écrit : l'écriture d'un groupe n'est ni journalisée par Gramps ni annulable (docs/gramps-web.md)
     "gramps_grouper_noms": (LECTURE, LECTURE),
+    "gramps_reglages": (PROPOSITION, PROPOSITION),  # lecture ; fiche du chercheur et signets : diff + jeton (#282)
     "gramps_envoyer_medias": (ECRITURE, ECRITURE),  # CONDITIONS : collecte sans « appliquer »
     "gramps_relocaliser_medias": (PROPOSITION, PROPOSITION),  # proposition seulement : écrite par arbre_appliquer
     "gramps_synchroniser": (ECRITURE, COLLECTE),  # relecture forcée ; miroir Git : commit additif

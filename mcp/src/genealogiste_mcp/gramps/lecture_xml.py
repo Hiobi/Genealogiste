@@ -978,6 +978,16 @@ def rapport_mediapath(mediapath: str | None, base: Path | None = None) -> dict |
     return rap
 
 
+def rapport_metadonnees(meta: gx.Metadonnees) -> dict:
+    """Fiche du chercheur, signets et formats de nom du fichier (#282), rapportés par des comptes seulement : la fiche
+    est une donnée personnelle (jamais recopiée dans le rapport ni les journaux), les signets et formats ne sont pas
+    repris dans l'arbre de Genealogiste (signets : handles de la base d'origine ; formats : réglage de Gramps)."""
+    champs = len([v for v in meta.chercheur.values() if v])
+    return {"chercheur": {"renseigne": bool(champs), "champs": champs}, "signets": len(meta.signets),
+            "formats_noms": len(meta.formats_noms),
+            "usage": "rapporté seulement : rien n'est écrit dans l'arbre, la configuration ni Gramps Web"}
+
+
 def bilan_medias_importes(db: GrampsDb, mediapath: str | None, racines, base: Path | None = None) -> dict:
     """Médias du fichier lu : ``<mediapath>`` rapporté et, pour chaque chemin, où il se résout dans les racines
     autorisées de cette machine (règle commune ``chemins.localiser``) ; rien n'est déplacé ni modifié."""
@@ -1031,6 +1041,7 @@ def importer(chemin: Path, data_dir: Path, horodatage: str, racine_sosa: str = "
                                           "dossier des médias de Gramps : « mediapath »)."}
         info["medias"].update(bilan_medias_importes(db, lecture.meta.mediapath, racines_media or (data_dir,),
                                                     base_media))
+        info["metadonnees"] = rapport_metadonnees(lecture.meta)
         reattribues = identifiants_importables(db)
         if (ref := rapport_personne_reference(db, lecture.meta.personne_reference, racine_sosa, mode)) is not None:
             info["personne_reference"] = ref

@@ -44,6 +44,7 @@ from .export.rapport import proof_report
 from .fr_sources import next_source_hint
 from .gedcom.mapping import read_gedcom, write_gedcom
 from .gramps import groupes_noms as gn
+from .gramps import reglages as rg
 from .gramps.client import GrampsError
 from .gramps.mapping import tree_to_gramps_stats
 from .http import HttpClient, SourceError
@@ -1434,6 +1435,11 @@ def arbre_appliquer(jeton: str) -> dict:
         res = _gramps_guard(lambda: a.backend.apply(jeton))
     except ProposalError as exc:
         return {"erreur": str(exc)}
+    if "erreur" not in res and (trace := res.pop("trace_enquete", None)):  # signets d'enquête (#282)
+        try:
+            res["enquete_signets"] = a.enquetes.trace_signets(trace["enquete"], trace["poses"], trace["retires"])
+        except EnqueteError as exc:  # enquête supprimée à la main : les signets restent écrits et journalisés
+            res["enquete_signets"] = {"erreur": str(exc)}
     if "erreur" not in res and (entree := a.file.par_jeton(jeton)):  # reprise d'une proposition de la file
         ref = {k: res[k] for k in ("commit", "transaction") if res.get(k)}
         a.file.maj(entree["id"], fp.APPLIQUEE, f"appliquée (jeton {jeton})", **ref)
@@ -1695,7 +1701,7 @@ def propositions_abandonner(id: str, motif: str = "") -> dict:
 def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", generations: int = 4,
                    masquer_vivants: bool = True, temoins_en_personnes: bool = False,
                    version_xml: str = gramps_xml.VERSION_XML_DEFAUT, compresse: bool = False,
-                   chemin_base_medias: str = "") -> dict:
+                   chemin_base_medias: str = "", chercheur: bool | None = None) -> dict:
     """Export : gedcom7 | gedcom551 | geneweb | gramps | gpkg | mermaid_asc | mermaid_desc | svg_asc | svg_desc | fiche.
     geneweb : GEDCOM 5.5.1 pour ged2gwb, avec citations complètes, statut de preuve et témoins visibles dans
     GeneWeb (temoins_en_personnes=True crée une fiche pour chaque témoin seulement nommé).
@@ -1711,7 +1717,14 @@ def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", gene
     dossier où la machine qui ouvrira l'arbre trouve la racine du vault ; écrit dans l'en-tête (<mediapath>) et
     les chemins des médias qui s'y trouvent deviennent relatifs à lui (Gramps Desktop les retrouve alors
     directement). Chemin personnel : refusé avec masquer_vivants=True (export public) et pour gpkg (Gramps
-    ignore le <mediapath> d'un paquet). Vivants et objets privés masqués par défaut (RGPD) : sources, médias et notes liés à une personne masquée
+    ignore le <mediapath> d'un paquet).
+    Mode gramps (#282) : les formats de nom personnalisés (<name-formats>) et les signets de la base (<bookmarks>,
+    objets conservés par l'export seulement : un signet vers un objet masqué est retiré) sont écrits dans gramps et
+    gpkg. chercheur : fiche du chercheur de la base Gramps (SUBM en gedcom7 et gedcom551, <researcher> en gramps et
+    gpkg ; champs street et county absents du XML) ; None (défaut) : écrite seulement dans un export privé
+    (masquer_vivants=False), jamais dans un export public ; True : écrite sur demande explicite, même public ; False :
+    jamais. Coordonnées personnelles : mode gramps seulement, jamais envoyées à une source externe.
+    Vivants et objets privés masqués par défaut (RGPD) : sources, médias et notes liés à une personne masquée
     retirés avec leurs références, noms remplacés par « Vivant » dans les textes. chemin par défaut :
     <données>/exports/."""
     ext = {"gedcom7": "ged", "gedcom551": "ged", "geneweb": "ged", "gramps": "gramps", "gpkg": "gpkg",
@@ -1739,6 +1752,27 @@ def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", gene
         except ValueError as exc:
             return {"erreur": str(exc)}
     a = app()
+    fiche: dict[str, str] | None = None
+    bilan_chercheur: dict | None = None
+    veut_chercheur = (not masquer_vivants) if chercheur is None else chercheur
+    if chercheur is True and format not in ("gedcom7", "gedcom551", "gramps", "gpkg"):
+        return {"erreur": "chercheur : formats gedcom7, gedcom551, gramps et gpkg seulement (SUBM ou <researcher>)."}
+    if chercheur is True and a.config.backend != "gramps":
+        return {"erreur": "chercheur : mode gramps seulement (GENEALOGISTE_BACKEND=gramps) : la fiche est celle de la "
+                          "base Gramps ; le modèle fichier n'en a pas et n'en invente pas."}
+    if veut_chercheur and a.config.backend == "gramps" and format in ("gedcom7", "gedcom551", "gramps", "gpkg"):
+        try:
+            lue = a.backend.client.chercheur()
+        except GrampsError as exc:
+            if chercheur is True:
+                return {"erreur": f"Fiche du chercheur illisible : {exc}. Rien n'a été écrit."}
+            lue = None
+            bilan_chercheur = {"ecrit": False, "motif": f"fiche illisible ({exc})"}
+        if lue is not None:
+            if rg.chercheur_renseigne(lue):
+                fiche = lue
+            else:
+                bilan_chercheur = {"ecrit": False, "motif": "fiche du chercheur vide dans la base Gramps"}
     t = complet = a.tree()
     hidden: set[str] = set()
     rapport: dict = {}
@@ -1749,9 +1783,9 @@ def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", gene
     bilan_base: dict = {}
     reduits: dict = {}
     if format == "gedcom7":
-        content = write_gedcom(t, 7)
+        content = write_gedcom(t, 7, fiche)
     elif format == "gedcom551":
-        content = write_gedcom(t, 5)
+        content = write_gedcom(t, 5, fiche)
     elif format == "geneweb":
         content, stats = to_geneweb(t, a.config.strict_evidence, temoins_en_personnes)
     elif format in ("gramps", "gpkg"):
@@ -1770,7 +1804,22 @@ def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", gene
         regroupements, bilan_groupes = gn.regroupements_exportables(table, complet, t, hidden, masquer_vivants)
         if a.config.backend != "gramps":
             bilan_groupes = {"ecrits": 0, "source": "mode fichier : pas de groupes de noms (rien n'est inventé)"}
+        signets_xml: list[tuple[str, str]] = []
+        formats_xml: list[tuple[int, str, str, bool]] = []
+        bilan_signets: dict = {"ecrits": 0, "source": "mode fichier : pas de signets (rien n'est inventé)"}
+        if a.config.backend == "gramps":  # signets et formats de nom de la base (#282)
+            try:
+                etat = a.backend.client.signets_tous()
+                formats_xml = a.backend.client.formats_noms()
+            except GrampsError as exc:
+                return {"erreur": f"Signets ou formats de nom illisibles : {exc}. Rien n'a été écrit."}
+            masques = ({("person", i) for i in hidden}
+                       | {("family", f.id) for f in complet.familles.values()
+                          if f.prive or f.epoux in hidden or f.epouse in hidden}) if masquer_vivants else set()
+            signets_xml, bilan_signets = rg.signets_pour_export(a.backend.snapshot(fresh=False), db, etat, masques)
+        chercheur_xml, hors_xml = rg.chercheur_pour_xml(fiche) if fiche else ({}, [])
         content = gramps_xml.db_to_xml(db, version_xml, gramps_xml.Metadonnees(
+            chercheur=chercheur_xml, formats_noms=formats_xml, signets=signets_xml,
             personne_reference=handle_ref, regroupements=regroupements, mediapath=base_medias or None))
     elif format == "mermaid_asc":
         content = charts.mermaid_ancestors(t, id, generations, hidden)
@@ -1821,11 +1870,23 @@ def arbre_exporter(format: str = "gedcom7", chemin: str = "", id: str = "", gene
         res["personne_reference"] = ({"ecrite": a.config.sosa_racine} if handle_ref else
                                      {"ecrite": None, "motif": motif_ref})
         res["groupes_de_noms"] = bilan_groupes
+        res["signets"] = bilan_signets
+        res["formats_de_noms"] = {"ecrits": len(formats_xml)}
         dates = gramps_xml.avertissements_dates(db, version_xml)
         if dates:
             res["avertissements_dates"] = dates
     if format == "gpkg":
         res["medias"] = bilan_medias
+    if fiche is not None:
+        res["chercheur"] = {"ecrit": True, "champs": rg.champs_renseignes(fiche), "forme": (
+            "SUBM" if format.startswith("gedcom") else "<researcher>")}
+        if format in ("gramps", "gpkg") and hors_xml:
+            res["chercheur"]["champs_absents_du_format"] = hors_xml
+        if masquer_vivants:
+            res["chercheur"]["avertissement"] = ("Export public : la fiche du chercheur (coordonnées personnelles) "
+                                                 "a été écrite sur demande explicite (chercheur=True).")
+    elif bilan_chercheur is not None:
+        res["chercheur"] = bilan_chercheur
     if reduits.get("nombre"):
         res["chemins_absolus_reduits"] = reduits
     if base_medias:
@@ -2380,15 +2441,23 @@ def _enquete(fn):
 
 @mcp.tool()
 def enquete_ouvrir(sujet: str, personnes: list[str] | None = None, id: str = "",
-                   budget: dict | None = None) -> dict:
+                   budget: dict | None = None, signets: bool = False) -> dict:
     """Ouvre une enquête : état de recherche persistant et reprenable (pistes, progression par registre,
     tâches manuelles, demandes faites), fichier JSON lisible dans <données>/enquetes/<id>.json. id facultatif
     (dérivé du sujet : minuscules, chiffres, tirets), stable : à passer à enquete_noter, enquete_reprendre et
     au paramètre enquete des outils de collecte réseau (recherche_multi, archives_naviguer, archive_image,
     sources…). personnes : ids de l'arbre. budget (facultatif, 0 = illimité ; défauts GENEALOGISTE_BUDGET_*) :
     {requetes_par_hote, images} ; arrête une boucle d'enquête, le coût réel se plafonne côté client
-    (--max-budget-usd). Compté côté serveur ; à l'épuisement, refus avant toute requête et enquête « bloque ». Local seulement, rien n'est envoyé au réseau."""
-    return _enquete(lambda: app().enquetes.ouvrir(sujet, personnes, id, budget))
+    (--max-budget-usd). Compté côté serveur ; à l'épuisement, refus avant toute requête et enquête « bloque ».
+    signets=True (mode gramps, #282) : prépare AUSSI la proposition de mettre en signet de Gramps les personnes de
+    l'enquête (jeton pour arbre_appliquer après accord explicite, clé « signets » ; jamais appliquée seule ; seuls
+    les signets posés par le plugin seront proposés au retrait à la clôture). Local seulement, rien n'est envoyé au réseau."""
+    def run():
+        res = app().enquetes.ouvrir(sujet, personnes, id, budget)
+        if signets:
+            res = {**res, "signets": _signets_enquete(res["id"], "poser")}
+        return res
+    return _enquete(run)
 
 
 @mcp.tool()
@@ -2799,6 +2868,62 @@ def gramps_grouper_noms(patronymes: list[str] | None = None, candidats: bool = T
         r["xml_import"] = gn.regroupements_xml([(x["patronyme"], x["groupe"]) for x in r["a_appliquer"]])
     r["procedure"] = PROCEDURE_GROUPES_NOMS
     return r
+
+
+def _signets_enquete(eid: str, action: str) -> dict:
+    """Proposition de signets pour les personnes d'une enquête (``poser``) ou de retrait de ceux que le plugin a posés
+    (``retirer``), #282. Mode gramps seulement ; jamais appliquée ici."""
+    a = app()
+    if a.config.backend != "gramps":
+        return {"erreur": "Signets : disponibles en mode gramps (GENEALOGISTE_BACKEND=gramps), ce sont ceux de la "
+                          "base Gramps."}
+    try:
+        e = a.enquetes.lire(eid)
+        b = a.backend
+        ops, notes = b.operations_enquete(b.snapshot(fresh=True), e.get("personnes", []), action,
+                                          a.enquetes.signets_poses(eid))
+        return _gramps_guard(lambda: b.propose_signets(operations=ops, enquete=eid, notes=notes))
+    except ProposalError as exc:
+        return {"erreur": str(exc)}
+
+
+@mcp.tool()
+def gramps_reglages(chercheur: dict | None = None, signets: dict | None = None) -> dict:
+    """Mode gramps : réglages de la base Gramps (#282), partagés entre Gramps Desktop et Gramps Web. Sans paramètre :
+    LECTURE seule : fiche du chercheur (renseignée ou vide et noms des champs renseignés, jamais les valeurs), signets
+    de chaque type d'objet (identifiants Gramps), formats de nom personnalisés (numéro, nom, format, actif) et droits
+    du compte. Le format de nom PAR DÉFAUT de l'arbre n'est pas dans la base (préférence de Gramps Desktop ou du
+    serveur, illisible par l'API) : fiches et récits gardent leur affichage.
+    chercheur={name, addr, street, locality, city, county, state, country, postal, phone, email} (valeurs fournies
+    par l'utilisateur, chaîne vide pour vider un champ) : PROPOSITION (jeton + diff avant/après), rôle Owner requis.
+    signets={ajouter: [{cible, id}], retirer: [{cible, id}]} (cible : person, family, event, place, source,
+    citation, repository, media, note ; id : identifiant Gramps) ou {enquete, action: poser|retirer} (personnes d'une
+    enquête ; retrait limité aux signets que le plugin a posés) : PROPOSITION (jeton + diff), rôle Editor.
+    Ces écritures sont HORS transaction Gramps (rien dans l'historique de Gramps Web) : proposition, accord explicite
+    (arbre_appliquer), journal, annulation par Genealogiste (arbre_annuler_modification : état antérieur mémorisé,
+    restauré, conflit refusé). Un retrait annulé remet le signet en fin de liste. docs/gramps-web.md."""
+    if app().config.backend != "gramps":
+        return {"erreur": "Disponible en mode gramps (GENEALOGISTE_BACKEND=gramps) : ces réglages sont ceux de la "
+                          "base Gramps ; le modèle fichier n'en a pas et n'en invente pas."}
+    if chercheur is not None and signets is not None:
+        return {"erreur": "Une proposition à la fois : chercheur ou signets."}
+    try:
+        if chercheur is not None:
+            return _gramps_guard(lambda: app().backend.propose_chercheur(chercheur))
+        if signets is not None:
+            if not isinstance(signets, dict):
+                return {"erreur": "signets : dictionnaire attendu ({ajouter, retirer} ou {enquete, action})."}
+            if "enquete" in signets or "action" in signets:
+                if set(signets) - {"enquete", "action"} or signets.get("action") not in ("poser", "retirer") \
+                        or not isinstance(signets.get("enquete"), str):
+                    return {"erreur": "signets d'enquête : {\"enquete\": id, \"action\": \"poser\" | \"retirer\"}."}
+                return _enquete(lambda: _signets_enquete(signets["enquete"], signets["action"]))
+            if set(signets) - {"ajouter", "retirer"}:
+                return {"erreur": "signets : clés ajouter et retirer seulement (ou enquete et action)."}
+            return _gramps_guard(lambda: app().backend.propose_signets(signets.get("ajouter"), signets.get("retirer")))
+        return _gramps_guard(lambda: {**app().backend.lire_reglages(), "nature": "lecture : rien n'est écrit"})
+    except ProposalError as exc:
+        return {"erreur": str(exc)}
 
 
 @mcp.tool()

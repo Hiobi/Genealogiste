@@ -18,6 +18,12 @@
   ``get_name_group_mapping``), ``POST /api/name-groups/<patronyme>/<groupe>`` (droit EditNameGroup, 201) ;
   comme Gramps, un POST n'entre PAS dans l'historique des transactions et regrouper un nom sous lui-même laisse la
   clé listée : aucune route ne retire un regroupement.
+- signets, fiche chercheur, formats de nom (#282) : ``GET /api/bookmarks/<namespace>`` (404 hors des neuf espaces),
+  ``PUT``/``DELETE /api/bookmarks/<namespace>/<handle>`` (EditObject ; PUT ajoute EN FIN de liste, 404 si l'objet
+  n'existe pas, DELETE 404 si le signet n'existe pas ; corps vide), ``GET /api/metadata/`` -> ``researcher`` (onze
+  clés), ``PUT /api/metadata/researcher/`` (EditTree, Owner ; mise à jour PARTIELLE : seules les clés envoyées,
+  clés inconnues refusées en 422), ``GET /api/name-formats/`` (lecture seule). Comme Gramps, aucune de ces écritures
+  n'entre dans l'historique des transactions.
 Défauts : compte Editor, API épinglée de docker-compose.test.yml. Données fictives uniquement.
 """
 
@@ -48,6 +54,12 @@ _OWNER = _EDITOR | {"AddUser", "DeleteUser", "EditOtherUser", "EditUserRole", "V
                     "EditTreeMinRoleAI", "BatchDeleteObjects"}
 PERMISSIONS = {0: {"EditOwnUser"}, 1: _MEMBER, 2: _CONTRIBUTOR, 3: _EDITOR, 4: _OWNER,
                5: _OWNER | {"ViewSettings", "EditSettings", "AddTree", "MakeAdmin"}}
+CHERCHEUR_CLES = ("name", "addr", "street", "locality", "city", "county", "state", "country", "postal", "phone",
+                  "email")  # ResearcherUpdateSchema (gramps_webapi/api/resources/metadata.py)
+ESPACES_SIGNETS = ("citations", "events", "families", "media", "notes", "people", "places", "repositories",
+                   "sources")  # _BOOKMARK_TYPES (bookmarks.py)
+ESPACE_CLASSE = {"people": "Person", "families": "Family", "events": "Event", "places": "Place", "sources": "Source",
+                 "citations": "Citation", "repositories": "Repository", "media": "Media", "notes": "Note"}
 DUREE_JETON = 900  # JWT_ACCESS_TOKEN_EXPIRES = 15 min
 
 
@@ -118,6 +130,9 @@ class FakeGrampsWeb:
         self.objects: dict[str, dict[str, dict]] = {c: {} for c in CLASSES}
         self.clock = 1_000
         self.name_groups: dict[str, str] = {}  # table name_group de Gramps : patronyme -> groupe (#276)
+        self.chercheur: dict[str, str] = {k: "" for k in CHERCHEUR_CLES}  # fiche du chercheur (#282), vide par défaut
+        self.signets: dict[str, list[str]] = {n: [] for n in ESPACES_SIGNETS}  # signets de la base (#282)
+        self.formats_noms: list[dict] = []  # formats de nom personnalisés de la base (#282) : number, name, format, active
         self.messages: list[str] = []
         self.transactions: list[list[dict]] = []
         self.forced = False
@@ -131,6 +146,14 @@ class FakeGrampsWeb:
         r.get(api + "/metadata/").mock(side_effect=self._metadata)
         r.get(api + "/users/-/").mock(side_effect=self._me)
         r.get(api + "/register/config/").mock(side_effect=self._register_config)
+        r.get(api + "/metadata/researcher/").mock(side_effect=self._chercheur_lire)
+        r.put(api + "/metadata/researcher/").mock(side_effect=self._chercheur_ecrire)
+        r.get(api + "/name-formats/").mock(side_effect=self._formats)
+        r.get(url__regex=re.escape(api) + r"/bookmarks/(?P<ns>[^/?]+)$").mock(side_effect=self._signets_lire)
+        r.put(url__regex=re.escape(api) + r"/bookmarks/(?P<ns>[^/?]+)/(?P<handle>[^/?]+)$").mock(
+            side_effect=self._signet_poser)
+        r.delete(url__regex=re.escape(api) + r"/bookmarks/(?P<ns>[^/?]+)/(?P<handle>[^/?]+)$").mock(
+            side_effect=self._signet_retirer)
         r.get(api + "/name-groups/").mock(side_effect=self._groupes)
         r.get(url__regex=re.escape(api) + r"/name-groups/(?P<surname>[^/?]+)$").mock(side_effect=self._groupe)
         r.post(url__regex=re.escape(api) + r"/name-groups/(?P<surname>[^/?]+)/(?P<group>[^/?]+)$").mock(
@@ -219,7 +242,7 @@ class FakeGrampsWeb:
             "default_person": self.default_person,
             "gramps": {"version": self.gramps_version},
             "gramps_webapi": {"schema": self.api_version, "version": self.api_version},
-            "object_counts": counts,
+            "object_counts": counts, "researcher": dict(self.chercheur),
             "server": {"multi_tree": self.multi_tree, "task_queue": self.task_queue, "ocr": False,
                        "semantic_search": False, "chat": False, "email": False, "backups": False}})
 
@@ -228,6 +251,67 @@ class FakeGrampsWeb:
             return r
         return httpx.Response(200, json={"name": self.user, "email": "", "full_name": "", "role": self.role,
                                          "tree": self.tree, "user_id": "u1"})
+
+    def _chercheur_lire(self, req):
+        if (r := self._auth(req)) is not None:
+            return r
+        return httpx.Response(200, json=dict(self.chercheur))
+
+    def _chercheur_ecrire(self, req):
+        """PUT /metadata/researcher/ : ``require_permissions([EditTree])`` puis mise à jour PARTIELLE (seules les clés
+        du corps), clés inconnues refusées (``unknown = RAISE`` : 422) ; hors transaction, pas d'historique."""
+        if (r := self._auth(req)) is not None:
+            return r
+        corps = json.loads(req.content or b"{}")
+        if set(corps) - set(CHERCHEUR_CLES) or not all(isinstance(v, str) for v in corps.values()):
+            return httpx.Response(422, json={"code": 422, "status": "Unprocessable Entity",
+                                             "errors": {"json": {k: ["Unknown field."] for k in corps
+                                                                 if k not in CHERCHEUR_CLES}}})
+        if (r := self._droits(req, "EditTree")) is not None:
+            return r
+        self.chercheur.update(corps)
+        return httpx.Response(200, json=dict(self.chercheur))
+
+    def _formats(self, req):
+        if (r := self._auth(req)) is not None:
+            return r
+        return httpx.Response(200, json=copy.deepcopy(self.formats_noms))
+
+    def _signets_lire(self, req, ns):
+        if (r := self._auth(req)) is not None:
+            return r
+        ns = unquote(ns)
+        if ns not in ESPACES_SIGNETS:
+            return httpx.Response(404, json={"code": 404, "status": "Not Found"})
+        return httpx.Response(200, json=list(self.signets[ns]))
+
+    def _signet_poser(self, req, ns, handle):
+        """PUT : ajoute EN FIN de liste (``bookmarks.append``) si absent, 404 si l'objet n'existe pas ; corps vide."""
+        if (r := self._auth(req)) is not None:
+            return r
+        if (r := self._droits(req, "EditObject")) is not None:
+            return r
+        ns, handle = unquote(ns), unquote(handle)
+        if ns not in ESPACES_SIGNETS:
+            return httpx.Response(404, json={"code": 404, "status": "Not Found"})
+        if handle not in self.signets[ns]:
+            if handle not in self.objects[ESPACE_CLASSE[ns]]:
+                return httpx.Response(404, json={"error": {"code": 404, "message": "Object does not exist"}})
+            self.signets[ns].append(handle)
+        return httpx.Response(200, content=b"")
+
+    def _signet_retirer(self, req, ns, handle):
+        if (r := self._auth(req)) is not None:
+            return r
+        if (r := self._droits(req, "EditObject")) is not None:
+            return r
+        ns, handle = unquote(ns), unquote(handle)
+        if ns not in ESPACES_SIGNETS:
+            return httpx.Response(404, json={"code": 404, "status": "Not Found"})
+        if handle not in self.signets[ns]:
+            return httpx.Response(404, json={"error": {"code": 404, "message": "Bookmark does not exist"}})
+        self.signets[ns].remove(handle)
+        return httpx.Response(200, content=b"")
 
     def _groupes(self, req):
         if (r := self._auth(req)) is not None:

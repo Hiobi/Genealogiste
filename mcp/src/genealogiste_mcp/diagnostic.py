@@ -327,6 +327,7 @@ def controles_gramps(a) -> list[dict]:
         out.append(_controle_role_gramps(a, gramps_actif))
     if meta is not None:
         out.append(_controle_reglages_gramps(a, meta))
+        out.append(_controle_chercheur(a, meta))
         if not injoignable:
             out.append(_controle_personne_reference(a, meta, gramps_actif))
     if gramps_actif and not injoignable:
@@ -502,6 +503,25 @@ def _gramps_id_de(a, cls: str, **params) -> str | None:
         wanted = params.get("gramps_id")
         return wanted if any(isinstance(o, dict) and o.get("gramps_id") == wanted for o in d) else None
     return d.get("gramps_id") if isinstance(d, dict) else None
+
+
+def _controle_chercheur(a, meta: dict) -> dict:
+    """Fiche du chercheur de la base Gramps (#282) : renseignée ou vide, JAMAIS son contenu (nom, adresse, courriel
+    sont des données personnelles) ni le nombre ou le nom des champs. Indique si le compte peut la modifier (droit
+    EditTree, rôle Owner). Informatif : une fiche vide n'est pas une anomalie."""
+    from .gramps.reglages import chercheur_normalise, chercheur_renseigne
+
+    renseignee = chercheur_renseigne(chercheur_normalise(meta.get("researcher")))
+    try:
+        perms = a.gramps().permissions()
+        modifiable = None if perms is None else "EditTree" in perms
+    except Exception:  # noqa: BLE001 — le contrôle reste informatif
+        modifiable = None
+    detail = "fiche du chercheur renseignée" if renseignee else (
+        "fiche du chercheur vide (les exports privés n'ont pas de soumetteur SUBM ni de <researcher>)")
+    if modifiable is False:
+        detail += " ; modification par Genealogiste : rôle Owner requis (le compte est au-dessous)"
+    return _ctl("gramps_chercheur", "ok", detail, renseigne=renseignee, modifiable=modifiable)
 
 
 def _sans_zeros(gid: str) -> str:

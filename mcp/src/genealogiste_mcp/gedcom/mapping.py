@@ -578,9 +578,10 @@ def _w_event(parent: Node, e: Event, version: int) -> None:
     n.add("UID" if version >= 7 else "_UID", e.uid)
 
 
-def _header(version: int, etiquettes: bool = False) -> Node:
+def _header(version: int, etiquettes: bool = False, chercheur: bool = False) -> Node:
     """En-tête ; ``_ETIQUETTE`` n'est déclarée que si l'arbre porte des étiquettes (#262) : un fichier sans
-    étiquette reste identique octet pour octet à celui des versions précédentes."""
+    étiquette reste identique octet pour octet à celui des versions précédentes. ``chercheur`` : renvoi ``SUBM`` vers
+    l'enregistrement du chercheur (#282), absent par défaut (même octets qu'avant)."""
     h = Node("HEAD")
     gedc = h.add("GEDC")
     if version >= 7:
@@ -595,8 +596,29 @@ def _header(version: int, etiquettes: bool = False) -> Node:
     src = h.add("SOUR", "GENEALOGISTE")
     src.add("NAME", "Plugin Claude Code genealogiste")
     src.add("VERS", "0.2.0")
+    if chercheur:
+        h.add("SUBM", "@SUBM@")
     h.add("LANG", "fr" if version >= 7 else "French")
     return h
+
+
+def _soumetteur(c: dict[str, str]) -> Node:
+    """Enregistrement ``SUBM`` d'après la fiche du chercheur de la base Gramps (#282), à la manière de l'export GEDCOM
+    de Gramps (``exportgedcom.py`` : ``_submitter`` et ``__write_addr``) : NAME toujours, ADDR (lignes : adresse, lieu-dit,
+    ville, comté, état, code postal, pays ; CONT) avec ADR1 (= adresse de la fiche : Gramps y recopie ``addr`` et
+    n'écrit pas ``street``), ADR2, CITY, STAE, POST, CTRY, puis PHON et EMAIL. Seulement ce qui est renseigné."""
+    n = Node("SUBM", "", "SUBM")
+    n.add("NAME", c.get("name", ""))
+    lignes = [x for x in (c.get("addr"), c.get("locality"), c.get("city"), c.get("county"), c.get("state"),
+                          c.get("postal"), c.get("country")) if x]
+    if lignes:
+        a = n.add("ADDR", "\n".join(lignes))
+        for tag, cle in (("ADR1", "addr"), ("ADR2", "locality"), ("CITY", "city"), ("STAE", "state"),
+                         ("POST", "postal"), ("CTRY", "country")):
+            a.add_if(tag, c.get(cle))
+    n.add_if("PHON", c.get("phone"))
+    n.add_if("EMAIL", c.get("email"))
+    return n
 
 
 def _a_etiquettes(tree: Tree) -> bool:
@@ -609,8 +631,9 @@ def _a_etiquettes(tree: Tree) -> bool:
         or any(c.tags for o in owners for c in iter_citations(o))
 
 
-def to_nodes(tree: Tree, version: int = 7) -> list[Node]:
-    nodes = [_header(version, _a_etiquettes(tree))]
+def to_nodes(tree: Tree, version: int = 7, chercheur: dict[str, str] | None = None) -> list[Node]:
+    """``chercheur`` : fiche du chercheur à écrire en ``SUBM`` (#282) ; ``None`` (défaut) : rien, sortie inchangée."""
+    nodes = [_header(version, _a_etiquettes(tree), bool(chercheur))]
     pedi: dict[tuple[str, str], str] = {}
     for fam in tree.familles.values():
         for link in fam.enfants:
@@ -742,7 +765,11 @@ def to_nodes(tree: Tree, version: int = 7) -> list[Node]:
             sn.add("_RESN", "PRIVACY")
         nodes.append(sn)
     for x in tree.extra_records:
+        if chercheur and x.get("tag") == "SUBM":  # le soumetteur d'un fichier importé cède la place à la fiche
+            continue
         nodes.append(Node.from_dict(x))
+    if chercheur:
+        nodes.append(_soumetteur(chercheur))
     nodes.append(Node("TRLR"))
     return nodes
 
@@ -753,8 +780,8 @@ def _guess_form(path: str) -> str:
             "tif": "image/tiff", "tiff": "image/tiff", "txt": "text/plain"}.get(ext, "application/octet-stream")
 
 
-def write_gedcom(tree: Tree, version: int = 7) -> str:
-    return serialize(to_nodes(tree, version), version)
+def write_gedcom(tree: Tree, version: int = 7, chercheur: dict[str, str] | None = None) -> str:
+    return serialize(to_nodes(tree, version, chercheur), version)
 
 
 def load(text: str) -> Tree:
