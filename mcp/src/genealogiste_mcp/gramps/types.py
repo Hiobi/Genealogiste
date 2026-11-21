@@ -15,6 +15,7 @@ Tout le plugin travaille en format brut ; :func:`to_raw` convertit une lecture (
 from __future__ import annotations
 
 import copy
+import functools
 import json
 import unicodedata
 from pathlib import Path
@@ -308,9 +309,14 @@ def _index_libelles() -> dict[str, dict[str, set[str]]]:
 LIBELLES = _index_libelles()
 
 
+@functools.lru_cache(maxsize=8192)
+def _candidats(cls: str, chaine: str) -> tuple[str, ...]:
+    return tuple(sorted(LIBELLES.get(cls, {}).get(cle_libelle(chaine), ())))
+
+
 def candidats(cls: str, chaine: str) -> list[str]:
     """Types standard de la classe dont ``chaine`` est un libellé (tolérant) ; plusieurs : ambigu."""
-    return sorted(LIBELLES.get(cls, {}).get(cle_libelle(chaine), ()))
+    return list(_candidats(cls, chaine))
 
 
 def type_standard(cls: str, chaine: str) -> str | None:
