@@ -345,6 +345,44 @@ def generer(dossier: str, user) -> dict:
     return sortie
 
 
+def types_utilises(db) -> list[list]:
+    """Types portés par la base importée (#273) : [classe, chaîne XML, personnalisé ?] distincts, lus par l'API de
+    la bibliothèque (5.2 comprise) : montre ce que chaque version fait d'un type standard qu'elle ne connaît pas."""
+    vus = set()
+
+    def t(classe, gt):
+        vus.add((classe, gt.xml_str(), bool(gt.is_custom())))
+
+    def attributs(obj):
+        for a in obj.get_attribute_list():
+            t("AttributeType", a.get_type())
+
+    for p in db.iter_people():
+        attributs(p)
+        for n in [p.get_primary_name(), *p.get_alternate_names()]:
+            t("NameType", n.get_type())
+        for r in p.get_event_ref_list():
+            t("EventRoleType", r.get_role())
+            attributs(r)
+    for f in db.iter_families():
+        t("FamilyRelType", f.get_relationship())
+        for r in f.get_event_ref_list():
+            t("EventRoleType", r.get_role())
+        for c in f.get_child_ref_list():
+            t("ChildRefType", c.get_father_relation())
+            t("ChildRefType", c.get_mother_relation())
+    for e in db.iter_events():
+        t("EventType", e.get_type())
+        attributs(e)
+    for x in db.iter_places():
+        t("PlaceType", x.get_type())
+    for x in db.iter_notes():
+        t("NoteType", x.get_type())
+    for x in db.iter_repositories():
+        t("RepositoryType", x.get_type())
+    return sorted([list(x) for x in vus])
+
+
 def dates_reference(chemin: str) -> dict:
     """Formes de date de l'inventaire #272 (fichier JSON [[nom, Date JSON], …]) soumises à la bibliothèque :
     ``Date.set`` (acceptée ou DateError), valeur de tri calculée, affichage anglais au format ISO par défaut
@@ -446,6 +484,7 @@ def main() -> int:
             continue
         res["importe"] = True
         res["handles"] = {cls: sorted(getattr(db, meth)()) for cls, meth in CLASSES.items()}
+        res["types"] = types_utilises(db)
         # médias : chemin enregistré et fichier trouvé par Gramps (paquet .gpkg : extrait à côté de l'arbre)
         res["medias"] = [{"chemin": m.get_path(), "fichier": os.path.isfile(media_path_full(db, m.get_path()))}
                          for m in (db.get_media_from_handle(h) for h in db.get_media_handles())]

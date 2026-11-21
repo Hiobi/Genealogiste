@@ -346,3 +346,81 @@ def test_dates_aller_retour_sur_vrai_gramps_web(client, loaded):
     client.transaction(diff(db, tree_to_gramps(t, base=db)), "Tests d'intégration : dates du modèle (#272)")
     t2, _ = gramps_to_tree(client.load_all())
     assert [e.date for e in t2.personnes["I272G7"].evenements] == CANONIQUES
+
+
+# ---------------------------------------------------------------------------- #273 : types personnalisés français
+
+def test_types_francais_lus_normalises_annules(client, loaded, tmp_path):
+    """Objets créés comme l'interface de Gramps Web (POST au format simplifié, type « personnalisé » saisi en
+    français) : le serveur (locale anglaise) en fait des types personnalisés ; Genealogiste les lit comme les types
+    standard, les réécrit à l'identique, puis les normalise (transaction, accord) et l'annulation les rétablit."""
+    from genealogiste_mcp.gedcom.mapping import write_gedcom
+    from genealogiste_mcp.gramps.types import TYPES, blank, tname
+
+    def simplifie(o):  # types en chaîne, comme les envoie l'interface
+        if isinstance(o, dict):
+            if o.get("_class") in TYPES:
+                return tname(o)
+            return {k: simplifie(v) for k, v in o.items()}
+        if isinstance(o, list):
+            return [simplifie(x) for x in o]
+        return o
+
+    lieu = blank("Place", "type273lieu", "P273")
+    lieu.update(title="Saint-Exemple-273", place_type="Paroisse")
+    lieu["name"]["value"] = "Saint-Exemple-273"
+    bapteme = blank("Event", "type273bapteme", "E2731")
+    bapteme.update(type="Baptême", place="type273lieu", description="test #273")
+    recens = blank("Event", "type273recens", "E2732")
+    recens.update(type="Recensement")
+    enfant = blank("Person", "type273enfant", "I2731")
+    enfant["primary_name"]["first_name"] = "Baptisé"
+    enfant["event_ref_list"] = [{**blank_ref(), "ref": "type273bapteme", "role": "Primary",
+                                 "attribute_list": [{"_class": "Attribute", "private": False, "type": "Âge",
+                                                     "value": "1 jour", "citation_list": [], "note_list": []}]},
+                                {**blank_ref(), "ref": "type273recens", "role": "Primary"}]
+    temoin = blank("Person", "type273temoin", "I2732")
+    temoin["primary_name"]["first_name"] = "Témoin"
+    temoin["event_ref_list"] = [{**blank_ref(), "ref": "type273bapteme", "role": "Témoin"},
+                                {**blank_ref(), "ref": "type273bapteme", "role": "Officiant"}]  # ambigu
+    for chemin, o in (("places", lieu), ("events", bapteme), ("events", recens), ("people", enfant),
+                      ("people", temoin)):
+        rep = client.request("POST", f"/{chemin}/", json=simplifie(o))
+        assert rep.status_code in (200, 201), rep.text
+    db = client.load_all()
+    assert db.get("Event", "type273bapteme")["type"] == {"_class": "EventType", "value": 0, "string": "Baptême"}
+    assert db.get("Place", "type273lieu")["place_type"]["string"] == "Paroisse"
+    roles = [r["role"] for r in db.get("Person", "type273temoin")["event_ref_list"]]
+    assert [r["string"] for r in roles] == ["Témoin", "Officiant"] and {r["value"] for r in roles} == {0}
+    t, _ = gramps_to_tree(db)
+    ev = next(e for e in t.personnes["I2731"].evenements if e.valeur == "test #273")
+    assert ev.type == "BAPM" and ev.age == "1 jour"
+    assert [(a.personne, a.role, a.detail) for a in ev.associations] == [("I2732", "WITN", ""),
+                                                                        ("I2732", "OTHER", "Officiant")]
+    assert {e.type for e in t.personnes["I2731"].evenements} == {"BAPM", "CENS"}
+    nouveaux = {"type273lieu", "type273bapteme", "type273recens", "type273enfant", "type273temoin"}
+    assert [x for x in diff(db, tree_to_gramps(t, base=db, generated=False)) if x["handle"] in nouveaux] == []
+    ged = write_gedcom(t)
+
+    b = GrampsBackend(client, tmp_path, tmp_path / ".propositions", ttl=0)
+    p = b.propose_types()
+    print("types #273, bilan réel :", p["bilan_types"], p["ambigus"])
+    assert p["bilan_types"]["EventType"]["Baptême"]["standard"] == "Baptism"
+    assert p["bilan_types"]["PlaceType"]["Paroisse"]["standard"] == "Parish"
+    assert p["bilan_types"]["EventRoleType"]["Témoin"]["standard"] == "Witness"
+    assert any(x["chaine"] == "Officiant" for x in p["ambigus"])
+    r = b.apply(p["jeton"])
+    db2 = client.load_all()
+    assert db2.get("Event", "type273bapteme")["type"] == {"_class": "EventType", "value": 15, "string": ""}
+    assert db2.get("Place", "type273lieu")["place_type"] == {"_class": "PlaceType", "value": 5, "string": ""}
+    assert [x["value"] for x in (r_["role"] for r_ in db2.get("Person", "type273temoin")["event_ref_list"])] == [7, 0]
+    assert write_gedcom(gramps_to_tree(db2)[0]) == ged  # le modèle ne change pas
+    assert "jeton" not in b.propose_types()  # deuxième exécution : rien à faire
+    b.apply(b.propose_undo(r["transaction"])["jeton"])
+    db3 = client.load_all()
+    assert db3.get("Event", "type273bapteme")["type"]["string"] == "Baptême"
+    assert db3.get("Place", "type273lieu")["place_type"]["string"] == "Paroisse"
+
+
+def blank_ref() -> dict:
+    return {"_class": "EventRef", "private": False, "citation_list": [], "note_list": [], "attribute_list": []}
