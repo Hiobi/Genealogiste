@@ -12,6 +12,8 @@ Diagnostic : **$ARGUMENTS**
    de rôle (Editor attendu : un rôle plus faible interdit l'écriture, Owner/Admin est déconseillé) et de réglages.
    Ajouter l'accord entre la racine Sosa et la personne de référence de Gramps : en cas d'écart, donner les deux
    identifiants et la procédure manuelle du remède (Gramps Web n'a aucun point d'API pour la modifier).
+   Vivants (`gramps_vivants`, `gramps_prive_a_retirer`, `gramps_regle_vivants`) : donner les comptes et les
+   identifiants tels quels (jamais de nom) ; remède : `gramps_proteger_vivants` (proposition, accord explicite).
 4. Présenter le contrôle des chemins de médias (introuvables, ambigus, hors des racines, nom attribué par Gramps Web) avec son
    échantillon d'identifiants, sans rien déduire d'autre ; pour la procédure, renvoyer à docs/gramps.md (chemin de base des médias).
 5. Pour une source au verdict **protection** : le dire tel quel (blocage anti-robot de cette adresse) et

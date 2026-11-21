@@ -26,6 +26,7 @@ jamais dans Git, un journal ou une issue.
 | `GENEALOGISTE_GRAMPS_NOTES_AUTO` | notes de preuve `Genealogiste:auto` : `true` (défaut, recalcul sur toute la base à chaque écriture), `modifies` (recalcul limité aux objets touchés), `false` (aucune note ni étiquette générée ; celles qui existent sont conservées telles quelles) |
 | `GENEALOGISTE_GRAMPS_NOTES_LIENS` | `false` (défaut) : notes de preuve en texte simple, comme avant ; `true` : liens internes `gramps://` vers les personnes, événements, familles, sources et citations qu'elles citent ([#279](#texte-enrichi-et-liens-internes-279)). Changer la valeur ne réécrit aucune note : `gramps_recalculer_notes` propose le passage d'une forme à l'autre (diff, accord, journal, annulable) |
 | `GENEALOGISTE_GRAMPS_TACHES` | `false` (défaut) : aucune source n'est lue ni écrite comme tâche, comportement inchangé ; `true` : tâches de la vue Tâches (source + note étiquetées `ToDo`) lues et écrites par `ajouter_tache` / `modifier_tache`, correspondance avec les enquêtes et les lacunes ([#263](#tâches-263)). Jamais automatique |
+| `GENEALOGISTE_GRAMPS_PRIVE_VIVANTS` | `off` (défaut) : rien d'ajouté aux propositions, comportement inchangé ; `propose` : une proposition qui touche une personne présumée vivante ajoute à son diff la pose du privé de cette personne et de ses données propres. `auto` est **refusé** au démarrage : le drapeau privé n'est jamais posé ni retiré sans proposition ([vivants et privé](#vivants-et-privé-264)) |
 | `GENEALOGISTE_MARQUEURS` | forme écrite des attributs et de l'étiquette gérés : `genealogiste` (défaut, `Genealogiste-*`, `Genealogiste:auto`) ou `sosa` (`Sosa-*`, `Sosa:auto`, pour une base partagée avec une ancienne version) ; les deux formes sont toujours lues (voir « Marqueurs historiques ») |
 | `GENEALOGISTE_GIT_MIRROR` | `true` : miroir GEDCOM 7 versionné de l'arbre Gramps (défaut `false`) |
 | `GENEALOGISTE_GIT_REMOTE` | dépôt distant optionnel du répertoire de données (**privé**) |
@@ -39,8 +40,8 @@ réglages : à éviter pour un compte dont les identifiants sont stockés (privi
 
 - **Lecture** : possible avec n'importe quel rôle (recherche, fiches, preuve, ascendance, `gramps_tirer`).
 - **Proposition** : en mode `gramps`, `arbre_proposer` et les autres préparations (`gramps_recalculer_notes`,
-  `gramps_structurer_lieux`, `gramps_dater_lieux`, `gramps_normaliser_types`, `marqueurs_migrer_proposer`,
-  annulation, `gramps_bascule_proposer`) refusent
+  `gramps_structurer_lieux`, `gramps_dater_lieux`, `gramps_normaliser_types`, `gramps_proteger_vivants`,
+  `marqueurs_migrer_proposer`, annulation, `gramps_bascule_proposer`) refusent
   **avant de lire l'arbre et de calculer le diff** un compte sans droit d'écriture, avec le rôle détecté et le
   correctif. `arbre_appliquer` refuse de même avant de consommer le jeton : une promotion du compte permet de
   réessayer avec la même proposition. Les droits sont ceux du jeton d'accès (le rôle n'y figure pas : seulement
@@ -69,7 +70,149 @@ Le jeton d'accès Gramps Web dure 15 minutes ; sa revendication `exp` fixe le mo
 avant l'échéance), sans délai codé en dur. Le jeton renouvelé garde l'arbre et les droits.
 
 Le mode direct suppose une instance Gramps Web **privée** : les personnes vivantes y sont écrites en clair.
-Elles restent masquées par défaut dans les exports publics (`arbre_exporter`).
+Elles restent masquées par défaut dans les exports publics (`arbre_exporter`). Pour une instance ouverte à des
+comptes Invité ou à l'inscription libre : `gramps_proteger_vivants` et les contrôles `gramps_vivants`,
+`gramps_prive_a_retirer` et `gramps_regle_vivants` du diagnostic ([vivants et privé](#vivants-et-privé-264)).
+
+## Vivants et privé (#264)
+
+Gramps Web **ne masque pas les vivants** : aucune lecture de l'API ne filtre une personne parce qu'elle est
+vivante (aucun `LivingProxyDb` dans gramps-web-api ; seul l'export propose un filtre `living`). Le seul rempart
+est le drapeau **privé** (`private`), et seulement contre un compte sans le droit `ViewPrivate`, c'est-à-dire le
+rôle **Invité** (Guest, 0) : *Member* (1) et au-dessus voient tout le privé (`auth/const.py`). Genealogiste ne pose
+ni ne retire jamais ce drapeau sans proposition : diff, accord explicite, `arbre_appliquer`, transaction
+journalisée et annulable par `arbre_annuler_modification`.
+
+### Ce que masque le drapeau privé (relevé amont)
+
+Sources lues : gramps-web-api `v3.26.0` (`5b3f890`), `v3.25.1` (`77263b8`), `v3.13.0` ; Gramps `maintenance/gramps60`
+(`gramps/gen/proxy/private.py`). Depuis l'API **3.25.0** (commit `4345fef`, « Replace the private proxy with
+RestrictedDb », #1107), un Invité lit la base à travers `RestrictedDb` (`api/access/db.py`, `api/access/sanitize.py`) ;
+avant (3.13.0), à travers `PrivateProxyDb` de Gramps. Les deux font la même chose sur les objets :
+
+- un **objet principal privé** (personne, famille, événement, citation, source, média, note) est introuvable :
+  listes, lecture par handle ou par `gramps_id`, rétroliens, recherche, export, `/api/living/<handle>` ;
+- dans un objet visible, les **références vers un objet invisible** sont retirées (`father_handle` /
+  `mother_handle` vidés, enfant retiré de `child_ref_list`, références d'événement, de média, de citation, de
+  note retirées ; une citation dont la source est privée est masquée) et les **sous-objets privés** (nom,
+  attribut, référence, adresse…) supprimés ; un nom principal privé devient « Private » ;
+- en revanche un objet principal **non privé reste visible même si tout ce qui le référence est privé** :
+  l'événement de naissance d'une personne privée, sa note, sa citation, son image restent listés (date, lieu,
+  texte, fichier). Rendre privée la seule personne ne suffit donc pas.
+
+### Périmètre du marquage
+
+Pour une personne présumée vivante (règle du plugin, `arbre_vivant`) :
+
+| Objet | Marqué privé quand… | Sinon |
+|---|---|---|
+| la personne | toujours (ses noms, attributs, références, adresses suivent : la personne est masquée en entier) | — |
+| famille | tous ses conjoints sont masqués (enfant décédé visible : sa filiation est masquée, listée dans `references_masquees`) | conjoint non masqué (décédé) : famille et événements familiaux **laissés visibles**, listés dans `partages` ; le vivant n'y figure plus (référence retirée par Gramps) |
+| événement | tous ses « propriétaires » (rôle Principal ou Famille) sont masqués ; un témoin ou parrain resté visible perd sa participation (listée) | partagé avec un propriétaire visible : laissé, listé |
+| citation, source, média, note | **tous** les objets qui les référencent sont masqués | partagé avec un objet visible : laissé, listé avec ses référents |
+| note générée (`Genealogiste:auto`) | elle nomme la personne et reste visible ailleurs (ex. « Filiation de … » portée par la famille d'un parent décédé, constaté sur Gramps Web réel) : elle ne parle que d'elle | — |
+| média d'un billet ou d'une tâche privés | son seul référent est ce billet ou cette tâche (outil sur tout l'arbre) | lié ailleurs : avertissement (voir [Blog](#blog-261)) |
+
+Jamais modifiés : lieux, dépôts, étiquettes, notes et textes saisis par l'utilisateur sur un objet resté visible.
+Un texte resté visible qui nomme un vivant (note d'un défunt, page de citation, description, attribut
+`Genealogiste-Association`) est **listé** dans `residus`, jamais réécrit.
+
+### Outil, réglage, opération
+
+- `gramps_proteger_vivants(personnes, limite, retraits)` : bilan (personnes présumées vivantes, vivants non
+  privés, objets à marquer par classe, `partages`, `references_masquees`, `residus`, `non_masquable`), puis une
+  transaction ordinaire (`POST /api/transactions/`, en tâche de fond au-delà de 200 objets) : seul `private`
+  change. `limite` (100 par défaut) borne le nombre de personnes par lot, `reste_apres_ce_lot` dit s'il faut
+  relancer. Idempotent : rien à faire, pas de jeton.
+- `GENEALOGISTE_GRAMPS_PRIVE_VIVANTS` : `off` (défaut, comportement inchangé : aucune ligne ajoutée au diff) ou
+  `propose` : toute proposition qui touche une personne présumée vivante (personne modifiée, membre d'une famille
+  modifiée) ajoute à son propre diff la pose du privé de cette personne et de ses données propres, ligne par ligne
+  (`transaction_gramps.prive_vivants`, bilan `prive_vivants`). **`auto` est refusé au démarrage** : il poserait le
+  drapeau sans proposition, contraire à la règle du plugin.
+- `marquer_vivant` avec `"prive": true` : même pose pour cette personne, quel que soit le réglage ; refusée si la
+  personne n'est pas présumée vivante ; sans `vivant`, le statut forcé est inchangé. `prive: false` est refusé : le
+  retrait passe par l'outil.
+- La **modification en lot** de Gramps Web (`POST /api/objects/edit-by-handle/`, `set_private`) n'est pas utilisée :
+  absente avant l'API 3.26.0 et hors de `/api/transactions/`, son annulation n'est pas établie (même décision que
+  pour les étiquettes, #262).
+
+### Trace et retrait au décès
+
+Le journal local `gramps-transactions.jsonl` enregistre, pour chaque transaction acceptée, les objets dont le
+plugin a posé le privé « parce que vivant » (`protection` : classe, handle, `gramps_id`, personnes motivantes) et
+ceux dont il l'a retiré (`retrait_protection`). **Aucun attribut n'est écrit dans Gramps** (une note n'a pas
+d'attribut : un marqueur dans Gramps ne couvrirait pas tout le périmètre). Quand toutes les personnes motivantes
+d'un objet ne sont plus présumées vivantes (décès saisi, âge dépassé), `arbre_coherence` (code
+`prive_vivant_a_retirer`) et `diagnostic` (`gramps_prive_a_retirer`) le signalent, et `gramps_proteger_vivants`
+propose le retrait, jamais automatique. Seul ce que le plugin a posé est retiré : un privé voulu par l'utilisateur
+n'est jamais touché ; un objet qui masque encore un autre vivant reste privé ; une transaction annulée ne compte
+plus. Sans ce journal (répertoire de données perdu, autre poste), rien n'est retiré : retrait à la main dans
+Gramps Web.
+
+Conséquence à connaître : comme toute note privée, une note rendue privée sort du modèle de Genealogiste (fiches,
+notes de recherche, exports ne la lisent plus) ; elle reste intacte dans Gramps et lisible des rôles Membre et
+plus, et redevient lue après le retrait. En mode `off`, une modification ultérieure d'un vivant protégé (nouvel
+événement, nouvelle note) crée des objets publics : relancer `gramps_proteger_vivants`, ou utiliser `propose`.
+
+### Ce qu'un Invité voit encore (constaté)
+
+Banc réel `test_vivants_prives_invisibles_pour_un_invite` (personnes fictives, conteneurs jetables), compte
+`sosa-invite` de rôle 0, après protection de tout l'arbre :
+
+| Voie | 3.13.0 (plancher) | 3.25.1 (épinglée) | 3.26.0 (plafond) |
+|---|---|---|---|
+| `GET /api/people/`, `/api/<objets>/` | vivants et données propres absents | idem | idem |
+| `GET /api/people/<handle>` | `200 {}` (objet vide) | 404 | 404 |
+| `GET /api/people/?gramps_id=…` | 404 | 404 | 404 |
+| `GET /api/people/<handle>/timeline` | 500 (page d'erreur, aucune donnée) | 404 | 404 |
+| `GET /api/living/<handle>`, `/dates` | 404 | 404 | 404 |
+| média : objet / fichier / vignette | `200 {}` / 500 / 500 | 404 / 404 / 404 | 404 / 404 / 404 |
+| famille partagée avec un défunt (`extend`, `profile`, `backlinks`) | défunt seul, sans conjoint ni enfant vivants | idem | idem |
+| `GET /api/search/?query=<nom du vivant>` | la famille et le mariage partagés sont **trouvés** (nom non renvoyé) ; la note saisie qui le nomme | seule la note saisie (résidu) | idem |
+| `/api/metadata/` `object_counts` | compte sans les objets privés | idem | idem |
+| export `GET /api/exporters/ged/file` | aucun vivant (hors résidu) | idem | idem |
+
+Restent donc visibles, et listés par la proposition : une famille partagée avec un conjoint décédé (l'existence
+d'une union), les textes saisis qui nomment le vivant (`residus`), les types personnalisés (collectés sur tous les
+objets, fuite connue de Gramps Web), et, **avant l'API 3.25.0**, le résultat de recherche d'une famille ou d'un
+événement partagés par le nom du vivant (index `sifts` remplacé en 3.25.0, commit `0f2a99d`) : mettre à jour
+Gramps Web. Rendu dans le navigateur non automatisé : implémenté, non éprouvé visuellement.
+
+### Deux règles « vivant » : alignement
+
+- **Plugin** (`privacy.is_living`) : présumé vivant tant qu'une naissance il y a moins de **100 ans** reste
+  possible (borne haute), sauf décès non réfuté ou statut forcé (`Genealogiste-Vivant` Y/N, `marquer_vivant`).
+- **Gramps** (`gramps.gen.utils.alive.probably_alive`) : `GET /api/living/<handle>` → `{"living": bool}` et
+  `GET /api/living/<handle>/dates` → `{birth, death, explain, other}` (`api/__init__.py:765-771`,
+  `resources/living.py`). Il n'existe **pas** de route `/api/people/<handle>/alive` (seules des docstrings la
+  citent ; le commentaire de l'issue #264 est à corriger). Paramètres facultatifs `max_age_probably_alive`,
+  `average_generation_gap`, `max_sibling_age_difference` ; sans eux, réglages de Gramps `behavior.max-age-prob-alive`
+  (**110**), `avg-generation-gap` (20), `max-sib-age-diff` (20). Gramps ignore le statut forcé du plugin, lit un
+  décès réfuté, raisonne sur les proches ; une personne sans aucune date est vivante pour les deux.
+- **Comparaison** (`diagnostic`, contrôle `gramps_regle_vivants`) : pas de portage de l'algorithme de Gramps (récursif
+  sur ascendants, descendants, fratrie et conjoints : un portage infidèle mentirait). Échantillon ciblé sur la zone
+  d'incertitude, par priorité : statut forcé ou décès réfuté ; sans décès avec une naissance au plus tard estimée
+  il y a 85 à 125 ans ; sans aucune date. Plafond de **30 requêtes** par diagnostic, pause de 0,1 s entre deux ;
+  une divergence est réinterrogée avec `max_age_probably_alive=100` : « seuil » si Gramps rejoint alors le plugin,
+  « méthode » sinon. Sortie : comptes, `gramps_id` des divergences, jamais de nom. Constaté sur 3.25.1 : une
+  personne née il y a 105 ans sans décès (« seuil ») et une personne forcée décédée née en 1970 (« méthode »).
+- **Aligner** : les réglages `behavior.*` ne sont **pas** modifiables par l'API (`/api/config/` n'accepte que les
+  clés de messagerie et d'URL, `DB_CONFIG_ALLOWED_KEYS`, `const.py:61-69`, et seulement pour un Admin). Gramps Desktop :
+  Préférences > Limites, « Espérance de vie maximale » = 100. Serveur Gramps Web : `gramps.ini` de l'utilisateur du
+  processus (section `[behavior]`, `max-age-prob-alive=100`), non vérifié ici. Appel ponctuel :
+  `GET /api/living/<handle>?max_age_probably_alive=100`. La règle du plugin reste 100 ans (`privacy.LIVING_YEARS`,
+  non réglable) ; un seuil réglable serait une option à décider (elle changerait aussi la garde réseau, les exports
+  et les notes), non ajoutée.
+
+### Diagnostic
+
+| Contrôle | Contenu | États |
+|---|---|---|
+| `gramps_vivants` | personnes présumées vivantes et non privées (compte) ; exposition : comptes Invité (`GET /api/users/`, rôle Owner seulement ; sinon « non vérifiable ») et inscription libre (API ≥ 3.26.0) | aucun vivant non privé, ou exposition vérifiée nulle : `ok` ; sinon `attention` (exposée ou non vérifiable), remède `gramps_proteger_vivants` |
+| `gramps_prive_a_retirer` | personnes motivant un privé posé par le plugin et qui ne sont plus présumées vivantes (`gramps_id`, nombre d'objets) | présent seulement s'il y en a : `attention` |
+| `gramps_regle_vivants` | divergences plugin / Gramps sur l'échantillon borné ci-dessus (comptes, `gramps_id`, cause) | `ok` sans divergence ; `attention` sinon |
+
+Ces contrôles lisent l'arbre (déjà chargé par la session en mode `gramps`) et seulement en mode `gramps`.
 
 ## Personne de référence et racine Sosa (#274)
 
@@ -520,7 +663,10 @@ hors présentation) :
   non plus (`/api/notes/?gramps_id=…` : 404). Un billet public et son corps lui sont lisibles. Gramps Web
   ne masque pas les vivants par rôle : d'où le refus d'un billet public qui nomme une personne présumée vivante
   ([sécurité](securite.md#billets-du-blog-de-gramps-web-261)). Les **médias** gardent leur propre
-  confidentialité : l'image d'un billet privé reste lisible par un Invité si le média est public ;
+  confidentialité : l'image d'un billet privé reste lisible par un Invité si le média est public. Depuis #264, la
+  proposition d'un billet ou d'une tâche privés l'**avertit** pour chaque média public, avec l'opération qui le
+  rend privé (`modifier_media`, `champs.prive`) et les autres objets qui le lient ; `gramps_proteger_vivants` (tout
+  l'arbre) propose de rendre privé le média dont le seul référent est un billet ou une tâche privés ;
 - **synchronisation** : `gramps_synchroniser`, le miroir Git et `gramps_tirer` (mode fichier) lisent le billet
   comme une source ordinaire (étiquette `_ETIQUETTE Blog`, `_RESN PRIVACY`, corps en `NOTE`, `OBJE` dans
   l'ordre) : ni doublon ni écrasement ;

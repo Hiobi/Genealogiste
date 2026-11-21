@@ -32,6 +32,11 @@ les exports appliquent un masquage par défaut. La présomption prend en compte 
 pas seulement une date de naissance exacte. Une identité ou un fait mal renseigné peut fausser une
 analyse : vérifier les données avant de décider de ce qui peut être partagé.
 
+Avec Gramps Web, les vivants sont écrits en clair et Gramps Web ne les cache pas aux comptes Invité : seul le
+drapeau « privé » les protège. `gramps_proteger_vivants` propose de le poser sur les vivants et leurs données (et
+de le retirer à leur décès), toujours après accord ; le diagnostic signale une instance exposée
+([vivants et privé](../docs/gramps-web.md#vivants-et-privé-264)).
+
 Les notes générées utilisent `masquer` par défaut. Le mode `complet` est pour un espace strictement privé.
 Revoir le [guide des notes](../docs/notes.md), notamment le traitement des fichiers déjà créés et des médias
 confidentiels connus ; les fichiers manuels ne sont pas nettoyés automatiquement.

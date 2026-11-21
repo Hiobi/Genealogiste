@@ -113,6 +113,9 @@ défaut) ajoute des liens cliquables aux notes de preuve, après un recalcul que
 ([texte enrichi](docs/gramps-web.md#texte-enrichi-et-liens-internes-279)).
 `GENEALOGISTE_GRAMPS_TACHES=true` (désactivé par défaut) rend le plan de recherche visible dans la vue Tâches
 de Gramps Web, une proposition validée à la fois ([tâches](docs/gramps-web.md#tâches-263)).
+Gramps Web ne masque pas les personnes vivantes aux comptes Invité : `gramps_proteger_vivants` propose de les marquer
+privées avec leurs données, et `GENEALOGISTE_GRAMPS_PRIVE_VIVANTS=propose` (désactivé par défaut) ajoute ce marquage
+aux propositions qui les touchent ; toujours après votre accord ([vivants et privé](docs/gramps-web.md#vivants-et-privé-264)).
 
 Pour contribuer : [CONTRIBUTING.md](CONTRIBUTING.md), [architecture et conventions](CLAUDE.md),
 [tests et CI](docs/integration-continue.md). Licence : [GPL-3.0](LICENSE).
