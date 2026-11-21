@@ -203,6 +203,13 @@ de l'arbre de travail.
 `tests/test_publication.py` exporte un arbre piégé dans les quatre formats et vérifie qu'aucune chaîne
 identifiante ne subsiste.
 
+Texte enrichi des notes (#279) : les exports partent du modèle, qui ne porte que le texte des notes ; ils ne
+contiennent donc ni mise en forme ni lien interne `gramps://` (aucun handle de personne, masquée ou non,
+`tests/test_notes_texte_enrichi.py`). Les liens internes des notes de preuve ne vivent que dans l'instance Gramps
+Web privée. Un lien Markdown (`format_texte: "markdown"`) n'est écrit que pour `http(s)://`, `mailto:` ou un lien
+interne vers un objet présent ; `javascript:`, `data:`, `file:`… restent du texte, et Gramps Web filtre en plus
+le HTML rendu (bleach).
+
 `tests/test_outils.py` vérifie que tout outil réseau recevant un paramètre de personne figure dans la liste des
 outils gardés (exemptions justifiées : communes de l'API Géo, serveur Gramps Web de l'utilisateur), et
 `tests/test_vivants.py` qu'aucun de ces outils ne fait d'appel réseau pour un vivant.

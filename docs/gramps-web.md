@@ -24,6 +24,7 @@ jamais dans Git, un journal ou une issue.
 | `GENEALOGISTE_GRAMPS_USER` / `_PASSWORD` | compte local dédié, rôle Editor |
 | `GENEALOGISTE_GRAMPS_TTL` | secondes entre deux relectures incrémentales en lecture (défaut 30) |
 | `GENEALOGISTE_GRAMPS_NOTES_AUTO` | notes de preuve `Genealogiste:auto` : `true` (défaut, recalcul sur toute la base à chaque écriture), `modifies` (recalcul limité aux objets touchés), `false` (aucune note ni étiquette générée ; celles qui existent sont conservées telles quelles) |
+| `GENEALOGISTE_GRAMPS_NOTES_LIENS` | `false` (défaut) : notes de preuve en texte simple, comme avant ; `true` : liens internes `gramps://` vers les personnes, événements, familles, sources et citations qu'elles citent ([#279](#texte-enrichi-et-liens-internes-279)). Changer la valeur ne réécrit aucune note : `gramps_recalculer_notes` propose le passage d'une forme à l'autre (diff, accord, journal, annulable) |
 | `GENEALOGISTE_MARQUEURS` | forme écrite des attributs et de l'étiquette gérés : `genealogiste` (défaut, `Genealogiste-*`, `Genealogiste:auto`) ou `sosa` (`Sosa-*`, `Sosa:auto`, pour une base partagée avec une ancienne version) ; les deux formes sont toujours lues (voir « Marqueurs historiques ») |
 | `GENEALOGISTE_GIT_MIRROR` | `true` : miroir GEDCOM 7 versionné de l'arbre Gramps (défaut `false`) |
 | `GENEALOGISTE_GIT_REMOTE` | dépôt distant optionnel du répertoire de données (**privé**) |
@@ -123,6 +124,7 @@ Module unique, utilisé par l'export Gramps XML et par le mode direct, testé al
 | cause, précision du type | attributs `Cause`, `Précision` |
 | date GEDCOM 7 (et extensions) | date Gramps : calendrier, modificateur, qualité, valeur, nouvel an ; table complète ci-dessous ([Dates](#dates-272)) |
 | étiquettes (`tags`) de personne, famille, événement, citation, source, dépôt, média, note partagée | `tag_list` (handles) + objets `Tag` ; voir « Étiquettes » ci-dessous |
+| texte d'une note | `text.string` ; mise en forme (`text.tags` : gras, italique, liens…) gardée côté Gramps, écrite depuis du Markdown sur demande ([#279](#texte-enrichi-et-liens-internes-279)) |
 
 Une personne, un événement ou une note créés dans l'interface Gramps sont lus sans attribut `Genealogiste-*` et
 réécrits **à l'identique** tant que Genealogiste ne les modifie pas. Ce que Genealogiste ne modélise pas (adresses, URL,
@@ -377,7 +379,8 @@ de la personne, filiations de la famille, lien cliquable des sources : notes ét
 (ou `Sosa:auto` dans une base non migrée),
 recalculées à chaque écriture et ignorées à la lecture. Après des modifications faites dans l'interface,
 `gramps_recalculer_notes` propose leur recalcul (toute la base, même en mode `modifies` ; refusé en mode
-`false`). Les notes manuelles ne sont **jamais** modifiées.
+`false`). Les notes manuelles ne sont **jamais** modifiées. Liens internes `gramps://` vers les objets cités :
+`GENEALOGISTE_GRAMPS_NOTES_LIENS` ([ci-dessous](#texte-enrichi-et-liens-internes-279)).
 
 En mode `modifies`, sont recalculées les notes des personnes, familles, événements et sources modifiés par la
 proposition, plus les membres des familles modifiées et les familles des personnes modifiées (filiations). Le
@@ -393,6 +396,106 @@ reconnues à leur gabarit : `⛔|🟡|🟢|✅|⚠️|❌ Preuve : …`, `Filiat
 `Fiche de preuve (plugin genealogiste)…`, `Lien : http…`. Elles sont **adoptées** à la première écriture
 (étiquetées `Genealogiste:auto` et réécrites en place), jamais doublées. Une note manuelle qui commence par l'un de ces
 gabarits est donc traitée comme générée : la reformuler si elle doit être conservée.
+
+### Texte enrichi et liens internes (#279)
+
+Module `gramps/texte.py` (fonctions pures, appelées par `gramps/mapping.py` : un seul chemin).
+
+**Forme** (Gramps `gen/lib/styledtext.py`, `styledtexttag.py`, `styledtexttagtype.py`, identiques en 5.2
+`maintenance/gramps52` 14c01e5, 6.0 `maintenance/gramps60` 32aa296 et 6.1 `maintenance/gramps61` e9c09a4) :
+`text = {"_class": "StyledText", "string": …, "tags": [{"name": <StyledTextTagType>, "value": …, "ranges":
+[[début, fin], …]}]}`. Onze styles, les mêmes dans les trois versions : `bold`, `italic`, `underline`,
+`fontface` (texte), `fontsize` (entier), `fontcolor` et `highlight` (couleur), `superscript`, `subscript`,
+`strikethrough`, `link` (URL). Plusieurs styles peuvent se chevaucher, un même style apparaître plusieurs fois :
+Gramps ne fusionne qu'à l'affichage. Le DTD et le RNG livrés (5.2 à 6.1) ne citent pas `strikethrough` ni
+`subscript`, que Gramps écrit et relit pourtant (voir [Gramps Desktop](gramps.md#contenu-écrit)).
+
+**Plages : points de code Unicode**, `[début, fin)` en indices de chaîne Python. Gramps découpe
+`str(text)[début:fin]` (`gen/plug/docbackend/docbackend.py`, `add_markup_from_styled` : « unicode text must be
+sliced correctly ») ; Gramps Desktop compte les caractères GTK (`TextIter.get_offset`,
+`gui/widgets/styledtextbuffer.py`) ; l'éditeur de Gramps Web compte aussi en points de code
+(`src/components/GrampsjsEditor.js`, « Unicode code-point offset », gramps-web 26.11.3 `20c7655`). Jamais des
+unités UTF-16 : 🟡 (hors plan de base) compte 1, ⚠️ (U+26A0 + U+FE0F) compte 2.
+
+**Liens** : style `link`, valeur = URL. Lien interne `gramps://<Classe>/handle/<handle>` (forme écrite par
+l'éditeur de lien de Gramps, `gui/editors/editlink.py`, et seule retraduite par l'import XML,
+`plugins/importer/importxml.py` `grampsuri`) ; `gramps://<Classe>/gramps_id/<id>` est aussi lu par Gramps et
+Gramps Web (`plugins/lib/libhtmlbackend.py`, `format_link`). Lien externe : l'URL telle quelle (`https://…`).
+
+**Notes manuelles** : réécrites à l'identique (texte, styles, étiquettes, type, confidentialité) tant que leur texte
+ne change pas, y compris quand l'objet qui les porte est modifié (tests : les onze styles sur notes de personne,
+partagée, d'événement, de source et de citation). Quand le texte d'une note existante change (`modifier_evenement`
+`champs.note`, note partagée…), la note **garde son handle, ses étiquettes, son type et sa confidentialité** ;
+règle des plages : un style dont la plage reste entière dans le **préfixe commun** inchangé est gardé, dans le
+**suffixe commun** il est décalé, tout autre (plage touchée par la modification ou hors bornes) est retiré **et
+annoncé** dans `avertissements` (« Note N0500 réécrite : mise en forme retirée (plage modifiée) : fontcolor #ff0000
+« rouge » [6, 11) »). Jamais de plage hors bornes, jamais de perte silencieuse. Champ unique à plusieurs notes
+(note d'événement, de source) : les notes dont le texte reste en tête ou en queue (séparateur « \n\n ») sont gardées
+telles quelles, la première des autres reçoit le texte du milieu.
+
+**Markdown simple** (`format_texte: "markdown"` sur une opération, voir [opérations](operations.md#texte-enrichi-des-notes-279)) :
+`**gras**`, `*italique*` ou `_italique_`, `[texte](url)` avec `http(s)://`, `mailto:` ou un lien interne
+`gramps://Classe/handle|gramps_id/…`, échappement `\` de `\ * _ [ ]`. Rien d'autre : titres, listes, tableaux,
+HTML, code restent du texte brut, caractère pour caractère. Une emphase ne traverse pas une fin de ligne ; un
+marqueur non fermé, `_` à l'intérieur d'un mot, une URL à schéma refusé (`javascript:`, `data:`, `file:`…) ou
+contenant blanc ou crochet restent du texte. Par défaut (`texte`), rien n'est interprété : un `*` reste un `*`.
+Aucune note existante n'est convertie. Un lien interne vers un objet absent est retiré et annoncé. Sens inverse :
+`vers_markdown` (aller-retour stable sur le sous-ensemble) liste ce qui ne s'écrit pas en Markdown (police,
+taille, couleur, surlignage, souligné, barré, exposant, indice, lien à autre schéma, liens qui se chevauchent,
+emphases adjacentes ambiguës) ; il n'est pas encore exposé par un outil.
+
+**Backend fichier** : le modèle (GEDCOM 7) ne porte que le texte des notes. La mise en forme reste côté Gramps,
+préservée par-dessus l'état lu ; une opération `format_texte: "markdown"` en mode fichier enregistre le texte brut
+et l'annonce dans `avertissements`. Import d'un fichier Gramps (`arbre_importer_gedcom`) : les styles non repris
+sont comptés dans `non_repris` (`Note.text.tags[]`). Exports (GEDCOM, Gramps XML, GeneWeb) : depuis le modèle,
+donc sans mise en forme ni lien interne (aucun handle publié).
+
+**Liens internes des notes de preuve** (`GENEALOGISTE_GRAMPS_NOTES_LIENS=true`) : le texte visible ne change pas
+(gabarits de `looks_generated` intacts, adoption des notes sans étiquette inchangée) ; seuls des styles `link` sont
+ajoutés, vers les objets réellement écrits dans la même transaction (handles déterministes pour les nouveaux),
+jamais vers un objet absent :
+
+| note | plage | cible |
+|---|---|---|
+| fiche de preuve de la personne | `I12` de « réf. I12 » | la personne |
+| | libellé de chaque fait (« Naissance 3 MAY 1846 ») | l'événement (de la personne ou de sa famille) |
+| | « Filiation » | la famille des parents |
+| statut de preuve d'un événement | titre de la source d'un acte de « Acte(s) cité(s) mais non vu(s) » | la source |
+| | page / cote de cet acte | la citation (le titre, si la citation n'a pas de page) |
+| filiations de la famille | nom de chaque enfant | la personne |
+
+Le lien de source « Lien : https://… » garde sa forme. Exemple (fiche de preuve, `famille.ged`) :
+
+```json
+{"string": "Fiche de preuve (plugin genealogiste) — réf. I3\n⚠️ Naissance 3 MAY 1846 : contradictoire\n…\n🟢 Filiation : probable\n…",
+ "tags": [{"name": "link", "value": "gramps://Person/handle/e44dc5f86a9d2ba3d1c4f803", "ranges": [[45, 47]]},
+          {"name": "link", "value": "gramps://Event/handle/560a2f0bfbe02046f317dfae", "ranges": [[51, 71]]},
+          {"name": "link", "value": "gramps://Event/handle/aebdf08198fbadc6703727f5", "ranges": [[92, 106]]},
+          {"name": "link", "value": "gramps://Family/handle/3c8d1919bfd1afa27f41e48d", "ranges": [[126, 135]]}]}
+```
+
+**Activer ou désactiver** ne réécrit rien tout seul : une note générée dont le texte ne change pas garde sa forme
+(avec ou sans liens) ; une note créée ou dont le texte change prend la forme de l'option. Le passage de toutes les
+notes se fait par `gramps_recalculer_notes` (diff, accord, `arbre_appliquer`, journal, annulable) ; le bilan
+`transaction_gramps.liens_internes` compte les notes qui gagnent (`notes_avec_liens_ajoutes`) ou perdent
+(`notes_avec_liens_retires`) des liens, et l'avertissement « transaction massive » cite ce cas. Un second recalcul
+ne propose rien. Option désactivée : sortie strictement identique à celle d'avant #279 (empreintes des fixtures).
+En mode `modifies`, seules les notes des objets touchés sont entretenues.
+
+**Rendu par Gramps Web** (`GET /api/notes/<h>?formats=html`, `api/html.py`, bleach) : gras → `<strong>`,
+italique → `<em>`, barré → `<s>`, souligné, police, taille et couleurs → `<span style=…>`, lien externe →
+`<a href>` ; exposant et indice ne passent pas le filtre (texte gardé). Lien interne : souligné sans `<a>`, sauf
+avec `format_options={"link_format": "…/{obj_class}/{gramps_id}"}` (ce que fait le frontend, et pour les billets
+de blog : `GrampsjsViewBlogPost.js`), qui donne `<a href="…/person/I1">`. Relevé le 2026-11-21 sur les trois
+images de la matrice (API 3.13.0, 3.25.1, 3.26.0 ; Gramps 6.0.8) : HTML identique, par exemple
+`<strong>Acte</strong> de <em>naissance</em> : <a href="https://archives.exemple.org/a_(b)">registre</a> et
+<a href="/person/I1">Jean</a>` et, pour une fiche de preuve, `réf. <a href="/person/I1">I1</a>`,
+`✅ <a href="/event/E3effe1be">Naissance 12 MAR 1820</a>`, `⛔ <a href="/family/F2">Filiation</a>`. Une note
+stylée saisie comme l'interface (styles sans `_class`, nom en chaîne) est relue avec les noms en objets
+`StyledTextTagType` et réécrite à l'identique.
+
+**Billets de blog (#261)** : un billet est une source étiquetée `Blog` dont la première note est le corps, rendue
+par ce même HTML ; une note écrite avec `format_texte: "markdown"` y apparaît donc avec gras, italique et liens.
 
 ## Bascule fichier → Gramps Web
 
