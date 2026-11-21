@@ -35,7 +35,7 @@ from typing import Any, BinaryIO
 
 from ..chemins import CheminAmbigu, CheminRefuse, localiser
 from ..gramps.mapping import A_FICHIER, GrampsDb, tree_to_gramps_stats
-from ..gramps.types import TYPES, tname
+from ..gramps.types import TYPES, gtype, tname
 from ..models import Tree
 
 # ============================================================================ versions
@@ -87,8 +87,6 @@ class Conv:
 def _type_conv(cls: str, toujours: bool = False, sauf_defaut: bool = False) -> Conv:
     """Type Gramps (chaîne XML anglaise ou personnalisée). ``sauf_defaut`` : omis s'il vaut le défaut du type
     (filiation « Birth »), ``toujours`` : écrit même vide."""
-    from ..gramps.types import gtype
-
     defaut = TYPES[cls][1]
 
     def ecrire(v):
@@ -315,11 +313,8 @@ SECTIONS = (("tags", "Tag", SPEC_ETIQUETTE), ("events", "Event", SPEC_EVENEMENT)
 # ============================================================================ dates
 
 CALENDRIERS = {1: "Julian", 2: "Hebrew", 3: "French Republican", 4: "Persian", 5: "Islamic", 6: "Swedish"}
-CFORMAT = CALENDRIERS  # nom historique
 MODIFICATEURS = {1: "before", 2: "after", 3: "about", 7: "from", 8: "to"}
-MODS = MODIFICATEURS
 QUALITES = {1: "estimated", 2: "calculated"}
-QUALS = QUALITES
 NOUVEL_AN = {1: "Mar1", 2: "Mar25", 3: "Sep1"}
 
 

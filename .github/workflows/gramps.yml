@@ -17,6 +17,9 @@ on:
       - mcp/uv.lock
       - mcp/src/genealogiste_mcp/gramps/**
       - mcp/src/genealogiste_mcp/export/gramps_xml.py
+      - mcp/src/genealogiste_mcp/chemins.py
+      - mcp/tests/fixtures/gramps-xml/**
+      - mcp/tests/fixtures/gramps-objets-riches.json
       - mcp/src/genealogiste_mcp/gedcom/**
       - mcp/src/genealogiste_mcp/models.py
       - mcp/tests/test_gramps_live.py
@@ -34,6 +37,9 @@ on:
       - mcp/uv.lock
       - mcp/src/genealogiste_mcp/gramps/**
       - mcp/src/genealogiste_mcp/export/gramps_xml.py
+      - mcp/src/genealogiste_mcp/chemins.py
+      - mcp/tests/fixtures/gramps-xml/**
+      - mcp/tests/fixtures/gramps-objets-riches.json
       - mcp/src/genealogiste_mcp/gedcom/**
       - mcp/src/genealogiste_mcp/models.py
       - mcp/tests/test_gramps_live.py

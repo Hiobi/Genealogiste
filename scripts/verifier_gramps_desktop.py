@@ -3,17 +3,24 @@
 Pour chaque version déclarée dans `compatibilite-gramps.json` (`gramps_desktop`), un environnement Python isolé
 est créé dans un cache (jamais dans `mcp/.venv` ni `uv.lock`) : `gramps` depuis PyPI, ou depuis les sources
 Git épinglées par commit (6.1, absente de PyPI). Les arbres synthétiques du dépôt (`mcp/tests/fixtures/*.ged`)
-sont exportés avec l'export actuel (`to_gramps_xml`), puis la sonde `sonde_gramps_desktop.py`, lancée dans
-l'environnement isolé, les importe et les réexporte. Invariants vérifiés pour chaque cas et chaque version :
+sont exportés sous chaque forme de `CAS` (Gramps XML 1.7.1 et 1.7.2, `.gramps` gzip, paquet `.gpkg` avec
+médias), puis la sonde `sonde_gramps_desktop.py`, lancée dans l'environnement isolé, les importe et les
+réexporte. Invariants vérifiés pour chaque cas et chaque version :
 
-- import sans erreur ni avertissement de Gramps ;
+- fichier valide au DTD et au RNG livrés avec la bibliothèque (`data/grampsxml.dtd`, `.rng`), étiquette du
+  fichier ramenée à celle du schéma : le contenu écrit sous l'étiquette 1.7.1 suit déjà 1.7.2, comme celui de
+  Gramps 5.2 (le schéma 1.7.1 strict est vérifié par les tests unitaires) ;
+- refus par les versions de `refus_attendu` (1.7.2 dans Gramps 5.2) ;
+- import sans erreur ni avertissement de Gramps (sauf ceux que le cas admet : chemin de base des médias d'un
+  `.gpkg`) ;
+- médias : chaque fichier empaqueté est retrouvé par Gramps après import ;
 - mêmes objets que l'export, classe par classe (personnes, familles, événements, sources, citations, lieux,
   notes, dépôts, médias, étiquettes) : mêmes nombres et mêmes handles ;
 - réexport par Gramps (aller-retour) : mêmes nombres et mêmes handles.
 
-Points d'extension (#268, #269) : ajouter un `Cas` à `CAS` (autre forme de fichier : `.gramps` gzip, `.gpkg`,
-version XML cible ; `refus_attendu` pour une version qui doit refuser le fichier, ex. 1.7.2 dans Gramps 5.2), et
-un contrôle à `CONTROLES` (ex. relire le réexport de Gramps avec l'import Genealogiste).
+Points d'extension : ajouter un `Cas` à `CAS` (autre forme de fichier ; `refus_attendu` pour une version qui
+doit refuser le fichier), et un contrôle à `CONTROLES` (ex. relire le réexport de Gramps avec l'import
+Genealogiste, #269).
 
 Usage (depuis la racine) : make test-gramps-desktop [GRAMPS_DESKTOP=6.0] [GI=systeme] [PYTHON=/usr/bin/python3]
 """
@@ -21,12 +28,16 @@ Usage (depuis la racine) : make test-gramps-desktop [GRAMPS_DESKTOP=6.0] [GI=sys
 from __future__ import annotations
 
 import argparse
+import copy
 import gzip
+import io
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
+import tarfile
 import tempfile
 import xml.etree.ElementTree as ET
 from collections.abc import Callable
@@ -55,12 +66,41 @@ def handle_gramps(attribut: str) -> str:
     return attribut.replace("_", "")
 
 
-def inventaire_xml(chemin: Path) -> dict[str, list[str]]:
-    """Handles des objets primaires d'un fichier Gramps XML (gzip ou non), par classe Gramps."""
+def lire_xml(chemin: Path) -> bytes:
+    """Contenu XML d'un fichier remis à Gramps : `.gramps` (gzip ou non) ou `data.gramps` d'un paquet `.gpkg`
+    (reconnu au contenu : le réexport de Gramps garde le nom du fichier importé)."""
     brut = chemin.read_bytes()
     if brut[:2] == b"\x1f\x8b":
         brut = gzip.decompress(brut)
-    racine = ET.fromstring(brut)
+    if tarfile.is_tarfile(io.BytesIO(brut)):
+        with tarfile.open(fileobj=io.BytesIO(brut)) as tar:
+            brut = tar.extractfile("data.gramps").read()
+        brut = gzip.decompress(brut) if brut[:2] == b"\x1f\x8b" else brut
+    return brut
+
+
+def valider_schemas(brut: bytes, schemas: dict[str, str]) -> list[str]:
+    """Validation DTD puis RNG contre les schémas d'une bibliothèque Gramps, l'étiquette du fichier (espace de
+    noms) ramenée à celle du schéma. lxml : groupe dev de mcp/."""
+    from lxml import etree
+
+    dtd_brut = Path(schemas["dtd"]).read_bytes()
+    cible = re.search(rb'xmlns CDATA #FIXED "(http://gramps-project.org/xml/[0-9.]+/)"', dtd_brut).group(1)
+    brut = re.sub(rb'xmlns="http://gramps-project.org/xml/[0-9.]+/"', b'xmlns="' + cible + b'"', brut, count=1)
+    doc = etree.fromstring(brut, etree.XMLParser(load_dtd=False, resolve_entities=False, no_network=True))
+    ecarts = []
+    dtd = etree.DTD(io.BytesIO(dtd_brut))
+    if not dtd.validate(doc):
+        ecarts += [f"DTD {cible.decode()} l.{e.line} : {e.message}" for e in list(dtd.error_log)[:5]]
+    rng = etree.RelaxNG(etree.parse(schemas["rng"]))
+    if not rng.validate(doc):
+        ecarts += [f"RNG l.{e.line} : {e.message}" for e in list(rng.error_log)[:3]]
+    return ecarts
+
+
+def inventaire_xml(chemin: Path) -> dict[str, list[str]]:
+    """Handles des objets primaires d'un fichier Gramps XML (gzip ou non, ou paquet .gpkg), par classe Gramps."""
+    racine = ET.fromstring(lire_xml(chemin))
     trouves: dict[str, list[str]] = {cls: [] for cls in CLASSES}
     for section in racine:
         for objet in section:
@@ -88,19 +128,60 @@ class Cas:
     description: str
     produire: Callable[[object, Path], Path]  # (Tree, dossier) -> fichier écrit
     refus_attendu: frozenset[str] = field(default_factory=frozenset)  # versions Gramps qui doivent refuser
+    enrichir: Callable[[object, Path], object] | None = None  # (Tree, dossier) -> arbre exporté (copie)
+    avertissements_admis: tuple[str, ...] = ()  # débuts d'avertissements Gramps attendus pour ce cas
 
 
-def produire_xml_genealogiste(tree, dossier: Path) -> Path:
-    from genealogiste_mcp.export.gramps_xml import to_gramps_xml
+def produire_xml(version_xml: str, compresse: bool = False) -> Callable[[object, Path], Path]:
+    def produire(tree, dossier: Path) -> Path:
+        from genealogiste_mcp.export.gramps_xml import compresser, to_gramps_xml
 
-    chemin = dossier / "genealogiste.gramps"
-    chemin.write_text(to_gramps_xml(tree), encoding="utf-8")
+        chemin = dossier / "genealogiste.gramps"
+        xml = to_gramps_xml(tree, version_xml=version_xml)
+        if compresse:
+            chemin.write_bytes(compresser(xml))
+        else:
+            chemin.write_text(xml, encoding="utf-8")
+        return chemin
+    return produire
+
+
+MEDIA_TEST = "medias/acte de décès é.jpg"
+
+
+def avec_media(tree, dossier: Path):
+    """Copie de l'arbre avec un média local (nom accentué, sous-dossier) rattaché à la première personne."""
+    from genealogiste_mcp.models import Media
+
+    tree = copy.deepcopy(tree)
+    (dossier / "racine" / "medias").mkdir(parents=True)
+    (dossier / "racine" / MEDIA_TEST).write_bytes(b"\xff\xd8\xff\xe0 image fictive")
+    mid = "O" + str(len(tree.medias) + 900)
+    tree.medias[mid] = Media(id=mid, fichier=MEDIA_TEST, titre="Acte fictif")
+    tree.personnes[sorted(tree.personnes)[0]].medias.append(mid)
+    return tree
+
+
+def produire_gpkg(tree, dossier: Path) -> Path:
+    from genealogiste_mcp.export.gramps_xml import paquet_gpkg
+    from genealogiste_mcp.gramps.mapping import tree_to_gramps_stats
+
+    db, _ = tree_to_gramps_stats(tree, None, False)
+    brut, bilan = paquet_gpkg(db, (dossier / "racine",))
+    if bilan["manquants"]:
+        raise SystemExit(f"paquet incomplet : {bilan['manquants']}")
+    chemin = dossier / "genealogiste.gpkg"
+    chemin.write_bytes(brut)
     return chemin
 
 
 CAS: list[Cas] = [
-    Cas("xml-genealogiste", "export actuel to_gramps_xml (Gramps XML 1.7.1, non compressé)",
-        produire_xml_genealogiste),
+    Cas("xml-1.7.1", "Gramps XML 1.7.1 non compressé (défaut d'arbre_exporter, format gramps)", produire_xml("1.7.1")),
+    Cas("xml-1.7.2", "Gramps XML 1.7.2 non compressé (version_xml=1.7.2) : refusé par Gramps 5.2",
+        produire_xml("1.7.2"), refus_attendu=frozenset({"5.2"})),
+    Cas("gramps-gzip", "Gramps XML 1.7.1 compressé gzip (compresse=True)", produire_xml("1.7.1", True)),
+    Cas("gpkg", "paquet .gpkg : data.gramps (1.7.1, gzip) + un média local", produire_gpkg, enrichir=avec_media,
+        avertissements_admis=("Base path for relative media set",)),
 ]
 
 
@@ -124,7 +205,66 @@ def controle_reexport(cas: Cas, version: str, attendu: dict[str, list[str]], rap
     return comparer(attendu, inventaire_xml(Path(rapport["reexport"])), "réexport Gramps")
 
 
-CONTROLES: list[Controle] = [controle_reexport]
+def controle_medias(cas: Cas, version: str, attendu: dict[str, list[str]], rapport: dict) -> list[str]:
+    """Médias d'un paquet : chaque fichier empaqueté est retrouvé par Gramps à son chemin relatif."""
+    if cas.enrichir is None:
+        return []
+    trouves = {m["chemin"] for m in rapport.get("medias", []) if m["fichier"]}
+    return [] if MEDIA_TEST in trouves else [f"média {MEDIA_TEST} introuvable après import : {rapport.get('medias')}"]
+
+
+MODELE = "_objets"  # clé de `attendu` : objets Gramps JSON du modèle exporté (comparés champ par champ)
+
+# Écarts propres à Gramps, sans perte de contenu exporté : identifiants renumérotés selon les préférences de
+# l'arbre cible (I7 -> I0007), date de modification 0 remplacée par celle du fichier, champs calculés à l'import
+# (somme de contrôle, valeur de tri, texte d'une date non textuelle), champs JSON hors XML ou propres à une
+# version (vignette, complete, familysearch_sync de 6.1).
+IGNORES = {"gramps_id", "thumb", "complete", "familysearch_sync", "sortval"}
+
+
+def _normaliser(o, cls: str = ""):
+    if isinstance(o, dict):
+        c = o.get("_class", cls)
+        out = {}
+        for k, v in o.items():
+            if k in IGNORES or (c == "Date" and k == "format") or (c == "Date" and k == "text"
+                                                                  and o.get("modifier") != 6):
+                continue
+            out[k] = _normaliser(v, c)
+        return out
+    if isinstance(o, (list, tuple)):
+        return [_normaliser(x, cls) for x in o]
+    return o
+
+
+def _ecarts(a, b, chemin: str):
+    if isinstance(a, dict) and isinstance(b, dict):
+        for k in a:  # clés de l'objet exporté ; celles que Gramps ajoute sont sans objet
+            if k not in b:
+                yield f"{chemin}.{k} absent après import"
+            elif not (k in ("change", "checksum") and not a[k]):
+                yield from _ecarts(a[k], b[k], f"{chemin}.{k}")
+    elif isinstance(a, list) and isinstance(b, list) and len(a) == len(b):
+        for i, (x, y) in enumerate(zip(a, b, strict=True)):
+            yield from _ecarts(x, y, f"{chemin}[{i}]")
+    elif a != b:
+        yield f"{chemin} : exporté {a!r}, importé {b!r}"
+
+
+def controle_champs(cas: Cas, version: str, attendu: dict, rapport: dict) -> list[str]:
+    """Gramps ≥ 6.0 : chaque objet importé est identique, champ par champ, à l'objet Gramps exporté."""
+    if "objets" not in rapport:
+        return []  # Gramps 5.2 : pas de format JSON
+    importes = {o["handle"]: o for o in rapport["objets"]}
+    ecarts = []
+    for o in attendu.get(MODELE, []):
+        h = handle_gramps(o["handle"])
+        if h in importes:
+            ecarts += list(_ecarts(_normaliser({**o, "handle": h}), _normaliser(importes[h]), f"{o['_class']}:{h}"))
+    return ecarts[:10]
+
+
+CONTROLES: list[Controle] = [controle_reexport, controle_medias, controle_champs]
 
 
 # --- environnements isolés ------------------------------------------------------------------------------
@@ -180,12 +320,14 @@ def preparer_cas(travail: Path) -> list[tuple[str, Cas, Path, dict[str, list[str
 
     lots = []
     for arbre in ARBRES:
-        tree = read_gedcom((FIXTURES / arbre).read_text(encoding="utf-8"))[0]
-        db, _ = tree_to_gramps_stats(tree, None, False)
-        attendu = {cls: sorted(handle_gramps(h) for h in db.all(cls)) for cls in CLASSES}
+        origine = read_gedcom((FIXTURES / arbre).read_text(encoding="utf-8"))[0]
         for cas in CAS:
             dossier = travail / "entrees" / cas.nom / Path(arbre).stem
             dossier.mkdir(parents=True)
+            tree = cas.enrichir(origine, dossier) if cas.enrichir else origine
+            db, _ = tree_to_gramps_stats(tree, None, False)
+            attendu = {cls: sorted(handle_gramps(h) for h in db.all(cls)) for cls in CLASSES}
+            attendu[MODELE] = [o for cls in CLASSES for o in db.all(cls).values()]  # objets JSON exportés
             fichier = cas.produire(tree, dossier)
             cible = dossier / f"{Path(arbre).stem}{''.join(fichier.suffixes)}"
             fichier.rename(cible)
@@ -207,7 +349,11 @@ def verifier_version(entree: dict, lots, travail: Path, cache: Path, python: str
         sortie = travail / f"gramps-{version}" / cas.nom
         (sortie / "reexport").mkdir(parents=True)
         rapport_json = sortie / "rapport.json"
-        env = {**os.environ, **env_sup, "GRAMPSHOME": str(sortie / "home"), "LANGUAGE": "en", "LC_ALL": "C.UTF-8"}
+        maison = sortie / "home"  # import .gpkg : médias extraits sous le dossier d'images de l'utilisateur
+        (maison / "Pictures").mkdir(parents=True)
+        env = {**os.environ, **env_sup, "GRAMPSHOME": str(maison), "HOME": str(maison),
+               "XDG_PICTURES_DIR": str(maison), "XDG_CONFIG_HOME": str(maison / ".config"),
+               "XDG_DATA_HOME": str(maison / ".local" / "share"), "LANGUAGE": "en", "LC_ALL": "C.UTF-8"}
         proc = subprocess.run([str(exe), "-P", str(SONDE), "--rapport", str(rapport_json),
                                "--reexporter", str(sortie / "reexport"), *[str(f) for _, f, _ in entrees]],
                               env=env, capture_output=True, text=True)
@@ -228,13 +374,16 @@ def verifier_version(entree: dict, lots, travail: Path, cache: Path, python: str
         for arbre, fichier, attendu in entrees:
             r = rapport["fichiers"][fichier.name]
             refus = version in cas.refus_attendu
+            schema = valider_schemas(lire_xml(fichier), rapport["schemas"])
             if refus:
-                ok = not r["importe"]
-                ecarts = [] if ok else ["import accepté alors qu'un refus est attendu"]
+                ecarts = schema + ([] if not r["importe"] else ["import accepté alors qu'un refus est attendu"])
+                ecarts += [] if "older version" in " ".join(r["erreurs"]) else [f"refus inattendu : {r['erreurs']}"]
+                ok = not ecarts
             elif not r["importe"]:
                 ok, ecarts = False, r["erreurs"] or ["import refusé"]
             else:
-                ecarts = r["erreurs"] + [f"avertissement : {a}" for a in r["avertissements"]]
+                ecarts = schema + r["erreurs"] + [f"avertissement : {a}" for a in r["avertissements"]
+                                                  if not a.startswith(cas.avertissements_admis or ("\0",))]
                 ecarts += comparer(attendu, r["handles"], "import")
                 for controle in CONTROLES:
                     ecarts += controle(cas, version, attendu, r)

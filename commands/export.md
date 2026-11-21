@@ -1,10 +1,10 @@
 ---
-description: Exporter l'arbre (GEDCOM 7/5.5.1, Gramps XML, Mermaid, SVG, fiche Markdown)
-argument-hint: <geneweb|gedcom7|gedcom551|gramps|mermaid_asc|mermaid_desc|svg_asc|svg_desc|fiche> [id] [générations] [chemin]
+description: Exporter l'arbre (GEDCOM 7/5.5.1, Gramps XML ou .gpkg, Mermaid, SVG, fiche Markdown)
+argument-hint: <geneweb|gedcom7|gedcom551|gramps|gpkg|mermaid_asc|mermaid_desc|svg_asc|svg_desc|fiche> [id] [générations] [chemin]
 ---
 Export : **$ARGUMENTS**
 
-`arbre_exporter(format, chemin, id, generations, masquer_vivants=True)`. Les personnes présumées vivantes
+`arbre_exporter(format, chemin, id, generations, masquer_vivants=True, version_xml="1.7.1", compresse=False)`. Les personnes présumées vivantes
 sont masquées par défaut (RGPD) ; ne désactiver le masquage que sur demande explicite et pour un usage
 strictement privé, en le rappelant. Indiquer le fichier produit, le nombre de vivants masqués et, pour
 Mermaid/fiche, afficher l'aperçu.
@@ -21,4 +21,9 @@ Conserve : URL et type des sources, classification et transcription des citation
 l'arbre comme références d'événement avec leur rôle, parrains en associations, notes, statut de preuve
 (note de recherche + étiquette « Preuve : … »), coordonnées et code INSEE des lieux. Rappeler qu'un second
 import dans un arbre non vide duplique tout (pour travailler en direct sur Gramps Web : docs/gramps-web.md). Pour une instance Gramps Web privée, l'utilisateur peut demander
-`masquer_vivants=False`.
+`masquer_vivants=False`. Garder `version_xml="1.7.1"` (lu par Gramps 5.2, 6.0, 6.1) sauf demande pour
+Gramps 6.x seul (`1.7.2`, refusé par 5.2) ; `compresse=True` donne le `.gramps` gzip natif de Gramps Desktop.
+
+**gpkg** : paquet Gramps Desktop (XML + fichiers des médias locaux, chemins relatifs). Afficher le bilan
+`medias` : médias inclus, **manquants** (introuvables ou hors des répertoires autorisés, avec le motif) et
+distants. Docs : docs/gramps.md.

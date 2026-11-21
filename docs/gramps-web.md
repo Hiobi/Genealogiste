@@ -98,6 +98,11 @@ nom `BIRTH` = nom de naissance, filiation `BIRTH` = filiation biologique, un mê
 lieu Gramps (coordonnées et code INSEE mis en commun). Un événement partagé par plusieurs personnes
 (rôle *Primary*) reste partagé tant qu'il n'est pas modifié ; modifié pour l'une d'elles, il est dédoublé.
 
+Export Gramps XML (`export/gramps_xml.py`) : sérialise ces mêmes objets Gramps, **tout leur contenu** compris
+(y compris ce que Genealogiste ne modélise pas), selon des tables champ JSON ↔ élément XML que l'import (#269)
+relira dans l'autre sens. Versions cibles, `.gramps` gzip, paquet `.gpkg` et vérifications : voir
+[Gramps Desktop](gramps.md#contenu-écrit).
+
 ### Marqueurs historiques (`Sosa-*`, `Sosa:auto`)
 
 Les bases écrites avant le renommage (#182) portent `Sosa-UID`, `Sosa-UID noms`, `Sosa-Statut…`,

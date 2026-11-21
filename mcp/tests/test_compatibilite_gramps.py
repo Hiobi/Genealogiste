@@ -101,7 +101,7 @@ def test_inventaire_de_l_export_genealogiste(desktop, tmp_path):
 
     tree = read_gedcom((ROOT / "mcp/tests/fixtures/famille.ged").read_text(encoding="utf-8"))[0]
     db, _ = tree_to_gramps_stats(tree, None, False)
-    fichier = desktop["produire_xml_genealogiste"](tree, tmp_path)
+    fichier = desktop["produire_xml"]("1.7.1")(tree, tmp_path)
     inventaire = desktop["inventaire_xml"](fichier)
     assert inventaire["Person"] and inventaire["Citation"]
     assert desktop["comparer"]({k: sorted(db.all(k)) for k in desktop["CLASSES"]}, inventaire, "x") == []
@@ -122,3 +122,55 @@ def test_inventaire_lit_le_gzip_et_les_handles_gramps(desktop, tmp_path):
 def test_version_desktop_inconnue_refusee(desktop):
     with pytest.raises(SystemExit):
         desktop["main"](["--version", "4.2"])
+
+
+def test_cas_desktop_de_l_export_268(desktop):
+    """Formes remises à Gramps : 1.7.1, 1.7.2 (refusée par 5.2 seulement), .gramps gzip, .gpkg avec média."""
+    cas = {c.nom: c for c in desktop["CAS"]}
+    assert set(cas) == {"xml-1.7.1", "xml-1.7.2", "gramps-gzip", "gpkg"}
+    assert cas["xml-1.7.2"].refus_attendu == {"5.2"}
+    assert all(not c.refus_attendu for n, c in cas.items() if n != "xml-1.7.2")
+    assert cas["gpkg"].enrichir and cas["gpkg"].avertissements_admis
+
+
+def test_cas_desktop_produisent_des_fichiers_lisibles(desktop, tmp_path):
+    import tarfile
+
+    from genealogiste_mcp.gedcom.mapping import read_gedcom
+    from genealogiste_mcp.gramps.mapping import tree_to_gramps_stats
+
+    origine = read_gedcom((ROOT / "mcp/tests/fixtures/famille.ged").read_text(encoding="utf-8"))[0]
+    for forme in desktop["CAS"]:
+        dossier = tmp_path / forme.nom
+        dossier.mkdir()
+        tree = forme.enrichir(origine, dossier) if forme.enrichir else origine
+        db, _ = tree_to_gramps_stats(tree, None, False)
+        fichier = forme.produire(tree, dossier)
+        attendu = {k: sorted(db.all(k)) for k in desktop["CLASSES"]}
+        assert desktop["comparer"](attendu, desktop["inventaire_xml"](fichier), forme.nom) == []
+        xml = desktop["lire_xml"](fichier)
+        assert xml.startswith(b"<?xml") and (b"xml/1.7.2/" in xml) == (forme.nom == "xml-1.7.2")
+    with tarfile.open(tmp_path / "gpkg" / "genealogiste.gpkg") as tar:
+        assert sorted(tar.getnames()) == ["data.gramps", desktop["MEDIA_TEST"]]
+
+
+def test_validation_contre_les_schemas_de_la_bibliotheque(desktop):
+    schemas = {k: str(ROOT / f"mcp/tests/fixtures/gramps-xml/1.7.2/grampsxml.{k}") for k in ("dtd", "rng")}
+    entete = (b'<database xmlns="http://gramps-project.org/xml/1.7.1/"><header><created date="2026-01-01" '
+              b'version="5.2.0"/><researcher/></header>')
+    assert desktop["valider_schemas"](entete + b"</database>", schemas) == []  # étiquette ramenée au schéma
+    assert desktop["valider_schemas"](entete + b"<inconnu/></database>", schemas)
+
+
+def test_controle_champ_par_champ(desktop):
+    date = {"_class": "Date", "modifier": 0, "text": "1 JAN 1800", "sortval": 1, "dateval": [1, 1, 1800, False]}
+    modele = [{"_class": "Person", "handle": "a_b", "gramps_id": "I1", "change": 0, "gender": 1,
+               "primary_name": {"_class": "Name", "first_name": "Jean", "date": date}}]
+    importe = {"_class": "Person", "handle": "ab", "gramps_id": "I0001", "change": 1795000000, "gender": 1,
+               "familysearch_sync": {}, "primary_name": {"_class": "Name", "first_name": "Jean",
+                                                         "date": {**date, "text": "", "sortval": 2}}}
+    cas, controle, cle = desktop["CAS"][0], desktop["controle_champs"], desktop["MODELE"]
+    assert controle(cas, "6.0", {cle: modele}, {"objets": [importe]}) == []
+    importe["primary_name"]["first_name"] = "Jea"
+    assert controle(cas, "6.0", {cle: modele}, {"objets": [importe]})
+    assert controle(cas, "5.2", {cle: modele}, {}) == []  # Gramps 5.2 : pas de format JSON
