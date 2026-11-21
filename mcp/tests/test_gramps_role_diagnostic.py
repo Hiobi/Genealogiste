@@ -160,7 +160,8 @@ def test_arbre_proposer_refuse_tot_un_compte_sans_droit_d_ecriture(tmp_path, fak
         server.set_app(None)
 
 
-@pytest.mark.parametrize("outil", ["gramps_recalculer_notes", "gramps_structurer_lieux", "marqueurs_migrer_proposer"])
+@pytest.mark.parametrize("outil", ["gramps_recalculer_notes", "gramps_structurer_lieux", "marqueurs_migrer_proposer",
+                                   "gramps_normaliser_types"])
 def test_les_autres_propositions_partagent_le_refus(tmp_path, fake, outil):
     fake.role = 2
     make_app(tmp_path)

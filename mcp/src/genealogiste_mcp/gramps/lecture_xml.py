@@ -47,6 +47,7 @@ from .types import (
     date_reprise,
     gtype,
     surname,
+    tcanon,
     tname,
     valeur_tri,
 )
@@ -810,7 +811,8 @@ def _vide(v: Any) -> bool:
 
 def compter_contenu(db: GrampsDb, auto: set[str] | None = None) -> dict[str, int]:
     """Valeurs non vides par chemin de champ (``Person.address_list.city``), objets par classe ; attributs
-    comptés par type (``Person.attribute_list[Profession]``) ; étiquettes et notes générées par Genealogiste
+    comptés par type (``Person.attribute_list[Profession]``), un libellé reconnu sous son type standard (« Âge » :
+    ``[Age]``, #273) ; étiquettes et notes générées par Genealogiste
     (``auto`` : handles d'étiquettes) exclues. Sert à mesurer ce qu'une conversion ne reprend pas."""
     from collections import Counter
 
@@ -832,7 +834,7 @@ def compter_contenu(db: GrampsDb, auto: set[str] | None = None) -> dict[str, int
                     continue
                 if k == "attribute_list" and isinstance(v, list):
                     for a in v:  # attribut : compté par type, puis ce qu'il porte (valeur, citations, notes)
-                        p = f"{chemin}.{k}[{tname(a.get('type'))}]"
+                        p = f"{chemin}.{k}[{tcanon(a.get('type'))}]"
                         n[p] += 1
                         visiter({x: y for x, y in a.items() if x != "type"}, p)
                     continue

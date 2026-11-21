@@ -32,7 +32,11 @@ Correspondance (voir docs/gramps-web.md) :
   gérées (``Genealogiste:auto``, « Preuve : … ») et handles sans objet Tag intacts ; étiquette inconnue créée dans la
   même transaction (couleur par défaut de Gramps, priorité suivante) ; nom en double dans la base : la première
   dans l'ordre de priorité est réutilisée, jamais de fusion ; un retrait ne supprime jamais l'objet Tag. Les
-  étiquettes des lieux et des notes « en ligne » restent côté Gramps (conservées tant que l'objet est inchangé).
+  étiquettes des lieux et des notes « en ligne » restent côté Gramps (conservées tant que l'objet est inchangé) ;
+- types (#273) : un type personnalisé dont la chaîne est un libellé non ambigu d'un type standard (« Baptême »,
+  « Témoin », « Âge ») est lu comme ce type (:func:`types.tcanon`) sans que l'objet change ; un objet nouveau ou
+  dont le type change reçoit le type standard quand il existe (rôles Father… Officiator de Gramps 6.0 compris) ;
+  normalisation explicite par :func:`normaliser_types`, détection par :func:`types_en_doublon`.
 
 Non mappés (perdus à l'aller-retour, voir ``NON_MAPPES``) : nœuds GEDCOM non interprétés (``extra``).
 Normalisations : type de nom BIRTH -> « » (nom de naissance), filiation BIRTH -> « », lieux homonymes
@@ -74,17 +78,23 @@ from ..models import (
 )
 from ..normalize.places import DEPARTEMENTS
 from ..statuts import COULEURS
+from .types import TYPES as GRAMPS_TYPES
 from .types import (
     attribute,
     blank,
     blank_date,
     blank_name,
+    candidats,
     date_from_gramps,
     date_to_gramps,
+    est_personnalise,
     event_ref,
     gtype,
+    gtype_ecrit,
     surname,
+    tcanon,
     tname,
+    type_standard,
 )
 
 NON_MAPPES = ["extra (nœuds GEDCOM non interprétés de chaque objet)", "Tree.header_extra",
@@ -128,11 +138,15 @@ PEDI = {"": "Birth", "BIRTH": "Birth", "ADOPTED": "Adopted", "FOSTER": "Foster"}
 PEDI_CODES = {"Birth": "", "Adopted": "ADOPTED", "Foster": "FOSTER"}
 GENDER = {"F": 0, "M": 1, "U": 2, "X": 3}
 GENDER_CODES = {v: k for k, v in GENDER.items()}
-# Rôles standard de Gramps (EventRoleType) ; les autres deviennent des rôles personnalisés en français
-EVENT_ROLES = {"WITN": "Witness", "CLERGY": "Clergy", "OFFICIATOR": "Celebrant"}
-ROLE_CODES = {"Witness": "WITN", "Clergy": "CLERGY", "Celebrant": "OFFICIATOR", "Godparent": "GODP",
-              "Friend": "FRIEND", "Neighbor": "NGHBR", "Father": "FATH", "Mother": "MOTH", "Parent": "PARENT",
-              "Child": "CHIL", "Multiple birth": "MULTIPLE"}
+# Rôle du modèle -> rôle standard de Gramps (EventRoleType ; Father… Officiator : Gramps ≥ 6.0, #273). Les autres
+# (HUSB, WIFE, SPOU, OTHER) deviennent des rôles personnalisés : précision, sinon libellé français (ROLE_LABELS).
+EVENT_ROLES = {"WITN": "Witness", "CLERGY": "Clergy", "OFFICIATOR": "Officiator", "GODP": "Godparent",
+               "FATH": "Father", "MOTH": "Mother", "PARENT": "Parent", "CHIL": "Child", "MULTIPLE": "Multiple birth",
+               "FRIEND": "Friend", "NGHBR": "Neighbor"}
+# Rôle standard de Gramps (après reconnaissance des libellés) -> rôle du modèle ; Celebrant : écrit avant #273
+ROLE_CODES = {"Witness": "WITN", "Clergy": "CLERGY", "Celebrant": "OFFICIATOR", "Officiator": "OFFICIATOR",
+              "Godparent": "GODP", "Friend": "FRIEND", "Neighbor": "NGHBR", "Father": "FATH", "Mother": "MOTH",
+              "Parent": "PARENT", "Child": "CHIL", "Multiple birth": "MULTIPLE"}
 STATUS_COLORS = COULEURS
 AUTO_COLOR = "#607d8b"
 _NS = uuid.UUID("5f0e8f9e-9a51-4d1c-9d43-7d2b8f4c0a11")
@@ -198,8 +212,9 @@ def _attrs(obj: dict) -> list[dict]:
 
 
 def _atype(a: dict) -> str:
-    """Nom logique du type d'un attribut (forme historique Sosa-* ramenée à Genealogiste-*)."""
-    return marqueurs.canon(tname(a.get("type")))
+    """Nom logique du type d'un attribut (forme historique Sosa-* ramenée à Genealogiste-* ; libellé d'un type
+    standard, « Âge », ramené à ce type, #273)."""
+    return marqueurs.canon(tcanon(a.get("type")))
 
 
 def _attr(obj: dict, typ: str) -> dict | None:
@@ -246,21 +261,20 @@ def asso_parse(value: str) -> tuple[int, str, str, str, str]:
 
 
 def event_role(a: Association) -> str:
-    """Rôle Gramps d'un intervenant : standard si possible, sinon le libellé français (« Parrain »)."""
+    """Rôle Gramps d'un intervenant nouveau ou modifié : standard quand il existe (#273), sinon la précision ou le
+    libellé français (personnalisé) ; une précision qui est le libellé d'un rôle standard donne ce rôle."""
     d = (a.detail or "").lower()
     if a.role in EVENT_ROLES:
         return EVENT_ROLES[a.role]
     if "déclarant" in d or "declarant" in d:
         return "Informant"
-    if a.role == "GODP" and not a.detail:
-        return "Godparent"
-    if a.detail:
-        return a.detail.split(",")[0].strip()
-    return ROLE_LABELS.get(a.role, a.role)
+    nom = a.detail.split(",")[0].strip() if a.detail else ROLE_LABELS.get(a.role, a.role)
+    return type_standard("EventRoleType", nom) or nom
 
 
 def role_guess(role: str) -> tuple[str, str]:
-    """Rôle Gramps saisi dans l'interface -> (rôle Genealogiste, précision)."""
+    """Rôle Gramps lu (chaîne XML du type standard, libellés reconnus compris : :func:`tcanon`) -> (rôle
+    Genealogiste, précision)."""
     if role in ROLE_CODES:
         return ROLE_CODES[role], ""
     if role == "Informant":
@@ -405,6 +419,94 @@ def migrer_marqueurs(db: GrampsDb) -> tuple[list[dict], list[str]]:
     return items, incoherences
 
 
+# ============================================================================ types personnalisés (#273)
+
+# Classes dont un type personnalisé peut doublonner un type standard (StyledTextTagType n'est jamais saisi)
+CLASSES_TYPES = tuple(sorted(c for c in GRAMPS_TYPES if c != "StyledTextTagType"))
+
+
+def _types_perso(o, out: list) -> None:
+    """Types personnalisés (dicts) d'un objet Gramps, sous-objets compris, dans l'ordre."""
+    if isinstance(o, dict):
+        if o.get("_class") in GRAMPS_TYPES:
+            if est_personnalise(o) and o["_class"] in CLASSES_TYPES:
+                out.append(o)
+            return
+        for v in o.values():
+            _types_perso(v, out)
+    elif isinstance(o, list):
+        for v in o:
+            _types_perso(v, out)
+
+
+def _classes(classes: list[str] | None) -> set[str]:
+    if not classes:
+        return set(CLASSES_TYPES)
+    inconnues = sorted(set(classes) - set(CLASSES_TYPES))
+    if inconnues:
+        raise ValueError(f"Classe de type inconnue : {', '.join(inconnues)} (classes : {', '.join(CLASSES_TYPES)}).")
+    return set(classes)
+
+
+def _libelle_fr(cls: str, xml: str) -> str:
+    from .types import REFERENTIEL
+    fr = REFERENTIEL["classes"][cls]["types"][xml]["fr"]
+    return fr[max(fr, key=lambda v: tuple(map(int, v.split("."))))]
+
+
+def types_en_doublon(db: GrampsDb, classes: list[str] | None = None) -> dict:
+    """Types personnalisés dont la chaîne est le libellé d'un type standard de leur classe (#273) : {doublons :
+    [{classe, chaine, standard, libelle, objets, occurrences}], ambigus : [{classe, chaine, candidats, objets,
+    occurrences}]} ; ``objets`` = objets de premier niveau qui les portent, ``occurrences`` = nombre de types."""
+    voulues = _classes(classes)
+    compte: dict[tuple[str, str], list] = {}
+    for cls in ORDER:
+        for h, o in db.all(cls).items():
+            found: list[dict] = []
+            _types_perso(o, found)
+            for t in found:
+                if t["_class"] in voulues and candidats(t["_class"], t.get("string") or ""):
+                    c = compte.setdefault((t["_class"], t.get("string") or ""), [set(), 0])
+                    c[0].add((cls, h))
+                    c[1] += 1
+    doublons, ambigus = [], []
+    for (cls, s), (objs, n) in sorted(compte.items()):
+        cand = candidats(cls, s)
+        if len(cand) == 1:
+            doublons.append({"classe": cls, "chaine": s, "standard": cand[0], "libelle": _libelle_fr(cls, cand[0]),
+                             "objets": len(objs), "occurrences": n})
+        else:
+            ambigus.append({"classe": cls, "chaine": s, "candidats": cand, "objets": len(objs), "occurrences": n})
+    return {"doublons": doublons, "ambigus": ambigus}
+
+
+def normaliser_types(db: GrampsDb, classes: list[str] | None = None) -> tuple[list[dict], dict]:
+    """Normalisation explicite (#273) : chaque type personnalisé qui désigne sans ambiguïté un type standard
+    devient ce type standard, en place. Seul le type change (handles, gramps_id, valeurs, citations, positions
+    inchangés) ; aucun objet créé ni supprimé ; les cas ambigus sont listés, jamais tranchés. Idempotente.
+    Renvoie (éléments de transaction, {par_classe : {classe : {chaîne : {standard, objets, occurrences}}},
+    ambigus})."""
+    voulues = _classes(classes)
+    items: list[dict] = []
+    for cls in ORDER:
+        for h, o in db.all(cls).items():
+            new = copy.deepcopy(o)
+            found: list[dict] = []
+            _types_perso(new, found)
+            for t in found:
+                std = type_standard(t["_class"], t.get("string") or "") if t["_class"] in voulues else None
+                if std is not None:
+                    t.update(gtype(t["_class"], std))
+            if _strip_change(new) != _strip_change(o):
+                items.append({"type": "update", "_class": cls, "handle": h, "old": o, "new": new})
+    d = types_en_doublon(db, classes)
+    par_classe: dict[str, dict] = {}
+    for x in d["doublons"]:
+        par_classe.setdefault(x["classe"], {})[x["chaine"]] = {"standard": x["standard"], "objets": x["objets"],
+                                                               "occurrences": x["occurrences"]}
+    return items, {"par_classe": par_classe, "ambigus": d["ambigus"]}
+
+
 @dataclass
 class ReadInfo:
     """Index produit par la lecture, réutilisé par l'écriture."""
@@ -469,7 +571,7 @@ class _Reader:
             n = self.note(h)
             if n is None or self.is_auto(n) or n.get("private"):  # privée : gardée dans Gramps, jamais publiée
                 continue
-            if tname(n.get("type")) in inline:
+            if tcanon(n.get("type")) in inline:
                 texts.append(self.note_text(n))
             else:
                 key = n.get("gramps_id") or h
@@ -498,7 +600,7 @@ class _Reader:
             n = self.note(nh)
             if n is None or self.is_auto(n) or n.get("private"):
                 continue
-            (texte if tname(n.get("type")) == "Transcript" else note).append(self.note_text(n))
+            (texte if tcanon(n.get("type")) == "Transcript" else note).append(self.note_text(n))
         conf = c.get("confidence", 2)
         quay = _attr_value(c, "QUAY")
         qualite = int(quay) if quay.isdigit() else (None if conf == 2 else min(int(conf), 3))
@@ -557,7 +659,7 @@ class _Reader:
         if ev is None:
             return None
         self.rep("Event", h)
-        typ = tname(ev.get("type"))
+        typ = tcanon(ev.get("type"))  # « Baptême » personnalisé : Baptism (#273)
         code = CODES.get(typ, "EVEN")
         allowed = INDI_EVENTS if owner_cls == "Person" else FAM_EVENTS
         detail = ""
@@ -610,7 +712,7 @@ class _Reader:
                 noms.append(Name(
                     prenoms=n.get("first_name") or "",
                     nom=" ".join(x for s in n.get("surname_list") or [] for x in (s.get("prefix"), s.get("surname")) if x),
-                    surnom=n.get("nick") or "", type=NAME_CODES.get(tname(n.get("type")), tname(n.get("type"))),
+                    surnom=n.get("nick") or "", type=NAME_CODES.get(tcanon(n.get("type")), tcanon(n.get("type"))),
                     citations=self.citations(n.get("citation_list")),
                     uid=uids[i] if i < len(uids) else derived_uid(h, "nom", str(i)),
                     statut_manuel=_statut_read(st)))
@@ -619,7 +721,7 @@ class _Reader:
                             prive=bool(p.get("private")), tags=self.tags(p))
             self.info.handles[("PersonUID", person.uid)] = h
             for ref in p.get("event_ref_list") or []:
-                role = tname(ref.get("role"))
+                role = tcanon(ref.get("role"))
                 eh = ref.get("ref")
                 if role == "Primary":
                     e = self.event(eh, pid, "Person", ref)
@@ -645,7 +747,7 @@ class _Reader:
             for pr in p.get("person_ref_list") or []:
                 xref = self.xid("Person", pr.get("ref"))
                 if xref and xref not in linked:
-                    role, det = role_guess(pr.get("rel") or "")
+                    role, det = role_guess(pr.get("rel") or "")  # PersonRef.rel : texte libre, pas un type
                     assos.append((10_000, Association(personne=xref, role=role, detail=det,
                                                       citations=self.citations(pr.get("citation_list")))))
             person.associations = [a for _, a in sorted(assos, key=lambda x: x[0])]
@@ -662,13 +764,13 @@ class _Reader:
                 cid = self.xid("Person", cr.get("ref"))
                 if not cid:
                     continue
-                frel, mrel = tname(cr.get("frel")), tname(cr.get("mrel"))
+                frel, mrel = tcanon(cr.get("frel")), tcanon(cr.get("mrel"))
                 rel = frel if frel != "Birth" else mrel
                 fam.enfants.append(ChildLink(enfant=cid, filiation=PEDI_CODES.get(rel, rel.upper()),
                                              citations=self.citations(cr.get("citation_list")),
                                              statut_manuel=_statut_read(_attr_value(f, f"{A_STATUT_FIL}{cid}"))))
             for ref in f.get("event_ref_list") or []:
-                if tname(ref.get("role")) in ("Family", "Primary"):
+                if tcanon(ref.get("role")) in ("Family", "Primary"):
                     e = self.event(ref.get("ref"), fid, "Family", ref)
                     if e:
                         fam.evenements.append(e)
@@ -689,7 +791,7 @@ class _Reader:
             if val:
                 rang, role, det, _, _ = asso_parse(val)
             else:
-                rang, (role, det) = 10_000, role_guess(tname(ref.get("role")))
+                rang, (role, det) = 10_000, role_guess(tcanon(ref.get("role")))
             ranked[eh].append((rang, Association(personne=pid, role=role, detail=det,
                                                  citations=self.citations(ref.get("citation_list")))))
         for eh, items in ranked.items():
@@ -729,7 +831,7 @@ class _Reader:
         # notes partagées non référencées (enregistrements NOTE du GEDCOM)
         referenced = {nh for cls in ORDER for o in db.all(cls).values() for nh in _note_refs(o)}
         for h, n in db.all("Note").items():
-            if h in referenced or self.is_auto(n) or tname(n.get("type")) != "General" or not n.get("gramps_id"):
+            if h in referenced or self.is_auto(n) or tcanon(n.get("type")) != "General" or not n.get("gramps_id"):
                 continue
             self.rep("Note", h)
             t.notes[n["gramps_id"]] = self.note_text(n)
@@ -824,7 +926,11 @@ class _Writer:
         self.t = tree
         self.base = base or GrampsDb()
         self.strict = strict
-        _, self.info = gramps_to_tree(self.base) if base is not None else (None, ReadInfo())
+        base_tree, self.info = gramps_to_tree(self.base) if base is not None else (Tree(), ReadInfo())
+        # intervenants lus de chaque événement de la base : (propriétaire, uid) -> associations (#273 : références
+        # saisies dans l'interface réécrites telles quelles tant qu'elles ne changent pas)
+        self.assos_base = {(o.id, e.uid): [a.to_dict() for a in e.associations]
+                           for o in [*base_tree.personnes.values(), *base_tree.familles.values()] for e in o.evenements}
         self.reader = _Reader(self.base)  # lecture unitaire (comparaisons « même contenu »)
         self.reader._assos = {}
         self.out = GrampsDb()
@@ -1178,7 +1284,7 @@ class _Writer:
             obj = copy.deepcopy(self.out.get("Place", h) or p)
             obj["title"] = ""
             obj["name"] = dict(obj.get("name") or blank("Place", h)["name"], value=parts[0])
-            if tname(obj.get("place_type")) in ("", "Unknown", "City"):
+            if tcanon(obj.get("place_type")) in ("", "Unknown", "City"):
                 obj["place_type"] = gtype("PlaceType", level_type(parts, 0))
             obj["placeref_list"] = [{"_class": "PlaceRef", "ref": self.parent_place(parts[1:]), "date": blank_date()}]
             self.out.put(obj)
@@ -1193,7 +1299,7 @@ class _Writer:
             base_e = self.reader.event(h, owner, owner_cls, {})
         if base_e is None or (base_e.type, base_e.type_detail) != (e.type, e.type_detail):
             name = TYPES.get(e.type) or e.type_detail or EVEN_DEFAULT
-            obj["type"] = gtype("EventType", name)
+            obj["type"] = gtype_ecrit("EventType", name)  # standard quand il existe (#273)
         if base_e is None or base_e.date != e.date:
             obj["date"] = date_to_gramps(e.date)
         obj["description"] = e.valeur
@@ -1214,7 +1320,7 @@ class _Writer:
         base_asso = {a.get("value"): a for a in _attrs(obj) if _atype(a) == A_ASSO}
         for rang, a in enumerate(e.associations, 1):
             if a.personne and a.personne in self.t.personnes:
-                self.links.append((a.personne, h, rang, a, owner))
+                self.links.append((a.personne, h, rang, a, owner, e))
                 self.stats["temoins_lies"] += 1
             elif a.nom or a.personne:
                 val = asso_value(rang, a)
@@ -1247,9 +1353,17 @@ class _Writer:
         self.stats["evenements"] += 1
         return h
 
-    def ref_with(self, base_refs: list[dict], handle: str, role: str, attrs: list[dict], cits: list[str]) -> dict:
-        prev = next((r for r in base_refs if r.get("ref") == handle and tname(r.get("role")) == role), None)
+    def ref_with(self, base_refs: list[dict], handle: str, role: str, attrs: list[dict] | None, cits: list[str],
+                 prev: dict | None | bool = False) -> dict:
+        """Référence d'événement par-dessus celle de la base : ``prev`` donnée (ou None : nouvelle), sinon cherchée
+        par rôle (libellés reconnus : « Principal » = Primary, #273) ; rôle de la base conservé. ``attrs`` None :
+        attributs de la base gardés tels quels."""
+        if prev is False:
+            prev = next((r for r in base_refs if r.get("ref") == handle and tcanon(r.get("role")) == role), None)
         ref = copy.deepcopy(prev) if prev else event_ref(handle, role)
+        if attrs is None:
+            ref["citation_list"] = _same_list(ref.get("citation_list") or [], cits)
+            return ref
         owned = {A_AGE, A_ASSO}
         keep = [a for a in ref.get("attribute_list") or [] if _atype(a) not in owned]
         old_owned = [a for a in ref.get("attribute_list") or [] if _atype(a) in owned]
@@ -1313,10 +1427,11 @@ class _Writer:
                 cr = copy.deepcopy(base_children.get(ch)) or {
                     "_class": "ChildRef", "private": False, "citation_list": [], "note_list": [], "ref": ch,
                     "frel": gtype("ChildRefType", "Birth"), "mrel": gtype("ChildRefType", "Birth")}
-                cur = PEDI_CODES.get(tname(cr["frel"]) if tname(cr["frel"]) != "Birth" else tname(cr["mrel"]))
-                if cur != (link.filiation if link.filiation != "BIRTH" else ""):
+                frel, mrel = tcanon(cr["frel"]), tcanon(cr["mrel"])
+                lu = frel if frel != "Birth" else mrel
+                if PEDI_CODES.get(lu, lu.upper()) != (link.filiation if link.filiation != "BIRTH" else ""):
                     rel = PEDI.get(link.filiation, link.filiation.capitalize())
-                    cr["frel"] = cr["mrel"] = gtype("ChildRefType", rel)
+                    cr["frel"] = cr["mrel"] = gtype_ecrit("ChildRefType", rel)
                 cr["citation_list"] = _same_list(cr.get("citation_list") or [], self.citations(
                     link.citations, cr.get("citation_list"), f"{h}:enfant:{link.enfant}"))
                 children.append(cr)
@@ -1339,14 +1454,31 @@ class _Writer:
             self.stats["familles"] += 1
         # personnes : noms, références (propres, témoins), associations, notes
         witness_refs: dict[str, list[dict]] = {}
-        for pid_w, eh, rang, a, _owner in self.links:
+        used: set[int] = set()
+        for pid_w, eh, rang, a, owner, ev in self.links:
             base_refs = people[pid_w].get("event_ref_list") or []
+            asso = asso_value(rang, a, with_name=False)
             prev = next((r for r in base_refs if r.get("ref") == eh and _attr_value(r, A_ASSO)
                          and asso_parse(_attr_value(r, A_ASSO))[0] == rang), None)
-            role = event_role(a)
-            cits = self.citations(a.citations, (prev or {}).get("citation_list"), f"{eh}:lien:{rang}")
-            witness_refs.setdefault(pid_w, []).append(self.ref_with(
-                base_refs, eh, role, [attribute(A_ASSO, asso_value(rang, a, with_name=False))], cits))
+            # référence saisie dans l'interface (sans attribut structuré), relue comme cette association, dans un
+            # événement aux intervenants inchangés : gardée telle quelle (rôle personnalisé d'origine, #273)
+            plain = None
+            if self.assos_base.get((owner, ev.uid)) == [x.to_dict() for x in ev.associations]:
+                plain = next((r for r in base_refs if r.get("ref") == eh and id(r) not in used
+                              and not _attr_value(r, A_ASSO)
+                              and role_guess(tcanon(r.get("role"))) == (a.role, a.detail)), None)
+            if plain is not None:
+                used.add(id(plain))
+                cits = self.citations(a.citations, plain.get("citation_list"), f"{eh}:lien:{rang}")
+                ref = self.ref_with(base_refs, eh, "", None, cits, prev=plain)
+            elif prev is not None and _attr_value(prev, A_ASSO) == asso:  # association inchangée : rôle conservé
+                cits = self.citations(a.citations, prev.get("citation_list"), f"{eh}:lien:{rang}")
+                ref = self.ref_with(base_refs, eh, "", [attribute(A_ASSO, asso)], cits, prev=prev)
+            else:
+                role = event_role(a)
+                cits = self.citations(a.citations, (prev or {}).get("citation_list"), f"{eh}:lien:{rang}")
+                ref = self.ref_with(base_refs, eh, role, [attribute(A_ASSO, asso)], cits)
+            witness_refs.setdefault(pid_w, []).append(ref)
         for pid in sorted(t.personnes):
             p, obj = t.personnes[pid], people[pid]
             h = obj["handle"]
@@ -1362,9 +1494,9 @@ class _Writer:
                 if cur != n.nom:
                     nb["surname_list"] = [surname(n.nom)] if n.nom else []
                 nb["nick"] = n.surnom
-                cur_type = NAME_CODES.get(tname(nb.get("type")), tname(nb.get("type")))
+                cur_type = NAME_CODES.get(tcanon(nb.get("type")), tcanon(nb.get("type")))
                 if cur_type != (n.type if n.type != "BIRTH" else ""):
-                    nb["type"] = gtype("NameType", NAME_TYPES.get(n.type, n.type or "Birth Name"))
+                    nb["type"] = gtype_ecrit("NameType", NAME_TYPES.get(n.type, n.type or "Birth Name"))
                 nb["citation_list"] = _same_list(nb.get("citation_list") or [], self.citations(
                     n.citations, nb.get("citation_list"), f"{h}:nom:{i}"))
                 new_names.append(nb)
@@ -1517,7 +1649,7 @@ class _Writer:
         uid = self.gen["best"].get((p.id, typ)) or next((e.uid for e in p.evenements if e.type == typ), None)
         want = self.ev_handle.get((p.id, uid)) if uid else None
         return next((i for i, r in enumerate(refs) if want and r.get("ref") == want
-                     and tname(r.get("role")) == "Primary"), -1)
+                     and tcanon(r.get("role")) == "Primary"), -1)
 
 
 def tree_to_gramps(tree: Tree, base: GrampsDb | None = None, strict: bool = False,

@@ -8,7 +8,8 @@ Import : **$ARGUMENTS**
 - **Gramps Desktop** : le même outil lit un Gramps XML `.gramps` (1.7.1 ou 1.7.2, compressé ou non) ou un
   paquet `.gpkg`, format reconnu au contenu ; Gramps XML 1.8.0 et versions inconnues sont refusés. Présenter
   aussi `import.non_repris` (ce que l'arbre ne représente pas : étiquettes, adresses, texte stylé, lieux
-  hiérarchiques… non importés) et, pour un `.gpkg`, `import.medias` : fichiers extraits dans une zone
+  hiérarchiques… non importés ; un type personnalisé en français, « Baptême », « Témoin », « Âge », est repris
+  comme le type standard qu'il désigne) et, pour un `.gpkg`, `import.medias` : fichiers extraits dans une zone
   d'attente du répertoire de données, jamais rangés sans accord. Après application, proposer de les classer
   avec `pieces_proposer(dossier=<zone_attente>, suivre_medias=true)` (docs/gramps.md#import-depuis-gramps-desktop).
 - **FamilySearch** : l’ancien exporteur est désactivé pour sécurité. Importer un GEDCOM obtenu
@@ -20,3 +21,5 @@ Import : **$ARGUMENTS**
 Présenter le bilan (format et version, personnes, familles, sources, avertissements) et un extrait du diff ;
 rappeler que les données importées sont **composites/non vérifiées**. Appliquer seulement après accord explicite.
 Ensuite : `arbre_coherence()` et proposer `/genealogiste:recoupe` sur les doublons probables (même nom ± 2 ans).
+En mode gramps, `arbre_coherence()` signale aussi les types personnalisés qui doublonnent un type standard
+(`type_personnalise_doublon`) : `gramps_normaliser_types` en propose la normalisation (diff, accord, annulable).
