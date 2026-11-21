@@ -383,6 +383,21 @@ def types_utilises(db) -> list[list]:
     return sorted([list(x) for x in vus])
 
 
+def lieux_affiches(db) -> dict:
+    """#277 : pour chaque événement qui a un lieu, le lieu tel que Gramps l'affiche à la date de l'événement
+    (``PlaceDisplay.display_event``, format par défaut, ``preferences.place-auto`` par défaut) et le nom du lieu
+    seul (``get_location_list(db, lieu, date)[0][0]``, ce que Gramps Web renvoie en ``place_name``)."""
+    from gramps.gen.display.place import displayer
+    from gramps.gen.utils.location import get_location_list
+
+    out = {}
+    for e in db.iter_events():
+        if e.get_place_handle():
+            lieu = db.get_place_from_handle(e.get_place_handle())
+            out[e.handle] = [displayer.display_event(db, e), get_location_list(db, lieu, e.get_date_object())[0][0]]
+    return out
+
+
 def dates_reference(chemin: str) -> dict:
     """Formes de date de l'inventaire #272 (fichier JSON [[nom, Date JSON], …]) soumises à la bibliothèque :
     ``Date.set`` (acceptée ou DateError), valeur de tri calculée, affichage anglais au format ISO par défaut
@@ -485,6 +500,7 @@ def main() -> int:
         res["importe"] = True
         res["handles"] = {cls: sorted(getattr(db, meth)()) for cls, meth in CLASSES.items()}
         res["types"] = types_utilises(db)
+        res["lieux_affiches"] = lieux_affiches(db)
         # médias : chemin enregistré et fichier trouvé par Gramps (paquet .gpkg : extrait à côté de l'arbre)
         res["medias"] = [{"chemin": m.get_path(), "fichier": os.path.isfile(media_path_full(db, m.get_path()))}
                          for m in (db.get_media_from_handle(h) for h in db.get_media_handles())]

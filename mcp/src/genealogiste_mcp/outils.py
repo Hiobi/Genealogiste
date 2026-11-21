@@ -143,6 +143,9 @@ OUTILS: dict[str, tuple[str, str]] = {  # nom -> (effet, classe)
     "gramps_recalculer_notes": (PROPOSITION, PROPOSITION),  # diff + jeton (propose_notes)
     "gramps_structurer_lieux": (PROPOSITION, PROPOSITION),  # diff + jeton (propose_places)
     "gramps_normaliser_types": (PROPOSITION, PROPOSITION),  # diff + jeton (propose_types, #273)
+    # diff + jeton (propose_place_history, #277) ; lit aussi les fichiers publics du COG (réseau sans donnée de
+    # personne, cache, journal) : la proposition l'emporte, rien n'est écrit sans arbre_appliquer
+    "gramps_dater_lieux": (PROPOSITION, PROPOSITION),
     "gramps_envoyer_medias": (ECRITURE, ECRITURE),  # CONDITIONS : collecte sans « appliquer »
     "gramps_relocaliser_medias": (PROPOSITION, PROPOSITION),  # proposition seulement : écrite par arbre_appliquer
     "gramps_synchroniser": (ECRITURE, COLLECTE),  # relecture forcée ; miroir Git : commit additif

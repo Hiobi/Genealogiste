@@ -127,7 +127,7 @@ def test_version_desktop_inconnue_refusee(desktop):
 def test_cas_desktop_de_l_export_268(desktop):
     """Formes remises à Gramps : 1.7.1, 1.7.2 (refusée par 5.2 seulement), .gramps gzip, .gpkg avec média."""
     cas = {c.nom: c for c in desktop["CAS"]}
-    assert set(cas) == {"xml-1.7.1", "xml-1.7.2", "gramps-gzip", "gpkg", "dates", "types"}
+    assert set(cas) == {"xml-1.7.1", "xml-1.7.2", "gramps-gzip", "gpkg", "dates", "types", "lieux"}
     assert cas["xml-1.7.2"].refus_attendu == {"5.2"}
     assert all(not c.refus_attendu for n, c in cas.items() if n != "xml-1.7.2")
     assert cas["gpkg"].enrichir and cas["gpkg"].avertissements_admis

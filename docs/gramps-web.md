@@ -37,8 +37,8 @@ réglages : à éviter pour un compte dont les identifiants sont stockés (privi
 
 - **Lecture** : possible avec n'importe quel rôle (recherche, fiches, preuve, ascendance, `gramps_tirer`).
 - **Proposition** : en mode `gramps`, `arbre_proposer` et les autres préparations (`gramps_recalculer_notes`,
-  `gramps_structurer_lieux`, `gramps_normaliser_types`, `marqueurs_migrer_proposer`, annulation,
-  `gramps_bascule_proposer`) refusent
+  `gramps_structurer_lieux`, `gramps_dater_lieux`, `gramps_normaliser_types`, `marqueurs_migrer_proposer`,
+  annulation, `gramps_bascule_proposer`) refusent
   **avant de lire l'arbre et de calculer le diff** un compte sans droit d'écriture, avec le rôle détecté et le
   correctif. `arbre_appliquer` refuse de même avant de consommer le jeton : une promotion du compte permet de
   réessayer avec la même proposition. Les droits sont ceux du jeton d'accès (le rôle n'y figure pas : seulement
@@ -118,7 +118,7 @@ Module unique, utilisé par l'export Gramps XML et par le mode direct, testé al
 | parrain/marraine de niveau individu | `personref` + attribut de personne `Genealogiste-Association` « … \| xref » |
 | citation | page, confiance (QUAY ; attribut `QUAY` si 2), notes `Transcript` / `Citation`, attributs Consulté, Type de source, Information, Preuve, Date de consultation, ARK |
 | source | titre, auteur, publication, dépôt + cote, attributs URL, ARK, Type de source, Dérivée de |
-| lieu | titre « Commune, Département, Pays », code INSEE, coordonnées ; paroisse en attribut d'événement |
+| lieu | titre « Commune, Département, Pays », code INSEE, coordonnées ; paroisse en attribut d'événement ; noms et rattachements datés côté Gramps seulement, posés par `gramps_dater_lieux` ([#277](#noms-et-rattachements-datés-277)) |
 | âge | attribut `Age` de la référence d'événement |
 | cause, précision du type | attributs `Cause`, `Précision` |
 | date GEDCOM 7 (et extensions) | date Gramps : calendrier, modificateur, qualité, valeur, nouvel an ; table complète ci-dessous ([Dates](#dates-272)) |
@@ -127,7 +127,8 @@ Module unique, utilisé par l'export Gramps XML et par le mode direct, testé al
 Une personne, un événement ou une note créés dans l'interface Gramps sont lus sans attribut `Genealogiste-*` et
 réécrits **à l'identique** tant que Genealogiste ne les modifie pas. Ce que Genealogiste ne modélise pas (adresses, URL,
 étiquettes des lieux et des notes « en ligne », couleur et priorité des étiquettes, titres et suffixes de nom, noms
-alternatifs et dates des lieux, médias d'événements, notes isolées…) est conservé tel quel.
+alternatifs et rattachements datés des lieux — posés seulement par `gramps_dater_lieux`, voir
+[#277](#noms-et-rattachements-datés-277) —, médias d'événements, notes isolées…) est conservé tel quel.
 
 ### Étiquettes (#262)
 
@@ -345,8 +346,10 @@ silencieux vers Celebrant : relus par Genealogiste, ces rôles personnalisés re
 **pas** des libellés de Gramps (Commune pourrait être *City*, que Genealogiste écrit, ou *Municipality*) : ils
 restent personnalisés, jamais tranchés. Le type de lieu ne fait pas partie du modèle (nom « Commune, Département,
 Pays ») ; il sert à `gramps_structurer_lieux` (un lieu à plat de type personnalisé « Ville » est traité comme
-*City* : rattaché, il reçoit le type standard, comme tout objet modifié) et à la normalisation. L'écriture de la hiérarchie (commune *City*, département *Department*, pays *Country*) et de la
-paroisse (attribut d'événement) ne change pas (#277).
+*City* : rattaché, il reçoit le type standard, comme tout objet modifié), à `gramps_dater_lieux` (un lieu
+personnalisé « Commune » est identifié comme commune, sans que son type change) et à la normalisation, qui ne
+tranche jamais « Commune ». L'écriture de la hiérarchie (commune *City*, département *Department*, pays
+*Country*) et de la paroisse (attribut d'événement) ne change pas (#277).
 
 **Détection.** `arbre_coherence` sur tout l'arbre, en mode gramps, ajoute une alerte `type_personnalise_doublon`
 (niveau `info`) par classe et par libellé (classe, chaîne, type standard et son libellé, nombre d'objets de
@@ -499,6 +502,7 @@ diagnostic.
 | verrous de tâches (409 `task_locked`) | `verrous_taches` | 3.24.0 | prévue |
 | `edit-by-handle` (`gql` retiré) | `edit_by_handle` | 3.26.0 | écartée pour les étiquettes (#262 : hors `/api/transactions/`, annulation non établie) |
 | inscription libre lisible (`GET /api/register/config/`) | `inscription_libre` | 3.26.0 | utilisée (diagnostic) |
+| nom du lieu à la date de l'événement (`place_name` du profil d'événement) | `nom_lieu_date` | 3.26.0 | constatée (#277) : avant, l'interface affiche le nom principal du lieu, `place` (`display_event`) a déjà le nom d'époque |
 
 La recherche sémantique a été retirée de l'API en 3.25 ; Genealogiste ne l'utilise pas.
 
@@ -554,6 +558,138 @@ le workflow.
   changeraient le nom du lieu. Une région déjà présente dans le nom devient un niveau *Region*.
 - `gramps_structurer_lieux` : propose de rattacher les lieux à plat d'une base existante (titre complet, créés
   par une version antérieure ou un import) à cette hiérarchie ; diff puis accord, aucun événement modifié.
+
+### Noms et rattachements datés (#277)
+
+Gramps date les **noms** d'un lieu (`alt_names`, et la date du nom principal) et ses **rattachements**
+(`placeref_list`, une date par lieu englobant). `gramps_dater_lieux` (mode gramps, classe *proposition*) les pose
+pour les communes d'après le Code officiel géographique (COG) de l'INSEE, la source de `geo_historique` ;
+**jamais automatiquement** : une transaction proposée (diff, jeton), écrite par `arbre_appliquer` après accord,
+journalisée dans `gramps-transactions.jsonl`, annulable par `arbre_annuler_modification`. Deuxième exécution :
+rien à faire, pas de jeton.
+
+**Règle de Gramps** (lue dans le code ; identique sur `maintenance/gramps52` 14c01e56, `maintenance/gramps60`
+32aa2962 et `maintenance/gramps61` e9c09a44) : `PlaceDisplay.display_event` (`gramps/gen/display/place.py`)
+affiche le lieu à la date de l'événement par `get_location_list(db, lieu, date)`
+(`gramps/gen/utils/location.py`) :
+
+- nom : le **premier** de `[nom principal] + noms alternatifs` dont la date est vide ou correspond à la date de
+  l'événement (un nom de la langue du format d'affichage est rendu aussitôt, sinon le premier qui correspond) ;
+  aucun : « ? ». Un nom principal **sans date l'emporte donc toujours** ;
+- lieu englobant : le premier rattachement dont la date est vide ou correspond ; on remonte ainsi jusqu'au pays ;
+- correspondance (`Date.match_exact`, `gramps/gen/lib/date.py`) : « avant D » et « jusqu'à D » valent pour un
+  événement **strictement** antérieur à D, « après D » et « depuis D » strictement postérieur, une plage
+  (« de… à… », « entre… et… ») bornes comprises, une date simple le même jour ; « vers » et une date textuelle ne
+  correspondent jamais. Un événement sans date vaut 0 : seuls « avant » et les dates vides lui correspondent.
+
+**Ce que la proposition écrit**, pour chaque lieu identifié comme commune (code INSEE ; type *City*, *Town*,
+*Village*, *Municipality*, ou personnalisé « Commune », que Gramps n'a pas : identifié sans que son type change) :
+
+- **noms** : chaque nom antérieur du COG (changement de nom, commune nouvelle qui prend un autre nom, nom
+  repris après rétablissement) devient un nom alternatif daté, et le nom principal (inchangé) est daté de son
+  entrée en vigueur. Périodes contiguës, sans jour sans nom ni recouvrement : le premier nom vaut « avant » la
+  date du changement (son début est inconnu : le COG commence en 1943), un nom intermédiaire « du » premier jour
+  « au » dernier jour de sa période (plage), le nom actuel « après » la veille de son entrée en vigueur ;
+- **ancien département** (changement de code de la commune, MOD 41 du COG : Seine et Seine-et-Oise en 1968,
+  Corse en 1976, transferts entre départements) : le rattachement actuel est daté « après » la veille du
+  changement, et un rattachement à l'ancien département (lieu *Department* réutilisé, sinon créé sous le même
+  pays, code de l'ancien département) daté « avant » ;
+- **commune déléguée** d'une commune nouvelle (ou associée) : rattachement à la commune nouvelle daté « après »
+  la veille de la création, rattachement au département daté « avant », si le lieu de la commune nouvelle (même
+  code INSEE) est dans la base.
+
+Exemple, Charleville-Mézières (fusion de 1966) et Boulogne-Billancourt (Seine → Hauts-de-Seine), JSON Gramps
+(dates abrégées aux champs utiles) :
+
+```json
+{"gramps_id": "P010304", "title": "", "code": "08105", "place_type": {"_class": "PlaceType", "value": 4},
+ "name": {"_class": "PlaceName", "value": "Charleville-Mézières", "lang": "",
+          "date": {"_class": "Date", "modifier": 2, "dateval": [30, 9, 1966, false]}},
+ "alt_names": [{"_class": "PlaceName", "value": "Charleville", "lang": "",
+                "date": {"_class": "Date", "modifier": 1, "dateval": [1, 10, 1966, false]}}],
+ "placeref_list": [{"_class": "PlaceRef", "ref": "<Ardennes>", "date": {"_class": "Date", "modifier": 0}}]}
+
+{"gramps_id": "P6ee1c7", "code": "92012", "name": {"value": "Boulogne-Billancourt", "date": {"modifier": 0}},
+ "placeref_list": [
+   {"_class": "PlaceRef", "ref": "<Hauts-de-Seine>", "date": {"modifier": 2, "dateval": [31, 12, 1967, false]}},
+   {"_class": "PlaceRef", "ref": "<Seine>", "date": {"modifier": 1, "dateval": [1, 1, 1968, false]}}]}
+```
+
+En Gramps XML : `<pname value="Charleville"><dateval val="1966-10-01" type="before"/></pname>`,
+`<placeref hlink="…"><dateval val="1967-12-31" type="after"/></placeref>`, plage en `<datespan>`.
+
+**Diff** : une ligne par lieu (`lieux` : « P010304 Charleville-Mézières, Ardennes, France : +« Charleville »
+avant 1966-10-01 ; nom principal « Charleville-Mézières » après 1966-09-30 »), plus le bilan de la transaction.
+Listés à part, jamais tranchés :
+
+- `conflits` : nom alternatif ou rattachement déjà saisi sur la même période (même langue), nom principal ou
+  rattachement actuel déjà daté autrement, nom du lieu différent du nom actuel du COG (ex. lieu nommé
+  « Charleville » avec le code 08105), lieu rattaché à autre chose que son département actuel. Le volet en
+  conflit (noms, ou rattachements) est laissé tel quel pour ce lieu ;
+- `lieux_distincts` : communes réunies (fusion, commune nouvelle) dont un lieu existe aussi dans la base, par
+  son code INSEE ou son nom dans le même département (« l'acte dit Mézières ») : gardées distinctes, **jamais
+  fusionnées** ;
+- `non_traites` : lieu à plat (rattachements possibles après `gramps_structurer_lieux`), commune nouvelle
+  absente de la base, rattachement terminé (commune rétablie) ou cumulé avec un changement de département ;
+- `codes_inconnus_du_cog`.
+
+**Événements sans date, annoncés avant l'accord.** Un événement de valeur de tri 0 — date vide, ou date
+textuelle, y compris une date invalide importée comme texte (`Date.set_as_text`, `_calc_sort_value` de Gramps) —
+ne correspond qu'aux noms et rattachements « avant » : après datation, Gramps lui affiche le nom le plus ancien et
+l'ancien département au lieu du nom actuel. La proposition le simule pour chaque événement concerné (lieu affiché
+avant et après, la date de l'événement étant 0) et l'annonce au même niveau que le bilan : `evenements_non_dates`,
+une ligne par lieu modifié (« P010304 Charleville-Mézières, Ardennes, France : 2 événement(s) sans date
+afficheront « Charleville, Ardennes, France » au lieu de « Charleville-Mézières, Ardennes, France » (E…) »),
+`nombre_evenements_non_dates`, et un `avertissement` global dès qu'il y en a un. Un événement daté, même « vers »,
+n'est pas concerné ; une commune déléguée non plus (sans date, son département seul reste affiché).
+`gramps_dater_lieux(ignorer_lieux_evenements_non_dates=true)` laisse ces lieux hors de la proposition
+(`lieux_exclus`) ; sinon, dater ces événements avant d'appliquer.
+
+**Invariants** : seules les dates du nom principal et du premier rattachement sont posées (s'ils n'en ont pas),
+des noms et rattachements ajoutés en fin de liste, un lieu *Department* créé au besoin ; aucun événement modifié.
+Le nom relu par Genealogiste (nom principal, puis premier rattachement : « Commune, Département, Pays ») ne
+change pas : arbre, miroir Git et exports GEDCOM identiques, aller-retour Gramps → modèle → Gramps sans diff. Un
+nom ou rattachement saisi dans Gramps est conservé tel quel (comme tout ce que le modèle ne représente pas), un
+doublon identique n'est jamais ajouté.
+
+**Réseau** : les deux fichiers du COG (`GENEALOGISTE_COG_COMMUNES_URL`, `GENEALOGISTE_COG_MVT_URL`, hôte
+`www.insee.fr`) sont lus une fois par proposition, en cache 180 jours, sous la politique réseau et les limites
+de débit habituelles ; aucun nom de personne n'est envoyé (fichiers complets, rien de la base ne part). Une
+entrée de journal par proposition (source `cog`, opération `chronologie`, codes examinés), positive ou
+négative ; COG injoignable : erreur claire, entrée « erreur » au journal, rien n'est préparé ni écrit. Sans
+commune identifiée : aucune requête.
+
+**Affichage vérifié** (#277) :
+
+- Gramps Desktop 5.2.4, 6.0.8, 6.1.0-beta2 (vraie bibliothèque, `make test-gramps-desktop`, cas `lieux`) :
+  `PlaceDisplay.display_event` rend « Charleville, Ardennes, France » en 1950, « Charleville-Mézières, Ardennes,
+  France » en 1980, « Boulogne-Billancourt, Seine, France » en 1950, « Meythet, Annecy, Haute-Savoie, France »
+  en 2020 ; noms et rattachements relus par Genealogiste depuis le réexport de Gramps ;
+- Gramps Web (`make test-gramps`, chaque image de la matrice) : le profil d'événement
+  (`GET /api/events/<handle>?profile=all`) donne `place` = `display_event` au nom d'époque sur toutes les images.
+  `place_name`, que l'interface affiche **en priorité** dans les listes (événements, personnes, familles,
+  anniversaires) et la fiche de personne, est le nom du lieu à la date de l'événement seulement depuis l'API
+  3.26.0 (`get_location_list`) ; avant, c'est le nom principal (`place.get_name()`, API 3.25.1, image épinglée
+  26.11.0), et l'interface y montre donc le nom actuel (clé `nom_lieu_date`,
+  [version minimale par fonction](#version-minimale-par-fonction)).
+
+**Limites** :
+
+- Événement **sans date** (ou à date textuelle) : Gramps lui donne le plus ancien nom (« avant ») et l'ancien
+  département ; règle amont, sans représentation qui l'évite (nom principal sans date : le nom d'époque ne
+  s'afficherait jamais). Annoncé par lieu dans la proposition, lieux excluables (ci-dessus).
+- COG : depuis 1943 seulement ; avant, et pour les paroisses d'Ancien Régime, le dictionnaire « Des villages de
+  Cassini aux communes d'aujourd'hui » (EHESS), non exploité. Un changement de département sans changement de code
+  n'est pas un mouvement du COG (Versailles, Paris : Seine-et-Oise et Seine avant 1968 non posés) ; les
+  départements renommés (Seine-Inférieure, Basses-Pyrénées, Côtes-du-Nord…) non plus : leur lieu garde son nom.
+- Canton et arrondissement : les fichiers du COG utilisés n'en donnent pas l'historique daté ; rien n'est
+  ajouté. Un « changement de code (transfert de chef-lieu) » (MOD 50) ne relie pas deux codes comme une même
+  commune.
+- **Paroisses** : inchangées, attribut d'événement (décision du mainteneur) ; pas de lieu de type Paroisse.
+- **Backend fichier** : le modèle n'a pas d'objet lieu (titre, code INSEE, coordonnées) ; l'outil répond
+  « Disponible en mode gramps ». Les noms et rattachements datés restent côté Gramps et passent par le Gramps
+  XML (export et import sans perte des objets) ; importés dans le modèle, `non_repris` les compte toujours
+  (`Place.alt_names[]`, dates des noms et des rattachements).
 
 ## Plusieurs arbres
 

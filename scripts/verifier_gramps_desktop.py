@@ -275,6 +275,106 @@ def produire_types(tree, dossier: Path) -> Path:
     return chemin
 
 
+# --- lieux datés (#277) : nom d'époque à la date de l'événement (PlaceDisplay.display_event) ----------------
+
+# (lieu, année de l'événement) -> nom affiché attendu, d'après la règle amont (get_location_list) et les dates
+# posées par dater_lieux depuis l'extrait COG des tests (mcp/tests/fixtures/cog)
+LIEUX_AFFICHES = {
+    ("Charleville-Mézières", 1950): "Charleville, Ardennes, France",
+    ("Charleville-Mézières", 1980): "Charleville-Mézières, Ardennes, France",
+    ("Charleville-Mézières", 2020): "Charleville-Mézières, Ardennes, France",
+    ("Boulogne-Billancourt", 1950): "Boulogne-Billancourt, Seine, France",
+    ("Boulogne-Billancourt", 1980): "Boulogne-Billancourt, Hauts-de-Seine, France",
+    ("Meythet", 1980): "Meythet, Haute-Savoie, France",
+    ("Meythet", 2020): "Meythet, Annecy, Haute-Savoie, France",
+    ("Valserhône", 1950): "Bellegarde, Ain, France",
+    ("Valserhône", 1980): "Bellegarde-sur-Valserine, Ain, France",
+    ("Valserhône", 2020): "Valserhône, Ain, France",
+    ("Mézières", 1950): "Mézières, Ardennes, France",
+    ("Rochefort", 1950): "Rochefort, Charente-Maritime, France",
+}
+
+
+def _module_test(nom: str):
+    sys.path.insert(0, str(TESTS))
+    try:
+        return __import__(nom)
+    finally:
+        sys.path.remove(str(TESTS))
+
+
+def avec_lieux(tree, dossier: Path):
+    """Copie de l'arbre avec une personne fictive : un événement en 1950, 1980 et 2020 dans chaque commune de
+    test_gramps_lieux_dates (fusion, commune nouvelle, changement de département, commune déléguée)."""
+    return _module_test("test_gramps_lieux_dates").arbre_lieux(tree)
+
+
+def dater(db) -> None:
+    """Noms et rattachements datés par dater_lieux, chronologies de l'extrait COG des tests (sans réseau)."""
+    from genealogiste_mcp.gramps.mapping import dater_lieux, est_commune
+    from genealogiste_mcp.sources.geo import IndexCog
+
+    t = _module_test("test_gramps_lieux_dates")
+    index = IndexCog(t.lire("communes.csv"), t.lire("mouvements.csv"))
+    items, _ = dater_lieux(db, {p["code"]: index.chronologie(p["code"]) for p in db.all("Place").values()
+                                if est_commune(p)})
+    for it in items:
+        db.put(it["new"])
+
+
+def produire_lieux(tree, dossier: Path) -> Path:
+    from genealogiste_mcp.export.gramps_xml import db_to_xml
+    from genealogiste_mcp.gramps.mapping import tree_to_gramps_stats
+
+    db, _ = tree_to_gramps_stats(tree, None, False)
+    dater(db)
+    chemin = dossier / "genealogiste.gramps"
+    chemin.write_text(db_to_xml(db, "1.7.1"), encoding="utf-8")
+    return chemin
+
+
+def controle_lieux(cas: Cas, version: str, attendu: dict, rapport: dict) -> list[str]:
+    """#277 : nom affiché par la bibliothèque (PlaceDisplay.display_event, et nom du lieu seul par
+    get_location_list) à la date de chaque événement de la personne de test : nom d'époque avant le changement,
+    nom actuel après ; noms et rattachements datés relus par Genealogiste depuis le réexport sans changer le nom
+    relu."""
+    if cas.nom != "lieux":
+        return []
+    objets = attendu[MODELE]
+    lieux = {o["handle"]: o["name"]["value"] for o in objets if o["_class"] == "Place"}
+    vus = rapport.get("lieux_affiches") or {}
+    ecarts, n = [], 0
+    for o in objets:
+        if o["_class"] != "Event" or not o.get("place"):
+            continue
+        cle = (lieux.get(o["place"]), o["date"]["dateval"][2])
+        if cle not in LIEUX_AFFICHES:
+            continue
+        n += 1
+        obtenu = vus.get(handle_gramps(o["handle"]))
+        if obtenu is None or obtenu[0] != LIEUX_AFFICHES[cle] or obtenu[1] != LIEUX_AFFICHES[cle].split(", ")[0]:
+            ecarts.append(f"lieu {cle[0]} en {cle[1]} : affiché {obtenu}, attendu {LIEUX_AFFICHES[cle]!r}")
+    if n != len(LIEUX_AFFICHES):
+        ecarts.append(f"{n} événements contrôlés sur {len(LIEUX_AFFICHES)}")
+    print(f"   {version} : {n} événements, nom de lieu affiché par PlaceDisplay.display_event à la date de "
+          f"l'événement : {n - len(ecarts)} conformes (ex. Charleville-Mézières 1950 -> "
+          f"{next((v[0] for h, v in vus.items() if v[0].startswith('Charleville,')), '?')!r})", flush=True)
+    if "reexport" in rapport:
+        from genealogiste_mcp.gramps.lecture_xml import lire_xml
+        from genealogiste_mcp.gramps.mapping import GrampsDb, gramps_to_tree
+
+        relu = lire_xml(Path(rapport["reexport"]).read_bytes()).db
+        ch = next((p for p in relu.all("Place").values() if p["name"]["value"] == "Charleville-Mézières"), None)
+        if ch is None or [a["value"] for a in ch["alt_names"]] != ["Charleville"]:
+            ecarts.append("noms datés de Charleville-Mézières absents du réexport de Gramps")
+        def noms(db) -> list:
+            t = gramps_to_tree(db)[0]
+            return sorted((e.uid, e.lieu.nom) for p in t.personnes.values() for e in p.evenements if e.lieu)
+        if noms(relu) != noms(GrampsDb.from_objects(objets)):
+            ecarts.append("nom de lieu relu par Genealogiste changé après réexport par Gramps")
+    return ecarts
+
+
 # DTD et RNG de Gramps 5.2 et 6.0 : dateval type sans from/to (ajoutés par 6.1), que leur code lit et écrit pourtant
 # (MOD_FROM / MOD_TO depuis 5.2) ; validés comme « about », seul écart admis
 FROM_TO_HORS_SCHEMA = ((rb'(<dateval [^>]*type=")(?:from|to)"', rb'\1about"'),)
@@ -292,6 +392,8 @@ CAS: list[Cas] = [
     Cas("types", "Gramps XML 1.7.1 : les huit rôles d'événement de Gramps 6.0 (lus comme personnalisés par 5.2) et "
         "des types personnalisés saisis en français (#273)", produire_types, enrichir=avec_types,
         arbres=("famille.ged",), retoucher=types_francais),
+    Cas("lieux", "Gramps XML 1.7.1 : noms et rattachements datés des communes (#277) ; nom d'époque affiché à la "
+        "date de l'événement", produire_lieux, enrichir=avec_lieux, arbres=("famille.ged",), retoucher=dater),
 ]
 
 
@@ -704,7 +806,7 @@ def controle_types(cas: Cas, version: str, attendu: dict, rapport: dict) -> list
 
 
 CONTROLES: list[Controle] = [controle_reexport, controle_medias, controle_champs, controle_lecture, controle_dates,
-                             controle_types]
+                             controle_types, controle_lieux]
 
 
 def comparer_cycle(premier: dict, second: dict, contexte: str, ecrit_par_gramps: bool = True) -> list[str]:

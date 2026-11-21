@@ -78,13 +78,14 @@ from ..models import (
 )
 from ..normalize.places import DEPARTEMENTS
 from ..statuts import COULEURS
-from .types import TYPES as GRAMPS_TYPES
 from .types import (
+    MOD_COMPOSES,
     attribute,
     blank,
     blank_date,
     blank_name,
     candidats,
+    cle_libelle,
     date_from_gramps,
     date_to_gramps,
     est_personnalise,
@@ -95,7 +96,9 @@ from .types import (
     tcanon,
     tname,
     type_standard,
+    valeur_tri,
 )
+from .types import TYPES as GRAMPS_TYPES
 
 NON_MAPPES = ["extra (nœuds GEDCOM non interprétés de chaque objet)", "Tree.header_extra",
               "Tree.extra_records"]
@@ -1810,3 +1813,315 @@ def summarize(items: list[dict]) -> dict:
         d = out.setdefault(it["_class"], {"add": 0, "update": 0, "delete": 0})
         d[it["type"]] += 1
     return out
+
+
+# ---------------------------------------------------------------------------- lieux datés (#277)
+#
+# Règle de Gramps (gramps/gen/utils/location.py, get_location_list et __get_name ; Date.match_exact) : à la date
+# de l'événement, le nom affiché est le PREMIER de [nom principal] + noms alternatifs dont la date est vide ou
+# « correspond » (même langue que le format d'affichage d'abord), et le lieu englobant est le premier
+# rattachement (placeref) dont la date est vide ou correspond. Correspondance stricte : « avant D » vaut pour un
+# événement < D, « après D » pour > D, une plage (de… à…, entre… et…) bornes comprises ; date d'événement vide :
+# valeur 0, donc seulement « avant ». Un nom principal sans date l'emporte toujours : il est daté « après » la veille
+# de son entrée en vigueur ; un nom ancien vaut « avant » la date du changement (début inconnu : le COG commence en
+# 1943), un nom intermédiaire du premier au dernier jour de sa période. Aucun jour sans nom ni recouvrement.
+
+COMMUNE_TYPES = {"City", "Town", "Village", "Municipality"}
+CODE_INSEE = re.compile(r"^(?:\d{5}|2[AB]\d{3})$")
+_MOIS_GEDCOM = ("JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC")
+_INF = float("inf")
+
+
+def est_commune(p: dict) -> bool:
+    """Lieu identifié comme commune : code INSEE et type commune (City, Town, Village, Municipality, ou
+    personnalisé « Commune », que Gramps n'a pas : lu comme commune, l'objet n'est pas modifié pour autant)."""
+    if not CODE_INSEE.match((p.get("code") or "").strip()):
+        return False
+    t = p.get("place_type")
+    return tcanon(t, "PlaceType") in COMMUNE_TYPES or cle_libelle(tname(t)) == "commune"
+
+
+def _jour(iso: str, delta: int = 0) -> tuple[str, str]:
+    """(date GEDCOM, date ISO) du jour ``iso`` décalé de ``delta`` jours."""
+    from datetime import date, timedelta
+    d = date.fromisoformat(iso) + timedelta(days=delta)
+    return f"{d.day} {_MOIS_GEDCOM[d.month - 1]} {d.year}", d.isoformat()
+
+
+def periode_gramps(debut: str, fin: str | None, premiere: bool) -> tuple[dict, str]:
+    """Date Gramps (et texte lisible) d'une période COG [debut, fin[ : « avant fin » pour la première (début
+    inconnu), « après la veille de debut » pour la période en cours, sinon plage du premier au dernier jour."""
+    if fin is None:
+        g, t = _jour(debut, -1)
+        return date_to_gramps(f"AFT {g}"), f"après {t}"
+    if premiere:
+        g, t = _jour(fin)
+        return date_to_gramps(f"BEF {g}"), f"avant {t}"
+    (g1, t1), (g2, t2) = _jour(debut), _jour(fin, -1)
+    return date_to_gramps(f"FROM {g1} TO {g2}"), f"du {t1} au {t2}"
+
+
+def _vide(d: dict | None) -> bool:
+    return not d or (not any((d.get("dateval") or [0, 0, 0])[:3]) and not d.get("modifier") and not d.get("text"))
+
+
+def _meme_date(a: dict | None, b: dict | None) -> bool:
+    return (_vide(a) and _vide(b)) or (not _vide(a) and not _vide(b) and date_from_gramps(a) == date_from_gramps(b))
+
+
+def intervalle(d: dict | None) -> tuple[float, float] | None:
+    """Jours (valeur de tri) d'événement auxquels la date d'un nom ou d'un rattachement correspond selon
+    ``Date.match_exact`` de Gramps ; None : jamais (date textuelle, « vers »)."""
+    if _vide(d):
+        return (-_INF, _INF)
+    mod = d.get("modifier", 0)
+    s = valeur_tri(d)
+    if mod in MOD_COMPOSES:
+        return (s, valeur_tri({**d, "dateval": list((d.get("dateval") or [])[4:8]) + [0, 0, 0, False]}))
+    return {0: (s, s), 1: (-_INF, s - 1), 8: (-_INF, s - 1), 2: (s + 1, _INF), 7: (s + 1, _INF)}.get(mod)
+
+
+def _chevauche(a: dict | None, b: dict | None) -> bool:
+    ia, ib = intervalle(a), intervalle(b)
+    return ia is not None and ib is not None and max(ia[0], ib[0]) <= min(ia[1], ib[1])
+
+
+def _texte_date(d: dict | None) -> str:
+    return date_from_gramps(d) or "sans date"
+
+
+def _noms_dates(obj: dict, ch: dict) -> tuple[list[str], list[str]]:
+    """Noms anciens datés (alt_names) et date du nom principal ; rien n'est modifié en cas de conflit."""
+    noms = ch.get("noms") or []
+    if len(noms) < 2:
+        return [], []
+    principal = obj.get("name") or {}
+    actuel = noms[-1]["nom"]
+    if cle_libelle(principal.get("value", "")) != cle_libelle(actuel):
+        return [], [f"nom « {principal.get('value', '')} » différent du nom actuel du COG « {actuel} » : noms non "
+                    "datés (vérifier le code INSEE ou le nom du lieu)"]
+    lang = principal.get("lang") or ""
+    d_princ, t_princ = periode_gramps(noms[-1]["debut"], None, False)
+    conflits, changements, ajouts = [], [], []
+    dater = _vide(principal.get("date"))
+    if not dater and not _meme_date(principal.get("date"), d_princ):
+        conflits.append(f"nom principal déjà daté ({_texte_date(principal.get('date'))}), {t_princ} attendu")
+    existants = obj.get("alt_names") or []
+    for i, n in enumerate(noms[:-1]):
+        d, t = periode_gramps(n["debut"], n["fin"], i == 0)
+        if any(a.get("value") == n["nom"] and _meme_date(a.get("date"), d) for a in existants):
+            continue  # déjà présent : jamais en double
+        autres = [a for a in existants if (a.get("lang") or "") == lang
+                  and (a.get("value") == n["nom"] or _chevauche(a.get("date"), d))]
+        if autres:
+            conflits += [f"« {n['nom']} » ({t}) : nom alternatif « {a.get('value')} » ({_texte_date(a.get('date'))}) "
+                         "sur la même période, non tranché" for a in autres]
+            continue
+        ajouts.append({"_class": "PlaceName", "value": n["nom"], "date": d, "lang": lang})
+        changements.append(f"+« {n['nom']} » {t}")
+    if conflits:
+        return [], conflits
+    if dater:
+        obj["name"] = {**principal, "date": d_princ}
+        changements.append(f"nom principal « {actuel} » {t_princ}")
+    if ajouts:
+        obj["alt_names"] = existants + ajouts
+    return changements, []
+
+
+def _liens_dates(obj: dict, d0: dict, t0: str, voulus: list[tuple[str, dict, str, str]]) -> tuple[list[str], list[str]]:
+    """Rattachements datés : date du premier lien (lieu englobant actuel, qui donne le nom relu) et liens anciens
+    ou supplémentaires ``(handle, date, texte, nom)``. Rien n'est modifié en cas de conflit."""
+    refs = obj["placeref_list"]
+    r0, autres = refs[0], refs[1:]
+    conflits, changements, ajouts = [], [], []
+    dater = _vide(r0.get("date"))
+    if not dater and not _meme_date(r0.get("date"), d0):
+        conflits.append(f"rattachement actuel déjà daté ({_texte_date(r0.get('date'))}), {t0} attendu")
+    for h, d, t, nom in voulus:
+        if any(r.get("ref") == h and _meme_date(r.get("date"), d) for r in autres):
+            continue
+        ajouts.append({"_class": "PlaceRef", "ref": h, "date": d})
+        changements.append(f"rattaché à {nom} {t}")
+    for r in autres:
+        if any(r.get("ref") == h and _meme_date(r.get("date"), d) for h, d, _, _ in voulus):
+            continue
+        if any(_chevauche(r.get("date"), d) for d in [d0] + [x[1] for x in voulus]):
+            conflits.append(f"rattachement existant ({_texte_date(r.get('date'))}) sur la même période, non tranché")
+    if conflits:
+        return [], conflits
+    if dater:
+        refs[0] = {**r0, "date": d0}
+        changements.append(f"rattachement actuel {t0}")
+    obj["placeref_list"] = refs + ajouts
+    return changements, []
+
+
+def lieu_affiche(get, p: dict | None, sortval: float) -> str:
+    """Lieu tel que Gramps l'affiche pour un événement de valeur de tri ``sortval`` (``get_location_list``, format
+    par défaut : tous les niveaux, langue vide) ; ``get(handle)`` donne un lieu. « ? » : aucun nom ne correspond."""
+    noms, vus = [], set()
+    while p is not None and p.get("handle") not in vus:
+        vus.add(p.get("handle"))
+        ok = [n for n in [p.get("name") or {}, *(p.get("alt_names") or [])]
+              if (iv := intervalle(n.get("date"))) is not None and iv[0] <= sortval <= iv[1]]
+        noms.append(ok[0].get("value", "") if ok else "?")
+        ref = next((r for r in p.get("placeref_list") or []
+                    if (iv := intervalle(r.get("date"))) is not None and iv[0] <= sortval <= iv[1]), None)
+        p = get(ref.get("ref")) if ref else None
+    return ", ".join(noms)
+
+
+def _impact_non_dates(db: GrampsDb, modifies: dict[str, dict], ajoutes: dict[str, dict]) -> dict[str, list]:
+    """Événements de valeur de tri 0 (date vide ; date textuelle, y compris une date invalide importée comme texte :
+    ``Date.set_as_text`` et ``_calc_sort_value`` de Gramps) dont le lieu affiché change avec les lieux ``modifies`` :
+    lieu modifié (celui de l'événement ou un lieu englobant) -> [(événement, affiché avant, affiché après)]."""
+    def avant(h):
+        return db.get("Place", h)
+
+    def apres(h):
+        return modifies.get(h) or ajoutes.get(h) or db.get("Place", h)
+    out: dict[str, list] = {}
+    for e in sorted(db.all("Event").values(), key=lambda x: x.get("gramps_id") or x["handle"]):
+        lieu = e.get("place")
+        if not lieu or valeur_tri(e.get("date") or {}) != 0:
+            continue
+        a, b = lieu_affiche(avant, avant(lieu), 0), lieu_affiche(apres, apres(lieu), 0)
+        if a == b:
+            continue
+        todo, vus = [lieu], set()
+        while todo:  # lieux modifiés de la hiérarchie de l'événement
+            h = todo.pop()
+            if h in vus:
+                continue
+            vus.add(h)
+            if h in modifies:
+                out.setdefault(h, []).append((e.get("gramps_id") or e["handle"], a, b))
+            for get in (avant, apres):
+                todo += [r.get("ref") for r in (get(h) or {}).get("placeref_list") or []]
+    return out
+
+
+def dater_lieux(db: GrampsDb, chronos: dict[str, dict], ignorer_non_dates: bool = False) -> tuple[list[dict], dict]:
+    """Noms et rattachements datés des communes d'une base Gramps d'après leur chronologie COG (``chronos`` : code
+    INSEE -> :meth:`sources.geo.IndexCog.chronologie`). Lieu identifié par :func:`est_commune` ; nom relu (titre
+    « Commune, Département, Pays ») inchangé : le nom principal et le premier rattachement gardent leur valeur, seule
+    leur date est posée. Jamais d'écrasement ni de doublon ; un conflit est listé et le lieu laissé tel quel pour
+    ce volet ; aucune fusion de lieux. Effet sur les événements sans date (valeur de tri 0 : nom le plus ancien,
+    ancien département) compté par lieu (``evenements_non_dates``, ``avertissement``) ; ``ignorer_non_dates`` :
+    ces lieux restent hors de la proposition (``lieux_exclus``). Renvoie (éléments de transaction, rapport)."""
+    reader = _Reader(db)
+    places = db.all("Place")
+    communes = {h: p for h, p in sorted(places.items()) if est_commune(p)}
+    par_code: dict[str, list[str]] = {}
+    for h, p in communes.items():
+        par_code.setdefault(p["code"].strip(), []).append(h)
+    ajoutes: dict[str, dict] = {}
+    lignes: dict[str, tuple[str, str]] = {}
+    rapport: dict = {"lieux": [], "conflits": [], "non_traites": [], "lieux_distincts": []}
+
+    def departement(nom: str, pays: str | None, code: str) -> str:
+        for h, p in sorted(places.items()):
+            if (p.get("name") or {}).get("value") == nom and tcanon(p.get("place_type"), "PlaceType") == "Department" \
+                    and [r.get("ref") for r in p.get("placeref_list") or []][:1] == ([pays] if pays else []):
+                return h
+        cle = f"{nom}, {reader.place_name(places[pays])}" if pays else nom
+        h = det_handle("Place", cle)
+        if h not in places and h not in ajoutes:
+            o = blank("Place", h, f"P{h[:6]}")
+            o["name"]["value"], o["place_type"], o["code"] = nom, gtype("PlaceType", "Department"), code
+            if pays:
+                o["placeref_list"] = [{"_class": "PlaceRef", "ref": pays, "date": blank_date()}]
+            ajoutes[h] = o
+        return h
+
+    items = []
+    for h, p in communes.items():
+        code = p["code"].strip()
+        ch = chronos.get(code)
+        if not ch:
+            continue
+        label = f"{p.get('gramps_id') or h} {reader.place_name(p)}"
+        obj = copy.deepcopy(p)
+        changements, conflits = _noms_dates(obj, ch)
+        refs = obj.get("placeref_list") or []
+        deps, rats = ch.get("departements") or [], ch.get("rattachements") or []
+        if (len(deps) > 1 or rats) and not refs:
+            rapport["non_traites"].append(f"{label} : lieu à plat, rattachements datés après gramps_structurer_lieux")
+        elif len(deps) > 1:
+            parent = places.get(refs[0].get("ref")) or {}
+            if cle_libelle((parent.get("name") or {}).get("value", "")) != cle_libelle(deps[-1]["nom"]):
+                conflits.append(f"rattaché à « {(parent.get('name') or {}).get('value', '?')} », pas au département "
+                                f"actuel « {deps[-1]['nom']} » : rattachements non datés")
+            else:
+                pays = (parent.get("placeref_list") or [{}])[0].get("ref")
+                pays = pays if pays in places else None
+                voulus = []
+                for i, seg in enumerate(deps[:-1]):
+                    d, t = periode_gramps(seg["debut"], seg["fin"], i == 0)
+                    voulus.append((departement(seg["nom"], pays, seg["code"]), d, t, seg["nom"]))
+                d0, t0 = periode_gramps(deps[-1]["debut"], None, False)
+                c, k = _liens_dates(obj, d0, t0, voulus)
+                changements += c
+                conflits += k
+            if rats:
+                rapport["non_traites"].append(f"{label} : rattachement à {rats[0]['nom']} ({rats[0]['statut']}) non "
+                                              "ajouté en plus d'un changement de département")
+        elif rats:
+            r = rats[0]
+            cibles = [x for x in par_code.get(r["code_insee"], []) if x != h]
+            if len(rats) > 1 or r["fin"] is not None:
+                rapport["non_traites"].append(
+                    f"{label} : " + ", ".join(f"{x['statut']} de {x['nom']} ({x['code_insee']}) du {x['debut']}"
+                                              + (f" au {x['fin']}" if x["fin"] else "") for x in rats)
+                    + " : non représentable par un seul lien daté, non ajouté")
+            elif len(cibles) != 1:
+                rapport["non_traites"].append(
+                    f"{label} : {r['statut']} de {r['nom']} ({r['code_insee']}) depuis le {r['debut']} : "
+                    + ("lieu de cette commune absent de la base" if not cibles else "plusieurs lieux portent ce code")
+                    + ", rattachement non ajouté")
+            else:
+                d0, t0 = periode_gramps(r["debut"], r["debut"], True)  # département seul avant le rattachement
+                d, t = periode_gramps(r["debut"], None, False)
+                c, k = _liens_dates(obj, d0, t0, [(cibles[0], d, t, f"{r['nom']} ({r['statut']})")])
+                changements += c
+                conflits += k
+        for a in ch.get("absorbees") or []:
+            for x in communes:
+                q = communes[x]
+                if x != h and (q["code"].strip() == a["code_insee"] or (
+                        cle_libelle((q.get("name") or {}).get("value", "")) == cle_libelle(a["nom"])
+                        and q["code"].strip()[:2] == a["code_insee"][:2])):
+                    rapport["lieux_distincts"].append(
+                        f"{q.get('gramps_id') or x} {reader.place_name(q)} : {a['nom']} ({a['code_insee']}) réunie à "
+                        f"{label} le {a['date']} ({a['type']}) ; lieux gardés distincts, aucune fusion")
+        rapport["conflits"] += [f"{label} : {c}" for c in conflits]
+        if changements and _strip_change(obj) != _strip_change(p):
+            lignes[h] = (label, f"{label} : " + " ; ".join(changements))
+            items.append({"type": "update", "_class": "Place", "handle": h, "old": p, "new": obj})
+    impact = _impact_non_dates(db, {it["handle"]: it["new"] for it in items}, ajoutes)
+
+    def ligne_impact(h: str) -> str:
+        ev = impact[h]
+        return (f"{lignes[h][0]} : {len(ev)} événement(s) sans date afficheront « {ev[0][2]} » au lieu de "
+                f"« {ev[0][1]} » ({', '.join(x[0] for x in ev[:5])}{', …' if len(ev) > 5 else ''})")
+    if ignorer_non_dates:
+        rapport["lieux_exclus"] = [ligne_impact(h) for h in impact]
+        items = [it for it in items if it["handle"] not in impact]
+        impact = _impact_non_dates(db, {it["handle"]: it["new"] for it in items}, ajoutes)
+    rapport["lieux"] = [lignes[it["handle"]][1] for it in items]
+    rapport["evenements_non_dates"] = [ligne_impact(h) for h in impact]
+    n_ev = len({x[0] for v in impact.values() for x in v})
+    rapport["nombre_evenements_non_dates"] = n_ev
+    if n_ev:
+        rapport["avertissement"] = (
+            f"{n_ev} événement(s) sans date (vide ou textuelle) sur {len(impact)} lieu(x) afficheront dans Gramps le "
+            "nom le plus ancien et l'ancien rattachement au lieu du nom actuel (règle de Gramps : un événement sans "
+            "date ne correspond qu'aux noms et rattachements « avant ») ; dater ces événements, ou relancer avec "
+            "ignorer_lieux_evenements_non_dates=true pour laisser ces lieux hors de la proposition.")
+    utilises = {r.get("ref") for it in items for r in it["new"].get("placeref_list") or []}
+    nouveaux = [{"type": "add", "_class": "Place", "handle": h, "old": None, "new": o}
+                for h, o in sorted(ajoutes.items()) if h in utilises]
+    rapport["lieux"] += [f"{o['gramps_id']} {o['name']['value']} : nouveau lieu (département, code {o['code']})"
+                         for o in (x["new"] for x in nouveaux)]
+    return nouveaux + items, rapport

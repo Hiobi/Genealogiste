@@ -424,3 +424,69 @@ def test_types_francais_lus_normalises_annules(client, loaded, tmp_path):
 
 def blank_ref() -> dict:
     return {"_class": "EventRef", "private": False, "citation_list": [], "note_list": [], "attribute_list": []}
+
+
+def test_lieux_dates_sur_vrai_gramps_web(client, loaded, tmp_path):
+    """#277 : noms et rattachements datés acceptés par l'API, relus à l'identique, noms relus inchangés ; profil
+    d'événement de Gramps Web (``place`` = PlaceDisplay.display_event, ``place_name`` si l'API le fournit) au nom
+    d'époque ; deuxième proposition vide ; annulation. Chronologies COG tirées de l'extrait des tests (aucun appel
+    réseau hors du conteneur)."""
+    from test_gramps_lieux_dates import arbre_lieux, lire
+
+    from genealogiste_mcp.gedcom.mapping import write_gedcom
+    from genealogiste_mcp.gramps.mapping import est_commune
+    from genealogiste_mcp.sources.geo import IndexCog
+
+    db = client.load_all()
+    t, _ = gramps_to_tree(db)
+    items = diff(db, tree_to_gramps(arbre_lieux(t), base=db))
+    client.transaction(items, "Tests d'intégration #277 : lieux fictifs datables")
+    index = IndexCog(lire("communes.csv"), lire("mouvements.csv"))
+    b = GrampsBackend(client, tmp_path, tmp_path / ".propositions", ttl=0)
+    avant = b.snapshot(fresh=True)
+    ged = write_gedcom(b.load(fresh=True))
+
+    def cog(codes):
+        return {"journal": "test", "resultats": [index.chronologie(c) for c in codes]}
+    p = b.propose_place_history(cog)
+    print("lieux #277 :", p.get("lieux"), p.get("transaction_gramps", {}).get("bilan"))
+    assert "jeton" in p, p
+    r = b.apply(p["jeton"])
+    db2 = client.load_all()
+    places = {o["name"]["value"]: o for o in db2.all("Place").values() if est_commune(o) or o["name"]["value"] == "Seine"}
+    ch = places["Charleville-Mézières"]
+    assert [(a["value"], a["date"]["modifier"], a["date"]["dateval"][:3]) for a in ch["alt_names"]] == \
+        [("Charleville", 1, [1, 10, 1966])]
+    assert (ch["name"]["date"]["modifier"], ch["name"]["date"]["dateval"][:3]) == (2, [30, 9, 1966])
+    bo = places["Boulogne-Billancourt"]
+    assert [(db2.get("Place", x["ref"])["name"]["value"], x["date"]["modifier"]) for x in bo["placeref_list"]] == \
+        [("Hauts-de-Seine", 2), ("Seine", 1)]
+    assert write_gedcom(b.load(fresh=True)) == ged  # noms relus inchangés
+    assert diff(db2, tree_to_gramps(gramps_to_tree(db2)[0], base=db2)) == []
+    # profil d'événement de Gramps Web : nom d'époque à la date de l'événement
+    vus = {}
+    for e in db2.all("Event").values():
+        if e.get("description") or not e.get("place") or e["place"] not in (ch["handle"], bo["handle"]):
+            continue
+        prof = client.request("GET", f"/events/{e['handle']}", params={"profile": "all"}).json()["profile"]
+        vus[(e["place"], e["date"]["dateval"][2])] = (prof.get("place"), prof.get("place_name"))
+    print("profils #277 :", vus)
+    assert vus[(ch["handle"], 1950)][0] == "Charleville, Ardennes, France"
+    assert vus[(ch["handle"], 1980)][0] == "Charleville-Mézières, Ardennes, France"
+    assert vus[(bo["handle"], 1950)][0] == "Boulogne-Billancourt, Seine, France"
+    assert vus[(bo["handle"], 1980)][0] == "Boulogne-Billancourt, Hauts-de-Seine, France"
+    # place_name (ce qu'affichent les listes de l'interface) : nom principal jusqu'à l'API 3.25 (place.get_name()),
+    # nom à la date de l'événement ensuite (get_location_list) ; relevé par image, voir docs/gramps-web.md
+    version = client.request("GET", "/metadata/").json()["gramps_webapi"]["version"]
+    nom_liste = vus[(ch["handle"], 1950)][1]
+    print(f"place_name #277 (API {version}) :", nom_liste)
+    from genealogiste_mcp.gramps.compatibilite import FONCTIONS_API, version_api
+    if version_api(version) >= FONCTIONS_API["nom_lieu_date"]:
+        assert nom_liste == "Charleville"
+    else:
+        assert nom_liste in (None, "Charleville-Mézières")
+    assert "jeton" not in b.propose_place_history(cog)  # deuxième exécution : rien à faire
+    b.apply(b.propose_undo(r["transaction"])["jeton"])
+    db3 = client.load_all()
+    assert {h: (o["name"], o["alt_names"], o["placeref_list"]) for h, o in db3.all("Place").items()} == \
+        {h: (o["name"], o["alt_names"], o["placeref_list"]) for h, o in avant.all("Place").items()}

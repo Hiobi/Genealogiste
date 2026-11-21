@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import csv
 import io
+import re
+from collections import defaultdict
 
 from ..normalize.names import basic
 from ..normalize.places import DEPARTEMENTS, normalize_place, place_key
@@ -122,3 +124,131 @@ def history(ctx: SourceContext, nom: str = "", code_insee: str = "", departement
     return envelope(ctx, "cog", "historique", {k: v for k, v in params.items() if v}, records, len(records), False,
                     mouvements=events[:200], note=note,
                     cassini="http://cassini.ehess.fr/ (rechercher la commune par son nom)")
+
+
+# ---------------------------------------------------------------------------- chronologie d'une commune (#277)
+
+# Départements supprimés depuis 1943 dont le code a été réattribué ou éclaté (COG : mouvements « changement de code
+# (département) », MOD 41) : nom du département avant la date d'effet. Tout autre code garde son nom actuel.
+DEPARTEMENTS_SUPPRIMES = {"75": ("Seine", "1968-01-01"), "78": ("Seine-et-Oise", "1968-01-01"),
+                          "20": ("Corse", "1976-01-01")}
+INSEE = re.compile(r"^(?:\d{5}|2[AB]\d{3})$")
+
+
+def code_departement(code: str) -> str:
+    return code[:3] if code.startswith("97") else code[:2]
+
+
+def nom_departement(dep: str, fin: str | None) -> str:
+    """Nom du département ``dep`` pour une période qui finit à ``fin`` (date ISO exclue ; None : en cours)."""
+    ancien = DEPARTEMENTS_SUPPRIMES.get(dep)
+    if ancien and fin and fin <= ancien[1]:
+        return ancien[0]
+    return DEPARTEMENTS.get(dep, "")
+
+
+class IndexCog:
+    """Fichiers COG indexés par code commune (lignes de v_commune_depuis_1943, mouvements de v_mvt_commune)."""
+
+    def __init__(self, communes: list[dict], mouvements: list[dict]):
+        self.lignes: dict[str, list[dict]] = defaultdict(list)
+        for c in communes:
+            self.lignes[c["COM"]].append(c)
+        self.mvts: dict[str, list[dict]] = defaultdict(list)
+        for m in mouvements:
+            self.mvts[m["COM_AV"]].append(m)
+            if m["COM_AP"] != m["COM_AV"]:
+                self.mvts[m["COM_AP"]].append(m)
+
+    def lignee(self, code: str) -> list[str]:
+        """Codes successifs d'une même commune, reliés par un changement de code de département (MOD 41)."""
+        vus, todo = {code}, [code]
+        while todo:
+            c = todo.pop()
+            for m in self.mvts.get(c, []):
+                if m["MOD"] == "41" and m["TYPECOM_AV"] == m["TYPECOM_AP"] == "COM":
+                    for x in (m["COM_AV"], m["COM_AP"]):
+                        if x not in vus:
+                            vus.add(x)
+                            todo.append(x)
+        return sorted(vus)
+
+    def chronologie(self, code: str) -> dict:
+        """Chronologie d'une commune d'après le COG : noms successifs (périodes contiguës : un nom vaut jusqu'au
+        début du suivant), départements successifs (d'après les seuls changements de code), rattachements de
+        commune déléguée ou associée à une autre commune, communes absorbées. Dates ISO, ``fin`` exclue."""
+        codes = self.lignee(code)
+        lignes = sorted((x for c in codes for x in self.lignes.get(c, [])), key=lambda x: (x["DATE_DEBUT"], x["COM"]))
+        out: dict = {"code_insee": code, "codes": codes, "connue": bool(lignes), "noms": [], "departements": [],
+                     "rattachements": [], "absorbees": []}
+        for x in lignes:
+            if not out["noms"] or out["noms"][-1]["nom"] != x["LIBELLE"]:
+                out["noms"].append({"nom": x["LIBELLE"], "debut": x["DATE_DEBUT"]})
+            dep = code_departement(x["COM"])
+            if not out["departements"] or out["departements"][-1]["code"] != dep:
+                out["departements"].append({"code": dep, "debut": x["DATE_DEBUT"]})
+        for liste in (out["noms"], out["departements"]):
+            for a, b in zip(liste, liste[1:], strict=False):
+                a["fin"] = b["debut"]
+            if liste:
+                liste[-1]["fin"] = None
+        for d in out["departements"]:
+            d["nom"] = nom_departement(d["code"], d["fin"])
+        mvts = sorted({id(m): m for c in codes for m in self.mvts.get(c, [])}.values(),
+                      key=lambda m: (m["DATE_EFF"], m["MOD"], m["COM_AV"], m["COM_AP"]))
+        out["rattachements"] = _rattachements(code, mvts, lignes)
+        for m in mvts:
+            if m["COM_AP"] in codes and m["COM_AV"] not in codes and m["TYPECOM_AV"] == m["TYPECOM_AP"] == "COM" \
+                    and m["MOD"] in ("31", "32", "33", "34"):
+                out["absorbees"].append({"code_insee": m["COM_AV"], "nom": m["LIBELLE_AV"], "date": m["DATE_EFF"],
+                                         "type": MOD.get(m["MOD"], m["MOD"])})
+        return out
+
+
+def _rattachements(code: str, mvts: list[dict], lignes: list[dict]) -> list[dict]:
+    """Périodes où la commune ``code`` est déléguée ou associée d'une autre commune (de code différent)."""
+    out: list[dict] = []
+    for m in mvts:
+        if m["COM_AV"] != code:
+            continue
+        courant = out[-1] if out and out[-1]["fin"] is None else None
+        if m["TYPECOM_AP"] in ("COMD", "COMA") and m["COM_AP"] == code:
+            parent = next((x for x in mvts if x is not m and x["DATE_EFF"] == m["DATE_EFF"] and x["MOD"] == m["MOD"]
+                           and x["COM_AV"] == code and x["TYPECOM_AP"] == "COM"), None)
+            statut = "commune déléguée" if m["TYPECOM_AP"] == "COMD" else "commune associée"
+            if courant and (parent is None or parent["COM_AP"] == courant["code_insee"]):
+                courant["statut"] = statut  # MOD 70 : associée devenue déléguée de la même commune
+                continue
+            if courant:
+                courant["fin"] = m["DATE_EFF"]
+            if parent and parent["COM_AP"] != code:
+                out.append({"code_insee": parent["COM_AP"], "nom": parent["LIBELLE_AP"], "statut": statut,
+                            "debut": m["DATE_EFF"], "fin": None})
+        elif courant and m["TYPECOM_AV"] in ("COMD", "COMA") and m["DATE_EFF"] > courant["debut"]:
+            courant["fin"] = m["DATE_EFF"]  # rétablissement, suppression de la commune déléguée, fusion simple
+    for r in out:  # commune rétablie sous son code : sa nouvelle ligne clôt le rattachement
+        if r["fin"] is None:
+            r["fin"] = next((x["DATE_DEBUT"] for x in lignes if x["COM"] == code and x["DATE_DEBUT"] > r["debut"]),
+                            None)
+    return out
+
+
+def chronologies(ctx: SourceContext, codes: list[str]) -> dict:
+    """Chronologies COG de plusieurs communes (codes INSEE). Les deux fichiers COG sont lus une fois (cache de
+    180 jours, politique réseau et limites de débit du client HTTP) ; une entrée de journal pour l'ensemble,
+    positive ou négative. Renvoie l'enveloppe ``{resultats: [chronologie…]}`` ou une enveloppe d'erreur."""
+    codes = sorted({c for c in codes if INSEE.match(c or "")})
+    params = {"codes_insee": codes[:50] + ([f"… {len(codes) - 50} de plus"] if len(codes) > 50 else [])}
+    try:
+        cog = Cog(ctx)
+        index = IndexCog(cog.communes(), cog.mouvements())
+    except Exception as exc:  # noqa: BLE001
+        return error_envelope(ctx, "cog", "chronologie", params, exc)
+    records = []
+    for c in codes:
+        ch = index.chronologie(c)
+        if len(ch["noms"]) > 1 or len(ch["departements"]) > 1 or ch["rattachements"] or ch["absorbees"]:
+            records.append({**ch, "titre": f"{ch['noms'][-1]['nom']} ({c})", "id_externe": c})
+    inconnus = [c for c in codes if not index.lignes.get(c)]
+    return envelope(ctx, "cog", "chronologie", params, records, len(records), False, inconnus=inconnus,
+                    resume=f"{len(codes)} commune(s) : aucun changement de nom ou de département, aucun rattachement")
