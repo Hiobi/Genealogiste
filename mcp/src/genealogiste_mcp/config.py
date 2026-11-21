@@ -76,6 +76,7 @@ class Config:
     gramps_ttl: float = 30.0  # secondes entre deux rafraîchissements en lecture (mode gramps)
     gramps_notes_auto: str = "true"  # notes de preuve Genealogiste:auto : true (toute la base) | modifies | false
     gramps_notes_liens: bool = False  # liens internes gramps:// dans ces notes (#279) ; changement : par recalcul
+    gramps_taches: bool = False  # tâches de Gramps Web (source + note étiquetées ToDo, #263) ; faux : rien de lu ni écrit
     git_mirror: bool = False  # mode gramps : miroir GEDCOM 7 versionné de l'arbre Gramps
     git_remote: str = ""  # dépôt distant optionnel (privé !) du répertoire de données
     strict_evidence: bool = False
@@ -268,6 +269,17 @@ def notes_liens(value: str | None) -> bool:
     return NOTES_AUTO[v] == "true"
 
 
+def taches_mode(value: str | None) -> bool:
+    """GENEALOGISTE_GRAMPS_TACHES (#263) : tâches de Gramps Web (source étiquetée ToDo, attributs Status et
+    Priority) lues et écrites comme tâches ; faux par défaut (comportement inchangé), valeur inconnue refusée."""
+    v = (value or "").strip().lower()
+    if not v:
+        return False
+    if v not in NOTES_AUTO or NOTES_AUTO[v] == "modifies":
+        raise ValueError(f"GENEALOGISTE_GRAMPS_TACHES={value!r} : valeurs possibles true | false")
+    return NOTES_AUTO[v] == "true"
+
+
 ECRITURE = {"autorisee": "autorisee", "autorisée": "autorisee", "interdite": "interdite"}
 
 
@@ -407,6 +419,7 @@ def load_config() -> Config:
         gramps_ttl=float(env("GENEALOGISTE_GRAMPS_TTL", "30") or 30),
         gramps_notes_auto=notes_auto_mode(env("GENEALOGISTE_GRAMPS_NOTES_AUTO")),
         gramps_notes_liens=notes_liens(env("GENEALOGISTE_GRAMPS_NOTES_LIENS")),
+        gramps_taches=taches_mode(env("GENEALOGISTE_GRAMPS_TACHES")),
         git_mirror=_bool(env("GENEALOGISTE_GIT_MIRROR"), False),
         git_remote=env("GENEALOGISTE_GIT_REMOTE", ""),
         strict_evidence=env("GENEALOGISTE_STRICT", "0") in ("1", "true", "oui"),

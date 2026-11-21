@@ -249,12 +249,13 @@ def validated(message: str, token: str) -> str:
 
 
 def prepare(tree, operations: list[dict], titre: str, justification: str, sources: list[str] | None,
-            exiger_source: bool, media=None, backend: str = "") -> tuple[Ctx, str, str]:
+            exiger_source: bool, media=None, backend: str = "", taches_actives: bool = False
+            ) -> tuple[Ctx, str, str]:
     """Applique les opérations sur une copie : (contexte, jeton, message). Commun aux deux backends."""
     if not justification.strip():
         raise ProposalError("Justification obligatoire (raisonnement + sources).")
     try:
-        ctx = apply_ops(tree, operations, exiger_source, media, backend)
+        ctx = apply_ops(tree, operations, exiger_source, media, backend, taches_actives)
     except OpError as exc:
         raise ProposalError(str(exc)) from exc
     token = new_token()

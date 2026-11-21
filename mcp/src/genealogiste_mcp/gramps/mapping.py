@@ -79,6 +79,7 @@ from ..models import (
 )
 from ..normalize.places import DEPARTEMENTS
 from ..statuts import COULEURS
+from ..taches import PRIORITY, STATUS, TODO, TYPE_NOTE
 from .texte import ajuster, cible_interne, decrire, lien_interne, plages_valides
 from .texte import tag as lien_tag
 from .types import (
@@ -523,8 +524,9 @@ class ReadInfo:
 
 
 class _Reader:
-    def __init__(self, db: GrampsDb):
+    def __init__(self, db: GrampsDb, taches: bool = False):
         self.db = db
+        self.taches = taches  # GENEALOGISTE_GRAMPS_TACHES (#263) : sources étiquetées ToDo lues comme tâches
         self.t = Tree()
         self.info = ReadInfo()
         autos = auto_tags(db)
@@ -589,7 +591,7 @@ class _Reader:
 
     def single_note(self, handles: list[str], corps: str = "") -> str:
         """Champ texte unique (note d'événement, de source) : toutes les notes manuelles, jointes ; ``corps`` : note
-        privée gardée quand même (corps d'un billet privé, :meth:`corps_billet`)."""
+        privée gardée quand même (corps d'un billet privé, :meth:`corps_interface`)."""
         out = []
         for h in handles or []:
             n = self.note(h)
@@ -597,11 +599,20 @@ class _Reader:
                 out.append(self.note_text(n))
         return "\n\n".join(out)
 
-    def corps_billet(self, s: dict | None) -> str:
-        """Handle du corps d'un billet privé (#261) : première note non générée d'une source étiquetée Blog et
-        privée. Il reste dans le modèle même privé (sa confidentialité suit celle de la source) ; le corps privé
-        d'un billet public reste, lui, hors du modèle comme toute note privée."""
-        if not s or not s.get("private") or BLOG not in self.tags(s):
+    def interface(self, s: dict | None) -> str:
+        """Étiquette d'objet d'interface d'une source brute : Blog (billet, #261), ToDo (tâche, #263, réglage
+        activé) ou "" (le billet prime)."""
+        tags = self.tags(s) if s else []
+        if BLOG in tags:
+            return BLOG
+        return TODO if self.taches and TODO in tags else ""
+
+    def corps_interface(self, s: dict | None) -> str:
+        """Handle du texte d'un objet d'interface privé (corps d'un billet #261, description d'une tâche #263) :
+        première note non générée d'une source privée étiquetée Blog (ou ToDo). Il reste dans le modèle même privé
+        (sa confidentialité suit celle de la source) ; le texte privé d'un objet public reste, lui, hors du modèle
+        comme toute note privée."""
+        if not s or not s.get("private") or not self.interface(s):
             return ""
         for h in s.get("note_list") or []:
             n = self.db.get("Note", h)
@@ -824,9 +835,11 @@ class _Reader:
                 id=sid, titre=s.get("title") or "", auteur=s.get("author") or "", publication=s.get("pubinfo") or "",
                 depot=self.xid("Repository", repo.get("ref")), cote=repo.get("call_number") or "",
                 url=_attr_value(s, "URL"), ark=_attr_value(s, "ARK"), type_source=_REV_TYPES.get(_attr_value(s, "Type de source"), "indeterminee"),
-                original=orig, note=self.single_note(s.get("note_list"), self.corps_billet(s)),
+                original=orig, note=self.single_note(s.get("note_list"), self.corps_interface(s)),
                 prive=bool(s.get("private")),
-                medias=self.media_ids(s), tags=self.tags(s))
+                medias=self.media_ids(s), tags=self.tags(s),
+                tache={"statut": _attr_value(s, STATUS), "priorite": _attr_value(s, PRIORITY)}
+                if self.interface(s) == TODO else {})
         for h, r in sorted(db.all("Repository").items(), key=lambda kv: self.xid("Repository", kv[0])):
             rid = self.xid("Repository", h)
             self.rep("Repository", h)
@@ -899,8 +912,9 @@ def references(obj, out: set | None = None) -> set[str]:
     return out
 
 
-def gramps_to_tree(db: GrampsDb) -> tuple[Tree, ReadInfo]:
-    return _Reader(db).read()
+def gramps_to_tree(db: GrampsDb, taches: bool = False) -> tuple[Tree, ReadInfo]:
+    """Base Gramps -> arbre Genealogiste ; ``taches`` : sources étiquetées ToDo lues comme tâches (#263)."""
+    return _Reader(db, taches).read()
 
 
 # ============================================================================ écriture : Genealogiste -> Gramps
@@ -1016,8 +1030,9 @@ def proof_data(tree: Tree, strict: bool = False, liens: bool = False) -> dict:
 class _Writer:
     def __init__(self, tree: Tree, base: GrampsDb | None, strict: bool, generated: bool,
                  only: set[tuple[str, str]] | None = None, forme: str = marqueurs.GENEALOGISTE,
-                 liens: bool = False, recalcul: bool = False):
+                 liens: bool = False, recalcul: bool = False, taches: bool = False):
         self.forme = forme  # forme écrite des marqueurs nouveaux ou modifiés (#182)
+        self.taches = taches  # GENEALOGISTE_GRAMPS_TACHES (#263) : attributs Status et Priority des tâches
         # #279 : liens internes gramps:// dans les notes générées (GENEALOGISTE_GRAMPS_NOTES_LIENS) ; ``recalcul`` :
         # gramps_recalculer_notes, seul à faire passer une note inchangée d'une forme (avec / sans liens) à l'autre
         self.liens, self.recalcul = liens, recalcul
@@ -1029,13 +1044,13 @@ class _Writer:
         self.t = tree
         self.base = base or GrampsDb()
         self.strict = strict
-        base_tree, self.info = gramps_to_tree(self.base) if base is not None else (Tree(), ReadInfo())
+        base_tree, self.info = gramps_to_tree(self.base, taches) if base is not None else (Tree(), ReadInfo())
         # intervenants lus de chaque événement de la base : (propriétaire, uid) -> associations (#273 : références
         # saisies dans l'interface réécrites telles quelles tant qu'elles ne changent pas)
         self.assos_base = {(o.id, e.uid): [a.to_dict() for a in e.associations]
                            for o in [*base_tree.personnes.values(), *base_tree.familles.values()] for e in o.evenements}
-        self.sources_base = base_tree.sources  # billets créés ou modifiés (#261)
-        self.reader = _Reader(self.base)  # lecture unitaire (comparaisons « même contenu »)
+        self.sources_base = base_tree.sources  # billets et tâches créés ou modifiés (#261, #263)
+        self.reader = _Reader(self.base, taches)  # lecture unitaire (comparaisons « même contenu »)
         self.reader._assos = {}
         self.out = GrampsDb()
         self.gen = proof_data(tree, strict, liens) if generated else {"notes": {}, "status": {}, "best": {}}
@@ -1395,11 +1410,13 @@ class _Writer:
         return _same_list(list(base_handles or []), manual[:tete] + centre + manual[len(manual) - queue:]
                           + self.notes([], autres, typ, owner, auto, url, keep))
 
-    def billet(self, s: Source, base_src: dict | None, corps: str, note_list: list[str]) -> list[str]:
-        """Billet créé ou modifié (#261) : corps (première note du champ ``note``) en tête de ``note_list`` (la page
-        Blog de Gramps Web affiche la première note), notes générées (lien de la source) en dernier ; corps et notes
-        générées privés comme la source ; corps créé étiqueté Blog, comme le fait l'interface. Les autres notes
-        privées (hors du modèle) gardent leur confidentialité et leur texte."""
+    def billet(self, s: Source, base_src: dict | None, corps: str, note_list: list[str],
+               etiquette: str = BLOG) -> list[str]:
+        """Objet d'interface créé ou modifié (billet #261, tâche #263 : ``etiquette``) : texte (première note du
+        champ ``note``) en tête de ``note_list`` (la page Blog et la vue Tâches de Gramps Web affichent la première
+        note), notes générées (lien de la source) en dernier ; texte et notes générées privés comme la source ;
+        texte créé étiqueté comme l'objet (Blog, ToDo), et de type To Do pour une tâche, comme le fait l'interface.
+        Les autres notes privées (hors du modèle) gardent leur confidentialité et leur texte."""
         autos_tags = auto_tags(self.base) | auto_tags(self.out)
         base_list = (base_src or {}).get("note_list") or []
         cachees = {h for h in base_list if h != corps and (n := self.base.get("Note", h)) and n.get("private")
@@ -1419,10 +1436,14 @@ class _Writer:
                 n["private"] = s.prive
         if tete and not self.base.get("Note", tete):
             n = self.out.get("Note", tete)
-            n["tag_list"] = self.tag_list(n.get("tag_list"), [BLOG])
+            n["tag_list"] = self.tag_list(n.get("tag_list"), [etiquette])
+            if etiquette == TODO:
+                n["type"] = gtype("NoteType", TYPE_NOTE)
         if base_src is not None and ordre != note_list:
             self.avis.append(f"Billet {s.id} : corps remis en première note de la source (la page Blog de Gramps Web "
-                             "affiche la première note), notes générées après.")
+                             "affiche la première note), notes générées après." if etiquette == BLOG else
+                             f"Tâche {s.id} : description remise en première note de la source (la vue Tâches de "
+                             "Gramps Web affiche la première note), notes générées après.")
         return ordre
 
     def shared_note(self, key: str) -> str:
@@ -1850,20 +1871,29 @@ class _Writer:
                 ("Dérivée de", (f"{s.original} — {t.sources[s.original].titre}" if s.original in t.sources
                                 else s.original) if s.original else ""),
                 ("URL", s.url), ("ARK", s.ark)) if v]
-            self.set_attrs(obj, lambda x: x in SRC_ATTRS, desired)
+            # #263 : attributs de la vue Tâches (ordre de l'interface) ; une valeur vide du modèle (attribut absent
+            # ou vide dans Gramps) laisse l'attribut tel quel
+            tache = self.taches and bool(s.tache)
+            geres = {k for k, c in ((PRIORITY, "priorite"), (STATUS, "statut")) if tache and s.tache.get(c)}
+            desired += [attribute(k, s.tache[c], src=True) for k, c in ((PRIORITY, "priorite"), (STATUS, "statut"))
+                        if k in geres]
+            self.set_attrs(obj, lambda x, g=geres: x in SRC_ATTRS or x in g, desired)
             self.media_refs(obj, s.medias)
             regen = self.regen("Source", sid)
-            auto = [("Source Note", f"Lien : {s.url}")] if s.url and regen else None
+            # tâche : aucune note générée ajoutée (la vue Tâches afficherait « Lien : … » comme description) ; une
+            # note générée déjà présente est gardée telle quelle (objet inchangé jamais réécrit)
+            auto = [("Source Note", f"Lien : {s.url}")] if s.url and regen and not tache else None
             if s.url:
                 self.stats["sources_url"] += 1
             base_src = self.base.get("Source", h)
-            corps = self.reader.corps_billet(base_src)
+            corps = self.reader.corps_interface(base_src)
             obj["note_list"] = self.single(s.note, obj.get("note_list"), "Source Note", h, auto, url=s.url,
-                                           keep=not regen, corps=corps)
+                                           keep=not regen or tache, corps=corps)
             obj["tag_list"] = self.tag_list(obj.get("tag_list"), s.tags)
             avant = self.sources_base.get(sid)
-            if BLOG in s.tags and (base_src is None or avant is None or avant.to_dict() != s.to_dict()):
-                obj["note_list"] = self.billet(s, base_src, corps, obj["note_list"])
+            etiquette = BLOG if BLOG in s.tags else TODO if tache else ""
+            if etiquette and (base_src is None or avant is None or avant.to_dict() != s.to_dict()):
+                obj["note_list"] = self.billet(s, base_src, corps, obj["note_list"], etiquette)
             out.put(obj)
         for rid in sorted(t.depots):
             r = t.depots[rid]
@@ -1939,14 +1969,15 @@ class _Writer:
 def tree_to_gramps(tree: Tree, base: GrampsDb | None = None, strict: bool = False,
                    generated: bool = True, only: set[tuple[str, str]] | None = None,
                    structure: bool = False, forme: str = marqueurs.GENEALOGISTE, liens: bool = False,
-                   recalcul: bool = False, avis: list[str] | None = None) -> GrampsDb:
+                   recalcul: bool = False, avis: list[str] | None = None, taches: bool = False) -> GrampsDb:
     """Arbre Genealogiste -> base Gramps (par-dessus ``base`` si fournie). ``generated`` : notes générées
     (Genealogiste:auto) ; ``forme`` : forme écrite des marqueurs nouveaux ou modifiés (#182) ; ``only`` :
     les recalculer seulement pour ces objets (cls, clé Genealogiste), celles des autres sont conservées telles quelles ;
     ``structure`` : rattacher aussi les lieux à plat de la base à une hiérarchie ; ``liens`` : liens internes
     gramps:// dans les notes générées (#279) ; ``recalcul`` : recalcul explicite des notes (seul à changer la forme
-    d'une note générée inchangée) ; ``avis`` : reçoit les mises en forme retirées (texte modifié, lien invalide)."""
-    w = _Writer(tree, base, strict, generated, only, forme, liens, recalcul)
+    d'une note générée inchangée) ; ``avis`` : reçoit les mises en forme retirées (texte modifié, lien invalide) ;
+    ``taches`` : tâches de Gramps Web (GENEALOGISTE_GRAMPS_TACHES, #263)."""
+    w = _Writer(tree, base, strict, generated, only, forme, liens, recalcul, taches)
     out = w.build()
     if avis is not None:
         avis.extend(w.avis)

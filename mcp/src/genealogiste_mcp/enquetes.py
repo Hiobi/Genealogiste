@@ -48,6 +48,23 @@ class EnqueteError(ValueError):
     pass
 
 
+_ID_TACHE = re.compile(r"^[A-Za-z0-9_-]{1,40}$")
+
+
+def _lien_tache(element: dict, d: dict) -> None:
+    """``tache_gramps`` (#263) : identifiant de la tâche de Gramps Web liée à une piste ou une tâche manuelle
+    (noté après application de la proposition qui l'a créée) ; "" retire le lien."""
+    if "tache_gramps" not in d:
+        return
+    v = d["tache_gramps"]
+    if v in ("", None):
+        element.pop("tache_gramps", None)
+    elif isinstance(v, str) and _ID_TACHE.match(v.strip()):
+        element["tache_gramps"] = v.strip()
+    else:
+        raise EnqueteError("tache_gramps : identifiant de la tâche de Gramps Web (S12…), ou \"\" pour délier.")
+
+
 def maintenant() -> str:
     return datetime.now(UTC).isoformat(timespec="seconds")
 
@@ -349,6 +366,7 @@ class Enquetes:
         for k in ("question", "note"):
             if k in d:
                 p[k] = d[k]
+        _lien_tache(p, d)
         if "hypotheses" in d:
             p["hypotheses"] = list(d["hypotheses"] or [])
         if "sources" in d:
@@ -463,6 +481,7 @@ class Enquetes:
         for k in ("description", "service", "piste", "resultat", "url"):
             if d.get(k):
                 t[k] = d[k]
+        _lien_tache(t, d)
         if "statut" in d:
             if d["statut"] not in STATUTS_TACHE:
                 raise EnqueteError(f"statut de tâche : {' | '.join(STATUTS_TACHE)}")

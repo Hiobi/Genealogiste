@@ -35,6 +35,7 @@ from .models import EVENT_LABELS, Tree
 from .normalize.dates import parse_date
 from .normalize.names import normalize_surname
 from .notes_liens import renommer_liens
+from .objets_interface import est_objet_interface
 from .pieces import _part, nom_compatible
 from .privacy import identifying_patterns, is_living, private_resources
 from .statuts import GRAVITE, ICONS
@@ -294,7 +295,7 @@ class Notes:
         srcs = sorted({c.source for e in p.evenements for c in e.citations} | filiation
                       | {c.source for n in p.noms for c in n.citations} | {c.source for c in p.citations})
         src_links = [self.link(tree, "source", s) for s in srcs if s in tree.sources
-                     and not est_billet(tree.sources[s])]  # billet (#261) : pas de fiche
+                     and not est_objet_interface(tree.sources[s])]  # billet, tâche (#261, #263) : pas de fiche
         jr = self._journal(pid)
         research = [f"- {e['date'][:10]} · {e['source']} · {e['operation']} · {e['statut']}"
                     + (f" — {e['resume'][:200]}" if e.get("resume") else "") + f" (`{e['id']}`)" for e in jr]
@@ -494,7 +495,7 @@ class Notes:
         srcs = sorted({c.source for e in f.evenements for c in e.citations} | {c.source for c in f.citations}
                       | {c.source for k in f.enfants for c in k.citations})
         src_links = [self.link(tree, "source", s) for s in srcs if s in tree.sources
-                     and not est_billet(tree.sources[s])]  # billet (#261) : pas de fiche
+                     and not est_objet_interface(tree.sources[s])]  # billet, tâche (#261, #263) : pas de fiche
         fm = {"id": fid, "type": "famille", "epoux": sides["epoux"], "epouse": sides["epouse"],
               "mariage": marr.date if marr else "", "sources": src_links}
         blocks = {"identite": "\n".join(lines), "enfants": "## Enfants\n\n" + ("\n".join(kids) or "- (aucun)"),
@@ -861,11 +862,14 @@ class Notes:
         porteurs = self._porteurs(tree) if porteurs is None else porteurs
         if target == "tout":
             return ([("personne", x) for x in sorted(tree.personnes)] + [("famille", x) for x in sorted(tree.familles)]
-                    + [("source", x) for x in sorted(tree.sources) if not est_billet(tree.sources[x])]
+                    + [("source", x) for x in sorted(tree.sources) if not est_objet_interface(tree.sources[x])]
                     + [("patronyme", k) for k in sorted(porteurs)])
         if est_billet(tree.sources.get(target)):
             raise NotesError(f"{target} est un billet du blog de Gramps Web (source étiquetée Blog, #261) : pas de "
                              "fiche dans les notes de recherche (un billet n'est pas une source de preuve).")
+        if est_objet_interface(tree.sources.get(target)):
+            raise NotesError(f"{target} est une tâche de Gramps Web (source étiquetée ToDo, #263) : pas de fiche "
+                             "dans les notes de recherche (une tâche est un plan de recherche, pas une source).")
         for kind, coll in (("personne", tree.personnes), ("famille", tree.familles), ("source", tree.sources)):
             if target in coll:
                 out = [(kind, target)]
@@ -883,7 +887,7 @@ class Notes:
         lines = ["## Personnes", ""] + [f"- {self.link(tree, 'personne', x)}" for x in sorted(tree.personnes)]
         lines += ["", "## Familles", ""] + [f"- {self.link(tree, 'famille', x)}" for x in sorted(tree.familles)]
         lines += ["", "## Sources", ""] + [f"- {self.link(tree, 'source', x)}" for x in sorted(tree.sources)
-                                           if not est_billet(tree.sources[x])]
+                                           if not est_objet_interface(tree.sources[x])]
         lines += ["", "## Patronymes", ""] + [f"- {self.link(tree, 'patronyme', k)} ({len(v)})" for k, v in sorted(porteurs.items())]
         fm = {"type": "index", "personnes": len(tree.personnes), "familles": len(tree.familles),
               "sources": len(tree.sources), "patronymes": len(porteurs)}
@@ -1011,7 +1015,7 @@ def touched(before: Tree, after: Tree) -> list[str]:
     for coll in ("personnes", "familles", "sources"):
         a, b = getattr(before, coll), getattr(after, coll)
         for oid, obj in b.items():
-            if coll == "sources" and est_billet(obj):  # billet du blog (#261) : jamais de fiche
+            if coll == "sources" and est_objet_interface(obj):  # billet, tâche (#261, #263) : jamais de fiche
                 continue
             if oid not in a or a[oid].to_dict() != obj.to_dict():
                 out.append(oid)

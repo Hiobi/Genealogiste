@@ -132,6 +132,7 @@ def controles_locaux(a, probleme: dict | None, config) -> list[dict]:
             "gramps_password": "défini" if config.gramps_password else "absent",
             "gramps_notes_auto": getattr(config, "gramps_notes_auto", "true"),
             "gramps_notes_liens": getattr(config, "gramps_notes_liens", False),
+            "gramps_taches": getattr(config, "gramps_taches", False),
             "matchid_token": "défini" if config.matchid_token else "absent",
             "wikitree_app_id": "défini" if config.wikitree_app_id else "absent",
             "mcp_token": "défini" if os.environ.get("MCP_TOKEN") else "absent",

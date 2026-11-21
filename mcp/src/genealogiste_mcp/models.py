@@ -257,6 +257,15 @@ class Source(_Base):
     prive: bool = False
     medias: list[str] = field(default_factory=list)  # images du registre, de la page de titre… (#222)
     tags: list[str] = field(default_factory=list)  # étiquettes (noms, ordre conservé ; hors étiquettes gérées, #262)
+    # tâche de Gramps Web (#263, GENEALOGISTE_GRAMPS_TACHES) : {"statut": "Open", "priorite": "5"} (valeurs des
+    # attributs Status et Priority, "" si absent) ; vide pour toute autre source et quand le réglage est désactivé
+    tache: dict = field(default_factory=dict)
+
+    def to_dict(self) -> dict:
+        d = asdict(self)
+        if not d["tache"]:  # hors tâches : forme inchangée (sorties, comparaisons)
+            del d["tache"]
+        return d
 
 
 @dataclass
