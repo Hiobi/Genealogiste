@@ -1,0 +1,3206 @@
+{
+ "_description": "Types standard de Gramps par classe (chaîne XML anglaise canonique -> valeur, version d'apparition, libellé anglais affiché et libellé français par version). Généré par scripts/generer_types_gramps.py ; ne pas modifier à la main.",
+ "_licence": "Données extraites de Gramps (gramps/gen/lib/*type.py, po/fr.po), © projet Gramps et ses traducteurs, sous GPL-2.0-or-later ; redistribuées avec Genealogiste sous GPL-3.0.",
+ "_provenance": {
+  "depot": "https://github.com/gramps-project/gramps",
+  "versions": [
+   {
+    "version": "5.2",
+    "branche": "maintenance/gramps52",
+    "sha": "14c01e56f088a865cd1f5a78708357237b74d92d",
+    "version_gramps": "5.2.5",
+    "fichiers": [
+     "gramps/gen/lib/*type.py",
+     "po/fr.po"
+    ]
+   },
+   {
+    "version": "6.0",
+    "branche": "maintenance/gramps60",
+    "sha": "32aa29629b94c549f232cd0b61c137ae95d73acf",
+    "version_gramps": "6.0.8",
+    "fichiers": [
+     "gramps/gen/lib/*type.py",
+     "po/fr.po"
+    ]
+   },
+   {
+    "version": "6.1",
+    "branche": "maintenance/gramps61",
+    "sha": "e9c09a44791def6a6b81079dc7f8cbe8c7e69cc0",
+    "version_gramps": "6.1.0-beta2",
+    "fichiers": [
+     "gramps/gen/lib/*type.py",
+     "po/fr.po"
+    ]
+   }
+  ]
+ },
+ "versions": [
+  "5.2",
+  "6.0",
+  "6.1"
+ ],
+ "classes": {
+  "EventType": {
+   "personnalise": 0,
+   "defaut": 12,
+   "types": {
+    "Unknown": {
+     "valeur": -1,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Unknown",
+      "6.0": "Unknown",
+      "6.1": "Unknown"
+     },
+     "fr": {
+      "5.2": "Inconnu",
+      "6.0": "Inconnu",
+      "6.1": "Inconnu"
+     }
+    },
+    "Custom": {
+     "valeur": 0,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Custom",
+      "6.0": "Custom",
+      "6.1": "Custom"
+     },
+     "fr": {
+      "5.2": "Personnalisé",
+      "6.0": "Personnalisé",
+      "6.1": "Personnalisé"
+     }
+    },
+    "Adopted": {
+     "valeur": 11,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Adopted",
+      "6.0": "Adopted",
+      "6.1": "Adopted"
+     },
+     "fr": {
+      "5.2": "Adoption",
+      "6.0": "Adoption",
+      "6.1": "Adoption"
+     }
+    },
+    "Birth": {
+     "valeur": 12,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Birth",
+      "6.0": "Birth",
+      "6.1": "Birth"
+     },
+     "fr": {
+      "5.2": "Naissance",
+      "6.0": "Naissance",
+      "6.1": "Naissance"
+     }
+    },
+    "Death": {
+     "valeur": 13,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Death",
+      "6.0": "Death",
+      "6.1": "Death"
+     },
+     "fr": {
+      "5.2": "Décès",
+      "6.0": "Décès",
+      "6.1": "Décès"
+     }
+    },
+    "Adult Christening": {
+     "valeur": 14,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Adult Christening",
+      "6.0": "Adult Christening",
+      "6.1": "Adult Christening"
+     },
+     "fr": {
+      "5.2": "Baptême religieux à l'âge adulte",
+      "6.0": "Baptême religieux à l'âge adulte",
+      "6.1": "Baptême religieux à l'âge adulte"
+     }
+    },
+    "Baptism": {
+     "valeur": 15,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Baptism",
+      "6.0": "Baptism",
+      "6.1": "Baptism"
+     },
+     "fr": {
+      "5.2": "Baptême",
+      "6.0": "Baptême",
+      "6.1": "Baptême"
+     }
+    },
+    "Bar Mitzvah": {
+     "valeur": 16,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Bar Mitzvah",
+      "6.0": "Bar Mitzvah",
+      "6.1": "Bar Mitzvah"
+     },
+     "fr": {
+      "5.2": "Bar Mitzvah",
+      "6.0": "Bar Mitzvah",
+      "6.1": "Bar Mitzvah"
+     }
+    },
+    "Bas Mitzvah": {
+     "valeur": 17,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Bat Mitzvah",
+      "6.0": "Bat Mitzvah",
+      "6.1": "Bat Mitzvah"
+     },
+     "fr": {
+      "5.2": "Bat Mitzvah",
+      "6.0": "Bat Mitzvah",
+      "6.1": "Bat Mitzvah"
+     }
+    },
+    "Blessing": {
+     "valeur": 18,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Blessing",
+      "6.0": "Blessing",
+      "6.1": "Blessing"
+     },
+     "fr": {
+      "5.2": "Bénédiction",
+      "6.0": "Bénédiction",
+      "6.1": "Bénédiction"
+     }
+    },
+    "Burial": {
+     "valeur": 19,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Burial",
+      "6.0": "Burial",
+      "6.1": "Burial"
+     },
+     "fr": {
+      "5.2": "Inhumation",
+      "6.0": "Inhumation",
+      "6.1": "Inhumation"
+     }
+    },
+    "Cause Of Death": {
+     "valeur": 20,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Cause Of Death",
+      "6.0": "Cause Of Death",
+      "6.1": "Cause Of Death"
+     },
+     "fr": {
+      "5.2": "Cause de décès",
+      "6.0": "Cause de décès",
+      "6.1": "Cause de décès"
+     }
+    },
+    "Census": {
+     "valeur": 21,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Census",
+      "6.0": "Census",
+      "6.1": "Census"
+     },
+     "fr": {
+      "5.2": "Recensement",
+      "6.0": "Recensement",
+      "6.1": "Recensement"
+     }
+    },
+    "Christening": {
+     "valeur": 22,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Christening",
+      "6.0": "Christening",
+      "6.1": "Christening"
+     },
+     "fr": {
+      "5.2": "Baptême religieux",
+      "6.0": "Baptême religieux",
+      "6.1": "Baptême religieux"
+     }
+    },
+    "Confirmation": {
+     "valeur": 23,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Confirmation",
+      "6.0": "Confirmation",
+      "6.1": "Confirmation"
+     },
+     "fr": {
+      "5.2": "Confirmation",
+      "6.0": "Confirmation",
+      "6.1": "Confirmation"
+     }
+    },
+    "Cremation": {
+     "valeur": 24,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Cremation",
+      "6.0": "Cremation",
+      "6.1": "Cremation"
+     },
+     "fr": {
+      "5.2": "Crémation",
+      "6.0": "Crémation",
+      "6.1": "Crémation"
+     }
+    },
+    "Degree": {
+     "valeur": 25,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Degree",
+      "6.0": "Degree",
+      "6.1": "Degree"
+     },
+     "fr": {
+      "5.2": "Diplôme ou certificat",
+      "6.0": "Diplôme ou certificat",
+      "6.1": "Diplôme ou certificat"
+     }
+    },
+    "Education": {
+     "valeur": 26,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Education",
+      "6.0": "Education",
+      "6.1": "Education"
+     },
+     "fr": {
+      "5.2": "Niveau d'instruction",
+      "6.0": "Niveau d'instruction",
+      "6.1": "Niveau d'instruction"
+     }
+    },
+    "Elected": {
+     "valeur": 27,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Elected",
+      "6.0": "Elected",
+      "6.1": "Elected"
+     },
+     "fr": {
+      "5.2": "Élection",
+      "6.0": "Élection",
+      "6.1": "Élection"
+     }
+    },
+    "Emigration": {
+     "valeur": 28,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Emigration",
+      "6.0": "Emigration",
+      "6.1": "Emigration"
+     },
+     "fr": {
+      "5.2": "Émigration",
+      "6.0": "Émigration",
+      "6.1": "Émigration"
+     }
+    },
+    "First Communion": {
+     "valeur": 29,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "First Communion",
+      "6.0": "First Communion",
+      "6.1": "First Communion"
+     },
+     "fr": {
+      "5.2": "Première communion",
+      "6.0": "Première communion",
+      "6.1": "Première communion"
+     }
+    },
+    "Immigration": {
+     "valeur": 30,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Immigration",
+      "6.0": "Immigration",
+      "6.1": "Immigration"
+     },
+     "fr": {
+      "5.2": "Immigration",
+      "6.0": "Immigration",
+      "6.1": "Immigration"
+     }
+    },
+    "Graduation": {
+     "valeur": 31,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Graduation",
+      "6.0": "Graduation",
+      "6.1": "Graduation"
+     },
+     "fr": {
+      "5.2": "Remise de diplôme",
+      "6.0": "Remise de diplôme",
+      "6.1": "Remise de diplôme"
+     }
+    },
+    "Medical Information": {
+     "valeur": 32,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Medical Information",
+      "6.0": "Medical Information",
+      "6.1": "Medical Information"
+     },
+     "fr": {
+      "5.2": "Information médicale",
+      "6.0": "Information médicale",
+      "6.1": "Information médicale"
+     }
+    },
+    "Military Service": {
+     "valeur": 33,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Military Service",
+      "6.0": "Military Service",
+      "6.1": "Military Service"
+     },
+     "fr": {
+      "5.2": "Service militaire",
+      "6.0": "Service militaire",
+      "6.1": "Service militaire"
+     }
+    },
+    "Naturalization": {
+     "valeur": 34,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Naturalization",
+      "6.0": "Naturalization",
+      "6.1": "Naturalization"
+     },
+     "fr": {
+      "5.2": "Naturalisation",
+      "6.0": "Naturalisation",
+      "6.1": "Naturalisation"
+     }
+    },
+    "Nobility Title": {
+     "valeur": 35,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Nobility Title",
+      "6.0": "Nobility Title",
+      "6.1": "Nobility Title"
+     },
+     "fr": {
+      "5.2": "Titre de noblesse",
+      "6.0": "Titre de noblesse",
+      "6.1": "Titre de noblesse"
+     }
+    },
+    "Number of Marriages": {
+     "valeur": 36,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Number of Marriages",
+      "6.0": "Number of Marriages",
+      "6.1": "Number of Marriages"
+     },
+     "fr": {
+      "5.2": "Nombre de mariages",
+      "6.0": "Nombre de mariages",
+      "6.1": "Nombre de mariages"
+     }
+    },
+    "Occupation": {
+     "valeur": 37,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Occupation",
+      "6.0": "Occupation",
+      "6.1": "Occupation"
+     },
+     "fr": {
+      "5.2": "Profession",
+      "6.0": "Profession",
+      "6.1": "Profession"
+     }
+    },
+    "Ordination": {
+     "valeur": 38,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Ordination",
+      "6.0": "Ordination",
+      "6.1": "Ordination"
+     },
+     "fr": {
+      "5.2": "Ordination",
+      "6.0": "Ordination",
+      "6.1": "Ordination"
+     }
+    },
+    "Probate": {
+     "valeur": 39,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Probate",
+      "6.0": "Probate",
+      "6.1": "Probate"
+     },
+     "fr": {
+      "5.2": "Validation d'un testament",
+      "6.0": "Validation d'un testament",
+      "6.1": "Validation d'un testament"
+     }
+    },
+    "Property": {
+     "valeur": 40,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Property",
+      "6.0": "Property",
+      "6.1": "Property"
+     },
+     "fr": {
+      "5.2": "Propriété",
+      "6.0": "Propriété",
+      "6.1": "Propriété"
+     }
+    },
+    "Religion": {
+     "valeur": 41,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Religion",
+      "6.0": "Religion",
+      "6.1": "Religion"
+     },
+     "fr": {
+      "5.2": "Religion",
+      "6.0": "Religion",
+      "6.1": "Religion"
+     }
+    },
+    "Residence": {
+     "valeur": 42,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Residence",
+      "6.0": "Residence",
+      "6.1": "Residence"
+     },
+     "fr": {
+      "5.2": "Résidence",
+      "6.0": "Résidence",
+      "6.1": "Résidence"
+     }
+    },
+    "Retirement": {
+     "valeur": 43,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Retirement",
+      "6.0": "Retirement",
+      "6.1": "Retirement"
+     },
+     "fr": {
+      "5.2": "Retraite",
+      "6.0": "Retraite",
+      "6.1": "Retraite"
+     }
+    },
+    "Will": {
+     "valeur": 44,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Will",
+      "6.0": "Will",
+      "6.1": "Will"
+     },
+     "fr": {
+      "5.2": "Testament",
+      "6.0": "Testament",
+      "6.1": "Testament"
+     }
+    },
+    "Marriage": {
+     "valeur": 1,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Marriage",
+      "6.0": "Marriage",
+      "6.1": "Marriage"
+     },
+     "fr": {
+      "5.2": "Mariage",
+      "6.0": "Mariage",
+      "6.1": "Mariage"
+     }
+    },
+    "Marriage Settlement": {
+     "valeur": 2,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Marriage Settlement",
+      "6.0": "Marriage Settlement",
+      "6.1": "Marriage Settlement"
+     },
+     "fr": {
+      "5.2": "Contrat avant mariage",
+      "6.0": "Contrat avant mariage",
+      "6.1": "Contrat avant mariage"
+     }
+    },
+    "Marriage License": {
+     "valeur": 3,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Marriage License",
+      "6.0": "Marriage License",
+      "6.1": "Marriage License"
+     },
+     "fr": {
+      "5.2": "Autorisation de mariage",
+      "6.0": "Autorisation de mariage",
+      "6.1": "Autorisation de mariage"
+     }
+    },
+    "Marriage Contract": {
+     "valeur": 4,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Marriage Contract",
+      "6.0": "Marriage Contract",
+      "6.1": "Marriage Contract"
+     },
+     "fr": {
+      "5.2": "Contrat de mariage",
+      "6.0": "Contrat de mariage",
+      "6.1": "Contrat de mariage"
+     }
+    },
+    "Marriage Banns": {
+     "valeur": 5,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Marriage Banns",
+      "6.0": "Marriage Banns",
+      "6.1": "Marriage Banns"
+     },
+     "fr": {
+      "5.2": "Bans de mariage",
+      "6.0": "Bans de mariage",
+      "6.1": "Bans de mariage"
+     }
+    },
+    "Engagement": {
+     "valeur": 6,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Engagement",
+      "6.0": "Engagement",
+      "6.1": "Engagement"
+     },
+     "fr": {
+      "5.2": "Fiançailles",
+      "6.0": "Fiançailles",
+      "6.1": "Fiançailles"
+     }
+    },
+    "Divorce": {
+     "valeur": 7,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Divorce",
+      "6.0": "Divorce",
+      "6.1": "Divorce"
+     },
+     "fr": {
+      "5.2": "Divorce",
+      "6.0": "Divorce",
+      "6.1": "Divorce"
+     }
+    },
+    "Divorce Filing": {
+     "valeur": 8,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Divorce Filing",
+      "6.0": "Divorce Filing",
+      "6.1": "Divorce Filing"
+     },
+     "fr": {
+      "5.2": "Enregistrement de divorce",
+      "6.0": "Enregistrement de divorce",
+      "6.1": "Enregistrement de divorce"
+     }
+    },
+    "Annulment": {
+     "valeur": 9,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Annulment",
+      "6.0": "Annulment",
+      "6.1": "Annulment"
+     },
+     "fr": {
+      "5.2": "Annulation de mariage",
+      "6.0": "Annulation de mariage",
+      "6.1": "Annulation de mariage"
+     }
+    },
+    "Alternate Marriage": {
+     "valeur": 10,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Alternate Marriage",
+      "6.0": "Alternate Marriage",
+      "6.1": "Alternate Marriage"
+     },
+     "fr": {
+      "5.2": "Mariage alternatif",
+      "6.0": "Mariage alternatif",
+      "6.1": "Mariage alternatif"
+     }
+    },
+    "Stillbirth": {
+     "valeur": 45,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Stillbirth",
+      "6.0": "Stillbirth",
+      "6.1": "Stillbirth"
+     },
+     "fr": {
+      "5.2": "Mort-né",
+      "6.0": "Mort-né",
+      "6.1": "Mort-né"
+     }
+    }
+   }
+  },
+  "EventRoleType": {
+   "personnalise": 0,
+   "defaut": 1,
+   "types": {
+    "Unknown": {
+     "valeur": -1,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Unknown",
+      "6.0": "Unknown",
+      "6.1": "Unknown"
+     },
+     "fr": {
+      "5.2": "Inconnu",
+      "6.0": "Inconnu",
+      "6.1": "Inconnu"
+     }
+    },
+    "Custom": {
+     "valeur": 0,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Custom",
+      "6.0": "Custom",
+      "6.1": "Custom"
+     },
+     "fr": {
+      "5.2": "Personnalisé",
+      "6.0": "Personnalisé",
+      "6.1": "Personnalisé"
+     }
+    },
+    "Primary": {
+     "valeur": 1,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Primary",
+      "6.0": "Primary",
+      "6.1": "Primary"
+     },
+     "fr": {
+      "5.2": "Principal",
+      "6.0": "Principal",
+      "6.1": "Principal"
+     },
+     "contexte": {
+      "5.2": "Role",
+      "6.0": "Role",
+      "6.1": "Role"
+     }
+    },
+    "Clergy": {
+     "valeur": 2,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Clergy",
+      "6.0": "Clergy",
+      "6.1": "Clergy"
+     },
+     "fr": {
+      "5.2": "Clergé",
+      "6.0": "Clergé",
+      "6.1": "Clergé"
+     }
+    },
+    "Celebrant": {
+     "valeur": 3,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Celebrant",
+      "6.0": "Celebrant",
+      "6.1": "Celebrant"
+     },
+     "fr": {
+      "5.2": "Officiant",
+      "6.0": "Officiant",
+      "6.1": "Officiant"
+     }
+    },
+    "Aide": {
+     "valeur": 4,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Aide",
+      "6.0": "Aide",
+      "6.1": "Aide"
+     },
+     "fr": {
+      "5.2": "Assistant",
+      "6.0": "Assistant",
+      "6.1": "Assistant"
+     }
+    },
+    "Bride": {
+     "valeur": 5,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Bride",
+      "6.0": "Bride",
+      "6.1": "Bride"
+     },
+     "fr": {
+      "5.2": "Fiancée",
+      "6.0": "Fiancée",
+      "6.1": "Fiancée"
+     }
+    },
+    "Groom": {
+     "valeur": 6,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Groom",
+      "6.0": "Groom",
+      "6.1": "Groom"
+     },
+     "fr": {
+      "5.2": "Fiancé",
+      "6.0": "Fiancé",
+      "6.1": "Fiancé"
+     }
+    },
+    "Witness": {
+     "valeur": 7,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Witness",
+      "6.0": "Witness",
+      "6.1": "Witness"
+     },
+     "fr": {
+      "5.2": "Témoin",
+      "6.0": "Témoin",
+      "6.1": "Témoin"
+     }
+    },
+    "Family": {
+     "valeur": 8,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Family",
+      "6.0": "Family",
+      "6.1": "Family"
+     },
+     "fr": {
+      "5.2": "Famille",
+      "6.0": "Famille",
+      "6.1": "Famille"
+     },
+     "contexte": {
+      "5.2": "Role",
+      "6.0": "Role",
+      "6.1": "Role"
+     }
+    },
+    "Informant": {
+     "valeur": 9,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Informant",
+      "6.0": "Informant",
+      "6.1": "Informant"
+     },
+     "fr": {
+      "5.2": "Déclarant",
+      "6.0": "Déclarant",
+      "6.1": "Déclarant"
+     }
+    },
+    "Godparent": {
+     "valeur": 10,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Godparent",
+      "6.0": "Godparent",
+      "6.1": "Godparent"
+     },
+     "fr": {
+      "5.2": "parrain, marraine",
+      "6.0": "parrain, marraine",
+      "6.1": "parrain, marraine"
+     }
+    },
+    "Father": {
+     "valeur": 11,
+     "depuis": "6.0",
+     "en": {
+      "6.0": "Father",
+      "6.1": "Father"
+     },
+     "fr": {
+      "6.0": "Père",
+      "6.1": "Père"
+     }
+    },
+    "Mother": {
+     "valeur": 12,
+     "depuis": "6.0",
+     "en": {
+      "6.0": "Mother",
+      "6.1": "Mother"
+     },
+     "fr": {
+      "6.0": "Mère",
+      "6.1": "Mère"
+     }
+    },
+    "Parent": {
+     "valeur": 13,
+     "depuis": "6.0",
+     "en": {
+      "6.0": "Parent",
+      "6.1": "Parent"
+     },
+     "fr": {
+      "6.0": "Parent",
+      "6.1": "Parent"
+     }
+    },
+    "Child": {
+     "valeur": 14,
+     "depuis": "6.0",
+     "en": {
+      "6.0": "Child",
+      "6.1": "Child"
+     },
+     "fr": {
+      "6.0": "Enfant",
+      "6.1": "Enfant"
+     }
+    },
+    "Multiple birth": {
+     "valeur": 15,
+     "depuis": "6.0",
+     "en": {
+      "6.0": "Multiple birth",
+      "6.1": "Multiple birth"
+     },
+     "fr": {
+      "6.0": "Naissance multiple",
+      "6.1": "Naissance multiple"
+     }
+    },
+    "Friend": {
+     "valeur": 16,
+     "depuis": "6.0",
+     "en": {
+      "6.0": "Friend",
+      "6.1": "Friend"
+     },
+     "fr": {
+      "6.0": "Ami(e)",
+      "6.1": "Ami(e)"
+     }
+    },
+    "Neighbor": {
+     "valeur": 17,
+     "depuis": "6.0",
+     "en": {
+      "6.0": "Neighbor",
+      "6.1": "Neighbor"
+     },
+     "fr": {
+      "6.0": "Voisin(e)",
+      "6.1": "Voisin(e)"
+     }
+    },
+    "Officiator": {
+     "valeur": 18,
+     "depuis": "6.0",
+     "en": {
+      "6.0": "Officiator",
+      "6.1": "Officiator"
+     },
+     "fr": {
+      "6.0": "Officiant",
+      "6.1": "Officiant"
+     }
+    }
+   }
+  },
+  "AttributeType": {
+   "personnalise": 0,
+   "defaut": 3,
+   "types": {
+    "Unknown": {
+     "valeur": -1,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Unknown",
+      "6.0": "Unknown",
+      "6.1": "Unknown"
+     },
+     "fr": {
+      "5.2": "Inconnu",
+      "6.0": "Inconnu",
+      "6.1": "Inconnu"
+     }
+    },
+    "Custom": {
+     "valeur": 0,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Custom",
+      "6.0": "Custom",
+      "6.1": "Custom"
+     },
+     "fr": {
+      "5.2": "Personnalisé",
+      "6.0": "Personnalisé",
+      "6.1": "Personnalisé"
+     }
+    },
+    "Caste": {
+     "valeur": 1,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Caste",
+      "6.0": "Caste",
+      "6.1": "Caste"
+     },
+     "fr": {
+      "5.2": "Rang ou état",
+      "6.0": "Rang ou état",
+      "6.1": "Rang ou état"
+     }
+    },
+    "Description": {
+     "valeur": 2,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Description",
+      "6.0": "Description",
+      "6.1": "Description"
+     },
+     "fr": {
+      "5.2": "Description",
+      "6.0": "Description",
+      "6.1": "Description"
+     }
+    },
+    "Identification Number": {
+     "valeur": 3,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Identification Number",
+      "6.0": "Identification Number",
+      "6.1": "Identification Number"
+     },
+     "fr": {
+      "5.2": "Numéro d'identification",
+      "6.0": "Numéro d'identification",
+      "6.1": "Numéro d'identification"
+     }
+    },
+    "National Origin": {
+     "valeur": 4,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "National Origin",
+      "6.0": "National Origin",
+      "6.1": "National Origin"
+     },
+     "fr": {
+      "5.2": "Nationalité d'origine",
+      "6.0": "Nationalité d'origine",
+      "6.1": "Nationalité d'origine"
+     }
+    },
+    "Number of Children": {
+     "valeur": 5,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Number of Children",
+      "6.0": "Number of Children",
+      "6.1": "Number of Children"
+     },
+     "fr": {
+      "5.2": "Nombre d'enfants",
+      "6.0": "Nombre d'enfants",
+      "6.1": "Nombre d'enfants"
+     }
+    },
+    "Social Security Number": {
+     "valeur": 6,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Social Security Number",
+      "6.0": "Social Security Number",
+      "6.1": "Social Security Number"
+     },
+     "fr": {
+      "5.2": "Numéro de sécurité sociale",
+      "6.0": "Numéro de sécurité sociale",
+      "6.1": "Numéro de sécurité sociale"
+     }
+    },
+    "Nickname": {
+     "valeur": 7,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Nickname",
+      "6.0": "Nickname",
+      "6.1": "Nickname"
+     },
+     "fr": {
+      "5.2": "Surnom",
+      "6.0": "Surnom",
+      "6.1": "Surnom"
+     }
+    },
+    "Cause": {
+     "valeur": 8,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Cause",
+      "6.0": "Cause",
+      "6.1": "Cause"
+     },
+     "fr": {
+      "5.2": "Cause",
+      "6.0": "Cause",
+      "6.1": "Cause"
+     }
+    },
+    "Agency": {
+     "valeur": 9,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Agency",
+      "6.0": "Agency",
+      "6.1": "Agency"
+     },
+     "fr": {
+      "5.2": "Entreprise ou institution",
+      "6.0": "Entreprise ou institution",
+      "6.1": "Entreprise ou institution"
+     }
+    },
+    "Age": {
+     "valeur": 10,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Age",
+      "6.0": "Age",
+      "6.1": "Age"
+     },
+     "fr": {
+      "5.2": "Âge",
+      "6.0": "Âge",
+      "6.1": "Âge"
+     }
+    },
+    "Father Age": {
+     "valeur": 11,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Father's Age",
+      "6.0": "Father's Age",
+      "6.1": "Father's Age"
+     },
+     "fr": {
+      "5.2": "Âge du mari/compagnon",
+      "6.0": "Âge du mari/compagnon",
+      "6.1": "Âge du mari/compagnon"
+     }
+    },
+    "Mother Age": {
+     "valeur": 12,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Mother's Age",
+      "6.0": "Mother's Age",
+      "6.1": "Mother's Age"
+     },
+     "fr": {
+      "5.2": "Âge de la femme/compagne",
+      "6.0": "Âge de la femme/compagne",
+      "6.1": "Âge de la femme/compagne"
+     }
+    },
+    "Witness": {
+     "valeur": 13,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Witness",
+      "6.0": "Witness",
+      "6.1": "Witness"
+     },
+     "fr": {
+      "5.2": "Témoin",
+      "6.0": "Témoin",
+      "6.1": "Témoin"
+     }
+    },
+    "Time": {
+     "valeur": 14,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Time",
+      "6.0": "Time",
+      "6.1": "Time"
+     },
+     "fr": {
+      "5.2": "Heure",
+      "6.0": "Heure",
+      "6.1": "Heure"
+     }
+    },
+    "Occupation": {
+     "valeur": 15,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Occupation",
+      "6.0": "Occupation",
+      "6.1": "Occupation"
+     },
+     "fr": {
+      "5.2": "Profession",
+      "6.0": "Profession",
+      "6.1": "Profession"
+     }
+    }
+   }
+  },
+  "SrcAttributeType": {
+   "personnalise": 0,
+   "defaut": -1,
+   "types": {
+    "Unknown": {
+     "valeur": -1,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Unknown",
+      "6.0": "Unknown",
+      "6.1": "Unknown"
+     },
+     "fr": {
+      "5.2": "Inconnu",
+      "6.0": "Inconnu",
+      "6.1": "Inconnu"
+     }
+    },
+    "Custom": {
+     "valeur": 0,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Custom",
+      "6.0": "Custom",
+      "6.1": "Custom"
+     },
+     "fr": {
+      "5.2": "Personnalisé",
+      "6.0": "Personnalisé",
+      "6.1": "Personnalisé"
+     }
+    }
+   }
+  },
+  "NoteType": {
+   "personnalise": 0,
+   "defaut": 1,
+   "types": {
+    "Unknown": {
+     "valeur": -1,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Unknown",
+      "6.0": "Unknown",
+      "6.1": "Unknown"
+     },
+     "fr": {
+      "5.2": "Inconnu",
+      "6.0": "Inconnu",
+      "6.1": "Inconnu"
+     }
+    },
+    "Custom": {
+     "valeur": 0,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Custom",
+      "6.0": "Custom",
+      "6.1": "Custom"
+     },
+     "fr": {
+      "5.2": "Personnalisé",
+      "6.0": "Personnalisé",
+      "6.1": "Personnalisé"
+     }
+    },
+    "General": {
+     "valeur": 1,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "General",
+      "6.0": "General",
+      "6.1": "General"
+     },
+     "fr": {
+      "5.2": "Général",
+      "6.0": "Général",
+      "6.1": "Général"
+     }
+    },
+    "Research": {
+     "valeur": 2,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Research",
+      "6.0": "Research",
+      "6.1": "Research"
+     },
+     "fr": {
+      "5.2": "Recherche",
+      "6.0": "Recherche",
+      "6.1": "Recherche"
+     }
+    },
+    "Analysis": {
+     "valeur": 27,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Analysis",
+      "6.0": "Analysis",
+      "6.1": "Analysis"
+     },
+     "fr": {
+      "5.2": "Analyse",
+      "6.0": "Analyse",
+      "6.1": "Analyse"
+     }
+    },
+    "Transcript": {
+     "valeur": 3,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Transcript",
+      "6.0": "Transcript",
+      "6.1": "Transcript"
+     },
+     "fr": {
+      "5.2": "Transcription",
+      "6.0": "Transcription",
+      "6.1": "Transcription"
+     }
+    },
+    "Source text": {
+     "valeur": 21,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Source text",
+      "6.0": "Source text",
+      "6.1": "Source text"
+     },
+     "fr": {
+      "5.2": "Texte source",
+      "6.0": "Texte source",
+      "6.1": "Texte source"
+     }
+    },
+    "Citation": {
+     "valeur": 22,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Citation",
+      "6.0": "Citation",
+      "6.1": "Citation"
+     },
+     "fr": {
+      "5.2": "Citation",
+      "6.0": "Citation",
+      "6.1": "Citation"
+     }
+    },
+    "Report": {
+     "valeur": 23,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Report",
+      "6.0": "Report",
+      "6.1": "Report"
+     },
+     "fr": {
+      "5.2": "Rapport",
+      "6.0": "Rapport",
+      "6.1": "Rapport"
+     }
+    },
+    "Html code": {
+     "valeur": 24,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Html code",
+      "6.0": "Html code",
+      "6.1": "Html code"
+     },
+     "fr": {
+      "5.2": "Code HTML",
+      "6.0": "Code HTML",
+      "6.1": "Code HTML"
+     }
+    },
+    "To Do": {
+     "valeur": 25,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "To Do",
+      "6.0": "To Do",
+      "6.1": "To Do"
+     },
+     "fr": {
+      "5.2": "À faire",
+      "6.0": "À faire",
+      "6.1": "À faire"
+     },
+     "contexte": {
+      "5.2": "notetype",
+      "6.0": "notetype",
+      "6.1": "notetype"
+     }
+    },
+    "Link": {
+     "valeur": 26,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Link",
+      "6.0": "Link",
+      "6.1": "Link"
+     },
+     "fr": {
+      "5.2": "Lien",
+      "6.0": "Lien",
+      "6.1": "Lien"
+     },
+     "contexte": {
+      "5.2": "notetype",
+      "6.0": "notetype",
+      "6.1": "notetype"
+     }
+    },
+    "Person Note": {
+     "valeur": 4,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Person Note",
+      "6.0": "Person Note",
+      "6.1": "Person Note"
+     },
+     "fr": {
+      "5.2": "Note sur l'individu",
+      "6.0": "Note sur l'individu",
+      "6.1": "Note sur l'individu"
+     }
+    },
+    "Name Note": {
+     "valeur": 20,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Name Note",
+      "6.0": "Name Note",
+      "6.1": "Name Note"
+     },
+     "fr": {
+      "5.2": "Note sur le nom",
+      "6.0": "Note sur le nom",
+      "6.1": "Note sur le nom"
+     }
+    },
+    "Attribute Note": {
+     "valeur": 5,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Attribute Note",
+      "6.0": "Attribute Note",
+      "6.1": "Attribute Note"
+     },
+     "fr": {
+      "5.2": "Note sur l'attribut",
+      "6.0": "Note sur l'attribut",
+      "6.1": "Note sur l'attribut"
+     }
+    },
+    "Address Note": {
+     "valeur": 6,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Address Note",
+      "6.0": "Address Note",
+      "6.1": "Address Note"
+     },
+     "fr": {
+      "5.2": "Note sur l'adresse",
+      "6.0": "Note sur l'adresse",
+      "6.1": "Note sur l'adresse"
+     }
+    },
+    "Association Note": {
+     "valeur": 7,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Association Note",
+      "6.0": "Association Note",
+      "6.1": "Association Note"
+     },
+     "fr": {
+      "5.2": "Note sur l'association",
+      "6.0": "Note sur l'association",
+      "6.1": "Note sur l'association"
+     }
+    },
+    "LDS Note": {
+     "valeur": 8,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "LDS Note",
+      "6.0": "LDS Note",
+      "6.1": "LDS Note"
+     },
+     "fr": {
+      "5.2": "Note sur l'évènement mormon",
+      "6.0": "Note sur l'évènement mormon",
+      "6.1": "Note sur l'évènement mormon"
+     }
+    },
+    "Family Note": {
+     "valeur": 9,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Family Note",
+      "6.0": "Family Note",
+      "6.1": "Family Note"
+     },
+     "fr": {
+      "5.2": "Note sur la famille",
+      "6.0": "Note sur la famille",
+      "6.1": "Note sur la famille"
+     }
+    },
+    "Event Note": {
+     "valeur": 10,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Event Note",
+      "6.0": "Event Note",
+      "6.1": "Event Note"
+     },
+     "fr": {
+      "5.2": "Note sur l'évènement",
+      "6.0": "Note sur l'évènement",
+      "6.1": "Note sur l'évènement"
+     }
+    },
+    "Event Reference Note": {
+     "valeur": 11,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Event Reference Note",
+      "6.0": "Event Reference Note",
+      "6.1": "Event Reference Note"
+     },
+     "fr": {
+      "5.2": "Note sur la référence de l'évènement",
+      "6.0": "Note sur la référence de l'évènement",
+      "6.1": "Note sur la référence de l'évènement"
+     }
+    },
+    "Source Note": {
+     "valeur": 12,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Source Note",
+      "6.0": "Source Note",
+      "6.1": "Source Note"
+     },
+     "fr": {
+      "5.2": "Note sur la source",
+      "6.0": "Note sur la source",
+      "6.1": "Note sur la source"
+     }
+    },
+    "Source Reference Note": {
+     "valeur": 13,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Source Reference Note",
+      "6.0": "Source Reference Note",
+      "6.1": "Source Reference Note"
+     },
+     "fr": {
+      "5.2": "Note sur la référence de la source",
+      "6.0": "Note sur la référence de la source",
+      "6.1": "Note sur la référence de la source"
+     }
+    },
+    "Place Note": {
+     "valeur": 14,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Place Note",
+      "6.0": "Place Note",
+      "6.1": "Place Note"
+     },
+     "fr": {
+      "5.2": "Note sur le lieu",
+      "6.0": "Note sur le lieu",
+      "6.1": "Note sur le lieu"
+     }
+    },
+    "Repository Note": {
+     "valeur": 15,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Repository Note",
+      "6.0": "Repository Note",
+      "6.1": "Repository Note"
+     },
+     "fr": {
+      "5.2": "Note sur le dépôt",
+      "6.0": "Note sur le dépôt",
+      "6.1": "Note sur le dépôt"
+     }
+    },
+    "Repository Reference Note": {
+     "valeur": 16,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Repository Reference Note",
+      "6.0": "Repository Reference Note",
+      "6.1": "Repository Reference Note"
+     },
+     "fr": {
+      "5.2": "Note sur la référence du dépôt",
+      "6.0": "Note sur la référence du dépôt",
+      "6.1": "Note sur la référence du dépôt"
+     }
+    },
+    "Media Note": {
+     "valeur": 17,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Media Note",
+      "6.0": "Media Note",
+      "6.1": "Media Note"
+     },
+     "fr": {
+      "5.2": "Note sur le medium",
+      "6.0": "Note sur le medium",
+      "6.1": "Note sur le medium"
+     }
+    },
+    "Media Reference Note": {
+     "valeur": 18,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Media Reference Note",
+      "6.0": "Media Reference Note",
+      "6.1": "Media Reference Note"
+     },
+     "fr": {
+      "5.2": "Note sur la référence du medium",
+      "6.0": "Note sur la référence du medium",
+      "6.1": "Note sur la référence du medium"
+     }
+    },
+    "Child Reference Note": {
+     "valeur": 19,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Child Reference Note",
+      "6.0": "Child Reference Note",
+      "6.1": "Child Reference Note"
+     },
+     "fr": {
+      "5.2": "Note sur la référence de l'enfant",
+      "6.0": "Note sur la référence de l'enfant",
+      "6.1": "Note sur la référence de l'enfant"
+     }
+    }
+   }
+  },
+  "PlaceType": {
+   "personnalise": 0,
+   "defaut": -1,
+   "types": {
+    "Unknown": {
+     "valeur": -1,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Unknown",
+      "6.0": "Unknown",
+      "6.1": "Unknown"
+     },
+     "fr": {
+      "5.2": "Inconnu",
+      "6.0": "Inconnu",
+      "6.1": "Inconnu"
+     }
+    },
+    "Custom": {
+     "valeur": 0,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Custom",
+      "6.0": "Custom",
+      "6.1": "Custom"
+     },
+     "fr": {
+      "5.2": "Personnalisé",
+      "6.0": "Personnalisé",
+      "6.1": "Personnalisé"
+     }
+    },
+    "Country": {
+     "valeur": 1,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Country",
+      "6.0": "Country",
+      "6.1": "Country"
+     },
+     "fr": {
+      "5.2": "Pays",
+      "6.0": "Pays",
+      "6.1": "Pays"
+     }
+    },
+    "State": {
+     "valeur": 2,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "State",
+      "6.0": "State",
+      "6.1": "State"
+     },
+     "fr": {
+      "5.2": "Province (Région)",
+      "6.0": "Province (Région)",
+      "6.1": "Province (Région)"
+     }
+    },
+    "County": {
+     "valeur": 3,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "County",
+      "6.0": "County",
+      "6.1": "County"
+     },
+     "fr": {
+      "5.2": "Comté (Départ.)",
+      "6.0": "Comté (Départ.)",
+      "6.1": "Comté (Départ.)"
+     }
+    },
+    "City": {
+     "valeur": 4,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "City",
+      "6.0": "City",
+      "6.1": "City"
+     },
+     "fr": {
+      "5.2": "Ville",
+      "6.0": "Ville",
+      "6.1": "Ville"
+     }
+    },
+    "Parish": {
+     "valeur": 5,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Parish",
+      "6.0": "Parish",
+      "6.1": "Parish"
+     },
+     "fr": {
+      "5.2": "Paroisse",
+      "6.0": "Paroisse",
+      "6.1": "Paroisse"
+     }
+    },
+    "Locality": {
+     "valeur": 6,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Locality",
+      "6.0": "Locality",
+      "6.1": "Locality"
+     },
+     "fr": {
+      "5.2": "Lieu-dit",
+      "6.0": "Lieu-dit",
+      "6.1": "Lieu-dit"
+     }
+    },
+    "Street": {
+     "valeur": 7,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Street",
+      "6.0": "Street",
+      "6.1": "Street"
+     },
+     "fr": {
+      "5.2": "Rue",
+      "6.0": "Rue",
+      "6.1": "Rue"
+     }
+    },
+    "Province": {
+     "valeur": 8,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Province",
+      "6.0": "Province",
+      "6.1": "Province"
+     },
+     "fr": {
+      "5.2": "Province",
+      "6.0": "Province",
+      "6.1": "Province"
+     }
+    },
+    "Region": {
+     "valeur": 9,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Region",
+      "6.0": "Region",
+      "6.1": "Region"
+     },
+     "fr": {
+      "5.2": "Région",
+      "6.0": "Région",
+      "6.1": "Région"
+     }
+    },
+    "Department": {
+     "valeur": 10,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Department",
+      "6.0": "Department",
+      "6.1": "Department"
+     },
+     "fr": {
+      "5.2": "Département",
+      "6.0": "Département",
+      "6.1": "Département"
+     }
+    },
+    "Neighborhood": {
+     "valeur": 11,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Neighborhood",
+      "6.0": "Neighborhood",
+      "6.1": "Neighborhood"
+     },
+     "fr": {
+      "5.2": "Quartier",
+      "6.0": "Quartier",
+      "6.1": "Quartier"
+     }
+    },
+    "District": {
+     "valeur": 12,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "District",
+      "6.0": "District",
+      "6.1": "District"
+     },
+     "fr": {
+      "5.2": "District (Arrondissement)",
+      "6.0": "District (Arrondissement)",
+      "6.1": "District (Arrondissement)"
+     }
+    },
+    "Borough": {
+     "valeur": 13,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Borough",
+      "6.0": "Borough",
+      "6.1": "Borough"
+     },
+     "fr": {
+      "5.2": "Borough (Arrondissement)",
+      "6.0": "Borough (Arrondissement)",
+      "6.1": "Borough (Arrondissement)"
+     }
+    },
+    "Municipality": {
+     "valeur": 14,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Municipality",
+      "6.0": "Municipality",
+      "6.1": "Municipality"
+     },
+     "fr": {
+      "5.2": "Municipalité",
+      "6.0": "Municipalité",
+      "6.1": "Municipalité"
+     }
+    },
+    "Town": {
+     "valeur": 15,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Town",
+      "6.0": "Town",
+      "6.1": "Town"
+     },
+     "fr": {
+      "5.2": "Bourg",
+      "6.0": "Bourg",
+      "6.1": "Bourg"
+     }
+    },
+    "Village": {
+     "valeur": 16,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Village",
+      "6.0": "Village",
+      "6.1": "Village"
+     },
+     "fr": {
+      "5.2": "Village",
+      "6.0": "Village",
+      "6.1": "Village"
+     }
+    },
+    "Hamlet": {
+     "valeur": 17,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Hamlet",
+      "6.0": "Hamlet",
+      "6.1": "Hamlet"
+     },
+     "fr": {
+      "5.2": "Hameau",
+      "6.0": "Hameau",
+      "6.1": "Hameau"
+     }
+    },
+    "Farm": {
+     "valeur": 18,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Farm",
+      "6.0": "Farm",
+      "6.1": "Farm"
+     },
+     "fr": {
+      "5.2": "Ferme",
+      "6.0": "Ferme",
+      "6.1": "Ferme"
+     }
+    },
+    "Building": {
+     "valeur": 19,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Building",
+      "6.0": "Building",
+      "6.1": "Building"
+     },
+     "fr": {
+      "5.2": "Immeuble",
+      "6.0": "Immeuble",
+      "6.1": "Immeuble"
+     }
+    },
+    "Number": {
+     "valeur": 20,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Number",
+      "6.0": "Number",
+      "6.1": "Number"
+     },
+     "fr": {
+      "5.2": "Numéro",
+      "6.0": "Numéro",
+      "6.1": "Numéro"
+     }
+    }
+   }
+  },
+  "NameType": {
+   "personnalise": 0,
+   "defaut": 2,
+   "types": {
+    "Unknown": {
+     "valeur": -1,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Unknown",
+      "6.0": "Unknown",
+      "6.1": "Unknown"
+     },
+     "fr": {
+      "5.2": "Inconnu",
+      "6.0": "Inconnu",
+      "6.1": "Inconnu"
+     }
+    },
+    "Custom": {
+     "valeur": 0,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Custom",
+      "6.0": "Custom",
+      "6.1": "Custom"
+     },
+     "fr": {
+      "5.2": "Personnalisé",
+      "6.0": "Personnalisé",
+      "6.1": "Personnalisé"
+     }
+    },
+    "Also Known As": {
+     "valeur": 1,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Also Known As",
+      "6.0": "Also Known As",
+      "6.1": "Also Known As"
+     },
+     "fr": {
+      "5.2": "Alias",
+      "6.0": "Alias",
+      "6.1": "Alias"
+     }
+    },
+    "Birth Name": {
+     "valeur": 2,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Birth Name",
+      "6.0": "Birth Name",
+      "6.1": "Birth Name"
+     },
+     "fr": {
+      "5.2": "Nom de naissance",
+      "6.0": "Nom de naissance",
+      "6.1": "Nom de naissance"
+     }
+    },
+    "Married Name": {
+     "valeur": 3,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Married Name",
+      "6.0": "Married Name",
+      "6.1": "Married Name"
+     },
+     "fr": {
+      "5.2": "Nom marital (nom de l'époux)",
+      "6.0": "Nom marital (nom de l'époux)",
+      "6.1": "Nom marital (nom de l'époux)"
+     }
+    }
+   }
+  },
+  "NameOriginType": {
+   "personnalise": 0,
+   "defaut": 1,
+   "types": {
+    "Unknown ": {
+     "valeur": -1,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Unknown",
+      "6.0": "Unknown",
+      "6.1": "Unknown"
+     },
+     "fr": {
+      "5.2": "Inconnu",
+      "6.0": "Unknown",
+      "6.1": "Inconnue"
+     },
+     "contexte": {
+      "6.0": "Surname",
+      "6.1": "Surname"
+     }
+    },
+    "Custom": {
+     "valeur": 0,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Custom",
+      "6.0": "Custom",
+      "6.1": "Custom"
+     },
+     "fr": {
+      "5.2": "Personnalisé",
+      "6.0": "Personnalisé",
+      "6.1": "Personnalisé"
+     }
+    },
+    "": {
+     "valeur": 1,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "",
+      "6.0": "",
+      "6.1": ""
+     },
+     "fr": {
+      "5.2": "",
+      "6.0": "",
+      "6.1": ""
+     }
+    },
+    "Inherited": {
+     "valeur": 2,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Inherited",
+      "6.0": "Inherited",
+      "6.1": "Inherited"
+     },
+     "fr": {
+      "5.2": "Hérité",
+      "6.0": "Hérité",
+      "6.1": "Hérité"
+     },
+     "contexte": {
+      "5.2": "Surname",
+      "6.0": "Surname",
+      "6.1": "Surname"
+     }
+    },
+    "Given": {
+     "valeur": 3,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Given",
+      "6.0": "Given",
+      "6.1": "Given"
+     },
+     "fr": {
+      "5.2": "Reçu (octroyé)",
+      "6.0": "Reçu (octroyé)",
+      "6.1": "Reçu (octroyé)"
+     },
+     "contexte": {
+      "5.2": "Surname",
+      "6.0": "Surname",
+      "6.1": "Surname"
+     }
+    },
+    "Taken": {
+     "valeur": 4,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Taken",
+      "6.0": "Taken",
+      "6.1": "Taken"
+     },
+     "fr": {
+      "5.2": "Pris (choisi)",
+      "6.0": "Pris (choisi)",
+      "6.1": "Pris (choisi)"
+     },
+     "contexte": {
+      "5.2": "Surname",
+      "6.0": "Surname",
+      "6.1": "Surname"
+     }
+    },
+    "Patronymic": {
+     "valeur": 5,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Patronymic",
+      "6.0": "Patronymic",
+      "6.1": "Patronymic"
+     },
+     "fr": {
+      "5.2": "Patronyme",
+      "6.0": "Patronyme",
+      "6.1": "Patronyme"
+     }
+    },
+    "Matronymic": {
+     "valeur": 6,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Matronymic",
+      "6.0": "Matronymic",
+      "6.1": "Matronymic"
+     },
+     "fr": {
+      "5.2": "Matronyme (prénom de la mère)",
+      "6.0": "Matronyme (prénom de la mère)",
+      "6.1": "Matronyme (prénom de la mère)"
+     }
+    },
+    "Feudal": {
+     "valeur": 7,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Feudal",
+      "6.0": "Feudal",
+      "6.1": "Feudal"
+     },
+     "fr": {
+      "5.2": "Féodal",
+      "6.0": "Féodal",
+      "6.1": "Féodal"
+     },
+     "contexte": {
+      "5.2": "Surname",
+      "6.0": "Surname",
+      "6.1": "Surname"
+     }
+    },
+    "Pseudonym": {
+     "valeur": 8,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Pseudonym",
+      "6.0": "Pseudonym",
+      "6.1": "Pseudonym"
+     },
+     "fr": {
+      "5.2": "Pseudonyme",
+      "6.0": "Pseudonyme",
+      "6.1": "Pseudonyme"
+     }
+    },
+    "Patrilineal": {
+     "valeur": 9,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Patrilineal",
+      "6.0": "Patrilineal",
+      "6.1": "Patrilineal"
+     },
+     "fr": {
+      "5.2": "Lignée paternelle (nom du père)",
+      "6.0": "Lignée paternelle (nom du père)",
+      "6.1": "Lignée paternelle (nom du père)"
+     }
+    },
+    "Matrilineal": {
+     "valeur": 10,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Matrilineal",
+      "6.0": "Matrilineal",
+      "6.1": "Matrilineal"
+     },
+     "fr": {
+      "5.2": "Lignée maternelle (nom de la mère)",
+      "6.0": "Lignée maternelle (nom de la mère)",
+      "6.1": "Lignée maternelle (nom de la mère)"
+     }
+    },
+    "Occupation": {
+     "valeur": 11,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Occupation",
+      "6.0": "Occupation",
+      "6.1": "Occupation"
+     },
+     "fr": {
+      "5.2": "Profession",
+      "6.0": "Profession",
+      "6.1": "Profession"
+     },
+     "contexte": {
+      "6.0": "Surname",
+      "6.1": "Surname"
+     }
+    },
+    "Location": {
+     "valeur": 12,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Location",
+      "6.0": "Location",
+      "6.1": "Location"
+     },
+     "fr": {
+      "5.2": "Emplacement",
+      "6.0": "Lieu",
+      "6.1": "Lieu"
+     },
+     "contexte": {
+      "6.0": "Surname",
+      "6.1": "Surname"
+     }
+    }
+   }
+  },
+  "FamilyRelType": {
+   "personnalise": 4,
+   "defaut": 0,
+   "types": {
+    "Married": {
+     "valeur": 0,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Married",
+      "6.0": "Married",
+      "6.1": "Married"
+     },
+     "fr": {
+      "5.2": "Mariés",
+      "6.0": "Mariés",
+      "6.1": "Mariés"
+     }
+    },
+    "Unmarried": {
+     "valeur": 1,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Unmarried",
+      "6.0": "Unmarried",
+      "6.1": "Unmarried"
+     },
+     "fr": {
+      "5.2": "Non mariés",
+      "6.0": "Non mariés",
+      "6.1": "Non mariés"
+     }
+    },
+    "Civil Union": {
+     "valeur": 2,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Civil Union",
+      "6.0": "Civil Union",
+      "6.1": "Civil Union"
+     },
+     "fr": {
+      "5.2": "Union civile",
+      "6.0": "Union civile",
+      "6.1": "Union civile"
+     }
+    },
+    "Unknown": {
+     "valeur": 3,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Unknown",
+      "6.0": "Unknown",
+      "6.1": "Unknown"
+     },
+     "fr": {
+      "5.2": "Inconnu",
+      "6.0": "Inconnu",
+      "6.1": "Inconnu"
+     }
+    },
+    "Custom": {
+     "valeur": 4,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Custom",
+      "6.0": "Custom",
+      "6.1": "Custom"
+     },
+     "fr": {
+      "5.2": "Personnalisé",
+      "6.0": "Personnalisé",
+      "6.1": "Personnalisé"
+     }
+    }
+   }
+  },
+  "ChildRefType": {
+   "personnalise": 7,
+   "defaut": 1,
+   "types": {
+    "None": {
+     "valeur": 0,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "None",
+      "6.0": "None",
+      "6.1": "None"
+     },
+     "fr": {
+      "5.2": "Aucun",
+      "6.0": "Aucun",
+      "6.1": "Aucun"
+     }
+    },
+    "Birth": {
+     "valeur": 1,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Birth",
+      "6.0": "Birth",
+      "6.1": "Birth"
+     },
+     "fr": {
+      "5.2": "Naissance",
+      "6.0": "Naissance",
+      "6.1": "Naissance"
+     },
+     "contexte": {
+      "5.2": "relationship",
+      "6.0": "relationship",
+      "6.1": "relationship"
+     }
+    },
+    "Adopted": {
+     "valeur": 2,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Adopted",
+      "6.0": "Adopted",
+      "6.1": "Adopted"
+     },
+     "fr": {
+      "5.2": "Adopted",
+      "6.0": "Adopté(e)",
+      "6.1": "Adopté(e)"
+     },
+     "contexte": {
+      "5.2": "relationship",
+      "6.0": "relationship",
+      "6.1": "relationship"
+     }
+    },
+    "Stepchild": {
+     "valeur": 3,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Stepchild",
+      "6.0": "Stepchild",
+      "6.1": "Stepchild"
+     },
+     "fr": {
+      "5.2": "Enfant du conjoint",
+      "6.0": "Enfant du conjoint",
+      "6.1": "Enfant du conjoint"
+     }
+    },
+    "Sponsored": {
+     "valeur": 4,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Sponsored",
+      "6.0": "Sponsored",
+      "6.1": "Sponsored"
+     },
+     "fr": {
+      "5.2": "Parrainé",
+      "6.0": "Parrainé",
+      "6.1": "Parrainé"
+     }
+    },
+    "Foster": {
+     "valeur": 5,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Foster",
+      "6.0": "Foster",
+      "6.1": "Foster"
+     },
+     "fr": {
+      "5.2": "En nourrice",
+      "6.0": "En nourrice",
+      "6.1": "En nourrice"
+     }
+    },
+    "Unknown": {
+     "valeur": 6,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Unknown",
+      "6.0": "Unknown",
+      "6.1": "Unknown"
+     },
+     "fr": {
+      "5.2": "Inconnu",
+      "6.0": "Inconnu",
+      "6.1": "Inconnu"
+     }
+    },
+    "Custom": {
+     "valeur": 7,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Custom",
+      "6.0": "Custom",
+      "6.1": "Custom"
+     },
+     "fr": {
+      "5.2": "Personnalisé",
+      "6.0": "Personnalisé",
+      "6.1": "Personnalisé"
+     }
+    }
+   }
+  },
+  "RepositoryType": {
+   "personnalise": 0,
+   "defaut": 1,
+   "types": {
+    "Unknown": {
+     "valeur": -1,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Unknown",
+      "6.0": "Unknown",
+      "6.1": "Unknown"
+     },
+     "fr": {
+      "5.2": "Inconnu",
+      "6.0": "Inconnu",
+      "6.1": "Inconnu"
+     }
+    },
+    "Custom": {
+     "valeur": 0,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Custom",
+      "6.0": "Custom",
+      "6.1": "Custom"
+     },
+     "fr": {
+      "5.2": "Personnalisé",
+      "6.0": "Personnalisé",
+      "6.1": "Personnalisé"
+     }
+    },
+    "Library": {
+     "valeur": 1,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Library",
+      "6.0": "Library",
+      "6.1": "Library"
+     },
+     "fr": {
+      "5.2": "Bibliothèque",
+      "6.0": "Bibliothèque",
+      "6.1": "Bibliothèque"
+     }
+    },
+    "Cemetery": {
+     "valeur": 2,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Cemetery",
+      "6.0": "Cemetery",
+      "6.1": "Cemetery"
+     },
+     "fr": {
+      "5.2": "Cimetière",
+      "6.0": "Cimetière",
+      "6.1": "Cimetière"
+     }
+    },
+    "Church": {
+     "valeur": 3,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Church",
+      "6.0": "Church",
+      "6.1": "Church"
+     },
+     "fr": {
+      "5.2": "Église",
+      "6.0": "Église",
+      "6.1": "Église"
+     }
+    },
+    "Archive": {
+     "valeur": 4,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Archive",
+      "6.0": "Archive",
+      "6.1": "Archive"
+     },
+     "fr": {
+      "5.2": "Archive",
+      "6.0": "Archive",
+      "6.1": "Archive"
+     }
+    },
+    "Album": {
+     "valeur": 5,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Album",
+      "6.0": "Album",
+      "6.1": "Album"
+     },
+     "fr": {
+      "5.2": "Album",
+      "6.0": "Album",
+      "6.1": "Album"
+     }
+    },
+    "Web site": {
+     "valeur": 6,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Web site",
+      "6.0": "Web site",
+      "6.1": "Web site"
+     },
+     "fr": {
+      "5.2": "Site web",
+      "6.0": "Site web",
+      "6.1": "Site web"
+     }
+    },
+    "Bookstore": {
+     "valeur": 7,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Bookstore",
+      "6.0": "Bookstore",
+      "6.1": "Bookstore"
+     },
+     "fr": {
+      "5.2": "Librairie",
+      "6.0": "Librairie",
+      "6.1": "Librairie"
+     }
+    },
+    "Collection": {
+     "valeur": 8,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Collection",
+      "6.0": "Collection",
+      "6.1": "Collection"
+     },
+     "fr": {
+      "5.2": "Collection",
+      "6.0": "Collection",
+      "6.1": "Collection"
+     }
+    },
+    "Safe": {
+     "valeur": 9,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Safe",
+      "6.0": "Safe",
+      "6.1": "Safe"
+     },
+     "fr": {
+      "5.2": "Coffre-fort",
+      "6.0": "Coffre-fort",
+      "6.1": "Coffre-fort"
+     }
+    }
+   }
+  },
+  "SourceMediaType": {
+   "personnalise": 0,
+   "defaut": 2,
+   "types": {
+    "Unknown": {
+     "valeur": -1,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Unknown",
+      "6.0": "Unknown",
+      "6.1": "Unknown"
+     },
+     "fr": {
+      "5.2": "Inconnu",
+      "6.0": "Inconnu",
+      "6.1": "Inconnu"
+     }
+    },
+    "Custom": {
+     "valeur": 0,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Custom",
+      "6.0": "Custom",
+      "6.1": "Custom"
+     },
+     "fr": {
+      "5.2": "Personnalisé",
+      "6.0": "Personnalisé",
+      "6.1": "Personnalisé"
+     }
+    },
+    "Audio": {
+     "valeur": 1,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Audio",
+      "6.0": "Audio",
+      "6.1": "Audio"
+     },
+     "fr": {
+      "5.2": "Audio",
+      "6.0": "Audio",
+      "6.1": "Audio"
+     }
+    },
+    "Book": {
+     "valeur": 2,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Book",
+      "6.0": "Book",
+      "6.1": "Book"
+     },
+     "fr": {
+      "5.2": "Livre",
+      "6.0": "Livre",
+      "6.1": "Livre"
+     }
+    },
+    "Card": {
+     "valeur": 3,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Card",
+      "6.0": "Card",
+      "6.1": "Card"
+     },
+     "fr": {
+      "5.2": "Fiche",
+      "6.0": "Fiche",
+      "6.1": "Fiche"
+     }
+    },
+    "Electronic": {
+     "valeur": 4,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Electronic",
+      "6.0": "Electronic",
+      "6.1": "Electronic"
+     },
+     "fr": {
+      "5.2": "Électronique",
+      "6.0": "Électronique",
+      "6.1": "Électronique"
+     }
+    },
+    "Fiche": {
+     "valeur": 5,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Fiche",
+      "6.0": "Fiche",
+      "6.1": "Fiche"
+     },
+     "fr": {
+      "5.2": "Microfiche",
+      "6.0": "Microfiche",
+      "6.1": "Microfiche"
+     }
+    },
+    "Film": {
+     "valeur": 6,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Film",
+      "6.0": "Film",
+      "6.1": "Film"
+     },
+     "fr": {
+      "5.2": "Film",
+      "6.0": "Film",
+      "6.1": "Film"
+     }
+    },
+    "Magazine": {
+     "valeur": 7,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Magazine",
+      "6.0": "Magazine",
+      "6.1": "Magazine"
+     },
+     "fr": {
+      "5.2": "Magazine",
+      "6.0": "Magazine",
+      "6.1": "Magazine"
+     }
+    },
+    "Manuscript": {
+     "valeur": 8,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Manuscript",
+      "6.0": "Manuscript",
+      "6.1": "Manuscript"
+     },
+     "fr": {
+      "5.2": "Manuscrit",
+      "6.0": "Manuscrit",
+      "6.1": "Manuscrit"
+     }
+    },
+    "Map": {
+     "valeur": 9,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Map",
+      "6.0": "Map",
+      "6.1": "Map"
+     },
+     "fr": {
+      "5.2": "Plan",
+      "6.0": "Plan",
+      "6.1": "Plan"
+     }
+    },
+    "Newspaper": {
+     "valeur": 10,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Newspaper",
+      "6.0": "Newspaper",
+      "6.1": "Newspaper"
+     },
+     "fr": {
+      "5.2": "Journal",
+      "6.0": "Journal",
+      "6.1": "Journal"
+     }
+    },
+    "Photo": {
+     "valeur": 11,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Photo",
+      "6.0": "Photo",
+      "6.1": "Photo"
+     },
+     "fr": {
+      "5.2": "Photo",
+      "6.0": "Photo",
+      "6.1": "Photo"
+     }
+    },
+    "Tombstone": {
+     "valeur": 12,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Tombstone",
+      "6.0": "Tombstone",
+      "6.1": "Tombstone"
+     },
+     "fr": {
+      "5.2": "Pierre tombale",
+      "6.0": "Pierre tombale",
+      "6.1": "Pierre tombale"
+     }
+    },
+    "Video": {
+     "valeur": 13,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Video",
+      "6.0": "Video",
+      "6.1": "Video"
+     },
+     "fr": {
+      "5.2": "Vidéo",
+      "6.0": "Vidéo",
+      "6.1": "Vidéo"
+     }
+    }
+   }
+  },
+  "UrlType": {
+   "personnalise": 0,
+   "defaut": -1,
+   "types": {
+    "Unknown": {
+     "valeur": -1,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Unknown",
+      "6.0": "Unknown",
+      "6.1": "Unknown"
+     },
+     "fr": {
+      "5.2": "Inconnu",
+      "6.0": "Inconnu",
+      "6.1": "Inconnu"
+     }
+    },
+    "Custom": {
+     "valeur": 0,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Custom",
+      "6.0": "Custom",
+      "6.1": "Custom"
+     },
+     "fr": {
+      "5.2": "Personnalisé",
+      "6.0": "Personnalisé",
+      "6.1": "Personnalisé"
+     }
+    },
+    "E-mail": {
+     "valeur": 1,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "E-mail",
+      "6.0": "E-mail",
+      "6.1": "E-mail"
+     },
+     "fr": {
+      "5.2": "Adresse électronique",
+      "6.0": "Adresse électronique",
+      "6.1": "Adresse électronique"
+     }
+    },
+    "Web Home": {
+     "valeur": 2,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Web Home",
+      "6.0": "Web Home",
+      "6.1": "Web Home"
+     },
+     "fr": {
+      "5.2": "Accueil site web",
+      "6.0": "Accueil site web",
+      "6.1": "Accueil site web"
+     }
+    },
+    "Web Search": {
+     "valeur": 3,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Web Search",
+      "6.0": "Web Search",
+      "6.1": "Web Search"
+     },
+     "fr": {
+      "5.2": "Recherche sur la toile",
+      "6.0": "Recherche sur la toile",
+      "6.1": "Recherche sur la toile"
+     }
+    },
+    "FTP": {
+     "valeur": 4,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "FTP",
+      "6.0": "FTP",
+      "6.1": "FTP"
+     },
+     "fr": {
+      "5.2": "FTP",
+      "6.0": "FTP",
+      "6.1": "FTP"
+     }
+    }
+   }
+  },
+  "MarkerType": {
+   "personnalise": 0,
+   "defaut": -1,
+   "types": {
+    "": {
+     "valeur": -1,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "",
+      "6.0": "",
+      "6.1": ""
+     },
+     "fr": {
+      "5.2": "",
+      "6.0": "",
+      "6.1": ""
+     }
+    },
+    "Custom": {
+     "valeur": 0,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Custom",
+      "6.0": "Custom",
+      "6.1": "Custom"
+     },
+     "fr": {
+      "5.2": "Personnalisé",
+      "6.0": "Personnalisé",
+      "6.1": "Personnalisé"
+     }
+    },
+    "Complete": {
+     "valeur": 1,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Complete",
+      "6.0": "Complete",
+      "6.1": "Complete"
+     },
+     "fr": {
+      "5.2": "Complet",
+      "6.0": "Complet",
+      "6.1": "Complet"
+     }
+    },
+    "ToDo": {
+     "valeur": 2,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "ToDo",
+      "6.0": "ToDo",
+      "6.1": "ToDo"
+     },
+     "fr": {
+      "5.2": "À faire",
+      "6.0": "À faire",
+      "6.1": "À faire"
+     }
+    }
+   }
+  },
+  "StyledTextTagType": {
+   "personnalise": -1,
+   "defaut": -1,
+   "types": {
+    "bold": {
+     "valeur": 0,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Bold",
+      "6.0": "Bold",
+      "6.1": "Bold"
+     },
+     "fr": {
+      "5.2": "Gras",
+      "6.0": "Gras",
+      "6.1": "Gras"
+     }
+    },
+    "italic": {
+     "valeur": 1,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Italic",
+      "6.0": "Italic",
+      "6.1": "Italic"
+     },
+     "fr": {
+      "5.2": "Italique",
+      "6.0": "Italique",
+      "6.1": "Italique"
+     }
+    },
+    "underline": {
+     "valeur": 2,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Underline",
+      "6.0": "Underline",
+      "6.1": "Underline"
+     },
+     "fr": {
+      "5.2": "Souligné",
+      "6.0": "Souligné",
+      "6.1": "Souligné"
+     }
+    },
+    "fontface": {
+     "valeur": 3,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Fontface",
+      "6.0": "Fontface",
+      "6.1": "Fontface"
+     },
+     "fr": {
+      "5.2": "Police de caractères",
+      "6.0": "Police de caractères",
+      "6.1": "Police de caractères"
+     }
+    },
+    "fontsize": {
+     "valeur": 4,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Fontsize",
+      "6.0": "Fontsize",
+      "6.1": "Fontsize"
+     },
+     "fr": {
+      "5.2": "Taille de la police",
+      "6.0": "Taille de la police",
+      "6.1": "Taille de la police"
+     }
+    },
+    "fontcolor": {
+     "valeur": 5,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Fontcolor",
+      "6.0": "Fontcolor",
+      "6.1": "Fontcolor"
+     },
+     "fr": {
+      "5.2": "Couleur de la police de caractères",
+      "6.0": "Couleur de la police de caractères",
+      "6.1": "Couleur de la police de caractères"
+     }
+    },
+    "highlight": {
+     "valeur": 6,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Highlight",
+      "6.0": "Highlight",
+      "6.1": "Highlight"
+     },
+     "fr": {
+      "5.2": "Mis en relief",
+      "6.0": "Mis en relief",
+      "6.1": "Mis en relief"
+     }
+    },
+    "superscript": {
+     "valeur": 7,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Superscript",
+      "6.0": "Superscript",
+      "6.1": "Superscript"
+     },
+     "fr": {
+      "5.2": "Exposant",
+      "6.0": "Exposant",
+      "6.1": "Exposant"
+     }
+    },
+    "link": {
+     "valeur": 8,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Link",
+      "6.0": "Link",
+      "6.1": "Link"
+     },
+     "fr": {
+      "5.2": "Lien",
+      "6.0": "Lien",
+      "6.1": "Lien"
+     }
+    },
+    "strikethrough": {
+     "valeur": 9,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Strikethrough",
+      "6.0": "Strikethrough",
+      "6.1": "Strikethrough"
+     },
+     "fr": {
+      "5.2": "Barré",
+      "6.0": "Barré",
+      "6.1": "Barré"
+     }
+    },
+    "subscript": {
+     "valeur": 10,
+     "depuis": "5.2",
+     "en": {
+      "5.2": "Subscript",
+      "6.0": "Subscript",
+      "6.1": "Subscript"
+     },
+     "fr": {
+      "5.2": "Indice",
+      "6.0": "Indice",
+      "6.1": "Indice"
+     }
+    }
+   }
+  }
+ }
+}
