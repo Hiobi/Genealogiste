@@ -48,7 +48,9 @@ from .mapping import (
     _attr_value,
     _strip_change,
     apply_items,
+    dater_lieux,
     diff,
+    est_commune,
     etiquettes_en_double,
     etiquettes_gerees,
     gramps_to_tree,
@@ -375,6 +377,43 @@ class GrampsBackend:
                    "valeurs, citations et positions inchangés).")
         resume = [f"Normalisation des types : {cls} « {s} » -> {x['standard']} ({x['objets']} objet(s))"
                   for cls, v in sorted(bilan["par_classe"].items()) for s, x in sorted(v.items())]
+        token = self.tokens.create({"type": "transaction", "items": items, "message": message, "operations": [],
+                                    "resume": resume, "references": {}})
+        return {**out, "jeton": token, "expire_dans_minutes": TTL_SECONDS // 60,
+                "transaction_gramps": self._preview(items, db), "message_de_transaction": message,
+                "consigne": CONSIGNE}
+
+    def propose_place_history(self, chronologies) -> dict:
+        """Noms et rattachements datés des communes (#277) d'après le COG : ``chronologies(codes INSEE)`` renvoie
+        l'enveloppe de :func:`sources.geo.chronologies` (requête journalisée). Une transaction (jeton, accord
+        explicite, journalisée et annulable) ; événements et noms relus inchangés. Sans rien à dater : pas de jeton.
+        COG injoignable : erreur, rien n'est préparé."""
+        exiger_ecriture(self.client)
+        db = self.snapshot(fresh=True)
+        codes = sorted({p["code"].strip() for p in db.all("Place").values() if est_commune(p)})
+        if not codes:
+            return {"communes_examinees": 0,
+                    "note": "Aucune commune identifiée (code INSEE et type commune) : rien à dater, aucune requête."}
+        env = chronologies(codes)
+        if env.get("erreur"):
+            raise ProposalError(f"COG injoignable : {env['erreur']} (journal {env.get('journal')}). Rien n'est "
+                                "préparé ni écrit ; réessayer plus tard.")
+        items, rapport = dater_lieux(db, {r["code_insee"]: r for r in env.get("resultats") or []})
+        out: dict = {"communes_examinees": len(codes), "journal": env.get("journal"),
+                     **{k: v for k, v in rapport.items() if v}}
+        if env.get("inconnus"):
+            out["codes_inconnus_du_cog"] = env["inconnus"]
+        if rapport["conflits"]:
+            out["conflits_conseil"] = ("Nom ou rattachement déjà saisi sur la même période (ou nom du lieu différent "
+                                       "du nom actuel du COG) : le lieu est laissé tel quel pour ce volet, rien "
+                                       "n'est tranché. Corriger dans Gramps Web si voulu, puis relancer.")
+        if not items:
+            out["note"] = "Rien à dater : noms et rattachements déjà présents, ou aucun changement connu du COG."
+            return out
+        message = (f"Noms et rattachements datés des communes (#277)\n\nD'après le Code officiel géographique de "
+                   f"l'INSEE (journal {env.get('journal')}) : noms anciens datés, nom principal et rattachement actuel "
+                   "datés, anciens départements ; noms relus et événements inchangés.")
+        resume = [f"Lieux datés (COG) : {x}" for x in rapport["lieux"]]
         token = self.tokens.create({"type": "transaction", "items": items, "message": message, "operations": [],
                                     "resume": resume, "references": {}})
         return {**out, "jeton": token, "expire_dans_minutes": TTL_SECONDS // 60,
