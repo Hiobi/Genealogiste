@@ -201,11 +201,13 @@ def test_diagnostic_sur_le_vrai_gramps_web(tmp_path):
     assert v["api"] and v["gramps"].startswith("6.")
     assert (ctl["gramps_role"]["etat"], ctl["gramps_role"]["role"]) == ("ok", 3)
     g = ctl["gramps_reglages"]
-    assert g["etat"] == "ok" and "file de tâches : non" in g["detail"] and "multi-arbres : non" in g["detail"]
+    assert "file de tâches : non" in g["detail"] and "multi-arbres : non" in g["detail"]
     if version_api(v["api"]) >= FONCTIONS_API["inscription_libre"]:
-        assert "inscription libre : fermée" in g["detail"] or "inscription libre : ouverte" in g["detail"]
+        # le serveur déclare l'inscription ouverte dès qu'un compte Owner existe (`is_registration_disabled`, amont) :
+        # le compte `sosa-owner` du banc (#274, rôle requis par l'import) la rend ouverte, et le diagnostic le dit
+        assert g["etat"] == "attention" and "inscription libre : ouverte" in g["detail"] and g["remede"]
     else:
-        assert "non vérifiable sur cette version" in g["detail"]
+        assert g["etat"] == "ok" and "non vérifiable sur cette version" in g["detail"]
     texte = json.dumps(list(ctl.values()), ensure_ascii=False)
     assert "sosa-test" not in texte and "Bearer" not in texte
 
@@ -653,16 +655,16 @@ def test_import_xml_avec_home_definit_la_personne_de_reference(tmp_path):
     importer("a274a", "a274b", "a274b")
     h1, gid1 = reference()
     print("référence après le 1er import :", h1, gid1)
-    assert (h1, gid1) == ("a274b", "I9002")
+    assert h1 and gid1 == "I9002"  # le serveur attribue ses propres handles : seul le gramps_id est comparable
     c = _diag_reference(tmp_path, "I9002")
     assert c["etat"] == "ok" and c["personne_reference"] == "I9002" == c["racine_sosa"]
     c = _diag_reference(tmp_path, "I3")
     assert c["etat"] == "attention" and "I3" in c["detail"] and "I9002" in c["detail"]
     c = _diag_reference(tmp_path, "")
     assert c["etat"] == "ok" and c["suggestion"] == "GENEALOGISTE_SOSA_RACINE=I9002"
-    # second import : mêmes handles ; `home` différent écrase la référence existante
+    # second import (mêmes identifiants, personnes en double renumérotées) : `home` écrase la référence existante
     importer("a274a", "a274b", "a274a")
     h2, gid2 = reference()
-    print("référence après le 2e import (home différent) :", h2, gid2)
-    assert h2 == "a274a"
+    print("référence après le 2e import (home vers l'autre personne) :", h2, gid2)
+    assert h2 and h2 != h1 and gid2 != "I9002"
     assert _diag_reference(tmp_path, gid2)["etat"] == "ok"

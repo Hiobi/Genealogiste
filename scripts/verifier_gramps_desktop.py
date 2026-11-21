@@ -479,6 +479,49 @@ def tname_xml(t) -> str:
     return tname(t)
 
 
+RACINE_REFERENCE = "I3"  # racine Sosa du cas « reference » (famille.ged)
+HANDLE_REFERENCE: dict[str, str] = {}  # handle écrit dans `home` (Gramps complète « I3 » par des zéros : I0003, I00003)
+
+
+def produire_reference(tree, dossier: Path) -> Path:
+    """Export réel avec racine Sosa : le même chemin que arbre_exporter (personne_reference puis db_to_xml)."""
+    from genealogiste_mcp.export.gramps_xml import Metadonnees, db_to_xml, personne_reference
+    from genealogiste_mcp.gramps.mapping import tree_to_gramps_stats
+
+    db, _ = tree_to_gramps_stats(tree, None, False)
+    handle, motif = personne_reference(db, RACINE_REFERENCE)
+    if not handle:
+        raise SystemExit(f"racine {RACINE_REFERENCE} absente de l'export : {motif}")
+    HANDLE_REFERENCE[RACINE_REFERENCE] = handle
+    chemin = dossier / "genealogiste.gramps"
+    chemin.write_text(db_to_xml(db, "1.7.1", Metadonnees(personne_reference=handle)), encoding="utf-8")
+    return chemin
+
+
+def controle_reference(cas: Cas, version: str, attendu: dict, rapport: dict) -> list[str]:
+    """#274 : la personne de référence appliquée par l'import de Gramps (``db.get_default_person()``) est celle du
+    fichier exporté avec racine Sosa ; sans racine, rien n'est inventé ; le réexport de Gramps garde ``home``."""
+    ref = rapport.get("personne_reference")
+    if cas.nom != "reference":
+        return [f"personne de référence {ref['gramps_id']} inventée par l'export sans racine"] if ref else []
+    if not ref:
+        return ["aucune personne de référence après l'import d'un fichier portant <people home>"]
+    # le handle est la preuve ; le gramps_id n'est qu'une écriture du même numéro (zéros ajoutés par Gramps)
+    ecarts = [] if ref["handle"] == HANDLE_REFERENCE.get(RACINE_REFERENCE) else [
+        f"personne de référence {ref['handle']} au lieu de {HANDLE_REFERENCE.get(RACINE_REFERENCE)}"]
+    if int(ref["gramps_id"][1:] or -1) != int(RACINE_REFERENCE[1:]) or ref["gramps_id"][0] != RACINE_REFERENCE[0]:
+        ecarts.append(f"identifiant {ref['gramps_id']} : autre numéro que {RACINE_REFERENCE}")
+    if ref["handle"] not in rapport["handles"]["Person"]:
+        ecarts.append("personne de référence hors des personnes importées")
+    if "reexport" in rapport:
+        m = re.search(rb'<people[^>]* home="_?([^"]+)"', lire_xml(Path(rapport["reexport"])))
+        if not m or m[1].decode() != ref["handle"]:
+            ecarts.append(f"réexport de Gramps : home {m and m[1].decode()!r} au lieu de {ref['handle']!r}")
+    print(f"   {version} : personne de référence {ref['gramps_id']} (racine Sosa {RACINE_REFERENCE}), "
+          f"handle {ref['handle']}", flush=True)
+    return ecarts
+
+
 FROM_TO_HORS_SCHEMA = ((rb'(<dateval [^>]*type=")(?:from|to)"', rb'\1about"'),)
 
 CAS: list[Cas] = [
@@ -496,6 +539,8 @@ CAS: list[Cas] = [
         arbres=("famille.ged",), retoucher=types_francais),
     Cas("lieux", "Gramps XML 1.7.1 : noms et rattachements datés des communes (#277) ; nom d'époque affiché à la "
         "date de l'événement", produire_lieux, enrichir=avec_lieux, arbres=("famille.ged",), retoucher=dater),
+    Cas("reference", "Gramps XML 1.7.1 exporté avec la racine Sosa I3 : <people home> appliqué par l'import (#274)",
+        produire_reference, arbres=("famille.ged",)),
     Cas("notes", "Gramps XML 1.7.1 : notes de preuve avec liens internes et note manuelle aux onze styles (#279)",
         produire_notes, arbres=("famille.ged",), retoucher=notes_stylees,
         schema_admis={v: STYLES_HORS_SCHEMA for v in ("5.2", "6.0", "6.1")}),
@@ -911,7 +956,8 @@ def controle_types(cas: Cas, version: str, attendu: dict, rapport: dict) -> list
 
 
 CONTROLES: list[Controle] = [controle_reexport, controle_medias, controle_champs, controle_lecture, controle_dates,
-                             controle_types, controle_lieux, controle_notes]
+                             controle_types, controle_lieux, controle_notes,
+                             controle_reference]
 
 
 def comparer_cycle(premier: dict, second: dict, contexte: str, ecrit_par_gramps: bool = True) -> list[str]:

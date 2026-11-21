@@ -456,6 +456,12 @@ def _gramps_id_de(a, cls: str, **params) -> str | None:
     return d.get("gramps_id") if isinstance(d, dict) else None
 
 
+def _sans_zeros(gid: str) -> str:
+    """`I0003` -> `I3` : Gramps complète par des zéros le numéro des identifiants importés (`id2user_format`)."""
+    m = re.match(r"^(\D*)(\d+)$", gid)
+    return f"{m[1]}{int(m[2])}" if m else gid
+
+
 def _controle_personne_reference(a, meta: dict, gramps_actif: bool) -> dict:
     """Racine Sosa (`GENEALOGISTE_SOSA_RACINE`) et personne de référence de Gramps (`default_person`), #274.
 
@@ -483,19 +489,23 @@ def _controle_personne_reference(a, meta: dict, gramps_actif: bool) -> dict:
     except Exception as exc:  # noqa: BLE001
         return _ctl("gramps_personne_reference", "attention", f"personne de référence non vérifiée : {_motif(exc)}",
                     "Relancer le diagnostic une fois Gramps Web rétabli.", racine_sosa=racine or None)
+    zeros = ref is not None and _sans_zeros(racine) == _sans_zeros(ref)  # I3 écrit I0003 par Gramps
+    explication = ("Même numéro, écrit autrement : Gramps complète les identifiants numériques à l'import "
+                   f"(I3 devient I0003, ou I00003 avec Gramps 6.1). Régler GENEALOGISTE_SOSA_RACINE={ref}, l'identifiant que porte Gramps. "
+                   if zeros else "")
     if not existe:
         return _ctl("gramps_personne_reference", "erreur" if gramps_actif else "attention",
                     f"la racine Sosa {racine} est introuvable dans l'arbre Gramps",
-                    "Corriger GENEALOGISTE_SOSA_RACINE : les notes ne peuvent pas être numérotées sans elle.",
-                    racine_sosa=racine, personne_reference=ref)
+                    explication + "Corriger GENEALOGISTE_SOSA_RACINE : les notes ne peuvent pas être numérotées "
+                    "sans elle.", racine_sosa=racine, personne_reference=ref)
     if ref is None:
         return _ctl("gramps_personne_reference", "attention",
                     f"racine Sosa {racine} ; Gramps n'a pas de personne de référence (rapports et numéros Sosa "
                     "natifs sans point de départ)", _PROCEDURE_REFERENCE, racine_sosa=racine, personne_reference=None)
+    remede = explication + _PROCEDURE_REFERENCE
     return _ctl("gramps_personne_reference", "attention",
                 f"racine Sosa {racine} différente de la personne de référence de Gramps {ref} : les numéros Sosa "
-                "des notes et ceux des rapports Gramps divergent", _PROCEDURE_REFERENCE,
-                racine_sosa=racine, personne_reference=ref)
+                "des notes et ceux des rapports Gramps divergent", remede, racine_sosa=racine, personne_reference=ref)
 
 
 def executer(app_ou_exc, probleme: dict | None, reseau: bool = True) -> dict:

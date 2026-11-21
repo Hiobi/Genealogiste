@@ -64,6 +64,22 @@ def test_differentes_attention_avec_les_deux_identifiants(tmp_path, fake):
     assert any(x.startswith("gramps_personne_reference") for x in res["a_corriger"])
 
 
+def test_meme_numero_complete_de_zeros_par_gramps(tmp_path, fake):
+    """Gramps rend I3 « I0003 » à l'import XML : l'écart est signalé avec l'explication et la valeur à régler."""
+    cible = fake.find("Person", "I3")
+    cible["gramps_id"] = "I0003"
+    fake.default_person = cible["handle"]
+    c, _ = controle(tmp_path, racine="I3")
+    assert c["etat"] == "erreur" and "introuvable" in c["detail"]  # I3 n'existe plus côté Gramps (backend gramps)
+    assert "GENEALOGISTE_SOSA_RACINE=I0003" in c["remede"] and "complète les identifiants" in c["remede"]
+    c, _ = controle(tmp_path, backend="fichier", racine="I0003")
+    assert c["etat"] == "ok"
+    fake.find("Person", "I1")["gramps_id"] = "I3"  # une autre personne porte I3 : racine existante, référence I0003
+    c, _ = controle(tmp_path, racine="I3")
+    assert c["etat"] == "attention" and "I0003" in c["detail"] and "complète les identifiants" in c["remede"]
+    assert "GENEALOGISTE_SOSA_RACINE=I0003" in c["remede"]
+
+
 def test_aucune_personne_de_reference_attention(tmp_path, fake):
     c, _ = controle(tmp_path, racine="I3")
     assert c["etat"] == "attention" and "pas de personne de référence" in c["detail"] and c["remede"]

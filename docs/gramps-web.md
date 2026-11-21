@@ -51,7 +51,7 @@ réglages : à éviter pour un compte dont les identifiants sont stockés (privi
   *Contributor* : `{"code":403,"status":"Forbidden"}` (`application/json`, format flask-smorest, sans clé
   `error.message`).
 
-`diagnostic` (réseau activé et `GENEALOGISTE_GRAMPS_URL` renseigné) ajoute à la joignabilité (`gramps_web`) trois
+`diagnostic` (réseau activé et `GENEALOGISTE_GRAMPS_URL` renseigné) ajoute à la joignabilité (`gramps_web`) quatre
 contrôles, chacun indépendant : si `/api/metadata/` ou `/api/users/-/` échoue, le contrôle correspondant passe en
 `attention` avec le motif et les autres continuent. Aucun identifiant, jeton ni nom de personne n'y figure.
 
@@ -60,12 +60,64 @@ contrôles, chacun indépendant : si `/api/metadata/` ou `/api/users/-/` échoue
 | `gramps_version` | version de l'API et de Gramps (`GET /api/metadata/`), plage testée, fonctions optionnelles disponibles ou absentes d'après `FONCTIONS_API` | `ok` dans la plage ; API plus ancienne que 3.13.0 : `erreur` en mode `gramps`, `attention` sinon ; plus récente ou illisible : `attention` |
 | `gramps_role` | rôle du compte (`GET /api/users/-/`) | Editor : `ok` ; sous Editor : `erreur` en mode `gramps`, `attention` sinon ; Owner ou Admin : `attention` (« préférer Editor ») |
 | `gramps_reglages` | file de tâches (`server.task_queue`), multi-arbres (`server.multi_tree`), inscription libre | `ok` ; inscription libre ouverte : `attention`. L'inscription libre n'est lisible que depuis l'API 3.26.0 (`GET /api/register/config/`) : avant, « non vérifiable sur cette version ». `/api/config/` est réservé aux Admin : jamais appelé |
+| `gramps_personne_reference` | racine Sosa (`GENEALOGISTE_SOSA_RACINE`) comparée à la personne de référence de Gramps (`default_person` de `GET /api/metadata/`, traduite en `gramps_id` par `GET /api/people/<handle>?keys=gramps_id`, puis `GET /api/people/?gramps_id=…&keys=gramps_id` pour la racine ; aucun chargement de l'arbre) | même personne : `ok` ; différentes : `attention` avec les deux `gramps_id` ; Gramps sans personne de référence (ou référence supprimée) : `attention` ; racine introuvable dans l'arbre : `erreur` en mode `gramps`, `attention` sinon ; racine non définie : `ok` (information, avec une `suggestion` si Gramps a une référence). Jamais de nom de personne ; panne de lecture : `attention` avec le motif, le diagnostic continue |
 
 Le jeton d'accès Gramps Web dure 15 minutes ; sa revendication `exp` fixe le moment du renouvellement (30 secondes
 avant l'échéance), sans délai codé en dur. Le jeton renouvelé garde l'arbre et les droits.
 
 Le mode direct suppose une instance Gramps Web **privée** : les personnes vivantes y sont écrites en clair.
 Elles restent masquées par défaut dans les exports publics (`arbre_exporter`).
+
+## Personne de référence et racine Sosa (#274)
+
+Gramps (Desktop et Web) a une **personne de référence** (`default_person`) : point de départ de l'interface, des
+rapports natifs (dont la numérotation Ahnentafel/Sosa) et du calcul des relations. Genealogiste a sa propre racine,
+`GENEALOGISTE_SOSA_RACINE`, qui fixe la personne n° 1 de la numérotation Sosa des notes. Si les deux divergent, les
+numéros des notes et ceux des rapports Gramps ne concordent plus, sans avertissement. Trois outils les rapprochent :
+
+- **`diagnostic`** : le contrôle `gramps_personne_reference` (tableau ci-dessus) signale l'écart, avec les deux
+  identifiants, et la procédure à suivre.
+- **Export** (`arbre_exporter`, formats `gramps` et `gpkg`) : la racine Sosa devient `<people home="…">` du fichier,
+  quand elle est configurée **et** présente dans l'export. Non configurée : rien n'est écrit (rien n'est inventé).
+  Racine masquée par l'export public (personne vivante ou privée, `masquer_vivants`) : aucun `home`, ni dans le
+  fichier ni ailleurs ; le résultat dit seulement `personne_reference.ecrite: null` et le motif.
+- **Import** (`arbre_importer_gedcom` d'un fichier Gramps) : la personne de référence du fichier est rapportée dans
+  `import.personne_reference` (`gramps_id`, jamais un nom), avec son état par rapport à la racine Sosa
+  (`identique`, `differente`, `racine_non_definie`, ou `a_verifier` en mode `ajouter`, qui renumérote) et, selon le cas, la
+  suggestion « Racine Sosa suggérée : I0001 ». **Rien n'est jamais modifié** : ni la configuration, ni le `.env`. L'arbre
+  Genealogiste ne conserve pas cette personne (comptée sous `non_repris`, `Métadonnées.personne_reference`).
+
+### Pas d'écriture par l'API : procédure manuelle
+
+**Gramps Web n'offre aucun point d'API pour définir la personne de référence** (lecture seule via
+`GET /api/metadata/`). Source : `gramps-web-api` 3.26.0, commit `9cbf933` ; `grep -rn "set_default_person\|default_person"`
+dans `gramps_webapi/` ne trouve que la lecture (`resources/metadata.py`) et deux effacements (une transaction ou une
+restauration qui supprime la personne de référence appelle `set_default_person_handle(None)`, `api/tasks.py`,
+`resources/restore.py`). La « Home person » de l'interface Gramps Web est un réglage **du navigateur** (`localStorage`,
+clé `grampsjs_settings_tree`, propre à chaque navigateur et à chaque arbre) : elle n'est ni stockée dans la base ni lisible
+par l'API, donc `diagnostic` ne la voit pas. En conséquence, l'opération `definir_personne_reference` envisagée par
+l'issue n'est **pas** ajoutée à `arbre_proposer` pour Gramps Web. Le futur backend Gramps Desktop (#270, étude à venir)
+pourra la porter, puisqu'il écrira dans la base elle-même (`set_default_person_handle`).
+
+Pour définir la personne de référence de la base :
+
+1. **Gramps Desktop** : ouvrir l'arbre, sélectionner la personne dans la vue « Personnes », puis menu
+   **Édition > Définir la personne de référence**. Gramps Web lit ensuite cette valeur si l'arbre lui est transmis
+   (export `.gramps` puis import, ou sauvegarde de la base).
+2. **Gramps Web, arbre vide** : exporter avec `arbre_exporter` (format `gramps` ou `gpkg`, racine Sosa configurée : le fichier
+   porte `<people home>`), puis l'importer dans l'arbre vide (Paramètres > Administration > Importer, rôle Owner :
+   `ImportFile`). Gramps applique le `home` **à chaque import qui en porte un, même si l'arbre en a déjà une**
+   (`gramps/plugins/importer/importxml.py` : `start_people` mémorise `home`, `parse` appelle ensuite
+   `set_default_person_handle` sans condition ; maintenance/gramps52 `14c01e5` l. 1074-1076 et 1662, gramps60 `32aa296` l. 1076-1078 et 1664, gramps61 `e9c09a4`
+   l. 1076-1078 et 1664 ; constaté sur Gramps Web jetable, voir ci-dessous). Un second import dans un arbre déjà rempli
+   duplique les données : réserver cette voie aux arbres vides.
+3. **Réglage de l'interface Gramps Web** : il ne concerne que le navigateur où il est fait ; il n'aligne pas les
+   rapports ni `default_person`.
+
+Après l'une de ces voies, relancer `diagnostic` : `gramps_personne_reference` repasse à `ok` si la référence est la
+racine Sosa. Pour l'inverse (aligner la racine Sosa sur Gramps), régler `GENEALOGISTE_SOSA_RACINE` à la main avec la
+valeur de `suggestion`.
+
 
 ## Fonctionnement
 
