@@ -139,7 +139,8 @@ class App:
                                          notes_liens=self.config.gramps_notes_liens,
                                          media_dir=self.config.media_racines[1:] if self.config.media_dir_conf else None,
                                          media=self.config.media_reference, forme=self.config.marqueurs,
-                                         taches=self.config.gramps_taches)
+                                         taches=self.config.gramps_taches,
+                                         prive_vivants=self.config.gramps_prive_vivants)
 
     def taches_actives(self) -> bool:
         """Tâches de Gramps Web lues et écrites (#263) : backend gramps et GENEALOGISTE_GRAMPS_TACHES=true."""
@@ -988,20 +989,23 @@ def _naviguer(a: App, source: str, page: int, pas: int, params: dict) -> tuple[d
 
 
 @mcp.tool()
-def diagnostic(reseau: bool = True) -> dict:
+def diagnostic(reseau: bool = True, vivants: bool = False) -> dict:
     """Diagnostic d'exploitation : tableau « contrôle, état (ok/attention/erreur), détail, remède » —
     version du serveur et du plugin sur disque, configuration effective (sans secret), git, uv, droits,
     espace disque, taille des caches, OCR, propositions en attente/expirées, et si reseau=True la
     joignabilité de chaque source (verdict joignable/protection/injoignable, une requête par source, tracée
     au journal) et de Gramps Web (joignabilité, version de l'API et de Gramps, rôle du compte, réglages lisibles
-    sans droit Admin). Fonctionne même si la configuration est invalide."""
+    sans droit Admin). Fonctionne même si la configuration est invalide. vivants=True (mode gramps, réseau) : contrôle
+    des personnes vivantes (#264) — vivants non privés et exposition aux comptes Invité, privés à retirer, divergence
+    avec le calcul de Gramps — au prix d'une lecture complète de l'arbre et de 30 requêtes /api/living/ au plus ;
+    comptes et identifiants seulement. Par défaut : non lancé (une ligne d'information)."""
     from . import diagnostic as diag
 
     try:
         a = app()
     except Exception as exc:  # noqa: BLE001 — rapporté comme contrôle « configuration »
         return diag.executer(exc, verifier_demarrage(), reseau)
-    return diag.executer(a, verifier_demarrage(a.config), reseau)
+    return diag.executer(a, verifier_demarrage(a.config), reseau, vivants)
 
 
 @mcp.tool()
@@ -1243,7 +1247,8 @@ def arbre_statut_preuve(id: str, fait: str = "") -> list[dict]:
 def arbre_coherence(id: str = "") -> list[dict]:
     """Contrôles biologiques et chronologiques (une personne ou tout l'arbre). Tout l'arbre en mode gramps : aussi
     les types personnalisés qui doublonnent un type standard de Gramps (« Baptême » pour Baptism…), par classe avec
-    le nombre d'objets, et les libellés ambigus (normalisation : gramps_normaliser_types)."""
+    le nombre d'objets, et les libellés ambigus (normalisation : gramps_normaliser_types) ; et les personnes rendues
+    privées par Genealogiste parce que vivantes qui ne le sont plus (retrait : gramps_proteger_vivants)."""
     a = app()
     t = a.tree()
     if id:
@@ -1251,7 +1256,19 @@ def arbre_coherence(id: str = "") -> list[dict]:
     out = coherence.check_tree(t)
     if a.config.backend == "gramps":
         out += _types_en_doublon(a)
+        out += _prive_a_retirer(a)
     return out
+
+
+def _prive_a_retirer(a) -> list[dict]:
+    """#264 : personnes marquées privées par Genealogiste « parce que vivantes » qui ne sont plus présumées vivantes
+    (décès saisi, âge dépassé) : retrait à proposer par gramps_proteger_vivants, jamais automatique."""
+    e = a.backend.etat_vivants()
+    return [{"niveau": "info", "code": "prive_vivant_a_retirer", "personne": pid,
+             "message": f"{pid} n'est plus présumé(e) vivant(e) : des objets que Genealogiste a marqués privés pour "
+                        "cette personne (elle-même ou ses données propres) le restent ; gramps_proteger_vivants "
+                        "propose le retrait (accord explicite requis)."}
+            for pid in e["a_retirer"]]
 
 
 def _types_en_doublon(a) -> list[dict]:
@@ -2829,6 +2846,29 @@ def gramps_normaliser_types(classes: list[str] | None = None) -> dict:
         return {"erreur": "Disponible en mode gramps (GENEALOGISTE_BACKEND=gramps)."}
     try:
         return _gramps_guard(lambda: app().backend.propose_types(classes))
+    except ProposalError as exc:
+        return {"erreur": str(exc)}
+
+
+@mcp.tool()
+def gramps_proteger_vivants(personnes: list[str] | None = None, limite: int = 100, retraits: bool = True) -> dict:
+    """Mode gramps : prépare le marquage « privé » des personnes présumées vivantes (règle du plugin, arbre_vivant) et
+    de leurs données propres, pour qu'un compte Invité (rôle 0) de Gramps Web n'en voie rien (#264) : la personne ;
+    les familles dont tous les conjoints sont masqués ; les événements dont tous les propriétaires (rôle Principal ou
+    Famille) sont masqués ; les citations, sources, médias et notes dont tous les référents sont masqués. Un objet
+    partagé avec un objet qui reste visible (famille avec un conjoint décédé, source citée ailleurs…) n'est jamais
+    rendu privé : listé dans partages avec la raison ; textes restés visibles qui nomment un vivant : residus ;
+    limites : non_masquable. Sans personnes (tout l'arbre) : aussi les médias dont le seul référent est un billet ou
+    une tâche privés (#261, #263), et le RETRAIT du privé que Genealogiste a posé pour des personnes qui ne sont plus
+    présumées vivantes (décès saisi, âge dépassé ; retraits=False pour l'omettre), d'après le journal local des
+    transactions (jamais un privé posé par l'utilisateur). Une transaction ; limite : personnes par lot (relancer
+    pour la suite, reste_apres_ce_lot). Seul le drapeau privé change. Jeton pour arbre_appliquer après accord
+    explicite ; journalisée, annulable par arbre_annuler_modification. Rien à faire : pas de jeton (idempotent)."""
+    if app().config.backend != "gramps":
+        return {"erreur": "Disponible en mode gramps (GENEALOGISTE_BACKEND=gramps) : en mode fichier, les exports "
+                          "publics masquent déjà les vivants (arbre_exporter)."}
+    try:
+        return _gramps_guard(lambda: app().backend.propose_protection(personnes, limite, retraits))
     except ProposalError as exc:
         return {"erreur": str(exc)}
 

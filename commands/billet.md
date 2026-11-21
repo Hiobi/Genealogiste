@@ -16,8 +16,9 @@ Billet de blog : **$ARGUMENTS**
    Le premier média sert d'aperçu, tous forment la galerie. **Privé par défaut** : `"prive": false` seulement si
    l'utilisateur demande explicitement un billet public, lisible par les comptes Invité (Guest).
 5. `arbre_proposer(operations, titre, justification)` → montrer le **résumé (visibilité du billet), le diff et
-   les avertissements**. Un billet public qui nomme une personne présumée vivante ou privée est refusé : retirer
-   le nom ou garder le billet privé.
+   les avertissements**. Un billet public qui nomme une personne présumée vivante ou privée (nom ou identifiant)
+   est refusé : retirer le nom ou garder le billet privé. Billet privé avec une image publique : l'avertissement
+   donne l'opération `modifier_media` (`champs.prive`) à ajouter si l'image doit rester invisible des Invités.
 6. Demander : « Publier ce billet ? ». Appeler `arbre_appliquer(jeton)` **uniquement** après un accord explicite ;
    sinon `arbre_annuler_proposition`. Annulation ensuite : `arbre_annuler_modification`.
 7. Rappeler : le billet apparaît dans la page Blog de Gramps Web (`/blog`, le plus récemment modifié en tête) ;

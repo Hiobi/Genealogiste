@@ -31,7 +31,7 @@ de Claude Code (#153).
 |---|---|---|---|
 | Lecture | aucune écriture hors du cache et du journal internes | sans confirmation | `arbre_*` en lecture, `gramps_grouper_noms`, `archives_service`, `sources_catalogue`, `liens_recherche`, `variantes_noms`, `journal_ajouter`, `source_collee`, `pdf_markdown` |
 | Collecte | réseau et/ou écriture **additive et réversible** dans un répertoire géré par le plugin (cache, journal, pièce nouvelle archivée avec sa note) ; jamais d'écrasement ni de suppression, jamais l'arbre ni Gramps Web | sans confirmation | sources externes, `ark_resoudre`, `archive_image`, `archives_naviguer`, `archives_planche`, `piece_archiver`, `enquete_ouvrir`, `enquete_noter`, `archives_sonder`, `gramps_synchroniser`, `rapport_campagne_enregistrer` |
-| Proposition | prépare une modification sans l'écrire (diff et jeton, file de propositions) | sans confirmation | `arbre_proposer`, `propositions_*`, `pieces_proposer`, `marqueurs_migrer_proposer`, `gramps_bascule_proposer`, `gramps_recalculer_notes`, `gramps_structurer_lieux`, `gramps_dater_lieux`, `gramps_normaliser_types` |
+| Proposition | prépare une modification sans l'écrire (diff et jeton, file de propositions) | sans confirmation | `arbre_proposer`, `propositions_*`, `pieces_proposer`, `marqueurs_migrer_proposer`, `gramps_bascule_proposer`, `gramps_recalculer_notes`, `gramps_structurer_lieux`, `gramps_dater_lieux`, `gramps_normaliser_types`, `gramps_proteger_vivants` |
 | Écriture | arbre, Gramps Web, fichiers de l'utilisateur (notes, pièces existantes, exports), suppression, envoi de ses fichiers à un tiers, identifiants | confirmation demandée | `arbre_appliquer`, `pieces_appliquer`, `marqueurs_migrer_appliquer`, `rapport_enregistrer`, `media_enregistrer`, `arbre_exporter`, `notes_*`, `cache_purger`, `gramps_tirer`, `familysearch_exporter`, `matchid_appariement_csv` |
 
 **Outils en deux temps** (table `CONDITIONS`) : classés d'après leur effet maximal, mais le hook lit l'entrée
@@ -69,8 +69,10 @@ Cas tranchés d'après le code :
   d'attente neuve du répertoire de données (rien n'est écrasé, déplacé ni rangé dans le vault : le rangement
   passe par `pieces_proposer` puis `pieces_appliquer`, avec accord). La lecture est locale : aucune donnée
   ne sort, personnes vivantes comprises.
-- `gramps_recalculer_notes`, `gramps_structurer_lieux` et `gramps_normaliser_types` ne font que préparer un diff et
-  un jeton (proposition) ; l'écriture passe par `arbre_appliquer`.
+- `gramps_recalculer_notes`, `gramps_structurer_lieux`, `gramps_normaliser_types` et `gramps_proteger_vivants` ne
+  font que préparer un diff et un jeton (proposition) ; l'écriture passe par `arbre_appliquer`. Le drapeau privé
+  des vivants (#264) n'est jamais posé ni retiré autrement : le réglage `GENEALOGISTE_GRAMPS_PRIVE_VIVANTS=auto` est
+  refusé au démarrage.
 - `gramps_dater_lieux` (#277) reste une proposition alors qu'il lit le réseau : il télécharge les deux fichiers
   publics du COG de l'INSEE (cache de 180 jours, politique réseau et limites de débit de `www.insee.fr`), sans
   rien envoyer de la base ni d'aucune personne (pas de garde « vivants » : ni nom ni identifiant de personne), et
@@ -78,7 +80,7 @@ Cas tranchés d'après le code :
   demande pas d'accord ; la transaction préparée n'est écrite que par `arbre_appliquer`. Aucune classe
   intermédiaire ni condition (`CONDITIONS`) : l'outil n'a pas de branche d'écriture.
 - En mode gramps, les propositions (`arbre_proposer`, `gramps_recalculer_notes`, `gramps_structurer_lieux`,
-  `gramps_dater_lieux`, `gramps_normaliser_types`, `marqueurs_migrer_proposer`, annulation, bascule) et `arbre_appliquer` refusent tôt un compte sans droit
+  `gramps_dater_lieux`, `gramps_normaliser_types`, `gramps_proteger_vivants`, `marqueurs_migrer_proposer`, annulation, bascule) et `arbre_appliquer` refusent tôt un compte sans droit
   d'écriture (rôle sous Editor) ; le diagnostic signale aussi un compte Owner ou Admin (privilège excessif).
   Le contrôle ne lit que les droits du jeton et le rôle du compte, jamais `/api/config/` (réservé aux Admin).
 - `gramps_grouper_noms` (#276) est une **lecture** : il lit l'arbre Gramps et `GET /api/name-groups/`, ne prépare
@@ -257,7 +259,8 @@ corps et titres des médias contrôlés comme un export public (prénom et nom a
 vivante, `is_living`, ou marquée privée, `privacy.hidden_ids` et `identifying_patterns`) et liens internes
 `gramps://Person/gramps_id/I…` vers elle ; billet public qui en nomme une : **refusé**, avec la liste ; billet
 privé : avertissement. Le contrôle est local, rien n'est envoyé ailleurs. Limites : un prénom seul, un surnom,
-un lien interne par handle ou une image ne sont pas reconnus ; la confidentialité des médias reste la leur.
+un lien interne par handle ou une image ne sont pas reconnus ; la confidentialité des médias reste la leur
+(avertissement par média public d'un billet privé, #264 ; l'identifiant seul d'un vivant compte aussi depuis #264).
 Détails : [opérations](operations.md#billets-du-blog-de-gramps-web-261), [Gramps Web](gramps-web.md#blog-261).
 
 ### Tâches de Gramps Web (#263)
@@ -269,6 +272,33 @@ billet, plus l'**identifiant seul** d'une personne présumée vivante ou privée
 `personnes` ; tâche publique qui en nomme une : **refusée**, avec la liste ; privée : avertissement (« elle ne
 doit pas devenir publique en l'état »). Rendre publique une tâche existante repasse par le même contrôle.
 Le réglage `GENEALOGISTE_GRAMPS_TACHES` est désactivé par défaut et rien n'est écrit sans proposition validée.
+
+### Vivants dans Gramps Web (#264)
+
+En mode `gramps`, les vivants sont écrits en clair dans Gramps Web, qui **ne les masque pas par rôle** : un compte
+Invité (Guest, rôle 0) lit tout ce qui n'est pas privé ; Membre (1) et au-dessus lisent aussi le privé. Le seul
+rempart contre un Invité est le drapeau privé, posé objet par objet.
+
+- **Ce que protège le privé** : un objet principal privé est introuvable par toutes les voies (listes, handle,
+  `gramps_id`, recherche, rétroliens, `/api/living/`, export) et les références vers lui sont retirées des objets
+  visibles. **Ce qu'il ne protège pas** : un objet non privé reste visible même si tout ce qui le référence est
+  privé (événement, note, image d'une personne privée) ; d'où un périmètre (personne, familles, événements,
+  citations, sources, médias, notes propres, notes générées qui la nomment) calculé par `gramps_proteger_vivants`.
+- **Partagés** : un objet lié aussi à un défunt resté visible n'est jamais rendu privé en silence : il est listé
+  (`partages`, avec la raison) ; une famille avec un conjoint décédé reste visible (le vivant n'y figure plus) ;
+  un texte saisi qui nomme un vivant reste visible et est listé (`residus`).
+- **Règle** : pose et retrait seulement par proposition (diff, accord explicite, `arbre_appliquer`, journal,
+  annulable) ; `GENEALOGISTE_GRAMPS_PRIVE_VIVANTS` vaut `off` (défaut) ou `propose` ; `auto` est refusé. Le retrait
+  au décès est proposé, jamais automatique, et ne retire que ce que le plugin a posé (trace dans le journal local
+  des transactions ; aucun attribut écrit dans Gramps).
+- **Diagnostic** (`diagnostic(vivants=true)`, explicite : lecture de l'arbre et 30 requêtes `/api/living/` au
+  plus) : vivants non privés alors que l'instance a des comptes Invité ou l'inscription libre (comptes seulement),
+  privés à retirer, divergence entre la règle du plugin et celle de Gramps ; jamais de nom. Par défaut, une ligne
+  « non lancé », en `attention` sans rien lire si l'inscription libre est ouverte et le réglage vaut `off`.
+- **Limite par version** : avant l'API 3.25.0 (constaté sur 3.13.0), la recherche plein texte trouve encore une
+  famille ou un événement partagés en cherchant le nom du vivant (le nom n'est pas renvoyé) : mettre à jour.
+
+Détails, routes amont et constats par image : [Gramps Web](gramps-web.md#vivants-et-privé-264).
 
 ## Réseau : seules les adresses publiques
 

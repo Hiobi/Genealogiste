@@ -146,6 +146,8 @@ OUTILS: dict[str, tuple[str, str]] = {  # nom -> (effet, classe)
     # diff + jeton (propose_place_history, #277) ; lit aussi les fichiers publics du COG (réseau sans donnée de
     # personne, cache, journal) : la proposition l'emporte, rien n'est écrit sans arbre_appliquer
     "gramps_dater_lieux": (PROPOSITION, PROPOSITION),
+    # diff + jeton (propose_protection, #264) : pose ou retrait du drapeau privé, écrit seulement par arbre_appliquer
+    "gramps_proteger_vivants": (PROPOSITION, PROPOSITION),
     # groupes de noms (#276) : LECTURE SEULE. Lit l'arbre Gramps (comme arbre_*) et GET /api/name-groups/ ; aucun
     # jeton, rien d'écrit : l'écriture d'un groupe n'est ni journalisée par Gramps ni annulable (docs/gramps-web.md)
     "gramps_grouper_noms": (LECTURE, LECTURE),

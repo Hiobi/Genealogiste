@@ -47,11 +47,11 @@ est refusé, sauf `"non_source": true` + `"motif": "…"` (la mention « Non sou
 | | Citation : `source`, `page`, `texte`, `qualite`, `type_source`, `information`, `preuve`, `consultation`, `ark`, `medias` (ids ou `$ref` d'`ajouter_media` : images de l'acte), `lier_media` (défaut `true` : voir « Images d'une citation »), `note`, `tags` |
 | `supprimer_citation` | `cible` (même forme qu'`ajouter_citation`), `source`*, `page` (facultatif), `index` (parmi les citations qui correspondent, si plusieurs) : retire cette citation ; ses médias restent dans l'arbre |
 | `ajouter_media` | `fichier`* (voir « Fichier d'un média »), `format`, `titre`, `citations`, `lier_a` `[ids]` (personnes `I…`, familles `F…`, sources `S…`, événements (uid), ou `$ref` : voir « Médias »), `tags`, `ref` |
-| `modifier_media` | `id`, `champs` `{fichier, titre, format}` (`fichier` contrôlé comme pour `ajouter_media` ; `date` refusée : un `OBJE` GEDCOM 7 ne porte pas de date, dater l'acte dans sa citation ou son événement), `citations_ajout`, `lier_a` `[ids]` (liens ajoutés, mêmes cibles qu'`ajouter_media`), `tags`, `tags_retrait` |
+| `modifier_media` | `id`, `champs` `{fichier, titre, format, prive}` (`prive` : `true` / `false`, ex. image d'un billet ou d'une tâche privés, #264 ; `fichier` contrôlé comme pour `ajouter_media` ; `date` refusée : un `OBJE` GEDCOM 7 ne porte pas de date, dater l'acte dans sa citation ou son événement), `citations_ajout`, `lier_a` `[ids]` (liens ajoutés, mêmes cibles qu'`ajouter_media`), `tags`, `tags_retrait` |
 | `fusionner_personnes` | `conserver`, `absorber`, `justification`*, `forcer` |
 | `scinder_personne` | `id`, `evenements` `[uid]`, `familles_parents`, `familles_conjoint`, `noms`, `sexe`, `justification`*, `ref` |
 | `definir_statut` | `cible` `{type: evenement | nom | filiation …}`, `statut` (`refute` \| `contradictoire` \| `""`), `justification`* |
-| `marquer_vivant` | `id`, `vivant` (`Y` \| `N` \| `""`) |
+| `marquer_vivant` | `id`, `vivant` (`Y` \| `N` \| `""`), `prive` (`true` seulement, #264 : personne présumée vivante marquée privée avec ses données propres, dans le diff de la proposition ; sans `vivant`, statut inchangé ; [vivants et privé](gramps-web.md#vivants-et-privé-264)) |
 | `etiqueter` | `cible`* `{type: personne | famille | source | depot | media | note (id) | evenement (uid)}` ou `{type: citation, porteur (même forme que la cible d'ajouter_citation), source, page, index}`, `tags`, `tags_retrait` (au moins un) |
 
 ### Étiquettes (#262)
@@ -102,8 +102,13 @@ opération, lisible dans le diff comme une source :
   sur une source, `modifier_source` qui le rend public ou change son texte) contrôle titre, auteur, corps et
   titres des médias : prénom et nom accolés d'une personne présumée vivante ou marquée privée (même règle que
   les exports publics, [sécurité](securite.md#billets-du-blog-de-gramps-web-261)) ou lien interne
-  `gramps://Person/gramps_id/I…` vers elle. Billet public : **refus** avec la liste des personnes ; billet
-  privé : avertissement.
+  `gramps://Person/gramps_id/I…` vers elle, et depuis #264 l'**identifiant seul** (`I9`, mot entier), comme pour
+  les tâches. Billet public : **refus** avec la liste des personnes ; billet privé : avertissement.
+- **Images** (#264) : un média garde sa propre confidentialité. Billet ou tâche privés avec un média public :
+  avertissement par média (lisible par un Invité : objet, fichier, vignette), avec l'opération
+  `{"op": "modifier_media", "id": "O…", "champs": {"prive": true}}` et les autres objets qui le lient ;
+  `gramps_proteger_vivants` (tout l'arbre) propose de rendre privé un média dont le seul référent est un billet
+  ou une tâche privés.
 - **Backend fichier** : `ajouter_billet` est refusé (le blog n'existe que dans Gramps Web) ; une source étiquetée
   `Blog` reste possible (`ajouter_source`, `etiqueter`), sans effet hors de Gramps Web.
 - **Preuve** : un billet n'est pas une source généalogique ; une citation qui le désigne pèse 0 et ne compte

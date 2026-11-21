@@ -2147,7 +2147,10 @@ def tree_to_gramps_stats(tree: Tree, base: GrampsDb | None = None, strict: bool 
 # ============================================================================ différences -> transaction
 
 def _strip_change(o: dict) -> dict:
-    return {k: v for k, v in o.items() if k != "change"}
+    """Objet comparable : sans ``change`` ni ``thumb`` vide. Le ``new`` renvoyé par une transaction porte
+    ``"thumb": null`` sur un média, absent des lectures de l'API (constaté sur Gramps Web 26.11.0, #264) : sans cela,
+    annuler une transaction qui modifie un média lu (sans envoi de fichier) serait refusé comme un conflit."""
+    return {k: v for k, v in o.items() if k != "change" and not (k == "thumb" and v is None)}
 
 
 def diff(base: GrampsDb, new: GrampsDb) -> list[dict]:

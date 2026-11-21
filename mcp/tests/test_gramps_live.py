@@ -71,6 +71,184 @@ def test_rewrite_without_change_is_empty(client, loaded):
     assert diff(db, tree_to_gramps(t, base=db)) == []
 
 
+# ---------------------------------------------------------------------------- #264 : vivants privés
+
+def _absent(rep) -> bool:
+    """Objet introuvable pour l'Invité : 404 (3.25.1, 3.26.0) ou réponse vide (3.13.0 : 200 et {} / [])."""
+    if rep.status_code in (403, 404):
+        return True
+    try:
+        return rep.status_code == 200 and rep.json() in ({}, [])
+    except ValueError:
+        return False
+
+
+def _drapeaux(db) -> dict:
+    return {(c, h): bool(o.get("private")) for c in db.objects for h, o in db.all(c).items()}
+
+
+def test_vivants_prives_invisibles_pour_un_invite(client, loaded, tmp_path):
+    """Protection de tout l'arbre (gramps_proteger_vivants) : un compte Invité (rôle 0) ne voit plus aucune personne
+    présumée vivante ni ses données propres, par aucune voie (listes, handle, gramps_id, recherche, familles,
+    enfants, événements, notes, médias et fichier, citations, sources, rétroliens, /living/, export) ; ce qui reste
+    visible est relevé ; l'annulation restaure exactement tous les drapeaux ; idempotence ; retrait au décès."""
+    import io
+    from datetime import date
+
+    from PIL import Image
+
+    from genealogiste_mcp import privacy
+    (tmp_path / "medias").mkdir()
+    buf = io.BytesIO()
+    Image.new("L", (90, 60), 150).save(buf, "JPEG")
+    (tmp_path / "medias" / "vivante-264.jpg").write_bytes(buf.getvalue())
+    b = GrampsBackend(client, tmp_path, tmp_path / ".propositions", ttl=0)
+    ops = [{"op": "ajouter_source", "ref": "s", "titre": "Livret de famille VIVANTE (264)"},
+           {"op": "ajouter_personne", "ref": "a", "noms": [{"prenoms": "Alix", "nom": "VIVANTE"}], "sexe": "F",
+            "evenements": [{"type": "BIRT", "date": "1988", "lieu": "Rochefort, Charente-Maritime, France",
+                            "citations": [{"source": "$s", "page": "page 1 (264)"}]}],
+            "notes": ["Alix VIVANTE travaille à Lille (264)."]},
+           {"op": "ajouter_personne", "ref": "d", "noms": [{"prenoms": "Paul", "nom": "DEFUNT"}], "sexe": "M",
+            "evenements": [{"type": "BIRT", "date": "1930", "non_source": True, "motif": "test"},
+                           {"type": "DEAT", "date": "2001", "non_source": True, "motif": "test"}],
+            "notes": ["Époux d'Alix VIVANTE (264)."]},
+           {"op": "ajouter_personne", "ref": "e", "noms": [{"prenoms": "Zoé", "nom": "VIVANTE"}], "sexe": "F",
+            "evenements": [{"type": "BIRT", "date": "2015", "non_source": True, "motif": "test"}]},
+           {"op": "ajouter_famille", "ref": "f", "epoux": "$d", "epouse": "$a",
+            "evenements": [{"type": "MARR", "date": "2000", "non_source": True, "motif": "test"}]},
+           {"op": "lier_enfant", "famille": "$f", "enfant": "$e", "non_source": True, "motif": "test"},
+           {"op": "ajouter_media", "ref": "m", "fichier": "medias/vivante-264.jpg", "format": "image/jpeg",
+            "titre": "Portrait (264)", "lier_a": ["$a"]},
+           # zone d'incertitude des règles : née il y a 105 ans sans décès (seuil), forcée décédée (méthode)
+           {"op": "ajouter_personne", "ref": "z", "noms": [{"prenoms": "Ana", "nom": "SEUIL"}], "sexe": "F",
+            "evenements": [{"type": "BIRT", "date": str(date.today().year - 105), "non_source": True,
+                            "motif": "test"}]},
+           {"op": "ajouter_personne", "ref": "y", "noms": [{"prenoms": "Max", "nom": "FORCE"}], "sexe": "M",
+            "vivant": "N", "evenements": [{"type": "BIRT", "date": "1970", "non_source": True, "motif": "test"}]}]
+    p0 = b.propose(ops, "Vivants (264)", "Personnes fictives (test).")
+    r0 = b.apply(p0["jeton"])
+    assert not r0.get("medias", {}).get("erreurs"), r0
+    refs = p0["references_creees"]
+    tree = b.load(fresh=True)
+    vivants = sorted(privacy.living_ids(tree))
+    assert {refs["a"], refs["e"], "I9"} <= set(vivants) and not {refs["d"], refs["z"], refs["y"]} & set(vivants)
+    db0 = client.load_all()
+    avant = _drapeaux(db0)
+    gh = {o["gramps_id"]: h for h, o in db0.all("Person").items()}
+    fh = next(h for h, f in db0.all("Family").items() if f["gramps_id"] == refs["f"])
+    # calcul de Gramps (/api/living/), compte Editor : relevé pour la comparaison des règles
+    print("living (Gramps, réglages / max 100) :", {x: (client.living(gh[x]), client.living(
+        gh[x], max_age_probably_alive=100)) for x in sorted(gh)})
+    assert client.living(gh[refs["a"]]) is True and client.living(gh[refs["d"]]) is False
+    # comparaison des règles (diagnostic), bornée ; seuil (Gramps 110 ans) et méthode (statut forcé ignoré par Gramps)
+    from types import SimpleNamespace
+
+    from genealogiste_mcp import diagnostic_vivants
+    cmp = diagnostic_vivants.regle(SimpleNamespace(tree=lambda: b.load(fresh=True), backend=b, gramps=lambda: client))
+    print("règles :", {k: cmp[k] for k in ("detail", "gramps_vivant_plugin_non", "plugin_vivant_gramps_non", "cause",
+                                          "requetes", "zone_incertitude")})
+    assert set(cmp["gramps_vivant_plugin_non"]) >= {refs["z"], refs["y"]}
+    assert cmp["cause"][refs["z"]] == "seuil" and cmp["cause"][refs["y"]] == "méthode"
+    assert cmp["requetes"] <= cmp["plafond"] and "SEUIL" not in json.dumps(cmp, ensure_ascii=False)
+
+    prop = b.propose_protection()
+    print("protection, bilan :", {k: prop[k] for k in ("a_proteger", "partages", "references_masquees", "residus",
+                                                       "retraits")})
+    lignes = prop["transaction_gramps"]["prive_vivants"]
+    print("protection, lignes :", lignes)
+    assert set(prop["a_proteger"]["personnes"]) == set(vivants)
+    assert f"Person {refs['a']} : privé posé ({refs['a']})" in lignes
+    assert any(x["gramps_id"] == refs["f"] for x in prop["partages"])  # conjoint décédé : famille visible
+    assert any(x["classe"] == "Note" for x in prop["residus"])  # note de Paul qui nomme Alix
+    r1 = b.apply(prop["jeton"])
+    time.sleep(1.1)  # /token/ : 1 requête par seconde
+    g = GrampsClient(URL, "sosa-invite", "sosa-invite")
+    assert g.role() == 0
+    from genealogiste_mcp.gramps.compatibilite import version_api
+    api = client.request("GET", "/metadata/").json()["gramps_webapi"]["version"]
+    db = client.load_all()
+    hs = {x: gh[x] for x in vivants}
+    vus = {p["gramps_id"] for p in g.list("Person")}
+    print("Invité, personnes :", sorted(vus))
+    assert not vus & set(vivants) and refs["d"] in vus
+    # lectures directes : les vivants créés ici et I9 (la liste ci-dessus couvre tous les vivants ; une lecture
+    # d'Invité prend plusieurs secondes sur l'arbre chargé par toute la suite : test placé tôt)
+    for x, h in ((x, hs[x]) for x in sorted({refs["a"], refs["e"], "I9"})):
+        for chemin, params in ((f"/people/{h}", None), ("/people/", {"gramps_id": x}), (f"/living/{h}", None),
+                               (f"/living/{h}/dates", None), (f"/people/{h}/timeline", None)):
+            rep = g.request("GET", chemin, params=params)
+            print("Invité,", chemin, params, rep.status_code, rep.text[:120])
+            # 3.13.0 : /people/<h>/timeline d'une personne privée -> 500 (page d'erreur, aucune donnée)
+            assert _absent(rep) or (rep.status_code == 500 and "timeline" in chemin), (chemin, rep.status_code)
+            assert "VIVANTE" not in rep.text and "Lucas" not in rep.text
+    for q in ("VIVANTE", "Alix", "Lucas", "Lille"):
+        rep = g.request("GET", "/search/", params={"query": q, "pagesize": 50})
+        trouves = rep.json() if rep.status_code == 200 else []
+        print("Invité, recherche", q, rep.status_code, [(x.get("object_type"), (x.get("object") or {}).get(
+            "gramps_id")) for x in trouves])
+        assert rep.status_code == 200 and not [x for x in trouves if x.get("handle") in hs.values()]
+        assert not [x for x in trouves if "Alix" in json.dumps(x, ensure_ascii=False)
+                    and x.get("object_type") != "note"]
+        if version_api(api) >= (3, 25, 0):  # index de recherche propre à l'API : seule la note saisie (résidu)
+            assert {x.get("object_type") for x in trouves} <= {"note"}
+        # API 3.13.0 (index sifts) : famille et mariage partagés avec le défunt trouvés par le nom du vivant, sans
+        # que ce nom soit renvoyé (limite documentée : docs/gramps-web.md, « Vivants et privé »)
+    fam = g.request("GET", f"/families/{fh}", params={"extend": "all", "profile": "all", "backlinks": "true"})
+    print("Invité, famille partagée :", fam.status_code, fam.text[:1500])
+    assert fam.status_code == 200 and "Alix" not in fam.text and "Zoé" not in fam.text
+    f = fam.json()
+    assert f["mother_handle"] in ("", None) and f["child_ref_list"] == []
+    listes = {c: g.list(c) for c in ("Event", "Note", "Media", "Citation", "Source", "Family")}
+    texte = json.dumps(listes, ensure_ascii=False)
+    for mot in ("Alix VIVANTE travaille", "page 1 (264)", "Livret de famille VIVANTE", "Portrait (264)"):
+        assert mot not in texte, mot
+    print("Invité, notes visibles nommant Alix :", [n["gramps_id"] for n in listes["Note"]
+                                                   if "Alix" in (n.get("text") or {}).get("string", "")])
+    media = next(m for m in db.all("Media").values() if m.get("desc") == "Portrait (264)")
+    for chemin in (f"/media/{media['handle']}", f"/media/{media['handle']}/file",
+                   f"/media/{media['handle']}/thumbnail/100"):
+        rep = g.request("GET", chemin)
+        print("Invité,", chemin, rep.status_code)
+        assert _absent(rep) or rep.status_code >= 400
+    naiss = [r["ref"] for r in db.get("Person", hs[refs["a"]])["event_ref_list"]]
+    for h in naiss:
+        assert _absent(g.request("GET", f"/events/{h}"))
+    paul = g.request("GET", f"/people/{gh[refs['d']]}", params={"extend": "all", "profile": "all",
+                                                                  "backlinks": "true"})
+    # seule mention restante : la note saisie sur Paul (résidu listé par la proposition, jamais réécrite)
+    assert paul.status_code == 200 and "Zoé" not in paul.text
+    assert "Alix" not in paul.text.replace("Époux d'Alix VIVANTE (264).", "")
+    meta = g.request("GET", "/metadata/").json()
+    print("Invité, compteurs :", meta.get("object_counts"))
+    exp = g.request("GET", "/exporters/ged/file")
+    print("Invité, export GEDCOM :", exp.status_code, len(exp.content))
+    if exp.status_code == 200:
+        assert b"VIVANTE" not in exp.content.replace(b"Alix VIVANTE (264)", b"") and b"Lucas" not in exp.content
+    # le compte Editor voit tout ; idempotence ; aller-retour sans réécriture
+    assert set(vivants) <= {p["gramps_id"] for p in client.list("Person")}
+    assert "jeton" not in b.propose_protection()
+    t, _ = gramps_to_tree(db)
+    assert diff(db, tree_to_gramps(t, base=db)) == []
+    # annulation : tous les drapeaux exactement restaurés
+    b.apply(b.propose_undo(r1["transaction"])["jeton"])
+    assert _drapeaux(client.load_all()) == avant
+    # de nouveau, puis décès d'Alix : retrait proposé de ce que le plugin a posé pour elle seulement
+    r2 = b.apply(b.propose_protection()["jeton"])
+    r_deces = b.apply(b.propose([{"op": "ajouter_evenement", "cible": refs["a"], "evenement": {
+        "type": "DEAT", "date": "2024", "non_source": True, "motif": "test"}}], "Décès", "Test (fictif).")["jeton"])
+    ret = b.propose_protection()
+    print("retrait :", ret["retraits"], ret["transaction_gramps"]["prive_vivants"])
+    assert ret["retraits"]["personnes"] == [refs["a"]]
+    assert all(f"({refs['a']})" in x for x in ret["transaction_gramps"]["prive_vivants"] if "retiré" in x)
+    r3 = b.apply(ret["jeton"])
+    assert not client.get("Person", gh[refs["a"]]).get("private") and client.get("Person", gh[refs["e"]])["private"]
+    # nettoyage : annulations dans l'ordre inverse
+    for r in (r3, r_deces, r2, r0):
+        b.apply(b.propose_undo(r["transaction"])["jeton"])
+    assert refs["a"] not in {p["gramps_id"] for p in client.list("Person")}
+    assert _drapeaux(client.load_all()) == {k: v for k, v in avant.items() if k in _drapeaux(client.load_all())}
+
+
 def test_propose_apply_conflict_undo(client, loaded, tmp_path):
     b = GrampsBackend(client, tmp_path, tmp_path / ".propositions", ttl=0)
     ops = [{"op": "ajouter_citation", "cible": {"type": "evenement", "uid": "11111111-1111-4111-8111-111111111113"},
@@ -246,11 +424,12 @@ def _app_gramps(tmp_path, user, password):
     return server.App(cfg, sleeper=time.sleep)
 
 
-def test_diagnostic_sur_le_vrai_gramps_web(tmp_path):
+def test_diagnostic_sur_le_vrai_gramps_web(loaded, tmp_path):
     """Version de l'API, de Gramps, rôle Editor (ok) et réglages lisibles sans droit Admin."""
     from genealogiste_mcp import diagnostic
     from genealogiste_mcp.gramps.compatibilite import FONCTIONS_API, version_api
-    ctl = {c["controle"]: c for c in diagnostic.controles_gramps(_app_gramps(tmp_path, "sosa-test", "sosa-test"))}
+    ctl = {c["controle"]: c for c in diagnostic.controles_gramps(_app_gramps(tmp_path, "sosa-test", "sosa-test"),
+                                                                  vivants=True)}
     print("diagnostic réel :", {k: (v["etat"], v["detail"]) for k, v in ctl.items()})
     assert ctl["gramps_web"]["etat"] == "ok"
     v = ctl["gramps_version"]
@@ -269,6 +448,12 @@ def test_diagnostic_sur_le_vrai_gramps_web(tmp_path):
         assert g["etat"] == "ok" and "non vérifiable sur cette version" in g["detail"]
     texte = json.dumps(list(ctl.values()), ensure_ascii=False)
     assert "sosa-test" not in texte and "Bearer" not in texte
+    # #264 : vivants non privés (comptes seulement) et comparaison bornée des règles par /api/living/
+    v, r = ctl["gramps_vivants"], ctl["gramps_regle_vivants"]
+    print("diagnostic vivants :", v["etat"], v["detail"], "|", r["etat"], r["detail"], r.get("cause"))
+    assert v["etat"] == "attention" and v["valeurs"]["vivants_non_prives"] >= 1
+    assert r["requetes"] <= r["plafond"]
+    assert "Lucas" not in texte and "MARTIN" not in texte
 
 
 @pytest.mark.parametrize(("compte", "role", "nom"), COMPTES_FAIBLES)

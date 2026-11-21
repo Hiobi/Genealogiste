@@ -77,6 +77,8 @@ class Config:
     gramps_notes_auto: str = "true"  # notes de preuve Genealogiste:auto : true (toute la base) | modifies | false
     gramps_notes_liens: bool = False  # liens internes gramps:// dans ces notes (#279) ; changement : par recalcul
     gramps_taches: bool = False  # tâches de Gramps Web (source + note étiquetées ToDo, #263) ; faux : rien de lu ni écrit
+    # vivants marqués privés dans Gramps Web (#264) : off (rien d'ajouté) | propose (ajouté au diff de la proposition)
+    gramps_prive_vivants: str = "off"
     git_mirror: bool = False  # mode gramps : miroir GEDCOM 7 versionné de l'arbre Gramps
     git_remote: str = ""  # dépôt distant optionnel (privé !) du répertoire de données
     strict_evidence: bool = False
@@ -280,6 +282,27 @@ def taches_mode(value: str | None) -> bool:
     return NOTES_AUTO[v] == "true"
 
 
+PRIVE_VIVANTS = ("off", "propose")
+REGLE_PRIVE = ("le drapeau privé n'est jamais posé ni retiré sans proposition (diff, accord explicite, "
+               "arbre_appliquer, journalisée et annulable)")
+
+
+def prive_vivants_mode(value: str | None) -> str:
+    """GENEALOGISTE_GRAMPS_PRIVE_VIVANTS (#264) : off (défaut, comportement inchangé) | propose (la pose du privé des
+    vivants concernés est ajoutée au diff de la proposition en cours). « auto » est refusé : il écrirait le drapeau
+    sans proposition, contraire à la règle du plugin ; valeur inconnue refusée (pas de bascule silencieuse)."""
+    v = (value or "").strip().lower()
+    if not v:
+        return "off"
+    if v == "auto":
+        raise ValueError(f"GENEALOGISTE_GRAMPS_PRIVE_VIVANTS=auto refusé : {REGLE_PRIVE}. Valeurs possibles : off | "
+                         "propose (ajouté au diff, appliqué après accord) ; pour tout l'arbre : gramps_proteger_vivants "
+                         "(docs/gramps-web.md, « Vivants et privé »).")
+    if v not in PRIVE_VIVANTS:
+        raise ValueError(f"GENEALOGISTE_GRAMPS_PRIVE_VIVANTS={value!r} : valeurs possibles off | propose")
+    return v
+
+
 ECRITURE = {"autorisee": "autorisee", "autorisée": "autorisee", "interdite": "interdite"}
 
 
@@ -420,6 +443,7 @@ def load_config() -> Config:
         gramps_notes_auto=notes_auto_mode(env("GENEALOGISTE_GRAMPS_NOTES_AUTO")),
         gramps_notes_liens=notes_liens(env("GENEALOGISTE_GRAMPS_NOTES_LIENS")),
         gramps_taches=taches_mode(env("GENEALOGISTE_GRAMPS_TACHES")),
+        gramps_prive_vivants=prive_vivants_mode(env("GENEALOGISTE_GRAMPS_PRIVE_VIVANTS")),
         git_mirror=_bool(env("GENEALOGISTE_GIT_MIRROR"), False),
         git_remote=env("GENEALOGISTE_GIT_REMOTE", ""),
         strict_evidence=env("GENEALOGISTE_STRICT", "0") in ("1", "true", "oui"),

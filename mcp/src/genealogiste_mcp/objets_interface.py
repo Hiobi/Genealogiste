@@ -81,6 +81,41 @@ def _details(g: str, s: Source) -> str:
     return f", statut {e['statut'] or 'aucun'}, priorité {pr}"
 
 
+def _liens_media(tree: Tree, mid: str, sauf: str) -> list[str]:
+    """Objets de l'arbre (hors la source ``sauf``) qui lient le média ``mid`` : personnes, familles, sources,
+    événements et citations (par leur porteur)."""
+    from .privacy import _citations
+
+    out = []
+    for coll in (tree.personnes, tree.familles, tree.sources):
+        for oid, o in coll.items():
+            if oid == sauf:
+                continue
+            cits = [c for cs in _citations(o) for c in cs]
+            if mid in (getattr(o, "medias", None) or []) or any(mid in e.medias for e in getattr(o, "evenements", [])
+                                                                 or []) or any(mid in c.medias for c in cits):
+                out.append(oid)
+    return out
+
+
+def medias_publics(tree: Tree, sid: str, s: Source, g: str) -> list[str]:
+    """#264 (limite laissée par #261) : un média garde sa propre confidentialité ; l'image d'un objet d'interface
+    privé reste lisible d'un compte Invité (objet, fichier, vignette) si le média est public. Avertissement, avec
+    l'opération qui le rend privé ; s'il est lié ailleurs, ces liens sont nommés (il y serait masqué aussi)."""
+    out = []
+    quoi = "Billet" if g == "billet" else "Tâche"
+    for mid in s.medias:
+        m = tree.medias.get(mid)
+        if m is None or m.prive:
+            continue
+        ailleurs = _liens_media(tree, mid, sid)
+        op = f'{{"op": "modifier_media", "id": "{mid}", "champs": {{"prive": true}}}}'
+        out.append(f"{quoi} {sid} privé : son média {mid} est public ({INVITE} : objet, fichier et vignette). "
+                   + (f"Le rendre privé : {op}." if not ailleurs else
+                      f"Il est aussi lié à {', '.join(ailleurs)} : le rendre privé ({op}) le masquerait aussi là."))
+    return out
+
+
 def controler(before: Tree, after: Tree, genres: tuple[str, ...] = ("billet", "tache")
               ) -> tuple[list[str], list[str], list[str]]:
     """Objets d'interface créés ou modifiés par une proposition : (refus, avertissements, lignes de résumé)."""
@@ -107,7 +142,9 @@ def controler(before: Tree, after: Tree, genres: tuple[str, ...] = ("billet", "t
                 avis.append(m["devenu"].format(sid=sid, n=n))
         if not s.note and m["sans_texte"]:
             avis.append(m["sans_texte"].format(sid=sid))
-        noms = billets.personnes_nommees(after, s, identifiants=g == "tache")
+        if s.prive:
+            avis += medias_publics(after, sid, s, g)
+        noms = billets.personnes_nommees(after, s, identifiants=True)
         if not noms:
             continue
         liste = " ; ".join(f"{n['id']} {n['nom']} ({n['raison']} ; {', '.join(n['mentions'])})" for n in noms)

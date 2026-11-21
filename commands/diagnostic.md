@@ -1,6 +1,6 @@
 ---
 description: Diagnostic d'exploitation du serveur (configuration, dépendances, droits, caches, sources joignables)
-argument-hint: [local]
+argument-hint: [local] [vivants]
 ---
 Diagnostic : **$ARGUMENTS**
 
@@ -12,6 +12,10 @@ Diagnostic : **$ARGUMENTS**
    de rôle (Editor attendu : un rôle plus faible interdit l'écriture, Owner/Admin est déconseillé) et de réglages.
    Ajouter l'accord entre la racine Sosa et la personne de référence de Gramps : en cas d'écart, donner les deux
    identifiants et la procédure manuelle du remède (Gramps Web n'a aucun point d'API pour la modifier).
+   Contrôle des vivants : non lancé par défaut (une ligne). Si l'argument contient « vivants », ou si cette ligne
+   est en attention et que l'utilisateur l'accepte, appeler `diagnostic(vivants=true)` (lecture complète de l'arbre,
+   30 requêtes au plus) ; donner les comptes et les identifiants tels quels (jamais de nom) ; remède :
+   `gramps_proteger_vivants` (proposition, accord explicite).
 4. Présenter le contrôle des chemins de médias (introuvables, ambigus, hors des racines, nom attribué par Gramps Web) avec son
    échantillon d'identifiants, sans rien déduire d'autre ; pour la procédure, renvoyer à docs/gramps.md (chemin de base des médias).
 5. Pour une source au verdict **protection** : le dire tel quel (blocage anti-robot de cette adresse) et
