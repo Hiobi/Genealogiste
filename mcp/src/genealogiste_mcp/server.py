@@ -962,7 +962,8 @@ def diagnostic(reseau: bool = True) -> dict:
     version du serveur et du plugin sur disque, configuration effective (sans secret), git, uv, droits,
     espace disque, taille des caches, OCR, propositions en attente/expirées, et si reseau=True la
     joignabilité de chaque source (verdict joignable/protection/injoignable, une requête par source, tracée
-    au journal) et de Gramps Web. Fonctionne même si la configuration est invalide."""
+    au journal) et de Gramps Web (joignabilité, version de l'API et de Gramps, rôle du compte, réglages lisibles
+    sans droit Admin). Fonctionne même si la configuration est invalide."""
     from . import diagnostic as diag
 
     try:

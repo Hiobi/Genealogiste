@@ -27,7 +27,7 @@ Les commandes sont des workflows guidés : elles ne dispensent pas de lire les r
 | `preuve <id> [fait]` | Rédiger un rapport argumenté sur une conclusion |
 | `recit <id>` | Produire un récit dont les faits sont sourcés |
 | `journal` | Consulter recherches et historique des modifications |
-| `diagnostic [local]` | Contrôler configuration, dépendances, droits, caches et sources joignables, avec un remède par problème |
+| `diagnostic [local]` | Contrôler configuration, dépendances, droits, caches, sources joignables, et pour Gramps Web version de l’API, rôle du compte et réglages, avec un remède par problème |
 
 ## Exemples fictifs
 

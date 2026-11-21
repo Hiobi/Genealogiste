@@ -277,7 +277,7 @@ def controles_reseau(a) -> list[dict]:
                   nb_resultats=len(out), resume="; ".join(f"{c['controle']}={c['verdict']}" for c in out),
                   references=list(SOURCES.values()))
     if a.config.gramps_url:
-        out.append(_controle_gramps(a))
+        out += controles_gramps(a)
     return out
 
 
@@ -288,6 +288,144 @@ def _controle_gramps(a) -> dict:
     except Exception as exc:  # noqa: BLE001
         d = erreurs.decrire(exc)
         return _ctl("gramps_web", "erreur" if a.config.backend == "gramps" else "attention", d["erreur"], d["remede"])
+
+
+def controles_gramps(a) -> list[dict]:
+    """Joignabilité, puis version de l'API, rôle du compte et réglages lisibles sans droit Admin (#265).
+
+    Chaque contrôle échoue seul : un `/api/metadata/` ou `/api/users/-/` en panne donne un contrôle `attention` avec
+    le motif, sans empêcher les autres. Ni identifiant, ni jeton, ni nom de personne dans la sortie."""
+    out = [_controle_gramps(a)]
+    gramps_actif = a.config.backend == "gramps"
+    meta, injoignable = None, False
+    try:
+        meta = a.gramps().request("GET", "/metadata/")
+        if meta.status_code >= 400:
+            raise RuntimeError(f"HTTP {meta.status_code}")
+        meta = meta.json()
+        if not isinstance(meta, dict):
+            raise ValueError("réponse inattendue")
+    except Exception as exc:  # noqa: BLE001
+        meta, injoignable = None, "injoignable" in str(exc)
+        out.append(_ctl("gramps_version", "attention", f"version de l'API illisible : {_motif(exc)}",
+                        "Gramps Web ne renseigne pas /api/metadata/ : vérifier que le compte peut se connecter "
+                        "(GENEALOGISTE_GRAMPS_USER / _PASSWORD) puis relancer le diagnostic."))
+        out.append(_ctl("gramps_reglages", "attention", f"réglages illisibles : {_motif(exc)}",
+                        "Relancer le diagnostic une fois /api/metadata/ rétabli."))
+    if meta is not None:
+        out.append(_controle_version_gramps(meta, gramps_actif))
+    if injoignable:  # inutile de rejouer trois essais et leurs attentes pour chaque contrôle
+        out.append(_ctl("gramps_role", "attention", "rôle non vérifié : Gramps Web injoignable",
+                        "Rétablir l'accès à Gramps Web puis relancer le diagnostic."))
+    else:
+        out.append(_controle_role_gramps(a, gramps_actif))
+    if meta is not None:
+        out.append(_controle_reglages_gramps(a, meta))
+    return out
+
+
+def _motif(exc: BaseException) -> str:
+    return (str(exc) or type(exc).__name__)[:200]
+
+
+def _controle_version_gramps(meta: dict, gramps_actif: bool) -> dict:
+    from .gramps import compatibilite as cp
+
+    api = str((meta.get("gramps_webapi") or {}).get("version") or "")
+    gramps = str((meta.get("gramps") or {}).get("version") or "")
+    plage = f"{cp.texte_version(cp.API_TESTEE_MIN)} à {cp.texte_version(cp.API_TESTEE_MAX)}"
+    verdict = cp.verdict_api(api)
+    v = cp.version_api(api)
+    conditionnelles = {n: m for n, m in cp.FONCTIONS_API.items() if m > cp.API_TESTEE_MIN}
+    dispo = sorted(n for n, m in conditionnelles.items() if v and v >= m)
+    absentes = sorted((n for n, m in conditionnelles.items() if v and v < m), key=lambda n: conditionnelles[n])
+    fonctions = {n: bool(v and v >= m) for n, m in conditionnelles.items()} if v else {}
+    detail = f"API {api or 'inconnue'}, Gramps {gramps or 'inconnu'} ; plage testée {plage}"
+    if v:
+        detail += f" ; fonctions optionnelles disponibles : {', '.join(dispo) or 'aucune'}"
+        if absentes:
+            detail += f" ; absentes (API plus ancienne) : {', '.join(absentes)}"
+    extra = {"api": api, "gramps": gramps, "verdict": verdict, "plage_testee": plage, "fonctions": fonctions}
+    if verdict == "testee":
+        return _ctl("gramps_version", "ok", detail, **extra)
+    if verdict == "trop_ancienne":
+        return _ctl("gramps_version", "erreur" if gramps_actif else "attention", detail,
+                    f"API {api} sous la plage testée : le paramètre « message » des transactions est refusé (HTTP 422), "
+                    f"aucune écriture n'est possible. Mettre à jour Gramps Web (API {cp.texte_version(cp.API_TESTEE_MIN)} "
+                    "au moins ; docs/gramps-web.md, « Compatibilité des versions »).", **extra)
+    if verdict == "plus_recente":
+        return _ctl("gramps_version", "attention", detail,
+                    f"API {api} plus récente que la plage testée ({plage}) : lectures et écritures probablement "
+                    "compatibles, non vérifiées. Contrôler le diff d'une première proposition avant de l'appliquer ; "
+                    "signaler tout écart.", **extra)
+    return _ctl("gramps_version", "attention", detail,
+                "Version de l'API non reconnue dans /api/metadata/ : compatibilité non vérifiable ; "
+                "docs/gramps-web.md, « Compatibilité des versions ».", **extra)
+
+
+def _controle_role_gramps(a, gramps_actif: bool) -> dict:
+    from .gramps.client import ROLE_ECRITURE, nom_role
+
+    try:
+        role = a.gramps().role()
+    except Exception as exc:  # noqa: BLE001
+        return _ctl("gramps_role", "attention", f"rôle du compte illisible : {_motif(exc)}",
+                    "Vérifier que le compte peut se connecter puis relancer le diagnostic ; le rôle requis pour "
+                    "écrire est Editor.")
+    if role is None:
+        return _ctl("gramps_role", "attention", "rôle du compte non renseigné par le serveur",
+                    "Rôle non vérifiable : s'assurer que le compte dédié est Editor (docs/gramps-web.md).")
+    nom = nom_role(role)
+    if role < ROLE_ECRITURE:
+        return _ctl("gramps_role", "erreur" if gramps_actif else "attention",
+                    f"rôle {nom} ({role}) : lecture seule pour Genealogiste, aucune écriture possible",
+                    "Donner au compte dédié le rôle Editor dans Gramps Web (Paramètres, Administration, Gérer les "
+                    "utilisateurs), puis relancer le diagnostic.", role=role, role_nom=nom, ecriture=False)
+    if role > ROLE_ECRITURE:
+        return _ctl("gramps_role", "attention",
+                    f"rôle {nom} ({role}) : l'écriture est possible, mais le rôle dépasse le besoin",
+                    "Déconseillé : préférer un compte Editor (un compte Owner ou Admin gère aussi les utilisateurs, "
+                    "les sauvegardes et les réglages ; la fuite des identifiants serait plus grave).",
+                    role=role, role_nom=nom, ecriture=True)
+    return _ctl("gramps_role", "ok", f"rôle {nom} ({role}) : écriture possible, privilège minimal",
+                role=role, role_nom=nom, ecriture=True)
+
+
+def _controle_reglages_gramps(a, meta: dict) -> dict:
+    """Réglages lisibles sans droit Admin (`/api/config/` leur est réservé : jamais appelé)."""
+    from .gramps import compatibilite as cp
+
+    serveur = meta.get("server") or {}
+    file_taches = serveur.get("task_queue")
+    multi = serveur.get("multi_tree")
+    v = cp.version_api(str((meta.get("gramps_webapi") or {}).get("version") or ""))
+    inscription: bool | None = None
+    if v and v >= cp.FONCTIONS_API["inscription_libre"]:
+        try:
+            tree = a.gramps().tree_id if multi else ""
+            r = a.gramps().request("GET", "/register/config/", params={"tree": tree} if tree else None)
+            if r.status_code == 200 and isinstance((d := r.json()), dict) and isinstance(d.get("enabled"), bool):
+                inscription = d["enabled"]
+        except Exception:  # noqa: BLE001
+            inscription = None
+    if v is None or v < cp.FONCTIONS_API["inscription_libre"]:
+        texte_inscription = "non vérifiable sur cette version (API < 3.26.0)"
+    elif inscription is None:
+        texte_inscription = "illisible"
+    else:
+        texte_inscription = "ouverte" if inscription else "fermée"
+    def oui_non(b):
+        return "inconnu" if b is None else "oui" if b else "non"
+    detail = (f"file de tâches : {oui_non(file_taches)} ; multi-arbres : {oui_non(multi)} ; "
+              f"inscription libre : {texte_inscription}")
+    valeurs = {"file_de_taches": file_taches, "multi_arbres": multi, "inscription_libre": inscription}
+    if inscription:
+        return _ctl("gramps_reglages", "attention", detail,
+                    "L'inscription libre est ouverte : toute personne atteignant l'instance peut demander un compte. "
+                    "La fermer (REGISTRATION_DISABLED=True) si l'instance n'est pas publique.", valeurs=valeurs)
+    note = "" if file_taches else (
+        "Sans file de tâches, les grosses transactions s'exécutent dans la requête (délai plus long, pas d'échec).")
+    return _ctl("gramps_reglages", "ok", detail + (f" ({note})" if note else ""), valeurs=valeurs)
 
 
 def executer(app_ou_exc, probleme: dict | None, reseau: bool = True) -> dict:

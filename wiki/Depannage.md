@@ -19,7 +19,7 @@ Les contrôles ci-dessous évitent de réinstaller une autre copie ou de créer 
 | HTTP 401 | Jeton absent ou différent entre serveur et client ; vérifier l’en-tête Bearer sans le publier |
 | HTTP 421 | Host/Origin rejeté par le transport ; vérifier l’adresse locale et la configuration du proxy, pas seulement le token |
 | HTTP 413 | Message HTTP supérieur à 4 Mio ; réduire le texte envoyé ou utiliser les outils de fichier adaptés |
-| Gramps refuse une écriture | Vérifier rôle du compte, arbre sélectionné et conflit ; suivre le [guide Gramps](../docs/gramps-web.md) |
+| Gramps refuse une écriture | `/genealogiste:diagnostic` affiche le rôle du compte (Editor requis) et la version de l’API (3.13.0 au moins) ; vérifier aussi l’arbre sélectionné et les conflits ; suivre le [guide Gramps](../docs/gramps-web.md) |
 | Un envoi a un « résultat indéterminé » | Contrôler son résultat côté service avant de recommencer |
 | Une pièce ne s’affiche pas dans Obsidian | Vérifier le chemin et le nom de fichier ; le rendu natif des cas avec crochets reste suivi dans [#75](https://github.com/Hiobi/Genealogiste/issues/75) |
 

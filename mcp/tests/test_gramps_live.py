@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 
 import pytest
 
@@ -169,3 +170,69 @@ def test_sosa_auto_recalc_and_git_mirror(client, loaded, tmp_path):
     assert r["miroir_git"] is None
     with pytest.raises(ProposalError):
         b.propose_notes()
+
+
+
+# ---------------------------------------------------------------------------- #265 : version, rôle, refus d'écriture
+
+COMPTES_FAIBLES = [("sosa-membre", 1, "Member"), ("sosa-contributeur", 2, "Contributor")]
+
+
+def _app_gramps(tmp_path, user, password):
+    from genealogiste_mcp import server
+    from genealogiste_mcp.config import Config
+    cfg = Config(data_dir=tmp_path / "donnees", cache_path=tmp_path / "cache.sqlite", backend="gramps",
+                 gramps_url=URL, gramps_user=user, gramps_password=password, gramps_ttl=0)
+    # vraie pause : /token/ est limité à 1 requête par seconde et par adresse, tous comptes confondus
+    return server.App(cfg, sleeper=time.sleep)
+
+
+def test_diagnostic_sur_le_vrai_gramps_web(tmp_path):
+    """Version de l'API, de Gramps, rôle Editor (ok) et réglages lisibles sans droit Admin."""
+    from genealogiste_mcp import diagnostic
+    from genealogiste_mcp.gramps.compatibilite import FONCTIONS_API, version_api
+    ctl = {c["controle"]: c for c in diagnostic.controles_gramps(_app_gramps(tmp_path, "sosa-test", "sosa-test"))}
+    print("diagnostic réel :", {k: (v["etat"], v["detail"]) for k, v in ctl.items()})
+    assert ctl["gramps_web"]["etat"] == "ok"
+    v = ctl["gramps_version"]
+    attendu = os.environ.get("GENEALOGISTE_TEST_GRAMPS_API")
+    if attendu:
+        assert v["api"] == attendu and v["verdict"] == "testee" and v["etat"] == "ok"
+    assert v["api"] and v["gramps"].startswith("6.")
+    assert (ctl["gramps_role"]["etat"], ctl["gramps_role"]["role"]) == ("ok", 3)
+    g = ctl["gramps_reglages"]
+    assert g["etat"] == "ok" and "file de tâches : non" in g["detail"] and "multi-arbres : non" in g["detail"]
+    if version_api(v["api"]) >= FONCTIONS_API["inscription_libre"]:
+        assert "inscription libre : fermée" in g["detail"] or "inscription libre : ouverte" in g["detail"]
+    else:
+        assert "non vérifiable sur cette version" in g["detail"]
+    texte = json.dumps(list(ctl.values()), ensure_ascii=False)
+    assert "sosa-test" not in texte and "Bearer" not in texte
+
+
+@pytest.mark.parametrize(("compte", "role", "nom"), COMPTES_FAIBLES)
+def test_compte_sans_droit_d_ecriture(compte, role, nom, tmp_path):
+    """Diagnostic en erreur, refus anticipé de arbre_proposer, forme réelle du 403, lecture toujours possible."""
+    from genealogiste_mcp import diagnostic
+    from genealogiste_mcp.gramps.client import GrampsError
+    a = _app_gramps(tmp_path, compte, compte)
+    r = next(c for c in diagnostic.controles_gramps(a) if c["controle"] == "gramps_role")
+    assert (r["etat"], r.get("role"), r.get("role_nom")) == ("erreur", role, nom), r
+    assert "Editor" in r["remede"]
+    c = a.gramps()
+    assert c.role() == role and "EditObject" not in (c.permissions() or set())
+    with pytest.raises(GrampsError, match="Editor"):
+        c.exiger_ecriture()
+    with pytest.raises(ProposalError, match="lecture reste possible"):
+        a.backend.propose([{"op": "marquer_vivant", "id": "I7", "vivant": "N"}], "Vivant", "Essai (test).")
+    assert a.backend.db is None  # refus avant la lecture de l'arbre
+    assert c.load_all().count()  # la lecture reste possible
+    tag = {"_class": "Tag", "handle": "t403", "name": "essai-403", "color": "#000000", "priority": 0}
+    item = {"type": "add", "_class": "Tag", "handle": "t403", "old": None, "new": tag}
+    # forme réelle d'un 403 (flask-smorest) : consignée dans docs/gramps-web.md
+    rep = c.request("POST", "/transactions/", params={"message": "essai"}, json=[item])
+    print("403 réel", compte, rep.status_code, rep.headers.get("content-type"), rep.text)
+    assert rep.status_code == 403 and rep.json().get("code") == 403
+    with pytest.raises(GrampsError) as exc:
+        c.transaction([item], "essai")
+    assert exc.value.status == 403 and "Editor" in str(exc.value) and "Corriger" in str(exc.value)

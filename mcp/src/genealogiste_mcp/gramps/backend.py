@@ -139,6 +139,14 @@ def check_tree(client: GrampsClient, data_dir: Path) -> str:
     return tree
 
 
+def exiger_ecriture(client: GrampsClient) -> None:
+    """Point commun des propositions et écritures : compte sans droit d'écriture refusé avant tout calcul (#265)."""
+    try:
+        client.exiger_ecriture()
+    except GrampsError as exc:
+        raise ProposalError(str(exc)) from exc
+
+
 MASSIVE_OBJECTS = 50  # au-delà, pour moins de MASSIVE_OPERATIONS opérations : avertissement explicite
 MASSIVE_OPERATIONS = 5
 
@@ -256,6 +264,7 @@ class GrampsBackend:
 
     def propose(self, operations: list[dict], titre: str, justification: str,
                 sources: list[str] | None = None, all_notes: bool = False, structure: bool = False) -> dict:
+        exiger_ecriture(self.client)  # avant la lecture de l'arbre et le calcul du diff
         db = self.snapshot(fresh=True)
         tree = self.load()
         ctx, token, message = prepare(tree, operations, titre, justification, sources, self.exiger_source,
@@ -305,6 +314,7 @@ class GrampsBackend:
         """Migration des marqueurs Sosa-* / Sosa:auto vers Genealogiste-* / Genealogiste:auto (#182) : une
         transaction (jeton, accord explicite, journalisée et annulable), sans changement d'identifiant ni de
         valeur. Renvoie {jeton?, bilan, objets, incoherences}."""
+        exiger_ecriture(self.client)
         db = self.snapshot(fresh=True)
         items, incoherences = migrer_marqueurs(db)
         out: dict = {"incoherences": incoherences}
@@ -355,6 +365,7 @@ class GrampsBackend:
         kind = record.get("type")
         if kind not in ("annulation", "transaction"):
             raise ProposalError("Jeton d'un autre type (bascule : utiliser gramps_bascule_appliquer).")
+        exiger_ecriture(self.client)  # avant de consommer le jeton : un refus de droits ne le brûle pas
         self.recover()
         db = self.snapshot(fresh=True)
         undo = kind == "annulation"
@@ -465,6 +476,7 @@ class GrampsBackend:
         return {**out, "absents_en_local": missing}
 
     def propose_undo(self, reference: str) -> dict:
+        exiger_ecriture(self.client)
         self.recover()
         entry = next((e for e in reversed(self.transactions(1000)) if e["id"] == reference
                       and e["type"] == "transaction" and self._effective(e)), None)
@@ -521,6 +533,7 @@ def bascule_preview(client: GrampsClient, store: TreeStore, tokens: TokenStore, 
     privée). Après accord, Gramps Web devient la référence et arbre.ged est figé."""
     if store.frozen():
         raise ProposalError("Bascule déjà faite : " + json.dumps(store.frozen(), ensure_ascii=False))
+    exiger_ecriture(client)
     check_tree(client, store.dir)
     remote = client.load_all()
     occupied = {c: n for c, n in remote.count().items() if c not in ("Tag",)}
