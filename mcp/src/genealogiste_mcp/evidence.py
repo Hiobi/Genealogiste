@@ -4,7 +4,8 @@ Règle (mode pondéré, par défaut) :
   - les citations sont regroupées par source originale indépendante : deux sources dérivées d'un même
     original (acte + table décennale, relevé d'association, index en ligne) ne comptent qu'une fois ;
   - poids d'un groupe = meilleure citation : 2 si source originale + information primaire + preuve
-    directe, 1 sinon ; 0 pour une source composite (arbre en ligne : piste, pas preuve) ou une preuve négative ;
+    directe, 1 sinon ; 0 pour une source composite (arbre en ligne : piste, pas preuve), une preuve négative ou
+    un billet du blog de Gramps Web (source étiquetée Blog, #261 : récit, jamais une source indépendante) ;
   - confirmé : ≥3 points ET ≥2 groupes indépendants ; probable : ≥2 points ; hypothèse : ≥1 point ;
   - contradictoire : valeurs incompatibles pour un même fait unique ; réfuté : forçage manuel justifié.
 Mode strict (GENEALOGISTE_STRICT=1) : chaque groupe vaut 1 ; confirmé = 3 groupes, probable = 2, hypothèse = 1.
@@ -14,6 +15,7 @@ from __future__ import annotations
 
 import re
 
+from .billets import est_billet
 from .citations import format_citation
 from .models import UNIQUE_EVENTS, Citation, Event, Tree
 from .normalize.dates import compare, parse_date
@@ -98,7 +100,7 @@ def citation_weight(c: Citation, tree: Tree, strict: bool = False) -> float:
     """
     src = tree.sources.get(c.source)
     stype = c.type_source if c.type_source != "indeterminee" else (src.type_source if src else "indeterminee")
-    if c.consultation == "non_vu" or stype == "composite" or c.preuve == "negative":
+    if c.consultation == "non_vu" or stype == "composite" or c.preuve == "negative" or est_billet(src):
         return 0.0
     if c.consultation in ("index", "transcription") and stype == "originale":
         stype = "derivee"
@@ -175,6 +177,9 @@ def assess_citations(citations: list[Citation], tree: Tree, strict: bool = False
     unseen = [c for c in citations if c.consultation == "non_vu"]
     if unseen:
         out["actes_a_voir"] = [format_citation(tree, c, False) for c in unseen]
+    if billets := sorted({c.source for c in citations if est_billet(tree.sources.get(c.source))}):
+        out["billets_cites"] = [f"{sid} : billet du blog (récit), jamais compté comme preuve ; citer ses sources"
+                                for sid in billets]
     if citations and not any(c.consultation for c in citations):
         out["avertissement"] = "Préciser pour chaque citation ce qui a été vu (original, image, index, non vu)."
     return out

@@ -53,6 +53,7 @@ import uuid
 from dataclasses import asdict, dataclass, field
 
 from .. import marqueurs
+from ..billets import BLOG
 from ..citations import INFOS, PREUVES, VU
 from ..citations import TYPES as SOURCE_TYPE_LABELS
 from ..etiquettes import geree
@@ -586,14 +587,27 @@ class _Reader:
                 shared.append(f"@{key}@")
         return texts, shared
 
-    def single_note(self, handles: list[str]) -> str:
-        """Champ texte unique (note d'événement, de source) : toutes les notes manuelles, jointes."""
+    def single_note(self, handles: list[str], corps: str = "") -> str:
+        """Champ texte unique (note d'événement, de source) : toutes les notes manuelles, jointes ; ``corps`` : note
+        privée gardée quand même (corps d'un billet privé, :meth:`corps_billet`)."""
         out = []
         for h in handles or []:
             n = self.note(h)
-            if n is not None and not self.is_auto(n) and not n.get("private"):
+            if n is not None and not self.is_auto(n) and (not n.get("private") or h == corps):
                 out.append(self.note_text(n))
         return "\n\n".join(out)
+
+    def corps_billet(self, s: dict | None) -> str:
+        """Handle du corps d'un billet privé (#261) : première note non générée d'une source étiquetée Blog et
+        privée. Il reste dans le modèle même privé (sa confidentialité suit celle de la source) ; le corps privé
+        d'un billet public reste, lui, hors du modèle comme toute note privée."""
+        if not s or not s.get("private") or BLOG not in self.tags(s):
+            return ""
+        for h in s.get("note_list") or []:
+            n = self.db.get("Note", h)
+            if n is not None and not self.is_auto(n):
+                return h
+        return ""
 
     def citation(self, h: str) -> Citation | None:
         c = self.db.get("Citation", h)
@@ -810,7 +824,8 @@ class _Reader:
                 id=sid, titre=s.get("title") or "", auteur=s.get("author") or "", publication=s.get("pubinfo") or "",
                 depot=self.xid("Repository", repo.get("ref")), cote=repo.get("call_number") or "",
                 url=_attr_value(s, "URL"), ark=_attr_value(s, "ARK"), type_source=_REV_TYPES.get(_attr_value(s, "Type de source"), "indeterminee"),
-                original=orig, note=self.single_note(s.get("note_list")), prive=bool(s.get("private")),
+                original=orig, note=self.single_note(s.get("note_list"), self.corps_billet(s)),
+                prive=bool(s.get("private")),
                 medias=self.media_ids(s), tags=self.tags(s))
         for h, r in sorted(db.all("Repository").items(), key=lambda kv: self.xid("Repository", kv[0])):
             rid = self.xid("Repository", h)
@@ -1019,6 +1034,7 @@ class _Writer:
         # saisies dans l'interface réécrites telles quelles tant qu'elles ne changent pas)
         self.assos_base = {(o.id, e.uid): [a.to_dict() for a in e.associations]
                            for o in [*base_tree.personnes.values(), *base_tree.familles.values()] for e in o.evenements}
+        self.sources_base = base_tree.sources  # billets créés ou modifiés (#261)
         self.reader = _Reader(self.base)  # lecture unitaire (comparaisons « même contenu »)
         self.reader._assos = {}
         self.out = GrampsDb()
@@ -1337,23 +1353,26 @@ class _Writer:
         return _same_list(base_handles, out)
 
     def single(self, text: str, base_handles: list[str] | None, typ: str, owner: str,
-               auto: list[tuple] | None = None, url: str = "", keep: bool = False) -> list[str]:
+               auto: list[tuple] | None = None, url: str = "", keep: bool = False, corps: str = "") -> list[str]:
         """Champ texte unique : la base est gardée telle quelle si son texte est inchangé. Sinon (#279) les notes
         manuelles dont le texte reste en tête ou en queue du champ (séparateur « \\n\\n ») sont gardées, la première
-        des autres reçoit le texte du milieu (handle, étiquettes et type gardés), les suivantes sont retirées."""
+        des autres reçoit le texte du milieu (handle, étiquettes et type gardés), les suivantes sont retirées.
+        ``corps`` : note privée comptée comme manuelle (corps d'un billet privé, #261)."""
         if self.generated and looks_generated(text):  # note de preuve venue d'un GEDCOM (#15)
             text = ""
         manual = [h for h in base_handles or [] if self.base.get("Note", h)
                   and not self.reader.is_auto(self.base.get("Note", h))
-                  and not self.base.get("Note", h).get("private")]
-        if manual and self.reader.single_note(manual) == text:
+                  and (not self.base.get("Note", h).get("private") or h == corps)]
+        if manual and self.reader.single_note(manual, corps) == text:
             for h in manual:
                 if h not in self.out.all("Note"):
                     self.out.put(copy.deepcopy(self.base.get("Note", h)))
             autos = [h for h in base_handles or [] if h not in manual]
             return _same_list(list(base_handles or []), manual + self.notes([], autos, typ, owner, auto, url, keep))
-        if not manual or not text:
+        if not manual:
             return self.notes([text] if text else [], base_handles, typ, owner, auto, url, keep)
+        if not text:  # notes manuelles retirées (le corps privé d'un billet aussi : il est dans le modèle)
+            return self.notes([], [h for h in base_handles or [] if h not in manual], typ, owner, auto, url, keep)
         textes = [self.reader.note_text(self.base.get("Note", h)) for h in manual]
         tete, pos = 0, 0
         while tete < len(manual) and text.startswith(textes[tete] + "\n\n", pos):
@@ -1375,6 +1394,36 @@ class _Writer:
         autres = [h for h in base_handles or [] if h not in manual]
         return _same_list(list(base_handles or []), manual[:tete] + centre + manual[len(manual) - queue:]
                           + self.notes([], autres, typ, owner, auto, url, keep))
+
+    def billet(self, s: Source, base_src: dict | None, corps: str, note_list: list[str]) -> list[str]:
+        """Billet créé ou modifié (#261) : corps (première note du champ ``note``) en tête de ``note_list`` (la page
+        Blog de Gramps Web affiche la première note), notes générées (lien de la source) en dernier ; corps et notes
+        générées privés comme la source ; corps créé étiqueté Blog, comme le fait l'interface. Les autres notes
+        privées (hors du modèle) gardent leur confidentialité et leur texte."""
+        autos_tags = auto_tags(self.base) | auto_tags(self.out)
+        base_list = (base_src or {}).get("note_list") or []
+        cachees = {h for h in base_list if h != corps and (n := self.base.get("Note", h)) and n.get("private")
+                   and not self.reader.is_auto(n)}
+
+        def auto(h: str) -> bool:
+            n = self.out.get("Note", h) or {}
+            return bool(autos_tags & set(n.get("tag_list") or [])) or looks_generated(self.reader.note_text(n))
+
+        autos = [h for h in note_list if auto(h)]
+        manuelles = [h for h in note_list if h not in autos]
+        tete = next((h for h in manuelles if h not in cachees), "") if s.note else ""
+        ordre = ([tete] if tete else []) + [h for h in manuelles if h != tete] + autos
+        for h in ([tete] if tete else []) + autos:
+            n = self.out.get("Note", h)
+            if n is not None and bool(n.get("private")) != s.prive:
+                n["private"] = s.prive
+        if tete and not self.base.get("Note", tete):
+            n = self.out.get("Note", tete)
+            n["tag_list"] = self.tag_list(n.get("tag_list"), [BLOG])
+        if base_src is not None and ordre != note_list:
+            self.avis.append(f"Billet {s.id} : corps remis en première note de la source (la page Blog de Gramps Web "
+                             "affiche la première note), notes générées après.")
+        return ordre
 
     def shared_note(self, key: str) -> str:
         h = self.handle("Note", key)
@@ -1807,9 +1856,14 @@ class _Writer:
             auto = [("Source Note", f"Lien : {s.url}")] if s.url and regen else None
             if s.url:
                 self.stats["sources_url"] += 1
+            base_src = self.base.get("Source", h)
+            corps = self.reader.corps_billet(base_src)
             obj["note_list"] = self.single(s.note, obj.get("note_list"), "Source Note", h, auto, url=s.url,
-                                           keep=not regen)
+                                           keep=not regen, corps=corps)
             obj["tag_list"] = self.tag_list(obj.get("tag_list"), s.tags)
+            avant = self.sources_base.get(sid)
+            if BLOG in s.tags and (base_src is None or avant is None or avant.to_dict() != s.to_dict()):
+                obj["note_list"] = self.billet(s, base_src, corps, obj["note_list"])
             out.put(obj)
         for rid in sorted(t.depots):
             r = t.depots[rid]

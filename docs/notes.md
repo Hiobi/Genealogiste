@@ -211,6 +211,13 @@ titre est remplacé. Une fiche portant son nom généré est **renommée** au no
 Si le répertoire est dans un dépôt Git qui a un dépôt distant, `notes_generer` avertit : vérifier qu'il est
 **privé**.
 
+## Billets du blog de Gramps Web
+
+Une source étiquetée `Blog` est un billet du blog de Gramps Web (#261), pas une source de preuve : elle n'a pas
+de fiche dans `sources/`, ne figure ni dans l'index ni dans les sources d'une fiche de personne ou de famille,
+et la régénération après `arbre_appliquer` l'ignore. `notes_generer` sur l'identifiant d'un billet est refusé.
+Une fiche existante d'une source devenue billet n'est ni modifiée ni supprimée.
+
 ## Liens de pièces
 
 Les images des fiches et des nouvelles notes compagnons utilisent `![](chemin-encode)`. Les liens vers

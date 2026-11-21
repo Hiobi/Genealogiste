@@ -214,6 +214,18 @@ le HTML rendu (bleach).
 outils gardés (exemptions justifiées : communes de l'API Géo, serveur Gramps Web de l'utilisateur), et
 `tests/test_vivants.py` qu'aucun de ces outils ne fait d'appel réseau pour un vivant.
 
+### Billets du blog de Gramps Web (#261)
+
+Gramps Web est le backend, pas un service extérieur ; mais un billet **public** de sa page Blog (source étiquetée
+`Blog`) est lisible par tout compte Invité (Guest, rôle 0), et Gramps Web ne masque pas les vivants par rôle.
+D'où, pour toute proposition qui crée ou modifie un billet : privé par défaut (source et corps) ; titre, auteur,
+corps et titres des médias contrôlés comme un export public (prénom et nom accolés d'une personne présumée
+vivante, `is_living`, ou marquée privée, `privacy.hidden_ids` et `identifying_patterns`) et liens internes
+`gramps://Person/gramps_id/I…` vers elle ; billet public qui en nomme une : **refusé**, avec la liste ; billet
+privé : avertissement. Le contrôle est local, rien n'est envoyé ailleurs. Limites : un prénom seul, un surnom,
+un lien interne par handle ou une image ne sont pas reconnus ; la confidentialité des médias reste la leur.
+Détails : [opérations](operations.md#billets-du-blog-de-gramps-web-261), [Gramps Web](gramps-web.md#blog-261).
+
 ## Réseau : seules les adresses publiques
 
 Module `reseau.py` (#42), appliqué par le client HTTP commun (`http.py`) à **toutes** les sources externes

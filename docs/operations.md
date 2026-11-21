@@ -23,7 +23,8 @@ est refusé, sauf `"non_source": true` + `"motif": "…"` (la mention « Non sou
 
 | op | Paramètres |
 |---|---|
-| `ajouter_source` | `titre`*, `auteur`, `publication`, `depot`, `cote`, `url`, `ark`, `type_source`, `original`, `note`, `tags`, `ref` |
+| `ajouter_source` | `titre`*, `auteur`, `publication`, `depot`, `cote`, `url`, `ark`, `type_source`, `original`, `note`, `prive`, `tags`, `ref` (avec l'étiquette `Blog` : privée sauf `prive: false`, voir « Billets ») |
+| `ajouter_billet` | `titre`*, `texte`* (corps), `auteur`, `medias` `[ids | $ref]` (ordre gardé : le premier sert d'aperçu), `prive` (défaut `true`), `tags` (en plus de `Blog`), `ref` ; `format_texte` possible. Backend gramps seulement ([billets](#billets-du-blog-de-gramps-web-261)) |
 | `ajouter_depot` | `nom`, `sigle`, `adresse`, `url`, `tags`, `ref` |
 | `modifier_source` | `id`, `champs` (sauf `tags`), `tags`, `tags_retrait` |
 | `supprimer_source` | `id`, `cascade` (défaut `false` : refus si la source est encore citée ; `true` : chaque citation retirée est listée avec son porteur). Médias de la source détachés, jamais supprimés ; refus si elle est la source originale d'une autre |
@@ -77,6 +78,41 @@ média ou une note partagée (`N…`). Ce sont les étiquettes de Gramps Web (`B
 
 Exemple : `{"op": "etiqueter", "cible": {"type": "citation", "porteur": {"type": "evenement", "uid": "…"},
 "source": "S1", "page": "acte n° 45"}, "tags": ["À vérifier"]}`.
+
+### Billets du blog de Gramps Web (#261)
+
+Un billet de la page Blog de Gramps Web est une **source étiquetée `Blog`** : titre et auteur de la source, corps =
+**première note** de la source, aperçu = premier média, galerie = tous ses médias ; la page les trie par date de
+dernière modification ([Gramps Web](gramps-web.md#blog-261)). `ajouter_billet` compose ces éléments dans une seule
+opération, lisible dans le diff comme une source :
+
+```json
+[{"op": "ajouter_media", "ref": "img", "fichier": "medias/blog/portrait.jpg", "titre": "Portrait"},
+ {"op": "ajouter_billet", "ref": "b", "titre": "Les Martin de Rochefort", "auteur": "Équipe",
+  "texte": "**Jean MARTIN**, tisserand [1]…", "format_texte": "markdown", "medias": ["$img"]}]
+```
+
+- **Privé par défaut** : source et corps privés (comptes Membre et plus) ; `"prive": false` seulement sur demande
+  explicite, le billet devient alors **lisible par tout compte Invité** (Guest). Le résumé de la proposition
+  donne la visibilité de chaque billet créé ou modifié (« Billet S5 « … » : privé » / « PUBLIC »). Même défaut
+  pour `ajouter_source` avec `tags: ["Blog"]`.
+- **Personnes vivantes** : toute proposition qui crée ou modifie un billet (y compris `etiqueter` qui pose `Blog`
+  sur une source, `modifier_source` qui le rend public ou change son texte) contrôle titre, auteur, corps et
+  titres des médias : prénom et nom accolés d'une personne présumée vivante ou marquée privée (même règle que
+  les exports publics, [sécurité](securite.md#billets-du-blog-de-gramps-web-261)) ou lien interne
+  `gramps://Person/gramps_id/I…` vers elle. Billet public : **refus** avec la liste des personnes ; billet
+  privé : avertissement.
+- **Backend fichier** : `ajouter_billet` est refusé (le blog n'existe que dans Gramps Web) ; une source étiquetée
+  `Blog` reste possible (`ajouter_source`, `etiqueter`), sans effet hors de Gramps Web.
+- **Preuve** : un billet n'est pas une source généalogique ; une citation qui le désigne pèse 0 et ne compte
+  jamais comme source indépendante (`billets_cites` dans le statut de preuve). Poser `Blog` sur une source déjà
+  citée le signale (statuts recalculés).
+- **Notes de recherche** : aucune fiche pour un billet (`notes_generer` l'ignore, l'index aussi) ; rien n'est
+  écrit dans le vault.
+- **Lecture** : `arbre_recherche(etiquette="Blog", objet="source")` liste les billets (id, titre, auteur,
+  `prive`, médias dans l'ordre).
+- **Annulation** : `arbre_annuler_modification`, images envoyées comprises (l'état des médias après envoi est
+  journalisé et sert de référence à l'annulation).
 
 ### Texte enrichi des notes (#279)
 

@@ -668,3 +668,126 @@ def test_import_xml_avec_home_definit_la_personne_de_reference(tmp_path):
     print("référence après le 2e import (home vers l'autre personne) :", h2, gid2)
     assert h2 and h2 != h1 and gid2 != "I9002"
     assert _diag_reference(tmp_path, gid2)["etat"] == "ok"
+
+
+# ---------------------------------------------------------------------------- #261 : blog
+
+def _page_blog(c, pagesize: int = 6) -> tuple[list[dict], str]:
+    """Requête exacte de la page Blog (gramps-web v26.11.0, src/views/GrampsjsViewBlog.js:174-190)."""
+    regles = {"rules": [{"name": "HasTag", "values": ["Blog"]}]}
+    rep = c.request("GET", "/sources/", params={"rules": json.dumps(regles), "page": 1, "pagesize": pagesize,
+                                                 "sort": "-change", "locale": "fr", "profile": "all",
+                                                 "extend": "all"})
+    assert rep.status_code == 200, rep.text
+    return rep.json(), rep.headers.get("X-Total-Count", "")
+
+
+def _corps_blog(c, source: dict) -> list[dict]:
+    """Corps affiché (GrampsjsViewBlogPost.js:75-88) : première note de la source, formats=html et link_format."""
+    gid = source["extended"]["notes"][0]["gramps_id"]
+    rep = c.request("GET", "/notes/", params={"locale": "fr", "profile": "all", "extend": "all", "formats": "html",
+                                               "gramps_id": gid,
+                                               "format_options": json.dumps({"link_format": "/{obj_class}/{gramps_id}"})})
+    assert rep.status_code == 200, rep.text
+    return rep.json()
+
+
+def test_billet_blog_sur_vrai_gramps_web(client, loaded, tmp_path):
+    """Billet créé par arbre_proposer/arbre_appliquer (privé par défaut, Markdown, deux images) et billet public :
+    vérifiés par les requêtes de la page Blog (titre, auteur, corps HTML, aperçu, tri), lus par un compte Invité
+    (privé invisible, public visible) ; billet saisi comme l'interface relu sans réécriture ; annulations."""
+    import io
+
+    from PIL import Image
+
+    from genealogiste_mcp.gramps.types import tname
+    (tmp_path / "medias").mkdir()
+    for nom, gris in (("blog-261-a.jpg", 90), ("blog-261-b.jpg", 200)):
+        buf = io.BytesIO()
+        Image.new("L", (160, 120), gris).save(buf, "JPEG")
+        (tmp_path / "medias" / nom).write_bytes(buf.getvalue())
+    b = GrampsBackend(client, tmp_path, tmp_path / ".propositions", ttl=0)
+    corps = ("**Jean MARTIN**, tisserand, épouse *Marie DUPONT* : [registre](https://archives.exemple.org/r) et "
+             "[sa fiche](gramps://Person/gramps_id/I1).")
+    p1 = b.propose([{"op": "ajouter_media", "ref": "a", "fichier": "medias/blog-261-a.jpg", "format": "image/jpeg",
+                     "titre": "Portrait fictif (261)"},
+                    {"op": "ajouter_media", "ref": "b", "fichier": "medias/blog-261-b.jpg", "format": "image/jpeg",
+                     "titre": "Maison fictive (261)"},
+                    {"op": "ajouter_billet", "ref": "billet", "titre": "Billet privé 261", "auteur": "Équipe fictive",
+                     "texte": corps, "format_texte": "markdown", "medias": ["$a", "$b"]}], "Billet", "Récit (test).")
+    print("billet privé, proposition :", p1["resume"], p1["transaction_gramps"]["bilan"], p1["avertissements"])
+    assert "+1 _RESN PRIVACY" in p1["diff"] and "+1 _ETIQUETTE Blog" in p1["diff"]
+    r1 = b.apply(p1["jeton"])
+    assert r1["medias"]["envoyes"] and not r1["medias"]["erreurs"], r1
+    prive_id, img_a = p1["references_creees"]["billet"], p1["references_creees"]["a"]
+    time.sleep(1.1)  # date de modification distincte : tri -change
+    p2 = b.propose([{"op": "ajouter_billet", "ref": "billet", "titre": "Billet public 261", "texte": "Texte public.",
+                     "prive": False, "medias": [img_a]}], "Billet public", "Récit (test).")
+    r2 = b.apply(p2["jeton"])
+    public_id = p2["references_creees"]["billet"]
+    with pytest.raises(ProposalError, match="I9"):  # public nommant un vivant : refusé avant tout envoi
+        b.propose([{"op": "ajouter_billet", "titre": "Refusé", "texte": "Lucas MARTIN, né en 1990.", "prive": False}],
+                  "Billet", "Essai (test).")
+    # page Blog, compte Editor (voit le privé)
+    billets, total = _page_blog(client)
+    print("page Blog (Editor) :", total, [(s["gramps_id"], s["title"], s["private"], s["change"]) for s in billets])
+    assert [s["gramps_id"] for s in billets] == [public_id, prive_id] and total == "2"  # -change : récent d'abord
+    pv = billets[1]
+    assert (pv["title"], pv["author"], pv["private"]) == ("Billet privé 261", "Équipe fictive", True)
+    n0 = pv["extended"]["notes"][0]
+    assert n0["text"]["string"].startswith("Jean MARTIN, tisserand") and n0["private"] is True
+    print("type de la note du billet :", n0["type"])
+    note = _corps_blog(client, pv)[0]
+    print("corps HTML (Editor) :", note["formatted"]["html"])
+    assert "<strong>Jean MARTIN</strong>" in note["formatted"]["html"]
+    assert '<a href="https://archives.exemple.org/r">registre</a>' in note["formatted"]["html"]
+    assert '<a href="/person/I1">sa fiche</a>' in note["formatted"]["html"]
+    apercu = pv["extended"]["media"][0]
+    assert pv["media_list"][0]["ref"] == apercu["handle"] and apercu["gramps_id"] == img_a  # aperçu = premier
+    assert [m["gramps_id"] for m in pv["extended"]["media"]] == [img_a, p1["references_creees"]["b"]]
+    vignette = client.request("GET", f"/media/{apercu['handle']}/thumbnail/200")
+    assert vignette.status_code == 200 and vignette.headers["content-type"].startswith("image/")
+    dernier, _ = _page_blog(client, pagesize=1)  # « Latest Blog Post » du tableau de bord
+    assert [s["gramps_id"] for s in dernier] == [public_id]
+    # compte Invité (rôle 0) : billet privé et son corps invisibles, billet public lisible
+    time.sleep(1.1)  # /token/ : 1 requête par seconde
+    invite = GrampsClient(URL, "sosa-invite", "sosa-invite")
+    vus, total_invite = _page_blog(invite)
+    print("page Blog (Invité) :", total_invite, [(s["gramps_id"], s["title"]) for s in vus])
+    assert [s["gramps_id"] for s in vus] == [public_id]
+    assert _corps_blog(invite, vus[0])[0]["formatted"]["html"].strip()
+    rep = invite.request("GET", "/notes/", params={"gramps_id": n0["gramps_id"]})
+    assert rep.status_code == 404 or rep.json() == []  # 404 relevé sur 3.25.1 : note privée introuvable
+    direct = invite.request("GET", f"/sources/{pv['handle']}")
+    print("billet privé lu par son handle (Invité) :", direct.status_code, direct.text[:600])
+    assert direct.status_code in (403, 404) or direct.json() == {}  # API 3.13.0 : 200 et objet vide, rien ne fuit
+    # relecture par le plugin : corps du billet privé dans le modèle, rien à réécrire
+    db = client.load_all()
+    t, _ = gramps_to_tree(db)
+    assert t.sources[prive_id].note.startswith("Jean MARTIN") and t.sources[prive_id].prive
+    assert diff(db, tree_to_gramps(t, base=db)) == []
+    # billet saisi comme l'interface (GrampsjsViewNewBlogPost.js:143-176 : note sans type, étiquetée Blog)
+    blog = next(h for h, tg in db.all("Tag").items() if tg["name"] == "Blog")
+    hs, hn = "blog261uisource00000000", "blog261uinote0000000000"
+    rep = client.request("POST", "/objects/", json=[
+        {"_class": "Source", "handle": hs, "title": "Billet de l'interface 261", "author": "Moi",
+         "note_list": [hn], "tag_list": [blog], "media_list": [], "private": False},
+        {"_class": "Note", "handle": hn, "text": {"_class": "StyledText", "string": "Saisi dans l'interface."},
+         "tag_list": [blog], "private": False}])
+    assert rep.status_code in (200, 201), rep.text
+    db = client.load_all()
+    print("note créée par l'interface : type", db.get("Note", hn)["type"])
+    assert tname(db.get("Note", hn)["type"]) == "General"
+    t, _ = gramps_to_tree(db)
+    ui = next(s for s in t.sources.values() if s.titre == "Billet de l'interface 261")
+    assert ui.tags == ["Blog"] and ui.note == "Saisi dans l'interface."
+    assert diff(db, tree_to_gramps(t, base=db)) == []
+    for cls, h in (("sources", hs), ("notes", hn)):
+        assert client.request("DELETE", f"/{cls}/{h}").status_code == 200
+    # annulations (images envoyées comprises)
+    for r in (r2, r1):
+        b.apply(b.propose_undo(r["transaction"])["jeton"])
+    assert _page_blog(client)[0] == []
+    db = client.load_all()
+    assert not [m for m in db.all("Media").values() if (m.get("desc") or "").endswith("(261)")]
+    assert "Blog" not in {tg["name"] for tg in db.all("Tag").values()}
