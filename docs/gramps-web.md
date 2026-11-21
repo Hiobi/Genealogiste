@@ -210,6 +210,11 @@ Gramps (calendriers de `gcalendar.py` portés dans `normalize/calendriers.py`). 
 | `text` d'une date non textuelle | gardé comme date du modèle s'il relit exactement les mêmes champs (`abt 1850`, phrase `1850 (vers Pâques)`) | écrit dans `text` seulement s'il diffère de la forme canonique (sinon `text` vide, comme après un import Gramps XML) ; Gramps XML ne l'écrit pas |
 | date que `Date.set` de Gramps refuse (30 février, plage au début vide, deux calendriers…) | à l'écriture : date textuelle portant la chaîne ; à l'import XML : date textuelle portant l'élément XML, comme Gramps | conforme à Gramps |
 
+Écart connu de Gramps Web (API ≥ 3.25, gramps-web-api#869) : le serveur recalcule `sortval` à chaque écriture
+par `Date.recalc_sort_value`, sans le décalage de nouvel an qu'applique `Date.set` (Gramps Desktop,
+Genealogiste) ; une date à nouvel an décalé postérieure à la coupure y garde donc une valeur de tri d'un an plus
+tardive. Sans effet sur la date elle-même, relue et réécrite à l'identique (vérifié par `make test-gramps`).
+
 Non représentable, signalé : le `text` d'une date non textuelle qui ne relit pas les mêmes champs (saisie dans
 une autre langue, texte périmé après modification dans Gramps Web) est remplacé par la forme du modèle à la
 première écriture sans état lu ; `format` (format d'affichage) n'est pas porté ; une date sans valeur ni attribut

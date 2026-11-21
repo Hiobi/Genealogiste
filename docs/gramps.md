@@ -238,9 +238,12 @@ Workflow `Intégration Gramps`, un job `Gramps Desktop <version>` par version (v
     valeur de tri, même affichage `DateDisplayEn`), et les formes que Gramps refuse (`REFUSEES`) importées par
     Gramps comme Genealogiste les lit. `--fixtures` écrit la référence `dates-gramps-<version>.json`.
 
-Résultat du 2026-11-21 : 87 vérifications sur 87 réussies en local (GLib factice) pour 5.2, 6.0 et 6.1 :
-36 imports des formes de l'export (dont 3 refus attendus de 1.7.2 par Gramps 5.2), 33 cycles, 12 sur l'arbre fictif
-(lecture et cycle) et 6 arbres d'exemple.
+Résultat du 2026-11-21 (#272) : 96 vérifications sur 96 réussies en local (GLib factice) pour 5.2, 6.0 et 6.1 :
+39 imports des formes de l'export (dont 3 refus attendus de 1.7.2 par Gramps 5.2, et le cas `dates` : 1 233
+dates relues sans écart non nommé par version), 36 cycles, 12 sur l'arbre fictif (lecture et cycle), 3 références
+de dates (1 225 formes chacune, aucun écart) et 6 arbres d'exemple. Écarts connus comptés : 5.2, 14 plages à
+année négative, 1 date textuelle vide ; toutes versions, 2 plages à double datation d'un seul bout, 1 texte aux
+espaces de bord.
 
 | Arbre | Personnes | Familles | Événements | Sources | Citations | Lieux | Notes | Dépôts | Étiquettes |
 |---|---|---|---|---|---|---|---|---|---|

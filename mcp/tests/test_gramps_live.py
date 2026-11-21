@@ -292,3 +292,57 @@ def test_etiquettes_pose_relecture_retrait_annulation(client, loaded, tmp_path):
     apres = {cls: {h: o.get("tag_list") for h, o in db2.all(cls).items()} for cls in db2.objects if cls != "Tag"}
     assert apres == avant and nouvelle not in db2.all("Tag")
     assert {"tag262existante", "tag262double"} <= set(db2.all("Tag"))
+
+
+# ---------------------------------------------------------------------------- #272 : dates
+
+def test_dates_aller_retour_sur_vrai_gramps_web(client, loaded):
+    """Échantillon de l'inventaire des formes de date (dates_gramps.py) écrit par l'API puis relu : objet Date
+    identique (valeur de tri comprise) ; relu par Genealogiste et réécrit sans modification : aucune transaction ;
+    passé par le modèle sans état lu : même date. Puis dates du modèle (GEDCOM 7 et extensions) écrites par la
+    correspondance et relues : même chaîne, texte vide pour une forme canonique."""
+    from dates_gramps import ecarts, inventaire
+    from test_dates_gramps import CANONIQUES
+
+    from genealogiste_mcp.gramps.types import blank, date_reprise, event_ref, valeur_tri
+    from genealogiste_mcp.models import Event, Name, Person
+
+    formes = [(n, d) for i, (n, d) in enumerate(inventaire())
+              if i % 9 == 0 or n.startswith(("double", "ny4", "texte", "vide"))]
+    objets = []
+    for i, (nom, d) in enumerate(formes):
+        e = blank("Event", f"date272e{i:04d}", f"E272{i:04d}")
+        e.update(date=d, description=f"Forme {nom}")
+        objets.append(e)
+    p = blank("Person", "date272personne", "I272")
+    p["primary_name"]["first_name"] = "Formes"
+    p["event_ref_list"] = [event_ref(e["handle"], "Primary") for e in objets]
+    client.transaction([{"type": "add", "_class": o["_class"], "handle": o["handle"], "old": None, "new": o}
+                        for o in [*objets, p]], "Tests d'intégration : formes de date (#272, fictif)")
+    db = client.load_all()
+    relues = {o["handle"]: db.get("Event", o["handle"])["date"] for o in objets}
+    # Écart connu de Gramps Web (API >= 3.25, gramps-web-api#869) : le serveur recalcule sortval par
+    # Date.recalc_sort_value, sans le décalage de nouvel an que Date.set applique (Gramps Desktop, Genealogiste).
+    recalcul, ecarts_vus = 0, []
+    for (nom, d), o in zip(formes, objets, strict=True):
+        r = relues[o["handle"]]
+        e = ecarts(d, r)
+        if e == [f"sortval: {d['sortval']!r} -> {r['sortval']!r}"] and r["sortval"] == valeur_tri({**d, "newyear": 0}):
+            recalcul += 1
+        elif e:
+            ecarts_vus.append((nom, e))
+    assert ecarts_vus == []
+    assert all(date_reprise(r) for r in relues.values())
+    t, _ = gramps_to_tree(db)
+    # relu puis réécrit : aucun événement touché (la personne créée hors Genealogiste reçoit ses marqueurs)
+    assert [x for x in diff(db, tree_to_gramps(t, base=db, generated=False)) if x["_class"] == "Event"] == []
+    print(f"dates #272 : {len(formes)} formes écrites et relues à l'identique sur Gramps Web "
+          f"(dont {recalcul} au sortval recalculé par le serveur sans nouvel an)")
+
+    # GEDCOM 7 (et extensions) -> Gramps Web -> GEDCOM 7
+    t.personnes["I272G7"] = Person(id="I272G7", noms=[Name(prenoms="Dates", nom="MODELE")], uid="personne-272-g7",
+                                   evenements=[Event(type="EVEN", type_detail="Forme", date=s, uid=f"g7-272-{i}")
+                                               for i, s in enumerate(CANONIQUES)])
+    client.transaction(diff(db, tree_to_gramps(t, base=db)), "Tests d'intégration : dates du modèle (#272)")
+    t2, _ = gramps_to_tree(client.load_all())
+    assert [e.date for e in t2.personnes["I272G7"].evenements] == CANONIQUES
