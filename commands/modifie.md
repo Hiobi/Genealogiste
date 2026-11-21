@@ -11,4 +11,6 @@ Modification : **$ARGUMENTS**
 3. Opérations : `modifier_personne`, `modifier_evenement`, `supprimer_evenement`, `modifier_source`,
    `modifier_media` (fichier, titre, format ; `gramps_relocaliser_medias` pour un changement de machine),
    `ajouter_citation`, `lier_enfant`/`delier_enfant`, `lier_conjoint`, `definir_statut`, `marquer_vivant`.
+   Étiquettes (`Blog`, `ToDo`…) : `tags` / `tags_retrait` sur les modifications, `etiqueter` pour tout objet
+   existant (famille, dépôt, note partagée, citation…) ; voir docs/operations.md, « Étiquettes ».
 4. `arbre_proposer` → diff → accord explicite → `arbre_appliquer(jeton)`.

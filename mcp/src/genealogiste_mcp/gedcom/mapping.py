@@ -7,6 +7,7 @@ dans `extra` et réécrit à l'identique : un aller-retour ne perd rien.
 
 from __future__ import annotations
 
+from ..etiquettes import GEDCOM_TAG, geree, unique
 from ..models import (
     EVENT_LABELS,
     FAM_EVENTS,
@@ -34,6 +35,22 @@ EXT_DOC = "https://github.com/Hiobi/Genealogiste/blob/main/docs/gedcom-extension
 EXTENSIONS = ["_STAT", "_TYPE", "_INFO", "_PREUVE", "_CONSULT", "_VU", "_ORIG", "_URL", "_SOUR", "_VIVANT",
               "_PAROISSE", "_SIGLE", "_ARK", "_RESN"]
 RESN_TAGS = ("RESN", "_RESN")
+
+
+def _etiquettes(n: Node) -> list[str]:
+    """Étiquettes (#262) d'un nœud : lignes _ETIQUETTE (sans doublon) ; une étiquette gérée par Genealogiste
+    n'entre jamais dans le modèle (conservée comme nœud non interprété par :func:`_non_etiquette`)."""
+    return unique(c.value for c in n.children if c.tag == GEDCOM_TAG and not geree(c.value))
+
+
+def _non_etiquette(c: Node) -> bool:
+    """Nœud à garder dans ``extra`` : tout sauf une étiquette reprise dans le modèle."""
+    return not (c.tag == GEDCOM_TAG and c.value and not geree(c.value))
+
+
+def _w_etiquettes(n: Node, tags: list[str]) -> None:
+    for t in tags:
+        n.add(GEDCOM_TAG, t)
 
 
 def is_private(value: str) -> bool:
@@ -159,7 +176,7 @@ class _Reader:
         medias = [strip_xref(x.value) for x in n.all("OBJE") if x.value.strip().startswith("@")]
         if medias:
             known = known | {"OBJE"}
-        extra = [c.to_dict() for c in n.children if c.tag not in known and _not_private(c)]
+        extra = [c.to_dict() for c in n.children if c.tag not in known and _not_private(c) and _non_etiquette(c)]
         if data:
             others = [c for c in data.children if c.tag != "TEXT"]
             if others:
@@ -170,7 +187,7 @@ class _Reader:
             type_source=n.val("_TYPE", "indeterminee"), information=n.val("_INFO", "indeterminee"),
             preuve=n.val("_PREUVE", "directe"), date_consultation=n.val("_CONSULT"),
             note="\n".join(x.value for x in n.all("NOTE")), consultation=n.val("_VU"), ark=n.val("_ARK"),
-            medias=medias, extra=extra, prive=_private_in(n),
+            medias=medias, extra=extra, prive=_private_in(n), tags=_etiquettes(n),
         )
 
     def place(self, n: Node | None) -> Place | None:
@@ -233,7 +250,7 @@ class _Reader:
                     assos.append(a)
                 else:
                     extra.append(c.to_dict())
-            elif c.tag not in known and _not_private(c):
+            elif c.tag not in known and _not_private(c) and _non_etiquette(c):
                 extra.append(c.to_dict())
         return Event(
             type=n.tag, date=self.date(n.val("DATE")), lieu=self.place(n.first("PLAC")),
@@ -241,7 +258,7 @@ class _Reader:
             cause=n.val("CAUS"), note="\n".join(x.value for x in n.all("NOTE")),
             citations=[self.citation(c) for c in n.all("SOUR")], associations=assos,
             uid=n.val("UID") or n.val("_UID") or new_uid(), statut_manuel=self.statut(n), extra=extra,
-            prive=_private_in(n), medias=medias,
+            prive=_private_in(n), medias=medias, tags=_etiquettes(n),
         )
 
     def name(self, n: Node) -> Name:
@@ -287,8 +304,8 @@ def read_gedcom(text: str) -> tuple[Tree, dict]:
                 note="\n".join(x.value for x in r.all("NOTE")),
                 extra=[c.to_dict() for c in r.children
                        if c.tag not in ("TITL", "AUTH", "PUBL", "REPO", "_URL", "WWW", "_ARK", "_TYPE", "_ORIG",
-                                        "NOTE") and _not_private(c) and not _bare_obje(c)],
-                prive=_private_in(r),
+                                        "NOTE") and _not_private(c) and not _bare_obje(c) and _non_etiquette(c)],
+                prive=_private_in(r), tags=_etiquettes(r),
                 medias=[_bare_obje(c) for c in r.all("OBJE") if _bare_obje(c)],  # #222
             )
     for r in roots:
@@ -296,7 +313,8 @@ def read_gedcom(text: str) -> tuple[Tree, dict]:
         if tag in ("HEAD", "TRLR", "SOUR"):
             continue
         if tag == "INDI":
-            p = Person(id=r.xref, uid=r.val("UID") or r.val("_UID") or new_uid(), prive=_private_in(r))
+            p = Person(id=r.xref, uid=r.val("UID") or r.val("_UID") or new_uid(), prive=_private_in(r),
+                       tags=_etiquettes(r))
             for c in r.children:
                 if c.tag == "NAME":
                     p.noms.append(rd.name(c))
@@ -327,14 +345,14 @@ def read_gedcom(text: str) -> tuple[Tree, dict]:
                     p.notes.append("@" + strip_xref(c.value) + "@")
                 elif c.tag == "_VIVANT":
                     p.vivant = c.value
-                elif c.tag in ("UID", "_UID") or not _not_private(c):
+                elif c.tag in ("UID", "_UID") or not _not_private(c) or not _non_etiquette(c):
                     continue
                 else:
                     p.extra.append(c.to_dict())
             tree.personnes[p.id] = p
         elif tag == "FAM":
             f = Family(id=r.xref, uid=r.val("UID") or r.val("_UID") or new_uid(), statut_manuel=rd.statut(r),
-                       prive=_private_in(r))
+                       prive=_private_in(r), tags=_etiquettes(r))
             for c in r.children:
                 if c.tag == "HUSB":
                     f.epoux = strip_xref(c.value)
@@ -354,25 +372,27 @@ def read_gedcom(text: str) -> tuple[Tree, dict]:
                     continue
                 elif c.tag == "NOTE":
                     f.notes.append(c.value)
-                elif c.tag in ("UID", "_UID", "_STAT") or not _not_private(c):
+                elif c.tag in ("UID", "_UID", "_STAT") or not _not_private(c) or not _non_etiquette(c):
                     continue
                 else:
                     f.extra.append(c.to_dict())
             tree.familles[f.id] = f
         elif tag == "REPO":
             tree.depots[r.xref] = Repository(id=r.xref, nom=r.val("NAME"), sigle=r.val("_SIGLE"),
-                                             adresse=r.val("ADDR"), url=r.val("WWW"))
+                                             adresse=r.val("ADDR"), url=r.val("WWW"), tags=_etiquettes(r))
         elif tag == "OBJE":
             fn = r.first("FILE")
             tree.medias[r.xref] = Media(
                 id=r.xref, fichier=fn.value if fn else "", format=(fn.val("FORM") if fn else "") or r.val("FORM"),
                 titre=(fn.val("TITL") if fn else "") or r.val("TITL"),
-                citations=[rd.citation(c) for c in r.all("SOUR")], prive=_private_in(r),
+                citations=[rd.citation(c) for c in r.all("SOUR")], prive=_private_in(r), tags=_etiquettes(r),
             )
         elif tag in ("SNOTE", "NOTE") and r.xref:
             tree.notes[r.xref] = r.value
             if _private_in(r):
                 tree.notes_privees.add(r.xref)
+            if _etiquettes(r):
+                tree.notes_tags[r.xref] = _etiquettes(r)
         else:
             tree.extra_records.append(r.to_dict())
             warnings.append(f"Enregistrement {tag} conservé sans interprétation")
@@ -457,6 +477,7 @@ def _w_citation(parent: Node, c: Citation, tag: str = "SOUR") -> None:
     for m in c.medias:
         n.add("OBJE", f"@{m}@")
     n.add_if("NOTE", c.note)
+    _w_etiquettes(n, c.tags)
     if c.prive:
         n.add("_RESN", "PRIVACY")
     _extra(n, [x for x in c.extra if x.get("tag") != "DATA"])
@@ -537,19 +558,22 @@ def _w_event(parent: Node, e: Event, version: int) -> None:
         if m:
             n.add("OBJE", f"@{m}@")
     _w_statut(n, e.statut_manuel)
+    _w_etiquettes(n, e.tags)
     if e.prive:
         n.add("RESN", "PRIVACY")
     _extra(n, e.extra)
     n.add("UID" if version >= 7 else "_UID", e.uid)
 
 
-def _header(version: int) -> Node:
+def _header(version: int, etiquettes: bool = False) -> Node:
+    """En-tête ; ``_ETIQUETTE`` n'est déclarée que si l'arbre porte des étiquettes (#262) : un fichier sans
+    étiquette reste identique octet pour octet à celui des versions précédentes."""
     h = Node("HEAD")
     gedc = h.add("GEDC")
     if version >= 7:
         gedc.add("VERS", "7.0")
         schma = h.add("SCHMA")
-        for t in EXTENSIONS:
+        for t in EXTENSIONS + ([GEDCOM_TAG] if etiquettes else []):
             schma.add("TAG", f"{t} {EXT_DOC}#{t.lower()}")
     else:
         gedc.add("VERS", "5.5.1")
@@ -562,8 +586,18 @@ def _header(version: int) -> Node:
     return h
 
 
+def _a_etiquettes(tree: Tree) -> bool:
+    from ..tree.integrite import iter_citations
+
+    owners = [*tree.personnes.values(), *tree.familles.values(), *tree.sources.values(), *tree.depots.values(),
+              *tree.medias.values()]
+    return any(o.tags for o in owners) or any(tags for tags in tree.notes_tags.values()) \
+        or any(e.tags for o in owners for e in getattr(o, "evenements", [])) \
+        or any(c.tags for o in owners for c in iter_citations(o))
+
+
 def to_nodes(tree: Tree, version: int = 7) -> list[Node]:
-    nodes = [_header(version)]
+    nodes = [_header(version, _a_etiquettes(tree))]
     pedi: dict[tuple[str, str], str] = {}
     for fam in tree.familles.values():
         for link in fam.enfants:
@@ -607,6 +641,7 @@ def to_nodes(tree: Tree, version: int = 7) -> list[Node]:
             else:
                 r.add("NOTE", note)
         r.add_if("_VIVANT", p.vivant)
+        _w_etiquettes(r, p.tags)
         if p.prive:
             r.add("RESN", "PRIVACY")
         _extra(r, p.extra)
@@ -634,6 +669,7 @@ def to_nodes(tree: Tree, version: int = 7) -> list[Node]:
         for note in f.notes:
             r.add("NOTE", note)
         _w_statut(r, f.statut_manuel)
+        _w_etiquettes(r, f.tags)
         if f.prive:
             r.add("RESN", "PRIVACY")
         _extra(r, f.extra)
@@ -660,6 +696,7 @@ def to_nodes(tree: Tree, version: int = 7) -> list[Node]:
         for m in s.medias:
             if m:
                 r.add("OBJE", f"@{m}@")
+        _w_etiquettes(r, s.tags)
         if s.prive:
             r.add("_RESN", "PRIVACY")
         _extra(r, s.extra)
@@ -671,6 +708,7 @@ def to_nodes(tree: Tree, version: int = 7) -> list[Node]:
         r.add_if("ADDR", d.adresse)
         r.add_if("WWW", d.url)
         r.add_if("_SIGLE", d.sigle)
+        _w_etiquettes(r, d.tags)
         nodes.append(r)
     for mid in sorted(tree.medias, key=_num_key):
         m = tree.medias[mid]
@@ -680,11 +718,13 @@ def to_nodes(tree: Tree, version: int = 7) -> list[Node]:
         fn.add_if("TITL", m.titre)
         for c in m.citations:
             _w_citation(r, c)
+        _w_etiquettes(r, m.tags)
         if m.prive:
             r.add("RESN", "PRIVACY")
         nodes.append(r)
     for nid in sorted(tree.notes, key=_num_key):
         sn = Node("SNOTE" if version >= 7 else "NOTE", tree.notes[nid], nid)
+        _w_etiquettes(sn, tree.notes_tags.get(nid, []))
         if nid in tree.notes_privees:
             sn.add("_RESN", "PRIVACY")
         nodes.append(sn)

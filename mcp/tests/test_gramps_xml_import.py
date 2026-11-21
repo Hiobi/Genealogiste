@@ -321,12 +321,15 @@ def test_marqueurs_genealogiste_et_sosa_reconnus(version, tmp_path):
 
 
 def test_pertes_listees_jamais_silencieuses(tmp_path):
-    _, info, _ = lx.importer(DESKTOP / "gramps-6.1" / "famille.gramps", tmp_path, "t")
+    tree, info, _ = lx.importer(DESKTOP / "gramps-6.1" / "famille.gramps", tmp_path, "t")
     pertes = info["non_repris"]
     for cle in ("Person.address_list[]", "Person.urls[]", "Note.text.tags[]", "Person.primary_name.suffix",
-                "Person.alternate_names.date", "Tag", "Repository.address_list.city", "Métadonnées.mediapath"):
+                "Person.alternate_names.date", "Repository.address_list.city", "Métadonnées.mediapath"):
         assert pertes.get(cle, 0) >= 1, cle
     assert "Person" not in pertes and "Family" not in pertes and "Event" not in pertes
+    # #262 : l'étiquette de l'utilisateur est reprise (plus comptée comme perdue), Sosa:auto reste hors modèle
+    assert tree.personnes["I0001"].tags == ["À vérifier"]
+    assert not any(k == "Tag" or "tag_list" in k for k in pertes), pertes
 
 
 def test_pertes_par_chemin_de_champ():

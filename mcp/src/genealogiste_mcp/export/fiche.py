@@ -36,6 +36,12 @@ def fiche_markdown(tree: Tree, pid: str, strict: bool = False, mask_living: bool
     lines.append(f"- **Sexe** : {sexe}")
     for n in p.noms[1:]:
         lines.append(f"- **Autre nom** : {n.complet}")
+    if p.tags:
+        lines.append(f"- **Étiquettes** : {', '.join(p.tags)}")
+    for e in p.evenements:
+        if e.tags:
+            lines.append(f"- **Étiquettes {EVENT_LABELS.get(e.type, e.type)}"
+                         + (f" {_fmt_date(e.date)}" if e.date else "") + f"** : {', '.join(e.tags)}")
     father, mother = tree.father_mother(pid)
     for role, x in (("Père", father), ("Mère", mother)):
         if x and x in tree.personnes:
@@ -64,7 +70,8 @@ def fiche_markdown(tree: Tree, pid: str, strict: bool = False, mask_living: bool
             marr = next((e for e in fam.evenements if e.type == "MARR"), None)
             sp_label = tree.personnes[sp].label() if sp in tree.personnes else "conjoint inconnu"
             lines.append(f"- **{fam.id}** avec {sp_label}" + (f", mariage {_fmt_date(marr.date)}"
-                                                              f"{' à ' + marr.lieu.nom if marr.lieu else ''}" if marr else ""))
+                                                              f"{' à ' + marr.lieu.nom if marr.lieu else ''}" if marr else "")
+                         + (f" (étiquettes : {', '.join(fam.tags)})" if fam.tags else ""))
             for link in fam.enfants:
                 if link.enfant in tree.personnes:
                     lines.append(f"  - {tree.personnes[link.enfant].label()}")

@@ -243,7 +243,10 @@ def publication(tree: Tree, today: date | None = None) -> tuple[Tree, set[str], 
 
     Les ressources privées ou liées à un masqué sont retirées, y compris chez les défunts.
     Les noms des personnes masquées sont remplacés dans tous les textes. Les enregistrements
-    non interprétés sont exclus. Renvoie (arbre publié, personnes masquées, rapport).
+    non interprétés sont exclus. Étiquettes (#262) : même politique que les notes — retirées avec
+    les personnes et familles masquées et avec les notes, sources, médias, événements et
+    citations retirés ; conservées sur les objets publiés, où les noms des masqués sont remplacés.
+    Renvoie (arbre publié, personnes masquées, rapport).
     """
     from .models import Name
 
@@ -258,8 +261,10 @@ def publication(tree: Tree, today: date | None = None) -> tuple[Tree, set[str], 
         p = t.personnes[pid]
         p.noms = [Name(prenoms="Vivant")]
         p.evenements, p.citations, p.notes, p.medias, p.extra, p.associations = [], [], [], [], [], []
+        p.tags = []
     for f in familles:
         f.evenements, f.citations, f.notes, f.extra, f.statut_manuel = [], [], [], [], None
+        f.tags = []
     for f in t.familles.values():
         for link in f.enfants:
             if link.enfant in hidden:
@@ -301,6 +306,7 @@ def publication(tree: Tree, today: date | None = None) -> tuple[Tree, set[str], 
         t.medias.pop(m, None)
     for n in notes:
         t.notes.pop(n, None)
+        t.notes_tags.pop(n, None)
     t.notes_privees = set()
     for s in t.sources.values():
         if s.original in sources:

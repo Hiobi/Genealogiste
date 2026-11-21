@@ -183,6 +183,11 @@ de l'arbre de travail.
   **toutes** leurs références, y compris chez les défunts. Liés seulement à des défunts : conservés.
 - Événements et citations privés, associations désignant une personne masquée (lien ou nom écrit) : retirés.
   Enregistrements non interprétés : exclus (contenu indécidable).
+- Étiquettes (#262) : même politique que les notes. Retirées avec les personnes et familles masquées et avec
+  tout objet retiré (note partagée, source, média, événement, citation) ; conservées sur les objets publiés,
+  où la passe ci-dessous remplace aussi les noms des masqués (une étiquette « Famille Alice SECRET » devient
+  « Famille Vivant »). Une étiquette interne (`ToDo`, `Blog`) d'un défunt publié reste donc visible :
+  ne pas mettre d'information confidentielle dans un nom d'étiquette.
 - Passe sur tous les textes : « Prénom Nom », « NOM Prénom », « Prénom /Nom/ » d'une personne masquée remplacés
   par « Vivant » (sans tenir compte des accents ni de la casse).
 - Garde-fou : si une de ces chaînes subsiste dans le fichier produit, l'export est refusé et rien n'est écrit.

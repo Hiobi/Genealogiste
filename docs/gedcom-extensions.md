@@ -1,6 +1,8 @@
 # Extensions GEDCOM 7 du plugin genealogiste
 
-Déclarées dans `HEAD.SCHMA` ; ignorées sans perte par les logiciels qui ne les connaissent pas.
+Déclarées dans `HEAD.SCHMA` ; ignorées sans perte par les logiciels qui ne les connaissent pas. `_ETIQUETTE`
+n'y est déclarée que si l'arbre porte au moins une étiquette : un fichier sans étiquette reste identique, octet
+pour octet, à celui des versions précédentes.
 
 | Tag | Contexte | Valeur | Rôle |
 |---|---|---|---|
@@ -18,6 +20,12 @@ Déclarées dans `HEAD.SCHMA` ; ignorées sans perte par les logiciels qui ne le
 | `_VIVANT` | `INDI` | `Y` \| `N` | forçage du statut vivant (RGPD) |
 | `_RESN` | enregistrements `SOUR` et `SNOTE`, citation `SOUR` | `PRIVACY` | marque « privé » là où GEDCOM 7 n'autorise pas `RESN` (standard, écrit sur `INDI`, `FAM`, événements et `OBJE`) ; un objet privé (Gramps `private`) n'est jamais publié |
 | `_PAROISSE` | `PLAC` | texte | paroisse d'Ancien Régime correspondant au lieu |
+| `_ETIQUETTE` | `INDI`, `FAM`, événement, citation `SOUR` (y compris `FAM.CHIL._SOUR`), enregistrements `SOUR`, `REPO`, `OBJE`, `SNOTE` | nom de l'étiquette (sensible à la casse) | étiquette (tag) de l'objet, une ligne par étiquette dans l'ordre ; correspond au `tag_list` de Gramps Web (#262, [opérations](operations.md#étiquettes-262)) |
+
+Étiquettes : un nom en double sous un même objet est lu une fois ; une étiquette gérée par Genealogiste
+(`Genealogiste:auto`, `Sosa:auto`, « Preuve : … ») n'entre jamais dans le modèle et reste un nœud non interprété
+(conservé). Couleur et priorité des étiquettes de Gramps ne sont pas écrites dans le GEDCOM. Export 5.5.1 : écrite
+comme les autres extensions ; export GeneWeb : omise, comme toutes les extensions.
 
 Lieux : le code INSEE est stocké en `EXID` avec `TYPE http://id.insee.fr/geo/commune` (`_INSEE` en 5.5.1).
 Export 5.5.1 : `UID` → `_UID`, calendriers en échappements `@#DJULIAN@` / `@#DFRENCH R@`.

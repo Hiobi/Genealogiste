@@ -4,8 +4,12 @@ Chaque opération est un objet `{"op": "...", ...}`. Les créations acceptent `"
 suivantes de la même proposition désignent l'objet par `"$x"`. Dates : GEDCOM 7 ou texte français
 (converti). Lieu : chaîne « Commune, Département, France » ou `{nom, code_insee, latitude, longitude, paroisse}`.
 
-Citation : `{source, page, texte, qualite (0-3), type_source, information, preuve, consultation, note}` —
+Citation : `{source, page, texte, qualite (0-3), type_source, information, preuve, consultation, note, tags}` —
 `consultation` : `original` | `image` | `transcription` | `index` | `non_vu`.
+
+**Étiquettes** (`tags`, #262) : `tags` (liste de noms, ajout) sur toutes les opérations d'ajout (au niveau de
+l'opération, ou dans l'objet créé pour un événement et une citation) et de modification ; `tags_retrait` (liste
+de noms) sur les modifications. `etiqueter` étiquette tout objet existant. Voir « Étiquettes » plus bas.
 
 Association (témoin, parrain…) : `{personne (id) | nom (tel qu'écrit), role, detail, citations}` — `role` :
 `temoin`, `parrain`, `marraine`, `declarant`, `officier`, `maire`, `pretre`, `cure`, `vicaire`, `notaire`,
@@ -16,32 +20,60 @@ est refusé, sauf `"non_source": true` + `"motif": "…"` (la mention « Non sou
 
 | op | Paramètres |
 |---|---|
-| `ajouter_source` | `titre`*, `auteur`, `publication`, `depot`, `cote`, `url`, `ark`, `type_source`, `original`, `note`, `ref` |
-| `ajouter_depot` | `nom`, `sigle`, `adresse`, `url`, `ref` |
-| `modifier_source` | `id`, `champs` |
+| `ajouter_source` | `titre`*, `auteur`, `publication`, `depot`, `cote`, `url`, `ark`, `type_source`, `original`, `note`, `tags`, `ref` |
+| `ajouter_depot` | `nom`, `sigle`, `adresse`, `url`, `tags`, `ref` |
+| `modifier_source` | `id`, `champs` (sauf `tags`), `tags`, `tags_retrait` |
 | `supprimer_source` | `id`, `cascade` (défaut `false` : refus si la source est encore citée ; `true` : chaque citation retirée est listée avec son porteur). Médias de la source détachés, jamais supprimés ; refus si elle est la source originale d'une autre |
 | `fusionner_sources` | `de` (doublon), `vers` (source gardée) : citations réécrites, citations devenues identiques (même source et page) sur un même porteur fondues (médias réunis), médias et sources dérivées reportés, doublon supprimé |
-| `ajouter_personne` | `noms`* `[{prenoms, nom, surnom, type, citations}]`, `sexe`, `evenements`, `citations`, `notes`, `vivant`, `ref` |
-| `modifier_personne` | `id`, `sexe`, `vivant`, `noms` (remplace), `notes_ajout` |
+| `ajouter_personne` | `noms`* `[{prenoms, nom, surnom, type, citations}]`, `sexe`, `evenements`, `citations`, `notes`, `vivant`, `tags`, `ref` |
+| `modifier_personne` | `id`, `sexe`, `vivant`, `noms` (remplace), `notes_ajout`, `tags`, `tags_retrait` |
 | `supprimer_personne` | `id` |
 | `ajouter_nom` | `id`, `nom` |
-| `ajouter_evenement` | `cible` (I… ou F…), `evenement` `{type, date, lieu, valeur, type_detail, age, cause, note, citations, associations, non_source, motif}`, `ref` |
+| `ajouter_evenement` | `cible` (I… ou F…), `evenement` `{type, date, lieu, valeur, type_detail, age, cause, note, citations, associations, tags, non_source, motif}`, `ref` |
 | `ajouter_association` | `evenement` (uid) ou `personne` (id), `association` |
 | `supprimer_association` | `evenement` ou `personne`, `index` |
-| `modifier_evenement` | `uid`, `champs` `{date, lieu, valeur, type_detail, age, cause, note}`, `citations_ajout` |
+| `modifier_evenement` | `uid`, `champs` `{date, lieu, valeur, type_detail, age, cause, note}`, `citations_ajout`, `tags`, `tags_retrait` |
 | `supprimer_evenement` | `uid` |
-| `ajouter_famille` | `epoux`, `epouse`, `enfants` `[id | {enfant, filiation, citations}]`, `evenements`, `citations`, `ref` |
+| `ajouter_famille` | `epoux`, `epouse`, `enfants` `[id | {enfant, filiation, citations}]`, `evenements`, `citations`, `tags`, `ref` |
 | `lier_enfant` / `delier_enfant` | `famille`, `enfant`, (`filiation`, `citations`, `non_source`, `motif`) |
 | `lier_conjoint` | `famille`, `personne`, `role` (`epoux`/`epouse`) |
 | `ajouter_citation` | `cible` `{type: evenement(uid) | nom(id, index) | filiation(famille, enfant) | personne | famille | media (id)}`, `citation` |
-| | Citation : `source`, `page`, `texte`, `qualite`, `type_source`, `information`, `preuve`, `consultation`, `ark`, `medias` (ids ou `$ref` d'`ajouter_media` : images de l'acte), `lier_media` (défaut `true` : voir « Images d'une citation »), `note` |
+| | Citation : `source`, `page`, `texte`, `qualite`, `type_source`, `information`, `preuve`, `consultation`, `ark`, `medias` (ids ou `$ref` d'`ajouter_media` : images de l'acte), `lier_media` (défaut `true` : voir « Images d'une citation »), `note`, `tags` |
 | `supprimer_citation` | `cible` (même forme qu'`ajouter_citation`), `source`*, `page` (facultatif), `index` (parmi les citations qui correspondent, si plusieurs) : retire cette citation ; ses médias restent dans l'arbre |
-| `ajouter_media` | `fichier`* (voir « Fichier d'un média »), `format`, `titre`, `citations`, `lier_a` `[ids]` (personnes `I…`, familles `F…`, sources `S…`, événements (uid), ou `$ref` : voir « Médias »), `ref` |
-| `modifier_media` | `id`, `champs` `{fichier, titre, format}` (`fichier` contrôlé comme pour `ajouter_media` ; `date` refusée : un `OBJE` GEDCOM 7 ne porte pas de date, dater l'acte dans sa citation ou son événement), `citations_ajout`, `lier_a` `[ids]` (liens ajoutés, mêmes cibles qu'`ajouter_media`) |
+| `ajouter_media` | `fichier`* (voir « Fichier d'un média »), `format`, `titre`, `citations`, `lier_a` `[ids]` (personnes `I…`, familles `F…`, sources `S…`, événements (uid), ou `$ref` : voir « Médias »), `tags`, `ref` |
+| `modifier_media` | `id`, `champs` `{fichier, titre, format}` (`fichier` contrôlé comme pour `ajouter_media` ; `date` refusée : un `OBJE` GEDCOM 7 ne porte pas de date, dater l'acte dans sa citation ou son événement), `citations_ajout`, `lier_a` `[ids]` (liens ajoutés, mêmes cibles qu'`ajouter_media`), `tags`, `tags_retrait` |
 | `fusionner_personnes` | `conserver`, `absorber`, `justification`*, `forcer` |
 | `scinder_personne` | `id`, `evenements` `[uid]`, `familles_parents`, `familles_conjoint`, `noms`, `sexe`, `justification`*, `ref` |
 | `definir_statut` | `cible` `{type: evenement | nom | filiation …}`, `statut` (`refute` \| `contradictoire` \| `""`), `justification`* |
 | `marquer_vivant` | `id`, `vivant` (`Y` \| `N` \| `""`) |
+| `etiqueter` | `cible`* `{type: personne | famille | source | depot | media | note (id) | evenement (uid)}` ou `{type: citation, porteur (même forme que la cible d'ajouter_citation), source, page, index}`, `tags`, `tags_retrait` (au moins un) |
+
+### Étiquettes (#262)
+
+Une étiquette (tag) se pose sur une personne, une famille, un événement, une citation, une source, un dépôt, un
+média ou une note partagée (`N…`). Ce sont les étiquettes de Gramps Web (`Blog` pour les sources publiées,
+`ToDo` pour les tâches…) ; en mode fichier, elles s'écrivent en extension GEDCOM `_ETIQUETTE`
+([extensions](gedcom-extensions.md)).
+
+- `tags` ajoute (en fin de liste, sans doublon), `tags_retrait` retire ; un nom à la fois ajouté et retiré est
+  refusé, un retrait d'une étiquette absente est signalé dans les avertissements. Pour un objet créé, seul `tags`
+  est accepté.
+- Noms : sensibles à la casse (comme Gramps Web), non vides, sans espace en début ou en fin, sans retour à la
+  ligne ni caractère de contrôle, 100 caractères au plus.
+- Étiquettes gérées par Genealogiste (`Genealogiste:auto`, `Sosa:auto`, statut de preuve « Preuve : … ») :
+  refusées, quelle que soit la casse ; elles restent recalculées par Genealogiste.
+- Diff concis : une ligne par objet, `étiquettes I12 : +Blog −ToDo`, dans le résumé, à la fin du diff
+  (`@@ étiquettes I12 : +Blog −ToDo @@`) et, en mode gramps, dans `transaction_gramps.etiquettes`.
+- Fusions (`fusionner_personnes`, `fusionner_sources`, événements identiques fusionnés, citations fondues) :
+  étiquettes réunies.
+- Lecture : `arbre_fiche` les affiche (personne, événements, unions), `arbre_recherche` les renvoie
+  (`etiquettes`) et filtre par `etiquette` (nom exact). Exports publics : même politique que les notes
+  ([sécurité](securite.md)).
+- Étiquettes des lieux et des notes « en ligne » (note de personne, d'événement…) : non modélisées, conservées
+  dans Gramps Web tant que l'objet ne change pas.
+
+Exemple : `{"op": "etiqueter", "cible": {"type": "citation", "porteur": {"type": "evenement", "uid": "…"},
+"source": "S1", "page": "acte n° 45"}, "tags": ["À vérifier"]}`.
 
 ### Fichier d'un média (`ajouter_media`)
 
@@ -136,7 +168,8 @@ paquet attendent dans `<données>/imports/gramps/` ([Gramps Desktop](gramps.md#i
   conflit est indiqué dans le résumé, à confirmer par `marquer_vivant` ;
 - extensions GEDCOM (`extra`) des deux fiches conservées ;
 - événements identiques : citations, associations, notes, cause, âge, valeur et statut manuel fusionnés ; une
-  valeur divergente est reportée en note, le statut le plus grave (`refute`, puis `contradictoire`) est retenu.
+  valeur divergente est reportée en note, le statut le plus grave (`refute`, puis `contradictoire`) est retenu ;
+- étiquettes des deux fiches (et des événements fusionnés) réunies.
 
 **Médias** (`ajouter_media`, `modifier_media`, `lier_a`) : un média se lie à des personnes (`I…`), des
 familles (`F…`), des sources (`S…`) et des événements (uid), mélangeables (`["I1", "I2", "F3"]` pour un acte de

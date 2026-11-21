@@ -11,7 +11,7 @@ import re
 from datetime import date
 from pathlib import PurePosixPath
 
-from .. import ark
+from .. import ark, etiquettes
 from ..models import (
     CONSULTATIONS,
     EVENT_LABELS,
@@ -64,6 +64,37 @@ class Ctx:
 
 # ---------------------------------------------------------------------------- constructeurs
 
+def _noms_etiquettes(valeur, champ: str) -> list[str]:
+    try:
+        return etiquettes.liste(valeur, champ)
+    except ValueError as exc:
+        raise OpError(f"{champ} : {exc}") from exc
+
+
+def _etiqueter(ctx: Ctx, cible, o: dict, label: str, creation: bool = False, lire=None, ecrire=None) -> bool:
+    """Champs « tags » (ajout) et « tags_retrait » d'une opération appliqués aux étiquettes de ``cible`` (#262) ;
+    une ligne concise au résumé (« étiquettes I12 : +Blog −ToDo »). Renvoie vrai si un des champs est fourni."""
+    if "tags" not in o and "tags_retrait" not in o:
+        return False
+    ajout = _noms_etiquettes(o.get("tags"), "tags")
+    retrait = _noms_etiquettes(o.get("tags_retrait"), "tags_retrait")
+    if creation and retrait:
+        raise OpError("tags_retrait : rien à retirer sur un objet créé par l'opération")
+    if set(ajout) & set(retrait):
+        raise OpError(f"étiquette(s) à la fois ajoutée(s) et retirée(s) : {sorted(set(ajout) & set(retrait))}")
+    actuelles = lire() if lire else cible.tags
+    nouvelles, ajoutees, retirees, absentes = etiquettes.appliquer(actuelles, ajout, retrait)
+    if ecrire:
+        ecrire(nouvelles)
+    else:
+        cible.tags = nouvelles
+    if ajoutees or retirees:
+        ctx.summary.append(etiquettes.ligne(label, ajoutees, retirees))
+    for x in absentes:
+        ctx.warnings.append(f"{label} : étiquette « {x} » absente, rien à retirer")
+    return True
+
+
 def _date(value: str) -> str:
     if not value:
         return ""
@@ -91,6 +122,10 @@ def _source_by_ark(tree: Tree, a: ark.Ark) -> str:
 
 def _citation(ctx: Ctx, d: dict) -> Citation:
     d = dict(d)
+    if "tags_retrait" in d:
+        raise OpError("Citation : tags_retrait sans objet sur une citation créée (étiqueter une citation existante : "
+                      "opération etiqueter)")
+    d["tags"] = _noms_etiquettes(d.get("tags"), "Citation : tags")
     lier_media = d.pop("lier_media", True)
     if not isinstance(lier_media, bool):
         raise OpError("Citation : lier_media doit valoir true ou false")
@@ -192,6 +227,9 @@ def _event(ctx: Ctx, d: dict) -> Event:
     d.pop("uid", None)
     if "medias" in d:
         raise OpError("Événement : médias à lier par ajouter_media / modifier_media (lier_a : uid de l'événement)")
+    if "tags_retrait" in d:
+        raise OpError("Événement : tags_retrait sans objet sur un événement créé (modifier_evenement ou etiqueter)")
+    d["tags"] = _noms_etiquettes(d.get("tags"), "Événement : tags")
     try:
         return Event(**{k: v for k, v in d.items()})
     except TypeError as exc:
@@ -242,6 +280,7 @@ def op_ajouter_personne(ctx: Ctx, o: dict) -> None:
     if o.get("ref"):
         ctx.refs[o["ref"]] = pid
     ctx.summary.append(f"Ajout de {p.label()}")
+    _etiqueter(ctx, p, o, pid, creation=True)
 
 
 def op_modifier_personne(ctx: Ctx, o: dict) -> None:
@@ -255,6 +294,7 @@ def op_modifier_personne(ctx: Ctx, o: dict) -> None:
     for n in o.get("notes_ajout", []):
         p.notes.append(n)
     ctx.summary.append(f"Modification de {p.label()}")
+    _etiqueter(ctx, p, o, p.id)
 
 
 def op_supprimer_personne(ctx: Ctx, o: dict) -> None:
@@ -301,11 +341,14 @@ def op_modifier_evenement(ctx: Ctx, o: dict) -> None:
         if k in champs:
             setattr(e, k, champs.pop(k))
     if champs:
-        raise OpError(f"modifier_evenement : champs non modifiables {sorted(champs)}")
+        raise OpError(f"modifier_evenement : champs non modifiables {sorted(champs)}"
+                      + (" (étiquettes : tags / tags_retrait au niveau de l'opération)" if "tags" in champs else ""))
     for c in o.get("citations_ajout", []):
         e.citations.append(_citation(ctx, c))
     after = f"{e.date} {e.lieu.nom if e.lieu else ''}".strip()
-    ctx.summary.append(f"{owner.id} : {EVENT_LABELS[e.type]} modifié ({before} → {after})")
+    if o.get("champs") or o.get("citations_ajout") or ("tags" not in o and "tags_retrait" not in o):
+        ctx.summary.append(f"{owner.id} : {EVENT_LABELS[e.type]} modifié ({before} → {after})")
+    _etiqueter(ctx, e, o, f"{owner.id} {EVENT_LABELS[e.type]}")
 
 
 def op_supprimer_evenement(ctx: Ctx, o: dict) -> None:
@@ -322,6 +365,7 @@ def op_ajouter_famille(ctx: Ctx, o: dict) -> None:
             ctx.tree.person(role).fams.append(fid)
     f.evenements = [_event(ctx, e) for e in o.get("evenements", [])]
     f.citations = [_citation(ctx, c) for c in o.get("citations", [])]
+    _etiqueter(ctx, f, o, fid, creation=True)
     ctx.tree.familles[fid] = f
     if o.get("ref"):
         ctx.refs[o["ref"]] = fid
@@ -388,7 +432,7 @@ def _depot_for(ctx: Ctx, a: ark.Ark) -> str:
 
 
 def op_ajouter_source(ctx: Ctx, o: dict) -> None:
-    d = {k: v for k, v in o.items() if k not in ("op", "ref")}
+    d = {k: v for k, v in o.items() if k not in ("op", "ref", "tags", "tags_retrait")}
     a = _ark_of(d.get("ark", ""), d.get("url", ""))
     if a:
         same = _source_by_ark(ctx.tree, a)
@@ -398,6 +442,9 @@ def op_ajouter_source(ctx: Ctx, o: dict) -> None:
             ctx.sources_cited.add(same)
             ctx.warnings.append(f"Source {same} réutilisée : même ARK ({a.base}) que « {ctx.tree.sources[same].titre} ».")
             ctx.summary.append(f"Source {same} réutilisée (même ARK {a.base})")
+            if "tags_retrait" in o:
+                raise OpError("tags_retrait : rien à retirer sur une source ajoutée (modifier_source ou etiqueter)")
+            _etiqueter(ctx, ctx.tree.sources[same], o, same)
             return
         d["ark"] = a.base
         if not d.get("url"):
@@ -421,6 +468,7 @@ def op_ajouter_source(ctx: Ctx, o: dict) -> None:
         ctx.refs[o["ref"]] = sid
     ctx.sources_cited.add(sid)
     ctx.summary.append(f"Source {sid} : {s.titre}" + (f" (cote {s.cote})" if s.cote else ""))
+    _etiqueter(ctx, s, o, sid, creation=True)
 
 
 def op_modifier_source(ctx: Ctx, o: dict) -> None:
@@ -429,11 +477,15 @@ def op_modifier_source(ctx: Ctx, o: dict) -> None:
     if not s:
         raise OpError(f"Source inconnue : {sid}")
     for k, v in o.get("champs", {}).items():
-        if k in ("id", "extra", "medias") or not hasattr(s, k):
+        if k in ("id", "extra", "medias", "tags") or not hasattr(s, k):
             raise OpError(f"modifier_source : champ {k!r} invalide"
-                          + (" (lier un média : ajouter_media / modifier_media, lier_a)" if k == "medias" else ""))
+                          + (" (lier un média : ajouter_media / modifier_media, lier_a)" if k == "medias" else "")
+                          + (" (étiquettes : tags / tags_retrait au niveau de l'opération)" if k == "tags" else ""))
         setattr(s, k, ctx.r(v) if k in ("depot", "original") else v)
-    ctx.summary.append(f"Source {sid} modifiée")
+    if o.get("champs"):
+        ctx.summary.append(f"Source {sid} modifiée")
+    if not _etiqueter(ctx, s, o, sid) and not o.get("champs"):
+        ctx.summary.append(f"Source {sid} modifiée")
 
 
 def op_ajouter_depot(ctx: Ctx, o: dict) -> None:
@@ -443,6 +495,7 @@ def op_ajouter_depot(ctx: Ctx, o: dict) -> None:
     if o.get("ref"):
         ctx.refs[o["ref"]] = rid
     ctx.summary.append(f"Dépôt {rid} : {o.get('nom', '')}")
+    _etiqueter(ctx, ctx.tree.depots[rid], o, rid, creation=True)
 
 
 def _liste_citations(ctx: Ctx, cible: dict) -> tuple[list[Citation], str]:
@@ -479,28 +532,33 @@ def op_ajouter_citation(ctx: Ctx, o: dict) -> None:
     ctx.summary.append(f"Citation {c.source} ({c.page}) sur {what}")
 
 
-def op_supprimer_citation(ctx: Ctx, o: dict) -> None:
-    """Retire une citation précise (#248) : source (+ page) ; index parmi les citations qui correspondent si
-    plusieurs. Les médias de la citation restent dans l'arbre."""
-    liste, what = _liste_citations(ctx, o["cible"])
+def _choisir_citation(ctx: Ctx, liste: list[Citation], what: str, o: dict, op: str) -> int:
+    """Position de la citation désignée par source (+ page) et index parmi celles qui correspondent."""
     sid = ctx.r(o.get("source"))
     if not sid:
-        raise OpError("supprimer_citation : source requise (S…)")
+        raise OpError(f"{op} : source requise (S…)")
     candidates = [i for i, c in enumerate(liste) if c.source == sid and ("page" not in o or c.page == o["page"])]
     if not candidates:
         presentes = [f"{c.source} ({c.page})" for c in liste] or ["aucune"]
-        raise OpError(f"supprimer_citation : aucune citation {sid}"
+        raise OpError(f"{op} : aucune citation {sid}"
                       + (f" ({o['page']})" if "page" in o else "") + f" sur {what} ; présentes : {', '.join(presentes)}")
     if "index" in o:
         k = int(o["index"])
         if not 0 <= k < len(candidates):
-            raise OpError(f"supprimer_citation : index {k} hors des {len(candidates)} citation(s) correspondantes")
+            raise OpError(f"{op} : index {k} hors des {len(candidates)} citation(s) correspondantes")
     elif len(candidates) > 1:
-        raise OpError(f"supprimer_citation : {len(candidates)} citations {sid} sur {what} "
+        raise OpError(f"{op} : {len(candidates)} citations {sid} sur {what} "
                       f"(pages : {', '.join(repr(liste[i].page) for i in candidates)}) ; préciser page ou index")
     else:
         k = 0
-    c = liste.pop(candidates[k])
+    return candidates[k]
+
+
+def op_supprimer_citation(ctx: Ctx, o: dict) -> None:
+    """Retire une citation précise (#248) : source (+ page) ; index parmi les citations qui correspondent si
+    plusieurs. Les médias de la citation restent dans l'arbre."""
+    liste, what = _liste_citations(ctx, o["cible"])
+    c = liste.pop(_choisir_citation(ctx, liste, what, o, "supprimer_citation"))
     ctx.summary.append(f"Citation {c.source} ({c.page}) retirée de {what}")
     if not liste:
         ctx.warnings.append(f"{what} n'a plus aucune citation.")
@@ -588,6 +646,7 @@ def op_fusionner_sources(ctx: Ctx, o: dict) -> None:
             for m in c.medias:
                 if m not in double.medias:
                     double.medias.append(m)
+            double.tags += [x for x in c.tags if x not in double.tags]
             for k in ("texte", "note", "ark"):
                 if not getattr(double, k) and getattr(c, k):
                     setattr(double, k, getattr(c, k))
@@ -600,6 +659,7 @@ def op_fusionner_sources(ctx: Ctx, o: dict) -> None:
     for m in ctx.tree.sources[de].medias:
         if m not in cible.medias:
             cible.medias.append(m)
+    cible.tags += [x for x in ctx.tree.sources[de].tags if x not in cible.tags]
     s = ctx.tree.sources.pop(de)
     ctx.sources_cited.add(vers)
     ctx.summary.append(f"Fusion de la source {de} ({s.titre}) dans {vers} ({cible.titre}) : {reecrites} citation(s) "
@@ -623,6 +683,7 @@ def op_ajouter_media(ctx: Ctx, o: dict) -> None:
         ctx.refs[o["ref"]] = mid
     lie = f" (liée à {', '.join(liens)})" if liens else ""
     ctx.summary.append(f"Média {mid} : {m.titre or m.fichier}{lie}")
+    _etiqueter(ctx, m, o, mid, creation=True)
 
 
 MEDIA_CHAMPS = ("fichier", "titre", "format")
@@ -640,11 +701,12 @@ def op_modifier_media(ctx: Ctx, o: dict) -> None:
                       "date) ; dater l'acte dans sa citation ou dans l'événement qu'il prouve")
     inconnus = sorted(set(champs) - set(MEDIA_CHAMPS))
     if inconnus:
-        raise OpError(f"modifier_media : champs non modifiables {inconnus} (modifiables : {', '.join(MEDIA_CHAMPS)})")
+        raise OpError(f"modifier_media : champs non modifiables {inconnus} (modifiables : {', '.join(MEDIA_CHAMPS)})"
+                      + (" ; étiquettes : tags / tags_retrait au niveau de l'opération" if "tags" in inconnus else ""))
     citations = o.get("citations_ajout") or []
     lier_a = o.get("lier_a") or []
-    if not champs and not citations and not lier_a:
-        raise OpError("modifier_media : rien à modifier (champs, citations_ajout ou lier_a)")
+    if not champs and not citations and not lier_a and not o.get("tags") and not o.get("tags_retrait"):
+        raise OpError("modifier_media : rien à modifier (champs, citations_ajout, lier_a, tags ou tags_retrait)")
     changes = []
     if "fichier" in champs:
         fichier = champs["fichier"]
@@ -671,7 +733,9 @@ def op_modifier_media(ctx: Ctx, o: dict) -> None:
     liens = _lier_media(ctx, mid, lier_a, "modifier_media", seulement_nouveaux=True)
     if liens:
         changes.append(f"liée à {', '.join(liens)}")
-    ctx.summary.append(f"Média {mid} modifié : " + ("; ".join(changes) or "inchangé"))
+    if changes or champs or citations or lier_a:
+        ctx.summary.append(f"Média {mid} modifié : " + ("; ".join(changes) or "inchangé"))
+    _etiqueter(ctx, m, o, mid)
 
 
 def _suffixe(fichier: str) -> str:
@@ -801,6 +865,7 @@ def _merge_event(twin: Event, e: Event) -> list[str]:
                                        justification=" ; ".join(x for x in (sa.justification, sb.justification) if x))
     twin.prive = twin.prive or e.prive
     twin.extra += [x for x in e.extra if x not in twin.extra]
+    twin.tags += [x for x in e.tags if x not in twin.tags]
     return conflits
 
 
@@ -836,6 +901,7 @@ def op_fusionner_personnes(ctx: Ctx, o: dict) -> None:
         conflits.append(f"privé : {gone_id} marqué privé → fiche fusionnée marquée privée")
     keep.prive = keep.prive or gone.prive
     keep.extra += [x for x in gone.extra if x not in keep.extra]
+    keep.tags += [x for x in gone.tags if x not in keep.tags]
     keep.citations += gone.citations
     keep.associations += gone.associations
     for a in _all_associations(ctx.tree):
@@ -935,6 +1001,49 @@ def op_definir_statut(ctx: Ctx, o: dict) -> None:
     ctx.summary.append(f"Statut {statut or '(calculé)'} pour {what}" + (f" — {a.justification}" if a else ""))
 
 
+ETIQUETER_CIBLES = ("personne", "famille", "evenement", "source", "depot", "media", "note", "citation")
+
+
+def op_etiqueter(ctx: Ctx, o: dict) -> None:
+    """Étiquettes d'un objet existant (#262) : cible = {type, id | uid} ; citation : {type: citation, porteur:
+    <cible d'ajouter_citation>, source, page?, index?}. Champs tags (ajout) et tags_retrait."""
+    cible = o.get("cible") or {}
+    t = cible.get("type")
+    if not o.get("tags") and not o.get("tags_retrait"):
+        raise OpError("etiqueter : tags ou tags_retrait requis")
+    if t == "evenement":
+        owner, e = _find_event(ctx, ctx.r(cible.get("uid")))
+        _etiqueter(ctx, e, o, f"{owner.id} {EVENT_LABELS[e.type]}")
+    elif t == "citation":
+        if not isinstance(cible.get("porteur"), dict):
+            raise OpError("etiqueter : cible.porteur requis pour une citation (même forme que la cible "
+                          "d'ajouter_citation)")
+        liste, what = _liste_citations(ctx, cible["porteur"])
+        c = liste[_choisir_citation(ctx, liste, what, cible, "etiqueter")]
+        _etiqueter(ctx, c, o, f"citation {c.source}" + (f" ({c.page})" if c.page else "") + f" sur {what}")
+    elif t == "note":
+        nid = ctx.r(cible.get("id"))
+        if nid not in ctx.tree.notes:
+            raise OpError(f"etiqueter : note partagée inconnue {nid!r}")
+
+        def ecrire(tags: list[str]) -> None:
+            if tags:
+                ctx.tree.notes_tags[nid] = tags
+            else:
+                ctx.tree.notes_tags.pop(nid, None)
+
+        _etiqueter(ctx, None, o, nid, lire=lambda: list(ctx.tree.notes_tags.get(nid, [])), ecrire=ecrire)
+    elif t in ETIQUETER_CIBLES:
+        oid = ctx.r(cible.get("id"))
+        coll = {"personne": ctx.tree.personnes, "famille": ctx.tree.familles, "source": ctx.tree.sources,
+                "depot": ctx.tree.depots, "media": ctx.tree.medias}[t]
+        if oid not in coll:
+            raise OpError(f"etiqueter : {t} inconnu(e) : {oid!r}")
+        _etiqueter(ctx, coll[oid], o, oid)
+    else:
+        raise OpError(f"etiqueter : cible.type parmi {', '.join(ETIQUETER_CIBLES)}")
+
+
 def op_marquer_vivant(ctx: Ctx, o: dict) -> None:
     p = ctx.tree.person(ctx.r(o["id"]))
     v = o.get("vivant", "")
@@ -1025,6 +1134,8 @@ def op_remplacer_arbre(ctx: Ctx, o: dict) -> None:
         ctx.tree.notes[N[old]] = text
         if old in new.notes_privees:
             ctx.tree.notes_privees.add(N[old])
+        if new.notes_tags.get(old):
+            ctx.tree.notes_tags[N[old]] = list(new.notes_tags[old])
     ctx.summary.append(f"Import : {len(new.personnes)} personnes ajoutées (renumérotées"
                        + (f", {renumbered_uids} UID réattribués" if renumbered_uids else "") + ") — "
                        "doublons éventuels à traiter par /gen:recoupe puis fusion validée")
