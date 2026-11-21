@@ -512,6 +512,9 @@ Workflow `Intégration Gramps`, un job `Gramps Desktop <version>` par version (v
     `<mediapath>` (export par défaut), le fichier n'est pas retrouvé, la somme reste vide et aucun chemin n'est
     inventé ; dans un paquet, le `<mediapath>` est ignoré (chemin de base = `<nom>.gpkg.media`).
 
+Résultat du 2026-11-21 (#282) : 156 vérifications sur 156 réussies (GLib factice, 5.2.4, 6.0.8 et 6.1.0-beta2), dont, par
+version, les 2 du cas `reglages` (import et cycle : fiche, signets et formats relus par la base, réexport de Gramps
+identique) et `chercheur:ged` (le `SUBM` du GEDCOM exporté relu par l'import GEDCOM de Gramps).
 Résultat du 2026-11-21 (#280) : 147 vérifications sur 147 réussies (GLib factice, 5.2.4, 6.0.8 et 6.1.0-beta2), dont
 les 6 de chacun des cas `mediapath`, `sans-mediapath` et `gpkg-mediapath` (import et cycle) pour chaque version.
 Résultat du 2026-11-21 (#276) : 129 vérifications sur 129 réussies (GLib factice, 5.2.4, 6.0.8 et 6.1.0-beta2),
