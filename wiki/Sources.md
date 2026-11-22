@@ -6,7 +6,7 @@ les restrictions d’accès d’un site et ne remplace pas la consultation d’u
 | Source ou fonction | Usage et prérequis |
 |---|---|
 | matchID / décès INSEE | Recherche de décès dans le périmètre de ses fichiers ; l’appariement CSV peut nécessiter un jeton |
-| WikiTree | Recherche et profils ; configurer un identifiant d’application avant utilisation |
+| WikiTree | Recherche et profils ; configurer un identifiant d’application avant utilisation. Depuis novembre 2026, WikiTree refuse le User-Agent du plugin (403 « AI-scraping bots ») : le refus est signalé comme blocage, sans contournement ; demander une autorisation à WikiTree, ou consulter le site vous-même puis utiliser `source_collee` ([détails](../docs/securite.md#identification--user-agent-et-contact-facultatif)) |
 | Gallica | Recherche documentaire ; certaines protections réseau peuvent bloquer l’accès automatisé |
 | Wikidata | Recherche et requêtes de recoupement ; relire les références des résultats |
 | API Géo / COG | Normalisation des lieux et historique disponible ; le COG historique ne couvre pas toutes les périodes anciennes |
@@ -40,6 +40,11 @@ pour exploiter les exceptions. Le [modèle de couverture](../docs/couvertures-ar
 Une date `releve_le` décrit un relevé automatisé ; `verifie_le` est réservé au contrôle humain.
 Un site qui répond n’est pas un inventaire intégralement vérifié. Les cotes proposées sont des pistes
 à confronter à l’inventaire du service.
+
+Pour l’AD59 et quatorze services Mnesys, `archives_registres` retrouve un registre à partir d’une commune et
+d’une année, sans connaître sa cote ni son ARK ; certains services couvrent aussi les registres matricules
+(`RM`, par classe) et les tables des successions (`SUCC`, par bureau). `archives_planche` montre plusieurs vues
+sur une seule image et `archives_sonder` indique la vue à lire pour atteindre une date.
 
 Le [catalogue des services d’archives](Services-archives.md) précise les API, les fonctions de
 téléchargement livrées, les essais réels et les cas qui demandent un fichier manuel.

@@ -36,5 +36,5 @@ la lecture des actes ni le jugement généalogique.
 [Sécurité technique](../docs/securite.md) · [Exploitation](../docs/production.md) ·
 [Intégration continue](../docs/integration-continue.md) · [Maintenir cette documentation](Maintenance.md)
 
-Les exemples de ces guides sont fictifs. Le plugin est livré pour Claude Code ; le portage Codex
-reste un chantier suivi dans [#80](https://github.com/Hiobi/Genealogiste/issues/80).
+Les exemples de ces guides sont fictifs. Le plugin est livré pour Claude Code ; pour Codex CLI en local,
+suivre le [guide Codex](../docs/adaptation-codex.md).

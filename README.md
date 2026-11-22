@@ -13,8 +13,10 @@ Genealogiste vous aide à distinguer les faits étayés, les hypothèses et les 
 |---|---|
 | Retrouver une personne | Recherche dans plusieurs sources, variantes de noms et comparaison des candidats |
 | Vérifier une filiation | Citations, analyse des contradictions et vérification indépendante |
+| Trouver un acte | Registre retrouvé par commune et année (AD59 et quatorze services Mnesys), vue repérée, pièce archivée |
 | Exploiter un acte | Aide à la transcription, relevé des témoins et classement des pièces |
 | Organiser votre travail | Fiches Markdown/Obsidian, journal et prochaines recherches prioritaires |
+| Mener une enquête longue | État d’enquête reprenable, budget, mode autonome et campagne sans surveillance ; propositions validées une à une |
 | Construire et partager un arbre | GEDCOM versionné en Git ou connexion à Gramps Web ; échange Gramps XML et `.gpkg` avec Gramps Desktop ; exports masqués par défaut |
 
 Les sources sont principalement françaises. Certains sites sont consultés par API ; d’autres nécessitent
@@ -63,6 +65,11 @@ Avec un **GEDCOM fictif ou une copie privée** de votre arbre, dans Claude Code 
 Relisez le bilan et le diff de l’import avant de l’approuver. Utilisez ensuite les identifiants réellement
 présents dans votre arbre. Le [tutoriel avec les données fictives du projet](https://github.com/Hiobi/Genealogiste/wiki/Demarrage)
 détaille ce parcours et le résultat attendu.
+
+Toutes les commandes : `cherche`, `enquete`, `campagne`, `acte`, `transcris`, `fiche`, `lacunes`, `verifie`,
+`recoupe`, `preuve`, `recit`, `ascendance`, `descendance`, `ajoute`, `modifie`, `fusionne`, `valide`, `import`,
+`export`, `organise`, `billet`, `journal` et `diagnostic`, chacune préfixée de `/genealogiste:`
+([rôle et arguments de chaque commande, outils du serveur](https://github.com/Hiobi/Genealogiste/wiki/Commandes)).
 
 Vous avez déjà un dossier de scans, de photos d’archives ou de PDF d’actes, éventuellement avec des notes
 Markdown ? Demandez simplement « organise ce dossier de scans » ou lancez `/genealogiste:organise <dossier>` :

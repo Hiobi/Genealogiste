@@ -68,6 +68,12 @@ d’arbre qui en découle. Un refus, ou l’absence de réponse, ne déplace rie
 **Annulation** : `pieces_proposer(dossier, annuler="<journal>.tsv")`, puis accord, puis `pieces_appliquer`.
 Annuler les journaux du plus récent au plus ancien. Le retour est exact, notes compagnons comprises.
 
+**Pièces déjà rangées** : une pièce placée sous `documents/` n’est jamais déplacée par une nouvelle
+organisation. Quand le classement évolue (en 0.27.0, une déclaration de succession passe de
+`documents/Notaires/` à `documents/Enregistrement/`, code `MPD`), la déplacer à la main, ou la remettre dans
+`_À trier/` avant de relancer l’organisation. Les codes de type sont listés dans la
+[convention](../docs/pieces.md#codes-de-type).
+
 ## 2. Créer une base depuis zéro
 
 **Demandes types**
