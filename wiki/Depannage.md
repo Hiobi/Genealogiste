@@ -13,21 +13,24 @@ Les contrôles ci-dessous évitent de réinstaller une autre copie ou de créer 
 | Un arbre vide apparaît à la place du vôtre | Arrêter les écritures ; vérifier `GENEALOGISTE_DATA_DIR`, `GENEALOGISTE_BACKEND`, le fichier `.env` et les volumes |
 | « Répertoire de données dans le dépôt du plugin » | Choisir un dossier privé distinct ; ne pas désactiver cette protection |
 | WikiTree signale un appId absent | Renseigner `GENEALOGISTE_WIKITREE_APPID`, puis redémarrer le serveur |
+| WikiTree répond 403 « AI-scraping bots » | Filtre de WikiTree contre les robots d’IA, pas un problème d’identifiants : le plugin ne le contourne pas ; demander une autorisation à WikiTree, ou consulter le site vous-même et utiliser `source_collee` ([détails](../docs/securite.md#identification--user-agent-et-contact-facultatif)) |
 | Le jeton de proposition est refusé | Il peut être expiré, déjà utilisé ou associé à un arbre modifié ; demander une nouvelle proposition et relire le diff |
 | Une recherche concernant un vivant est bloquée | C’est une garde de confidentialité ; corriger une donnée erronée avec justification, sans chercher à contourner le contrôle |
-| Un site bloque la requête | Consulter la page vous-même selon ses conditions ; conserver URL et citation, puis fournir le contenu autorisé |
+| Un site bloque la requête (`bloque_antirobot`, `coupe_circuit`, `exclusion`) | Défi anti-robot : le service est mis en pause, puis exclu 7 jours si le défi persiste ; aucun contournement. Consulter la page vous-même selon ses conditions ; conserver URL et citation, puis fournir le contenu autorisé (`source_collee`, ou l’image avec `media_enregistrer`) ; voir les [protections anti-robot](../docs/archives.md) |
+| Notes : « fichier préexistant non reconnu pour ce patronyme » | Vault sous macOS ou synchronisé par Nextcloud (noms de fichiers en NFD) : corrigé en 0.26.1 ; mettre à jour le plugin et reconnecter le serveur |
 | HTTP 401 | Jeton absent ou différent entre serveur et client ; vérifier l’en-tête Bearer sans le publier |
 | HTTP 421 | Host/Origin rejeté par le transport ; vérifier l’adresse locale et la configuration du proxy, pas seulement le token |
 | HTTP 413 | Message HTTP supérieur à 4 Mio ; réduire le texte envoyé ou utiliser les outils de fichier adaptés |
 | Gramps refuse une écriture | `/genealogiste:diagnostic` affiche le rôle du compte (Editor requis) et la version de l’API (3.13.0 au moins) ; vérifier aussi l’arbre sélectionné et les conflits ; suivre le [guide Gramps](../docs/gramps-web.md) |
 | Un envoi a un « résultat indéterminé » | Contrôler son résultat côté service avant de recommencer |
-| Une pièce ne s’affiche pas dans Obsidian | Vérifier le chemin et le nom de fichier ; le rendu natif des cas avec crochets reste suivi dans [#75](https://github.com/Hiobi/Genealogiste/issues/75) |
+| Une pièce ne s’affiche pas dans Obsidian | Vérifier le chemin et le nom de fichier ; les fiches générées utilisent des liens Markdown encodés, valides même avec des crochets dans le nom ([#75](https://github.com/Hiobi/Genealogiste/issues/75)) |
+| Une personne vivante apparaît comme décédée, ou l’inverse, après une fusion faite dans Gramps | Marqueurs `Genealogiste-Vivant` en double : le plugin retient la valeur la plus protectrice et le signale ; `arbre_coherence` ou `/genealogiste:diagnostic vivants`, puis proposition `dedoublonner_marqueurs` ([détails](../docs/gramps-web.md#marqueurs-en-double-après-une-fusion-faite-hors-du-plugin-311)) |
 
 ## Peut-on utiliser Codex ?
 
-Le portage complet n’est pas livré. Le serveur MCP peut être étudié séparément, mais les hooks Claude
-ne constituent pas la politique d’approbation d’un autre client. Suivre [#80](https://github.com/Hiobi/Genealogiste/issues/80)
-plutôt que de présumer les mêmes garanties sur une surface non validée.
+Oui, en local : le paquet fournit les skills et un profil séparé active le serveur MCP avec l’approbation
+native de chaque outil. Les hooks Claude ne s’appliquent pas à Codex. Suivre le [guide Codex](../docs/adaptation-codex.md)
+et ne pas présumer les mêmes garanties sur une autre surface.
 
 ## Faut-il des comptes partout ?
 

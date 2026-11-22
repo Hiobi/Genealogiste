@@ -1,6 +1,6 @@
 ---
 description: Enquête complète sur un individu et ses proches en une commande (recherche, archives, vérification, plan, propositions) ; --autonome pour une enquête sans question, bornée par son budget
-argument-hint: <id|nom> [personne|famille|etendu] [--autonome] [budget images=… duree=…]
+argument-hint: <id|nom> [personne|famille|etendu] [--autonome] [budget images=… requetes=…]
 ---
 Enquête généalogique : **$ARGUMENTS**
 

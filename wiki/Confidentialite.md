@@ -19,7 +19,12 @@ Pour une édition d’arbre : demander une proposition, lire le diff et les aler
 Le jeton d’application expire après une heure, n’est utilisable qu’une fois et est refusé si l’arbre a changé.
 Un jeton démontre qu’une proposition existe ; **il ne démontre pas qu’un humain a donné son accord**.
 
-Dans Claude Code, les hooks ajoutent la demande de confirmation sur les outils concernés.
+Dans Claude Code, les hooks ajoutent la demande de confirmation sur les outils concernés. Chaque outil a une
+classe : **lecture**, **collecte** (sources, cache, journal, pièce nouvelle archivée, jamais d’écrasement),
+**proposition** (diff et jeton, file de propositions) ou **écriture** (arbre, Gramps Web, vos fichiers,
+suppression, identifiants). Seule l’écriture demande votre accord ; fixer ou relever le budget d’une enquête
+le demande aussi. Pour une session sans surveillance, `GENEALOGISTE_ECRITURE=interdite` fait refuser toute
+écriture par le serveur lui-même ([campagne](../docs/campagne.md)).
 Avec un autre client MCP, configurer sa propre politique d’approbation. Les écritures auxiliaires
 (journal, notes, synchronisation) ne suivent pas toutes le circuit de proposition d’arbre ; le
 [catalogue des décisions](../docs/securite.md#confirmations-hooks) précise les cas.
@@ -31,11 +36,16 @@ Les gardes bloquent certaines recherches externes sur une personne présumée vi
 les exports appliquent un masquage par défaut. La présomption prend en compte l’incertitude des dates,
 pas seulement une date de naissance exacte. Une identité ou un fait mal renseigné peut fausser une
 analyse : vérifier les données avant de décider de ce qui peut être partagé.
+Une demande externe sur une personne présumée vivante est refusée avant tout contrôle de budget : rien
+n’est envoyé, consommé ni consigné.
 
 Avec Gramps Web, les vivants sont écrits en clair et Gramps Web ne les cache pas aux comptes Invité : seul le
 drapeau « privé » les protège. `gramps_proteger_vivants` propose de le poser sur les vivants et leurs données (et
 de le retirer à leur décès), toujours après accord ; `diagnostic(vivants=true)` signale une instance exposée
-([vivants et privé](../docs/gramps-web.md#vivants-et-privé-264)).
+([vivants et privé](../docs/gramps-web.md#vivants-et-privé-264)). Après une fusion faite dans Gramps, une
+personne peut porter deux marqueurs `Genealogiste-Vivant` contradictoires : le plugin retient la valeur la plus
+protectrice et le signale (`arbre_coherence`, `diagnostic(vivants=true)`) ; l’opération `dedoublonner_marqueurs`
+corrige après accord.
 
 Les notes générées utilisent `masquer` par défaut. Le mode `complet` est pour un espace strictement privé.
 Revoir le [guide des notes](../docs/notes.md), notamment le traitement des fichiers déjà créés et des médias

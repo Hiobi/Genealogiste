@@ -237,6 +237,10 @@ ici, dans la note compagnon. Pour **conserver** une vue d'acte, `piece_archiver`
 5. renvoie les opérations à proposer (`ajouter_media`, puis `ajouter_citation` avec `citation_suggeree` : ARK,
    vue, `consultation: image`). Rien n'est écrit dans l'arbre sans `arbre_proposer` et ton accord.
 
+Pour un document Gallica, `gallica_iiif(ark, page, region, taille)` construit sans requête les adresses IIIF :
+manifeste et visionneuse, et avec `page`, l'image (région `x,y,l,h`, taille `pct:50` ou `1500,`) et son `info.json`.
+Ces adresses servent ensuite à `archive_image` ou à `piece_archiver`.
+
 Le même lien peut être utilisé pour l'aperçu, le recadrage et l'archivage. Une originale sans IIIF déjà
 lue est réutilisée, sans nouveau téléchargement. La citation et le lien pérenne de la note privilégient
 l'ARK de la vue ; l'URL technique de l'image reste distincte. Si seule une URL est connue, sa pérennité
@@ -275,8 +279,8 @@ personne masquée.
 | `pieces_proposer(dossier, renommages, annuler, seulement_renommages, suivre_medias)` | plan complet (TSV), aperçu, résumé par dossier, médias suivis, jeton | non |
 | `pieces_appliquer(jeton)` | déplacements, journal, contrôle ; proposition d'arbre pour les médias déplacés | **oui** |
 | `piece_nommer(personnes, …)` | nom selon la convention et dossier de destination | non |
-| `piece_archiver(source, page, personnes, …)` | vue téléchargée en pleine résolution, nommée, rangée, avec sa note | règle par défaut |
-| `media_enregistrer(chemin, nom, classer)` | copie d'une pièce dans le répertoire des médias | règle par défaut |
+| `piece_archiver(source, page, personnes, …)` | vue téléchargée en pleine résolution, nommée, rangée, avec sa note | non (collecte : fichier nouveau, rien d'écrasé) |
+| `media_enregistrer(chemin, nom, classer)` | copie d'une pièce dans le répertoire des médias | **oui** |
 
 ## Ranger depuis un sous-dossier
 

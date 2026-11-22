@@ -72,7 +72,6 @@ Passer ensuite au [tutoriel fictif](Demarrage.md).
 - [Configuration](Configuration.md) pour les options et les sources nécessitant un identifiant.
 - [Gramps Web](../docs/gramps-web.md) pour travailler sur un serveur existant.
 - [Docker/Portainer](Docker-et-Portainer.md) pour un serveur MCP HTTP.
-- [Migration depuis Sosa](../docs/renommage-genealogiste.md) pour une ancienne installation.
 
 Pour développer ou charger le plugin depuis une copie du code :
 

@@ -45,6 +45,11 @@ ouvert sans action automatique.
 | `archives_sonder(source, date_cible, type_acte, lecture, conclusion, enquete)` | sondage guidé d'un registre (#156) : note la lecture d'une vue et propose la suivante ; arrêt `localise`, `absent` (registre négatif journalisé avec les bornes examinées) ou `budget` ; voir `docs/archives.md` |
 | `enquete_reprendre(enquete, taches, elements)` | `a_faire` (outil et paramètres prêts, dans l'ordre ; d'abord le reste à faire refusé faute de budget), pistes ouvertes, registres en cours avec `vues_restantes`, tâches manuelles, `deja_fait`, `budget`, `blocage` |
 
+Pour cadrer une enquête, `/genealogiste:enquete` appelle `arbre_cercle(id, cercle)` (lecture) : le sujet et
+ses proches, selon `cercle` = `personne`, `famille` (parents, conjoints, enfants, fratrie, valeur par défaut)
+ou `etendu` (en plus grands-parents, beaux-parents, oncles et tantes). Pour chacun : le lien, le statut vivant
+(exclu des recherches externes) et le nombre d'actions urgentes tirées des lacunes.
+
 Ces outils sont locaux : lecture (`enquete_etat`, `enquete_reprendre`) ou trace au journal
 (`enquete_ouvrir`, `enquete_noter` : classe collecte, état géré par le plugin, ouverture sans écrasement), autorisés
 sans confirmation (voir les classes de permission dans `docs/securite.md`), sauf pour fixer ou modifier un
@@ -348,7 +353,7 @@ proposition est en file liée à l'enquête, que le budget est consommé et que 
 Recette manuelle avec Claude Code, sur une copie des données (jamais sur l'arbre de travail réel) :
 
 1. `GENEALOGISTE_DATA_DIR` vers un répertoire jetable contenant une copie de `mcp/tests/fixtures/famille.ged`
-   comme arbre, puis `/genealogiste:enquete I1 personne --autonome budget images=5 duree=10` ;
+   comme arbre, puis `/genealogiste:enquete I1 personne --autonome budget images=5 requetes=20` ;
 2. accepter la seule confirmation du lancement (`enquete_ouvrir` avec `budget`) ; ensuite, **aucune** question
    ni demande de permission ne doit apparaître jusqu'à la fin ;
 3. contrôler : compte rendu au format ci-dessus, `propositions_lister()` montre les dépôts avec

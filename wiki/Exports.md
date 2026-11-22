@@ -41,6 +41,10 @@ Les sources ou médias partagés avec une personne masquée peuvent aussi être 
 Cette réduction est volontaire. Voir la [confidentialité](Confidentialite.md) et la
 [description technique du masquage](../docs/securite.md).
 
+Dans un export masqué, aucun chemin de votre poste n’est écrit : le chemin absolu d’un média est réduit à son
+nom de fichier, et l’export est refusé si le chemin de votre dossier personnel ou de données figure encore dans
+le contenu (note, titre, URL).
+
 ## Réimporter ailleurs
 
 Le fichier `gramps` est lu par Gramps 5.2, 6.0 et 6.1 ; demander la version XML 1.7.2 seulement pour

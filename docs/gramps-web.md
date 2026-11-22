@@ -1132,7 +1132,8 @@ hors de Genealogiste sont commitées à la synchronisation suivante (« Modifica
 `gramps_synchroniser`).
 
 Le dépôt est local par défaut. `GENEALOGISTE_GIT_REMOTE` ajoute un push après chaque commit : il doit être
-**privé** (données de vivants) ; le dépôt du plugin est refusé.
+**privé** (données de vivants) ; le dépôt public du plugin est refusé, sous son nom actuel
+(`Hiobi/Genealogiste`) comme sous son ancien nom (`Hiobi/Sosa`).
 
 ## Tests
 

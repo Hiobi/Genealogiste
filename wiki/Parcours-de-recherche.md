@@ -19,6 +19,14 @@ Pour une enquête plus large, `/genealogiste:enquete` coordonne recherche, recou
 Lire les [sources disponibles et leurs limites](Sources.md) avant d’interpréter une absence de résultat.
 Une requête sans résultat est une observation à dater et à conserver, pas une preuve d’absence.
 
+Une enquête garde son état : pistes, demandes faites, registres en cours et tâches à faire à la main
+([état d’enquête](../docs/enquetes.md)). Après une interruption, relancer la même commande la reprend ;
+une demande déjà faite est signalée « déjà fait le … » (un signal, jamais un blocage). Un budget (requêtes
+par site, images lues) arrête l’enquête proprement et dit ce qui reste à faire. Avec `--autonome`, l’enquête
+avance sans question : ce qui demande une personne devient une tâche manuelle, et les conclusions attendent
+dans la file de propositions. `/genealogiste:campagne` enchaîne ces enquêtes sur les lacunes prioritaires,
+par exemple dans une tâche planifiée ([campagne sans surveillance](../docs/campagne.md)).
+
 Pour les vivants, rester sur les données privées dont vous disposez et respecter les
 [gardes de confidentialité](Confidentialite.md).
 
@@ -31,6 +39,10 @@ Indiquer si vous avez lu l’original, une image, une transcription, un index ou
 La transcription peut relever parents, témoins, parrains, professions et lieux. Distinguer le texte lu,
 les passages incertains et les déductions ; ne pas compléter un mot illisible comme s’il était certain.
 La commande `/genealogiste:transcris` apporte une aide, à relire face à l’image.
+
+Pour trouver l’acte lui-même, `/genealogiste:acte` cherche le registre par commune et année (AD59 et quatorze
+services Mnesys ; ailleurs, la cote ou l’ARK est à relever sur le site du service), repère la vue, aide à la
+transcrire et archive la pièce ([services d’archives](Services-archives.md)).
 
 ## 4. Comparer les candidats
 
@@ -66,6 +78,10 @@ Les classifications sont décrites dans les [extensions GEDCOM](../docs/gedcom-e
 Demander une proposition d’ajout avec citation et justification. Lire le diff et les nouvelles alertes.
 Refuser ou corriger tant que l’identité ou la lecture de l’acte reste incertaine. Appliquer après accord,
 puis vérifier la fiche et le journal. Il n’y a pas de fusion automatique d’homonymes.
+Les propositions d’une enquête autonome sont déposées dans une [file](../docs/propositions.md) :
+`/genealogiste:valide` les présente une à une, avec un diff recalculé sur l’arbre courant, et n’applique
+qu’après votre accord. Une citation ou une source erronée se corrige de la même façon : retrait d’une
+citation, suppression ou fusion de sources ([opérations](../docs/operations.md#supprimer-une-citation-ou-une-source-248)).
 
 `/genealogiste:preuve` aide à rédiger un rapport ; `/genealogiste:recit` un récit sourcé qui distingue
 faits, déductions et hypothèses. Conserver les pièces et les questions non résolues pour reprendre l’enquête.

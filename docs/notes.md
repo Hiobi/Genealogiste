@@ -57,6 +57,11 @@ Une collision de noms ou un lien symbolique sur une fiche à renommer provoque u
 Le renommage nécessite un système de fichiers acceptant les liens physiques ; sinon il est refusé en
 conservant les originaux. Garder la sauvegarde habituelle du vault avant une régénération importante.
 
+**Noms accentués sur macOS ou Nextcloud (#255).** Ces systèmes écrivent les noms de fichiers en forme Unicode
+décomposée (NFD). Depuis 0.26.1, une fiche existante ainsi nommée (`patronymes/ÉLÈVE.md`, fiche de personne)
+est reconnue sous son nom réel : elle est mise à jour, ou renommée si ses dates changent, sans doublon et
+sans perte du texte manuel.
+
 ## Reprendre des notes existantes
 
 Un dossier de notes Markdown écrit avant Genealogiste (recherches, transcriptions, courriers) peut servir de
