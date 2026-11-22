@@ -51,7 +51,8 @@ est refusé, sauf `"non_source": true` + `"motif": "…"` (la mention « Non sou
 | `fusionner_personnes` | `conserver`, `absorber`, `justification`*, `forcer` |
 | `scinder_personne` | `id`, `evenements` `[uid]`, `familles_parents`, `familles_conjoint`, `noms`, `sexe`, `justification`*, `ref` |
 | `definir_statut` | `cible` `{type: evenement | nom | filiation …}`, `statut` (`refute` \| `contradictoire` \| `""`), `justification`* |
-| `marquer_vivant` | `id`, `vivant` (`Y` \| `N` \| `""`), `prive` (`true` seulement, #264 : personne présumée vivante marquée privée avec ses données propres, dans le diff de la proposition ; sans `vivant`, statut inchangé ; [vivants et privé](gramps-web.md#vivants-et-privé-264)) |
+| `marquer_vivant` | `id`, `vivant` (`Y` \| `N` \| `""` ; remplace aussi les `Genealogiste-Vivant` en double, retrait au résumé et au diff, #311 ; de même `modifier_personne` avec `vivant`), `prive` (`true` seulement, #264 : personne présumée vivante marquée privée avec ses données propres, dans le diff de la proposition ; sans `vivant`, statut inchangé ; [vivants et privé](gramps-web.md#vivants-et-privé-264)) |
+| `dedoublonner_marqueurs` | `id` (personne `I…` avec ses noms, ou famille `F…`) ou `evenement` (uid) : retire les marqueurs à valeur unique en double (#311 : `Genealogiste-Vivant`, `-UID`, `-Statut`… laissés côte à côte par une fusion native de Gramps ou un autre outil) en gardant la valeur lue (Vivant : la plus protectrice ; statut : le plus grave ; sinon la première) ; refusé s'il n'y en a pas. Une ligne par doublon retiré au résumé et au diff. Pour garder une autre valeur de Vivant : `marquer_vivant` dans la même proposition ([marqueurs en double](gramps-web.md#marqueurs-en-double-après-une-fusion-faite-hors-du-plugin-311)) |
 | `etiqueter` | `cible`* `{type: personne | famille | source | depot | media | note (id) | evenement (uid)}` ou `{type: citation, porteur (même forme que la cible d'ajouter_citation), source, page, index}`, `tags`, `tags_retrait` (au moins un) |
 
 ### Étiquettes (#262)
@@ -269,6 +270,13 @@ paquet attendent dans `<données>/imports/gramps/` ([Gramps Desktop](gramps.md#i
 - événements identiques : citations, associations, notes, cause, âge, valeur et statut manuel fusionnés ; une
   valeur divergente est reportée en note, le statut le plus grave (`refute`, puis `contradictoire`) est retenu ;
 - étiquettes des deux fiches (et des événements fusionnés) réunies.
+
+**Marqueurs en double** (#311) : après une fusion faite hors du plugin (fusion native de Gramps, autre outil,
+fichier retouché), un marqueur à valeur unique peut figurer plusieurs fois (`_VIVANT`, `UID`, `_STAT` ;
+`Genealogiste-Vivant`, `-UID`, `-Statut…` en Gramps). Une seule valeur est lue (Vivant : la plus protectrice) ; les
+autres sont gardées et réécrites telles quelles par toute opération ordinaire. `arbre_coherence` les signale
+(`vivant_contradictoire`, `marqueur_en_double`) ; seules `marquer_vivant` (Vivant) et `dedoublonner_marqueurs` les
+retirent, chaque retrait figurant au résumé et au diff.
 
 **Médias** (`ajouter_media`, `modifier_media`, `lier_a`) : un média se lie à des personnes (`I…`), des
 familles (`F…`), des sources (`S…`) et des événements (uid), mélangeables (`["I1", "I2", "F3"]` pour un acte de

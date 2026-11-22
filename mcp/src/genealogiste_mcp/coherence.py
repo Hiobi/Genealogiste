@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from .models import Event, Person, Tree
+from . import marqueurs
+from .models import Event, Family, Person, Tree
 from .normalize.dates import YEAR_DAYS, GenDate, age_interval, birth_from_age, compare, parse_age, parse_date
 
 LIMITS = {
@@ -122,13 +123,114 @@ def check_person(tree: Tree, pid: str) -> list[dict]:
             if 2 < gap < LIMITS["intervalle_naissances_jours"]:
                 issues.append(_issue("alerte", "intervalle_naissances",
                                      f"{c1.label()} et {c2.label()} : {gap} jours d'écart (même mère {label})", pid))
+    issues += marqueurs_en_double_personne(p)  # #311
     return issues
+
+
+# ---------------------------------------------------------------------------- marqueurs en double (#311)
+
+CORRECTION_DOUBLONS = ("correction par proposition, jamais automatique : marquer_vivant (valeur à garder) ou "
+                       "dedoublonner_marqueurs (garde la valeur lue) dans arbre_proposer, puis accord explicite")
+
+
+def _valeur_lue(nom: str, porteur, nom_obj=None) -> str:
+    if nom == marqueurs.VIVANT:
+        return porteur.vivant
+    if nom == "Genealogiste-UID":
+        return getattr(nom_obj or porteur, "uid", "")
+    if nom == marqueurs.STATUT:
+        a = (nom_obj or porteur).statut_manuel
+        return a.statut if a else ""
+    return ""
+
+
+_REGLES = {marqueurs.VIVANT: " (la plus protectrice)", marqueurs.STATUT: " (la plus grave)",
+           "Genealogiste-UID": " (la première)"}
+
+
+def _issues_doublons(label: str, extra: list, porteur_type: str, porteur, pid: str, nom_obj=None, **kw) -> list[dict]:
+    """Une alerte par marqueur en double de ``extra`` : ``vivant_contradictoire`` (Genealogiste-Vivant de valeurs
+    différentes), sinon ``marqueur_en_double``."""
+    par_nom: dict[str, list[str]] = {}
+    for x in marqueurs.doublons(extra, porteur_type):
+        par_nom.setdefault(marqueurs.nom_doublon(x), []).append(x.get("value", ""))
+    out = []
+    for nom, vals in par_nom.items():
+        lu = _valeur_lue(nom, porteur, nom_obj)
+        lu_txt = f"valeur lue {lu!r}{_REGLES[nom]}" if nom in _REGLES else "une seule valeur lue"
+        msg = (f"{label} : {nom} en double ({lu_txt} ; autre(s) : {', '.join(repr(v) for v in vals)}), laissé tel "
+               f"quel ; {CORRECTION_DOUBLONS}")
+        code = "vivant_contradictoire" if nom == marqueurs.VIVANT and any(v != lu for v in vals) \
+            else "marqueur_en_double"
+        out.append(_issue("alerte", code, msg, pid, marqueur=nom, **kw))
+    return out
+
+
+def marqueurs_en_double_personne(p: Person) -> list[dict]:
+    """Marqueurs à valeur unique en double d'une personne, de ses noms et de ses événements (fusion native de Gramps,
+    synchro, GEDCOM d'un autre outil) : signalés, jamais corrigés ici."""
+    out = _issues_doublons(p.id, p.extra, "personne", p, p.id)
+    for i, n in enumerate(p.noms):
+        out += _issues_doublons(f"{p.id} nom {i}", n.extra, "nom", p, p.id, nom_obj=n)
+    for e in p.evenements:
+        out += _issues_doublons(f"{p.id} {e.type} {e.date}".strip(), e.extra, "evenement", e, p.id, nom_obj=e,
+                                evenement=e.uid)
+    return out
+
+
+def marqueurs_en_double_famille(f: Family) -> list[dict]:
+    out = _issues_doublons(f.id, f.extra, "famille", f, "", nom_obj=f, famille=f.id)
+    for e in f.evenements:
+        out += _issues_doublons(f"{f.id} {e.type} {e.date}".strip(), e.extra, "evenement", e, "", nom_obj=e,
+                                famille=f.id, evenement=e.uid)
+    return out
+
+
+def marqueurs_en_double(tree: Tree) -> list[dict]:
+    out = []
+    for pid in sorted(tree.personnes):
+        out += marqueurs_en_double_personne(tree.personnes[pid])
+    for fid in sorted(tree.familles):
+        out += marqueurs_en_double_famille(tree.familles[fid])
+    return out
+
+
+def lignes_doublons(avant: Tree, apres: Tree) -> list[str]:
+    """Lignes de diff : marqueurs en double retirés ou ajoutés par une proposition (objet par objet)."""
+    def etat(t: Tree) -> dict[str, list[str]]:
+        out: dict[str, list[str]] = {}
+        for p in t.personnes.values():
+            for x in (*marqueurs.doublons(p.extra, "personne"),
+                      *(y for n in p.noms for y in marqueurs.doublons(n.extra, "nom"))):
+                out.setdefault(p.id, []).append(f"{marqueurs.nom_doublon(x)} {x.get('value', '')!r}")
+            for e in p.evenements:
+                for x in marqueurs.doublons(e.extra, "evenement"):
+                    out.setdefault(f"{p.id} {e.type}", []).append(f"{marqueurs.nom_doublon(x)} {x.get('value', '')!r}")
+        for f in t.familles.values():
+            for x in marqueurs.doublons(f.extra, "famille"):
+                out.setdefault(f.id, []).append(f"{marqueurs.nom_doublon(x)} {x.get('value', '')!r}")
+            for e in f.evenements:
+                for x in marqueurs.doublons(e.extra, "evenement"):
+                    out.setdefault(f"{f.id} {e.type}", []).append(f"{marqueurs.nom_doublon(x)} {x.get('value', '')!r}")
+        return out
+    a, b = etat(avant), etat(apres)
+    lignes = []
+    for k in sorted(set(a) | set(b)):
+        retires = [v for v in a.get(k, []) if v not in b.get(k, [])]
+        ajoutes = [v for v in b.get(k, []) if v not in a.get(k, [])]
+        if retires:
+            lignes.append(f"marqueurs en double {k} : retiré(s) {', '.join(retires)}")
+        if ajoutes:
+            lignes.append(f"marqueurs en double {k} : ajouté(s) {', '.join(ajoutes)}")
+    return lignes
 
 
 def check_tree(tree: Tree) -> list[dict]:
     issues = []
     for pid in sorted(tree.personnes):
         issues += check_person(tree, pid)
+    for fid in sorted(tree.familles):
+        issues += marqueurs_en_double_famille(tree.familles[fid])
     from .tree.integrite import dangling, duplicate_event_uids, parent_cycles
 
     for cyc in parent_cycles(tree):

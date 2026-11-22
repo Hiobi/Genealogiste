@@ -842,6 +842,39 @@ de durée**. Seuls ces noms exacts sont reconnus : un attribut personnel commen�
   et `_UID` GEDCOM sont inchangés, le miroir Git et les exports GEDCOM restent identiques. Deuxième exécution :
   rien à migrer.
 
+### Marqueurs en double après une fusion faite hors du plugin (#311)
+
+La fusion native de Gramps (`POST /api/people/<phénix>/merge/<titanic>`, interface de Gramps Web, Gramps Desktop,
+objet modifié des deux côtés par l'addon de synchro) ne fusionne deux attributs que si type **et** valeur sont
+égaux ([étude](etudes/gramps-fusion-native.md)) : la personne gardée porte alors deux `Genealogiste-Vivant`
+(`N` et `Y`), deux `Genealogiste-UID`, deux `Genealogiste-UID noms`, et la fiche de preuve générée de la fiche
+absorbée. Même cas possible pour une famille (deux UID, deux statuts) ou un événement.
+
+- **Lecture** : une seule valeur par marqueur à valeur unique (tous les marqueurs gérés sauf
+  `Genealogiste-Association`) : `Genealogiste-Vivant` → **la plus protectrice** (forcé vivant > déduit > forcé
+  décédé ; ancienne forme `Sosa-Vivant` comprise) ; `Genealogiste-Statut…` → la plus grave (`refute`, puis
+  `contradictoire`) ; les autres (`-UID`, `-UID noms`, `-Fichier`) → la première dans l'ordre de Gramps (nouvelle
+  forme d'abord). Les autres valeurs restent dans le modèle (`extra` de la personne, de la famille ou de
+  l'événement : `_VIVANT`, `UID`, ou `_GENEALOGISTE_ATTR` + `TYPE` pour un marqueur sans équivalent GEDCOM) ;
+  elles figurent donc dans le miroir Git et dans le diff.
+- **Écriture** : un marqueur en double dont la lecture n'a pas changé est réécrit **à l'identique** (tous ses
+  attributs, ordre, forme, citations), même si l'objet est modifié par ailleurs ; seule une valeur changée dans
+  le modèle (`Genealogiste-UID noms` complété après l'ajout d'un nom, `marquer_vivant`, `dedoublonner_marqueurs`)
+  remplace les attributs de ce marqueur, et le diff de la proposition le dit en clair (« Person I5 :
+  Genealogiste-Vivant en double ('N', 'Y') → ('Y') »). Les attributs natifs de Gramps (`Merged Gramps ID`…) ne
+  sont jamais touchés.
+- **Signalement** : `arbre_coherence` (`vivant_contradictoire`, `marqueur_en_double`, `note_preuve_orpheline` :
+  fiche de preuve « réf. I6 » restée sur I5) et `diagnostic` (contrôle `marqueurs`, identifiants seulement ; en mode
+  gramps il lit tout l'arbre, donc lancé avec `diagnostic(vivants=true)`, « non lancé » sinon).
+- **Correction**, par proposition (diff, accord, journal, annulable), jamais automatique : `marquer_vivant`
+  (valeur choisie, doublons `Vivant` retirés), `dedoublonner_marqueurs` (garde la valeur lue, retire les autres)
+  et `gramps_recalculer_notes` pour les fiches de preuve.
+- **Backend fichier** : les mêmes règles valent pour un `arbre.ged` portant plusieurs `_VIVANT`, `UID`/`_UID` ou
+  `_STAT` sur une personne, une famille, un événement ou un nom (fichier retouché, GEDCOM d'un autre outil) :
+  valeur lue identique, doublons gardés dans `extra` et réécrits, mêmes alertes et opérations. Limite : un
+  `_STAT` en double sous un `CHIL` (filiation) n'est pas conservé (le lien d'enfant n'a pas d'`extra`) ; seul le
+  plus grave est lu et réécrit.
+
 ### Types personnalisés et libellés français (#273)
 
 **Comment Gramps stocke un type.** Type d'événement, rôle, attribut, note, lieu, nom, origine de patronyme,

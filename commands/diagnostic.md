@@ -18,6 +18,11 @@ Diagnostic : **$ARGUMENTS**
    `gramps_proteger_vivants` (proposition, accord explicite).
 4. Présenter le contrôle des chemins de médias (introuvables, ambigus, hors des racines, nom attribué par Gramps Web) avec son
    échantillon d'identifiants, sans rien déduire d'autre ; pour la procédure, renvoyer à docs/gramps.md (chemin de base des médias).
+   Contrôle `marqueurs` (#311 ; mode gramps : lancé avec `diagnostic(vivants=true)`, « non lancé » sinon) : marqueurs
+   en double après une fusion faite hors du plugin (`Genealogiste-Vivant`
+   contradictoire : la personne reste lue vivante ; UID en double ; fiche de preuve restée sur une autre personne) ;
+   donner les identifiants tels quels ; remède : `arbre_coherence` puis proposition (`marquer_vivant`,
+   `dedoublonner_marqueurs`, `gramps_recalculer_notes`), jamais de correction automatique.
 5. Pour une source au verdict **protection** : le dire tel quel (blocage anti-robot de cette adresse) et
    proposer la consultation dans le navigateur ; aucun contournement.
 6. Si la version du serveur diffère de celle du plugin, conseiller de redémarrer le serveur MCP (`/mcp`).

@@ -298,6 +298,14 @@ rempart contre un Invité est le drapeau privé, posé objet par objet.
 - **Limite par version** : avant l'API 3.25.0 (constaté sur 3.13.0), la recherche plein texte trouve encore une
   famille ou un événement partagés en cherchant le nom du vivant (le nom n'est pas renvoyé) : mettre à jour.
 
+- **Marqueur vivant en double** (#311) : une fusion native de Gramps (interface Gramps Web, Gramps Desktop,
+  synchro) ou un GEDCOM d'un autre outil peut laisser deux `Genealogiste-Vivant` (ou `Sosa-Vivant`, ou `_VIVANT`)
+  de valeurs différentes. La lecture retient **la valeur la plus protectrice** (forcé vivant > déduit > forcé
+  décédé) : un `Y` suffit à garder la personne vivante (exports, garde des recherches externes). Aucune écriture
+  ordinaire ne retire l'autre valeur ; seule une proposition `marquer_vivant` (ou `dedoublonner_marqueurs`) le
+  fait, ligne visible dans le diff, après accord. `arbre_coherence` (`vivant_contradictoire`) et `diagnostic`
+  (contrôle `marqueurs`, identifiants seulement ; mode gramps : avec `vivants=true`) le signalent.
+
 Détails, routes amont et constats par image : [Gramps Web](gramps-web.md#vivants-et-privé-264).
 
 ## Réseau : seules les adresses publiques

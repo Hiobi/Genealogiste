@@ -7,6 +7,7 @@ dans `extra` et réécrit à l'identique : un aller-retour ne perd rien.
 
 from __future__ import annotations
 
+from .. import marqueurs
 from ..etiquettes import GEDCOM_TAG, geree, unique
 from ..models import (
     EVENT_LABELS,
@@ -46,6 +47,32 @@ def _etiquettes(n: Node) -> list[str]:
 def _non_etiquette(c: Node) -> bool:
     """Nœud à garder dans ``extra`` : tout sauf une étiquette reprise dans le modèle."""
     return not (c.tag == GEDCOM_TAG and c.value and not geree(c.value))
+
+
+def _retenu(n: Node, tags: tuple[str, ...], nom: str) -> Node | None:
+    """Nœud lu d'un marqueur à valeur unique (#311) : ``UID`` avant ``_UID``, sinon la valeur la plus protectrice
+    (``_VIVANT``) ou la plus grave (``_STAT``) ; à égalité le premier."""
+    noeuds = [c for c in n.children if c.tag in tags]
+    if not noeuds:
+        return None
+    if nom == "Genealogiste-UID":
+        return next((c for c in noeuds if c.tag == "UID"), noeuds[0])
+    return noeuds[marqueurs.retenue(nom, [c.value for c in noeuds])]
+
+
+_UNIQUES = {"uid": (("UID", "_UID"), "Genealogiste-UID"), "stat": (("_STAT",), marqueurs.STATUT),
+            "vivant": (("_VIVANT",), marqueurs.VIVANT)}
+
+
+def _doublons(n: Node, *groupes: str) -> list[dict]:
+    """Nœuds en double d'un marqueur à valeur unique (fusion faite par un autre outil, fichier retouché) : gardés dans
+    ``extra`` et réécrits tels quels, jamais effacés en silence (#311) ; seul le nœud retenu est lu."""
+    out = []
+    for g in groupes:
+        tags, nom = _UNIQUES[g]
+        r = _retenu(n, tags, nom)
+        out += [c.to_dict() for c in n.children if c.tag in tags and c is not r]
+    return out
 
 
 def _w_etiquettes(n: Node, tags: list[str]) -> None:
@@ -165,7 +192,7 @@ class _Reader:
 
     @staticmethod
     def statut(n: Node) -> Assertion | None:
-        s = n.first("_STAT")
+        s = _retenu(n, ("_STAT",), marqueurs.STATUT)  # le plus grave s'il y en a plusieurs (#311)
         if not s:
             return None
         return Assertion(statut=s.value, justification=s.val("NOTE"))
@@ -265,7 +292,8 @@ class _Reader:
             valeur=n.value if n.value != "Y" else "", type_detail=n.val("TYPE"), age=n.val("AGE"),
             cause=n.val("CAUS"), note="\n".join(x.value for x in n.all("NOTE")),
             citations=[self.citation(c) for c in n.all("SOUR")], associations=assos,
-            uid=n.val("UID") or n.val("_UID") or new_uid(), statut_manuel=self.statut(n), extra=extra,
+            uid=n.val("UID") or n.val("_UID") or new_uid(), statut_manuel=self.statut(n),
+            extra=extra + _doublons(n, "uid", "stat"),
             prive=_private_in(n), medias=medias, tags=_etiquettes(n),
         )
 
@@ -281,7 +309,7 @@ class _Reader:
         return Name(
             prenoms=given, nom=surname, surnom=n.val("NICK"), type=n.val("TYPE"),
             citations=[self.citation(c) for c in n.all("SOUR")], statut_manuel=self.statut(n),
-            extra=[c.to_dict() for c in n.children if c.tag not in known],
+            extra=[c.to_dict() for c in n.children if c.tag not in known] + _doublons(n, "stat"),
         )
 
 
@@ -351,12 +379,13 @@ def read_gedcom(text: str) -> tuple[Tree, dict]:
                     p.notes.append(c.value)
                 elif c.tag == "SNOTE":
                     p.notes.append("@" + strip_xref(c.value) + "@")
-                elif c.tag == "_VIVANT":
-                    p.vivant = c.value
-                elif c.tag in ("UID", "_UID") or not _not_private(c) or not _non_etiquette(c):
+                elif c.tag in ("_VIVANT", "UID", "_UID") or not _not_private(c) or not _non_etiquette(c):
                     continue
                 else:
                     p.extra.append(c.to_dict())
+            vivant = _retenu(r, ("_VIVANT",), marqueurs.VIVANT)  # le plus protecteur s'il y en a plusieurs (#311)
+            p.vivant = vivant.value if vivant else ""
+            p.extra += _doublons(r, "vivant", "uid")
             tree.personnes[p.id] = p
         elif tag == "FAM":
             f = Family(id=r.xref, uid=r.val("UID") or r.val("_UID") or new_uid(), statut_manuel=rd.statut(r),
@@ -384,6 +413,7 @@ def read_gedcom(text: str) -> tuple[Tree, dict]:
                     continue
                 else:
                     f.extra.append(c.to_dict())
+            f.extra += _doublons(r, "uid", "stat")
             tree.familles[f.id] = f
         elif tag == "REPO":
             tree.depots[r.xref] = Repository(id=r.xref, nom=r.val("NAME"), sigle=r.val("_SIGLE"),
@@ -460,6 +490,14 @@ def _num_key(xref: str) -> tuple:
 def _extra(parent: Node, extra: list) -> None:
     for x in extra:
         parent.children.append(Node.from_dict(x))
+
+
+def _extra_uid(parent: Node, extra: list, version: int, uid: str) -> None:
+    """Extra puis UID ; un UID en double (#311) est écrit APRÈS l'UID lu pour être relu à l'identique."""
+    doubles = [x for x in extra if x.get("tag") in ("UID", "_UID")]
+    _extra(parent, [x for x in extra if x.get("tag") not in ("UID", "_UID")])
+    parent.add("UID" if version >= 7 else "_UID", uid)
+    _extra(parent, doubles)
 
 
 def _w_citation(parent: Node, c: Citation, tag: str = "SOUR") -> None:
@@ -574,8 +612,7 @@ def _w_event(parent: Node, e: Event, version: int) -> None:
     _w_etiquettes(n, e.tags)
     if e.prive:
         n.add("RESN", "PRIVACY")
-    _extra(n, e.extra)
-    n.add("UID" if version >= 7 else "_UID", e.uid)
+    _extra_uid(n, e.extra, version, e.uid)
 
 
 def _header(version: int, etiquettes: bool = False, chercheur: bool = False) -> Node:
@@ -680,8 +717,7 @@ def to_nodes(tree: Tree, version: int = 7, chercheur: dict[str, str] | None = No
         _w_etiquettes(r, p.tags)
         if p.prive:
             r.add("RESN", "PRIVACY")
-        _extra(r, p.extra)
-        r.add("UID" if version >= 7 else "_UID", p.uid)
+        _extra_uid(r, p.extra, version, p.uid)
         nodes.append(r)
     for fid in sorted(tree.familles, key=_num_key):
         f = tree.familles[fid]
@@ -708,8 +744,7 @@ def to_nodes(tree: Tree, version: int = 7, chercheur: dict[str, str] | None = No
         _w_etiquettes(r, f.tags)
         if f.prive:
             r.add("RESN", "PRIVACY")
-        _extra(r, f.extra)
-        r.add("UID" if version >= 7 else "_UID", f.uid)
+        _extra_uid(r, f.extra, version, f.uid)
         nodes.append(r)
     for sid in sorted(tree.sources, key=_num_key):
         s = tree.sources[sid]

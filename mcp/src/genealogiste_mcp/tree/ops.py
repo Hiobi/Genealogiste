@@ -11,7 +11,7 @@ import re
 from datetime import date
 from pathlib import PurePosixPath
 
-from .. import ark, billets, etiquettes, objets_interface, taches
+from .. import ark, billets, etiquettes, marqueurs, objets_interface, taches
 from ..models import (
     CONSULTATIONS,
     EVENT_LABELS,
@@ -286,12 +286,62 @@ def op_ajouter_personne(ctx: Ctx, o: dict) -> None:
     _etiqueter(ctx, p, o, pid, creation=True)
 
 
+def _retirer_doublons(ctx: Ctx, label: str, porteur, porteur_type: str, lu, noms: set[str] | None = None) -> int:
+    """Retire de ``porteur.extra`` les marqueurs en double (#311) ``noms`` (tous si None) ; une ligne par doublon
+    au résumé. ``lu(nom)`` : valeur gardée, pour le résumé. Renvoie le nombre de doublons retirés."""
+    retires = [x for x in marqueurs.doublons(porteur.extra, porteur_type)
+               if noms is None or marqueurs.nom_doublon(x) in noms]
+    if retires:
+        porteur.extra = [x for x in porteur.extra if not any(x is r for r in retires)]
+    for x in retires:
+        nom = marqueurs.nom_doublon(x)
+        ctx.summary.append(f"{label} : {nom} en double {x.get('value', '')!r} retiré (valeur gardée : {lu(nom)!r})")
+    return len(retires)
+
+
+def _fixer_vivant(ctx: Ctx, p: Person, v: str) -> None:
+    """Statut vivant posé explicitement : il remplace aussi les Genealogiste-Vivant en double (#311), visibles au
+    résumé et dans le diff."""
+    p.vivant = v
+    _retirer_doublons(ctx, p.id, p, "personne", lambda _n: v, {marqueurs.VIVANT})
+
+
+def op_dedoublonner_marqueurs(ctx: Ctx, o: dict) -> None:
+    """Retire les marqueurs à valeur unique en double (#311 : Genealogiste-Vivant, -UID, -Statut… laissés côte à côte
+    par une fusion native de Gramps ou un autre outil) d'une personne (et de ses noms), d'une famille (``id``) ou d'un
+    événement (``evenement`` : uid). La valeur lue est gardée (Vivant : la plus protectrice ; statut : le plus grave ;
+    sinon la première) ; pour garder une autre valeur de Vivant, ``marquer_vivant`` dans la même proposition."""
+    def lu_de(obj):
+        return lambda nom: {marqueurs.VIVANT: getattr(obj, "vivant", ""), "Genealogiste-UID": getattr(obj, "uid", ""),
+                            marqueurs.STATUT: getattr(obj.statut_manuel, "statut", "")
+                            if getattr(obj, "statut_manuel", None) else ""}.get(nom, "(valeur lue)")
+    n = 0
+    if o.get("evenement"):
+        found = ctx.tree.find_event(o["evenement"])
+        if not found:
+            raise OpError(f"Événement inconnu : {o['evenement']}")
+        e = found[1]
+        n += _retirer_doublons(ctx, f"{found[0].id} {e.type}", e, "evenement", lu_de(e))
+    elif (oid := ctx.r(o.get("id"))) in ctx.tree.personnes:
+        p = ctx.tree.personnes[oid]
+        n += _retirer_doublons(ctx, oid, p, "personne", lu_de(p))
+        for i, nm in enumerate(p.noms):
+            n += _retirer_doublons(ctx, f"{oid} nom {i}", nm, "nom", lu_de(nm))
+    elif oid in ctx.tree.familles:
+        f = ctx.tree.familles[oid]
+        n += _retirer_doublons(ctx, oid, f, "famille", lu_de(f))
+    else:
+        raise OpError("dedoublonner_marqueurs : id (personne I…, famille F…) ou evenement (uid)")
+    if not n:
+        raise OpError("dedoublonner_marqueurs : aucun marqueur en double sur cet objet (arbre_coherence les liste)")
+
+
 def op_modifier_personne(ctx: Ctx, o: dict) -> None:
     p = ctx.tree.person(ctx.r(o["id"]))
     if "sexe" in o:
         p.sexe = o["sexe"].upper()
     if "vivant" in o:
-        p.vivant = o["vivant"]
+        _fixer_vivant(ctx, p, o["vivant"])
     if "noms" in o:
         p.noms = [_name(ctx, n) for n in o["noms"]]
     for n in o.get("notes_ajout", []):
@@ -1232,7 +1282,7 @@ def op_marquer_vivant(ctx: Ctx, o: dict) -> None:
         v = o.get("vivant", "")
         if v not in ("Y", "N", ""):
             raise OpError("vivant : Y, N ou ''")
-        p.vivant = v
+        _fixer_vivant(ctx, p, v)
         ctx.summary.append(f"{p.label()} : vivant={v or 'déduit'}")
     if prive:
         from ..privacy import is_living
