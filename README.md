@@ -15,7 +15,7 @@ Genealogiste vous aide à distinguer les faits étayés, les hypothèses et les 
 | Vérifier une filiation | Citations, analyse des contradictions et vérification indépendante |
 | Exploiter un acte | Aide à la transcription, relevé des témoins et classement des pièces |
 | Organiser votre travail | Fiches Markdown/Obsidian, journal et prochaines recherches prioritaires |
-| Construire et partager un arbre | GEDCOM versionné en Git ou connexion à Gramps Web ; exports masqués par défaut |
+| Construire et partager un arbre | GEDCOM versionné en Git ou connexion à Gramps Web ; échange Gramps XML et `.gpkg` avec Gramps Desktop ; exports masqués par défaut |
 
 Les sources sont principalement françaises. Certains sites sont consultés par API ; d’autres nécessitent
 une consultation manuelle. Pour les actes, vous pouvez fournir un lien IIIF international, un lien de
@@ -108,6 +108,8 @@ Pour **Codex CLI**, suivre le [guide d’installation et d’approbation](https:
 le paquet fournit les skills ; un profil séparé active le MCP avec confirmation native de chaque outil.
 Le mode fichier fonctionne sans Gramps Web ni Obsidian. L’ancien exporteur FamilySearch est désactivé ;
 un GEDCOM obtenu séparément peut être importé.
+Versions testées en continu : Gramps Web (API 3.13.0 à 3.26.0) et Gramps Desktop 5.2, 6.0 et 6.1 pour les fichiers
+Gramps XML ([Gramps Web](docs/gramps-web.md#compatibilité-des-versions), [Gramps Desktop](docs/gramps.md#versions)).
 Avec Gramps Web, la mise en forme de vos notes est préservée ; `GENEALOGISTE_GRAMPS_NOTES_LIENS=true` (désactivé par
 défaut) ajoute des liens cliquables aux notes de preuve, après un recalcul que vous validez
 ([texte enrichi](docs/gramps-web.md#texte-enrichi-et-liens-internes-279)).
