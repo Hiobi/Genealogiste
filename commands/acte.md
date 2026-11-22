@@ -1,6 +1,6 @@
 ---
 description: Trouver le registre d'un acte (naissance, mariage, décès ; recherche automatisée AD59, guidée ailleurs), y repérer la vue, transcrire et archiver ; --autonome pour une recherche sans question déposée dans la file de propositions
-argument-hint: <id|nom> [naissance|mariage|deces] [--autonome] [budget images=… duree=…]
+argument-hint: <id|nom> [naissance|mariage|deces] [--autonome] [budget images=… requetes=…]
 ---
 Recherche d'acte : **$ARGUMENTS**
 

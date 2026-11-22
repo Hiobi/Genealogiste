@@ -55,6 +55,13 @@ est refusé, sauf `"non_source": true` + `"motif": "…"` (la mention « Non sou
 | `dedoublonner_marqueurs` | `id` (personne `I…` avec ses noms, ou famille `F…`) ou `evenement` (uid) : retire les marqueurs à valeur unique en double (#311 : `Genealogiste-Vivant`, `-UID`, `-Statut`… laissés côte à côte par une fusion native de Gramps ou un autre outil) en gardant la valeur lue (Vivant : la plus protectrice ; statut : le plus grave ; sinon la première) ; refusé s'il n'y en a pas. Une ligne par doublon retiré au résumé et au diff. Pour garder une autre valeur de Vivant : `marquer_vivant` dans la même proposition ([marqueurs en double](gramps-web.md#marqueurs-en-double-après-une-fusion-faite-hors-du-plugin-311)) |
 | `etiqueter` | `cible`* `{type: personne | famille | source | depot | media | note (id) | evenement (uid)}` ou `{type: citation, porteur (même forme que la cible d'ajouter_citation), source, page, index}`, `tags`, `tags_retrait` (au moins un) |
 
+Opération interne : `remplacer_arbre` (`mode` `ajouter` ou `remplacer`, `gedcom_texte`) est produite par
+`arbre_importer_gedcom` pour un import GEDCOM ou Gramps XML. Ne pas l'écrire à la main : passer par
+`/genealogiste:import`, qui présente le bilan et le diff avant l'accord.
+
+Une proposition qu'on ne veut pas appliquer s'abandonne avec `arbre_annuler_proposition(jeton)` : son jeton
+est invalidé et rien n'est écrit. Sans cela, le jeton expire au bout d'une heure.
+
 ### Étiquettes (#262)
 
 Une étiquette (tag) se pose sur une personne, une famille, un événement, une citation, une source, un dépôt, un
