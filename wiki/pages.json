@@ -66,12 +66,6 @@
     "groupe": "Commencer"
   },
   {
-    "slug": "Migration",
-    "source": "docs/renommage-genealogiste.md",
-    "titre": "Migration depuis Sosa",
-    "groupe": "Commencer"
-  },
-  {
     "slug": "Commandes",
     "source": "wiki/Commandes.md",
     "titre": "Commandes",

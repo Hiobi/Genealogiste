@@ -19,7 +19,6 @@ la lecture des actes ni le jugement généalogique.
 | Je veux commencer simplement | [Mode fichier](Mode-fichier.md), sans serveur supplémentaire |
 | J’utilise déjà Gramps Web | [Connexion et fonctionnement Gramps](../docs/gramps-web.md) |
 | Je veux héberger le serveur MCP | [Docker et Portainer](Docker-et-Portainer.md) |
-| J’avais installé Sosa | [Migration de marketplace](../docs/renommage-genealogiste.md) |
 
 ## Guides d’utilisation
 

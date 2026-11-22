@@ -23,8 +23,6 @@ celle du plugin, et un avertissement « reconnecter le serveur MCP » signale un
 sessions reconnectées, et aucun processus `genealogiste-mcp` d’une ancienne version encore actif
 (`pgrep -af genealogiste-mcp`), les dossiers des versions antérieures peuvent être supprimés. Ne jamais
 supprimer le dossier de la version en cours ni le répertoire de données.
-Une ancienne installation `genealogiste@sosa` suit d’abord le [guide de migration](../docs/renommage-genealogiste.md) :
-la redirection GitHub de l’ancien dépôt ne change pas automatiquement le nom de marketplace enregistré.
 
 ## Chargement local du code
 
@@ -41,7 +39,9 @@ notes de migration et validation d’une restauration.
 
 ## Repères de compatibilité
 
-- Depuis 0.16.0 : dépôt et marketplace portent le nom Genealogiste ; les anciens marqueurs de notes Sosa sont conservés.
+- Depuis 0.23.0 : les marqueurs écrits dans les notes et dans Gramps Web suivent la forme `genealogiste`.
+  Les formes antérieures (`<!-- sosa:debut … -->`, `Sosa-*`, `Sosa:auto`) restent lues ; voir les marqueurs historiques
+  des [notes](../docs/notes.md#marqueurs-historiques-sosa) et de [Gramps Web](../docs/gramps-web.md#marqueurs-historiques-sosa--sosaauto).
 - Depuis 0.17.0 : SDK MCP 2, exécution des outils toujours séquentielle et corps de requêtes HTTP limités à 4 Mio ;
   [détails de migration](../docs/migration-mcp-2.md).
 

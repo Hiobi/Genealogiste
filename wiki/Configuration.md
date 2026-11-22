@@ -50,6 +50,7 @@ Les identifiants FamilySearch ne doivent plus être configurés : l’ancien exp
 | Notes Markdown/Obsidian | `GENEALOGISTE_NOTES_DIR` ; vide = désactivées ; [guide des notes](../docs/notes.md) |
 | Confidentialité des notes | `GENEALOGISTE_NOTES_VIVANTS=masquer` par défaut ; `complet` pour un espace strictement privé |
 | Régénération des notes | `GENEALOGISTE_NOTES_AUTO=true` par défaut ; `GENEALOGISTE_SOSA_RACINE` pour la racine de numérotation |
+| Marqueurs des versions antérieures | `GENEALOGISTE_MARQUEURS=sosa` écrit encore les anciens marqueurs (`<!-- sosa:debut … -->`, `Sosa-*`, `Sosa:auto`), pour un vault ou une base Gramps partagés avec une version antérieure à 0.23.0 ; défaut `genealogiste` ; les deux formes sont toujours lues ; `marqueurs_migrer_proposer` puis `marqueurs_migrer_appliquer` convertissent les anciens après accord ([notes](../docs/notes.md#marqueurs-historiques-sosa), [Gramps Web](../docs/gramps-web.md#marqueurs-historiques-sosa--sosaauto)) |
 | Kit Obsidian | `GENEALOGISTE_NOTES_KIT=true` par défaut : vues Bases/Dataview, modèles et extrait CSS déposés par `notes_generer("tout")` |
 | Autres emplacements de pièces | `GENEALOGISTE_MEDIA_DIR`, `GENEALOGISTE_RAPPORTS_DIR`, `GENEALOGISTE_EXPORTS_DIR`, `GENEALOGISTE_CACHE_IMAGES_DIR` ; [guide des pièces](../docs/pieces.md) |
 | Serveur HTTP | `MCP_TOKEN`, en-tête `Authorization: Bearer` ; [Docker/Portainer](Docker-et-Portainer.md) |
