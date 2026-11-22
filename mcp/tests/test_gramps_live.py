@@ -1553,3 +1553,80 @@ def test_reecriture_neutre_et_proposition_sur_un_autre_objet_sur_vrai_gramps_web
         a = next(x for cls in apres.objects for k, x in apres.all(cls).items() if k == h)
         assert {k: v for k, v in a.items() if k not in ("change", "note_list", "tag_list")} == \
             {k: v for k, v in o.items() if k not in ("note_list", "tag_list")}, h
+
+
+# ---------------------------------------------------------------------------- #311 : marqueurs en double
+
+def test_fusion_native_vivant_en_double_sur_vrai_gramps_web(client, loaded, tmp_path):
+    """#311 : deux fiches fictives créées par le plugin, l'une forcée vivante (Y), l'autre forcée décédée (N),
+    fusionnées par la fusion native de Gramps Web (``POST /api/people/<phénix>/merge/<titanic>``, API >= 3.15.0 ; sinon
+    attributs en double posés par transaction, comme une synchro). La personne reste vivante pour le plugin, aucune
+    écriture ordinaire ne retire un marqueur, l'incohérence est signalée, la correction passe par une proposition."""
+    from genealogiste_mcp import coherence, privacy
+    from genealogiste_mcp.gramps.mapping import notes_preuve_orphelines
+    from genealogiste_mcp.gramps.types import tname
+
+    def vivants(o):
+        return sorted(a["value"] for a in o.get("attribute_list") or [] if tname(a.get("type")) == "Genealogiste-Vivant")
+
+    def marqueurs_(o):
+        return [(tname(a["type"]), a["value"]) for a in o.get("attribute_list") or []
+                if tname(a["type"]) in ("Genealogiste-Vivant", "Genealogiste-UID", "Merged Gramps ID")]
+
+    b = GrampsBackend(client, tmp_path, tmp_path / ".propositions", ttl=0)
+    p0 = b.propose([{"op": "ajouter_personne", "ref": "a", "noms": [{"prenoms": "Lou", "nom": "DOUBLON311"}],
+                     "sexe": "F", "vivant": "N"},
+                    {"op": "ajouter_personne", "ref": "b", "noms": [{"prenoms": "Lou Anne", "nom": "DOUBLON311"}],
+                     "sexe": "F", "vivant": "Y"}], "Deux fiches (311)", "Fiches fictives (test).")
+    b.apply(p0["jeton"])
+    refs = p0["references_creees"]
+    gh = {o["gramps_id"]: h for h, o in client.load_all().all("Person").items()}
+    ha, hb = gh[refs["a"]], gh[refs["b"]]
+    rep = client.request("POST", f"/people/{ha}/merge/{hb}", json={"family_merger": False})
+    natif = rep.status_code == 200
+    print("fusion native :", rep.status_code, rep.text[:200])
+    if not natif:  # API < 3.15.0 : pas de route de fusion ; attributs en double posés par transaction
+        assert rep.status_code == 404
+        db = client.load_all()
+        old = db.get("Person", ha)
+        new = {**old, "attribute_list": old["attribute_list"] + [
+            a for a in db.get("Person", hb)["attribute_list"] if tname(a["type"]).startswith("Genealogiste-")]}
+        client.transaction([{"type": "update", "_class": "Person", "handle": ha, "old": old, "new": new}],
+                           "Doublons fictifs (311)")
+    db = client.load_all()
+    phenix = db.get("Person", ha)
+    print("attributs après fusion :", marqueurs_(phenix))
+    assert vivants(phenix) == ["N", "Y"]
+    assert len([1 for t, _ in marqueurs_(phenix) if t == "Genealogiste-UID"]) == 2
+    tree = b.load(fresh=True)
+    assert tree.personnes[refs["a"]].vivant == "Y"  # reste vivante pour le plugin
+    assert privacy.is_living(tree, tree.personnes[refs["a"]])["vivant"]
+    avant = marqueurs_(phenix)
+    # écriture ordinaire sur la personne, puis sur une autre : aucun marqueur retiré
+    p1 = b.propose([{"op": "modifier_personne", "id": refs["a"], "notes_ajout": ["Note fictive (311)."]}],
+                   "Note (311)", "Note fictive.")
+    assert "_VIVANT" not in "\n".join(x for x in p1["diff"].splitlines() if x[:1] in "+-")
+    b.apply(p1["jeton"])
+    assert marqueurs_(client.load_all().get("Person", ha)) == avant
+    p2 = b.propose([{"op": "ajouter_personne", "noms": [{"prenoms": "Autre", "nom": "FICTIF311"}]}], "Autre (311)",
+                   "Fictif.")
+    b.apply(p2["jeton"])
+    assert marqueurs_(client.load_all().get("Person", ha)) == avant
+    tree = b.load(fresh=True)
+    assert tree.personnes[refs["a"]].vivant == "Y"
+    # incohérence signalée
+    alertes = coherence.check_person(tree, refs["a"])
+    assert {"vivant_contradictoire", "marqueur_en_double"} <= {i["code"] for i in alertes}
+    if natif:
+        print("fiches de preuve orphelines :", notes_preuve_orphelines(client.load_all()))
+    # correction : proposition (diff explicite), puis accord
+    c = b.propose([{"op": "marquer_vivant", "id": refs["a"], "vivant": "Y"},
+                   {"op": "dedoublonner_marqueurs", "id": refs["a"]}], "Doublons (311)", "Fusion vérifiée (fictif).")
+    assert any("Genealogiste-Vivant en double" in x for x in c["diff"].splitlines())
+    b.apply(c["jeton"])
+    fin = client.load_all().get("Person", ha)
+    assert vivants(fin) == ["Y"]
+    assert [t for t, _ in marqueurs_(fin)].count("Genealogiste-UID") == 1
+    assert not natif or any(t == "Merged Gramps ID" for t, _ in marqueurs_(fin))  # attribut natif conservé
+    assert not [i for i in coherence.check_person(b.load(fresh=True), refs["a"])
+                if i["code"] in ("vivant_contradictoire", "marqueur_en_double")]

@@ -151,9 +151,31 @@ def base_attribut_cite() -> GrampsDb:
     return GrampsDb.from_objects([p, e, m, _citation("cit1", "C0001"), *_source()])
 
 
+def base_marqueurs_en_double() -> GrampsDb:
+    """#311 : fusion native de Gramps : marqueurs à valeur unique côte à côte (Vivant N et Y, deux UID, deux UID noms,
+    deux statuts, deux chemins de fichier), ancienne forme comprise."""
+    p = _personne("per1", "I0001", "Jean")
+    p["attribute_list"] = [attribute("Genealogiste-UID noms", "aaaaaaaa-0000-4000-8000-000000000001"),
+                           attribute("Genealogiste-UID", "aaaaaaaa-0000-4000-8000-000000000002"),
+                           attribute("Genealogiste-Vivant", "N"),
+                           attribute("Genealogiste-UID noms", "aaaaaaaa-0000-4000-8000-000000000003"),
+                           attribute("Genealogiste-UID", "aaaaaaaa-0000-4000-8000-000000000004"),
+                           attribute("Sosa-Vivant", "Y"), attribute("Merged Gramps ID", "I0002")]
+    p["event_ref_list"] = [event_ref("evt1", "Primary")]
+    p["death_ref_index"] = 0
+    e = _evenement("evt1", "E0001", "Death")
+    e["attribute_list"] = [attribute("Genealogiste-Statut", "contradictoire | fictif"),
+                           attribute("Genealogiste-Statut", "refute | fictif")]
+    m = blank("Media", "med1", "O0001")
+    m.update(path="medias/acte.jpg", mime="image/jpeg", checksum="0123abcd")
+    m["attribute_list"] = [attribute("Genealogiste-Fichier", "medias/a.jpg"),
+                           attribute("Genealogiste-Fichier", "medias/b.jpg")]
+    return GrampsDb.from_objects([p, e, m])
+
+
 CAS = {"media_interface": base_media_interface, "attribut_cite": base_attribut_cite, "personref_interface": base_personref_interface,
        "ref_citee": base_ref_citee, "age_familial": base_age_familial, "ordre_refs": base_ordre_refs,
-       "evenement_retenu": base_evenement_retenu}
+       "evenement_retenu": base_evenement_retenu, "marqueurs_en_double": base_marqueurs_en_double}
 
 
 @pytest.mark.parametrize("nom", sorted(CAS))

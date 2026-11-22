@@ -111,3 +111,70 @@ def ecrit(nom: str, forme: str = GENEALOGISTE) -> str:
         return AUTO[forme]
     m = _GERES.match(c)
     return f"{_PREFIXES_GRAMPS[forme]}{m.group('nom')}" if m else nom
+
+
+# ---------------------------------------------------------------- marqueurs à valeur unique en double (#311)
+
+# Une fusion native de Gramps (interface, Gramps Desktop, synchro) garde côte à côte deux attributs de même type et de
+# valeurs différentes : une personne peut porter deux Genealogiste-Vivant (N et Y), deux Genealogiste-UID… Une seule
+# valeur est lue (la plus protectrice pour Vivant, la plus grave pour un Statut, sinon la première) ; les autres sont
+# gardées telles quelles (jamais effacées en silence), signalées par arbre_coherence et retirées seulement par une
+# proposition (marquer_vivant, dedoublonner_marqueurs).
+VIVANT = "Genealogiste-Vivant"
+STATUT = "Genealogiste-Statut"
+_PROTECTION_VIVANT = {"Y": 0, "N": 2}  # forcé vivant > déduit (ou valeur inconnue) > forcé décédé
+_GRAVITE_STATUT = {"refute": 0, "contradictoire": 1}
+
+
+def unique(nom: str) -> bool:
+    """Marqueur géré à valeur unique (tout marqueur géré sauf Genealogiste-Association), nom logique ou écrit."""
+    c = canon(nom)
+    return bool(_GERES.match(c or "")) and c not in MULTIPLES
+
+
+def rang_vivant(valeur: str) -> int:
+    return _PROTECTION_VIVANT.get((valeur or "").strip(), 1)
+
+
+def rang_statut(valeur: str) -> int:
+    """Gravité d'une valeur de statut manuel (« refute | justification » ou « refute ») : plus petit = plus grave."""
+    return _GRAVITE_STATUT.get((valeur or "").partition("|")[0].strip(), 9)
+
+
+def retenue(nom: str, valeurs: list[str]) -> int:
+    """Indice de la valeur lue parmi plusieurs valeurs d'un même marqueur à valeur unique (``nom`` logique) : la plus
+    protectrice pour Vivant, la plus grave pour un Statut, sinon la première (à égalité : la première)."""
+    if not valeurs:
+        return -1
+    c = canon(nom)
+    if c == VIVANT:
+        return min(range(len(valeurs)), key=lambda i: rang_vivant(valeurs[i]))
+    if c.startswith(STATUT):
+        return min(range(len(valeurs)), key=lambda i: rang_statut(valeurs[i]))
+    return 0
+
+
+# Doublons gardés dans le modèle (``extra`` d'une personne, d'une famille, d'un événement ou d'un nom) : nœuds GEDCOM
+# du même marqueur (``_VIVANT``, ``UID``/``_UID``, ``_STAT``) ou nœud générique pour un marqueur Gramps sans
+# équivalent GEDCOM (« _GENEALOGISTE_ATTR valeur » avec « TYPE Genealogiste-UID noms »…).
+TAG_DOUBLON = "_GENEALOGISTE_ATTR"
+_NOMS_TAGS = {"_VIVANT": VIVANT, "UID": "Genealogiste-UID", "_UID": "Genealogiste-UID", "_STAT": STATUT}
+# Tags lus comme doublons selon le porteur (un autre tag de l'extra reste un nœud GEDCOM non interprété).
+TAGS_DOUBLONS = {"personne": ("_VIVANT", "UID", "_UID", TAG_DOUBLON), "famille": ("UID", "_UID", "_STAT", TAG_DOUBLON),
+                 "evenement": ("UID", "_UID", "_STAT", TAG_DOUBLON), "nom": ("_UID", "_STAT")}
+
+
+def nom_doublon(noeud: dict) -> str:
+    """Nom logique du marqueur d'un nœud doublon de l'extra, « » si ce n'en est pas un."""
+    tag = noeud.get("tag", "")
+    if tag == TAG_DOUBLON:
+        typ = next((c.get("value", "") for c in noeud.get("children") or [] if c.get("tag") == "TYPE"), "")
+        return canon(typ) if unique(typ) else ""
+    return _NOMS_TAGS.get(tag, "")
+
+
+def doublons(extra: list, porteur: str) -> list[dict]:
+    """Nœuds doublons d'un marqueur à valeur unique dans l'extra d'un ``porteur`` (personne, famille, evenement,
+    nom)."""
+    tags = TAGS_DOUBLONS[porteur]
+    return [x for x in extra or [] if isinstance(x, dict) and x.get("tag") in tags and nom_doublon(x)]

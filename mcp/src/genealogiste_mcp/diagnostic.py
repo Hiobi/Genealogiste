@@ -203,6 +203,7 @@ def controles_locaux(a, probleme: dict | None, config) -> list[dict]:
         out.append(_controle_politique(a))
         if config.backend != "gramps":  # mode gramps : arbre lu sur Gramps Web, dans les contrôles réseau
             out.append(_controle_medias_chemins(a, "medias_chemins"))
+            out.append(_controle_marqueurs(a))
         from .tree.proposals import TTL_SECONDS
         expirees = a.tokens.expirees()  # lecture seule : le diagnostic ne modifie rien
         valides = [p for p in a.tokens._lire_tous() if p[1].get("jeton") not in expirees]
@@ -339,7 +340,46 @@ def controles_gramps(a, vivants: bool = False) -> list[dict]:
                     else diagnostic_vivants.non_lance(a, inscription))
     if gramps_actif and not injoignable:
         out.append(_controle_medias_chemins(a, "gramps_medias_chemins"))
+        out.append(_controle_marqueurs(a, lire=vivants))
     return out
+
+
+def _controle_marqueurs(a, lire: bool = True) -> dict:
+    """#311 : marqueurs à valeur unique en double (Genealogiste-Vivant contradictoires, Genealogiste-UID…) et, en mode
+    gramps, fiches de preuve restées sur une autre personne après une fusion native. Identifiants seulement (I…, F…),
+    aucun nom ; lecture seule. Mode gramps : lecture complète de l'arbre, donc lancé seulement avec
+    ``diagnostic(vivants=true)`` (comme le contrôle des vivants) ; sinon une ligne « non lancé »."""
+    from . import coherence
+    if not lire:
+        return _ctl("marqueurs", "ok", "contrôle des marqueurs en double non lancé (diagnostic(vivants=true) le lance : "
+                    "lecture complète de l'arbre ; arbre_coherence le fait aussi)", lance=False)
+    try:
+        alertes = coherence.marqueurs_en_double(a.tree())
+        orphelines = []
+        if a.config.backend == "gramps":
+            from .gramps.mapping import notes_preuve_orphelines
+            orphelines = notes_preuve_orphelines(a.backend.snapshot(fresh=False))
+    except Exception as exc:  # noqa: BLE001
+        return _ctl("marqueurs", "attention", f"arbre illisible : {_motif(exc)}", "Relancer après correction.")
+    if not alertes and not orphelines:
+        return _ctl("marqueurs", "ok", "aucun marqueur en double")
+    vivants = sorted({x["personne"] for x in alertes if x["code"] == "vivant_contradictoire"})
+    objets = sorted({x["personne"] or x.get("famille", "") for x in alertes})
+    details = []
+    if vivants:
+        details.append(f"Genealogiste-Vivant contradictoire : {', '.join(vivants)} (lu vivant si l'une des valeurs "
+                       "est Y)")
+    if objets:
+        details.append(f"{len(alertes)} marqueur(s) en double : {', '.join(objets[:20])}"
+                       + (" …" if len(objets) > 20 else ""))
+    if orphelines:
+        details.append(f"fiche(s) de preuve sur une autre personne : {', '.join(x['personne'] for x in orphelines)}")
+    return _ctl("marqueurs", "attention", " ; ".join(details),
+                "arbre_coherence pour le détail ; correction par arbre_proposer (marquer_vivant, "
+                "dedoublonner_marqueurs ; gramps_recalculer_notes pour les fiches de preuve), puis accord explicite. "
+                "Rien n'est corrigé automatiquement.",
+                personnes_vivant_contradictoire=vivants, objets=objets,
+                fiches_orphelines=[x["personne"] for x in orphelines])
 
 
 _CAUSES_MEDIAS = {"introuvables": "fichier introuvable",

@@ -64,6 +64,7 @@ from .mapping import (
     etiquettes_gerees,
     gramps_to_tree,
     liens_internes_changes,
+    lignes_doublons,
     lignes_etiquettes,
     migrer_marqueurs,
     normaliser_types,
@@ -340,7 +341,7 @@ class GrampsBackend:
             "jeton": token, "expire_dans_minutes": TTL_SECONDS // 60, "resume": ctx.summary,
             "references_creees": ctx.refs, "transaction_gramps": preview,
             "diff": tree_diff(write_gedcom(tree), write_gedcom(ctx.tree), "Gramps Web", targets(ctx, operations),
-                              lignes_arbres(tree, ctx.tree) + lignes_taches(tree, ctx.tree)),
+                              lignes_arbres(tree, ctx.tree) + lignes_taches(tree, ctx.tree) + lignes_doublons(items)),
             "nouvelles_alertes_coherence": new_alerts(tree, ctx.tree),
             "avertissements": warnings, "message_de_transaction": message, "consigne": CONSIGNE,
         }

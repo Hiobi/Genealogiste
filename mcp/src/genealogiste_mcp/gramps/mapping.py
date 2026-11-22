@@ -13,6 +13,9 @@ Correspondance (voir docs/gramps-web.md) :
   Écriture : un attribut ou l'étiquette existants gardent leur forme tant que leur valeur ne change pas ; un
   attribut nouveau ou modifié prend la forme ``forme`` (GENEALOGISTE_MARQUEURS) ; migration explicite par
   :func:`migrer_marqueurs` ;
+- marqueurs à valeur unique en double (#311, fusion native de Gramps) : une valeur lue (Vivant : la plus
+  protectrice ; statut : le plus grave ; sinon la première), les autres gardées dans ``extra`` du modèle et
+  réécrites à l'identique tant que la lecture ne change pas (:meth:`set_attrs`) ; retrait par proposition seulement ;
 - identifiants : ``gramps_id`` = xref Genealogiste (I12, F3, S7, R1, O2, N4) ; attribut ``Genealogiste-UID`` sur
   personnes, familles, événements, ``Genealogiste-UID noms`` sur la personne (uid des noms dans l'ordre). Un objet créé dans
   l'interface Gramps reçoit un uid dérivé de son handle, non écrit tant qu'il suffit ;
@@ -224,12 +227,120 @@ def _atype(a: dict) -> str:
     return marqueurs.canon(tcanon(a.get("type")))
 
 
+def _attrs_geres(obj: dict, typ: str) -> tuple[list[dict], list[dict]]:
+    """(attributs de nom logique ``typ``, attributs gérés à l'écriture) : sous les deux formes, la nouvelle forme
+    seule est gérée (l'ancienne reste intacte jusqu'à la migration explicite, :func:`migrer_marqueurs`)."""
+    found = [a for a in _attrs(obj) if _atype(a) == typ]
+    neufs = [a for a in found if marqueurs.forme_de(tname(a.get("type"))) != marqueurs.SOSA]
+    return found, neufs or found
+
+
 def _attr(obj: dict, typ: str) -> dict | None:
     """Attribut de nom logique ``typ`` ; sous les deux formes, la nouvelle prime (l'écart est signalé par
-    :func:`incoherences_marqueurs`)."""
-    found = [a for a in _attrs(obj) if _atype(a) == typ]
-    return next((a for a in found if marqueurs.forme_de(tname(a.get("type"))) != marqueurs.SOSA), None) or \
-        next(iter(found), None)
+    ``marqueurs_migrer_proposer``). Marqueur à valeur unique en double (#311, fusion native de Gramps) : la valeur
+    la plus protectrice pour Genealogiste-Vivant (ancienne forme comprise), la plus grave pour un statut, sinon la
+    première ; les autres sont gardées dans le modèle (:func:`_noeuds_doublons`)."""
+    found, geres = _attrs_geres(obj, typ)
+    if len(found) > 1 and marqueurs.unique(typ):
+        cands = found if typ == A_VIVANT else geres
+        return cands[marqueurs.retenue(typ, [a.get("value") or "" for a in cands])]
+    return next(iter(geres), None)
+
+
+def _doublons(obj: dict, typ: str) -> list[str]:
+    """Valeurs non lues d'un marqueur à valeur unique en double (#311), dans l'ordre de Gramps."""
+    found, geres = _attrs_geres(obj, typ)
+    if len(found) < 2 or not marqueurs.unique(typ):
+        return []
+    lu = _attr(obj, typ)
+    return [a.get("value") or "" for a in geres if a is not lu]
+
+
+def lignes_doublons(items: list[dict]) -> list[str]:
+    """Lignes de diff (#311) : objet dont un marqueur à valeur unique était en double et dont les valeurs changent
+    dans la transaction (doublon retiré, valeur remplacée) ; rien ne disparaît sans figurer au diff."""
+    out = []
+    for it in items:
+        old, new = it.get("old") or {}, it.get("new") or {}
+        if it.get("type") != "update":
+            continue
+        for typ in dict.fromkeys(_atype(a) for a in _attrs(old)):
+            avant = [a.get("value") or "" for a in _attrs(old) if _atype(a) == typ]
+            if len(avant) < 2 or not marqueurs.unique(typ):
+                continue
+            apres = [a.get("value") or "" for a in _attrs(new) if _atype(a) == typ]
+            if sorted(avant) != sorted(apres):
+                out.append(f"{_label_obj(it['_class'], new)} : {typ} en double "
+                           f"({', '.join(map(repr, avant))}) → ({', '.join(map(repr, apres)) or 'aucun'})")
+    return out
+
+
+_FICHE_REF = re.compile(r"^Fiche de preuve \(plugin genealogiste\) — réf\. (\S+)\s*$")
+
+
+def notes_preuve_orphelines(db: GrampsDb) -> list[dict]:
+    """Fiches de preuve générées rattachées à une autre personne que celle qu'elles décrivent (#311 : fusion native,
+    la fiche « réf. I6 » du titanic reste sur le phénix I5) : {personne, decrit, note}. Lecture seule ; le recalcul
+    (gramps_recalculer_notes) les remplace par proposition."""
+    out = []
+    for h, p in sorted(db.all("Person").items(), key=lambda kv: kv[1].get("gramps_id") or kv[0]):
+        for nh in p.get("note_list") or []:
+            n = db.get("Note", nh)
+            texte = ((n or {}).get("text") or {}).get("string") or ""
+            m = _FICHE_REF.match(texte.split("\n", 1)[0])
+            if m and m.group(1) != p.get("gramps_id"):
+                out.append({"personne": p.get("gramps_id") or h, "decrit": m.group(1), "note": n.get("gramps_id") or nh})
+    return out
+
+
+# Marqueurs possédés par l'écrivain, par classe (les autres attributs de l'objet restent tels quels).
+def _possede_personne(x: str) -> bool:
+    return x in (A_UID, A_UID_NOMS, A_ASSO, A_VIVANT) or x.startswith(A_STATUT_NOM)
+
+
+def _possede_famille(x: str) -> bool:
+    return x in (A_UID, A_STATUT) or x.startswith(A_STATUT_FIL)
+
+
+def _possede_evenement(x: str) -> bool:
+    return x in (A_UID, A_STATUT, A_CAUSE, A_PAROISSE, A_PRECISION, A_ASSO)
+
+
+# Doublons dans le modèle (``extra`` de la personne, de la famille, de l'événement) : forme GEDCOM quand elle existe
+# (``_VIVANT``, ``UID``), sinon nœud générique « _GENEALOGISTE_ATTR valeur / TYPE nom logique ».
+_TAGS_DOUBLONS = {A_VIVANT: "_VIVANT", A_UID: "UID"}
+
+
+def _noeuds_doublons(obj: dict, possede) -> list[dict]:
+    out: list[dict] = []
+    for typ in dict.fromkeys(_atype(a) for a in _attrs(obj)):
+        if not possede(typ):
+            continue
+        for v in _doublons(obj, typ):
+            tag = _TAGS_DOUBLONS.get(typ)
+            n = {"tag": tag or marqueurs.TAG_DOUBLON}
+            if v:
+                n["value"] = v
+            if not tag:
+                n["children"] = [{"tag": "TYPE", "value": typ}]
+            out.append(n)
+    return out
+
+
+def _attrs_des_doublons(extra: list, possede) -> list[dict]:
+    """Attributs Gramps des doublons gardés dans le modèle (lus de Gramps ou d'un GEDCOM : ``_VIVANT``, ``UID``,
+    ``_UID``, ``_STAT``, nœud générique), dans leur ordre."""
+    out = []
+    for x in extra or []:
+        typ = marqueurs.nom_doublon(x)
+        if not typ or not possede(typ):
+            continue
+        v = x.get("value", "")
+        if x.get("tag") == "_STAT":
+            note = next((c.get("value", "") for c in x.get("children") or [] if c.get("tag") == "NOTE"), "")
+            v = _statut_write(Assertion(statut=v, justification=note))
+        out.append(attribute(typ, v))
+    return out
 
 
 def _attr_value(obj: dict, typ: str) -> str:
@@ -711,7 +822,7 @@ class _Reader:
                   type_detail=detail, age=_attr_value(ref, A_AGE), cause=_attr_value(ev, A_CAUSE),
                   note=self.single_note(ev.get("note_list")), citations=self.citations(ev.get("citation_list")), uid=uid,
                   statut_manuel=_statut_read(_attr_value(ev, A_STATUT)), prive=bool(ev.get("private")),
-                  medias=self.media_ids(ev), tags=self.tags(ev))
+                  medias=self.media_ids(ev), tags=self.tags(ev), extra=_noeuds_doublons(ev, _possede_evenement))
         named = []
         for a in _attrs(ev):
             if _atype(a) == A_ASSO:
@@ -748,7 +859,8 @@ class _Reader:
                     statut_manuel=_statut_read(st)))
             person = Person(id=pid, noms=noms, sexe=GENDER_CODES.get(p.get("gender", 2), "U"),
                             uid=_attr_value(p, A_UID) or derived_uid(h), vivant=_attr_value(p, A_VIVANT),
-                            prive=bool(p.get("private")), tags=self.tags(p))
+                            prive=bool(p.get("private")), tags=self.tags(p),
+                            extra=_noeuds_doublons(p, _possede_personne))
             self.info.handles[("PersonUID", person.uid)] = h
             for ref in p.get("event_ref_list") or []:
                 role = tcanon(ref.get("role"))
@@ -789,7 +901,7 @@ class _Reader:
                          epouse=self.xid("Person", f.get("mother_handle")),
                          uid=_attr_value(f, A_UID) or derived_uid(h),
                          statut_manuel=_statut_read(_attr_value(f, A_STATUT)), prive=bool(f.get("private")),
-                         tags=self.tags(f))
+                         tags=self.tags(f), extra=_noeuds_doublons(f, _possede_famille))
             for cr in f.get("child_ref_list") or []:
                 cid = self.xid("Person", cr.get("ref"))
                 if not cid:
@@ -1152,21 +1264,36 @@ class _Writer:
         return a if nom == tname(a.get("type")) else {**a, "type": gtype(a["type"].get("_class", "AttributeType"),
                                                                             nom)}
 
-    def set_attrs(self, obj: dict, owned, desired: list[dict]) -> None:
+    def set_attrs(self, obj: dict, owned, desired: list[dict], modele: bool = True) -> None:
         """Remplace les attributs gérés par Genealogiste (``owned(type logique)``), conserve les autres et l'ordre.
         Un attribut inchangé garde sa forme (sosa ou genealogiste). Un attribut à valeur unique porté sous les deux
         formes : l'ancienne forme est laissée intacte (migration : doublon retiré ou incohérence signalée), la
-        nouvelle est mise à jour."""
+        nouvelle est mise à jour ; sauf Genealogiste-Vivant, dont les deux formes comptent à la lecture.
+
+        Marqueur à valeur unique en double (#311) : si le modèle relu est inchangé (même valeur lue, mêmes doublons
+        dans ``desired`` à la suite de la valeur lue ; ``modele=False`` : le modèle ne porte pas les doublons, la
+        valeur lue suffit), tous ses attributs restent tels quels ; sinon ils sont remplacés par ``desired``, ce que
+        le diff de la proposition montre (:func:`lignes_doublons`)."""
         base = obj.get("attribute_list") or []
-        keep, pending = [], list(desired)
+        intacts = set()
+        for typ in dict.fromkeys(_atype(a) for a in base):
+            if not owned(typ) or not marqueurs.unique(typ) or len(_attrs_geres(obj, typ)[0]) < 2:
+                continue
+            voulus = [d.get("value") or "" for d in desired if tname(d.get("type")) == typ]
+            lu = (_attr(obj, typ) or {}).get("value") or ""
+            if voulus[:1] == [lu] and (sorted(voulus[1:]) == sorted(_doublons(obj, typ)) or
+                                       (not modele and len(voulus) == 1)):
+                intacts.add(typ)
+        keep, pending = [], [d for d in desired if tname(d.get("type")) not in intacts]
         formes: dict[str, set[str]] = {}
         for a in base:
             formes.setdefault(_atype(a), set()).add(marqueurs.forme_de(tname(a.get("type"))))
-        doubles = {t for t, f in formes.items() if t not in marqueurs.MULTIPLES
+        doubles = {t for t, f in formes.items() if t not in marqueurs.MULTIPLES and t != A_VIVANT
                    and {marqueurs.SOSA, marqueurs.GENEALOGISTE} <= f}
         for a in base:
             typ = _atype(a)
-            if not owned(typ) or (typ in doubles and marqueurs.forme_de(tname(a.get("type"))) == marqueurs.SOSA):
+            if not owned(typ) or typ in intacts or \
+                    (typ in doubles and marqueurs.forme_de(tname(a.get("type"))) == marqueurs.SOSA):
                 keep.append(a)
                 continue
             # citations comparées seulement là où le modèle les porte (intervenants) ; ailleurs, celles posées dans
@@ -1632,7 +1759,7 @@ class _Writer:
                 desired.append(attribute(A_ASSO, val, self.citations(
                     a.citations, (prev or {}).get("citation_list"), f"{h}:asso:{rang}")))
                 self.stats["temoins_nommes"] += 1
-        self.set_attrs(obj, lambda t: t in (A_UID, A_STATUT, A_CAUSE, A_PAROISSE, A_PRECISION, A_ASSO), desired)
+        self.set_attrs(obj, _possede_evenement, desired + _attrs_des_doublons(e.extra, _possede_evenement))
         self.cit_evt[h] = self.citations(e.citations, obj.get("citation_list"), h)
         obj["citation_list"] = _same_list(obj.get("citation_list") or [], self.cit_evt[h])
         self.media_refs(obj, e.medias)
@@ -1751,7 +1878,10 @@ class _Writer:
                 desired.append(attribute(A_UID, f.uid))
             if _statut_write(f.statut_manuel):
                 desired.append(attribute(A_STATUT, _statut_write(f.statut_manuel)))
-            self.set_attrs(obj, lambda x: x in (A_UID, A_STATUT) or x.startswith(A_STATUT_FIL), desired + statut_attrs)
+            extras = _attrs_des_doublons(f.extra, _possede_famille)
+            if f.uid == derived_uid(h) and any(tname(x["type"]) == A_UID for x in extras):
+                desired.insert(0, attribute(A_UID, f.uid))
+            self.set_attrs(obj, _possede_famille, desired + statut_attrs + extras)
             obj["citation_list"] = _same_list(obj.get("citation_list") or [],
                                               self.citations(f.citations, obj.get("citation_list"), h))
             self.media_refs(obj, f.medias)
@@ -1868,15 +1998,16 @@ class _Writer:
             uids = [n.uid for n in p.noms]
             if any(u != derived_uid(h, "nom", str(i)) for i, u in enumerate(uids)):
                 desired.append(attribute(A_UID_NOMS, " ".join(uids)))
-            if p.uid != derived_uid(h):
+            extras = _attrs_des_doublons(p.extra, _possede_personne)  # doublons gardés (#311)
+            en_double = {tname(x["type"]) for x in extras}
+            if p.uid != derived_uid(h) or A_UID in en_double:
                 desired.append(attribute(A_UID, p.uid))
-            if p.vivant:
+            if p.vivant or A_VIVANT in en_double:
                 desired.append(attribute(A_VIVANT, p.vivant))
             for i, n in enumerate(p.noms):
                 if _statut_write(n.statut_manuel):
                     desired.append(attribute(f"{A_STATUT_NOM}{i}", _statut_write(n.statut_manuel)))
-            self.set_attrs(obj, lambda x: x in (A_UID, A_UID_NOMS, A_ASSO, A_VIVANT) or x.startswith(A_STATUT_NOM),
-                           desired)
+            self.set_attrs(obj, _possede_personne, desired + extras)
             obj["note_list"] = self.notes(p.notes, obj.get("note_list"), "Person Note", h, self.auto("Person", pid),
                                           keep=not self.regen("Person", pid))
             obj["tag_list"] = self.tag_list(obj.get("tag_list"), p.tags)
@@ -1985,7 +2116,8 @@ class _Writer:
             # #315 : chemin local en attribut seulement s'il n'est pas déjà celui de Gramps (média créé ou déplacé
             # par Genealogiste) ; un média de l'interface relu tel quel ne reçoit rien
             fichier = m.fichier and (base is None or _attr(base, A_FICHIER) or m.fichier != (base.get("path") or ""))
-            self.set_attrs(obj, lambda x: x == A_FICHIER, [attribute(A_FICHIER, m.fichier)] if fichier else [])
+            self.set_attrs(obj, lambda x: x == A_FICHIER, [attribute(A_FICHIER, m.fichier)] if fichier else [],
+                           modele=False)
             obj["citation_list"] = _same_list(obj.get("citation_list") or [],
                                               self.citations(m.citations, obj.get("citation_list"), h))
             obj["tag_list"] = self.tag_list(obj.get("tag_list"), m.tags)

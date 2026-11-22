@@ -1245,10 +1245,12 @@ def arbre_statut_preuve(id: str, fait: str = "") -> list[dict]:
 
 @mcp.tool()
 def arbre_coherence(id: str = "") -> list[dict]:
-    """Contrôles biologiques et chronologiques (une personne ou tout l'arbre). Tout l'arbre en mode gramps : aussi
+    """Contrôles biologiques et chronologiques (une personne ou tout l'arbre), marqueurs à valeur unique en double
+    (#311 : Genealogiste-Vivant contradictoires, Genealogiste-UID en double…). Tout l'arbre en mode gramps : aussi
     les types personnalisés qui doublonnent un type standard de Gramps (« Baptême » pour Baptism…), par classe avec
     le nombre d'objets, et les libellés ambigus (normalisation : gramps_normaliser_types) ; et les personnes rendues
-    privées par Genealogiste parce que vivantes qui ne le sont plus (retrait : gramps_proteger_vivants)."""
+    privées par Genealogiste parce que vivantes qui ne le sont plus (retrait : gramps_proteger_vivants), et les fiches
+    de preuve restées sur une autre personne après une fusion native (recalcul : gramps_recalculer_notes)."""
     a = app()
     t = a.tree()
     if id:
@@ -1257,7 +1259,20 @@ def arbre_coherence(id: str = "") -> list[dict]:
     if a.config.backend == "gramps":
         out += _types_en_doublon(a)
         out += _prive_a_retirer(a)
+        out += _notes_preuve_orphelines(a)
     return out
+
+
+def _notes_preuve_orphelines(a) -> list[dict]:
+    """#311 : fiches de preuve générées restées sur une autre personne que celle qu'elles décrivent (fusion native
+    de Gramps) ; recalcul proposé par gramps_recalculer_notes, jamais automatique."""
+    from .gramps.mapping import notes_preuve_orphelines
+
+    return [{"niveau": "alerte", "code": "note_preuve_orpheline", "personne": x["personne"],
+             "message": f"{x['personne']} porte la fiche de preuve générée de {x['decrit']} (note {x['note']}), "
+                        "restée après une fusion faite hors du plugin : elle décrit une autre personne ; "
+                        "gramps_recalculer_notes propose le recalcul (accord explicite requis).", **x}
+            for x in notes_preuve_orphelines(a.backend.snapshot(fresh=False))]
 
 
 def _prive_a_retirer(a) -> list[dict]:
@@ -1423,7 +1438,8 @@ def arbre_proposer(operations: list[dict], titre: str, justification: str, sourc
     ajouter_source, modifier_source, supprimer_source, fusionner_sources, ajouter_depot, ajouter_citation,
     supprimer_citation, ajouter_media, modifier_media, ajouter_billet (blog de Gramps Web), ajouter_tache et
     modifier_tache (tâches de Gramps Web, GENEALOGISTE_GRAMPS_TACHES), ajouter_association,
-    supprimer_association, fusionner_personnes, scinder_personne, definir_statut, marquer_vivant, etiqueter.
+    supprimer_association, fusionner_personnes, scinder_personne, definir_statut, marquer_vivant,
+    dedoublonner_marqueurs (marqueurs en double après une fusion faite hors du plugin), etiqueter.
     Étiquettes : tags (ajout) sur les ajouts et modifications, tags_retrait sur les modifications, etiqueter
     pour tout objet existant (famille, dépôt, note, citation…).
     Texte des notes : brut par défaut ; format_texte="markdown" sur l'opération pour **gras**, *italique* et

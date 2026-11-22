@@ -17,7 +17,7 @@ import threading
 import time
 from pathlib import Path
 
-from ..coherence import check_tree
+from ..coherence import check_tree, lignes_doublons
 from ..etiquettes import lignes_arbres
 from ..fichiers import verrou
 from ..gedcom.mapping import read_gedcom, write_gedcom
@@ -300,7 +300,8 @@ class Proposals:
         return {
             "jeton": token, "expire_dans_minutes": TTL_SECONDS // 60, "resume": ctx.summary,
             "references_creees": ctx.refs, "diff": tree_diff(before, after, cibles=targets(ctx, operations),
-                                                             etiquettes=lignes_arbres(tree, ctx.tree)),
+                                                             etiquettes=lignes_arbres(tree, ctx.tree)
+                                                             + lignes_doublons(tree, ctx.tree)),
             "nouvelles_alertes_coherence": new_alerts(tree, ctx.tree), "avertissements": ctx.warnings,
             "message_de_commit": message, "consigne": CONSIGNE,
         }

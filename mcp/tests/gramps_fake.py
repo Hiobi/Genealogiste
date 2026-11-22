@@ -33,6 +33,14 @@
   de décès ; ``max_age_probably_alive`` et les autres paramètres sont relevés dans ``living_requetes`` ; réponse
   selon ``vivants_100`` quand ``max_age_probably_alive=100``) ; ``GET /api/users/`` (droit ViewOtherUser, rôle Owner :
   ``comptes``, liste de ``{"name", "role"}``).
+- fusion native de deux personnes (#311) : ``POST /api/people/<phoenix>/merge/<titanic>`` (API >= 3.15.0, droits
+  EditObject et DeleteObject, réponse 200 ``{}`` sans transaction renvoyée, aucun état comparé), règles de
+  ``Person.merge`` de Gramps 6.0 utiles aux tests : un attribut n'est fusionné que si type ET valeur sont égaux,
+  sinon les deux sont gardés côte à côte (deux ``Genealogiste-Vivant`` N et Y, deux ``Genealogiste-UID``) ; attribut
+  ``Merged Gramps ID`` ajouté ; nom principal du titanic en tête de ses noms alternatifs ; références d'événements
+  (même événement et même rôle fondus), notes, citations, étiquettes, médias, familles réunies ; privé = OU ;
+  références au titanic réécrites dans les familles et les associations ; titanic supprimé ; « Merge Person » à
+  l'historique des messages.
 Défauts : compte Editor, API épinglée de docker-compose.test.yml. Données fictives uniquement.
 """
 
@@ -48,7 +56,7 @@ from urllib.parse import unquote
 import httpx
 import respx
 
-from genealogiste_mcp.gramps.types import CLASSES, tname
+from genealogiste_mcp.gramps.types import CLASSES, attribute, tname
 
 URL = "http://gramps.test"
 PLURAL = {v: k for k, v in CLASSES.items()}
@@ -172,6 +180,8 @@ class FakeGrampsWeb:
         r.post(url__regex=re.escape(api) + r"/name-groups/(?P<surname>[^/?]+)/(?P<group>[^/?]+)$").mock(
             side_effect=self._poser_groupe)
         r.post(api + "/transactions/").mock(side_effect=self._transaction)
+        r.post(url__regex=re.escape(api) + r"/people/(?P<phoenix>[^/?]+)/merge/(?P<titanic>[^/?]+)/?$").mock(
+            side_effect=self._fusion_personnes)
         r.put(url__regex=re.escape(api) + r"/media/(?P<handle>[^/?]+)/file(\?.*)?$").mock(side_effect=self._file)
         r.get(api + "/search/").mock(side_effect=self._search)
         r.get(api + "/users/").mock(side_effect=self._users)
@@ -538,6 +548,60 @@ class FakeGrampsWeb:
             self.tasks[tid] = {"state": "SUCCESS", "result_object": out}
             return httpx.Response(202, json={"task": {"href": f"/api/tasks/{tid}", "id": tid}})
         return httpx.Response(200, json=out)
+
+    def _fusion_personnes(self, req, phoenix, titanic):
+        """Fusion native de Gramps (``MergePersonQuery``, sans fusion de familles) : voir l'en-tête du module."""
+        if (r := self._auth(req)) is not None:
+            return r
+        if (r := self._droits(req, "EditObject", "DeleteObject")) is not None:
+            return r
+        gens = self.objects["Person"]
+        if version_tuple(self.api_version) < (3, 15, 0) or phoenix not in gens or titanic not in gens:
+            return httpx.Response(404, json={"error": {"code": 404, "message": "Not Found"}})
+        p, t = gens[phoenix], gens.pop(titanic)
+
+        def union(cle, egal=lambda a, b: a == b):
+            out = list(p.get(cle) or [])
+            for x in t.get(cle) or []:
+                if not any(egal(x, y) for y in out):
+                    out.append(copy.deepcopy(x))
+            p[cle] = out
+
+        # ordre constaté sur Gramps Web 26.11.0 (API 3.25.1) : attributs du phénix, « Merged Gramps ID », puis ceux du
+        # titanic qui diffèrent (type ou valeur)
+        p["attribute_list"] = list(p.get("attribute_list") or []) + [attribute("Merged Gramps ID",
+                                                                               t.get("gramps_id", ""))]
+        union("attribute_list", lambda a, b: tname(a.get("type")) == tname(b.get("type"))
+              and a.get("value") == b.get("value"))
+        p["private"] = bool(p.get("private") or t.get("private"))
+        noms = [t["primary_name"], *(t.get("alternate_names") or [])]
+        p["alternate_names"] = list(p.get("alternate_names") or []) + [
+            copy.deepcopy(n) for n in noms if n != p["primary_name"] and n not in (p.get("alternate_names") or [])]
+        union("event_ref_list", lambda a, b: a.get("ref") == b.get("ref") and tname(a.get("role")) == tname(b.get("role")))
+        for cle in ("note_list", "citation_list", "tag_list", "family_list", "parent_family_list"):
+            union(cle)
+        union("media_list", lambda a, b: a.get("ref") == b.get("ref"))
+        union("person_ref_list", lambda a, b: a.get("ref") == b.get("ref") and a.get("rel") == b.get("rel"))
+        p["change"] = self.tick()
+        for f in self.objects["Family"].values():
+            touche = False
+            for cle in ("father_handle", "mother_handle"):
+                if f.get(cle) == titanic:
+                    f[cle], touche = phoenix, True
+            for cr in f.get("child_ref_list") or []:
+                if cr.get("ref") == titanic:
+                    cr["ref"], touche = phoenix, True
+            if touche:
+                f["change"] = self.tick()
+        for o in self.objects["Person"].values():
+            for pr in o.get("person_ref_list") or []:
+                if pr.get("ref") == titanic:
+                    pr["ref"] = phoenix
+                    o["change"] = self.tick()
+        if titanic == self.default_person:
+            self.default_person = phoenix
+        self.messages.append("Merge Person")
+        return httpx.Response(200, json={})
 
 
 def handle_of(path: str) -> str:
