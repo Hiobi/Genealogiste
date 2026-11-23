@@ -1,0 +1,662 @@
+{
+ "_description": "Services publics de contexte historique (historiographie, bibliothèques, presse, cartes, statistiques) : distincts des archives (archives_fr.json) et des sites tiers (sites_tiers.json). mode « api » : interrogeable par les outils de contexte s'il est activé (GENEALOGISTE_CONTEXTE_SERVICES) et que sa clé requise est présente ; « lien_seulement » : jamais interrogé, lien à ouvrir par l'utilisateur. nature : classement par défaut des références issues du service (contexte/modeles.NATURES). cgu, quota et documentation restent vides tant qu'ils ne sont pas relevés ; verifie_le reste vide sans contrôle humain ; site_repond_le et releve valent pour un client automatisé aux dates indiquées. Format : docs/contexte-historique.md, « Services de contexte » (#285).",
+ "services": [
+  {
+   "code": "HAL",
+   "nom": "HAL (archive ouverte, API de recherche)",
+   "mode": "api",
+   "protocole": "solr",
+   "url_api": "https://api.archives-ouvertes.fr/search/",
+   "site": "",
+   "documentation": "",
+   "cle": "aucune",
+   "variable_cle": "",
+   "nature": "secondaire_savante",
+   "couverture": {
+    "zone": [
+     "FR"
+    ]
+   },
+   "usage": "articles, thèses, chapitres en libre accès",
+   "cgu": "",
+   "quota": "",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-23",
+   "verifie_le": "",
+   "origine": "relevé curl du 2026-11-21 (#285) ; sondage du 2026-11-23 (une requête GET, sans clé)",
+   "releve": "2026-11-21 : 200 JSON ; 2026-11-23 : 200"
+  },
+  {
+   "code": "ISIDORE",
+   "nom": "Isidore (Huma-Num)",
+   "mode": "api",
+   "protocole": "rest",
+   "url_api": "https://api.isidore.science/resource/search",
+   "site": "",
+   "documentation": "",
+   "cle": "aucune",
+   "variable_cle": "",
+   "nature": "index",
+   "couverture": {
+    "zone": [
+     "FR"
+    ]
+   },
+   "usage": "moteur fédéré SHS (agrège Persée, OpenEdition, HAL…)",
+   "cgu": "",
+   "quota": "",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-23",
+   "verifie_le": "",
+   "origine": "relevé curl du 2026-11-21 (#285) ; sondage du 2026-11-23 (une requête GET, sans clé)",
+   "releve": "2026-11-21 : 200 JSON ; 2026-11-23 : 200",
+   "notes": "Moteur fédéré : remonter à la notice du service d'origine pour la nature du document."
+  },
+  {
+   "code": "PERSEE",
+   "nom": "Persée (OAI-PMH)",
+   "mode": "api",
+   "protocole": "oai-pmh",
+   "url_api": "https://oai.persee.fr/oai",
+   "site": "",
+   "documentation": "",
+   "cle": "aucune",
+   "variable_cle": "",
+   "nature": "secondaire_savante",
+   "couverture": {
+    "zone": [
+     "FR"
+    ]
+   },
+   "usage": "revues savantes numérisées, sociétés savantes",
+   "cgu": "",
+   "quota": "",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-23",
+   "verifie_le": "",
+   "origine": "relevé curl du 2026-11-21 (#285) ; sondage du 2026-11-23 (une requête GET, sans clé)",
+   "releve": "2026-11-21 : OAI 200 ; SPARQL https://data.persee.fr/sparql sans réponse (45 s) ; 2026-11-23 : OAI 200 (verb=Identify)",
+   "url_sonde": "https://oai.persee.fr/oai?verb=Identify",
+   "notes": "Le point SPARQL https://data.persee.fr/sparql n'a pas répondu le 2026-11-21 : non déclaré ici."
+  },
+  {
+   "code": "OPENEDITION",
+   "nom": "OpenEdition (OAI-PMH)",
+   "mode": "api",
+   "protocole": "oai-pmh",
+   "url_api": "https://oai.openedition.org/",
+   "site": "",
+   "documentation": "",
+   "cle": "aucune",
+   "variable_cle": "",
+   "nature": "secondaire_savante",
+   "couverture": {
+    "zone": [
+     "FR"
+    ]
+   },
+   "usage": "revues et livres SHS",
+   "cgu": "",
+   "quota": "",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-23",
+   "verifie_le": "",
+   "origine": "relevé curl du 2026-11-21 (#285) ; sondage du 2026-11-23 (une requête GET, sans clé)",
+   "releve": "2026-11-21 : 200 ; 2026-11-23 : 200 (verb=Identify)",
+   "url_sonde": "https://oai.openedition.org/?verb=Identify",
+   "notes": "API de recherche à qualifier."
+  },
+  {
+   "code": "SUDOC",
+   "nom": "Sudoc (SRU)",
+   "mode": "api",
+   "protocole": "sru",
+   "url_api": "https://www.sudoc.abes.fr/cbs/sru/",
+   "site": "",
+   "documentation": "",
+   "cle": "aucune",
+   "variable_cle": "",
+   "nature": "index",
+   "couverture": {
+    "zone": [
+     "FR"
+    ]
+   },
+   "usage": "monographies, histoire locale, localisation en bibliothèque",
+   "cgu": "",
+   "quota": "",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-23",
+   "verifie_le": "",
+   "origine": "relevé curl du 2026-11-21 (#285) ; sondage du 2026-11-23 (une requête GET, sans clé)",
+   "releve": "2026-11-21 : 200 XML ; 2026-11-23 : 200 (operation=explain)",
+   "url_sonde": "https://www.sudoc.abes.fr/cbs/sru/?operation=explain"
+  },
+  {
+   "code": "IDREF",
+   "nom": "IdRef (Solr)",
+   "mode": "api",
+   "protocole": "solr",
+   "url_api": "https://www.idref.fr/Sru/Solr",
+   "site": "",
+   "documentation": "",
+   "cle": "aucune",
+   "variable_cle": "",
+   "nature": "index",
+   "couverture": {
+    "zone": [
+     "FR"
+    ]
+   },
+   "usage": "autorités (auteurs, collectivités, lieux)",
+   "cgu": "",
+   "quota": "",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-23",
+   "verifie_le": "",
+   "origine": "relevé curl du 2026-11-21 (#285) ; sondage du 2026-11-23 (une requête GET, sans clé)",
+   "releve": "2026-11-21 : 200 JSON ; 2026-11-23 : 200"
+  },
+  {
+   "code": "THESES-FR",
+   "nom": "theses.fr (API)",
+   "mode": "api",
+   "protocole": "rest",
+   "url_api": "https://theses.fr/api/v1/theses/recherche/",
+   "site": "",
+   "documentation": "",
+   "cle": "aucune",
+   "variable_cle": "",
+   "nature": "secondaire_savante",
+   "couverture": {
+    "zone": [
+     "FR"
+    ]
+   },
+   "usage": "thèses (histoire régionale, industrielle…)",
+   "cgu": "",
+   "quota": "",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-23",
+   "verifie_le": "",
+   "origine": "relevé curl du 2026-11-21 (#285) ; sondage du 2026-11-23 (une requête GET, sans clé)",
+   "releve": "2026-11-21 : 200 JSON ; 2026-11-23 : 200",
+   "url_sonde": "https://theses.fr/api/v1/theses/recherche/?q=histoire"
+  },
+  {
+   "code": "BNF-CATALOGUE",
+   "nom": "Catalogue général de la BnF (SRU)",
+   "mode": "api",
+   "protocole": "sru",
+   "url_api": "https://catalogue.bnf.fr/api/SRU",
+   "site": "",
+   "documentation": "",
+   "cle": "aucune",
+   "variable_cle": "",
+   "nature": "index",
+   "couverture": {
+    "zone": [
+     "FR"
+    ]
+   },
+   "usage": "notices bibliographiques",
+   "cgu": "",
+   "quota": "",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-23",
+   "verifie_le": "",
+   "origine": "relevé curl du 2026-11-21 (#285) ; sondage du 2026-11-23 (une requête GET, sans clé)",
+   "releve": "2026-11-21 : 200 XML ; 2026-11-23 : 200 (operation=explain, 6,8 s)",
+   "url_sonde": "https://catalogue.bnf.fr/api/SRU?version=1.2&operation=explain"
+  },
+  {
+   "code": "DATA-BNF",
+   "nom": "data.bnf.fr (SPARQL)",
+   "mode": "api",
+   "protocole": "sparql",
+   "url_api": "https://data.bnf.fr/sparql",
+   "site": "",
+   "documentation": "",
+   "cle": "aucune",
+   "variable_cle": "",
+   "nature": "index",
+   "couverture": {
+    "zone": [
+     "FR"
+    ]
+   },
+   "usage": "œuvres et auteurs liés",
+   "cgu": "",
+   "quota": "",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-23",
+   "verifie_le": "",
+   "origine": "relevé curl du 2026-11-21 (#285) ; sondage du 2026-11-23 (une requête GET, sans clé)",
+   "releve": "2026-11-21 : 200 JSON ; 2026-11-23 : 302 (redirection, sans paramètre de requête)"
+  },
+  {
+   "code": "OPENALEX",
+   "nom": "OpenAlex (API works)",
+   "mode": "api",
+   "protocole": "rest",
+   "url_api": "https://api.openalex.org/works",
+   "site": "",
+   "documentation": "",
+   "cle": "facultative",
+   "variable_cle": "GENEALOGISTE_CLE_OPENALEX",
+   "nature": "index",
+   "couverture": {
+    "zone": [
+     "INT"
+    ]
+   },
+   "usage": "littérature scientifique, DOI",
+   "cgu": "",
+   "quota": "sans clé : budget quotidien partagé par adresse IP, d'après la réponse du 2026-11-21 (chiffre non relevé)",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-23",
+   "verifie_le": "",
+   "origine": "relevé curl du 2026-11-21 (#285) ; sondage du 2026-11-23 (une requête GET, sans clé)",
+   "releve": "2026-11-21 : 200 JSON ; 2026-11-23 : 200",
+   "url_sonde": "https://api.openalex.org/works?per-page=1"
+  },
+  {
+   "code": "CROSSREF",
+   "nom": "Crossref (API works)",
+   "mode": "api",
+   "protocole": "rest",
+   "url_api": "https://api.crossref.org/works",
+   "site": "",
+   "documentation": "",
+   "cle": "aucune",
+   "variable_cle": "",
+   "nature": "index",
+   "couverture": {
+    "zone": [
+     "INT"
+    ]
+   },
+   "usage": "métadonnées DOI",
+   "cgu": "",
+   "quota": "",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-23",
+   "verifie_le": "",
+   "origine": "relevé curl du 2026-11-21 (#285) ; sondage du 2026-11-23 (une requête GET, sans clé)",
+   "releve": "2026-11-21 : 200 JSON ; 2026-11-23 : 200",
+   "url_sonde": "https://api.crossref.org/works?rows=1",
+   "notes": "mailto facultatif : GENEALOGISTE_CROSSREF_MAILTO, vide par défaut (donnée personnelle, envoyée seulement si renseignée)."
+  },
+  {
+   "code": "EUROPEANA",
+   "nom": "Europeana (Search API)",
+   "mode": "api",
+   "protocole": "rest",
+   "url_api": "https://api.europeana.eu/record/v2/search.json",
+   "site": "",
+   "documentation": "",
+   "cle": "requise",
+   "variable_cle": "GENEALOGISTE_CLE_EUROPEANA",
+   "nature": "primaire",
+   "couverture": {
+    "zone": [
+     "EU"
+    ]
+   },
+   "usage": "presse et patrimoine européens",
+   "cgu": "",
+   "quota": "",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-23",
+   "verifie_le": "",
+   "origine": "relevé curl du 2026-11-21 (#285) ; sondage du 2026-11-23 (une requête GET, sans clé)",
+   "releve": "2026-11-21 : 200 avec la clé de démonstration ; 2026-11-23 : 400 sans clé",
+   "notes": "Clé wskey personnelle requise ; la clé de démonstration n'est pas embarquée."
+  },
+  {
+   "code": "NAKALA",
+   "nom": "Nakala (Huma-Num)",
+   "mode": "api",
+   "protocole": "rest",
+   "url_api": "https://api.nakala.fr/search",
+   "site": "",
+   "documentation": "",
+   "cle": "aucune",
+   "variable_cle": "",
+   "nature": "index",
+   "couverture": {
+    "zone": [
+     "FR"
+    ]
+   },
+   "usage": "corpus de recherche déposés",
+   "cgu": "",
+   "quota": "",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-23",
+   "verifie_le": "",
+   "origine": "relevé curl du 2026-11-21 (#285) ; sondage du 2026-11-23 (une requête GET, sans clé)",
+   "releve": "2026-11-21 : 200 JSON ; 2026-11-23 : 200",
+   "notes": "Nature à qualifier document par document."
+  },
+  {
+   "code": "WIKIPEDIA",
+   "nom": "Wikipédia en français (REST)",
+   "mode": "api",
+   "protocole": "rest",
+   "url_api": "https://fr.wikipedia.org/api/rest_v1/",
+   "site": "",
+   "documentation": "",
+   "cle": "aucune",
+   "variable_cle": "",
+   "nature": "tertiaire",
+   "couverture": {
+    "zone": [
+     "FR"
+    ]
+   },
+   "usage": "tertiaire : sert seulement à remonter à ses références",
+   "cgu": "",
+   "quota": "",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-23",
+   "verifie_le": "",
+   "origine": "relevé curl du 2026-11-21 (#285) ; sondage du 2026-11-23 (une requête GET, sans clé)",
+   "releve": "2026-11-21 : 200 ; 2026-11-23 : 301 (redirection, sans paramètre de requête)"
+  },
+  {
+   "code": "WIKIDATA",
+   "nom": "Wikidata Query Service (SPARQL)",
+   "mode": "api",
+   "protocole": "sparql",
+   "url_api": "https://query.wikidata.org/sparql",
+   "site": "",
+   "documentation": "",
+   "cle": "aucune",
+   "variable_cle": "",
+   "nature": "index",
+   "couverture": {
+    "zone": [
+     "INT"
+    ]
+   },
+   "usage": "index d'événements et d'identifiants (BnF, IdRef, Persée), jamais source",
+   "cgu": "",
+   "quota": "voir la politique d'accès de query.wikidata.org (docs/securite.md)",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-23",
+   "verifie_le": "",
+   "origine": "relevé curl du 2026-11-21 (#285) ; sondage du 2026-11-23 (une requête GET, sans clé)",
+   "releve": "2026-11-21 : 200 en requête simple ; délai dépassé en requête géographique ; 429 ensuite ; 2026-11-23 : 200 (ASK)",
+   "url_sonde": "https://query.wikidata.org/sparql?query=ASK%7B%7D"
+  },
+  {
+   "code": "INSEE-MELODI",
+   "nom": "INSEE Melodi",
+   "mode": "api",
+   "protocole": "rest",
+   "url_api": "https://api.insee.fr/melodi/",
+   "site": "",
+   "documentation": "",
+   "cle": "aucune",
+   "variable_cle": "",
+   "nature": "primaire",
+   "couverture": {
+    "zone": [
+     "FR"
+    ],
+    "periode": {
+     "de": 1968,
+     "a": 2023
+    }
+   },
+   "usage": "populations communales (DS_POPULATIONS_HISTORIQUES)",
+   "cgu": "",
+   "quota": "",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-23",
+   "verifie_le": "",
+   "origine": "relevé curl du 2026-11-21 (#285) ; sondage du 2026-11-23 (une requête GET, sans clé)",
+   "releve": "2026-11-21 : 200 (163 jeux) ; 2026-11-23 : 200 (catalog/all)",
+   "url_sonde": "https://api.insee.fr/melodi/catalog/all",
+   "notes": "DS_POPULATIONS_HISTORIQUES : 1968-2023 seulement."
+  },
+  {
+   "code": "IGN-GEOPLATEFORME",
+   "nom": "Géoplateforme IGN (WMTS)",
+   "mode": "api",
+   "protocole": "wmts",
+   "url_api": "https://data.geopf.fr/wmts",
+   "site": "",
+   "documentation": "",
+   "cle": "aucune",
+   "variable_cle": "",
+   "nature": "primaire",
+   "couverture": {
+    "zone": [
+     "FR"
+    ]
+   },
+   "usage": "cartes anciennes : couches …CASSINI (BnF, AN), ETATMAJOR40, ETATMAJOR10, SCAN50.1950, orthophotos 1950-1965",
+   "cgu": "",
+   "quota": "",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-23",
+   "verifie_le": "",
+   "origine": "relevé curl du 2026-11-21 (#285) ; sondage du 2026-11-23 (une requête GET, sans clé)",
+   "releve": "2026-11-21 : 200 ; 2026-11-23 : 200 (GetCapabilities)",
+   "url_sonde": "https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetCapabilities"
+  },
+  {
+   "code": "CULTURE-DATA",
+   "nom": "culture.data.gouv.fr (Explore v2.1)",
+   "mode": "api",
+   "protocole": "rest",
+   "url_api": "https://culture.data.gouv.fr/api/explore/v2.1/",
+   "site": "",
+   "documentation": "",
+   "cle": "aucune",
+   "variable_cle": "",
+   "nature": "secondaire",
+   "couverture": {
+    "zone": [
+     "FR"
+    ]
+   },
+   "usage": "patrimoine protégé (jeux de données à identifier)",
+   "cgu": "",
+   "quota": "",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-23",
+   "verifie_le": "",
+   "origine": "relevé curl du 2026-11-21 (#285) ; sondage du 2026-11-23 (une requête GET, sans clé)",
+   "releve": "2026-11-21 : 200 (redirection depuis data.culture.gouv.fr) ; 2026-11-23 : 200"
+  },
+  {
+   "code": "GALLICA",
+   "nom": "Gallica (SRU)",
+   "mode": "lien_seulement",
+   "protocole": "sru",
+   "url_api": "https://gallica.bnf.fr/SRU",
+   "site": "https://gallica.bnf.fr/",
+   "documentation": "",
+   "cle": "aucune",
+   "variable_cle": "",
+   "nature": "primaire",
+   "couverture": {
+    "zone": [
+     "FR"
+    ]
+   },
+   "usage": "presse, imprimés (voir #150)",
+   "cgu": "",
+   "quota": "",
+   "protection": "cloudflare",
+   "site_repond_le": "2026-11-23",
+   "verifie_le": "",
+   "origine": "relevé curl du 2026-11-21 (#285) ; sondage du 2026-11-23 (une requête GET, sans clé)",
+   "releve": "2026-11-21 : 403 Cloudflare (exclu par le coupe-circuit jusqu'au 26/11) ; 2026-11-23 : 403",
+   "notes": "Lien seulement tant que le SRU répond 403 : consultation par l'utilisateur, aucun contournement."
+  },
+  {
+   "code": "CHRONICLING-AMERICA",
+   "nom": "Chronicling America (Library of Congress)",
+   "mode": "lien_seulement",
+   "protocole": "rest",
+   "url_api": "https://www.loc.gov/collections/chronicling-america/?fo=json",
+   "site": "https://www.loc.gov/collections/chronicling-america/",
+   "documentation": "",
+   "cle": "aucune",
+   "variable_cle": "",
+   "nature": "primaire",
+   "couverture": {
+    "zone": [
+     "US"
+    ]
+   },
+   "usage": "presse américaine",
+   "cgu": "",
+   "quota": "",
+   "protection": "cloudflare",
+   "site_repond_le": "2026-11-23",
+   "verifie_le": "",
+   "origine": "relevé curl du 2026-11-21 (#285) ; sondage du 2026-11-23 (une requête GET, sans clé)",
+   "releve": "2026-11-21 : 403 Cloudflare ; chroniclingamerica.loc.gov → 308 ; 2026-11-23 : 403",
+   "notes": "Lien seulement tant que le point d'accès répond 403."
+  },
+  {
+   "code": "NARA",
+   "nom": "NARA Catalog (API v2)",
+   "mode": "lien_seulement",
+   "protocole": "rest",
+   "url_api": "https://catalog.archives.gov/api/v2",
+   "site": "https://catalog.archives.gov/",
+   "documentation": "",
+   "cle": "requise",
+   "variable_cle": "GENEALOGISTE_CLE_NARA",
+   "nature": "primaire",
+   "couverture": {
+    "zone": [
+     "US"
+    ]
+   },
+   "usage": "archives fédérales américaines",
+   "cgu": "",
+   "quota": "",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-23",
+   "verifie_le": "",
+   "origine": "relevé curl du 2026-11-21 (#285) ; sondage du 2026-11-23 (une requête GET, sans clé)",
+   "releve": "2026-11-21 : non qualifié ; 2026-11-23 : 200 (racine de l'API, sans clé)",
+   "notes": "Clé x-api-key requise (wiki Services-archives) ; lien seulement tant que l'API n'est pas qualifiée."
+  },
+  {
+   "code": "APE",
+   "nom": "Archives Portal Europe",
+   "mode": "lien_seulement",
+   "protocole": "aucun",
+   "url_api": "",
+   "site": "https://www.archivesportaleurope.net/",
+   "documentation": "",
+   "cle": "requise",
+   "variable_cle": "GENEALOGISTE_CLE_APE",
+   "nature": "primaire",
+   "couverture": {
+    "zone": [
+     "EU"
+    ]
+   },
+   "usage": "archives européennes",
+   "cgu": "",
+   "quota": "",
+   "protection": "cloudflare",
+   "site_repond_le": "2026-11-23",
+   "verifie_le": "",
+   "origine": "relevé curl du 2026-11-21 (#285) ; sondage du 2026-11-23 (une requête GET, sans clé)",
+   "releve": "2026-11-21 : point d'accès essayé en 404 : à qualifier ; 2026-11-23 : 403 sur la page d'accueil (serveur Cloudflare)",
+   "notes": "API à clé ; point d'accès à qualifier : lien seulement."
+  },
+  {
+   "code": "FRANCEARCHIVES",
+   "nom": "FranceArchives",
+   "mode": "lien_seulement",
+   "protocole": "aucun",
+   "url_api": "",
+   "site": "https://francearchives.gouv.fr/",
+   "documentation": "",
+   "cle": "aucune",
+   "variable_cle": "",
+   "nature": "index",
+   "couverture": {
+    "zone": [
+     "FR"
+    ]
+   },
+   "usage": "portail national des archives",
+   "cgu": "",
+   "quota": "",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-23",
+   "verifie_le": "",
+   "origine": "relevé curl du 2026-11-21 (#285) ; sondage du 2026-11-23 (une requête GET, sans clé)",
+   "releve": "2026-11-21 : redirection JavaScript : pas d'API qualifiée ; 2026-11-23 : 200 (page d'accueil)",
+   "notes": "Pas d'API qualifiée : lien seulement."
+  },
+  {
+   "code": "CASSINI-EHESS",
+   "nom": "Des villages de Cassini aux communes d'aujourd'hui (EHESS)",
+   "mode": "lien_seulement",
+   "protocole": "aucun",
+   "url_api": "",
+   "site": "https://cassini.ehess.fr/",
+   "documentation": "",
+   "cle": "aucune",
+   "variable_cle": "",
+   "nature": "secondaire_savante",
+   "couverture": {
+    "zone": [
+     "FR"
+    ],
+    "periode": {
+     "de": 1793,
+     "a": 1999
+    }
+   },
+   "usage": "populations et noms de communes 1793-1999",
+   "cgu": "",
+   "quota": "",
+   "protection": "a_qualifier",
+   "site_repond_le": "",
+   "verifie_le": "",
+   "origine": "relevé curl du 2026-11-21 (#285) ; sondage du 2026-11-23 (une requête GET, sans clé)",
+   "releve": "2026-11-21 : sans réponse (30 s) ; 2026-11-23 : sans réponse (30 s)",
+   "notes": "Accès machine à qualifier (voir #322) : lien seulement."
+  },
+  {
+   "code": "RETRONEWS",
+   "nom": "Retronews",
+   "mode": "lien_seulement",
+   "protocole": "aucun",
+   "url_api": "",
+   "site": "https://www.retronews.fr/",
+   "documentation": "",
+   "cle": "aucune",
+   "variable_cle": "",
+   "nature": "primaire",
+   "couverture": {
+    "zone": [
+     "FR"
+    ]
+   },
+   "usage": "presse (lien seulement)",
+   "cgu": "",
+   "quota": "",
+   "protection": "aucune",
+   "site_repond_le": "2026-11-23",
+   "verifie_le": "",
+   "origine": "relevé curl du 2026-11-21 (#285) ; sondage du 2026-11-23 (une requête GET, sans clé)",
+   "releve": "2026-11-21 : 200 ; pas d'API publique connue ; 2026-11-23 : 200 (page d'accueil)",
+   "notes": "Pas d'API publique connue : lien seulement."
+  }
+ ]
+}

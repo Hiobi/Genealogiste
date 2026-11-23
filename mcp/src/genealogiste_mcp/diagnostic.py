@@ -198,6 +198,8 @@ def controles_locaux(a, probleme: dict | None, config) -> list[dict]:
                     f"{len(recentes)} erreur(s) récente(s)",
                     "Lire les dernières erreurs ci-dessous (outil, cause) ; corriger puis relancer l'outil concerné."
                     if recentes else "", dernieres_erreurs=recentes))
+    if probleme is None:
+        out.append(_controle_services_contexte(config))
     if a is not None:
         out.append(_controle_debit(a))
         out.append(_controle_politique(a))
@@ -213,6 +215,25 @@ def controles_locaux(a, probleme: dict | None, config) -> list[dict]:
                         "Les propositions expirées ne sont plus applicables : elles seront purgées au prochain "
                         "arbre_info ; reformuler celles à garder (arbre_proposer)." if expirees else ""))
     return out
+
+
+def _controle_services_contexte(config) -> dict:
+    """Services de contexte historique (#285) : actifs, interrogeables, motifs, état des clés (« définie » ou
+    « absente », jamais la valeur). Sans réseau."""
+    from .contexte import services
+
+    d = services.description(config)
+    detail = (f"{len(d['interrogeables'])} interrogeable(s) sur {len(services.codes())} "
+              f"({d['selection']}) ; clés : " + ", ".join(f"{v} {e}" for v, e in d["cles"].items()))
+    remedes = []
+    requises = [c for c, m in d["non_interrogeables"].items() if "clé d'API requise absente" in m]
+    if requises:
+        remedes.append(f"Service(s) activé(s) sans leur clé requise ({', '.join(requises)}) : aucune requête n'est "
+                       "émise ; définir la clé dans <données>/.env ou les retirer de GENEALOGISTE_CONTEXTE_SERVICES.")
+    if d["cles_sans_activation"]:
+        remedes.append(f"Clé définie pour un service non activé ({', '.join(d['cles_sans_activation'])}) : "
+                       "l'ajouter à GENEALOGISTE_CONTEXTE_SERVICES (ex. « defaut,EUROPEANA »).")
+    return _ctl("services_contexte", "attention" if remedes else "ok", detail, " ".join(remedes), **d)
 
 
 def _controle_debit(a) -> dict:
