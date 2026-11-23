@@ -4,12 +4,15 @@
 Services de contexte : une requête par service, sans clé ni paramètre (aucune donnée personnelle) ; un service en
 lien seulement, protégé ou à clé requise rend AVERT (jamais KO), sans contournement.
 
-Usage : uv run python scripts/verifier_archives.py
+Usage : uv run python scripts/verifier_archives.py [--contexte-seulement]
+``--contexte-seulement`` (#323) ne sonde que les services de contexte (rapport daté docs/releves-contexte-*.md) :
+les sites d'archives et les sites tiers ne sont pas interrogés.
 Rapport seulement : ``verifie_le`` atteste une vérification humaine de l'entrée et n'est jamais modifié ici.
 """
 
 from __future__ import annotations
 
+import argparse
 import sys
 
 import httpx
@@ -72,14 +75,18 @@ def sonder_contexte(client: httpx.Client, s: dict) -> tuple[str, str, str]:
     return verdict, detail, url
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description="Sonde les sites des référentiels (HEAD, corps jamais lu).")
+    ap.add_argument("--contexte-seulement", action="store_true",
+                    help="ne sonder que les services de contexte historique (référentiel sources_contexte.json)")
+    args = ap.parse_args([] if argv is None else argv)
     errs = (archives.validate() + [f"sites_tiers : {e}" for e in sites_tiers.validate()]
             + [f"sources_contexte : {e}" for e in services_contexte.validate()])
     for e in errs:
         print(f"FORMAT  {e}")
     bad = 0
     with httpx.Client(timeout=15, follow_redirects=True, headers={"User-Agent": UA}) as client:
-        for s in archives.services():
+        for s in () if args.contexte_seulement else archives.services():
             for field in ("site", "visionneuse", "demande_a_distance"):
                 url = s.get(field)
                 if not url:
@@ -89,7 +96,7 @@ def main() -> int:
                 print(f"{verdict:<6}  {s['code']:<16} {field:<18} {detail}  {url}")
             if w := archives.staleness(s):
                 print(f"VIEUX   {w}")
-        for s in sites_tiers.sites():  # protection relevée signalée, jamais contournée
+        for s in () if args.contexte_seulement else sites_tiers.sites():  # protection relevée signalée, jamais contournée
             verdict, detail = sonder(client, s["url"])
             if verdict == "OK" and s.get("protection") not in (None, "aucune"):
                 verdict, detail = "AVERT", f"{detail}, protection relevée : {s['protection']}"
@@ -103,4 +110,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv[1:]))

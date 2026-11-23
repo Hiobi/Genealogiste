@@ -112,6 +112,7 @@ class App:
                                exclusion_ttl=self.config.exclusion_antirobot,
                                plafond=PlafondJour(self.cache, politique=politique),
                                ralentissement_max=self.config.ralentissement_max,
+                               masque=lambda texte: services_contexte.masquer_cles(texte, self.config),
                                **kw)
         self.store = TreeStore(self.config.data_dir, self.config.git_remote, self.config.git_delai)
         self.store.ensure()

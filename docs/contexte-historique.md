@@ -232,7 +232,7 @@ l'analyseur précise notice par notice.
 | `INSEE-MELODI` | INSEE Melodi | rest | aucune | primaire | FR, 1968-2023 | actif par défaut | 2026-11-21 : 200 (163 jeux) ; 2026-11-23 : 200 ; `DS_POPULATIONS_HISTORIQUES` 1968-2023 seulement |
 | `IGN-GEOPLATEFORME` | Géoplateforme IGN (WMTS) | wmts | aucune | primaire | FR | actif par défaut | 2026-11-21 : 200 ; 2026-11-23 : 200 ; couches Cassini, état-major, SCAN50 1950, orthophotos 1950-1965 |
 | `CULTURE-DATA` | culture.data.gouv.fr (Explore v2.1) | rest | aucune | secondaire | FR | actif par défaut | 2026-11-21 : 200 ; 2026-11-23 : 200 ; jeux de données à identifier |
-| `GALLICA` | Gallica (SRU) | sru | aucune | primaire | FR | lien seulement | 2026-11-21 : 403 Cloudflare ; 2026-11-23 : 403 (voir #150) |
+| `GALLICA` | Gallica (SRU) | sru | aucune | primaire | FR | lien seulement (sauf `presse_recherche`, qui l'interroge par le client Gallica existant, soumis au coupe-circuit) | 2026-11-21 : 403 Cloudflare ; 2026-11-23 : 403 (voir #150) |
 | `CHRONICLING-AMERICA` | Chronicling America (Library of Congress) | rest | aucune | primaire | US | lien seulement | 2026-11-21 : 403 Cloudflare ; 2026-11-23 : 403 |
 | `NARA` | NARA Catalog (API v2) | rest | requise | primaire | US | lien seulement | 2026-11-21 : non qualifié ; 2026-11-23 : 200 à la racine de l'API, sans clé |
 | `APE` | Archives Portal Europe | aucun | requise | primaire | EU | lien seulement | 2026-11-21 : point d'accès en 404, à qualifier ; 2026-11-23 : 403 sur la page d'accueil (serveur Cloudflare) |
@@ -294,8 +294,103 @@ n'indiquent que « définie » ou « absente » (test `test_cles_jamais_renvoyee
   clé est définie pour un service non activé.
 - **Sondage** : `make verifier-archives` valide le référentiel et sonde chaque service sur `url_sonde`, sinon
   son point d'accès ou son site (HEAD, repli GET sans lecture du corps, sans clé) : `OK`, `AVERT` (service en lien seulement, protégé ou à clé requise) ou `KO`
-  (service actif par défaut qui ne répond pas). Le référentiel n'est jamais modifié par le sondage ; le rapport
-  daté et les réponses enregistrées relèvent de #323.
+  (service actif par défaut qui ne répond pas). Le référentiel n'est jamais modifié par le sondage ;
+  `scripts/verifier_archives.py --contexte-seulement` ne sonde que les services de contexte (rapport daté :
+  [releves-contexte-2026-11-23.md](releves-contexte-2026-11-23.md)).
+
+
+### Recette et réponses enregistrées
+
+<!-- #323 -->
+
+Les tests de `make test` n'émettent aucune requête : chaque protocole est testé sur une **réponse réelle
+enregistrée** (réduite au strict nécessaire) sous `mcp/tests/fixtures/contexte/reponses/<service>/`. Trois outils
+distincts, tous hors CI, mesurent la dérive des services :
+
+| Outil | Commande | Rôle | Écrit |
+|---|---|---|---|
+| Sondage | `make verifier-archives` (`scripts/verifier_archives.py --contexte-seulement` pour le seul contexte) | le service répond-il ? | rien |
+| Rejeu | `make enregistrer-contexte` (`--verifier`), `make enregistrer-contexte ECRIRE=1` (`--ecrire`) ; `SERVICE="HAL SUDOC"` pour restreindre | la réponse réduite a-t-elle encore la forme enregistrée ? | rien, sauf `--ecrire` |
+| Recette de contrat | `make test-contexte` (marqueur `contexte_live`, `GENEALOGISTE_TEST_CONTEXTE=1`) | l'analyseur lit-il la réponse réelle d'aujourd'hui ? | rien |
+
+**Manifeste unifié.** Chaque dossier porte un `MANIFESTE.json` de même forme, vérifié pour tous les dossiers par
+`tests/test_contexte_reponses.py` :
+
+```json
+{
+  "service": "HAL",
+  "objet": "ce que la réponse sert à tester (outil, issue)",
+  "enregistre_par": "#286",
+  "reponses": [
+    {
+      "fichier": "courrieres-mines.json",
+      "url": "https://api.archives-ouvertes.fr/search/?q=…",
+      "methode": "GET",
+      "date": "2026-11-23T10:15:17Z",
+      "statut": 200,
+      "type": "application/json; charset=utf-8",
+      "octets_origine": 4342,
+      "reduction": "aucune (JSON réindenté)",
+      "empreinte": "sha256:…",
+      "client": "httpx, User-Agent générique, sans clé ni mailto"
+    }
+  ]
+}
+```
+
+| Champ | Règle |
+|---|---|
+| `service` | nom du dossier en majuscules (code du référentiel ; `API-GEO` et `COG-INSEE` : services de `sources/geo.py`, hors référentiel) |
+| `objet` | obligatoire ; facultatifs : `enregistre_par`, `commune_temoin`, `non_verifie` |
+| `fichier` | fichier de la réponse réduite, décrit une seule fois ; tout fichier du dossier est décrit ; `null` si le corps n'est pas conservé (alors `empreinte: null`, `reduction: "corps non conservé"`) |
+| `url` | URL https **sans clé, jeton ni adresse courriel** (`mailto`), sans nom de personne : lieux, périodes et sujets seulement |
+| `methode`, `date`, `statut`, `type` | GET ; date ISO (`AAAA-MM-JJ` ou `AAAA-MM-JJThh:mm:ssZ`) ; statut HTTP entier ; `Content-Type` reçu |
+| `reduction` | ce qui a été retiré (clés, lignes, éléments, couches) ; `aucune` si rien ; la réduction est reproduite par `REDUCTIONS` dans `enregistrer_contexte.py` |
+| `empreinte` | `sha256:` du fichier tel qu'enregistré (vérifiée par le test) |
+| `client` | client et en-têtes utilisés, sans identifiant d'authentification |
+| facultatifs | `octets_origine` (taille avant réduction), `resultat`, `duree_s`, `note`, `rejouable: false` (extrait fait à la main, jamais rejoué) |
+
+Les réponses n'ont jamais été modifiées par l'harmonisation : seuls les manifestes l'ont été (`statut_http` devient
+`statut`, `content_type` devient `type`, `octets` devient `octets_origine`, ajout de `methode`, `client` par réponse et
+`empreinte`). Une réponse enregistrée en 403 (page de blocage réduite à la main : ni adresse IP ni identifiant de
+requête) n'est jamais rejouée.
+
+**Enregistrement** (`mcp/scripts/enregistrer_contexte.py`, réseau réel, hors CI). Rejoue chaque requête décrite par
+un manifeste (une tentative, 5 s entre deux requêtes vers un hôte, aucun contournement), applique la réduction
+déclarée et compare la **forme** (chemins des clés JSON, des éléments XML, en-tête CSV) à celle de la réponse
+enregistrée. Verdicts : `OK`, `DERIVE` (un champ enregistré a disparu : le service a changé, relire l'analyseur),
+`AVERT` (403, 429, défi anti-robot, 5xx ou silence : consigné, service laissé de côté pour la suite), `IGNORE`
+(non rejoué). Par défaut `--verifier` n'écrit rien ; `--ecrire` réécrit les réponses réduites et les manifestes des
+requêtes qui ont répondu 200, puis le diff est relu avant commit. Une URL contenant une clé, un `mailto` ou un nom
+des cas témoins n'est jamais émise. Testé sans réseau (`tests/test_enregistrer_contexte.py`, respx).
+
+**Recette de contrat** (`tests/test_contexte_live.py`, `make test-contexte`). Une à deux requêtes par service qui a
+un analyseur : les six gabarits de `contexte_bibliographie`, l'OAI-PMH de Persée, les cinq services de
+`lieu_historique` (COG INSEE, API Géo, Wikidata, Melodi, Géoplateforme, par un seul appel de l'outil) et Gallica par
+`presse_recherche`. Elle vérifie la **forme** que lit l'analyseur (conteneur de la réponse, titre lu sur au moins une
+notice, observations, couches), jamais le contenu. Un service protégé, limité, muet ou en panne rend **AVERT** (test
+ignoré avec le motif, `-rs`), pas un échec ; seule une réponse reçue mais illisible par l'analyseur échoue. Débit,
+coupe-circuit, plafonds et cache du plugin sont ceux du client commun. Ignorée sans `GENEALOGISTE_TEST_CONTEXTE=1` :
+`make test` et la CI ne l'exécutent jamais. Voir [integration-continue.md](integration-continue.md).
+
+**Règle : aucun analyseur sans réponse réelle enregistrée.** `test_aucun_analyseur_sans_reponse_reelle_enregistree`
+dérive du code la liste des services qu'un outil interroge avec un analyseur (gabarits, services de
+`lieu_historique`, services de `presse_recherche` hors repli) et exige pour chacun un dossier avec manifeste et au
+moins une réponse 2xx. Exception nommée et motivée : **GALLICA** (analyseur SRU et recherche dans le document du
+client existant, antérieurs à #323, testés sur une fixture au format du parseur ; le SRU répond 403 Cloudflare et
+ContentSearch n'a jamais été joint). Le test exige que l'exception reste nécessaire : elle disparaît dès qu'une
+réponse 200 réelle est enregistrée. Europeana n'a pas d'analyseur (aucune clé), donc pas d'exception.
+
+**Courriels dans les réponses.** Le test refuse toute adresse courriel dans les réponses, sauf trois adresses
+institutionnelles de réponses réelles laissées telles quelles (contact du `GetCapabilities` de la Géoplateforme,
+contacts de revues dans la réponse d'Isidore), nommées dans le test.
+
+**Fuite de `mailto` et de clés.** Le cache d'échecs du client HTTP, la table des défis anti-robot et les messages
+d'erreur ne gardent plus l'URL brute : `HttpClient` masque les secrets (`masque`, branché sur
+`services.masquer_cles` par `App`) avant tout message portant une URL (404, défi anti-robot). Constaté par
+`tests/test_contexte_fuites.py` : une 404 ou un défi Cloudflare, avec un `mailto` Crossref configuré, laissaient
+l'adresse encodée dans le cache d'échecs avant ce correctif ; 403 et 429 n'en portaient pas. Le test lit le cache
+SQLite complet, le journal, les données et la sortie de l'outil.
 
 ## Outils
 
@@ -407,9 +502,15 @@ Limites : la fenêtre ne voit que l'arbre ; elle ne déduit aucune date d'un con
 | Chronicling America | lien seulement (403 Cloudflare, une tentative le 2026-11-23) | page de la collection |
 | Retronews | lien seulement (pas d'API publique) | recherche avancée pré-remplie (`/search?…&q=` : base64 du JSON encodé, forme relevée sur le site) ; période à régler dans le site |
 
-Gallica figure en `lien_seulement` dans le référentiel de contexte (SRU en 403) : `presse_recherche` ne l'ouvre pas
-pour autant à un nouvel accès, il passe par le même client que `gallica_recherche`, et un blocage est rendu tel
-quel. Réponses réelles réduites et manifestes : `mcp/tests/fixtures/contexte/reponses/<code>/MANIFESTE.json`.
+Gallica figure en `lien_seulement` dans le référentiel de contexte (SRU en 403) : c'est le mode des services de
+contexte (`contexte_bibliographie`, `lieu_historique`), pour lesquels `services.refus` répond « lien seulement ».
+`presse_recherche` n'ouvre pas pour autant un nouvel accès : il passe par le même client que `gallica_recherche`
+(`sources/gallica.py`), sans appeler `services.refus("GALLICA")`, avec le coupe-circuit et les plafonds du client
+commun, et un blocage est rendu tel quel. Le référentiel le dit dans la `notes` de l'entrée (#323) ; son mode ne
+change pas, et `services.refus` non plus (son motif « jamais interrogé par le plugin » reste vrai pour ces autres
+outils seulement). Réponses réelles réduites et manifestes :
+`mcp/tests/fixtures/contexte/reponses/<code>/MANIFESTE.json` (forme unifiée, voir « Recette et réponses
+enregistrées »).
 
 ### contexte_bibliographie
 

@@ -120,14 +120,15 @@ def test_gabarits_wikidata_livres_ont_une_reponse_enregistree():
     for r in manifeste["reponses"]:
         assert (WIKIDATA / r["fichier"]).is_file() and r["statut"] == 200, r
         assert srv.url_autorisee("WIKIDATA", r["url"].split("?")[0] + "?x=1")
-        if r.get("gabarit"):
+        if r["fichier"].startswith("evenements_"):
             contenu = (WIKIDATA / r["fichier"]).read_bytes()
             assert r["empreinte"] == "sha256:" + hashlib.sha256(contenu).hexdigest()
     for code, de, a in (("62133", 1881, 1946), ("62250", 1881, 1946), ("80080", 1892, 1916)):
         assert gabarit.requete(code, de, a) in enregistrees, code  # requête livrée = requête enregistrée
-    assert set(wdi.GABARITS) == {r["gabarit"] for r in manifeste["reponses"] if r.get("gabarit")}
+    assert set(wdi.GABARITS) == {r["fichier"].split("_P374_")[0] for r in manifeste["reponses"]
+                                 if r["fichier"].startswith("evenements_")}
     assert not set(wdi.NON_LIVRES) & set(wdi.GABARITS)  # un gabarit sans réponse n'est pas livré
-    assert all("délai dépassé" in x["resultat"] for x in manifeste["sans_reponse"])
+    assert manifeste["non_verifie"].count("délai dépassé") == 2  # deux formes essayées, aucune livrée
 
 
 def test_gabarit_leger_borne_et_sans_rayon():

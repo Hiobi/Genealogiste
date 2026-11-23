@@ -1,18 +1,21 @@
 {
   "service": "EUROPEANA",
+  "objet": "Europeana pour presse_recherche (#288) : site public (lien de consultation), pas l'API",
   "enregistre_par": "#288 (presse_recherche)",
-  "client": "curl, User-Agent générique, sans clé ni cookie",
   "reponses": [
     {
       "fichier": "site-recherche-200.html",
       "url": "https://www.europeana.eu/fr/search?query=gr%C3%A8ve%20Courri%C3%A8res",
       "methode": "GET",
-      "date": "2026-11-23T10:12:29+00:00",
+      "date": "2026-11-23T10:12:29Z",
       "statut": 200,
       "type": "text/html; charset=utf-8",
+      "reduction": "extrait manuel",
+      "empreinte": "sha256:89df02316ef6628234f3b7bcf8bb9a7c40488e60d43e73aa0c9d4bbfc3ca3de7",
+      "client": "curl, User-Agent générique, sans clé ni cookie",
       "resultat": "page de recherche du site public ; la requête est reprise dans le titre et og:url",
-      "note": "Site public (lien de consultation), pas l'API. Aucune requête à l'API Search : GENEALOGISTE_CLE_EUROPEANA absente lors de l'enregistrement, aucun analyseur livré, clé de démonstration non utilisée.",
-      "empreinte": "sha256:89df02316ef6628234f3b7bcf8bb9a7c40488e60d43e73aa0c9d4bbfc3ca3de7"
+      "rejouable": false,
+      "note": "Site public (lien de consultation), pas l'API. Aucune requête à l'API Search : GENEALOGISTE_CLE_EUROPEANA absente lors de l'enregistrement, aucun analyseur livré, clé de démonstration non utilisée."
     }
   ]
 }

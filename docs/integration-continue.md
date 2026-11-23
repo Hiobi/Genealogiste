@@ -64,6 +64,28 @@ rien : il publie le fichier en artefact ; le mettre à jour dans le dépôt rest
 Lancer la même recette depuis le VPS (`make test-archives ECRIRE=0`) distingue « site changé » (`echec`
 partout) de « adresse bloquée » (`protection` depuis le VPS, `ok` ailleurs).
 
+## Recette des services de contexte (#323)
+
+`make test-contexte` lance `tests/test_contexte_live.py` (marqueur `contexte_live`,
+`GENEALOGISTE_TEST_CONTEXTE=1`) : une à deux requêtes par service de contexte historique qui a un analyseur, forme
+de la réponse seulement. **Hors CI par défaut** : aucun workflow ne la lance, `make test` l'ignore (test ignoré
+sans la variable), comme `gramps_live`. Un service protégé, limité ou muet rend AVERT (test ignoré avec le motif,
+visible avec `-rs`), jamais un échec ; seule une réponse illisible par l'analyseur échoue.
+
+À lancer à la main, rarement : les services publics sont fragiles (le relevé du 2026-11-23 a vu Wikidata passer
+en 429 après trois exécutions en cinq minutes). Débit, coupe-circuit anti-robot et plafonds du plugin s'appliquent.
+
+Deux outils complètent la recette, eux aussi hors CI :
+
+- `make enregistrer-contexte` rejoue les requêtes décrites par les manifestes de
+  `mcp/tests/fixtures/contexte/reponses/` et compare la forme (rien d'écrit) ; `make enregistrer-contexte ECRIRE=1`
+  réécrit les réponses réduites et les manifestes, à relire avant commit ;
+- `uv --directory mcp run python scripts/verifier_archives.py --contexte-seulement` sonde les seuls services de
+  contexte.
+
+Format des manifestes, règles et exception de Gallica : [contexte-historique.md](contexte-historique.md),
+« Recette et réponses enregistrées » ; rapport daté : [releves-contexte-2026-11-23.md](releves-contexte-2026-11-23.md).
+
 ## Reproduire localement
 
 Depuis la racine, avec Python, uv, Git et la CLI Claude installés :

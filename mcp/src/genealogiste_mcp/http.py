@@ -158,10 +158,14 @@ class HttpClient:
         ralentissement_max: float = 60.0,
         politique=None,
         exclusion_ttl: float = 0.0,
+        masque: Callable[[str], str] | None = None,
     ):
         from .politique_acces import PolitiqueAcces
 
         self.cache = cache
+        # Masquage des secrets (clés d'API, mailto) dans toute URL qui entre dans un message d'erreur, donc dans le
+        # cache d'échecs, la table des défis anti-robot et les sorties (#323). Identité par défaut.
+        self.masque = masque or (lambda texte: texte)
         self.exclusion_ttl = exclusion_ttl  # exclusion (s) d'un hôte dont le défi persiste ; 0 = pause seule
         self.plafond = plafond  # budget.PlafondJour : plafond journalier par hôte, selon la politique d'accès (#211)
         self.hotes_contactes: list[str] = []  # relevé par le journal d'exploitation, remis à zéro par appel
@@ -449,7 +453,7 @@ class HttpClient:
                 resp.close()  # disponibilité : ne jamais consommer le corps
             protection = _protection(resp)
             if protection:
-                url_blocage = str(resp.url)
+                url_blocage = self.masque(str(resp.url))
                 hote_blocage = urlparse(url_blocage).netloc
                 obs = self._observer_defi(hote_blocage, protection, url_blocage, resp.status_code)
                 exclu = obs.get("exclu_jusqu_a") if obs.get("recidive") else None
@@ -479,7 +483,7 @@ class HttpClient:
             if resp.status_code in (401, 403):
                 raise SourceError(f"{host} : accès refusé (HTTP {resp.status_code}) — identifiants requis ?", resp.status_code)
             if resp.status_code == 404:
-                raise SourceError(f"{host} : ressource introuvable (404) : {resp.url}", 404)
+                raise SourceError(f"{host} : ressource introuvable (404) : {self.masque(str(resp.url))}", 404)
             if resp.status_code >= 400:
                 detail = "" if parse == "status" else resp.text[:300]
                 raise SourceError(f"{host} : HTTP {resp.status_code} : {detail}", resp.status_code)

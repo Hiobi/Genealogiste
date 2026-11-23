@@ -38,7 +38,8 @@ packages = ["src/genealogiste_mcp"]
 testpaths = ["tests"]
 addopts = "-q"
 markers = ["gramps_live: intégration sur un Gramps Web jetable (make test-gramps)",
-           "archives_live: recette de contrat contre les services d'archives réels (make test-archives)"]
+           "archives_live: recette de contrat contre les services d'archives réels (make test-archives)",
+           "contexte_live: recette de contrat contre les services de contexte historique réels (make test-contexte)"]
 
 [tool.ruff]
 line-length = 110

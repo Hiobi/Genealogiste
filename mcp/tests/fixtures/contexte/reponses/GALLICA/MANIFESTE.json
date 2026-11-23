@@ -1,18 +1,20 @@
 {
   "service": "GALLICA",
+  "objet": "Gallica pour presse_recherche (#288) : blocage Cloudflare du SRU, analyseur de sources/gallica.py non modifié",
   "enregistre_par": "#288 (presse_recherche)",
-  "client": "curl, User-Agent générique, sans clé ni cookie",
   "reponses": [
     {
       "fichier": "sru-403-cloudflare.html",
       "url": "https://gallica.bnf.fr/SRU?operation=searchRetrieve&version=1.2&query=gallica%20all%20%22gr%C3%A8ve%22%20and%20dc.type%20all%20%22fascicule%22&maximumRecords=3",
       "methode": "GET",
-      "date": "2026-11-23T10:11:41+00:00",
+      "date": "2026-11-23T10:11:41Z",
       "statut": 403,
       "type": "text/html; charset=UTF-8",
+      "reduction": "extrait manuel",
+      "empreinte": "sha256:1f893849683b5d0c5883ea6e1723691db861ccee83d6eb92ecdd0cba17bf5538",
+      "client": "curl, User-Agent générique, sans clé ni cookie",
       "resultat": "blocage Cloudflare (Attention Required, cf-error-details)",
-      "note": "Réponse réduite au strict nécessaire : ni adresse IP, ni identifiant de requête (Ray ID), ni en-tête. Une seule tentative, sans contournement. Analyseur SRU : celui de sources/gallica.py (fixture tests/fixtures/api/gallica_sru.xml), non modifié. Lien de recherche Gallica non vérifié (site bloqué) : la tâche manuelle renvoie à la page d'accueil.",
-      "empreinte": "sha256:1f893849683b5d0c5883ea6e1723691db861ccee83d6eb92ecdd0cba17bf5538"
+      "note": "Réponse réduite au strict nécessaire : ni adresse IP, ni identifiant de requête (Ray ID), ni en-tête. Une seule tentative, sans contournement. Analyseur SRU : celui de sources/gallica.py (fixture tests/fixtures/api/gallica_sru.xml), non modifié. Lien de recherche Gallica non vérifié (site bloqué) : la tâche manuelle renvoie à la page d'accueil."
     }
   ]
 }
