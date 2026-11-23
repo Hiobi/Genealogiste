@@ -16,6 +16,7 @@ Pour savoir quelles images le plugin peut résoudre et télécharger, voir le
 | `archives_service(lieu \| departement \| code, document, annee)` | fiche du service ; `en_ligne_pour_la_demande` : `true`, `false` ou `null` (inconnu) |
 | `communicabilite(…, lieu, personne)` | distingue **communicable** et **en ligne** ; si l'acte n'est pas connu en ligne : conseil (mairie, AD, demande à distance) et modèle de courrier ; si non communicable : dérogation |
 | `cotes_a_consulter` | nom réel du service et fiche (`service_archives`) au lieu de « AD » |
+| Pays du lieu (#283) | `archives_service(lieu=…)`, `communicabilite(…, lieu)`, `cotes_a_consulter`, `prochaine_source` et la fiche renvoient le pays et sa provenance ; hors de France, aucun service ni série d'AD (renvoi générique, piste de transcription) ; pays inconnu : séries d'AD « si le lieu est en France » ([contexte-historique.md](contexte-historique.md#pays-du-lieu)) |
 | `liens_recherche` | lien direct vers le site ou la visionneuse des AD du lieu ; sites tiers du département ([sites-tiers.md](sites-tiers.md)) |
 | `sources_catalogue` | liste filtrable de tout ce que le plugin connaît : ce référentiel, les [sites tiers](sites-tiers.md) et les API |
 | `ark_resoudre` | les NAAN du référentiel complètent la table ARK |

@@ -256,7 +256,7 @@ def assess_person(tree: Tree, pid: str, strict: bool = False) -> list[dict]:
         if e.associations:
             fact["associations"] = [a.libelle() for a in e.associations]
         if r["statut"] not in ("confirme", "refute"):
-            fact["prochaine_source"] = next_source_hint(e.type, e.date, e.lieu.nom if e.lieu else "")
+            fact["prochaine_source"] = next_source_hint(e.type, e.date, e.lieu or "")
         facts.append(fact)
     for fam, link in tree.parents(pid):
         r = assess_citations(link.citations, tree, strict)
@@ -277,6 +277,6 @@ def assess_person(tree: Tree, pid: str, strict: bool = False) -> list[dict]:
             if e.associations:
                 fact["associations"] = [a.libelle() for a in e.associations]
             if r["statut"] not in ("confirme", "refute"):
-                fact["prochaine_source"] = next_source_hint(e.type, e.date, e.lieu.nom if e.lieu else "")
+                fact["prochaine_source"] = next_source_hint(e.type, e.date, e.lieu or "")
             facts.append(fact)
     return facts
