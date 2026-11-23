@@ -84,6 +84,9 @@ HOTES_OUTILS = {
     "contexte_local": {"www.insee.fr", "geo.api.gouv.fr", "api.insee.fr", "data.geopf.fr", "query.wikidata.org",
                        "api.archives-ouvertes.fr", "api.isidore.science", "www.sudoc.abes.fr", "catalogue.bnf.fr",
                        "theses.fr", "api.crossref.org", "gallica.bnf.fr"},
+    "pistes_contexte": {"www.insee.fr", "geo.api.gouv.fr", "api.insee.fr", "data.geopf.fr", "query.wikidata.org",
+                        "api.archives-ouvertes.fr", "api.isidore.science", "www.sudoc.abes.fr", "catalogue.bnf.fr",
+                        "theses.fr", "api.crossref.org", "gallica.bnf.fr"},
     **{f"wikitree_{n}": {"api.wikitree.com"} for n in ("ascendants", "descendants", "personne", "profil",
                                                         "recherche")},
 }

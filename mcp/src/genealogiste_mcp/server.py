@@ -39,6 +39,7 @@ from .config import Config, load_config
 from .contexte import bibliographie as biblio_contexte
 from .contexte import lieux as lieux_contexte
 from .contexte import local as contexte_local_mod
+from .contexte import pistes as pistes_contexte_mod
 from .contexte import presse
 from .contexte import services as services_contexte
 from .contexte.registre import RegistreReferences
@@ -747,6 +748,31 @@ def contexte_local(personne: str = "", lieu: str = "", periode: str = "", echell
     try:
         return contexte_local_mod.contexte_local(a.sctx, a.registre_references, tree, personne, lieu, periode,
                                                  echelles, themes, a.config.contexte_style_citation, residus)
+    except contexte_local_mod.ContexteInvalide as exc:
+        return {"erreur": str(exc), "requetes_emises": 0}
+
+
+@mcp.tool()
+def pistes_contexte(personne: str = "", lieu: str = "", periode: str = "", echelles: str = "",
+                    themes: str = "") -> dict:
+    """Pistes de recherche réfutables (#290) : le contexte oriente une recherche, il ne conclut jamais. Combine
+    les faits sourcés de l'arbre (fenêtre de départ, métier attesté), les éléments de contexte_local (mêmes
+    arguments) et les chaînes de sources. Règles fermées et documentées, aucun intitulé libre : piste « départ
+    entre A et B » (fenêtre de départ), « même profession après l'arrivée » (métier attesté + premier fait à
+    l'étranger), « élément de contexte sourcé » (reprend l'énoncé de l'élément, statut contexte_seul, plafonné à
+    hypothèse). Chaque piste : hypothese, fondements (faits de l'arbre avec uid et statut de preuve ; éléments
+    avec leur source), test (sources qui confirment ou réfutent, avec avertissements), cout (en_ligne ou
+    a_determiner), statut (a_tester | confirmee | refutee | contexte_seul ; confirmee seulement par un fait sourcé
+    de l'arbre). Rien n'est écrit : depot donne les paramètres d'enquete_noter et, pour une piste à tester, le
+    chemin vers la file comme tâche ; une piste contexte_seul n'y va jamais."""
+    if refus := _garde(personne=personne, texte=themes) or _garde(texte=lieu):
+        return refus
+    a = app()
+    tree = a.tree() if personne else None
+    residus = (lambda url: residus_identite(url, tree, personne)) if personne else None
+    try:
+        return pistes_contexte_mod.pistes_contexte(a.sctx, a.registre_references, tree, personne, lieu, periode,
+                                                   echelles, themes, a.config.contexte_style_citation, residus)
     except contexte_local_mod.ContexteInvalide as exc:
         return {"erreur": str(exc), "requetes_emises": 0}
 
