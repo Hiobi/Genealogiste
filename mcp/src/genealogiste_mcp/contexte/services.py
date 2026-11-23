@@ -21,11 +21,12 @@ Format et règles : docs/contexte-historique.md, « Services de contexte ».
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import asdict, dataclass
 from datetime import date
 from functools import lru_cache
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import quote, quote_plus, urlsplit
 
 from .modeles import NATURES
 
@@ -237,11 +238,13 @@ def mailto(config) -> str:
 
 
 def masquer_cles(texte: str, config) -> str:
-    """Texte (URL, message d'erreur) dont toute clé d'API et l'adresse mailto sont remplacées par ``***``."""
+    """Texte (URL, message d'erreur) dont toute clé d'API et l'adresse mailto sont remplacées par ``***``, sous
+    leur forme brute comme encodée dans une URL (``%40``, minuscules comprises)."""
     out = texte or ""
     secrets = [*(getattr(config, "cles_contexte", None) or {}).values(), mailto(config)]
-    for v in sorted({x for x in secrets if x}, key=len, reverse=True):
-        out = out.replace(v, MASQUE)
+    formes = {f for x in secrets if x for f in (x, quote(x, safe=""), quote_plus(x, safe=""))}  # brute et encodée
+    for v in sorted(formes, key=len, reverse=True):
+        out = re.sub(re.escape(v), MASQUE, out, flags=re.I) if "%" in v else out.replace(v, MASQUE)
     return out
 
 

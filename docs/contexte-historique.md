@@ -301,6 +301,89 @@ n'indiquent que « définie » ou « absente » (test `test_cles_jamais_renvoyee
 
 <!-- #286 à #290 -->
 
+### contexte_bibliographie
+
+<!-- #286 -->
+
+Littérature historique (monographie communale, histoire industrielle ou régionale, thèse, article savant) sur un
+lieu, une période et un thème, citée et inscrite au registre des références consultées. Classe de permission
+`collecte` ; budget d'enquête (`enquete=<id>`) et « déjà fait » comme les autres outils de collecte.
+
+```
+contexte_bibliographie(sujet="", lieu="", periode="", echelle="commune", services=None, personne="", limite=10)
+```
+
+| Argument | Rôle |
+|---|---|
+| `sujet` | thème libre (« mines », « émigration ») ; texte libre : passe par la garde des vivants |
+| `lieu` | commune, département ou région, tel qu'envoyé aux services |
+| `periode` | `AAAA` ou `AAAA-AAAA` : sert au **classement**, jamais de filtre sur la date de publication |
+| `echelle` | `commune`, `departement`, `region`, `pays` (région naturelle), `nation` : choisit les lieux d'une personne |
+| `services` | codes du référentiel ; défaut : services bibliographiques actifs |
+| `personne` | id de l'arbre : garde des vivants, puis lieux (trois au plus), période de vie et premier métier lus dans ses faits **sourcés** (`requete.depuis_personne`) complètent les arguments absents |
+| `limite` | notices demandées par service (25 au plus) |
+
+**Services livrés** (un gabarit par service dans `contexte/gabarits.py`, analyseur d'après une réponse réelle
+enregistrée sous `mcp/tests/fixtures/contexte/reponses/<service>/` avec son `MANIFESTE.json`) :
+
+| Code | Protocole | Requête | Lecture |
+|---|---|---|---|
+| `HAL` | Solr | `("lieu" OR …) AND (mots du sujet)`, types de dépôt textuels | DOI sinon identifiant HAL ; évaluation par les pairs (`peerReviewing_s`) ; thèse ou article évalué : savante |
+| `ISIDORE` | REST | lieu principal et sujet | DOI sinon Handle ; titre d'origine, auteurs tels que donnés |
+| `SUDOC` | SRU (UNIMARC) | `tou="lieu" … and tou=mot` | PPN ; documents non textuels (cartes, images) écartés ; thèse (zone 328) : savante |
+| `BNF-CATALOGUE` | SRU (Dublin Core) | `bib.anywhere all` | ARK ; documents non textuels écartés |
+| `THESES-FR` | REST | lieu principal et sujet | DOI ; thèse sans DOI ou non soutenue écartée (motif et lien theses.fr) |
+| `CROSSREF` | REST | `query.bibliographic`, types article, chapitre, livre, thèse | DOI ; `mailto` envoyé seulement s'il est renseigné |
+
+Non livrés : `OPENALEX`, `IDREF`, `NAKALA`, `CULTURE-DATA` (pas de gabarit bibliographique) ; `PERSEE` et
+`OPENEDITION` (OAI-PMH : pas de recherche, l'analyseur `protocoles/oai.py` lit une notice dont l'identifiant est
+connu) ; `WIKIPEDIA` (jamais source de cet outil) ; services en lien seulement ou protégés. Demandés, ils sont
+listés dans `services_ecartes` avec leur motif, sans requête.
+
+**Traitement.** Pour chaque service : `services.refus` (inconnu, lien seulement, protection, désactivé, clé
+absente, hors ligne) puis contrôle de l'hôte (`url_autorisee`) ; avec `personne`, une URL qui contiendrait un
+élément de son identité (`residus_identite`) n'est pas émise. Chaque notice devient une `Reference` (format commun,
+`lu: notice_seule`) ; une notice sans identifiant pérenne lisible, non textuelle, ou dont ni le lieu ni le sujet ne
+figurent dans le titre, les sujets ou les mots-clés est écartée (`notices_ecartees`, avec le motif). Nature : celle
+lue sur la notice (thèse, article évalué par les pairs : `secondaire_savante` ; autre : `secondaire`) ; un imprimé
+publié **pendant la période** est une source contemporaine (`primaire`). Dédoublonnage : même DOI, sinon même PPN,
+sinon même titre et même année ; la notice gardée est la plus savante puis la plus complète, `trouvee_par` liste les
+services. Classement : pertinence géographique (lieu demandé, lieu plus large, aucun), puis temporelle
+(contemporaine ou années citées qui recoupent la période, non précisée, hors période), puis nature (savante
+d'abord). Chaque référence renvoyée est inscrite au registre des références consultées (réponse 2xx contenant
+l'identifiant) ; une référence que le registre refuse n'est pas renvoyée.
+
+**Sortie.**
+
+```json
+{"outil": "contexte_bibliographie",
+ "requete": {"sujet": "mines", "lieux": ["Courrières"], "echelle": "commune", "periode": {"de": 1880, "a": 1914},
+             "depuis_personne": false, "metiers": [], "limite_par_service": 10},
+ "style_citation": "iso690", "nb_references": 13,
+ "references": [{"citation": "…", "identifiant": {"type": "doi", "valeur": "10.…"}, "nature": "primaire", "…": "…",
+                 "trouvee_par": ["CROSSREF"],
+                 "pertinence": {"lieu": "demande", "lieu_cite": "Courrières", "sujet": true,
+                                "periode": "contemporaine"}}],
+ "services_interroges": [{"service": "HAL", "requete": "https://…", "total": 10, "nb_notices": 5, "nb_retenues": 5,
+                          "depuis_cache": false, "journal": "…"}],
+ "services_en_echec": [{"service": "…", "erreur": "…", "journal": "…"}],
+ "services_ecartes": [{"service": "WIKIPEDIA", "motif": "…"}],
+ "notices_ecartees": [{"service": "BNF-CATALOGUE", "titre": "…", "motif": "document non textuel …"}],
+ "rappel": "…"}
+```
+
+Rien trouvé : `references: []` et `recherche_negative` (« contexte non documenté par les services interrogés »),
+jamais de remplissage. Un service en échec n'empêche pas les autres ; `erreur` n'apparaît que si aucun service
+n'a répondu, ou pour des arguments invalides (`requetes_emises: 0`). Journal : une entrée par requête émise
+(source = code du service en minuscules, opération `bibliographie`, statut `positif`, `negatif` ou `erreur`),
+URL masquée (clé et `mailto` remplacés par `***`, y compris sous leur forme encodée).
+
+Limites : la période n'est pas envoyée (les services ne distinguent pas période étudiée et date de publication) ;
+les services REST reçoivent le seul lieu principal (pas de syntaxe booléenne documentée) ; la pertinence est lue sur
+le titre, les sujets et les mots-clés, pas sur le texte ; la nature « savante » n'est attribuée que sur une
+indication de la notice (thèse, évaluation par les pairs déclarée) ; `personne` est hors de l'identité « déjà
+fait » (deux demandes sans lieu ni sujet pour deux personnes différentes sont signalées comme la même).
+
 ## Rédaction et contrôle
 
 <!-- #291, #324 -->

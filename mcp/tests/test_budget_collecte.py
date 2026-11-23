@@ -16,6 +16,9 @@ from test_enquetes import MANIFEST, REGISTRE, mock_ad59
 
 from genealogiste_mcp import outils, server
 
+HAL = "https://api.archives-ouvertes.fr/search/"
+HAL_VIDE = {"response": {"numFound": 0, "start": 0, "docs": []}}  # forme réelle (fixtures/contexte/reponses/hal)
+
 # Arguments minimaux qui provoquent au moins une requête réseau. Un outil ajouté au périmètre sans exemple fait
 # échouer test_exemples_couvrent_le_perimetre.
 EXEMPLES: dict[str, dict] = {
@@ -40,6 +43,7 @@ EXEMPLES: dict[str, dict] = {
     "archives_naviguer": {"source": REGISTRE, "page": 1, "pas": 3},
     "archives_registres": {"service": "AD59", "commune": "Lille", "annee": 1850},
     "archives_planche": {"source": REGISTRE, "de": 1, "a": 2},
+    "contexte_bibliographie": {"sujet": "mines", "lieu": "Lille", "services": ["HAL"]},
 }
 
 
@@ -48,6 +52,7 @@ def routes():
     with respx.mock(assert_all_called=False) as router:
         mock_ad59(router)
         mock_iiif(router)
+        router.get(url__startswith=HAL).respond(200, json=HAL_VIDE)  # contexte_bibliographie : réponse Solr vide
         router.route().respond(200, json={})  # toute autre requête : réponse vide, mais émise et comptée
         yield router
 

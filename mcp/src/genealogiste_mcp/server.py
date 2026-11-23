@@ -36,8 +36,10 @@ from .budget import PlafondJour, mesurer
 from .cache import Cache
 from .chemins import CheminRefuse, nom_simple, sous
 from .config import Config, load_config
+from .contexte import bibliographie as biblio_contexte
 from .contexte import services as services_contexte
 from .contexte.registre import RegistreReferences
+from .contexte.requete import residus_identite
 from .enquetes import EnqueteError, Enquetes
 from .export import charts, chemins_medias, gramps_xml
 from .export.fiche import fiche_markdown, gaps, tree_gaps
@@ -666,6 +668,29 @@ def geo_commune(nom: str = "", code_postal: str = "", code_insee: str = "", depa
 def geo_historique(nom: str = "", code_insee: str = "", departement: str = "") -> dict:
     """Historique d'une commune (COG INSEE depuis 1943) : fusions, changements de nom, commune actuelle."""
     return geo.history(app().sctx, nom, code_insee, departement)
+
+
+@mcp.tool()
+def contexte_bibliographie(sujet: str = "", lieu: str = "", periode: str = "", echelle: str = "commune",
+                           services: list[str] | None = None, personne: str = "", limite: int = 10) -> dict:
+    """Littérature historique (HAL, Isidore, Sudoc, BnF catalogue, theses.fr, Crossref) sur un lieu, une période
+    et un thème : références normalisées, dédoublonnées, classées (lieu et période, puis savantes d'abord), citées
+    (GENEALOGISTE_CONTEXTE_STYLE_CITATION) et inscrites au registre des références consultées.
+    sujet : thème libre (« mines », « émigration ») ; lieu : commune, département ou région ; periode : « 1880-1914 »
+    (classement, pas un filtre) ; echelle : commune | departement | region | pays | nation ; services : codes
+    (défaut : services actifs) ; personne : id de l'arbre dont lieux, période et métier sourcés complètent les
+    arguments absents (jamais son nom). Vide : résultat vide explicite. Notices seules : « non lu »."""
+    if refus := _garde(personne=personne, texte=sujet):
+        return refus
+    a = app()
+    tree = a.tree() if personne else None
+    try:
+        demande = biblio_contexte.preparer(sujet, lieu, periode, echelle, limite, tree, personne)
+    except biblio_contexte.RechercheInvalide as exc:
+        return {"erreur": str(exc), "requetes_emises": 0}
+    residus = (lambda url: residus_identite(url, tree, personne)) if personne else None
+    return biblio_contexte.rechercher(a.sctx, a.registre_references, demande, services,
+                                      a.config.contexte_style_citation, personne or None, residus)
 
 
 @mcp.tool()
