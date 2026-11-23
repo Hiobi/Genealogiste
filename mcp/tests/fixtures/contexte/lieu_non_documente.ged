@@ -1,0 +1,41 @@
+0 HEAD
+1 GEDC
+2 VERS 7.0
+1 LANG fr
+0 @I1@ INDI
+1 NAME Anatole /BROUILLAUD/
+2 GIVN Anatole
+2 SURN BROUILLAUD
+1 SEX M
+1 BIRT
+2 DATE 8 OCT 1850
+2 PLAC Les Quatre-Chênes (lieu-dit fictif), Gers, France
+2 SOUR @S1@
+3 PAGE Naissances 1850, acte n° 9
+3 QUAY 3
+3 _TYPE originale
+3 _INFO primaire
+1 OCCU journalier
+2 DATE 1881
+2 PLAC Les Quatre-Chênes (lieu-dit fictif), Gers, France
+2 SOUR @S2@
+3 PAGE Recensement 1881, feuillet 4
+3 _TYPE originale
+3 _INFO secondaire
+3 _PREUVE indirecte
+1 DEAT
+2 DATE 30 MAR 1923
+2 PLAC Les Quatre-Chênes (lieu-dit fictif), Gers, France
+2 SOUR @S1@
+3 PAGE Décès 1923, acte n° 6
+3 QUAY 3
+3 _TYPE originale
+3 _INFO primaire
+1 UID c0ffee04-0000-4000-8000-000000000001
+0 @S1@ SOUR
+1 TITL Registres d'état civil de la commune de rattachement (fictif)
+1 _TYPE originale
+0 @S2@ SOUR
+1 TITL Recensement de population de la commune de rattachement, 1881 (fictif)
+1 _TYPE originale
+0 TRLR

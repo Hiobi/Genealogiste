@@ -1,0 +1,48 @@
+0 HEAD
+1 GEDC
+2 VERS 7.0
+1 LANG fr
+0 @I1@ INDI
+1 NAME Raoul /DELAUNAY-PICHOT/
+2 GIVN Raoul
+2 SURN DELAUNAY-PICHOT
+1 SEX M
+1 BIRT
+2 DATE 22 MAY 1892
+2 PLAC Saint-Amand-Montrond, Cher, France
+2 SOUR @S1@
+3 PAGE Naissances 1892, acte n° 58
+3 QUAY 3
+3 _TYPE originale
+3 _INFO primaire
+1 OCCU forgeron
+2 DATE 1912
+2 PLAC Saint-Amand-Montrond, Cher, France
+2 SOUR @S2@
+3 PAGE Classe 1912, matricule n° 1047
+3 _TYPE originale
+3 _INFO secondaire
+3 _PREUVE indirecte
+1 EVEN
+2 TYPE Mobilisation
+2 DATE 3 AUG 1914
+2 SOUR @S2@
+3 PAGE Classe 1912, matricule n° 1047
+3 _TYPE originale
+3 _INFO primaire
+1 DEAT
+2 DATE 12 JUL 1916
+2 PLAC Belloy-en-Santerre, Somme, France
+2 SOUR @S2@
+3 PAGE Classe 1912, matricule n° 1047
+3 QUAY 3
+3 _TYPE originale
+3 _INFO primaire
+1 UID c0ffee03-0000-4000-8000-000000000001
+0 @S1@ SOUR
+1 TITL Registres d'état civil de Saint-Amand-Montrond (fictif)
+1 _TYPE originale
+0 @S2@ SOUR
+1 TITL Registre matricule du recrutement du Cher (fictif)
+1 _TYPE originale
+0 TRLR
