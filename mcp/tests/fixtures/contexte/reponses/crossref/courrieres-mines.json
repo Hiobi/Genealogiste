@@ -1,0 +1,257 @@
+{
+ "status": "ok",
+ "message-type": "work-list",
+ "message-version": "1.0.0",
+ "message": {
+  "facets": {},
+  "total-results": 26674,
+  "items": [
+   {
+    "publisher": "EDP Sciences",
+    "issue": "12",
+    "DOI": "10.1051/metal/190603120709",
+    "type": "journal-article",
+    "page": "709-716",
+    "title": [
+     "L'accident des mines de courrières"
+    ],
+    "volume": "3",
+    "author": [
+     {
+      "given": "M.",
+      "family": "Cunynghame",
+      "sequence": "first",
+      "affiliation": [],
+      "role": [
+       {
+        "role": "author",
+        "vocabulary": "crossref"
+       }
+      ]
+     },
+     {
+      "given": "M.",
+      "family": "Atkinson",
+      "sequence": "additional",
+      "affiliation": [],
+      "role": [
+       {
+        "role": "author",
+        "vocabulary": "crossref"
+       }
+      ]
+     }
+    ],
+    "container-title": [
+     "Revue de Métallurgie"
+    ],
+    "issued": {
+     "date-parts": [
+      [
+       1906,
+       12
+      ]
+     ]
+    },
+    "URL": "https://doi.org/10.1051/metal/190603120709",
+    "published": {
+     "date-parts": [
+      [
+       1906,
+       12
+      ]
+     ]
+    }
+   },
+   {
+    "publisher": "PERSEE Program",
+    "issue": "4",
+    "DOI": "10.3406/hes.2006.2619",
+    "type": "journal-article",
+    "page": "61-78",
+    "title": [
+     "Une entreprise face à la gestion de « risques majeurs » : la compagnie des mines de Courrières (1852-1944)"
+    ],
+    "volume": "25",
+    "author": [
+     {
+      "given": "Marie-France",
+      "family": "Conus",
+      "sequence": "first",
+      "affiliation": [],
+      "role": [
+       {
+        "vocabulary": "crossref",
+        "role": "author"
+       }
+      ]
+     }
+    ],
+    "container-title": [
+     "Histoire, économie et société"
+    ],
+    "issued": {
+     "date-parts": [
+      [
+       2006
+      ]
+     ]
+    },
+    "URL": "https://doi.org/10.3406/hes.2006.2619",
+    "published": {
+     "date-parts": [
+      [
+       2006
+      ]
+     ]
+    }
+   },
+   {
+    "publisher": "CAIRN",
+    "issue": "4",
+    "DOI": "10.3917/hes.064.0061",
+    "type": "journal-article",
+    "page": "61-78",
+    "title": [
+     "Une entreprise face à la gestion de « risques majeurs » : la compagnie des mines de Courrières (1852-1944)"
+    ],
+    "volume": "25e année",
+    "author": [
+     {
+      "given": "Marie-France",
+      "family": "Conus",
+      "sequence": "first",
+      "affiliation": [],
+      "role": [
+       {
+        "role": "author",
+        "vocabulary": "crossref"
+       }
+      ]
+     }
+    ],
+    "container-title": [
+     "Histoire, économie &amp; société"
+    ],
+    "issued": {
+     "date-parts": [
+      [
+       2006,
+       12,
+       1
+      ]
+     ]
+    },
+    "URL": "https://doi.org/10.3917/hes.064.0061",
+    "published": {
+     "date-parts": [
+      [
+       2006,
+       12,
+       1
+      ]
+     ]
+    }
+   },
+   {
+    "publisher": "CAIRN.INFO",
+    "issue": "2",
+    "DOI": "10.3917/nord.062.0125b",
+    "type": "journal-article",
+    "page": "125b-132b",
+    "title": [
+     "Jean-Luc Loyer, Sang noir La catastrophe de Courrières , Futuropolis, 2013, 20 €."
+    ],
+    "volume": "N° 62",
+    "author": [
+     {
+      "given": "Paul",
+      "family": "Renard",
+      "sequence": "first",
+      "affiliation": [],
+      "role": [
+       {
+        "role": "author",
+        "vocabulary": "crossref"
+       }
+      ]
+     }
+    ],
+    "container-title": [
+     "Nord'"
+    ],
+    "issued": {
+     "date-parts": [
+      [
+       2013,
+       12,
+       1
+      ]
+     ]
+    },
+    "URL": "https://doi.org/10.3917/nord.062.0125b",
+    "published": {
+     "date-parts": [
+      [
+       2013,
+       12,
+       1
+      ]
+     ]
+    }
+   },
+   {
+    "publisher": "CAIRN",
+    "issue": "1",
+    "DOI": "10.3917/rdn.414.0113",
+    "type": "journal-article",
+    "page": "113-144",
+    "title": [
+     "Un second Courrières : la catastrophe minière du 19 avril 1948"
+    ],
+    "volume": "n° 414",
+    "author": [
+     {
+      "given": "Philippe",
+      "family": "Roger",
+      "sequence": "first",
+      "affiliation": [],
+      "role": [
+       {
+        "vocabulary": "crossref",
+        "role": "author"
+       }
+      ]
+     }
+    ],
+    "container-title": [
+     "Revue du Nord"
+    ],
+    "issued": {
+     "date-parts": [
+      [
+       2016,
+       9,
+       29
+      ]
+     ]
+    },
+    "URL": "https://doi.org/10.3917/rdn.414.0113",
+    "published": {
+     "date-parts": [
+      [
+       2016,
+       9,
+       29
+      ]
+     ]
+    }
+   }
+  ],
+  "items-per-page": 5,
+  "query": {
+   "start-index": 0,
+   "search-terms": null
+  }
+ }
+}

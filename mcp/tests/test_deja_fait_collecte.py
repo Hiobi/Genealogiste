@@ -10,7 +10,7 @@ import json
 
 import pytest
 import respx
-from test_budget_collecte import EXEMPLES
+from test_budget_collecte import EXEMPLES, HAL, HAL_VIDE
 from test_budget_enquete import mock_iiif
 from test_enquetes import MANIFEST, REGISTRE, mock_ad59
 from test_planche import preparer
@@ -40,9 +40,11 @@ VARIANTES: dict[str, dict] = {
     "wikidata_sparql": {"requete": "SELECT ?x WHERE { ?x ?y ?z } LIMIT 2"},
     "geo_commune": {"nom": "Douai"},
     "geo_historique": {"code_insee": "59178"},
+    "lieu_historique": {"lieu": "59350", "date": "1976"},
     "archives_registres": {"service": "AD59", "commune": "Lille", "annee": 1851},
     "archives_planche": {"source": REGISTRE, "de": 1, "a": 2, "bandeau": "pct:0,0,100,35"},
     "presse_recherche": {"texte": "grève", "lieu": "Courrières", "periode": "1906"},
+    "contexte_bibliographie": {"sujet": "mines", "lieu": "Lille", "services": ["HAL"], "periode": "1880-1914"},
 }
 # Même demande écrite autrement (casse, accents, espaces, défaut explicite) : « la même demande ».
 EQUIVALENTS: dict[str, dict] = {
@@ -67,6 +69,7 @@ def routes(fixtures):
         router.get(url__regex=r"https://gallica\.bnf\.fr/RequestDigitalElement").respond(
             200, text="<alto><Layout><Page><TextLine HPOS='1' VPOS='2'><String CONTENT='Dupont' WC='0.9'/>"
                       "</TextLine></Page></Layout></alto>")
+        router.get(url__startswith=HAL).respond(200, json=HAL_VIDE)  # contexte_bibliographie
         router.route().respond(200, json={})  # toute autre requête : réponse vide
         yield router
 

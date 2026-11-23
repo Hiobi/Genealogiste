@@ -205,6 +205,7 @@ bord retirés) ; entiers et booléens par valeur. La pagination fait partie de l
 | `wikidata_sparql` | `requete` (exacte : les littéraux SPARQL sont sensibles à la casse) |
 | `geo_commune` | `nom` (texte) ; exacts : `code_postal`, `code_insee`, `departement` ; `limite` |
 | `geo_historique` | `nom` (texte) ; exacts : `code_insee`, `departement` |
+| `contexte_bibliographie` | texte : `sujet`, `lieu` ; exacts : `periode`, `echelle`, `services` ; `limite` (la personne, hors identité, ne distingue pas deux demandes sans lieu ni sujet) |
 | `archives_registres` | `service` (exact), `commune` (texte), `annee`, `annee_fin`, `type_acte` (exact), `page` |
 | `archives_planche` | `source`, `de`, `a`, `pas`, `bandeau`, `largeur`, `gris`, `miniatures` (une planche plus fine ou recadrée est une autre demande) |
 

@@ -1,0 +1,26 @@
+{
+ "client": "Mozilla/5.0 (compatible; client-generique) ; sans clé, sans paramètre personnel",
+ "commune_temoin": "Billy-Montigny (code INSEE 62133, obtenu par geo_commune du plugin)",
+ "service": "INSEE-MELODI",
+ "usage": "lieu_historique (#287) : population depuis 1968",
+ "reponses": [
+  {
+   "fichier": "catalog_DS_POPULATIONS_HISTORIQUES.json",
+   "url": "https://api.insee.fr/melodi/catalog/DS_POPULATIONS_HISTORIQUES",
+   "date": "2026-11-23T10:12:23Z",
+   "statut": 200,
+   "type": "application/json",
+   "octets": 7543,
+   "reduction": "clés conservées : identifier, title, abstract, description, temporal, spatialTemporal, spatialResolution, issued, modified, creator, uri"
+  },
+  {
+   "fichier": "data_DS_POPULATIONS_HISTORIQUES_GEO_2025-COM-62133.json",
+   "url": "https://api.insee.fr/melodi/data/DS_POPULATIONS_HISTORIQUES?GEO=2025-COM-62133",
+   "date": "2026-11-23T10:12:32Z",
+   "statut": 200,
+   "type": "application/json",
+   "octets": 6033,
+   "reduction": "clé publisher retirée ; 23 observations conservées (1968-2023)"
+  }
+ ]
+}

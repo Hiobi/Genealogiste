@@ -1,0 +1,36 @@
+{
+ "client": "Mozilla/5.0 (compatible; client-generique) ; sans clé, sans paramètre personnel",
+ "commune_temoin": "Billy-Montigny (code INSEE 62133, obtenu par geo_commune du plugin)",
+ "service": "IGN-GEOPLATEFORME",
+ "usage": "lieu_historique (#287) : couches de cartes anciennes et leur période",
+ "reponses": [
+  {
+   "fichier": "GetCapabilities.xml",
+   "url": "https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetCapabilities",
+   "date": "2026-11-23T10:12:44Z",
+   "statut": 200,
+   "type": "application/xml",
+   "octets": 3112117,
+   "reduction": "ServiceIdentification, ServiceProvider ; 7 couches sur 753 (les 6 retenues par l'étude #322 et GEOGRAPHICALGRIDSYSTEMS.1900TYPEMAPS) ; jeux de tuiles qu'elles utilisent"
+  },
+  {
+   "fichier": "csw_ARCHIVES-NATIONALES_CASSINI-ROI.xml",
+   "url": "https://data.geopf.fr/csw?REQUEST=GetRecordById&SERVICE=CSW&VERSION=2.0.2&OUTPUTSCHEMA=http://standards.iso.org/iso/19115/-3/mdb/2.0&elementSetName=full&ID=ARCHIVES-NATIONALES_CASSINI-ROI",
+   "date": "2026-11-23T10:13:03Z",
+   "statut": 200,
+   "type": "application/xml; charset=UTF-8",
+   "octets": 36388,
+   "reduction": "identifiant de la fiche et chemin vers l'étendue temporelle (gml:TimePeriod 1756-01-01 / 1815-01-01) seulement"
+  },
+  {
+   "fichier": "csw_BNF_CASSINI-MARIE-ANTOINETTE.xml",
+   "url": "https://data.geopf.fr/csw?REQUEST=GetRecordById&SERVICE=CSW&VERSION=2.0.2&OUTPUTSCHEMA=http://standards.iso.org/iso/19115/-3/mdb/2.0&elementSetName=full&ID=BNF_CASSINI-MARIE-ANTOINETTE",
+   "date": "2026-11-23T10:13:27Z",
+   "statut": 200,
+   "type": "application/xml; charset=UTF-8",
+   "octets": 36775,
+   "reduction": "identifiant de la fiche et chemin vers l'étendue temporelle (gml:TimePeriod 1756-01-01 / 1815-01-01) seulement"
+  }
+ ],
+ "non_verifie": "aucune tuile GetTile demandée avec les jeux PM_x_y déclarés par les couches (l'étude #322 a obtenu une tuile avec TILEMATRIXSET=PM)"
+}

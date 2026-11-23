@@ -1,0 +1,814 @@
+{
+ "response": {
+  "header": {
+   "query": {
+    "@text": "Courrières mines",
+    "@userId": "d28520ac-2827-3f4c-787b-8aa2769e378b",
+    "@sessionId": "mlnvfg0o4voqr2s79k43uf6gls",
+    "@date": "2026-11-23T10:20:59+0000",
+    "param": [
+     {
+      "@name": "lang",
+      "@value": "fr"
+     },
+     {
+      "@name": "q",
+      "@value": "Courrières mines"
+     },
+     {
+      "@name": "replies",
+      "@value": "5"
+     }
+    ]
+   },
+   "performance": {
+    "@durationMs": "94"
+   }
+  },
+  "replies": {
+   "meta": {
+    "@items": "12213",
+    "@pageItems": "5"
+   },
+   "content": {
+    "reply": [
+     {
+      "@uri": "20.500.13089/8d53",
+      "isidore": {
+       "title": [
+        {
+         "@added": "true",
+         "@xml:lang": "fr",
+         "$": "Index des noms de lieux"
+        },
+        {
+         "@added": "true",
+         "@xml:lang": "en",
+         "$": "Index des noms de lieux"
+        },
+        {
+         "@added": "true",
+         "@xml:lang": "es",
+         "$": "Index des noms de lieux"
+        },
+        "Index des noms de lieux"
+       ],
+       "url": "https://doi.org/10.4000/books.pur.21346",
+       "enrichedCreators": {
+        "creator": {
+         "@origin": "Passaqui, Jean-Philippe",
+         "@normalizedAuthor": "Passaqui, Jean-Philippe",
+         "@idAuthor": "passaqui_jean-philippe",
+         "firstname": "Jean-Philippe",
+         "lastname": "Passaqui",
+         "title": [],
+         "sameAs": {
+          "idref": "059819235",
+          "idhal": "jean-philippepassaqui"
+         }
+        }
+       },
+       "date": {
+        "@origin": "2006",
+        "@startDate": "2006-01-01",
+        "@endDate": "2006-12-31",
+        "normalizedDate": "2006-01-01",
+        "century": "2000",
+        "decade": "2000",
+        "year": "2006"
+       },
+       "ore": {
+        "aggregates": [
+         {
+          "@crawl": "true",
+          "$": "https://doi.org/10.4000/books.pur.21346"
+         },
+         {
+          "@crawl": "true",
+          "$": "https://hdl.handle.net/20.500.13089/8d53"
+         },
+         {
+          "@crawl": "true",
+          "$": "https://books.openedition.org/pur/21346"
+         }
+        ]
+       },
+       "relations": {
+        "url": [
+         "https://hdl.handle.net/20.500.13089/81n9",
+         "https://doi.org/10.4000/books.pur.21322"
+        ],
+        "relation": [
+         "info:eu-repo/semantics/altIdentifier/isbn/978-2-7535-3191-8",
+         "info:eu-repo/semantics/altIdentifier/isbn/978-2-7535-0181-2"
+        ]
+       },
+       "types": {
+        "type": [
+         "index",
+         "info:eu-repo/semantics/bookPart"
+        ]
+       },
+       "source": {
+        "@handle": "10670/2.v8a41w",
+        "@action": "crawl",
+        "@frequency": "1",
+        "name": [
+         {
+          "@added": "true",
+          "@xml:lang": "en",
+          "$": "Presses universitaires de Rennes"
+         },
+         {
+          "@added": "true",
+          "@xml:lang": "es",
+          "$": "Presses universitaires de Rennes"
+         },
+         {
+          "@xml:lang": "fr",
+          "$": "Presses universitaires de Rennes"
+         }
+        ],
+        "shortName": {
+         "@xml:lang": "fr",
+         "$": "pur"
+        },
+        "url": "https://books.openedition.org/pur",
+        "topic": "http://aurehal.archives-ouvertes.fr/subject/shs.hist",
+        "type": "Book",
+        "uriPermanentPattern": "https://hdl.handle.net/(.+)",
+        "collection": {
+         "name": [
+          {
+           "@added": "true",
+           "@xml:lang": "fr",
+           "$": "OpenEdition Books"
+          },
+          {
+           "@added": "true",
+           "@xml:lang": "en",
+           "$": "OpenEdition Books"
+          },
+          {
+           "@added": "true",
+           "@xml:lang": "es",
+           "$": "OpenEdition Books"
+          },
+          "OpenEdition Books"
+         ],
+         "shortName": "OpenEdition Books",
+         "url": "http://books.openedition.org",
+         "description": "OpenEdition Books est une plateforme de livres en sciences humaines et sociales. Plus de la moitié d'entre eux est en libre accès. Des services complémentaires sont proposés via les bibliothèques et institutions abonnées.",
+         "country": "FR"
+        },
+        "organization": {
+         "name": [
+          {
+           "@added": "true",
+           "@xml:lang": "fr",
+           "$": "OpenEdition"
+          },
+          {
+           "@added": "true",
+           "@xml:lang": "en",
+           "$": "OpenEdition"
+          },
+          {
+           "@added": "true",
+           "@xml:lang": "es",
+           "$": "OpenEdition"
+          },
+          "OpenEdition"
+         ],
+         "url": "http://www.openedition.org",
+         "description": "calenda@revues.org",
+         "country": "FR"
+        }
+       },
+       "dc:language": "fr",
+       "dc:rights": [
+        "info:eu-repo/semantics/openAccess",
+        "https://www.openedition.org/12554"
+       ]
+      }
+     },
+     {
+      "@uri": "10.58079/rg6b",
+      "isidore": {
+       "title": [
+        {
+         "@added": "true",
+         "@xml:lang": "fr",
+         "$": "Au métro comme à la mine"
+        },
+        {
+         "@added": "true",
+         "@xml:lang": "en",
+         "$": "Au métro comme à la mine"
+        },
+        {
+         "@added": "true",
+         "@xml:lang": "es",
+         "$": "Au métro comme à la mine"
+        },
+        "Au métro comme à la mine"
+       ],
+       "url": "https://doi.org/10.58079/rg6b",
+       "enrichedCreators": {
+        "creator": {
+         "@origin": "Francesca Sanna",
+         "sameAs": []
+        }
+       },
+       "date": {
+        "@origin": "2017-07-04T19:34:55Z",
+        "@startDate": "2017-07-04",
+        "@endDate": "2017-07-04",
+        "normalizedDate": "2017-07-04",
+        "century": "2000",
+        "decade": "2010",
+        "year": "2017"
+       },
+       "ore": {
+        "aggregates": [
+         {
+          "@crawl": "true",
+          "$": "https://doi.org/10.58079/rg6b"
+         },
+         {
+          "@crawl": "true",
+          "$": "https://mine.hypotheses.org/320"
+         }
+        ],
+        "similar": "urn:doi:10.58079/rg6b"
+       },
+       "relations": {
+        "relation": "info:eu-repo/semantics/reference/issn/2551-2579"
+       },
+       "types": {
+        "type": [
+         "post",
+         "info:eu-repo/semantics/other"
+        ]
+       },
+       "source": {
+        "@handle": "10670/2.m569rg",
+        "@action": "crawl",
+        "@frequency": "1",
+        "name": [
+         {
+          "@added": "true",
+          "@xml:lang": "en",
+          "$": "Terrils"
+         },
+         {
+          "@added": "true",
+          "@xml:lang": "es",
+          "$": "Terrils"
+         },
+         {
+          "@xml:lang": "fr",
+          "$": "Terrils"
+         }
+        ],
+        "shortName": {
+         "@xml:lang": "fr",
+         "$": "mine"
+        },
+        "url": "https://mine.hypotheses.org",
+        "issn": "2551-2579",
+        "topic": "http://aurehal.archives-ouvertes.fr/subject/shs.hist",
+        "type": "Billets",
+        "uriPermanentPattern": "urn:doi:(10.58079/.+)",
+        "collection": {
+         "name": [
+          {
+           "@added": "true",
+           "@xml:lang": "fr",
+           "$": "Hypothèses : carnets de recherches en Sciences humaines et sociales"
+          },
+          {
+           "@added": "true",
+           "@xml:lang": "en",
+           "$": "Hypothèses : carnets de recherches en Sciences humaines et sociales"
+          },
+          {
+           "@added": "true",
+           "@xml:lang": "es",
+           "$": "Hypothèses : carnets de recherches en Sciences humaines et sociales"
+          },
+          "Hypothèses : carnets de recherches en Sciences humaines et sociales"
+         ],
+         "shortName": "Hypotheses.org",
+         "url": "http://hypotheses.org",
+         "description": "Hypothèses est une plateforme de publication de carnets de recherche en sciences humaines et sociales. Ouverte en 2008, elle permet aux chercheurs et équipes de recherche de communiquer rapidement et simplement sur leurs activités de recherche.",
+         "country": "FR"
+        },
+        "organization": {
+         "name": [
+          {
+           "@added": "true",
+           "@xml:lang": "fr",
+           "$": "OpenEdition"
+          },
+          {
+           "@added": "true",
+           "@xml:lang": "en",
+           "$": "OpenEdition"
+          },
+          {
+           "@added": "true",
+           "@xml:lang": "es",
+           "$": "OpenEdition"
+          },
+          "OpenEdition"
+         ],
+         "url": "http://www.openedition.org",
+         "description": "calenda@revues.org",
+         "country": "FR"
+        }
+       },
+       "dc:rights": "info:eu-repo/semantics/openAccess"
+      }
+     },
+     {
+      "@uri": "20.500.13089/7bev",
+      "isidore": {
+       "title": [
+        {
+         "@added": "true",
+         "@xml:lang": "fr",
+         "$": "Le courrier"
+        },
+        {
+         "@added": "true",
+         "@xml:lang": "en",
+         "$": "Le courrier"
+        },
+        {
+         "@added": "true",
+         "@xml:lang": "es",
+         "$": "Le courrier"
+        },
+        "Le courrier"
+       ],
+       "url": "https://doi.org/10.4000/books.ugaeditions.1587",
+       "enrichedCreators": {
+        "creator": {
+         "@origin": "Durych, Jaroslav",
+         "@normalizedAuthor": "Durych, Jaroslav",
+         "@idAuthor": "durych_jaroslav",
+         "firstname": "Jaroslav",
+         "lastname": "Durych",
+         "title": [],
+         "sameAs": {
+          "isni": "0000000110682381",
+          "idref": "059659475",
+          "idhal": "jaroslavdurych"
+         }
+        }
+       },
+       "date": {
+        "@origin": "2001",
+        "@startDate": "2001-01-01",
+        "@endDate": "2001-12-31",
+        "normalizedDate": "2001-01-01",
+        "century": "2000",
+        "decade": "2000",
+        "year": "2001"
+       },
+       "ore": {
+        "aggregates": [
+         {
+          "@crawl": "true",
+          "$": "https://doi.org/10.4000/books.ugaeditions.1587"
+         },
+         {
+          "@crawl": "true",
+          "$": "https://hdl.handle.net/20.500.13089/7bev"
+         },
+         {
+          "@crawl": "true",
+          "$": "https://books.openedition.org/ugaeditions/1587"
+         }
+        ]
+       },
+       "relations": {
+        "url": [
+         "https://hdl.handle.net/20.500.13089/79mp",
+         "https://doi.org/10.4000/books.ugaeditions.1575"
+        ],
+        "relation": [
+         "info:eu-repo/semantics/altIdentifier/isbn/978-2-84310-390-2",
+         "info:eu-repo/semantics/altIdentifier/isbn/978-2-84310-032-1"
+        ]
+       },
+       "types": {
+        "type": [
+         "chapter",
+         "info:eu-repo/semantics/bookPart"
+        ]
+       },
+       "source": {
+        "@handle": "10670/2.1zle3w",
+        "@action": "crawl",
+        "@frequency": "1",
+        "name": [
+         {
+          "@added": "true",
+          "@xml:lang": "es",
+          "$": "UGA Éditions"
+         },
+         {
+          "@xml:lang": "fr",
+          "$": "UGA Éditions"
+         },
+         {
+          "@xml:lang": "en",
+          "$": "UGA Éditions"
+         }
+        ],
+        "shortName": [
+         {
+          "@xml:lang": "fr",
+          "$": "ugaeditions"
+         },
+         {
+          "@xml:lang": "en",
+          "$": "ugaeditions"
+         }
+        ],
+        "url": "https://books.openedition.org/ugaeditions",
+        "topic": "http://aurehal.archives-ouvertes.fr/subject/shs.litt",
+        "type": "Book",
+        "uriPermanentPattern": "https://hdl.handle.net/(.+)",
+        "collection": {
+         "name": [
+          {
+           "@added": "true",
+           "@xml:lang": "fr",
+           "$": "OpenEdition Books"
+          },
+          {
+           "@added": "true",
+           "@xml:lang": "en",
+           "$": "OpenEdition Books"
+          },
+          {
+           "@added": "true",
+           "@xml:lang": "es",
+           "$": "OpenEdition Books"
+          },
+          "OpenEdition Books"
+         ],
+         "shortName": "OpenEdition Books",
+         "url": "http://books.openedition.org",
+         "description": "OpenEdition Books est une plateforme de livres en sciences humaines et sociales. Plus de la moitié d'entre eux est en libre accès. Des services complémentaires sont proposés via les bibliothèques et institutions abonnées.",
+         "country": "FR"
+        },
+        "organization": {
+         "name": [
+          {
+           "@added": "true",
+           "@xml:lang": "fr",
+           "$": "OpenEdition"
+          },
+          {
+           "@added": "true",
+           "@xml:lang": "en",
+           "$": "OpenEdition"
+          },
+          {
+           "@added": "true",
+           "@xml:lang": "es",
+           "$": "OpenEdition"
+          },
+          "OpenEdition"
+         ],
+         "url": "http://www.openedition.org",
+         "description": "calenda@revues.org",
+         "country": "FR"
+        }
+       },
+       "dc:language": "fr",
+       "dc:rights": [
+        "info:eu-repo/semantics/openAccess",
+        "https://www.openedition.org/12554"
+       ]
+      }
+     },
+     {
+      "@uri": "10670/1.586777fb92ddd39dce53fd517f6376862ae0b387",
+      "isidore": {
+       "title": [
+        {
+         "@added": "true",
+         "@xml:lang": "fr",
+         "$": "La Banque de l’Union Parisienne (1874/1904-1974). De l’Europe aux Outre-Mers"
+        },
+        {
+         "@added": "true",
+         "@xml:lang": "en",
+         "$": "La Banque de l’Union Parisienne (1874/1904-1974). De l’Europe aux Outre-Mers"
+        },
+        {
+         "@added": "true",
+         "@xml:lang": "es",
+         "$": "La Banque de l’Union Parisienne (1874/1904-1974). De l’Europe aux Outre-Mers"
+        },
+        "La Banque de l’Union Parisienne (1874/1904-1974). De l’Europe aux Outre-Mers"
+       ],
+       "url": "https://www.persee.fr/doc/sfhom_0000-0003_2011_mon_7_1",
+       "enrichedCreators": {
+        "creator": {
+         "@origin": "Bonin, Hubert",
+         "@normalizedAuthor": "Bonin, Hubert",
+         "@idAuthor": "bonin_hubert",
+         "firstname": "Hubert",
+         "lastname": "Bonin",
+         "title": [],
+         "sameAs": {
+          "isni": "0000000366874555",
+          "idref": "026737612",
+          "idhal": "hubertbonin"
+         }
+        }
+       },
+       "date": {
+        "@origin": "2011",
+        "@startDate": "2011-01-01",
+        "@endDate": "2011-12-31",
+        "normalizedDate": "2011-01-01",
+        "century": "2000",
+        "decade": "2010",
+        "year": "2011"
+       },
+       "ore": {
+        "aggregates": [
+         {
+          "@crawl": "false",
+          "$": "https://www.persee.fr/doc/sfhom_0000-0003_2011_mon_7_1"
+         },
+         {
+          "@crawl": "true",
+          "@rdfVisible": "false",
+          "$": "http://oai.persee.fr/oai?verb=GetRecord&identifier=oai:persee:article/sfhom_0000-0003_2011_mon_7_1_911&metadataPrefix=tei"
+         }
+        ],
+        "similar": "isbn:2-8597005-1-5"
+       },
+       "coverages": {
+        "coverage": "p. 0"
+       },
+       "types": {
+        "type": "book"
+       },
+       "source": {
+        "@handle": "10670/2.bwjyni",
+        "@action": "crawl",
+        "@frequency": "1",
+        "name": [
+         {
+          "@added": "true",
+          "@xml:lang": "en",
+          "$": "Publications de la Société française d'histoire des outre-mers (documents)"
+         },
+         {
+          "@added": "true",
+          "@xml:lang": "es",
+          "$": "Publications de la Société française d'histoire des outre-mers (documents)"
+         },
+         {
+          "@xml:lang": "fr",
+          "$": "Publications de la Société française d'histoire des outre-mers (documents)"
+         }
+        ],
+        "shortName": {
+         "@xml:lang": "fr",
+         "$": "sfhom"
+        },
+        "url": "https://www.persee.fr/collection/sfhom",
+        "topic": "http://aurehal.archives-ouvertes.fr/subject/shs.hist",
+        "type": "Article",
+        "uriPermanentPattern": "doi:(10.3406/.+)",
+        "collection": {
+         "name": [
+          {
+           "@added": "true",
+           "@xml:lang": "fr",
+           "$": "Persée"
+          },
+          {
+           "@added": "true",
+           "@xml:lang": "en",
+           "$": "Persée"
+          },
+          {
+           "@added": "true",
+           "@xml:lang": "es",
+           "$": "Persée"
+          },
+          "Persée"
+         ],
+         "shortName": "Persée",
+         "url": "http://www.persee.fr",
+         "description": "Persée est un programme national de bibliothèque scientifique soutenu par le MESR et mis en œuvre par l'Université Lyon 2, en collaboration avec la MOM, l'Université Paris-Descartes et le CINES.",
+         "country": "FR"
+        },
+        "organization": {
+         "name": [
+          {
+           "@added": "true",
+           "@xml:lang": "fr",
+           "$": "MESR"
+          },
+          {
+           "@added": "true",
+           "@xml:lang": "en",
+           "$": "MESR"
+          },
+          {
+           "@added": "true",
+           "@xml:lang": "es",
+           "$": "MESR"
+          },
+          "MESR"
+         ],
+         "url": "http://www.enseignementsup-recherche.gouv.fr",
+         "description": "contact@persee.fr",
+         "country": "FR"
+        }
+       },
+       "dc:language": "fre",
+       "dc:rights": {
+        "@xml:lang": "en",
+        "$": "Copyright PERSEE 2003-2024. Works reproduced on the PERSEE website are protected by the general rules of the Code of Intellectual Property. For strictly private, scientific or teaching purposes excluding all commercial use, reproduction and communication to the public of this document is permitted on condition that its origin and copyright are clearly mentionned."
+       }
+      }
+     },
+     {
+      "@uri": "20.500.13089/3vhy",
+      "isidore": {
+       "title": [
+        {
+         "@added": "true",
+         "@xml:lang": "fr",
+         "$": "Le mouvement catholique dans le Nord-Pas-de-Calais : milieu de vie et d’action clandestines sous l’Occupation"
+        },
+        {
+         "@added": "true",
+         "@xml:lang": "en",
+         "$": "Le mouvement catholique dans le Nord-Pas-de-Calais : milieu de vie et d’action clandestines sous l’Occupation"
+        },
+        {
+         "@added": "true",
+         "@xml:lang": "es",
+         "$": "Le mouvement catholique dans le Nord-Pas-de-Calais : milieu de vie et d’action clandestines sous l’Occupation"
+        },
+        "Le mouvement catholique dans le Nord-Pas-de-Calais : milieu de vie et d’action clandestines sous l’Occupation"
+       ],
+       "url": "https://doi.org/10.4000/books.irhis.2277",
+       "enrichedCreators": {
+        "creator": {
+         "@origin": "Bethouart, Bruno",
+         "@normalizedAuthor": "Bethouart, Bruno",
+         "@idAuthor": "bethouart_bruno",
+         "firstname": "Bruno",
+         "lastname": "Bethouart",
+         "title": [],
+         "sameAs": []
+        }
+       },
+       "date": {
+        "@origin": "2009",
+        "@startDate": "2009-01-01",
+        "@endDate": "2009-12-31",
+        "normalizedDate": "2009-01-01",
+        "century": "2000",
+        "decade": "2000",
+        "year": "2009"
+       },
+       "ore": {
+        "aggregates": [
+         {
+          "@crawl": "true",
+          "$": "https://doi.org/10.4000/books.irhis.2277"
+         },
+         {
+          "@crawl": "true",
+          "$": "https://hdl.handle.net/20.500.13089/3vhy"
+         },
+         {
+          "@crawl": "true",
+          "$": "https://books.openedition.org/irhis/2277"
+         }
+        ]
+       },
+       "relations": {
+        "url": [
+         "https://hdl.handle.net/20.500.13089/3vuc",
+         "https://doi.org/10.4000/books.irhis.2269"
+        ],
+        "relation": [
+         "info:eu-repo/semantics/altIdentifier/isbn/978-2-490296-15-6",
+         "info:eu-repo/semantics/altIdentifier/isbn/978-2-905637-59-8"
+        ]
+       },
+       "types": {
+        "type": [
+         "chapter",
+         "info:eu-repo/semantics/bookPart"
+        ]
+       },
+       "source": {
+        "@handle": "10670/2.f64e3i",
+        "@action": "crawl",
+        "@frequency": "1",
+        "name": [
+         {
+          "@added": "true",
+          "@xml:lang": "en",
+          "$": "Publications de l’Institut de recherches historiques du Septentrion"
+         },
+         {
+          "@added": "true",
+          "@xml:lang": "es",
+          "$": "Publications de l’Institut de recherches historiques du Septentrion"
+         },
+         {
+          "@xml:lang": "fr",
+          "$": "Publications de l’Institut de recherches historiques du Septentrion"
+         }
+        ],
+        "shortName": {
+         "@xml:lang": "fr",
+         "$": "irhis"
+        },
+        "url": "https://books.openedition.org/irhis",
+        "topic": "http://aurehal.archives-ouvertes.fr/subject/shs.hist",
+        "type": "Book",
+        "uriPermanentPattern": "https://hdl.handle.net/(.+)",
+        "collection": {
+         "name": [
+          {
+           "@added": "true",
+           "@xml:lang": "fr",
+           "$": "OpenEdition Books"
+          },
+          {
+           "@added": "true",
+           "@xml:lang": "en",
+           "$": "OpenEdition Books"
+          },
+          {
+           "@added": "true",
+           "@xml:lang": "es",
+           "$": "OpenEdition Books"
+          },
+          "OpenEdition Books"
+         ],
+         "shortName": "OpenEdition Books",
+         "url": "http://books.openedition.org",
+         "description": "OpenEdition Books est une plateforme de livres en sciences humaines et sociales. Plus de la moitié d'entre eux est en libre accès. Des services complémentaires sont proposés via les bibliothèques et institutions abonnées.",
+         "country": "FR"
+        },
+        "organization": {
+         "name": [
+          {
+           "@added": "true",
+           "@xml:lang": "fr",
+           "$": "OpenEdition"
+          },
+          {
+           "@added": "true",
+           "@xml:lang": "en",
+           "$": "OpenEdition"
+          },
+          {
+           "@added": "true",
+           "@xml:lang": "es",
+           "$": "OpenEdition"
+          },
+          "OpenEdition"
+         ],
+         "url": "http://www.openedition.org",
+         "description": "calenda@revues.org",
+         "country": "FR"
+        }
+       },
+       "dc:language": "fr",
+       "dc:rights": [
+        "info:eu-repo/semantics/openAccess",
+        "https://www.openedition.org/12554"
+       ]
+      }
+     }
+    ]
+   },
+   "page": {
+    "@current": "1",
+    "@next": "2"
+   }
+  }
+ }
+}

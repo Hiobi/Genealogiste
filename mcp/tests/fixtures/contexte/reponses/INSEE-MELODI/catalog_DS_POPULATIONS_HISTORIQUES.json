@@ -1,0 +1,122 @@
+{
+ "identifier": "DS_POPULATIONS_HISTORIQUES",
+ "title": [
+  {
+   "content": "Populations municipales de 1968 à 2023",
+   "lang": "fr"
+  },
+  {
+   "content": "Municipal populations from 1968 to 2023",
+   "lang": "en"
+  }
+ ],
+ "abstract": [
+  {
+   "content": "Population municipale pour les différentes circonscriptions administratives : régions, départements, arrondissements et communes de 1968 à 2023. ",
+   "lang": "fr"
+  },
+  {
+   "content": "Municipal population for the various administrative districts: regions, départements, arrondissements and communes from 1968 to 2023. ",
+   "lang": "en"
+  }
+ ],
+ "description": [
+  {
+   "content": "Cette base fournit les données de populations de 1968 à 2023 pour les communes de France hors Mayotte. Les résultats des recensements depuis 2006 ne se comparent correctement entre eux que sur des périodes espacées d’au moins 5 ans. Les données sont diffusées selon la géographie en vigueur au 1er janvier 2025. ",
+   "lang": "fr"
+  },
+  {
+   "content": "This database provides population data from 1968 to 2023 for municipalities in France excluding Mayotte. The results of censuses since 2006 can only be properly compared with each other for periods at least 5 years apart. The data is published according to the geography in force on 1 January 2025. ",
+   "lang": "en"
+  }
+ ],
+ "temporal": {
+  "endPeriod": "2023-01-01T00:00:00",
+  "startPeriod": "1968-01-01T00:00:00"
+ },
+ "spatialTemporal": "2025-01-01T01:00:00",
+ "spatialResolution": [
+  {
+   "id": "ARR",
+   "label": [
+    {
+     "content": "Arrondissement",
+     "lang": "fr"
+    },
+    {
+     "content": "District",
+     "lang": "en"
+    }
+   ]
+  },
+  {
+   "id": "ARM",
+   "label": [
+    {
+     "content": "Arrondissement municipal",
+     "lang": "fr"
+    },
+    {
+     "content": "Municipal district",
+     "lang": "en"
+    }
+   ]
+  },
+  {
+   "id": "COM",
+   "label": [
+    {
+     "content": "Commune",
+     "lang": "fr"
+    },
+    {
+     "content": "Commune",
+     "lang": "en"
+    }
+   ]
+  },
+  {
+   "id": "DEP",
+   "label": [
+    {
+     "content": "Département",
+     "lang": "fr"
+    },
+    {
+     "content": "Department",
+     "lang": "en"
+    }
+   ]
+  },
+  {
+   "id": "REG",
+   "label": [
+    {
+     "content": "Région",
+     "lang": "fr"
+    },
+    {
+     "content": "Region",
+     "lang": "en"
+    }
+   ]
+  },
+  {
+   "id": "FRANCE",
+   "label": [
+    {
+     "content": "France",
+     "lang": "fr"
+    },
+    {
+     "content": "France",
+     "lang": "en"
+    }
+   ]
+  }
+ ],
+ "issued": "2025-12-17T08:46:11.000414939",
+ "modified": "2025-12-18T12:00:16.306934614",
+ "creator": "Insee",
+ "uri": "http://id.insee.fr/catalogues/jeuDeDonnees/de100d53-2a08-40b6-a72a-cbed4fcd2614"
+}

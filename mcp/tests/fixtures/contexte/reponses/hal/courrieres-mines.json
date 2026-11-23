@@ -1,0 +1,185 @@
+{
+ "response": {
+  "numFound": 10,
+  "start": 0,
+  "maxScore": 13.571194,
+  "numFoundExact": true,
+  "docs": [
+   {
+    "docid": "140515",
+    "openAccess_bool": true,
+    "peerReviewing_s": "1",
+    "title_s": [
+     "L'héritage de Courrières : de la sécurité minière à la sécurité industrielle."
+    ],
+    "keyword_s": [
+     "Disaster",
+     "Charbon",
+     "Explosion de poussières",
+     "Poussière",
+     "Grisou",
+     "Catastrophe",
+     "Mine",
+     "Courrières",
+     "Coal",
+     "Dust explosion",
+     "Dust",
+     "Firedamp"
+    ],
+    "authLastName_s": [
+     "Cassini",
+     "Raffoux",
+     "Tauziède"
+    ],
+    "authFirstName_s": [
+     "Philippe",
+     "Jean-François",
+     "Christian"
+    ],
+    "authFullName_s": [
+     "Philippe Cassini",
+     "Jean-François Raffoux",
+     "Christian Tauziède"
+    ],
+    "halId_s": "ineris-00140515",
+    "docType_s": "COMM",
+    "bookTitle_s": "Actes du colloque Européen \"10 mars 1906 : la catastrophe des mines de Courrières... et après ?\", 9-11 octobre 2006, Lewarde",
+    "city_s": "Lewarde",
+    "page_s": "179-188",
+    "publisher_s": [
+     "Centre historique minier du Nord-Pas-de-Calais"
+    ],
+    "publicationDateY_i": 2007
+   },
+   {
+    "docid": "134739",
+    "openAccess_bool": false,
+    "peerReviewing_s": "1",
+    "title_s": [
+     "La recomposition du personnel de la Compagnie des mines de Courrières"
+    ],
+    "keyword_s": [
+     "Économie",
+     "Mines",
+     "Houillères",
+     "Histoire sociale",
+     "Compagnie des mines",
+     "COurrières"
+    ],
+    "authLastName_s": [
+     "Eck"
+    ],
+    "authFirstName_s": [
+     "Jean-François"
+    ],
+    "authFullName_s": [
+     "Jean-François Eck"
+    ],
+    "halId_s": "halshs-00134739",
+    "docType_s": "COMM",
+    "city_s": "Lewarde",
+    "publicationDateY_i": 2006
+   },
+   {
+    "docid": "4792774",
+    "openAccess_bool": true,
+    "peerReviewing_s": "1",
+    "title_s": [
+     "Les « films perdus » de la catastrophe de Courrières : des survivants au cœur d’un succès cinématographique",
+     "The \"lost films\" of the Courrieres disaster: survivors at the heart of a cinematographic success"
+    ],
+    "keyword_s": [
+     "Lost films",
+     "Cinematograph",
+     "Minors",
+     "France",
+     "Courrieres disaster",
+     "Catastrophe de Courrières",
+     "France",
+     "Mineurs",
+     "Cinématographe",
+     "Films perdus"
+    ],
+    "journalTitle_s": "Revue du Nord",
+    "authLastName_s": [
+     "Delangue"
+    ],
+    "authFirstName_s": [
+     "Guillaume"
+    ],
+    "authFullName_s": [
+     "Guillaume Delangue"
+    ],
+    "halId_s": "hal-04792774",
+    "docType_s": "ART",
+    "issue_s": [
+     "n°448"
+    ],
+    "page_s": "p. 341-366",
+    "publicationDateY_i": 2024
+   },
+   {
+    "docid": "414171",
+    "openAccess_bool": false,
+    "title_s": [
+     "De la police des mines à l'hygiène et à la salubrité des mines (1813-1907)"
+    ],
+    "keyword_s": [
+     "Police des mines",
+     "Hygiène et salubrité des mines"
+    ],
+    "authLastName_s": [
+     "Fortunet"
+    ],
+    "authFirstName_s": [
+     "Françoise"
+    ],
+    "authFullName_s": [
+     "Françoise Fortunet"
+    ],
+    "halId_s": "halshs-00414171",
+    "docType_s": "COUV",
+    "bookTitle_s": "10 mars 1906. La catastrophe des mines de Courrières. Et après ?",
+    "page_s": "138-144",
+    "publisher_s": [
+     "Ed. Centre Historique Minier"
+    ],
+    "publicationDateY_i": 2007
+   },
+   {
+    "docid": "5370567",
+    "openAccess_bool": true,
+    "peerReviewing_s": "1",
+    "title_s": [
+     "Médier l’extraordinaire par l’ordinaire : le cas des cartes postales de la catastrophe de Courrières",
+     "Mediating the extraordinary through the ordinary: the case of postcards from the Courrières disaster"
+    ],
+    "keyword_s": [
+     "Digital writing device",
+     "Memorial mediation",
+     "Postcard",
+     "Collection",
+     "Mining memory",
+     "Dispositif d'écriture numérique",
+     "Collection",
+     "Carte postale",
+     "Mémoire minière",
+     "Médiation mémorielle"
+    ],
+    "authLastName_s": [
+     "Le Marquer"
+    ],
+    "authFirstName_s": [
+     "Juliette"
+    ],
+    "authFullName_s": [
+     "Juliette Le Marquer"
+    ],
+    "halId_s": "hal-05370567",
+    "docType_s": "COMM",
+    "city_s": "Créteil",
+    "publicationDateY_i": 2025
+   }
+  ]
+ }
+}

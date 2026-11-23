@@ -1,0 +1,545 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xml-stylesheet type="text/xsl" href="https://www.sudoc.abes.fr/cbs/sru/DB=2.1/?xsl=searchRetrieveResponse" ?>
+<srw:searchRetrieveResponse xmlns:srw="http://www.loc.gov/zing/srw/"
+			    xmlns:dc="http://purl.org/dc/elements/1.1/"
+			    xmlns:diag="http://www.loc.gov/zing/srw/diagnostic/"
+			    xmlns:xcql="http://www.loc.gov/zing/cql/xcql/">
+    <srw:version>1.1</srw:version>
+    <srw:numberOfRecords>21</srw:numberOfRecords>
+    <srw:resultSetId>SIDc666661e-79S104575</srw:resultSetId>
+    <srw:records>
+    
+
+
+<srw:record>
+<srw:recordSchema>unimarc</srw:recordSchema>
+<srw:recordPacking>xml</srw:recordPacking>
+<srw:recordData>
+<record>
+<controlfield tag="005">20231013184535.000</controlfield>
+<leader>     cam0 22        450 </leader>
+<controlfield tag="001">000798495</controlfield>
+<controlfield tag="003">http://www.sudoc.fr/000798495</controlfield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">(OCoLC)461708199</subfield></datafield>
+<datafield tag="010" ind1=" " ind2=" "><subfield code="z">2-903034-000-4</subfield></datafield>
+<datafield tag="020" ind1=" " ind2=" "><subfield code="a">FR</subfield>
+<subfield code="b">08504851</subfield></datafield>
+<datafield tag="021" ind1=" " ind2=" "><subfield code="a">FR</subfield>
+<subfield code="b">D.L. 81-08530</subfield></datafield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">frBN002460969</subfield></datafield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">FRBNF347626500000005</subfield>
+<subfield code="z">FRBNF34762650</subfield></datafield>
+<datafield tag="033" ind1=" " ind2=" "><subfield code="a">http://catalogue.bnf.fr/ark:/12148/cb347626502</subfield></datafield>
+<datafield tag="100" ind1=" " ind2=" "><subfield code="a">19840420d1981    u  y0frey50      ba</subfield></datafield>
+<datafield tag="101" ind1="0" ind2=" "><subfield code="a">fre</subfield>
+<subfield code="2">639-2</subfield></datafield>
+<datafield tag="105" ind1=" " ind2=" "><subfield code="a">y   zz  00|z|</subfield></datafield>
+<datafield tag="106" ind1=" " ind2=" "><subfield code="a">r</subfield></datafield>
+<datafield tag="181" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">txt</subfield>
+<subfield code="2">rdacontent</subfield></datafield>
+<datafield tag="181" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">i#</subfield>
+<subfield code="b">xxxe##</subfield></datafield>
+<datafield tag="182" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">n</subfield>
+<subfield code="2">rdamedia</subfield></datafield>
+<datafield tag="182" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">n</subfield></datafield>
+<datafield tag="102" ind1=" " ind2=" "><subfield code="a">FR</subfield></datafield>
+<datafield tag="200" ind1="1" ind2=" "><subfield code="a">Courrières</subfield>
+<subfield code="e">histoire d&apos;une concession minière</subfield>
+<subfield code="f">par André Tavernier</subfield></datafield>
+<datafield tag="700" ind1=" " ind2="1"><subfield code="3">204410541</subfield>
+<subfield code="a">Tavernier</subfield>
+<subfield code="b">André</subfield>
+<subfield code="4">070</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="3"><subfield code="a">FR</subfield>
+<subfield code="b">Abes</subfield>
+<subfield code="c">20231013</subfield>
+<subfield code="g">AFNOR</subfield></datafield>
+<datafield tag="210" ind1=" " ind2=" "><subfield code="a">Henin Beaumont</subfield>
+<subfield code="c">Société de recherches historiques de la région d&apos;Henin-Carvin</subfield>
+<subfield code="d">1981</subfield></datafield>
+<datafield tag="215" ind1=" " ind2=" "><subfield code="a">1 vol. (70 f.)</subfield>
+<subfield code="c">ill., plan</subfield>
+<subfield code="d">30 cm</subfield></datafield>
+<datafield tag="300" ind1=" " ind2=" "><subfield code="a">Dactylographié</subfield></datafield>
+<datafield tag="601" ind1="0" ind2="0"><subfield code="3">028285352</subfield>
+<subfield code="a">Compagnie des mines de houille de Courrières</subfield>
+<subfield code="c">France</subfield>
+<subfield code="3">02726470X</subfield>
+<subfield code="x">Histoire</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">027260267</subfield>
+<subfield code="a">Mines de charbon</subfield>
+<subfield code="3">027226794</subfield>
+<subfield code="y">France</subfield>
+<subfield code="3">027250962</subfield>
+<subfield code="y">Courrières (Pas-de-Calais)</subfield>
+<subfield code="3">02726470X</subfield>
+<subfield code="x">Histoire</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="676" ind1=" " ind2=" "><subfield code="a">920</subfield></datafield>
+<datafield tag="675" ind1=" " ind2=" "><subfield code="a">92</subfield>
+<subfield code="v">Éd. 1967</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="3"><subfield code="a">FR</subfield>
+<subfield code="b">BN</subfield>
+<subfield code="c">19990126</subfield>
+<subfield code="g">AFNOR</subfield></datafield>
+</record></srw:recordData><srw:recordPosition>1</srw:recordPosition>
+</srw:record>
+
+<srw:record>
+<srw:recordSchema>unimarc</srw:recordSchema>
+<srw:recordPacking>xml</srw:recordPacking>
+<srw:recordData>
+<record>
+<controlfield tag="005">20231207121150.000</controlfield>
+<leader>     cam0 22        450 </leader>
+<controlfield tag="001">252647955</controlfield>
+<controlfield tag="003">http://www.sudoc.fr/252647955</controlfield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">(OCoLC)1231717370</subfield></datafield>
+<datafield tag="010" ind1=" " ind2=" "><subfield code="a">978-2-915398-20-5</subfield>
+<subfield code="b">rel.</subfield>
+<subfield code="d">20 EUR</subfield></datafield>
+<datafield tag="073" ind1=" " ind2="1"><subfield code="a">9782915398205</subfield></datafield>
+<datafield tag="100" ind1=" " ind2=" "><subfield code="a">20210118h20202020m  y0frey50      ba</subfield></datafield>
+<datafield tag="101" ind1="0" ind2=" "><subfield code="a">fre</subfield>
+<subfield code="2">639-2</subfield></datafield>
+<datafield tag="105" ind1=" " ind2=" "><subfield code="a">a   a   000fy</subfield></datafield>
+<datafield tag="106" ind1=" " ind2=" "><subfield code="a">r</subfield></datafield>
+<datafield tag="181" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">txt</subfield>
+<subfield code="2">rdacontent</subfield></datafield>
+<datafield tag="181" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">i#</subfield>
+<subfield code="b">xxxe##</subfield></datafield>
+<datafield tag="182" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">n</subfield>
+<subfield code="2">rdamedia</subfield></datafield>
+<datafield tag="182" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">n</subfield></datafield>
+<datafield tag="183" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">nga</subfield>
+<subfield code="2">RDAfrCarrier</subfield></datafield>
+<datafield tag="102" ind1=" " ind2=" "><subfield code="a">FR</subfield></datafield>
+<datafield tag="320" ind1=" " ind2=" "><subfield code="a">Bibliogr. p. 279</subfield></datafield>
+<datafield tag="200" ind1="1" ind2=" "><subfield code="a">Les Gueules Noires</subfield>
+<subfield code="f">Émile Morel</subfield>
+<subfield code="g">Illustré par Théophile Steinlein</subfield>
+<subfield code="g">Préface de Paul Adam</subfield>
+<subfield code="g">Préface de Dominique Simonnot</subfield>
+<subfield code="g">Postface de Philippe Kaenel</subfield></datafield>
+<datafield tag="700" ind1=" " ind2="1"><subfield code="3">033574766</subfield>
+<subfield code="a">Morel</subfield>
+<subfield code="b">Émile</subfield>
+<subfield code="f">1842-1919</subfield>
+<subfield code="4">070</subfield></datafield>
+<datafield tag="701" ind1=" " ind2="1"><subfield code="3">027205568</subfield>
+<subfield code="a">Adam</subfield>
+<subfield code="b">Paul</subfield>
+<subfield code="f">1862-1920</subfield>
+<subfield code="4">080</subfield></datafield>
+<datafield tag="702" ind1=" " ind2="1"><subfield code="3">027148246</subfield>
+<subfield code="a">Steinlen</subfield>
+<subfield code="b">Théophile Alexandre</subfield>
+<subfield code="f">1859-1923</subfield>
+<subfield code="4">440</subfield></datafield>
+<datafield tag="702" ind1=" " ind2="1"><subfield code="3">075423561</subfield>
+<subfield code="a">Simonnot</subfield>
+<subfield code="b">Dominique</subfield>
+<subfield code="f">1952-....</subfield>
+<subfield code="4">080</subfield></datafield>
+<datafield tag="702" ind1=" " ind2="1"><subfield code="3">029573688</subfield>
+<subfield code="a">Kaenel</subfield>
+<subfield code="b">Philippe</subfield>
+<subfield code="f">1960-....</subfield>
+<subfield code="4">075</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="3"><subfield code="a">FR</subfield>
+<subfield code="b">Abes</subfield>
+<subfield code="c">20231207</subfield>
+<subfield code="g">AFNOR</subfield></datafield>
+<datafield tag="214" ind1=" " ind2="0"><subfield code="a">Garches</subfield>
+<subfield code="c">À propos</subfield>
+<subfield code="d">DL 2020</subfield></datafield>
+<datafield tag="215" ind1=" " ind2=" "><subfield code="a">1 vol. (279 p.)</subfield>
+<subfield code="c">ill., ill. en coul., couv. ill. en coul.</subfield>
+<subfield code="d">20 cm</subfield></datafield>
+<datafield tag="455" ind1=" " ind2="|"><subfield code="0">082951047</subfield>
+<subfield code="t">Les gueules noires</subfield>
+<subfield code="f">Emile Morel</subfield>
+<subfield code="e">5ème éd.</subfield>
+<subfield code="c">Paris</subfield>
+<subfield code="n">E. Sansot &amp; Cie</subfield>
+<subfield code="d">1907</subfield>
+<subfield code="p">207 p.-[15]f. de pl.</subfield></datafield>
+<datafield tag="300" ind1=" " ind2=" "><subfield code="a">Cet ouvrage contient 57 illustrations, soit 16 lithographies pleine page et 41 gravures et dessins</subfield></datafield>
+<datafield tag="300" ind1=" " ind2=" "><subfield code="a">Cet ouvrage contient un dossier documentaire composé d’un article sur Eugène Morel, d’un article sur Théophile Steinlein et d’un cahier d’illustrations et de photos sur les mineurs et sur la catastrophe de Courrières</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">027288250</subfield>
+<subfield code="a">Catastrophe de Courrières (1906)</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">027299708</subfield>
+<subfield code="a">Mineurs (ouvriers)</subfield>
+<subfield code="3">027226794</subfield>
+<subfield code="y">France</subfield>
+<subfield code="3">027250962</subfield>
+<subfield code="y">Courrières (Pas-de-Calais)</subfield>
+<subfield code="3">02766435X</subfield>
+<subfield code="x">Conditions sociales</subfield>
+<subfield code="3">027794903</subfield>
+<subfield code="z">1870-1914</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">027260267</subfield>
+<subfield code="a">Mines de charbon</subfield>
+<subfield code="3">027226794</subfield>
+<subfield code="y">France</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="608" ind1=" " ind2=" "><subfield code="3">028207998</subfield>
+<subfield code="a">Nouvelles françaises</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="324" ind1=" " ind2=" "><subfield code="a">Reproduction en fac-similé de l’éd. de Paris. E. Sansot &amp; Cie, 1907</subfield></datafield>
+<datafield tag="330" ind1=" " ind2=" "><subfield code="a">Émile Morel, auteur arrageois désormais complètement oublié, publie en 1907 un texte consacré aux mineurs, au titre évocateur, Les Gueules noires. Dans une composition parfaitement construite, sept récits montés en kaléidoscope emmènent le lecteur sur le carreau de la fosse, dans le coron et l’estaminet, au plus près d’un mineur, d’une jeune trieuse, d’une veuve ou d’un patron. Peu à peu, au fil de la lecture, sans aucun élément chronologique, ni référence géographique, le lecteur, immergé dans un monde d’une dureté à peine imaginable, est gagné par l’émotion. La mort, la maladie, l’exploitation des hommes sont omniprésentes. Un texte noir très juste.</subfield>
+<subfield code="2">site web de l’éditeur</subfield></datafield>
+</record></srw:recordData><srw:recordPosition>2</srw:recordPosition>
+</srw:record>
+
+<srw:record>
+<srw:recordSchema>unimarc</srw:recordSchema>
+<srw:recordPacking>xml</srw:recordPacking>
+<srw:recordData>
+<record>
+<controlfield tag="005">20211018153814.000</controlfield>
+<leader>     cam0 22        450 </leader>
+<controlfield tag="001">111417104</controlfield>
+<controlfield tag="003">http://www.sudoc.fr/111417104</controlfield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">(OCoLC)493679451</subfield></datafield>
+<datafield tag="010" ind1=" " ind2=" "><subfield code="a">2-913661-22-X</subfield></datafield>
+<datafield tag="010" ind1=" " ind2=" "><subfield code="a">978-2-913661-22-6</subfield>
+<subfield code="b">br.</subfield>
+<subfield code="d">12 EUR</subfield></datafield>
+<datafield tag="073" ind1=" " ind2="0"><subfield code="a">9782913661226</subfield></datafield>
+<datafield tag="021" ind1=" " ind2=" "><subfield code="a">FR</subfield>
+<subfield code="b">DLE-20061017-49592</subfield></datafield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">FRBNF409214440000007</subfield>
+<subfield code="z">FRBNF40921444</subfield></datafield>
+<datafield tag="033" ind1=" " ind2=" "><subfield code="a">http://catalogue.bnf.fr/ark:/12148/cb40921444d</subfield></datafield>
+<datafield tag="100" ind1=" " ind2=" "><subfield code="a">20061219d2006    m  y0frey50      ba</subfield></datafield>
+<datafield tag="101" ind1="0" ind2=" "><subfield code="a">fre</subfield>
+<subfield code="2">639-2</subfield></datafield>
+<datafield tag="105" ind1=" " ind2=" "><subfield code="a">ab  ||||000yy</subfield></datafield>
+<datafield tag="106" ind1=" " ind2=" "><subfield code="a">r</subfield></datafield>
+<datafield tag="181" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">txt</subfield>
+<subfield code="2">rdacontent</subfield></datafield>
+<datafield tag="181" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">i#</subfield>
+<subfield code="b">xxxe##</subfield></datafield>
+<datafield tag="182" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">n</subfield>
+<subfield code="2">rdamedia</subfield></datafield>
+<datafield tag="182" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">n</subfield></datafield>
+<datafield tag="183" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">nga</subfield>
+<subfield code="2">RDAfrCarrier</subfield></datafield>
+<datafield tag="102" ind1=" " ind2=" "><subfield code="a">FR</subfield></datafield>
+<datafield tag="320" ind1=" " ind2=" "><subfield code="a">Glossaire p. [150]-[152]</subfield></datafield>
+<datafield tag="200" ind1="1" ind2=" "><subfield code="a">La catastrophe des mines de Courrières</subfield>
+<subfield code="e">récits et témoignages [de Auguste Berthon, Léon Boursier, Louis Castel, Honoré Couplet, César Danglot, Albert Dubois, Elie Joseph Lefebvre, Victor Emile Joseph Martin, Henri Nény, Romain Noiret, Anselme Pruvost, Léon Vanhoudenhove, Henri Wattier, François Colomer et Fernand Grard]</subfield>
+<subfield code="f">[édition établie par Virginie Debrabant et Karine Sprimont]</subfield>
+<subfield code="g">[introduction par André Dubuc,...]</subfield></datafield>
+<datafield tag="701" ind1=" " ind2="1"><subfield code="3">027405826</subfield>
+<subfield code="a">Jaurès</subfield>
+<subfield code="b">Jean</subfield>
+<subfield code="f">1859-1914</subfield>
+<subfield code="4">070</subfield></datafield>
+<datafield tag="702" ind1=" " ind2="1"><subfield code="3">084051930</subfield>
+<subfield code="a">Debrabant</subfield>
+<subfield code="b">Virginie</subfield>
+<subfield code="f">19..-....</subfield>
+<subfield code="4">340</subfield></datafield>
+<datafield tag="702" ind1=" " ind2="1"><subfield code="3">111719828</subfield>
+<subfield code="a">Sprimont</subfield>
+<subfield code="b">Karine</subfield>
+<subfield code="f">19..-....</subfield>
+<subfield code="4">340</subfield></datafield>
+<datafield tag="702" ind1=" " ind2="1"><subfield code="3">071540660</subfield>
+<subfield code="a">Dubuc</subfield>
+<subfield code="b">André</subfield>
+<subfield code="f">1945-....</subfield>
+<subfield code="4">080</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="3"><subfield code="a">FR</subfield>
+<subfield code="b">Abes</subfield>
+<subfield code="c">20211018</subfield>
+<subfield code="g">AFNOR</subfield></datafield>
+<datafield tag="214" ind1=" " ind2="0"><subfield code="a">Paris</subfield>
+<subfield code="c">L&apos;Oeil d&apos;or</subfield></datafield>
+<datafield tag="214" ind1=" " ind2="4"><subfield code="d">C 2006</subfield></datafield>
+<datafield tag="215" ind1=" " ind2=" "><subfield code="a">1 vol. (151 p.)</subfield>
+<subfield code="c">ill., carte, couv. ill.</subfield>
+<subfield code="d">21 cm</subfield></datafield>
+<datafield tag="225" ind1="2" ind2=" "><subfield code="a">Mémoires &amp; miroirs</subfield></datafield>
+<datafield tag="410" ind1=" " ind2="|"><subfield code="0">059695730</subfield>
+<subfield code="t">Mémoires &amp; miroirs</subfield>
+<subfield code="x">1630-6058</subfield></datafield>
+<datafield tag="300" ind1=" " ind2=" "><subfield code="a">En appendice : &quot;Symbole&quot;, un texte de Jean Jaurès, éditorial de &quot;L&apos;Humanité&quot; du 14 mars 1906</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">027288250</subfield>
+<subfield code="a">Catastrophe de Courrières (1906)</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">027260267</subfield>
+<subfield code="a">Mines de charbon</subfield>
+<subfield code="3">027226794</subfield>
+<subfield code="y">France</subfield>
+<subfield code="3">027250962</subfield>
+<subfield code="y">Courrières (Pas-de-Calais)</subfield>
+<subfield code="3">027794687</subfield>
+<subfield code="z">1900-1945</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="608" ind1=" " ind2=" "><subfield code="3">027805441</subfield>
+<subfield code="a">Récits personnels</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="676" ind1=" " ind2=" "><subfield code="a">363.119 622 334</subfield>
+<subfield code="v">21</subfield>
+<subfield code="z">fre</subfield></datafield>
+<datafield tag="686" ind1=" " ind2=" "><subfield code="a">920</subfield>
+<subfield code="2">Cadre de classement de la Bibliographie nationale française</subfield></datafield>
+<datafield tag="305" ind1=" " ind2=" "><subfield code="a">Autres tirage(s) : 2019</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="0"><subfield code="a">FR</subfield>
+<subfield code="b">BNF</subfield>
+<subfield code="c">20061017</subfield>
+<subfield code="g">AFNOR</subfield>
+<subfield code="2">intermrc</subfield></datafield>
+</record></srw:recordData><srw:recordPosition>3</srw:recordPosition>
+</srw:record>
+
+<srw:record>
+<srw:recordSchema>unimarc</srw:recordSchema>
+<srw:recordPacking>xml</srw:recordPacking>
+<srw:recordData>
+<record>
+<controlfield tag="005">20230117040157.000</controlfield>
+<leader>     cam0 22        450 </leader>
+<controlfield tag="001">12195742X</controlfield>
+<controlfield tag="003">http://www.sudoc.fr/12195742X</controlfield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">(OCoLC)470608758</subfield></datafield>
+<datafield tag="010" ind1=" " ind2=" "><subfield code="a">978-2-915507-00-3</subfield>
+<subfield code="b">br</subfield>
+<subfield code="d">18 EUR</subfield></datafield>
+<datafield tag="073" ind1=" " ind2="0"><subfield code="a">9782915507003</subfield></datafield>
+<datafield tag="021" ind1=" " ind2=" "><subfield code="a">FR</subfield>
+<subfield code="b">DLE-20080121-3421</subfield></datafield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">FRBNF411871100000001</subfield>
+<subfield code="z">FRBNF41187110</subfield></datafield>
+<datafield tag="033" ind1=" " ind2=" "><subfield code="a">http://catalogue.bnf.fr/ark:/12148/cb41187110q</subfield></datafield>
+<datafield tag="100" ind1=" " ind2=" "><subfield code="a">20080304h20072007k  y0frey50      ba</subfield></datafield>
+<datafield tag="101" ind1="0" ind2=" "><subfield code="a">fre</subfield>
+<subfield code="2">639-2</subfield></datafield>
+<datafield tag="105" ind1=" " ind2=" "><subfield code="a">a   ||||100yy</subfield></datafield>
+<datafield tag="106" ind1=" " ind2=" "><subfield code="a">r</subfield></datafield>
+<datafield tag="181" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">txt</subfield>
+<subfield code="2">rdacontent</subfield></datafield>
+<datafield tag="181" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">i#</subfield>
+<subfield code="b">xxxe##</subfield></datafield>
+<datafield tag="182" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">n</subfield>
+<subfield code="2">rdamedia</subfield></datafield>
+<datafield tag="182" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">n</subfield></datafield>
+<datafield tag="102" ind1=" " ind2=" "><subfield code="a">FR</subfield></datafield>
+<datafield tag="320" ind1=" " ind2=" "><subfield code="a">Notes bibliogr.</subfield></datafield>
+<datafield tag="200" ind1="1" ind2=" "><subfield code="a">10 mars 1906, la catastrophe des mines de Courrières, et après ?</subfield>
+<subfield code="e">actes du colloque européen [des] 9,10 et 11 octobre 2006</subfield>
+<subfield code="f">organisé par le Centre historique minier du Nord-Pas-de-Calais à Lewarde</subfield></datafield>
+<datafield tag="517" ind1="|" ind2=" "><subfield code="a">Dix mars 1906, la catastrophe des mines de Courrières, et après ?</subfield></datafield>
+<datafield tag="712" ind1="0" ind2="2"><subfield code="3">032121385</subfield>
+<subfield code="a">Centre historique minier</subfield>
+<subfield code="c">Lewarde, Nord</subfield>
+<subfield code="4">557</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="3"><subfield code="a">FR</subfield>
+<subfield code="b">Abes</subfield>
+<subfield code="c">20230117</subfield>
+<subfield code="g">AFNOR</subfield></datafield>
+<datafield tag="210" ind1=" " ind2=" "><subfield code="a">Lewarde</subfield>
+<subfield code="c">Centre historique minier du Nord-Pas-de-Calais</subfield>
+<subfield code="d">cop. 2007</subfield>
+<subfield code="e">59-Bondues</subfield>
+<subfield code="g">Impr. J. Bernard</subfield></datafield>
+<datafield tag="215" ind1=" " ind2=" "><subfield code="a">1 vol. (319 p.)</subfield>
+<subfield code="c">ill., couv. ill.</subfield>
+<subfield code="d">27 cm</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">027288250</subfield>
+<subfield code="a">Catastrophe de Courrières (1906)</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">033853428</subfield>
+<subfield code="a">Mines (sites d&apos;extraction)</subfield>
+<subfield code="x">Mesures de sécurité</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">027852431</subfield>
+<subfield code="a">Mines (sites d&apos;extraction)</subfield>
+<subfield code="x">Accidents</subfield>
+<subfield code="3">028054679</subfield>
+<subfield code="x">Dans la littérature</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">027852431</subfield>
+<subfield code="a">Mines (sites d&apos;extraction)</subfield>
+<subfield code="x">Accidents</subfield>
+<subfield code="3">027966216</subfield>
+<subfield code="x">Dans l&apos;art</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="608" ind1=" " ind2=" "><subfield code="3">02886431X</subfield>
+<subfield code="a">Actes de congrès</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="676" ind1=" " ind2=" "><subfield code="a">944.272 0813</subfield>
+<subfield code="v">21</subfield></datafield>
+<datafield tag="676" ind1=" " ind2=" "><subfield code="a">363.119 622334</subfield>
+<subfield code="v">21</subfield></datafield>
+<datafield tag="686" ind1=" " ind2=" "><subfield code="a">944</subfield>
+<subfield code="2">Cadre de classement de la Bibliographie nationale française</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="0"><subfield code="a">FR</subfield>
+<subfield code="b">BNF</subfield>
+<subfield code="c">20080121</subfield>
+<subfield code="g">AFNOR</subfield>
+<subfield code="2">intermrc</subfield></datafield>
+<datafield tag="359" ind1="2" ind2=" "><subfield code="b">I. La catastrophe du 10 mars 1906</subfield>
+<subfield code="b">II. Après la catastrophe, les conséquences</subfield>
+<subfield code="b">III. Risques et sécurité à la mine</subfield>
+<subfield code="b">IV. Les représentations de la catastrophe</subfield>
+<subfield code="b">V. Regards croisés sur la notion de catastrophe</subfield></datafield>
+</record></srw:recordData><srw:recordPosition>4</srw:recordPosition>
+</srw:record>
+
+<srw:record>
+<srw:recordSchema>unimarc</srw:recordSchema>
+<srw:recordPacking>xml</srw:recordPacking>
+<srw:recordData>
+<record>
+<controlfield tag="005">20231013200626.000</controlfield>
+<leader>     cam0 22        450 </leader>
+<controlfield tag="001">00225820X</controlfield>
+<controlfield tag="003">http://www.sudoc.fr/00225820X</controlfield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">(OCoLC)463413062</subfield></datafield>
+<datafield tag="010" ind1=" " ind2=" "><subfield code="b">Rel.</subfield>
+<subfield code="d">85 F</subfield></datafield>
+<datafield tag="020" ind1=" " ind2=" "><subfield code="a">FR</subfield>
+<subfield code="b">09117417</subfield></datafield>
+<datafield tag="021" ind1=" " ind2=" "><subfield code="a">FR</subfield>
+<subfield code="b">DL 91-06012</subfield></datafield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">bua18333</subfield></datafield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">PRITEC.MAZARINE.010470218001</subfield></datafield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">frBN012584310</subfield></datafield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">FRBNF354122770000002</subfield>
+<subfield code="z">FRBNF35412277</subfield></datafield>
+<datafield tag="033" ind1=" " ind2=" "><subfield code="a">http://catalogue.bnf.fr/ark:/12148/cb35412277k</subfield></datafield>
+<datafield tag="100" ind1=" " ind2=" "><subfield code="a">19910418d1990    m  y0frey50      ba</subfield></datafield>
+<datafield tag="101" ind1="0" ind2=" "><subfield code="a">fre</subfield>
+<subfield code="2">639-2</subfield></datafield>
+<datafield tag="105" ind1=" " ind2=" "><subfield code="a">a   zz  00|z|</subfield></datafield>
+<datafield tag="106" ind1=" " ind2=" "><subfield code="a">r</subfield></datafield>
+<datafield tag="181" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">txt</subfield>
+<subfield code="2">rdacontent</subfield></datafield>
+<datafield tag="181" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">i#</subfield>
+<subfield code="b">xxxe##</subfield></datafield>
+<datafield tag="182" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">n</subfield>
+<subfield code="2">rdamedia</subfield></datafield>
+<datafield tag="182" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">n</subfield></datafield>
+<datafield tag="102" ind1=" " ind2=" "><subfield code="a">FR</subfield></datafield>
+<datafield tag="200" ind1="1" ind2=" "><subfield code="a">Courrières et les grèves de 1906</subfield>
+<subfield code="f">Bertrand Cocq, Serge Louart</subfield></datafield>
+<datafield tag="700" ind1=" " ind2="1"><subfield code="a">Cocq</subfield>
+<subfield code="b">Bertrand</subfield>
+<subfield code="4">070</subfield></datafield>
+<datafield tag="701" ind1=" " ind2="1"><subfield code="3">23378604X</subfield>
+<subfield code="a">Louart</subfield>
+<subfield code="b">Serge</subfield>
+<subfield code="4">070</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="3"><subfield code="a">FR</subfield>
+<subfield code="b">Abes</subfield>
+<subfield code="c">20231013</subfield>
+<subfield code="g">AFNOR</subfield></datafield>
+<datafield tag="210" ind1=" " ind2=" "><subfield code="a">[Calonne-Ricouart]</subfield>
+<subfield code="b">15 Pl. Lannoy, 62470</subfield>
+<subfield code="c">S. Louart</subfield>
+<subfield code="d">1990</subfield>
+<subfield code="e">62-Bully-les-Mines</subfield>
+<subfield code="g">Impr. SCIE</subfield></datafield>
+<datafield tag="215" ind1=" " ind2=" "><subfield code="a">88 p</subfield>
+<subfield code="c">ill., couv. ill. en coul</subfield>
+<subfield code="d">15 x 21 cm</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">027288250</subfield>
+<subfield code="a">Catastrophe de Courrières (1906)</subfield>
+<subfield code="3">027791491</subfield>
+<subfield code="x">Ouvrages illustrés</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">027260267</subfield>
+<subfield code="a">Mines de charbon</subfield>
+<subfield code="3">027607429</subfield>
+<subfield code="x">Grèves et lock-out</subfield>
+<subfield code="3">027226794</subfield>
+<subfield code="y">France</subfield>
+<subfield code="3">027252353</subfield>
+<subfield code="y">Pas-de-Calais (France)</subfield>
+<subfield code="3">027794687</subfield>
+<subfield code="z">1900-1945</subfield>
+<subfield code="3">027791491</subfield>
+<subfield code="x">Ouvrages illustrés</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">027265668</subfield>
+<subfield code="a">Mineurs de charbon</subfield>
+<subfield code="3">027226794</subfield>
+<subfield code="y">France</subfield>
+<subfield code="3">027252353</subfield>
+<subfield code="y">Pas-de-Calais (France)</subfield>
+<subfield code="3">027791491</subfield>
+<subfield code="x">Ouvrages illustrés</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="676" ind1=" " ind2=" "><subfield code="a">930</subfield></datafield>
+<datafield tag="675" ind1=" " ind2=" "><subfield code="a">93</subfield>
+<subfield code="v">Éd. 1967</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="3"><subfield code="a">FR</subfield>
+<subfield code="b">BN</subfield>
+<subfield code="c">19990127</subfield>
+<subfield code="g">AFNOR</subfield></datafield>
+</record></srw:recordData><srw:recordPosition>5</srw:recordPosition>
+</srw:record>
+</srw:records>
+    <srw:echoedSearchRetrieveRequest>
+	<srw:version>1.1</srw:version>
+	<srw:query>tou%3D%22Courri%C3%A8res%22+and+tou%3Dmines</srw:query>
+	<srw:xQuery><xcql:triple><xcql:boolean> <xcql:value>and</xcql:value></xcql:boolean><xcql:leftOperand><xcql:searchClause><xcql:index>tou</xcql:index><xcql:relation><xcql:value>=</xcql:value></xcql:relation><xcql:term>"Courrières"</xcql:term></xcql:searchClause></xcql:leftOperand><xcql:rightOperand><xcql:searchClause><xcql:index>tou</xcql:index><xcql:relation><xcql:value>=</xcql:value></xcql:relation><xcql:term>mines</xcql:term></xcql:searchClause></xcql:rightOperand></xcql:triple></srw:xQuery>
+	<startRecord>1</startRecord>
+	<maximumRecords>5</maximumRecords>
+	<srw:recordPacking>xml</srw:recordPacking>
+	<srw:recordSchema>unimarc</srw:recordSchema>
+	
+	<srw:stylesheet>https://www.sudoc.abes.fr/cbs/sru/DB=2.1/?xsl=searchRetrieveResponse</srw:stylesheet>
+    </srw:echoedSearchRetrieveRequest>
+    <diag:diagnostics>
+        <diag:uri>info:srw/diagnostic/1/0</diag:uri>
+	
+	
+    </diag:diagnostics>
+    <srw:extraResponseData>
+	<rob:authenticationToken xmlns:rob="info:srw/extension/2/auth-1.0">U10178,Klecteurweb,D2.1,Ec666661e-79,I250,B341720009,SY,QDEF,A%5C9008+1,,J,H2-26,,29,,34,,39,,44,,49-50,,53-78,,80-87,NLECTEUR+PSI,R10.34.103.198,FN,MNNN</rob:authenticationToken>
+        <mg:resultGrouping xmlns:mg="info:srw/extension/5/metadata-grouping-v1.0">
+	    
+	    <mg:grouping key="9001" description="Type de document"></mg:grouping>
+	    
+	    <mg:grouping key="9000" description="Année de publication"></mg:grouping>
+	    
+	    <mg:grouping key="9005" description="Pays de publication"></mg:grouping>
+	    
+	    <mg:grouping key="9004" description="Langue du document"></mg:grouping>
+	    
+
+	
+	</mg:resultGrouping>
+	
+    </srw:extraResponseData>
+</srw:searchRetrieveResponse>

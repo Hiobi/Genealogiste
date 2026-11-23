@@ -36,9 +36,12 @@ from .budget import PlafondJour, mesurer
 from .cache import Cache
 from .chemins import CheminRefuse, nom_simple, sous
 from .config import Config, load_config
+from .contexte import bibliographie as biblio_contexte
+from .contexte import lieux as lieux_contexte
 from .contexte import presse
 from .contexte import services as services_contexte
 from .contexte.registre import RegistreReferences
+from .contexte.requete import residus_identite
 from .enquetes import EnqueteError, Enquetes
 from .export import charts, chemins_medias, gramps_xml
 from .export.fiche import fiche_markdown, gaps, tree_gaps
@@ -683,6 +686,42 @@ def geo_commune(nom: str = "", code_postal: str = "", code_insee: str = "", depa
 def geo_historique(nom: str = "", code_insee: str = "", departement: str = "") -> dict:
     """Historique d'une commune (COG INSEE depuis 1943) : fusions, changements de nom, commune actuelle."""
     return geo.history(app().sctx, nom, code_insee, departement)
+
+
+@mcp.tool()
+def contexte_bibliographie(sujet: str = "", lieu: str = "", periode: str = "", echelle: str = "commune",
+                           services: list[str] | None = None, personne: str = "", limite: int = 10) -> dict:
+    """Littérature historique (HAL, Isidore, Sudoc, BnF catalogue, theses.fr, Crossref) sur un lieu, une période
+    et un thème : références normalisées, dédoublonnées, classées (lieu et période, puis savantes d'abord), citées
+    (GENEALOGISTE_CONTEXTE_STYLE_CITATION) et inscrites au registre des références consultées.
+    sujet : thème libre (« mines », « émigration ») ; lieu : commune, département ou région ; periode : « 1880-1914 »
+    (classement, pas un filtre) ; echelle : commune | departement | region | pays | nation ; services : codes
+    (défaut : services actifs) ; personne : id de l'arbre dont lieux, période et métier sourcés complètent les
+    arguments absents (jamais son nom). Vide : résultat vide explicite. Notices seules : « non lu »."""
+    if refus := _garde(personne=personne, texte=sujet):
+        return refus
+    a = app()
+    tree = a.tree() if personne else None
+    try:
+        demande = biblio_contexte.preparer(sujet, lieu, periode, echelle, limite, tree, personne)
+    except biblio_contexte.RechercheInvalide as exc:
+        return {"erreur": str(exc), "requetes_emises": 0}
+    residus = (lambda url: residus_identite(url, tree, personne)) if personne else None
+    return biblio_contexte.rechercher(a.sctx, a.registre_references, demande, services,
+                                      a.config.contexte_style_citation, personne or None, residus)
+
+
+@mcp.tool()
+def lieu_historique(lieu: str, date: str) -> dict:
+    """Géographie historique d'un lieu à une date (#287), niveau par niveau, chacun avec source et
+    periode_de_validite : commune (nom, département, rattachement, existence) depuis 1943 (COG INSEE) ; population
+    depuis 1968 (INSEE Melodi) ; cartes anciennes de la Géoplateforme choisies selon la date (liens de tuile, aucun
+    téléchargement). Tout le reste (avant 1943 ; canton, arrondissement, district ; province, généralité,
+    bailliage, diocèse ; population avant 1968) vaut « inconnu » (à établir) avec un lien de consultation : ne
+    jamais le compléter de mémoire. lieu : commune avec son département (« Billy-Montigny, Pas-de-Calais ») ou code
+    INSEE ; date : GEDCOM ou texte (« 1906 », « vers 1750 »). Hors de France : hors périmètre ; pays inconnu ou
+    homonymes : préciser le département ou le code INSEE. Aucune donnée de personne n'est envoyée."""
+    return lieux_contexte.lieu_historique(app().sctx, lieu, date)
 
 
 @mcp.tool()

@@ -53,8 +53,10 @@ AVERTISSEMENT = ("Presse ancienne : source primaire contemporaine, qui situe un 
 # Liens de consultation. Forme de recherche vérifiée le 2026-11-23 (tests/fixtures/contexte/reponses/<code>/
 # MANIFESTE.json) : Retronews (paramètre q = base64 d'un JSON encodé, décodé par le site) et le site public
 # d'Europeana (query=). Gallica et Chronicling America répondent 403 (Cloudflare) : page d'accueil seulement.
-RETRONEWS_RECHERCHE = "https://www.retronews.fr/search"
-EUROPEANA_RECHERCHE = "https://www.europeana.eu/fr/search"
+# Regroupés dans un dictionnaire : liens de consultation, jamais interrogés par le plugin (voir
+# tests/test_politique_acces.py, qui prend toute constante URL de module pour un hôte interrogé).
+LIENS = {"retronews_recherche": "https://www.retronews.fr/search",
+         "europeana_recherche": "https://www.europeana.eu/fr/search"}
 VERIFICATIONS = {
     "RETRONEWS": "forme relevée le 2026-11-23 (lien « Recherche avancée » du site, HTTP 200)",
     "EUROPEANA": "forme relevée le 2026-11-23 (site public, HTTP 200, requête reprise par la page)",
@@ -109,11 +111,11 @@ def lien_retronews(mots: str) -> str:
                            "publicationLocation": {"data": {}, "size": 5}, "thematic": {}}}}}
     brut = json.dumps(critere, ensure_ascii=False, separators=(",", ":"))
     q = base64.b64encode(quote(brut, safe="-_.!~*'()").encode("ascii")).decode("ascii")
-    return f"{RETRONEWS_RECHERCHE}?page=1&advanced=true&q={quote(q, safe='')}"
+    return f"{LIENS['retronews_recherche']}?page=1&advanced=true&q={quote(q, safe='')}"
 
 
 def lien_europeana(mots: str) -> str:
-    return f"{EUROPEANA_RECHERCHE}?{urlencode({'query': mots}, quote_via=quote)}"
+    return f"{LIENS['europeana_recherche']}?{urlencode({'query': mots}, quote_via=quote)}"
 
 
 def liens_consultation(texte: str, lieu: str, debut: str, fin: str) -> list[dict]:
