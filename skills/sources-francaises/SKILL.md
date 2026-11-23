@@ -82,5 +82,10 @@ service ne s'applique pas à ce fonds : passer par le lien de consultation, un l
   fait daté à l'étranger, chacun cité avec son statut ; indéterminée sinon. Un événement générique à l'étranger
   peut être typé d'après sa source (`typage_propose`, puis `arbre_proposer`, accord explicite) ; jamais d'office.
   Détail : `docs/contexte-historique.md`, § « Émigration ».
+- **Contexte du lieu et de l'époque** (renvoi, pas une source de l'individu) : `lieu_historique` (commune à une
+  date, niveau par niveau ; un niveau « inconnu » ne se complète pas de mémoire), `presse_recherche` (presse
+  ancienne, OCR à vérifier sur l'image), `contexte_bibliographie` (littérature citée), `contexte_local` et
+  `pistes_contexte` (éléments et pistes d'une personne) ; commande `/genealogiste:contexte`. Méthode :
+  `methodologie-gps`, § « Contexte historique » ; détail : `docs/contexte-historique.md`.
 
 Détails par source : [references/sources-detaillees.md](references/sources-detaillees.md).

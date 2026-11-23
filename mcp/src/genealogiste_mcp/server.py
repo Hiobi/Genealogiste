@@ -45,7 +45,7 @@ from .contexte import services as services_contexte
 from .contexte import verifier as contexte_verifier_mod
 from .contexte.registre import RegistreReferences
 from .contexte.requete import residus_identite
-from .enquetes import EnqueteError, Enquetes
+from .enquetes import MOTIF_CONTEXTE_SEUL, EnqueteError, Enquetes, piste_contexte_seul
 from .export import charts, chemins_medias, gramps_xml
 from .export.fiche import fiche_markdown, gaps, tree_gaps
 from .export.geneweb import to_geneweb
@@ -1623,6 +1623,24 @@ def arbre_historique(limite: int = 20) -> list[dict]:
 
 # ============================================================================ arbre : écriture (proposer -> valider)
 
+def _refus_tache_contexte_seul(operations) -> dict | None:
+    """Verrou #325 : une opération ajouter_tache qui référence (enquete + element) une piste « contexte seul » est
+    refusée avant toute proposition, qu'elle vienne d'enquete_reprendre ou qu'elle ait été écrite à la main. Une
+    enquête inconnue n'est pas une erreur ici (la référence est un texte libre de la description)."""
+    for o in operations or []:
+        if not isinstance(o, dict) or o.get("op") != "ajouter_tache" or not (o.get("enquete") and o.get("element")):
+            continue
+        try:
+            e = app().enquetes.lire(str(o["enquete"]))
+        except EnqueteError:
+            continue
+        if piste_contexte_seul(e, str(o["element"])):
+            return {"erreur": f"Tâche refusée pour la piste {o['element']} de l'enquête {o['enquete']} : "
+                              f"{MOTIF_CONTEXTE_SEUL}.",
+                    "motif": "contexte_seul", "element": o["element"], "enquete": o["enquete"]}
+    return None
+
+
 @mcp.tool()
 def arbre_proposer(operations: list[dict], titre: str, justification: str, sources: list[str] | None = None) -> dict:
     """Prépare une modification SANS l'écrire : renvoie le diff GEDCOM, les alertes de cohérence nouvelles et un
@@ -1645,6 +1663,8 @@ def arbre_proposer(operations: list[dict], titre: str, justification: str, sourc
     une citation, sauf non_source=true + motif.
     Citation : préciser 'consultation' (original | image | transcription | index | non_vu). Référencer un objet créé dans la même proposition par
     "$ref". Voir docs/operations.md."""
+    if refus := _refus_tache_contexte_seul(operations):
+        return refus
     try:
         return _gramps_guard(lambda: app().backend.propose(operations, titre, justification, sources))
     except ProposalError as exc:
@@ -1837,6 +1857,8 @@ def propositions_deposer(operations: list[dict], titre: str, justification: str,
     sec sur l'arbre courant, règle EXIGER_SOURCE comprise : un dépôt invalide est refusé. pieces : chemins ou
     références des pièces à l'appui ; personnes : ids visés (complétés d'après les opérations) ; enquete : origine
     (texte libre). Revue : /genealogiste:valide, propositions_reprendre(id) puis arbre_appliquer après accord."""
+    if refus := _refus_tache_contexte_seul(operations):
+        return refus
     a = app()
 
     def valider() -> dict:
@@ -1893,6 +1915,9 @@ def propositions_reprendre(id: str) -> dict:
         return {"erreur": f"Proposition {id} {e['statut']} : rien à reprendre.", "statut": e["statut"]}
     if e.get("jeton"):
         a.backend.cancel(e["jeton"])
+    if refus := _refus_tache_contexte_seul(e["operations"]):  # dépôt antérieur au verrou (#325)
+        a.file.maj(id, fp.A_REVOIR, "reprise impossible", raison=refus["erreur"], jeton="")
+        return {**refus, "id": id, "statut": fp.A_REVOIR, "raison": refus["erreur"]}
     try:
         r = _gramps_guard(lambda: a.backend.propose(e["operations"], e["titre"], e["justification"],
                                                     e.get("sources")))
@@ -2697,7 +2722,9 @@ def enquete_noter(enquete: str, piste: dict | None = None, registre: dict | None
                   budget: dict | None = None) -> dict:
     """Note l'avancement d'une enquête (un ou plusieurs éléments par appel ; mise à jour si id existe).
     piste : {id?, question, hypotheses: [..], sources: [texte | {libelle, outil, parametres}] dans l'ordre,
-      sources_faites: [libelle], statut: a_faire|en_cours|trouve|negatif|bloque|manuel, note, journal?}.
+      sources_faites: [libelle], statut: a_faire|en_cours|trouve|negatif|bloque|manuel, note, journal?,
+      contexte_seul?: true (piste de pistes_contexte tirée du seul contexte : jamais une tâche ni la file,
+      marqueur définitif)}.
     registre : {id? | source (ARK, URL de visionneuse ou manifeste) | cote, service, titre, piste, nb_vues,
       bornes: [de, a], vues_lues: [n | [de, a]], lectures: [{vue, date, date_fin, type, numero, note}], verdict, statut}.
     tache (manuelle, pour l'utilisateur) : {id?, description, service, piste, url, statut: a_faire|faite|abandonnee}
@@ -2747,7 +2774,9 @@ def enquete_reprendre(enquete: str = "", taches: bool = False, elements: list[st
     restant et blocage éventuel. Sans enquete : liste des enquêtes ouvertes ou bloquées.
     GENEALOGISTE_GRAMPS_TACHES : taches_gramps (pistes et tâches manuelles liées aux tâches de Gramps Web, écarts
     ouvert/terminé signalés) ; taches=true : taches_a_proposer, opérations ajouter_tache prêtes pour les éléments
-    ouverts sans tâche (ou ceux d'elements : p1, t2…), à soumettre par arbre_proposer. Rien n'est écrit."""
+    ouverts sans tâche (ou ceux d'elements : p1, t2…), à soumettre par arbre_proposer. Une piste contexte_seul
+    n'est jamais convertie en tâche, même nommée dans elements : elle est rendue dans refuses avec le motif.
+    Rien n'est écrit."""
     def run():
         e = app().enquetes
         if not enquete:

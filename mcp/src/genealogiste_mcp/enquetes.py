@@ -65,6 +65,29 @@ def _lien_tache(element: dict, d: dict) -> None:
         raise EnqueteError("tache_gramps : identifiant de la tâche de Gramps Web (S12…), ou \"\" pour délier.")
 
 
+# Piste « contexte seul » (#290, #325) : hypothèse tirée du seul contexte historique (pistes_contexte, règle
+# element_de_contexte), sans source individuelle connue. Elle se note dans l'enquête, mais ne devient jamais une
+# tâche (ni tâche manuelle, ni tâche de Gramps Web) et ne va jamais dans la file de propositions, même désignée
+# explicitement. Marqueur explicite ``contexte_seul: true`` (posé par ``pistes_contexte`` dans ``depot.enquete_noter``,
+# jamais retiré) ; une piste notée avant ce marqueur est reconnue à la note que ``pistes_contexte`` lui donnait.
+_NOTE_CONTEXTE_SEUL = re.compile(r"pistes_contexte, règle element_de_contexte\b|statut contexte seul\b")
+MOTIF_CONTEXTE_SEUL = ("piste « contexte seul » : hypothèse tirée du seul contexte historique, sans source "
+                       "individuelle connue ; jamais convertie en tâche ni déposée dans la file de propositions "
+                       "(le contexte oriente une recherche, il ne conclut pas)")
+
+
+def est_contexte_seul(piste: dict | None) -> bool:
+    """Vrai pour une piste marquée ``contexte_seul`` (ou notée par pistes_contexte avant le marqueur, #290)."""
+    if not isinstance(piste, dict):
+        return False
+    return piste.get("contexte_seul") is True or bool(_NOTE_CONTEXTE_SEUL.search(str(piste.get("note") or "")))
+
+
+def piste_contexte_seul(e: dict, element: str) -> dict | None:
+    """La piste ``element`` de l'enquête si elle est « contexte seul », sinon None."""
+    return next((p for p in e.get("pistes", []) if p.get("id") == element and est_contexte_seul(p)), None)
+
+
 def maintenant() -> str:
     return datetime.now(UTC).isoformat(timespec="seconds")
 
@@ -391,6 +414,16 @@ class Enquetes:
             p = {"id": d.get("id") or self._nouvel_id(pistes, "p"), "question": "", "hypotheses": [],
                  "sources": [], "statut": "a_faire", "note": "", "journal": []}
             pistes.append(p)
+        if "contexte_seul" in d and not isinstance(d["contexte_seul"], bool):
+            raise EnqueteError("contexte_seul : true (piste tirée du seul contexte, voir pistes_contexte).")
+        if est_contexte_seul(p) or d.get("contexte_seul") or est_contexte_seul({"note": d.get("note")}):
+            if d.get("contexte_seul") is False:
+                raise EnqueteError(f"Piste {p['id']} : le marqueur contexte_seul ne se retire pas. "
+                                   f"{MOTIF_CONTEXTE_SEUL}. Une source portant sur l'individu se note dans une "
+                                   "nouvelle piste.")
+            if d.get("tache_gramps"):
+                raise EnqueteError(f"Piste {p['id']} : lien vers une tâche refusé. {MOTIF_CONTEXTE_SEUL}.")
+            p["contexte_seul"] = True  # explicite et définitif, même si la note est réécrite ensuite
         for k in ("question", "note"):
             if k in d:
                 p[k] = d[k]
@@ -497,6 +530,8 @@ class Enquetes:
         return r
 
     def _tache(self, e: dict, d: dict) -> dict:
+        if d.get("piste") and piste_contexte_seul(e, d["piste"]):  # avant toute création : rien n'est noté
+            raise EnqueteError(f"Tâche manuelle refusée pour la piste {d['piste']} : {MOTIF_CONTEXTE_SEUL}.")
         taches = e.setdefault("taches_manuelles", [])
         t = next((x for x in taches if d.get("id") and x["id"] == d["id"]), None)
         if t is None:
@@ -623,6 +658,9 @@ class Enquetes:
                 restantes.append(s)
             pistes.append({"id": p["id"], "question": p["question"], "statut": p["statut"],
                            "hypotheses": p.get("hypotheses", []), "sources_restantes": restantes})
+            if est_contexte_seul(p):  # #325 : présentée comme telle, jamais une action ni une tâche
+                pistes[-1].update(contexte_seul=True, motif=MOTIF_CONTEXTE_SEUL)
+                continue
             if p.get("statut") in ("bloque", "manuel"):
                 continue
             for s in restantes:

@@ -3,6 +3,26 @@
 Référence du jalon M7 : situer un individu dans son contexte historique sans inventer l'histoire. Conception :
 `docs/superpowers/specs/2026-11-23-m7-contexte-design.md`.
 
+## Parcours d'usage
+
+<!-- #325 -->
+
+De la commande au récit vérifié. Chaque étape affiche ce que rend un outil, tel quel ; rien n'est affirmé de
+mémoire, et un élément sans source n'est pas affiché.
+
+| Étape | Commande ou agent | Outils | Ce qui en sort |
+|---|---|---|---|
+| 1. Situer | `/genealogiste:contexte <personne \| lieu> [--periode] [--echelles] [--themes]` | `contexte_local`, puis `pistes_contexte` | éléments par échelle (énoncé entre guillemets, citation de la source, niveau de rattachement, mention de tendance générale au-delà de la commune) ; « contexte non documenté » le cas échéant ; services en échec ou écartés, tâches manuelles ; pistes (hypothèse, fondements, test, statut). Aucune écriture |
+| 2. Approfondir | demande libre, ou agent `chercheur` | `contexte_bibliographie`, `presse_recherche`, `lieu_historique` | références citées et inscrites au registre des références consultées ; niveaux « inconnu » jamais complétés de mémoire |
+| 3. Tester | `/genealogiste:enquete`, agent `chercheur` | `pistes_contexte`, `enquete_noter` | pistes à tester versées à l'enquête (proposé à l'utilisateur ; fait par le `chercheur` en mode autonome, dans le budget) ; une piste `contexte_seul` reste une hypothèse non démontrée, jamais une tâche ni une proposition (verrou du code) |
+| 4. Rédiger | `/genealogiste:recit`, `/genealogiste:billet`, agent `redacteur` | `contexte_local`, `pistes_contexte` | texte à section « Contexte » séparée, une phrase par élément, citation recopiée ; section absente si rien n'est sourcé |
+| 5. Contrôler | la commande, l'agent `verificateur` | `contexte_verifier` | rapport `conforme` ; `conforme: false` bloque un billet de Gramps Web (par le code) ; conforme ne veut pas dire vrai : relire chaque phrase contre sa source |
+
+Les sections suivantes sont la référence : « Méthode » (règles), « Outils » (signatures, sorties, limites),
+« Rédaction et contrôle » (format du texte, `contexte_verifier`). Configuration : « Services de contexte »
+(`GENEALOGISTE_CONTEXTE_SERVICES`, clés, `GENEALOGISTE_CROSSREF_MAILTO`) et `GENEALOGISTE_CONTEXTE_STYLE_CITATION`.
+Exemple de sortie sur le cas témoin du mineur : « pistes_contexte » (pistes) et « Rédaction » (texte conforme).
+
 ## Méthode
 
 Le contexte est traité avec la même rigueur que les faits de l'arbre (Genealogical Proof Standard, skill
@@ -507,8 +527,10 @@ contexte (`contexte_bibliographie`, `lieu_historique`), pour lesquels `services.
 `presse_recherche` n'ouvre pas pour autant un nouvel accès : il passe par le même client que `gallica_recherche`
 (`sources/gallica.py`), sans appeler `services.refus("GALLICA")`, avec le coupe-circuit et les plafonds du client
 commun, et un blocage est rendu tel quel. Le référentiel le dit dans la `notes` de l'entrée (#323) ; son mode ne
-change pas, et `services.refus` non plus (son motif « jamais interrogé par le plugin » reste vrai pour ces autres
-outils seulement). Réponses réelles réduites et manifestes :
+change pas, et la décision de `services.refus` non plus. Son motif dit vrai depuis #325 : pour Gallica, « non
+interrogé comme service de contexte ; seul presse_recherche l'interroge, par son client existant » (exception
+nommée `services.INTERROGE_HORS_REFERENTIEL`) ; les autres services en lien seulement gardent « jamais interrogé par
+le plugin ». Réponses réelles réduites et manifestes :
 `mcp/tests/fixtures/contexte/reponses/<code>/MANIFESTE.json` (forme unifiée, voir « Recette et réponses
 enregistrées »).
 
@@ -777,15 +799,18 @@ piste (`elements_non_retenus`, avec le motif).
 | `test` | `sources` : entrées des chaînes existantes telles quelles (`source`, `cote_typique`, `versant`, `avertissement`, `pays`), plus `cout` ; aucune cote étrangère, aucun fonds inventé |
 | `cout` | `en_ligne` seulement si une source du test est déclarée « en ligne » par la chaîne ; sinon `a_determiner` (`courrier` et `deplacement` : aucun champ du référentiel ne permet de les déduire) |
 | `statut`, `statut_libelle` | `a_tester`, `confirmee`, `refutee`, `contexte_seul` |
-| `depot` | `null` pour une piste déjà tranchée ; sinon `enquete_noter` (paramètres `piste` et `personnes`, à compléter par `enquete`) et `file` : chemin vers la file comme **tâche** (`enquete_reprendre(taches=true, elements=…)`, opération `ajouter_tache`, backend gramps et `GENEALOGISTE_GRAMPS_TACHES=true`) ; `contexte_seul` : `file: null` et `motif_file` |
+| `depot` | `null` pour une piste déjà tranchée ; sinon `enquete_noter` (paramètres `piste` et `personnes`, à compléter par `enquete` ; `piste.contexte_seul: true` pour une piste `contexte_seul`) et `file` : chemin vers la file comme **tâche** (`enquete_reprendre(taches=true, elements=…)`, opération `ajouter_tache`, backend gramps et `GENEALOGISTE_GRAMPS_TACHES=true`) ; `contexte_seul` : `file: null` et `motif_file` |
 | autres | `contexte_seul` : `plafond_gps`, `echelle`, `recoupe_fenetre_depart` (années de l'élément et de la fenêtre) ; `meme_metier_a_l_arrivee` : `pays_arrivee` |
 
 **Destination.** L'outil n'écrit rien : ni l'arbre, ni l'enquête, ni la file, aucune opération d'arbre ni jeton dans
 sa sortie. Le versement à l'enquête passe par `enquete_noter` (classe écriture d'un état local, collecte sans
 `budget` ni réouverture : `CONDITIONS`), la file par `propositions_deposer` ou `arbre_proposer` (classe
 proposition) : laissé à l'appelant, l'outil reste en collecte. Une piste `contexte_seul` n'est jamais convertie en
-proposition d'écriture ni en tâche de la file ; notée dans une enquête, ne pas la passer à
-`enquete_reprendre(taches=true)` (choisir les éléments par `elements`).
+proposition d'écriture ni en tâche de la file. Depuis #325 c'est un **verrou du code**, plus une consigne :
+`depot.enquete_noter.piste` porte `"contexte_seul": true`, et l'enquête refuse d'en faire une tâche
+(`enquete_reprendre(taches=true)` avec ou sans `elements` : rendue dans `refuses` avec le motif ; opération
+`ajouter_tache` qui la référence refusée par `arbre_proposer` et `propositions_deposer` ; pas de tâche manuelle ni
+de lien de tâche). Détail : [enquetes.md](enquetes.md#tâches-de-gramps-web-263).
 
 **Sortie.** `outil`, `personne`, `regle_inference`, `regles`, `nb_pistes`, `pistes`, `regles_non_appliquees`
 (règle et motif), `elements_non_retenus`, `contexte` (résumé de `contexte_local` : `resultat`, `nb_elements`,
@@ -1026,7 +1051,7 @@ billet n'est pas proposé (`ajouter_billet`) tant que le rapport n'est pas confo
 refuse (#291, « Rédaction », « Sorties ») ; pour une note du coffre ou un récit, le rapport est montré à
 l'utilisateur avec les phrases à corriger. L'appel par le `redacteur`, le `verificateur`, `/genealogiste:recit` et
 `/genealogiste:billet` est décrit dans « Rédaction » ; la commande `/genealogiste:contexte` et le branchement du
-`chercheur` relèvent de #325.
+`chercheur` sont décrits dans « Parcours d'usage », en tête de ce document (#325).
 
 **Limites** (rendues aussi dans `limites`) :
 

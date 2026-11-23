@@ -101,6 +101,9 @@ parents. Âge au décès = information secondaire. Table décennale = dérivée 
 Le contexte situe un individu (lieu, période, milieu) ; il ne se substitue jamais à une source de l'individu. Il
 vient de sources **consultées**, jamais de la mémoire du modèle : une phrase de contexte sans référence
 consultée n'est pas écrite. Les faits de l'arbre restent régis par §2 à §6 ; ici, ce qui encadre le contexte.
+Outils : `contexte_local` (éléments sourcés par échelle), `pistes_contexte` (hypothèses réfutables),
+`contexte_bibliographie`, `presse_recherche`, `lieu_historique` (approfondir), `contexte_verifier` (contrôle d'un
+texte) ; commande `/genealogiste:contexte` ; signatures et sorties : `docs/contexte-historique.md`.
 
 - **Hiérarchie des sources de contexte** : (1) source primaire contemporaine (presse, imprimé administratif,
   statistique d'époque) ; (2) historiographie savante évaluée par les pairs (article, thèse, monographie

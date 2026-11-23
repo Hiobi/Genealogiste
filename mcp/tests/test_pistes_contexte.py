@@ -12,9 +12,10 @@ import pytest
 import respx
 from test_contexte_local import services_enregistres  # noqa: F401  (fixture)
 
-from genealogiste_mcp import outils, server
+from genealogiste_mcp import outils, server, taches
 from genealogiste_mcp.contexte import pistes as pistes_mod
 from genealogiste_mcp.contexte.requete import residus_identite
+from genealogiste_mcp.enquetes import est_contexte_seul
 from genealogiste_mcp.fr_sources import next_source_hint
 from genealogiste_mcp.gedcom.mapping import read_gedcom
 
@@ -252,3 +253,33 @@ def test_lieu_sans_personne_pistes_de_contexte_seulement(app, services_enregistr
     assert {r["regle"] for r in out["regles_non_appliquees"]} >= {"fenetre_depart", "meme_metier_a_l_arrivee"}
     for p in out["pistes"]:
         _verifier_piste(p)
+
+
+# ---------------------------------------------------------------- #325 : marqueur contexte_seul dans le dépôt
+
+@pytest.mark.parametrize("app_contexte", ["mineur_artois_oklahoma"], indirect=True)
+def test_depot_marque_contexte_seul_et_l_enquete_n_en_fait_jamais_une_tache(app_contexte,
+                                                                            services_enregistres):  # noqa: F811
+    eid = server.enquete_ouvrir("Pistes du mineur", personnes=["I1"])["id"]
+    out = server.pistes_contexte(personne="I1")
+    statuts = []
+    for p in out["pistes"]:
+        if not p["depot"]:
+            continue
+        piste = p["depot"]["enquete_noter"]["piste"]
+        assert piste.get("contexte_seul", False) is (p["statut"] == "contexte_seul")  # marqueur explicite
+        assert "erreur" not in server.enquete_noter(eid, **p["depot"]["enquete_noter"])
+        statuts.append(p["statut"])
+    assert {"a_tester", "contexte_seul"} <= set(statuts)
+    etat = server.enquete_etat(eid)
+    notees = dict(zip([p["id"] for p in etat["pistes"]], statuts, strict=True))
+    assert all(est_contexte_seul(p) is (notees[p["id"]] == "contexte_seul") for p in etat["pistes"])
+    seules = [i for i, s in notees.items() if s == "contexte_seul"]
+    # opérations de tâches calculées sur l'état réel : sans sélection, puis en désignant chaque piste
+    for elements in (None, list(notees)):
+        prop = taches.operations_enquete(etat, app_contexte.tree(), elements)
+        assert sorted(o["element"] for o in prop["operations"]) == sorted(set(notees) - set(seules))
+        assert [x["element"] for x in prop["refuses"]] == seules
+    reprise = server.enquete_reprendre(eid)
+    assert {p["id"] for p in reprise["pistes_ouvertes"] if p.get("contexte_seul")} == set(seules)
+    assert not {x.get("piste") for x in reprise["a_faire"]} & set(seules)

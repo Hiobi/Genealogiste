@@ -161,6 +161,19 @@ def test_refus_sans_requete_et_motif(tmp_path, code, kw, mot):
     assert "Aucune requête" in r["consigne"]
 
 
+def test_motif_gallica_ne_dit_pas_jamais_interroge(tmp_path):
+    """#325 (reste de #323) : presse_recherche interroge Gallica par le client existant ; le motif de refus rendu
+    aux outils de contexte ne prétend donc plus « jamais interrogé par le plugin ». La décision ne change pas."""
+    cfg = _cfg(tmp_path, contexte_services=("GALLICA",))
+    r = services.refus("GALLICA", cfg)
+    assert r is not None and r["interrogeable"] is False and r["requetes_emises"] == 0  # toujours refusé
+    assert "jamais interrogé par le plugin" not in r["erreur"]
+    assert "presse_recherche" in r["erreur"] and "lien_seulement" in r["erreur"]
+    assert set(services.INTERROGE_HORS_REFERENTIEL) == {"GALLICA"}
+    for code in ("RETRONEWS", "CHRONICLING-AMERICA", "NARA", "APE", "FRANCEARCHIVES", "CASSINI-EHESS"):
+        assert "jamais interrogé par le plugin" in services.refus(code, cfg)["erreur"]  # inchangé ailleurs
+
+
 def test_cle_requise_presente_rend_interrogeable_sans_jamais_l_afficher(tmp_path):
     secret = SECRETS["GENEALOGISTE_CLE_EUROPEANA"]
     cfg = _cfg(tmp_path, contexte_services=("EUROPEANA",), cles_contexte={"EUROPEANA": secret})

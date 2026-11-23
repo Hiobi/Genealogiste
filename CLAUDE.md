@@ -79,7 +79,8 @@ Claude Code ne propose une mise à jour que si la version change. `make version 
 
 `docs/` : `operations.md` (ops d'édition), `gedcom-extensions.md` (classification des citations),
 `securite.md` (confinement fichiers, politique réseau, vivants, `MCP_TOKEN`), `gramps-web.md` (et matrice de versions), `gramps.md`, `pieces.md`,
-`notes.md`, `geneweb.md`, `enquetes.md` (état de recherche reprenable). Variables d'environnement : `README.md` et `.env.example`.
+`notes.md`, `geneweb.md`, `enquetes.md` (état de recherche reprenable), `contexte-historique.md` (contexte
+historique sourcé : parcours d'usage, six outils, services, rédaction et contrôle). Variables d'environnement : `README.md` et `.env.example`.
 
 ## Distribution Codex
 
