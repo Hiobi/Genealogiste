@@ -180,6 +180,8 @@ class Identifiant:
             essais.append(("hal", t))
         if bas.startswith(("http://", "https://")):
             essais.append(("url", t))
+        if bas.startswith(("url:http://", "url:https://")):  # clé d'un identifiant url (« url:https://… »)
+            essais.append(("url", t[4:]))
         for type_, valeur in essais:
             try:
                 return cls(type_, valeur)

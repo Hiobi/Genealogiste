@@ -251,6 +251,9 @@ def _csw(corps: bytes) -> bytes:
 REDUCTIONS: dict[tuple[str, str], Callable[[bytes], bytes]] = {
     ("API-GEO", "communes_62133.json"): lambda c: _ecrire_json(_json(c)),
     ("WIKIDATA", "sparql_P374_62133.json"): lambda c: _ecrire_json(_json(c)),
+    ("WIKIDATA", "evenements_commune_P374_62133.json"): lambda c: _ecrire_json(_json(c)),  # contexte_local (#289)
+    ("WIKIDATA", "evenements_commune_P374_62250.json"): lambda c: _ecrire_json(_json(c)),  # contexte_local (#289)
+    ("WIKIDATA", "evenements_commune_P374_80080.json"): lambda c: _ecrire_json(_json(c)),  # contexte_local (#289)
     ("COG-INSEE", "v_commune_depuis_1943.csv"): lambda c: _csv_filtre(c, ("COM",)),
     ("COG-INSEE", "v_mvt_commune_2024.csv"): lambda c: _csv_filtre(c, ("COM_AV", "COM_AP")),
     ("IGN-GEOPLATEFORME", "GetCapabilities.xml"): _capacites,

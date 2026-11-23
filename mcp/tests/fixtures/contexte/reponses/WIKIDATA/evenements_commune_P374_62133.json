@@ -1,0 +1,18 @@
+{
+ "head": {
+  "vars": [
+   "item",
+   "itemLabel",
+   "classe",
+   "date",
+   "debut",
+   "fin",
+   "bnf",
+   "idref",
+   "persee"
+  ]
+ },
+ "results": {
+  "bindings": []
+ }
+}

@@ -38,6 +38,7 @@ from .chemins import CheminRefuse, nom_simple, sous
 from .config import Config, load_config
 from .contexte import bibliographie as biblio_contexte
 from .contexte import lieux as lieux_contexte
+from .contexte import local as contexte_local_mod
 from .contexte import presse
 from .contexte import services as services_contexte
 from .contexte.registre import RegistreReferences
@@ -723,6 +724,31 @@ def lieu_historique(lieu: str, date: str) -> dict:
     INSEE ; date : GEDCOM ou texte (« 1906 », « vers 1750 »). Hors de France : hors périmètre ; pays inconnu ou
     homonymes : préciser le département ou le code INSEE. Aucune donnée de personne n'est envoyée."""
     return lieux_contexte.lieu_historique(app().sctx, lieu, date)
+
+
+@mcp.tool()
+def contexte_local(personne: str = "", lieu: str = "", periode: str = "", echelles: str = "",
+                   themes: str = "") -> dict:
+    """Contexte historique d'un individu (ou d'un lieu à une période), sans rien inventer (#289) : éléments
+    sourcés, bornés au lieu et à la période de vie, regroupés par échelle. personne : id de l'arbre (lieux, années
+    de présence, période et métier lus dans ses faits SOURCÉS, jamais son nom) ; sinon lieu (« Billy-Montigny,
+    Pas-de-Calais ») et periode (« 1880-1914 »). echelles : commune, pays, departement, region, nation,
+    international (défaut : commune,departement) ; themes : mots du sujet (défaut : métier). Collecte : géographie
+    historique (population, cartes), index Wikidata (jamais source), bibliographie, presse ; hors de France,
+    services couvrant le pays seulement. Chaque élément : enonce tiré de la source, portee, source au registre des
+    références consultées, rattachement (atteste seulement par une citation de l'arbre ; sinon compatible ou
+    non_demontre) et mention « tendance générale » au-delà de la commune. Écartés comptés avec motif ; rien trouvé :
+    resultat « contexte non documenté »."""
+    if refus := _garde(personne=personne, texte=themes) or _garde(texte=lieu):
+        return refus
+    a = app()
+    tree = a.tree() if personne else None
+    residus = (lambda url: residus_identite(url, tree, personne)) if personne else None
+    try:
+        return contexte_local_mod.contexte_local(a.sctx, a.registre_references, tree, personne, lieu, periode,
+                                                 echelles, themes, a.config.contexte_style_citation, residus)
+    except contexte_local_mod.ContexteInvalide as exc:
+        return {"erreur": str(exc), "requetes_emises": 0}
 
 
 @mcp.tool()
