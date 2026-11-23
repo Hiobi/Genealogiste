@@ -178,6 +178,125 @@ une URL émise. Construire une requête ne dispense pas de la garde des vivants 
 
 <!-- #285 -->
 
+Référentiel `mcp/src/genealogiste_mcp/referentiels/sources_contexte.json`, chargé et validé par
+`contexte/services.py` (calqué sur `sites_tiers.py`). Il recense les services publics de contexte historique
+(historiographie, bibliothèques, presse, cartes, statistiques), distincts des services d'archives
+(`archives_fr.json`, [archives.md](archives.md)) et des sites tiers ([sites-tiers.md](sites-tiers.md)). Ce
+contenu tient lieu du `docs/sources-contexte.md` annoncé par l'issue #285.
+
+### Format d'une entrée
+
+| Champ | Valeurs |
+|---|---|
+| `code` | identifiant en majuscules (`HAL`, `EUROPEANA`…) |
+| `nom`, `usage` | libellé ; ce que le service apporte au contexte |
+| `mode` | `api` : interrogeable par les outils de contexte s'il est activé ; `lien_seulement` : jamais interrogé, lien à ouvrir par l'utilisateur |
+| `protocole` | `rest`, `sru`, `oai-pmh`, `sparql`, `solr`, `wmts` ; `aucun` (pas d'API qualifiée) |
+| `url_api`, `site` | point d'accès machine (https) ; page à ouvrir dans le navigateur pour un service en lien seulement |
+| `url_sonde` | facultatif : requête minimale du sondage (`verb=Identify`, `operation=explain`, `GetCapabilities`…), sur l'hôte du point d'accès, sans donnée personnelle |
+| `cle`, `variable_cle` | `aucune`, `facultative`, `requise` ; variable `GENEALOGISTE_CLE_*` qui la porte |
+| `nature` | nature par défaut des références issues du service, alignée sur `Reference.nature` : `primaire`, `secondaire_savante`, `secondaire`, `tertiaire`, `index` |
+| `couverture` | `{zone: [FR, EU, US, INT], periode?: {de, a}}` ; période seulement quand elle est relevée |
+| `documentation`, `cgu`, `quota` | vides tant qu'ils ne sont pas relevés (à qualifier) : aucune valeur de mémoire |
+| `protection` | `aucune`, `cloudflare`, `captcha`, `connexion`, `a_qualifier` |
+| `site_repond_le`, `releve` | dernière réponse obtenue par un client automatisé ; résultats datés des sondages |
+| `verifie_le`, `origine` | contrôle humain (vide sans lui) ; provenance de l'entrée |
+
+Règles vérifiées par `validate()` (`tests/test_sources_contexte.py`, `make verifier-archives`) : un service `api`
+a une `url_api` https, un protocole d'API et aucune protection relevée (sinon `lien_seulement`, sans
+contournement) ; une clé facultative ou requise nomme sa variable ; dates ISO ; valeurs dans les listes fermées.
+
+### Services au 2026-11-23
+
+Relevé `curl` du 2026-11-21 (issue #285) et sondage du 2026-11-23 (une requête GET par service, sans clé ni
+paramètre personnel). La nature est un classement par défaut du plugin d'après l'usage du service, que
+l'analyseur précise notice par notice.
+
+| Code | Service | Protocole | Clé | Nature | Couverture | Statut | Relevés |
+|---|---|---|---|---|---|---|---|
+| `HAL` | HAL (archive ouverte, API de recherche) | solr | aucune | secondaire_savante | FR | actif par défaut | 2026-11-21 : 200 JSON ; 2026-11-23 : 200 |
+| `ISIDORE` | Isidore (Huma-Num) | rest | aucune | index | FR | actif par défaut | 2026-11-21 : 200 JSON ; 2026-11-23 : 200 |
+| `PERSEE` | Persée (OAI-PMH) | oai-pmh | aucune | secondaire_savante | FR | actif par défaut | 2026-11-21 : OAI 200, SPARQL sans réponse (45 s, non déclaré) ; 2026-11-23 : 200 |
+| `OPENEDITION` | OpenEdition (OAI-PMH) | oai-pmh | aucune | secondaire_savante | FR | actif par défaut | 2026-11-21 : 200 ; 2026-11-23 : 200 ; API de recherche à qualifier |
+| `SUDOC` | Sudoc (SRU) | sru | aucune | index | FR | actif par défaut | 2026-11-21 : 200 XML ; 2026-11-23 : 200 |
+| `IDREF` | IdRef (Solr) | solr | aucune | index | FR | actif par défaut | 2026-11-21 : 200 JSON ; 2026-11-23 : 200 |
+| `THESES-FR` | theses.fr (API) | rest | aucune | secondaire_savante | FR | actif par défaut | 2026-11-21 : 200 JSON ; 2026-11-23 : 200 |
+| `BNF-CATALOGUE` | Catalogue général de la BnF (SRU) | sru | aucune | index | FR | actif par défaut | 2026-11-21 : 200 XML ; 2026-11-23 : 200 (6,8 s) |
+| `DATA-BNF` | data.bnf.fr (SPARQL) | sparql | aucune | index | FR | actif par défaut | 2026-11-21 : 200 JSON ; 2026-11-23 : 302 sans paramètre |
+| `OPENALEX` | OpenAlex (API works) | rest | facultative | index | INT | actif par défaut | 2026-11-21 : 200 JSON (sans clé : budget quotidien partagé par adresse IP) ; 2026-11-23 : 200 |
+| `CROSSREF` | Crossref (API works) | rest | aucune (`mailto` facultatif) | index | INT | actif par défaut | 2026-11-21 : 200 JSON ; 2026-11-23 : 200 |
+| `EUROPEANA` | Europeana (Search API) | rest | requise | primaire | EU | clé requise, à activer | 2026-11-21 : 200 avec la clé de démonstration (non embarquée) ; 2026-11-23 : 400 sans clé |
+| `NAKALA` | Nakala (Huma-Num) | rest | aucune | index | FR | actif par défaut | 2026-11-21 : 200 JSON ; 2026-11-23 : 200 |
+| `WIKIPEDIA` | Wikipédia en français (REST) | rest | aucune | **tertiaire** | FR | actif par défaut | 2026-11-21 : 200 ; 2026-11-23 : 301 sans paramètre ; sert seulement à remonter aux références |
+| `WIKIDATA` | Wikidata Query Service (SPARQL) | sparql | aucune | **index** | INT | actif par défaut | 2026-11-21 : 200 simple, délai dépassé en requête géographique, 429 ensuite ; 2026-11-23 : 200 ; jamais source |
+| `INSEE-MELODI` | INSEE Melodi | rest | aucune | primaire | FR, 1968-2023 | actif par défaut | 2026-11-21 : 200 (163 jeux) ; 2026-11-23 : 200 ; `DS_POPULATIONS_HISTORIQUES` 1968-2023 seulement |
+| `IGN-GEOPLATEFORME` | Géoplateforme IGN (WMTS) | wmts | aucune | primaire | FR | actif par défaut | 2026-11-21 : 200 ; 2026-11-23 : 200 ; couches Cassini, état-major, SCAN50 1950, orthophotos 1950-1965 |
+| `CULTURE-DATA` | culture.data.gouv.fr (Explore v2.1) | rest | aucune | secondaire | FR | actif par défaut | 2026-11-21 : 200 ; 2026-11-23 : 200 ; jeux de données à identifier |
+| `GALLICA` | Gallica (SRU) | sru | aucune | primaire | FR | lien seulement | 2026-11-21 : 403 Cloudflare ; 2026-11-23 : 403 (voir #150) |
+| `CHRONICLING-AMERICA` | Chronicling America (Library of Congress) | rest | aucune | primaire | US | lien seulement | 2026-11-21 : 403 Cloudflare ; 2026-11-23 : 403 |
+| `NARA` | NARA Catalog (API v2) | rest | requise | primaire | US | lien seulement | 2026-11-21 : non qualifié ; 2026-11-23 : 200 à la racine de l'API, sans clé |
+| `APE` | Archives Portal Europe | aucun | requise | primaire | EU | lien seulement | 2026-11-21 : point d'accès en 404, à qualifier ; 2026-11-23 : 403 sur la page d'accueil (serveur Cloudflare) |
+| `FRANCEARCHIVES` | FranceArchives | aucun | aucune | index | FR | lien seulement | 2026-11-21 : redirection JavaScript, pas d'API qualifiée ; 2026-11-23 : 200 |
+| `CASSINI-EHESS` | Des villages de Cassini aux communes d'aujourd'hui (EHESS) | aucun | aucune | secondaire_savante | FR, 1793-1999 | lien seulement | sans réponse (30 s) les deux fois ; accès machine à qualifier (#322) |
+| `RETRONEWS` | Retronews | aucun | aucune | primaire | FR | lien seulement | 2026-11-21 et 2026-11-23 : 200 ; pas d'API publique connue |
+
+Restent à relever avant les analyseurs (#286 à #289, réponses enregistrées #323) : conditions d'utilisation,
+quotas et documentation de chaque service. Un service passe de `lien_seulement` à `api` seulement avec une réponse
+réelle enregistrée.
+
+### Configuration
+
+Dans `<données>/.env` (par défaut `~/.local/share/genealogiste/.env`, hors du dépôt et de toute synchronisation) :
+
+| Variable | Effet |
+|---|---|
+| `GENEALOGISTE_CONTEXTE_SERVICES` | services activés, codes séparés par des virgules. Absente ou vide : services `api` sans clé requise ni protection ; `aucun` : aucun ; `defaut` ajoute les services par défaut (`defaut,EUROPEANA`). Code inconnu : refus au démarrage. |
+| `GENEALOGISTE_CLE_EUROPEANA`, `GENEALOGISTE_CLE_OPENALEX`, `GENEALOGISTE_CLE_NARA`, `GENEALOGISTE_CLE_APE` | clés d'API personnelles. Europeana exige la sienne (la clé de démonstration n'est pas embarquée) ; OpenAlex fonctionne sans ; NARA et APE restent en lien seulement tant que leur API n'est pas qualifiée. |
+| `GENEALOGISTE_CROSSREF_MAILTO` | **vide par défaut**. Une adresse courriel est une donnée personnelle : elle n'est envoyée à Crossref que si l'utilisateur la renseigne. |
+
+Plafond journalier et intervalle par hôte : `GENEALOGISTE_PLAFONDS_JOUR` et `GENEALOGISTE_DEBITS` (hôte=valeur),
+sinon `GENEALOGISTE_PLAFOND_JOUR_DEFAUT` et `GENEALOGISTE_DEBIT_DEFAUT`.
+
+### Interrogeabilité : aucune requête sans service utilisable
+
+Les outils de contexte appellent `services.refus(code, config)` avant tout appel réseau ; une réponse non nulle est
+rendue telle quelle (`requetes_emises: 0`, motif, consigne « contexte non documenté par ce service ») et rien
+n'est émis. Motifs, dans l'ordre : service inconnu ; `lien_seulement` (avec le lien) ; protection relevée ;
+service désactivé (`GENEALOGISTE_CONTEXTE_SERVICES`) ; clé requise absente (la variable est nommée, jamais une
+valeur) ; mode hors ligne. API interne :
+
+| Fonction | Rôle |
+|---|---|
+| `etat(code, config) -> EtatService` | `interrogeable`, `motif`, `actif`, `mode`, `cle` (`sans_objet` / `presente` / `absente`), `variable_cle` |
+| `refus(code, config) -> dict \| None` | None si interrogeable, sinon la réponse à rendre sans requête |
+| `cle(code, config) -> str` | valeur de la clé, pour l'appel seulement |
+| `mailto(config) -> str` | adresse Crossref, vide sauf choix de l'utilisateur |
+| `masquer_cles(texte, config) -> str` | remplace clés et `mailto` par `***` dans une URL ou un message avant journal, cache de résultat ou erreur |
+| `url_autorisee(code, url) -> bool` | vrai seulement pour une URL https vers un hôte déclaré du service |
+| `validate()`, `filtrer(nature, protocole, mode)`, `resume(s, config)`, `description(config)` | format, filtres, entrée du catalogue, synthèse du diagnostic |
+
+Clés et `mailto` ne sont jamais journalisés, écrits dans le coffre (notes), les exports ou le répertoire de
+données, ni renvoyés par un outil : `Config` les exclut de sa représentation, le catalogue et le diagnostic
+n'indiquent que « définie » ou « absente » (test `test_cles_jamais_renvoyees_journalisees_ni_ecrites`).
+
+### Réseau, catalogue, diagnostic, sondage
+
+- **Politique d'accès** : chaque hôte d'un `url_api` est déclaré dans la politique d'accès (catégorie
+  `contexte`, intervalle `GENEALOGISTE_DEBIT_DEFAUT`, plafond `GENEALOGISTE_PLAFOND_JOUR_DEFAUT`, provenance
+  « défaut » : aucune limite publiée n'a été relevée) ; Gallica et Wikidata gardent leur entrée existante. Aucun
+  hôte hors référentiel n'est interrogé (`url_autorisee`). Coupe-circuit anti-robot, cache et plafonds sont
+  ceux du client HTTP commun ; budget d'enquête et garde des vivants restent à la charge de chaque outil
+  (#286 à #289).
+- **Catalogue** : `sources_catalogue(type="contexte")` liste le référentiel avec, pour chaque service, `actif`,
+  `interrogeable`, `motif` et `etat_cle` ; le catalogue complet (sans filtre) l'inclut sous `contexte`.
+- **Diagnostic** : contrôle `services_contexte` (services actifs et interrogeables, motifs, clés « définie » ou
+  « absente », `mailto` défini ou absent) ; `attention` si un service activé manque de sa clé requise ou si une
+  clé est définie pour un service non activé.
+- **Sondage** : `make verifier-archives` valide le référentiel et sonde chaque service sur `url_sonde`, sinon
+  son point d'accès ou son site (HEAD, repli GET sans lecture du corps, sans clé) : `OK`, `AVERT` (service en lien seulement, protégé ou à clé requise) ou `KO`
+  (service actif par défaut qui ne répond pas). Le référentiel n'est jamais modifié par le sondage ; le rapport
+  daté et les réponses enregistrées relèvent de #323.
+
 ## Outils
 
 <!-- #286 à #290 -->

@@ -426,6 +426,18 @@ Table au 2026-11-18 (défauts de configuration : intervalle 1,5 s, plafond 1000 
 | hôtes du référentiel des archives (sous-domaines compris, hors type « autre ») | service du référentiel | `intervalle_requetes` (référentiel ; ANOM : 5 s, `Crawl-delay` de son robots.txt) sinon 1,5 s (défaut) | `GENEALOGISTE_PLAFOND_JOUR_ARCHIVES` (1000) | 1 (défaut) | référentiel ([archives.md](archives.md)) |
 | tout autre hôte (IIIF, visionneuses…) | — | `GENEALOGISTE_DEBIT_DEFAUT` (1,5 s) | `GENEALOGISTE_PLAFOND_JOUR_DEFAUT` (1000) | 1 (défaut) | — |
 
+**Services de contexte historique** (#285, référentiel `sources_contexte.json`,
+[contexte-historique.md](contexte-historique.md#services-de-contexte)) : chaque hôte d'un point d'accès est
+déclaré dans la table (catégorie `contexte`, service « … (contexte) »), avec l'intervalle
+`GENEALOGISTE_DEBIT_DEFAUT` et le plafond `GENEALOGISTE_PLAFOND_JOUR_DEFAUT` (provenance « défaut » : aucune
+limite publiée relevée) ; `gallica.bnf.fr` et `query.wikidata.org` gardent leur ligne ci-dessus. Hôtes :
+`api.archives-ouvertes.fr`, `api.isidore.science`, `oai.persee.fr`, `oai.openedition.org`, `www.sudoc.abes.fr`,
+`www.idref.fr`, `theses.fr`, `catalogue.bnf.fr`, `data.bnf.fr`, `api.openalex.org`, `api.crossref.org`,
+`api.europeana.eu`, `api.nakala.fr`, `fr.wikipedia.org`, `query.wikidata.org`, `api.insee.fr`, `data.geopf.fr`,
+`culture.data.gouv.fr`, `gallica.bnf.fr`, `www.loc.gov`, `catalog.archives.gov`. Un service désactivé, en lien
+seulement, protégé ou sans sa clé requise n'émet aucune requête ; les clés `GENEALOGISTE_CLE_*` et
+`GENEALOGISTE_CROSSREF_MAILTO` (vide par défaut) ne sont jamais journalisées, écrites ni renvoyées par un outil.
+
 Un test dérive des modules `sources/` (et des URL COG de la configuration) la liste des hôtes réellement
 interrogés et exige qu'ils soient tous déclarés (table ou référentiel) ; un hôte dynamique (manifeste IIIF
 d'un tiers) tombe sur le défaut explicite.

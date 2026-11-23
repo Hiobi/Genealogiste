@@ -93,7 +93,7 @@ clean: ## Supprime caches et environnements
 	rm -rf $(MCP)/.venv $(MCP)/.pytest_cache $(MCP)/.ruff_cache
 	find . -name __pycache__ -type d -prune -exec rm -rf {} +
 
-verifier-archives: ## Vérifie que les sites du référentiel des archives répondent (HEAD, repli GET sans lecture du corps)
+verifier-archives: ## Vérifie que les sites des référentiels (archives, sites tiers, services de contexte) répondent (HEAD, repli GET sans lecture du corps)
 	$(UV) run python scripts/verifier_archives.py
 
 verifier-telechargements: ## Recette réseau explicite sur une vue publique (SERVICE=ad59|ad59_td|suisse|loc|tous)

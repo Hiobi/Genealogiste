@@ -36,6 +36,7 @@ from .budget import PlafondJour, mesurer
 from .cache import Cache
 from .chemins import CheminRefuse, nom_simple, sous
 from .config import Config, load_config
+from .contexte import services as services_contexte
 from .contexte.registre import RegistreReferences
 from .enquetes import EnqueteError, Enquetes
 from .export import charts, chemins_medias, gramps_xml
@@ -748,6 +749,18 @@ def liens_recherche(nom: str, prenom: str = "", ne_vers: str = "", lieu: str = "
     return liens.search_links(nom, prenom, ne_vers, lieu, decede_vers)
 
 
+TYPE_CONTEXTE = "contexte"
+
+
+def _config_courante() -> Config | None:
+    """Configuration de l'application en place, sinon celle de l'environnement, sans construire l'application
+    (outils de lecture des référentiels) ; None si elle est invalide (l'état d'activation est alors omis)."""
+    try:
+        return _APP.config if _APP is not None else load_config()
+    except Exception:  # noqa: BLE001
+        return None
+
+
 @mcp.tool()
 def sources_catalogue(departement: str = "", type: str = "", acces: str = "", theme: str = "") -> dict:
     """Tout ce que le plugin connaît, sans requête : archives publiques du référentiel, sites tiers de généalogie
@@ -755,9 +768,22 @@ def sources_catalogue(departement: str = "", type: str = "", acces: str = "", th
     departement (« 59 », « 2A »), type (departementales… pour les archives ; cercle_departemental,
     releves_benevoles, base_thematique, annuaire, lieux, cimetieres_monuments, arbre_collaboratif pour les sites
     tiers), acces (libre, inscription_gratuite, adhesion, points, mixte, a_determiner), theme (ww2, protestants,
-    juifs, deportes, emigration…). Un relevé de site tiers est une source dérivée : remonter à l'acte."""
+    juifs, deportes, emigration…). Un relevé de site tiers est une source dérivée : remonter à l'acte.
+    type="contexte" : services publics de contexte historique seulement (historiographie, bibliothèques, presse,
+    cartes, statistiques ; referentiels/sources_contexte.json) avec, pour chacun, activation, interrogeabilité et
+    motif, état de la clé (présente/absente, jamais sa valeur) ; mode lien_seulement : jamais interrogé."""
     from .normalize.places import DEPARTEMENTS
 
+    if type == TYPE_CONTEXTE:
+        if departement or acces or theme:
+            return {"erreur": "type=\"contexte\" ne se combine pas avec departement, acces ni theme"}
+        cfg_ctx = _config_courante()
+        ctx = [services_contexte.resume(s, cfg_ctx) for s in services_contexte.services()]
+        return {"filtres": {"type": TYPE_CONTEXTE}, "totaux": {"contexte": len(ctx)}, "contexte": ctx,
+                "avertissement": services_contexte.AVERTISSEMENT,
+                "consigne": ("Un service non interrogeable (désactivé, clé requise absente, lien seulement, "
+                             "protégé) n'émet aucune requête : son motif est donné. Activation : "
+                             "GENEALOGISTE_CONTEXTE_SERVICES ; clés : GENEALOGISTE_CLE_* (diagnostic).")}
     dep = (departement or "").strip().upper()
     if dep.isdigit() and len(dep) == 1:
         dep = "0" + dep
@@ -766,7 +792,7 @@ def sources_catalogue(departement: str = "", type: str = "", acces: str = "", th
     types_tiers = sites_tiers.TYPES
     if type and type not in types_tiers and type not in archives.TYPES:
         return {"erreur": f"type inconnu : {type!r}", "types_archives": list(archives.TYPES),
-                "types_sites_tiers": list(types_tiers)}
+                "types_sites_tiers": list(types_tiers), "types_contexte": [TYPE_CONTEXTE]}
     if acces and acces not in sites_tiers.ACCES:
         return {"erreur": f"accès inconnu : {acces!r}", "valeurs": list(sites_tiers.ACCES)}
     arch = [] if (type in types_tiers or acces or theme) else [
@@ -777,10 +803,14 @@ def sources_catalogue(departement: str = "", type: str = "", acces: str = "", th
     tiers = [] if type in archives.TYPES else [
         sites_tiers.resume(s) for s in sites_tiers.filtrer(dep, type, acces, theme)]
     api = [] if (dep or type or acces or theme) else list(sites_tiers.API)
+    ctx = []
+    if not (dep or type or acces or theme):
+        cfg_ctx = _config_courante()
+        ctx = [services_contexte.resume(s, cfg_ctx) for s in services_contexte.services()]
     return {"filtres": {k: v for k, v in (("departement", dep), ("type", type), ("acces", acces),
                                           ("theme", theme)) if v},
-            "totaux": {"archives": len(arch), "sites_tiers": len(tiers), "api": len(api)},
-            "archives": arch, "sites_tiers": tiers, "api": api,
+            "totaux": {"archives": len(arch), "sites_tiers": len(tiers), "api": len(api), "contexte": len(ctx)},
+            "archives": arch, "sites_tiers": tiers, "api": api, "contexte": ctx,
             "avertissement": sites_tiers.AVERTISSEMENT,
             "consigne": ("Détail d'un service d'archives : archives_service(code=...). Liens de recherche pour une "
                          "personne : liens_recherche. Site protégé ou sur adhésion : navigateur de l'utilisateur, "
