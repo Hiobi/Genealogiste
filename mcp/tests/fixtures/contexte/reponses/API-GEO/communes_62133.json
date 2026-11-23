@@ -1,0 +1,24 @@
+{
+ "nom": "Billy-Montigny",
+ "code": "62133",
+ "codesPostaux": [
+  "62420"
+ ],
+ "codeDepartement": "62",
+ "population": 7937,
+ "centre": {
+  "type": "Point",
+  "coordinates": [
+   2.9068,
+   50.4152
+  ]
+ },
+ "departement": {
+  "code": "62",
+  "nom": "Pas-de-Calais"
+ },
+ "region": {
+  "code": "32",
+  "nom": "Hauts-de-France"
+ }
+}

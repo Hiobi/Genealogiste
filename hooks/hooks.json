@@ -12,7 +12,7 @@
         ]
       },
       {
-        "matcher": "mcp__.*genealogiste.*__(archive_image|archives_naviguer|archives_planche|archives_registres|archives_sonder|ark_resoudre|diagnostic|gallica_alto|gallica_recherche|gallica_recherche_document|gallica_texte|geo_commune|geo_historique|gramps_personne|gramps_recherche|gramps_synchroniser|matchid_recherche|piece_archiver|rapport_campagne_enregistrer|recherche_multi|wikidata_personne|wikidata_sparql|wikitree_ascendants|wikitree_descendants|wikitree_personne|wikitree_profil|wikitree_recherche)$",
+        "matcher": "mcp__.*genealogiste.*__(archive_image|archives_naviguer|archives_planche|archives_registres|archives_sonder|ark_resoudre|diagnostic|gallica_alto|gallica_recherche|gallica_recherche_document|gallica_texte|geo_commune|geo_historique|gramps_personne|gramps_recherche|gramps_synchroniser|lieu_historique|matchid_recherche|piece_archiver|rapport_campagne_enregistrer|recherche_multi|wikidata_personne|wikidata_sparql|wikitree_ascendants|wikitree_descendants|wikitree_personne|wikitree_profil|wikitree_recherche)$",
         "hooks": [
           {
             "type": "command",

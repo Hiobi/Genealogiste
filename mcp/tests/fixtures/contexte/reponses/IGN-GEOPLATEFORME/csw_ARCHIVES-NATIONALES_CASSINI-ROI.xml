@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ns0:GetRecordByIdResponse xmlns:ns0="http://www.opengis.net/cat/csw/2.0.2" xmlns:ns1="http://standards.iso.org/iso/19115/-3/mdb/2.0" xmlns:ns2="http://standards.iso.org/iso/19115/-3/mcc/1.0" xmlns:ns3="http://standards.iso.org/iso/19115/-3/gco/1.0" xmlns:ns4="http://standards.iso.org/iso/19115/-3/mri/1.0" xmlns:ns5="http://standards.iso.org/iso/19115/-3/gex/1.0" xmlns:ns6="http://www.opengis.net/gml/3.2">
+  <ns1:MD_Metadata uuid="ARCHIVES-NATIONALES_CASSINI-ROI">
+    <ns1:metadataIdentifier>
+      <ns2:MD_Identifier>
+        <ns2:code>
+          <ns3:CharacterString>ARCHIVES-NATIONALES_CASSINI-ROI</ns3:CharacterString>
+        </ns2:code>
+      </ns2:MD_Identifier>
+    </ns1:metadataIdentifier>
+    <ns1:identificationInfo>
+      <ns4:MD_DataIdentification>
+        <ns4:extent>
+          <ns5:EX_Extent>
+            <ns5:temporalElement>
+              <ns5:EX_TemporalExtent>
+                <ns5:extent>
+                  <ns6:TimePeriod ns6:id="d26728628e949">
+                    <ns6:beginPosition>1756-01-01</ns6:beginPosition>
+                    <ns6:endPosition>1815-01-01</ns6:endPosition>
+                  </ns6:TimePeriod>
+                </ns5:extent>
+              </ns5:EX_TemporalExtent>
+            </ns5:temporalElement>
+          </ns5:EX_Extent>
+        </ns4:extent>
+        </ns4:MD_DataIdentification>
+    </ns1:identificationInfo>
+    </ns1:MD_Metadata>
+</ns0:GetRecordByIdResponse>
