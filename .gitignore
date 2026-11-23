@@ -23,6 +23,7 @@ data/*
 *.jsonl
 *.ged
 !mcp/tests/fixtures/*.ged
+!mcp/tests/fixtures/contexte/*.ged
 *.gramps
 *.gpkg
 !mcp/tests/fixtures/gramps-desktop/gramps-*/famille.gramps

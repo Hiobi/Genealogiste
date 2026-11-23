@@ -1,0 +1,35 @@
+{
+  "cas": "cultivateur_ancien_regime",
+  "description": "Laboureur d'Ancien Régime, une seule paroisse, vie entièrement avant 1789. Anachronismes administratifs à éviter (commune, département, catégories postérieures).",
+  "gedcom": "cultivateur_ancien_regime.ged",
+  "personne": "I1",
+  "vie": {"naissance": "ABT 1722", "deces": "1788"},
+  "metier": "laboureur",
+  "lieux": [
+    {"evenement": "BIRT", "lieu": "Vouillé-les-Marais, Vendée, France", "pays": "France"},
+    {"evenement": "OCCU", "lieu": "Vouillé-les-Marais, Vendée, France", "pays": "France"},
+    {"evenement": "DEAT", "lieu": "Vouillé-les-Marais, Vendée, France", "pays": "France"}
+  ],
+  "contexte_documente": true,
+  "ne_doit_pas_contenir": {
+    "causalites": [
+      "s'est installé à cause de",
+      "a choisi ce métier à cause de"
+    ],
+    "hors_periode": [
+      {"element": "Révolution française", "annee": 1789},
+      {"element": "Code civil", "annee": 1804},
+      {"element": "guerre de Vendée", "annee": 1793}
+    ],
+    "hors_lieu": [],
+    "anachronismes": [
+      "commune de Vouillé-les-Marais",
+      "agriculteur",
+      "exploitant agricole"
+    ],
+    "phrases_generiques": [
+      "à cette époque, les paysans vivaient pauvrement"
+    ]
+  },
+  "sortie_si_non_documente": "contexte non documenté"
+}

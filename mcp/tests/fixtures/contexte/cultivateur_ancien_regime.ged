@@ -1,0 +1,38 @@
+0 HEAD
+1 GEDC
+2 VERS 7.0
+1 LANG fr
+0 @I1@ INDI
+1 NAME Mathurin /CHEVREAU/
+2 GIVN Mathurin
+2 SURN CHEVREAU
+1 SEX M
+1 BIRT
+2 DATE ABT 1722
+2 PLAC Vouillé-les-Marais, Vendée, France
+2 SOUR @S1@
+3 PAGE Baptêmes 1722, f° 6
+3 QUAY 3
+3 _TYPE originale
+3 _INFO primaire
+1 OCCU laboureur
+2 DATE 1750
+2 PLAC Vouillé-les-Marais, Vendée, France
+2 SOUR @S1@
+3 PAGE Sépultures 1750, f° 11 (parrain, qualifié laboureur)
+3 _TYPE originale
+3 _INFO primaire
+3 _PREUVE indirecte
+1 DEAT
+2 DATE 9 JAN 1788
+2 PLAC Vouillé-les-Marais, Vendée, France
+2 SOUR @S1@
+3 PAGE Sépultures 1788, f° 3
+3 QUAY 3
+3 _TYPE originale
+3 _INFO primaire
+1 UID c0ffee02-0000-4000-8000-000000000001
+0 @S1@ SOUR
+1 TITL Registre paroissial de Vouillé-les-Marais (fictif)
+1 _TYPE originale
+0 TRLR
