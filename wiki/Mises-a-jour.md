@@ -77,5 +77,13 @@ Le détail est dans chaque note de version.
   double après une fusion (`dedoublonner_marqueurs`). **Changement** : dans Gramps, les rôles sont écrits sous
   leur nom anglais standard (affichés traduits) et `Date.text` reste vide quand il est la forme canonique ;
   seuls les objets modifiés sont réécrits.
+- [0.29.0](https://github.com/Hiobi/Genealogiste/releases/tag/v0.29.0) : contexte historique sourcé (`/genealogiste:contexte`) : littérature
+  savante citée (`contexte_bibliographie`), géographie historique (`lieu_historique`), presse ancienne
+  (`presse_recherche`), éléments de contexte bornés au lieu et à la période de vie (`contexte_local`), pistes
+  réfutables (`pistes_contexte`), contrôle des textes (`contexte_verifier`) ; parcours émigration et fenêtre de
+  départ ; pays du lieu résolu avant toute piste. **Changement** : un lieu hors de France ne reçoit plus de
+  série d’archives départementales, et un lieu sans pays ni département les reçoit avec « si le lieu est en
+  France » ; un billet dont le texte a une section « Contexte » n’est proposé que s’il est conforme et porte
+  le champ `personne`.
 
 Pour la version publiée actuellement, se référer à la page Releases et au numéro du pied de page du wiki.
