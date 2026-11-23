@@ -1,0 +1,18 @@
+{
+  "service": "CHRONICLING-AMERICA",
+  "enregistre_par": "#288 (presse_recherche)",
+  "client": "curl, User-Agent générique, sans clé ni cookie",
+  "reponses": [
+    {
+      "fichier": "recherche-403-cloudflare.html",
+      "url": "https://www.loc.gov/collections/chronicling-america/?q=strike&dates=1906/1906",
+      "methode": "GET",
+      "date": "2026-11-23T10:11:41+00:00",
+      "statut": 403,
+      "type": "text/html; charset=UTF-8",
+      "resultat": "défi Cloudflare (Just a moment, challenge-platform)",
+      "note": "Réponse réduite au strict nécessaire : ni adresse IP, ni identifiant de requête (Ray ID), ni en-tête. Une seule tentative, sans contournement : aucun analyseur, lien vers la page de la collection seulement.",
+      "empreinte": "sha256:8d902d709b45df998c810ae6522b65fe2938b55681155fbbc93b4fe51b34b2c4"
+    }
+  ]
+}

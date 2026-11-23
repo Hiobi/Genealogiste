@@ -370,6 +370,47 @@ Island Foundation, en plus de Fichier Origine et du PRDH.
 Limites : la fenêtre ne voit que l'arbre ; elle ne déduit aucune date d'un contexte ; un lieu de pays inconnu
 (« Charleroi » seul) est écarté, à préciser ; seul le premier départ attesté est encadré.
 
+### presse_recherche
+
+<!-- #288 -->
+
+`presse_recherche(texte, lieu="", periode="", services="", nombre=10)` (classe collecte, budget d'enquête via
+`enquete`) cherche la presse ancienne, source primaire contemporaine, service par service. Code :
+`contexte/presse.py` ; l'outil de `server.py` ne fait que la garde et l'appel.
+
+- `texte` : mots cherchés (événement, métier, nom d'un défunt pour un fait divers) ; `lieu` : ajouté aux mots ;
+  `periode` : `1906` ou `1900-1910` ; `services` : codes séparés par des virgules (`GALLICA`, `EUROPEANA`,
+  `CHRONICLING-AMERICA`, `RETRONEWS`), dans l'ordre voulu ; vide : les quatre dans cet ordre.
+- **Vivants** : `_garde` sur `texte` puis sur `lieu` avant toute requête (`GARDE_VIVANTS`, `GARDE_AVANT_BUDGET`).
+- **Repli explicite** : chaque service est essayé ou écarté avec son motif (`services[]` : `service`, `statut`,
+  `motif`, `journal`) ; un service bloqué n'arrête pas les suivants. Statuts : `interroge`, `bloque_antirobot`
+  (coupe-circuit compris), `erreur`, `refuse` (désactivé, clé absente, hors ligne : `services.refus`),
+  `lien_seulement`, `sans_analyseur`.
+- **Résultats** (`resultats[]`) : une `Reference` sérialisée (`nature: primaire`, `type_document: presse`,
+  `publication` = titre du périodique, `date`, `annee`, identifiant ARK, `service`, `requete`, `consulte_le`,
+  `citation`), plus `url`, `vue` (numéro de vue Gallica `fN`, pas forcément la page imprimée), `ocr`, `extrait`
+  et, si un extrait OCR est donné, `mention: « lecture OCR non vérifiée »`, `au_registre`, `suite`. Chaque
+  référence est inscrite au registre des références consultées (réponse 2xx contenant l'ARK) ; `lu` reste
+  `notice_seule` : relire l'image (`gallica_iiif`), l'archiver (`piece_archiver`), puis citer numéro et page lus.
+- **Sans résultat** : `statut: tache_manuelle` (ou `bloque_antirobot` si Gallica oppose un défi, avec `consigne`,
+  `suite` sans navigateur et, avec `enquete`, une tâche manuelle dans l'enquête), `recherche_negative` et
+  `tache_manuelle` : motif par service, liens de consultation, ce qu'il faut relever (titre, date, numéro, page,
+  extrait lu sur l'image), reprise par `source_collee`, `piece_archiver` ou `media_enregistrer`. Jamais de
+  résultat inventé.
+- **Journal** : recherche Gallica (`gallica`/`sru`, positive, négative ou bloquée) et synthèse
+  `presse`/`presse_recherche` (motifs par service ; statut `positif`, `negatif`, `bloque_antirobot` ou `manuel`).
+
+| Service | Traitement | Lien de consultation |
+|---|---|---|
+| Gallica | client existant (`sources/gallica.py` : SRU sur les fascicules, puis `ContentSearch` pour la vue et l'extrait OCR des 3 premiers documents) ; coupe-circuit et plafonds du client commun | page d'accueil (recherche en 403 Cloudflare le 2026-11-23, forme non vérifiée) |
+| Europeana | `services.refus` (activation, `GENEALOGISTE_CLE_EUROPEANA`) ; **aucun analyseur** : pas de réponse réelle de l'API enregistrée (aucune clé disponible, clé de démonstration non utilisée). Avec une clé, `sans_analyseur`, aucune requête | recherche du site public (`/fr/search?query=`, vérifiée, HTTP 200) |
+| Chronicling America | lien seulement (403 Cloudflare, une tentative le 2026-11-23) | page de la collection |
+| Retronews | lien seulement (pas d'API publique) | recherche avancée pré-remplie (`/search?…&q=` : base64 du JSON encodé, forme relevée sur le site) ; période à régler dans le site |
+
+Gallica figure en `lien_seulement` dans le référentiel de contexte (SRU en 403) : `presse_recherche` ne l'ouvre pas
+pour autant à un nouvel accès, il passe par le même client que `gallica_recherche`, et un blocage est rendu tel
+quel. Réponses réelles réduites et manifestes : `mcp/tests/fixtures/contexte/reponses/<code>/MANIFESTE.json`.
+
 ## Rédaction et contrôle
 
 <!-- #291, #324 -->

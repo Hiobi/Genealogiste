@@ -1,0 +1,40 @@
+{
+  "service": "RETRONEWS",
+  "enregistre_par": "#288 (presse_recherche)",
+  "client": "curl, User-Agent générique, sans clé ni cookie",
+  "reponses": [
+    {
+      "fichier": "accueil-lien-recherche-avancee.html",
+      "url": "https://www.retronews.fr/",
+      "methode": "GET",
+      "date": "2026-11-23T10:11:41+00:00",
+      "statut": 200,
+      "type": "text/html; charset=utf-8",
+      "resultat": "lien « Recherche avancée » de la page d'accueil : /search?page=1&advanced=true&q=<base64(encodeURIComponent(JSON))>",
+      "note": "Élément <a> seul, extrait de la page d'accueil.",
+      "empreinte": "sha256:2d8172c058468930124365ecb9954f64fc5d21a6cba51e9dfb064b7092165057"
+    },
+    {
+      "fichier": "recherche-decodage-q.js",
+      "url": "https://www.retronews.fr/_next/static/chunks/ (scripts servis par la page /search)",
+      "methode": "GET",
+      "date": "2026-11-23T10:12:10+00:00",
+      "statut": 200,
+      "type": "application/javascript",
+      "resultat": "décodage du paramètre q par le site : JSON.parse(decodeURIComponent(atob(q)))",
+      "note": "Fonction seule, extraite des scripts de la page de recherche.",
+      "empreinte": "sha256:195c562bf1ae6d37efb5364adf73e1fbba2ee91d840f1cd36bd8fd758605edaf"
+    },
+    {
+      "fichier": "",
+      "url": "https://www.retronews.fr/search?page=1&advanced=true&q=JTdCJTIyc2VhcmNoJTIyJTNBJTdCJTIydHlwZSUyMiUzQSUyMmFkdmFuY2VkJTIyJTJDJTIyY3JpdGVyaWElMjIlM0ElN0IlMjJhbGxUaGVzZVdvcmRzJTIyJTNBJTIyZ3IlQzMlQTh2ZSUyMENvdXJyaSVDMyVBOHJlcyUyMiUyQyUyMnNvbWVPZlRoZXNlV29yZHMlMjIlM0ElMjIlMjIlMkMlMjJub25lT2ZUaGVzZVdvcmRzJTIyJTNBJTIyJTIyJTJDJTIyZXhwcmVzc2lvbiUyMiUzQSUyMiUyMiUyQyUyMndvcmRQcm94aW1pdHklMjIlM0ElMjJNSU4lMjIlMkMlMjJleGFjdFNlYXJjaCUyMiUzQWZhbHNlJTJDJTIyb25seUhlYWRsaW5lcyUyMiUzQWZhbHNlJTJDJTIyb25seVRpdGxlcyUyMiUzQWZhbHNlJTJDJTIyZGF0ZVBhcnRpY2xlJTIyJTNBJTIyRVhBQ1QlMjIlMkMlMjJpbmNsdWRlZEZpZWxkcyUyMiUzQSU3QiU3RCUyQyUyMmV4Y2x1ZGVkRmllbGRzJTIyJTNBJTdCJTdEJTJDJTIyc2VsZWN0ZWRGYWNldHMlMjIlM0ElN0IlMjJkYXRlJTIyJTNBJTdCJTdEJTJDJTIybG9jYXRpb24lMjIlM0ElN0IlMjJkYXRhJTIyJTNBJTVCJTVEJTJDJTIyc2l6ZSUyMiUzQTUlN0QlMkMlMjJvcmdhbml6YXRpb24lMjIlM0ElN0IlMjJkYXRhJTIyJTNBJTVCJTVEJTJDJTIyc2l6ZSUyMiUzQTUlN0QlMkMlMjJwZXJzb24lMjIlM0ElN0IlMjJkYXRhJTIyJTNBJTVCJTVEJTJDJTIyc2l6ZSUyMiUzQTUlN0QlMkMlMjJwdWJsaWNhdGlvbklkJTIyJTNBJTdCJTIyc2l6ZSUyMiUzQTUlN0QlMkMlMjJ3b3JrSWQlMjIlM0ElN0IlMjJzaXplJTIyJTNBNSU3RCUyQyUyMnB1YmxpY2F0aW9uTG9jYXRpb24lMjIlM0ElN0IlMjJkYXRhJTIyJTNBJTdCJTdEJTJDJTIyc2l6ZSUyMiUzQTUlN0QlMkMlMjJ0aGVtYXRpYyUyMiUzQSU3QiU3RCU3RCU3RCU3RCU3RA%3D%3D",
+      "methode": "GET",
+      "date": "2026-11-23T10:11:58+00:00",
+      "statut": 200,
+      "type": "text/html; charset=utf-8",
+      "resultat": "page de recherche servie (rendu des résultats côté navigateur, non vérifiable sans navigateur)",
+      "note": "URL construite par contexte/presse.py (allTheseWords = « grève Courrières ») ; corps non conservé.",
+      "empreinte": ""
+    }
+  ]
+}

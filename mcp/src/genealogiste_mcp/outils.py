@@ -49,6 +49,7 @@ OUTILS: dict[str, tuple[str, str]] = {  # nom -> (effet, classe)
     "gallica_texte": (RESEAU, COLLECTE),
     "gallica_alto": (RESEAU, COLLECTE),
     "gallica_iiif": (LECTURE, LECTURE),  # construit des URL, sans requête
+    "presse_recherche": (RESEAU, COLLECTE),  # Gallica (client existant) ; registre des références consultées
     "ark_resoudre": (RESEAU, COLLECTE),  # requête HEAD, cache
     "archive_image": (RESEAU, COLLECTE),  # téléchargement dans le cache d'images
     "pdf_markdown": (LECTURE, LECTURE),  # fichier local ; écrit seulement dans le cache cache-pdf
@@ -261,7 +262,7 @@ BUDGET_ENQUETE = frozenset(n for n, (effet, classe) in OUTILS.items()
 # Outils réseau qui envoient des noms, un texte libre ou un identifiant de personne : garde « vivants » obligatoire.
 GARDE_VIVANTS = {"matchid_recherche", "matchid_appariement_csv", "wikitree_recherche", "gallica_recherche",
                  "gallica_recherche_document", "wikidata_personne", "wikidata_sparql", "recherche_multi",
-                 "archives_registres"}
+                 "archives_registres", "presse_recherche"}
 
 # Garde « vivants » avant le budget d'enquête (#211) : pour les outils gardés dont l'enveloppe générique
 # (ServeurMCP.mesure) contrôle le budget avant d'exécuter l'outil, paramètres de l'appel passés à _garde, comme
@@ -279,6 +280,7 @@ GARDE_AVANT_BUDGET: dict[str, dict[str, str]] = {
     "wikidata_personne": {"personne": "personne", "nom": "nom", "prenom": "prenom", "ne_vers": "ne_vers"},
     "wikidata_sparql": {"texte": "requete"},
     "archives_registres": {"personne": "personne", "texte": "commune"},
+    "presse_recherche": {"texte": "texte"},
 }
 
 # Paramètres qui désignent une personne ; exemptions justifiées (outil réseau, paramètre sans rapport).
@@ -312,6 +314,8 @@ IDENTITE_REQUETE: dict[str, dict[str, tuple[str, object]]] = {
                           "fin": (EXACT, ""), "exact": (BOOLEEN, True), "nombre": (ENTIER, 20),
                           "depart": (ENTIER, 1)},
     "gallica_recherche_document": {"ark": (EXACT, ""), "texte": (TEXTE, "")},
+    "presse_recherche": {"texte": (TEXTE, ""), "lieu": (TEXTE, ""), "periode": (TEXTE, ""), "services": (TEXTE, ""),
+                         "nombre": (ENTIER, 10)},
     "gallica_texte": {"ark": (EXACT, ""), "page": (ENTIER, 0), "max_caracteres": (ENTIER, 20000)},
     "gallica_alto": {"ark": (EXACT, ""), "page": (ENTIER, 0)},
     "ark_resoudre": {"ark": (EXACT, ""), "verifier": (BOOLEEN, True), "titre": (EXACT, "")},

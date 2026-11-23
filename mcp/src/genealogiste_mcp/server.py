@@ -36,6 +36,7 @@ from .budget import PlafondJour, mesurer
 from .cache import Cache
 from .chemins import CheminRefuse, nom_simple, sous
 from .config import Config, load_config
+from .contexte import presse
 from .contexte import services as services_contexte
 from .contexte.registre import RegistreReferences
 from .enquetes import EnqueteError, Enquetes
@@ -560,6 +561,22 @@ def gallica_alto(ark: str, page: int) -> dict:
 def gallica_iiif(ark: str, page: int = 0, region: str = "full", taille: str = "full") -> dict:
     """URL IIIF (manifeste, image d'une page, région 'x,y,l,h', taille 'pct:50' / '1500,')."""
     return gallica.iiif(ark, page or None, region, taille)
+
+
+@mcp.tool()
+def presse_recherche(texte: str, lieu: str = "", periode: str = "", services: str = "", nombre: int = 10) -> dict:
+    """Presse ancienne (#288) : Gallica, Europeana, Chronicling America, Retronews, dans cet ordre ou celui de
+    services (codes séparés par des virgules). Repli explicite : service bloqué, désactivé, sans clé ou en lien
+    seulement = motif, puis le suivant ; sans résultat, tâche manuelle avec liens de consultation. periode :
+    « 1906 » ou « 1900-1910 ». Résultats : références primaires (titre du périodique, date, ARK), extrait OCR
+    marqué « lecture OCR non vérifiée », inscrites au registre des références consultées."""
+    if refus := _garde(texte=texte) or _garde(texte=lieu):
+        return refus
+    a = app()
+    try:
+        return presse.rechercher(a.sctx, a.registre_references, texte, lieu, periode, services, nombre)
+    except presse.PresseInvalide as exc:
+        return {"erreur": str(exc), "requetes_emises": 0}
 
 
 @mcp.tool()

@@ -70,6 +70,7 @@ HOTES_OUTILS = {
     "gallica_recherche_document": {"gallica.bnf.fr"}, "gallica_texte": {"gallica.bnf.fr"},
     "geo_commune": {"geo.api.gouv.fr"}, "geo_historique": {"www.insee.fr"},
     "matchid_recherche": {"deces.matchid.io"},
+    "presse_recherche": {"gallica.bnf.fr"},
     "recherche_multi": {"deces.matchid.io", "api.wikitree.com", "gallica.bnf.fr", "query.wikidata.org"},
     "wikidata_personne": {"query.wikidata.org"}, "wikidata_sparql": {"query.wikidata.org"},
     **{f"wikitree_{n}": {"api.wikitree.com"} for n in ("ascendants", "descendants", "personne", "profil",
