@@ -356,6 +356,110 @@
    "notes": "Démographie canadienne-française ; détail payant."
   },
   {
+   "code": "NARA-IMMIGRATION",
+   "nom": "National Archives (NARA) — Immigrant Records",
+   "url": "https://www.archives.gov/research/immigration",
+   "type": "base_thematique",
+   "zone": [
+    "INT"
+   ],
+   "acces": "libre",
+   "nature": "notice",
+   "themes": [
+    "emigration"
+   ],
+   "protection": "aucune",
+   "site_repond_le": "2026-11-23",
+   "verifie_le": "",
+   "origine": "relevé HTTP du 2026-11-23 (#284)",
+   "notes": "Archives fédérales des États-Unis : guide des fonds sur les immigrants (listes de passagers, naturalisation, visas, A-Files, passeports) ; une partie seulement est numérisée, le reste sur papier ou microfilm. En anglais."
+  },
+  {
+   "code": "NARA-NATURALISATION",
+   "nom": "National Archives (NARA) — Naturalization Records",
+   "url": "https://www.archives.gov/research/immigration/naturalization",
+   "type": "base_thematique",
+   "zone": [
+    "INT"
+   ],
+   "acces": "libre",
+   "nature": "notice",
+   "themes": [
+    "emigration"
+   ],
+   "protection": "aucune",
+   "site_repond_le": "2026-11-23",
+   "verifie_le": "",
+   "origine": "relevé HTTP du 2026-11-23 (#284)",
+   "notes": "Naturalisation aux États-Unis : avant le 27 septembre 1906, tout tribunal pouvait naturaliser ; les dossiers des tribunaux d'État ou locaux sont souvent aux archives d'État ou dans des sociétés historiques, pas à NARA. En anglais."
+  },
+  {
+   "code": "NARA-WW1-DRAFT",
+   "nom": "National Archives (NARA) — World War I Draft Registration Cards",
+   "url": "https://www.archives.gov/research/military/ww1/draft-registration",
+   "type": "base_thematique",
+   "zone": [
+    "INT"
+   ],
+   "acces": "libre",
+   "nature": "notice",
+   "periode": {
+    "de": 1917,
+    "a": 1918
+   },
+   "themes": [
+    "emigration",
+    "ww1"
+   ],
+   "protection": "aucune",
+   "site_repond_le": "2026-11-23",
+   "verifie_le": "",
+   "origine": "relevé HTTP du 2026-11-23 (#284)",
+   "notes": "Fiches d'enregistrement au service sélectif des États-Unis (Selective Service Act du 18 mai 1917) : trois enregistrements, le premier le 5 juin 1917 (hommes de 21 à 31 ans). En anglais."
+  },
+  {
+   "code": "NARA-RECENSEMENTS",
+   "nom": "National Archives (NARA) — Census Records",
+   "url": "https://www.archives.gov/research/census",
+   "type": "base_thematique",
+   "zone": [
+    "INT"
+   ],
+   "acces": "libre",
+   "nature": "notice",
+   "periode": {
+    "de": 1790,
+    "a": 1950
+   },
+   "themes": [
+    "emigration"
+   ],
+   "protection": "aucune",
+   "site_repond_le": "2026-11-23",
+   "verifie_le": "",
+   "origine": "relevé HTTP du 2026-11-23 (#284)",
+   "notes": "Recensements fédéraux des États-Unis, décennaux depuis 1790 ; communicables après 72 ans (1950 le plus récent ouvert). En anglais."
+  },
+  {
+   "code": "ELLIS-ISLAND",
+   "nom": "Statue of Liberty & Ellis Island Foundation — Arrival Search",
+   "url": "https://www.statueofliberty.org/arrival-search/",
+   "type": "base_thematique",
+   "zone": [
+    "INT"
+   ],
+   "acces": "a_determiner",
+   "nature": "index",
+   "themes": [
+    "emigration"
+   ],
+   "protection": "aucune",
+   "site_repond_le": "2026-11-23",
+   "verifie_le": "",
+   "origine": "relevé HTTP du 2026-11-23 (#284)",
+   "notes": "Recherche nominative dans les listes d'arrivée de ports des États-Unis (navigateur). Conditions d'accès aux images non relevées. Index : remonter à la liste de passagers."
+  },
+  {
    "code": "REFUGE-HUGUENOT",
    "nom": "Refuge huguenot",
    "url": "https://www.refuge-huguenot.fr/",

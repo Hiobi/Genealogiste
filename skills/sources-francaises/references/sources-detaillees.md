@@ -29,6 +29,19 @@
 - En ligne et cherchable par classe : `archives_registres(service, commune=<bureau ou vide>, annee=<classe>,
   type_acte="RM")` pour AD19, AD25, AD27, AD39, AD55, AD58, AD69, AD90, AD972.
 
+## Émigration et immigration
+- Départ de France : registre matricule de la classe (adresses successives), passeports et police (sous-série
+  4 M dans plusieurs services, ex. AD de la Somme et d'Indre-et-Loire ; à vérifier dans l'inventaire du
+  service), recensements avant et après le départ (absence constatée, qui ne prouve pas l'émigration),
+  transcriptions sur les registres de la commune du dernier domicile, état civil consulaire (Nantes).
+- Étrangers en France : police des étrangers (déclarations de résidence, cartes d'identité d'étranger : 4 M
+  dans plusieurs services), décrets de naturalisation aux Archives nationales (inventaire 1883-1948
+  partiellement indexé ; le numéro de dossier du décret mène au dossier).
+- Pays d'arrivée : intitulés génériques seulement (listes de passagers, recensements, naturalisation,
+  conscription) ; aucune cote ni nom de fonds étranger. Guides relevés : `sources_catalogue(theme="emigration")`
+  (NARA, Ellis Island, Fichier Origine, PRDH).
+- Fenêtre de départ : tirée des seuls faits de l'arbre (`arbre_lacunes(id)` → `fenetre_depart`).
+
 ## Notaires (3 E)
 - Retrouver l'acte : répertoire de l'étude, tables de l'enregistrement (avant 1790 : contrôle des actes,
   série C). Contrats de mariage, inventaires après décès, partages, testaments, ventes, baux.

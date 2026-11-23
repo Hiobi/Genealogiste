@@ -1142,7 +1142,9 @@ def communicabilite(document: str, date_document: str = "", date_naissance: str 
 @mcp.tool()
 def prochaine_source(fait: str, date_fait: str = "", lieu: str = "") -> list[dict]:
     """Sources à consulter en priorité pour étayer un fait. Avec lieu, chaque piste porte pays (code, nom,
-    provenance) : hors de France, aucune série d'AD ; pays inconnu, séries d'AD « si le lieu est en France »."""
+    provenance) : hors de France, aucune série d'AD ; pays inconnu, séries d'AD « si le lieu est en France ».
+    EMIG, IMMI, NATU, RESI hors de France et RESI_ETRANGER : pistes des deux côtés (versant france / etranger),
+    côté étranger intitulés génériques sans cote, avertissement quand l'existence du fonds n'est pas vérifiée."""
     return next_source_hint(fait.upper(), date_fait, lieu)
 
 
@@ -1269,7 +1271,8 @@ def arbre_personne(id: str) -> dict:
 
 @mcp.tool()
 def arbre_fiche(id: str, masquer_vivants: bool = True) -> str:
-    """Fiche individuelle Markdown (faits, statut de preuve, contradictions, sources, prochaines sources)."""
+    """Fiche individuelle Markdown (faits, statut de preuve, contradictions, sources, prochaines sources) ; si un
+    fait est situé à l'étranger : fenêtre de départ tirée des faits de l'arbre (bornes citées) et pistes EMIG."""
     return fiche_markdown(app().tree(), id, app().config.strict_evidence, masquer_vivants)
 
 
@@ -1378,7 +1381,9 @@ def arbre_lacunes(id: str = "", taches: bool = False) -> dict:
     qu'elle prouve, avec l'opération modifier_media (lier_a) à soumettre par arbre_proposer.
     taches=true (avec id, GENEALOGISTE_GRAMPS_TACHES) : taches_a_proposer, une opération ajouter_tache par action
     (priorité Gramps calculée de la priorité de lacune : 0-1 haute, 2 moyenne, 3 basse), à soumettre par
-    arbre_proposer ; rien n'est écrit."""
+    arbre_proposer ; rien n'est écrit. Avec id, si un fait est situé à l'étranger : fenetre_depart (dernier fait
+    en France, premier fait à l'étranger, chacun cité avec son statut ; indéterminée sinon), pistes EMIG des deux
+    côtés et typage_propose (opérations par type pour un événement générique, à soumettre par arbre_proposer)."""
     t = app().tree()
     out = gaps(t, id, app().config.strict_evidence) if id else tree_gaps(t, app().config.strict_evidence)
     if taches:
