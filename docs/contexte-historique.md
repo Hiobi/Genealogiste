@@ -538,6 +538,106 @@ chacun avec `MANIFESTE.json`). Limites : la requête Wikidata a pris 45 s au pre
 du délai HTTP, la fiche Cassini n'est pas identifiée et le lien générique est donné. Les liens `GetTile` suivent
 les jeux de tuiles déclarés par les couches (`PM_6_15`…) ; seule une tuile du jeu `PM` a été demandée par l'étude.
 
+### contexte_local
+
+<!-- #289 -->
+
+`contexte_local(personne="", lieu="", periode="", echelles="", themes="")` (classe collecte, budget d'enquête via
+`enquete`) rassemble des éléments de contexte **sourcés, classés et bornés** autour d'un individu ou d'un lieu à une
+période. Code : `contexte/local.py` (assemblage), `contexte/index_wikidata.py` (gabarits Wikidata) ; l'outil de
+`server.py` ne fait que la garde et l'appel. Aucun format nouveau : `ElementContexte`, `portee.controler` et le
+registre des références consultées du socle.
+
+| Argument | Rôle |
+|---|---|
+| `personne` | id de l'arbre : garde des vivants, puis lieux (avec années de présence), période de vie et métiers lus dans ses seuls faits **sourcés** et non réfutés (`requete.depuis_personne`) ; jamais son nom |
+| `lieu`, `periode` | sans `personne` : commune avec son département et période `AAAA-AAAA` (obligatoire) ; avec `personne`, `lieu` est refusé et `periode` restreint la période de vie |
+| `echelles` | parmi `commune`, `pays`, `departement`, `region`, `nation`, `international` ; défaut `commune,departement` |
+| `themes` | mots du sujet (texte libre, passe par la garde des vivants) ; défaut : premier métier sourcé |
+
+**Vivants.** `_garde` sur `personne` et `themes`, puis sur `lieu`, avant toute requête (`GARDE_VIVANTS`,
+`GARDE_AVANT_BUDGET`). Avec `personne`, toute requête (URL, requête SPARQL, mots de presse, libellé de lieu) est
+contrôlée par `residus_identite` avant l'envoi : une requête qui contiendrait un élément d'identité n'est pas émise
+(motif dans `services_en_echec`).
+
+**Collecte**, service par service ; l'échec de l'un n'arrête pas les autres. Hors de France, seuls les services dont
+la `couverture` du référentiel inclut le pays (France : `FR`, `EU`, `INT` ; États-Unis : `US`, `INT` ; autre pays ou
+pays inconnu : `INT`) ; sinon le service est écarté avec son motif.
+
+| Collecte | Échelle | D'où vient l'élément | `enonce` |
+|---|---|---|---|
+| géographie historique (`lieux.lieu_historique`, communes françaises, trois au plus, aux années de présence) | commune | population INSEE Melodi ; cartes de la Géoplateforme dont la tuile contient le centre de la commune. Les niveaux « inconnu » ne donnent rien | valeurs du jeu (`titre : valeur (mesure, année)`) ; titre de la couche |
+| index Wikidata (`index_wikidata`, gabarit `evenements_commune`) | commune | entrée de l'index dont une référence externe (BnF `P268`, IdRef `P269`, Persée `P8758`) présente dans la réponse est déjà au registre | titre de cette référence, jamais le libellé Wikidata |
+| bibliographie (`bibliographie.rechercher`, mêmes services et classement que `contexte_bibliographie`) | chaque échelle demandée, par pays | notice dont le **titre** cite un lieu de vie (sinon le département de ce lieu : échelle `departement`) | titre de la notice |
+| presse (`presse.rechercher`, deux communes par pays) | commune | numéro au registre dont l'extrait OCR cite la commune | extrait cité, suivi de « (lecture OCR non vérifiée) » |
+
+Dates d'un élément : années citées par la notice qui recoupent la période (sinon la première citée, rejetée par le
+contrôle), ou année de publication d'un imprimé contemporain ; année de l'observation ; période de la couche ;
+années de l'entrée de l'index. Élément non daté : écarté. Type (`evenement`, `economie`…) : classement lexical
+indicatif des mots du titre ou de l'extrait (`TYPES_LEXIQUE`), `culture` à défaut ; `evenement` pour l'index,
+`demographie` et `geographie` pour la géographie historique.
+
+**Contrôles.** Chaque élément passe par `portee.controler` : hors de la période de vie ou des lieux de vie, il est
+écarté avec son motif ; au-delà de la commune il porte `mention` (« tendance générale, ne prouve rien pour
+l'individu »). Sa source doit être au registre des références consultées (notice récupérée par le plugin ; un jeu de
+données ou un service interrogé par son URL y est inscrit avec un identifiant `url` égal à la requête) ; sinon il est
+écarté. Une même source n'est retenue qu'une fois, à l'échelle la plus locale.
+
+**Rattachement.** `atteste` seulement si une citation de l'arbre portant sur un fait de la personne (page, texte,
+note, ARK, titre ou URL de la source) contient l'identifiant de la source de l'élément : `citation_arbre` la nomme.
+Sinon `compatible` (échelle commune, même lieu, années recoupant la présence attestée par l'arbre ou la période
+demandée) ou `non_demontre` (autre échelle, ou années hors de la présence attestée), avec une justification
+factuelle. Le groupe (métier, âge) n'est pas évalué automatiquement.
+
+**Wikidata, index seulement.** Gabarits SPARQL légers versionnés dans `contexte/index_wikidata.py` :
+rattachement administratif à la commune par son code INSEE (`P374`, puis `P276`|`P131` et `P131*`), jamais un
+rayon ; classes d'événements fermées (`CLASSES_EVENEMENTS` : catastrophe, accident minier, grève, épidémie,
+bataille, inondation, incendie, sous-classes comprises) ; filtre sur l'année (`P585`, sinon `P580` à `P582`) ;
+`LIMIT 50` ; délai du client HTTP commun (`GENEALOGISTE_HTTP_TIMEOUT`), limites de débit, coupe-circuit et cache de
+30 jours. Seuls un code INSEE et deux années partent. Une entrée sans référence externe est écartée ; une entrée dont
+la référence n'est pas consultée est signalée dans `non_sources` (`statut: « non sourcé »`, identifiants et liens de
+consultation), jamais présentée comme source. Le code INSEE vient du COG (communes depuis 1943) : sans lui, le
+gabarit n'est pas applicable (motif).
+
+| Gabarit | État | Réponses réelles enregistrées (`reponses/WIKIDATA/`, 2026-11-23) |
+|---|---|---|
+| `evenements_commune` | livré | Billy-Montigny 1881-1946 (vide, 3,2 s), Courrières 1881-1946 (une entrée sans identifiant externe, 2,6 s), Belloy-en-Santerre 1892-1916 (vide, 2,5 s) |
+| `evenements_departement` | non livré | deux formes essayées une fois chacune (`P2586` puis `P131*` ; communes du département par le préfixe du code INSEE) : délai dépassé (60 s) ; consigné dans `MANIFESTE.json` (`sans_reponse`), aucune requête émise |
+
+**Sortie.**
+
+```json
+{"outil": "contexte_local",
+ "requete": {"personne": "I1", "depuis_personne": true, "lieux": [{"commune": "…", "departement": "…",
+             "pays": "France", "de": 1881, "a": 1904}], "periode": {"de": 1881, "a": 1946}, "metiers": ["mineur"],
+             "themes": "", "echelles": ["commune", "departement"]},
+ "style_citation": "iso690", "resultat": "2 élément(s) de contexte sourcé(s)", "nb_elements": 2,
+ "elements": {"commune": [{"enonce": "…", "type": "evenement", "portee": {"…": "…"}, "source": {"…": "…"},
+                           "rattachement": {"…": "…"}, "origine": "SUDOC"}],
+              "departement": [{"…": "…", "mention": "tendance générale, ne prouve rien pour l'individu"}]},
+ "non_documente": [], "non_sources": [], "nb_ecartes": 12, "ecartes": [{"origine": "…", "enonce": "…", "motif": "…"}],
+ "services_interroges": [], "services_en_echec": [], "services_ecartes": [], "taches_manuelles": [],
+ "journal": "…", "avertissement": "…", "rappel_index": "…"}
+```
+
+Un élément est un `ElementContexte` sérialisé, plus `origine` (service) et, au-delà de la commune, `mention` :
+`ElementContexte.from_dict` le relit sans ces deux clés. `ecartes` (100 au plus, `nb_ecartes` les compte tous) donne
+le motif de chaque candidat écarté. Rien trouvé : `elements: {}`, `resultat: « contexte non documenté »` et
+`recherche_negative`, jamais un texte général ; `non_documente` liste les échelles demandées sans élément. Arguments
+insuffisants : `erreur` et `requetes_emises: 0`. Journal : les entrées des modules appelés, plus une synthèse
+`contexte`/`contexte_local` (statut `positif` ou `negatif`, identifiants des sources).
+
+Enregistrement dans le coffre (point 6 de l'issue) : hors périmètre de l'outil, qui n'écrit rien (classe
+collecte). La fiche de la personne peut recevoir un élément par l'outil de notes existant `notes_ajouter` (classe
+écriture : accord de l'utilisateur), en reprenant `enonce` et `source.citation` tels quels ; aucun outil existant
+n'écrit de note de lieu (`lieux/…`).
+
+Limites : un lieu cité seulement dans les sujets ou les mots-clés d'une notice (pas dans son titre) n'est pas
+retenu ; le type est un classement lexical ; la géographie historique ne donne rien avant 1943 (COG) ni avant 1968
+(population), sauf les cartes ; pas de gabarit Wikidata départemental ; `personne` est hors de l'identité « déjà
+fait » (voir [enquetes.md](enquetes.md)) ; l'outil enchaîne plusieurs services (une collecte complète peut émettre
+plusieurs dizaines de requêtes, bornées par le budget d'enquête).
+
 ## Rédaction et contrôle
 
 <!-- #291, #324 -->

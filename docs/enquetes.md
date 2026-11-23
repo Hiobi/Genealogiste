@@ -206,6 +206,7 @@ bord retirés) ; entiers et booléens par valeur. La pagination fait partie de l
 | `geo_commune` | `nom` (texte) ; exacts : `code_postal`, `code_insee`, `departement` ; `limite` |
 | `geo_historique` | `nom` (texte) ; exacts : `code_insee`, `departement` |
 | `contexte_bibliographie` | texte : `sujet`, `lieu` ; exacts : `periode`, `echelle`, `services` ; `limite` (la personne, hors identité, ne distingue pas deux demandes sans lieu ni sujet) |
+| `contexte_local` | texte : `lieu`, `echelles`, `themes` ; exact : `periode` (la personne, hors identité, ne distingue pas deux demandes sans lieu : à noter dans l'enquête de chaque individu) |
 | `archives_registres` | `service` (exact), `commune` (texte), `annee`, `annee_fin`, `type_acte` (exact), `page` |
 | `archives_planche` | `source`, `de`, `a`, `pas`, `bandeau`, `largeur`, `gris`, `miniatures` (une planche plus fine ou recadrée est une autre demande) |
 

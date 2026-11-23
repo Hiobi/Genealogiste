@@ -14,6 +14,64 @@
    "duree_s": 44.8,
    "reduction": "aucune (réindentée)",
    "note": "même requête rejouée à 10:14:27Z : 200 en 0,7 s, corps identique"
+  },
+  {
+   "fichier": "evenements_commune_P374_62133.json",
+   "gabarit": "evenements_commune",
+   "url": "https://query.wikidata.org/sparql?query=SELECT%20DISTINCT%20%3Fitem%20%3FitemLabel%20%3Fclasse%20%3Fdate%20%3Fdebut%20%3Ffin%20%3Fbnf%20%3Fidref%20%3Fpersee%20WHERE%20%7B%0A%20%20%3Flieu%20wdt%3AP374%20%2262133%22%20.%0A%20%20%3Fitem%20%28wdt%3AP276%7Cwdt%3AP131%29%2Fwdt%3AP131%2A%20%3Flieu%20.%0A%20%20VALUES%20%3Fclasse%20%7B%20wd%3AQ3839081%20wd%3AQ1550225%20wd%3AQ49776%20wd%3AQ44512%20wd%3AQ178561%20wd%3AQ8068%20wd%3AQ168983%20%7D%0A%20%20%3Fitem%20wdt%3AP31%2Fwdt%3AP279%2A%20%3Fclasse%20.%0A%20%20OPTIONAL%20%7B%20%3Fitem%20wdt%3AP585%20%3Fdate%20%7D%0A%20%20OPTIONAL%20%7B%20%3Fitem%20wdt%3AP580%20%3Fdebut%20%7D%0A%20%20OPTIONAL%20%7B%20%3Fitem%20wdt%3AP582%20%3Ffin%20%7D%0A%20%20BIND%28COALESCE%28YEAR%28%3Fdate%29%2C%20YEAR%28%3Fdebut%29%29%20AS%20%3Fan0%29%0A%20%20BIND%28COALESCE%28YEAR%28%3Fdate%29%2C%20YEAR%28%3Ffin%29%2C%20%3Fan0%29%20AS%20%3Fan1%29%0A%20%20FILTER%28BOUND%28%3Fan0%29%20%26%26%20%3Fan0%20%3C%3D%201946%20%26%26%20%3Fan1%20%3E%3D%201881%29%0A%20%20OPTIONAL%20%7B%20%3Fitem%20wdt%3AP268%20%3Fbnf%20%7D%0A%20%20OPTIONAL%20%7B%20%3Fitem%20wdt%3AP269%20%3Fidref%20%7D%0A%20%20OPTIONAL%20%7B%20%3Fitem%20wdt%3AP8758%20%3Fpersee%20%7D%0A%20%20SERVICE%20wikibase%3Alabel%20%7B%20bd%3AserviceParam%20wikibase%3Alanguage%20%22fr%2Cen%22%20.%20%7D%0A%7D%20LIMIT%2050%0A&format=json",
+   "date": "2026-11-23T12:27:51Z",
+   "statut": 200,
+   "type": "application/sparql-results+json;charset=utf-8",
+   "octets": 159,
+   "duree_s": 3.15,
+   "reduction": "aucune (réindentée)",
+   "empreinte": "sha256:9c1e450a116b3a77e52a64959d22dd70f60bd986e4f746c424cadd6f2eaf74cb",
+   "usage": "contexte_local (#289), index seulement",
+   "note": "cas témoin du mineur : Billy-Montigny (62133), vie 1881-1946 ; aucun événement"
+  },
+  {
+   "fichier": "evenements_commune_P374_62250.json",
+   "gabarit": "evenements_commune",
+   "url": "https://query.wikidata.org/sparql?query=SELECT%20DISTINCT%20%3Fitem%20%3FitemLabel%20%3Fclasse%20%3Fdate%20%3Fdebut%20%3Ffin%20%3Fbnf%20%3Fidref%20%3Fpersee%20WHERE%20%7B%0A%20%20%3Flieu%20wdt%3AP374%20%2262250%22%20.%0A%20%20%3Fitem%20%28wdt%3AP276%7Cwdt%3AP131%29%2Fwdt%3AP131%2A%20%3Flieu%20.%0A%20%20VALUES%20%3Fclasse%20%7B%20wd%3AQ3839081%20wd%3AQ1550225%20wd%3AQ49776%20wd%3AQ44512%20wd%3AQ178561%20wd%3AQ8068%20wd%3AQ168983%20%7D%0A%20%20%3Fitem%20wdt%3AP31%2Fwdt%3AP279%2A%20%3Fclasse%20.%0A%20%20OPTIONAL%20%7B%20%3Fitem%20wdt%3AP585%20%3Fdate%20%7D%0A%20%20OPTIONAL%20%7B%20%3Fitem%20wdt%3AP580%20%3Fdebut%20%7D%0A%20%20OPTIONAL%20%7B%20%3Fitem%20wdt%3AP582%20%3Ffin%20%7D%0A%20%20BIND%28COALESCE%28YEAR%28%3Fdate%29%2C%20YEAR%28%3Fdebut%29%29%20AS%20%3Fan0%29%0A%20%20BIND%28COALESCE%28YEAR%28%3Fdate%29%2C%20YEAR%28%3Ffin%29%2C%20%3Fan0%29%20AS%20%3Fan1%29%0A%20%20FILTER%28BOUND%28%3Fan0%29%20%26%26%20%3Fan0%20%3C%3D%201946%20%26%26%20%3Fan1%20%3E%3D%201881%29%0A%20%20OPTIONAL%20%7B%20%3Fitem%20wdt%3AP268%20%3Fbnf%20%7D%0A%20%20OPTIONAL%20%7B%20%3Fitem%20wdt%3AP269%20%3Fidref%20%7D%0A%20%20OPTIONAL%20%7B%20%3Fitem%20wdt%3AP8758%20%3Fpersee%20%7D%0A%20%20SERVICE%20wikibase%3Alabel%20%7B%20bd%3AserviceParam%20wikibase%3Alanguage%20%22fr%2Cen%22%20.%20%7D%0A%7D%20LIMIT%2050%0A&format=json",
+   "date": "2026-11-23T12:29:40Z",
+   "statut": 200,
+   "type": "application/sparql-results+json;charset=utf-8",
+   "octets": 691,
+   "duree_s": 2.59,
+   "reduction": "aucune (réindentée)",
+   "empreinte": "sha256:e6e13855d4ad707a57e4e2567b0515dfa6b25889bc016f2ddeb75fd70c9c5a47",
+   "usage": "contexte_local (#289), index seulement",
+   "note": "Courrières (62250), 1881-1946 : réponse non vide pour l'analyseur (une ligne, sans identifiant externe)"
+  },
+  {
+   "fichier": "evenements_commune_P374_80080.json",
+   "gabarit": "evenements_commune",
+   "url": "https://query.wikidata.org/sparql?query=SELECT%20DISTINCT%20%3Fitem%20%3FitemLabel%20%3Fclasse%20%3Fdate%20%3Fdebut%20%3Ffin%20%3Fbnf%20%3Fidref%20%3Fpersee%20WHERE%20%7B%0A%20%20%3Flieu%20wdt%3AP374%20%2280080%22%20.%0A%20%20%3Fitem%20%28wdt%3AP276%7Cwdt%3AP131%29%2Fwdt%3AP131%2A%20%3Flieu%20.%0A%20%20VALUES%20%3Fclasse%20%7B%20wd%3AQ3839081%20wd%3AQ1550225%20wd%3AQ49776%20wd%3AQ44512%20wd%3AQ178561%20wd%3AQ8068%20wd%3AQ168983%20%7D%0A%20%20%3Fitem%20wdt%3AP31%2Fwdt%3AP279%2A%20%3Fclasse%20.%0A%20%20OPTIONAL%20%7B%20%3Fitem%20wdt%3AP585%20%3Fdate%20%7D%0A%20%20OPTIONAL%20%7B%20%3Fitem%20wdt%3AP580%20%3Fdebut%20%7D%0A%20%20OPTIONAL%20%7B%20%3Fitem%20wdt%3AP582%20%3Ffin%20%7D%0A%20%20BIND%28COALESCE%28YEAR%28%3Fdate%29%2C%20YEAR%28%3Fdebut%29%29%20AS%20%3Fan0%29%0A%20%20BIND%28COALESCE%28YEAR%28%3Fdate%29%2C%20YEAR%28%3Ffin%29%2C%20%3Fan0%29%20AS%20%3Fan1%29%0A%20%20FILTER%28BOUND%28%3Fan0%29%20%26%26%20%3Fan0%20%3C%3D%201916%20%26%26%20%3Fan1%20%3E%3D%201892%29%0A%20%20OPTIONAL%20%7B%20%3Fitem%20wdt%3AP268%20%3Fbnf%20%7D%0A%20%20OPTIONAL%20%7B%20%3Fitem%20wdt%3AP269%20%3Fidref%20%7D%0A%20%20OPTIONAL%20%7B%20%3Fitem%20wdt%3AP8758%20%3Fpersee%20%7D%0A%20%20SERVICE%20wikibase%3Alabel%20%7B%20bd%3AserviceParam%20wikibase%3Alanguage%20%22fr%2Cen%22%20.%20%7D%0A%7D%20LIMIT%2050%0A&format=json",
+   "date": "2026-11-23T12:32:10Z",
+   "statut": 200,
+   "type": "application/sparql-results+json;charset=utf-8",
+   "octets": 159,
+   "duree_s": 2.5,
+   "reduction": "aucune (réindentée)",
+   "empreinte": "sha256:9c1e450a116b3a77e52a64959d22dd70f60bd986e4f746c424cadd6f2eaf74cb",
+   "usage": "contexte_local (#289), index seulement",
+   "note": "cas témoin du soldat : Belloy-en-Santerre (80080), vie 1892-1916 ; aucun événement"
+  }
+ ],
+ "sans_reponse": [
+  {
+   "gabarit": "evenements_departement (P2586 puis P131*)",
+   "date": "2026-11-23T12:28:04Z",
+   "lieu": "département 62, 1881-1946",
+   "resultat": "délai dépassé (60 s, aucun octet reçu)",
+   "suite": "gabarit non livré, pas de nouvel essai"
+  },
+  {
+   "gabarit": "evenements_departement (communes par préfixe du code INSEE, un saut P276|P131)",
+   "date": "2026-11-23T12:30:21Z",
+   "lieu": "département 80, 1892-1916",
+   "resultat": "délai dépassé (60 s, aucun octet reçu)",
+   "suite": "gabarit non livré, pas de nouvel essai"
   }
  ]
 }

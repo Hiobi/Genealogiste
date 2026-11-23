@@ -1,0 +1,39 @@
+{
+ "head": {
+  "vars": [
+   "item",
+   "itemLabel",
+   "classe",
+   "date",
+   "debut",
+   "fin",
+   "bnf",
+   "idref",
+   "persee"
+  ]
+ },
+ "results": {
+  "bindings": [
+   {
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q3839081"
+    },
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q108101483"
+    },
+    "date": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1940-05-28T00:00:00Z"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "massacre d'Oignies et Courrières"
+    }
+   }
+  ]
+ }
+}
