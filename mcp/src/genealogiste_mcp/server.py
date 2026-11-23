@@ -37,6 +37,7 @@ from .cache import Cache
 from .chemins import CheminRefuse, nom_simple, sous
 from .config import Config, load_config
 from .contexte import bibliographie as biblio_contexte
+from .contexte import lieux as lieux_contexte
 from .contexte import services as services_contexte
 from .contexte.registre import RegistreReferences
 from .contexte.requete import residus_identite
@@ -691,6 +692,19 @@ def contexte_bibliographie(sujet: str = "", lieu: str = "", periode: str = "", e
     residus = (lambda url: residus_identite(url, tree, personne)) if personne else None
     return biblio_contexte.rechercher(a.sctx, a.registre_references, demande, services,
                                       a.config.contexte_style_citation, personne or None, residus)
+
+
+@mcp.tool()
+def lieu_historique(lieu: str, date: str) -> dict:
+    """Géographie historique d'un lieu à une date (#287), niveau par niveau, chacun avec source et
+    periode_de_validite : commune (nom, département, rattachement, existence) depuis 1943 (COG INSEE) ; population
+    depuis 1968 (INSEE Melodi) ; cartes anciennes de la Géoplateforme choisies selon la date (liens de tuile, aucun
+    téléchargement). Tout le reste (avant 1943 ; canton, arrondissement, district ; province, généralité,
+    bailliage, diocèse ; population avant 1968) vaut « inconnu » (à établir) avec un lien de consultation : ne
+    jamais le compléter de mémoire. lieu : commune avec son département (« Billy-Montigny, Pas-de-Calais ») ou code
+    INSEE ; date : GEDCOM ou texte (« 1906 », « vers 1750 »). Hors de France : hors périmètre ; pays inconnu ou
+    homonymes : préciser le département ou le code INSEE. Aucune donnée de personne n'est envoyée."""
+    return lieux_contexte.lieu_historique(app().sctx, lieu, date)
 
 
 @mcp.tool()

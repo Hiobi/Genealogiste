@@ -437,7 +437,7 @@
      "FR"
     ]
    },
-   "usage": "cartes anciennes : couches …CASSINI (BnF, AN), ETATMAJOR40, ETATMAJOR10, SCAN50.1950, orthophotos 1950-1965",
+   "usage": "cartes anciennes : couches AN-IGNF_ et BNF-IGNF_GEOGRAPHICALGRIDSYSTEMS.CASSINI, GEOGRAPHICALGRIDSYSTEMS.ETATMAJOR40, GEOGRAPHICALGRIDSYSTEMS.ETATMAJOR10, GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN50.1950 (nom corrigé, étude #322, revérifié le 2026-11-23), ORTHOIMAGERY.ORTHOPHOTOS.1950-1965",
    "cgu": "",
    "quota": "",
    "protection": "aucune",

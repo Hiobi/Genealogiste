@@ -39,6 +39,7 @@ EXEMPLES: dict[str, dict] = {
     "wikidata_sparql": {"requete": "SELECT ?x WHERE { ?x ?y ?z } LIMIT 1"},
     "geo_commune": {"nom": "Lille"},
     "geo_historique": {"code_insee": "59350"},
+    "lieu_historique": {"lieu": "59350", "date": "1975"},
     "recherche_multi": {"nom": "Dupont", "prenom": "Jean", "sources": ["matchid"]},
     "archives_naviguer": {"source": REGISTRE, "page": 1, "pas": 3},
     "archives_registres": {"service": "AD59", "commune": "Lille", "annee": 1850},

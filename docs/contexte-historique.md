@@ -453,6 +453,50 @@ le titre, les sujets et les mots-clés, pas sur le texte ; la nature « savante 
 indication de la notice (thèse, évaluation par les pairs déclarée) ; `personne` est hors de l'identité « déjà
 fait » (deux demandes sans lieu ni sujet pour deux personnes différentes sont signalées comme la même).
 
+### lieu_historique
+
+<!-- #287 -->
+
+`lieu_historique(lieu, date)` (classe collecte, `enquete` facultatif) : géographie historique d'une commune à une
+date, **niveau par niveau**, chacun avec `source` et `periode_de_validite`. Code : `contexte/lieux.py`. Périmètre
+fixé par l'étude #322 ([etudes/lieux-1790-1943.md](etudes/lieux-1790-1943.md)) : rien n'est déduit, ni par le code
+ni par le modèle.
+
+- `lieu` : commune avec son département (`Billy-Montigny, Pas-de-Calais`, `Somain (59)`) ou code INSEE ; `date` :
+  GEDCOM ou texte (`1906`, `12 MAR 1906`, `vers 1750`, `an XII`), lue comme un intervalle grégorien.
+- Pays (`pays_du_lieu`) : hors de France, réponse `hors_perimetre` sans requête ni extrapolation ; pays inconnu
+  (`Billy`), réponse `pays_inconnu` sans requête. Homonymes au COG (`Billy, France`) : `homonymie` et liste des
+  `candidats` (code, nom, département, période), sans choix ; préciser le département ou le code INSEE.
+
+| Niveau | Source | Sinon |
+|---|---|---|
+| `nom`, `departement`, `rattachement_communal` (commune déléguée ou associée), `existence`, `communes_absorbees`, `evenements_depuis_1943` | COG INSEE par `geo_historique` et la chronologie COG de `sources/geo.py` (millésime configuré) ; `debut` 1943-01-01 = début de la couverture (antérieur inconnu) | avant 1943 ou intervalle à cheval sur 1943 : « inconnu » |
+| `population` | INSEE Melodi `DS_POPULATIONS_HISTORIQUES` : observation de l'année la plus proche avant la date (`annee`, code de `mesure` tel que servi, `ecart_annees`), géographie de diffusion lue dans le catalogue du jeu (2025-01-01 au relevé) | avant la première année du jeu (1968), commune absente de cette géographie, service non interrogeable : « inconnu » |
+| `canton`, `arrondissement`, `district` | aucune (le COG ne date pas ces rattachements) | « inconnu » ; district : lien vers la carte des districts de 1790 (Nakala, ODbL) |
+| `province`, `generalite`, `bailliage_ou_senechaussee`, `diocese` | aucune source structurée ouverte par commune | « inconnu » ; lien Cassini et dictionnaire topographique du département |
+| `cartes` | Géoplateforme WMTS : `AN-` et `BNF-IGNF_GEOGRAPHICALGRIDSYSTEMS.CASSINI`, `GEOGRAPHICALGRIDSYSTEMS.ETATMAJOR40`, `GEOGRAPHICALGRIDSYSTEMS.ETATMAJOR10`, `GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN50.1950`, `ORTHOIMAGERY.ORTHOPHOTOS.1950-1965` | couche hors emprise du lieu ou période non renseignée : rangée dans `autres` avec son motif |
+
+Chaque niveau « inconnu » porte `source: null`, `periode_de_validite: null`, `statut: "à établir"`, un `motif` et
+`consultation` : fiche « Des villages de Cassini aux communes d'aujourd'hui » (EHESS) par son identifiant, trouvé
+dans l'index Wikidata (P374 → P8422, jamais source ; site EHESS sans réponse aux relevés), sinon le site ; base
+Cassini redéposée sur Nakala (`doi:10.34847/nkl.e0556oog`, CC BY-NC-SA 4.0, ni embarquée ni interrogée). Ne jamais
+compléter un niveau « inconnu » de mémoire.
+
+Cartes : la période d'une couche est lue dans son titre (`Carte de l'état-major (1820-1866)`), sinon dans
+l'étendue temporelle de sa fiche de métadonnées CSW (Cassini : 1756-1815). Sont retenues les couches contemporaines
+de la date, à défaut la plus proche avant et la plus proche après. Chaque carte retenue donne un lien `GetTile`
+vers la tuile (niveau 14, sinon le plus fin publié) qui contient le centre de la commune actuelle (API Géo), avec
+le style, le format et le jeu de tuiles déclarés par la couche, ses fiches et les conditions d'utilisation du
+service ; aucune image n'est téléchargée. Commune disparue : pas de centre, pas de lien.
+
+Réseau : seul le code INSEE part vers Melodi et Wikidata ; `services.refus` avant chaque service de contexte
+(désactivé, hors ligne : niveau « inconnu » avec le motif, résumé dans `requetes`) ; une entrée de journal par
+service et une pour l'ensemble. Réponses réelles enregistrées (Billy-Montigny, 2026-11-23) :
+`mcp/tests/fixtures/contexte/reponses/` (`INSEE-MELODI`, `IGN-GEOPLATEFORME`, `WIKIDATA`, `COG-INSEE`, `API-GEO`,
+chacun avec `MANIFESTE.json`). Limites : la requête Wikidata a pris 45 s au premier essai (0,7 s ensuite) ; au-delà
+du délai HTTP, la fiche Cassini n'est pas identifiée et le lien générique est donné. Les liens `GetTile` suivent
+les jeux de tuiles déclarés par les couches (`PM_6_15`…) ; seule une tuile du jeu `PM` a été demandée par l'étude.
+
 ## Rédaction et contrôle
 
 <!-- #291, #324 -->

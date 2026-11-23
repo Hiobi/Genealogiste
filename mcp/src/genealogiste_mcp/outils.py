@@ -57,6 +57,8 @@ OUTILS: dict[str, tuple[str, str]] = {  # nom -> (effet, classe)
     "wikidata_sparql": (RESEAU, COLLECTE),
     "geo_commune": (RESEAU, COLLECTE),
     "geo_historique": (RESEAU, COLLECTE),
+    # géographie historique (#287) : COG, API Géo, Melodi, Géoplateforme, index Wikidata ; lieu et date seulement
+    "lieu_historique": (RESEAU, COLLECTE),
     "recherche_multi": (RESEAU, COLLECTE),
     "contexte_bibliographie": (RESEAU, COLLECTE),  # littérature savante (#286) ; registre des références
     "liens_recherche": (LECTURE, LECTURE),
@@ -323,6 +325,7 @@ IDENTITE_REQUETE: dict[str, dict[str, tuple[str, object]]] = {
     "geo_commune": {"nom": (TEXTE, ""), "code_postal": (EXACT, ""), "code_insee": (EXACT, ""),
                     "departement": (EXACT, ""), "limite": (ENTIER, 10)},
     "geo_historique": {"nom": (TEXTE, ""), "code_insee": (EXACT, ""), "departement": (EXACT, "")},
+    "lieu_historique": {"lieu": (TEXTE, ""), "date": (TEXTE, "")},
     "archives_registres": {"service": (EXACT, ""), "commune": (TEXTE, ""), "annee": (ENTIER, 0),
                            "type_acte": (EXACT, ""), "page": (ENTIER, 1), "annee_fin": (ENTIER, 0)},
     "contexte_bibliographie": {"sujet": (TEXTE, ""), "lieu": (TEXTE, ""), "periode": (EXACT, ""),

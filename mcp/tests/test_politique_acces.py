@@ -27,10 +27,10 @@ def _cfg(**kw) -> Config:
 
 
 def _hotes_sources() -> dict[str, str]:
-    """Hôtes réellement interrogés : constantes URL des modules qui appellent le client HTTP (sources/, ark.py)
-    et URL par défaut des fichiers COG (config). Dérivé du code, pas d'une liste tenue à la main."""
+    """Hôtes réellement interrogés : constantes URL des modules qui appellent le client HTTP (sources/, contexte/,
+    ark.py) et URL par défaut des fichiers COG (config). Dérivé du code, pas d'une liste tenue à la main."""
     out: dict[str, str] = {}
-    fichiers = sorted((SRC / "sources").rglob("*.py")) + [SRC / "ark.py"]
+    fichiers = sorted((SRC / "sources").rglob("*.py")) + sorted((SRC / "contexte").rglob("*.py")) + [SRC / "ark.py"]
     for f in fichiers:
         texte = f.read_text(encoding="utf-8")
         if f.name != "ark.py" and not re.search(r"\bhttp\.(get|post|request)\(", texte):
@@ -74,6 +74,7 @@ HOTES_OUTILS = {
     "gallica_alto": {"gallica.bnf.fr"}, "gallica_recherche": {"gallica.bnf.fr"},
     "gallica_recherche_document": {"gallica.bnf.fr"}, "gallica_texte": {"gallica.bnf.fr"},
     "geo_commune": {"geo.api.gouv.fr"}, "geo_historique": {"www.insee.fr"},
+    "lieu_historique": {"www.insee.fr", "geo.api.gouv.fr", "api.insee.fr", "data.geopf.fr", "query.wikidata.org"},
     "matchid_recherche": {"deces.matchid.io"},
     "recherche_multi": {"deces.matchid.io", "api.wikitree.com", "gallica.bnf.fr", "query.wikidata.org"},
     "wikidata_personne": {"query.wikidata.org"}, "wikidata_sparql": {"query.wikidata.org"},

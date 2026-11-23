@@ -1,0 +1,22 @@
+{
+ "head": {
+  "vars": [
+   "item",
+   "cassini"
+  ]
+ },
+ "results": {
+  "bindings": [
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q772803"
+    },
+    "cassini": {
+     "type": "literal",
+     "value": "29186"
+    }
+   }
+  ]
+ }
+}

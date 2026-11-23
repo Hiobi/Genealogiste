@@ -40,6 +40,7 @@ VARIANTES: dict[str, dict] = {
     "wikidata_sparql": {"requete": "SELECT ?x WHERE { ?x ?y ?z } LIMIT 2"},
     "geo_commune": {"nom": "Douai"},
     "geo_historique": {"code_insee": "59178"},
+    "lieu_historique": {"lieu": "59350", "date": "1976"},
     "archives_registres": {"service": "AD59", "commune": "Lille", "annee": 1851},
     "archives_planche": {"source": REGISTRE, "de": 1, "a": 2, "bandeau": "pct:0,0,100,35"},
     "contexte_bibliographie": {"sujet": "mines", "lieu": "Lille", "services": ["HAL"], "periode": "1880-1914"},
