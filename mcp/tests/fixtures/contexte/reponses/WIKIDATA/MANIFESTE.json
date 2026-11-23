@@ -1,0 +1,19 @@
+{
+ "client": "Mozilla/5.0 (compatible; client-generique) ; sans clé, sans paramètre personnel",
+ "commune_temoin": "Billy-Montigny (code INSEE 62133, obtenu par geo_commune du plugin)",
+ "service": "WIKIDATA",
+ "usage": "lieu_historique (#287) : identifiant Cassini/EHESS (P8422) par le code INSEE (P374), index seulement",
+ "reponses": [
+  {
+   "fichier": "sparql_P374_62133.json",
+   "url": "https://query.wikidata.org/sparql?query=SELECT ?item ?cassini WHERE { ?item wdt:P374 \"62133\" ; wdt:P8422 ?cassini . } LIMIT 5&format=json",
+   "date": "2026-11-23T10:13:31Z",
+   "statut": 200,
+   "type": "application/sparql-results+json;charset=utf-8",
+   "octets": 296,
+   "duree_s": 44.8,
+   "reduction": "aucune (réindentée)",
+   "note": "même requête rejouée à 10:14:27Z : 200 en 0,7 s, corps identique"
+  }
+ ]
+}

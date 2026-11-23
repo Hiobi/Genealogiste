@@ -1,0 +1,311 @@
+{
+ "identifier": "DS_POPULATIONS_HISTORIQUES",
+ "title": {
+  "en": "Municipal populations from 1968 to 2023",
+  "fr": "Populations municipales de 1968 à 2023"
+ },
+ "paging": {
+  "first": "https://api.insee.fr/melodi/data/DS_POPULATIONS_HISTORIQUES?GEO=2025-COM-62133&page=1"
+ },
+ "observations": [
+  {
+   "dimensions": {
+    "GEO": "2025-COM-62133",
+    "FREQ": "A",
+    "TIME_PERIOD": "2010",
+    "POPREF_MEASURE": "PMUN"
+   },
+   "measures": {
+    "OBS_VALUE_NIVEAU": {
+     "value": 8163.0
+    }
+   }
+  },
+  {
+   "dimensions": {
+    "GEO": "2025-COM-62133",
+    "FREQ": "A",
+    "TIME_PERIOD": "2006",
+    "POPREF_MEASURE": "PMUN"
+   },
+   "measures": {
+    "OBS_VALUE_NIVEAU": {
+     "value": 8018.0
+    }
+   }
+  },
+  {
+   "dimensions": {
+    "GEO": "2025-COM-62133",
+    "FREQ": "A",
+    "TIME_PERIOD": "2022",
+    "POPREF_MEASURE": "PMUN"
+   },
+   "measures": {
+    "OBS_VALUE_NIVEAU": {
+     "value": 8027.0
+    }
+   }
+  },
+  {
+   "dimensions": {
+    "GEO": "2025-COM-62133",
+    "FREQ": "A",
+    "TIME_PERIOD": "2014",
+    "POPREF_MEASURE": "PMUN"
+   },
+   "measures": {
+    "OBS_VALUE_NIVEAU": {
+     "value": 8199.0
+    }
+   }
+  },
+  {
+   "dimensions": {
+    "GEO": "2025-COM-62133",
+    "FREQ": "A",
+    "TIME_PERIOD": "2017",
+    "POPREF_MEASURE": "PMUN"
+   },
+   "measures": {
+    "OBS_VALUE_NIVEAU": {
+     "value": 8150.0
+    }
+   }
+  },
+  {
+   "dimensions": {
+    "GEO": "2025-COM-62133",
+    "FREQ": "A",
+    "TIME_PERIOD": "2009",
+    "POPREF_MEASURE": "PMUN"
+   },
+   "measures": {
+    "OBS_VALUE_NIVEAU": {
+     "value": 8104.0
+    }
+   }
+  },
+  {
+   "dimensions": {
+    "GEO": "2025-COM-62133",
+    "FREQ": "A",
+    "TIME_PERIOD": "2013",
+    "POPREF_MEASURE": "PMUN"
+   },
+   "measures": {
+    "OBS_VALUE_NIVEAU": {
+     "value": 8213.0
+    }
+   }
+  },
+  {
+   "dimensions": {
+    "GEO": "2025-COM-62133",
+    "FREQ": "A",
+    "TIME_PERIOD": "2015",
+    "POPREF_MEASURE": "PMUN"
+   },
+   "measures": {
+    "OBS_VALUE_NIVEAU": {
+     "value": 8183.0
+    }
+   }
+  },
+  {
+   "dimensions": {
+    "GEO": "2025-COM-62133",
+    "FREQ": "A",
+    "TIME_PERIOD": "2012",
+    "POPREF_MEASURE": "PMUN"
+   },
+   "measures": {
+    "OBS_VALUE_NIVEAU": {
+     "value": 8284.0
+    }
+   }
+  },
+  {
+   "dimensions": {
+    "GEO": "2025-COM-62133",
+    "FREQ": "A",
+    "TIME_PERIOD": "2011",
+    "POPREF_MEASURE": "PMUN"
+   },
+   "measures": {
+    "OBS_VALUE_NIVEAU": {
+     "value": 8224.0
+    }
+   }
+  },
+  {
+   "dimensions": {
+    "GEO": "2025-COM-62133",
+    "FREQ": "A",
+    "TIME_PERIOD": "2019",
+    "POPREF_MEASURE": "PMUN"
+   },
+   "measures": {
+    "OBS_VALUE_NIVEAU": {
+     "value": 8177.0
+    }
+   }
+  },
+  {
+   "dimensions": {
+    "GEO": "2025-COM-62133",
+    "FREQ": "A",
+    "TIME_PERIOD": "2016",
+    "POPREF_MEASURE": "PMUN"
+   },
+   "measures": {
+    "OBS_VALUE_NIVEAU": {
+     "value": 8166.0
+    }
+   }
+  },
+  {
+   "dimensions": {
+    "GEO": "2025-COM-62133",
+    "FREQ": "A",
+    "TIME_PERIOD": "2023",
+    "POPREF_MEASURE": "PMUN"
+   },
+   "measures": {
+    "OBS_VALUE_NIVEAU": {
+     "value": 7937.0
+    }
+   }
+  },
+  {
+   "dimensions": {
+    "GEO": "2025-COM-62133",
+    "FREQ": "A",
+    "TIME_PERIOD": "2018",
+    "POPREF_MEASURE": "PMUN"
+   },
+   "measures": {
+    "OBS_VALUE_NIVEAU": {
+     "value": 8167.0
+    }
+   }
+  },
+  {
+   "dimensions": {
+    "GEO": "2025-COM-62133",
+    "FREQ": "A",
+    "TIME_PERIOD": "2021",
+    "POPREF_MEASURE": "PMUN"
+   },
+   "measures": {
+    "OBS_VALUE_NIVEAU": {
+     "value": 8117.0
+    }
+   }
+  },
+  {
+   "dimensions": {
+    "GEO": "2025-COM-62133",
+    "FREQ": "A",
+    "TIME_PERIOD": "2007",
+    "POPREF_MEASURE": "PMUN"
+   },
+   "measures": {
+    "OBS_VALUE_NIVEAU": {
+     "value": 7964.0
+    }
+   }
+  },
+  {
+   "dimensions": {
+    "GEO": "2025-COM-62133",
+    "FREQ": "A",
+    "TIME_PERIOD": "2020",
+    "POPREF_MEASURE": "PMUN"
+   },
+   "measures": {
+    "OBS_VALUE_NIVEAU": {
+     "value": 8185.0
+    }
+   }
+  },
+  {
+   "dimensions": {
+    "GEO": "2025-COM-62133",
+    "FREQ": "A",
+    "TIME_PERIOD": "2008",
+    "POPREF_MEASURE": "PMUN"
+   },
+   "measures": {
+    "OBS_VALUE_NIVEAU": {
+     "value": 8023.0
+    }
+   }
+  },
+  {
+   "dimensions": {
+    "GEO": "2025-COM-62133",
+    "FREQ": "A",
+    "TIME_PERIOD": "1982",
+    "POPREF_MEASURE": "PSDC"
+   },
+   "measures": {
+    "OBS_VALUE_NIVEAU": {
+     "value": 7682.0
+    }
+   }
+  },
+  {
+   "dimensions": {
+    "GEO": "2025-COM-62133",
+    "FREQ": "A",
+    "TIME_PERIOD": "1968",
+    "POPREF_MEASURE": "PSDC"
+   },
+   "measures": {
+    "OBS_VALUE_NIVEAU": {
+     "value": 10077.0
+    }
+   }
+  },
+  {
+   "dimensions": {
+    "GEO": "2025-COM-62133",
+    "FREQ": "A",
+    "TIME_PERIOD": "1975",
+    "POPREF_MEASURE": "PSDC"
+   },
+   "measures": {
+    "OBS_VALUE_NIVEAU": {
+     "value": 8834.0
+    }
+   }
+  },
+  {
+   "dimensions": {
+    "GEO": "2025-COM-62133",
+    "FREQ": "A",
+    "TIME_PERIOD": "1999",
+    "POPREF_MEASURE": "PSDC"
+   },
+   "measures": {
+    "OBS_VALUE_NIVEAU": {
+     "value": 8396.0
+    }
+   }
+  },
+  {
+   "dimensions": {
+    "GEO": "2025-COM-62133",
+    "FREQ": "A",
+    "TIME_PERIOD": "1990",
+    "POPREF_MEASURE": "PSDC"
+   },
+   "measures": {
+    "OBS_VALUE_NIVEAU": {
+     "value": 8126.0
+    }
+   }
+  }
+ ]
+}

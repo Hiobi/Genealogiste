@@ -29,6 +29,7 @@ APPELS: dict[str, dict] = {
     "wikidata_sparql": {"requete": "SELECT ?x WHERE { ?x wdt:P31 wd:Q5 } LIMIT 1"},
     "geo_commune": {"nom": "Lille"},
     "geo_historique": {"nom": "Lille"},
+    "lieu_historique": {"lieu": "Lille, Nord", "date": "1975"},
     "recherche_multi": {"nom": "Durand", "prenom": "Jean"},
     "archives_naviguer": {"source": "https://iiif.example/iiif/registre/manifest.json"},
     "archives_registres": {"service": "AD59", "commune": "Somain", "annee": 1860},
