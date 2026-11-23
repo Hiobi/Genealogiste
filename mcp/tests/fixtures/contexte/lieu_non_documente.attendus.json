@@ -1,0 +1,31 @@
+{
+  "cas": "lieu_non_documente",
+  "description": "Lieu-dit fictif sans littérature attendue. Sortie attendue : « contexte non documenté », jamais un texte générique sur la région.",
+  "gedcom": "lieu_non_documente.ged",
+  "personne": "I1",
+  "vie": {"naissance": "1850", "deces": "1923"},
+  "metier": "journalier",
+  "lieux": [
+    {"evenement": "BIRT", "lieu": "Les Quatre-Chênes (lieu-dit fictif), Gers, France", "pays": "France"},
+    {"evenement": "OCCU", "lieu": "Les Quatre-Chênes (lieu-dit fictif), Gers, France", "pays": "France"},
+    {"evenement": "DEAT", "lieu": "Les Quatre-Chênes (lieu-dit fictif), Gers, France", "pays": "France"}
+  ],
+  "contexte_documente": false,
+  "ne_doit_pas_contenir": {
+    "causalites": [
+      "a quitté la terre à cause de l'exode rural"
+    ],
+    "hors_periode": [
+      {"element": "Révolution française", "annee": 1789},
+      {"element": "Seconde Guerre mondiale", "annee": 1939}
+    ],
+    "hors_lieu": [
+      "histoire générale de la Gascogne présentée comme contexte du lieu-dit"
+    ],
+    "anachronismes": [],
+    "phrases_generiques": [
+      "dans cette région rurale du Sud-Ouest, la vie était rythmée par"
+    ]
+  },
+  "sortie_si_non_documente": "contexte non documenté"
+}

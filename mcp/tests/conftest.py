@@ -88,3 +88,24 @@ def app_famille(app, fixtures):
     app.store.write(app.store.load())
     app.store.commit("fixture")
     return app
+
+
+CAS_CONTEXTE = ("mineur_artois_oklahoma", "cultivateur_ancien_regime", "soldat_1914_1918", "lieu_non_documente")
+
+
+@pytest.fixture(params=CAS_CONTEXTE)
+def app_contexte(request, app, fixtures):
+    """Application dont l'arbre de travail est un cas témoin du contexte historique (#292), un par paramètre.
+
+    `app_contexte.cas` : nom du cas ; `app_contexte.attendus` : contenu de `<cas>.attendus.json`
+    (voir `fixtures/contexte/`). Paramétrable aussi à la demande :
+    `@pytest.mark.parametrize("app_contexte", ["soldat_1914_1918"], indirect=True)`."""
+    import json
+    cas = request.param
+    dossier = fixtures / "contexte"
+    shutil.copy(dossier / f"{cas}.ged", app.store.path)
+    app.store.write(app.store.load())  # normalisation par l'écrivain, comme app_famille
+    app.store.commit(f"cas témoin {cas}")
+    app.cas = cas
+    app.attendus = json.loads((dossier / f"{cas}.attendus.json").read_text(encoding="utf-8"))
+    return app

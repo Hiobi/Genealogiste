@@ -96,8 +96,48 @@ parents. Âge au décès = information secondaire. Table décennale = dérivée 
 - **Une conclusion par fait** à la publication : la version la mieux prouvée est mise en avant, les autres
   restent documentées (export GeneWeb).
 
-## 8. Forme des réponses
+## 8. Contexte historique
+
+Le contexte situe un individu (lieu, période, milieu) ; il ne se substitue jamais à une source de l'individu. Il
+vient de sources **consultées**, jamais de la mémoire du modèle : une phrase de contexte sans référence
+consultée n'est pas écrite. Les faits de l'arbre restent régis par §2 à §6 ; ici, ce qui encadre le contexte.
+
+- **Hiérarchie des sources de contexte** : (1) source primaire contemporaine (presse, imprimé administratif,
+  statistique d'époque) ; (2) historiographie savante évaluée par les pairs (article, thèse, monographie
+  universitaire) ; (3) synthèse ou vulgarisation sourcée ; (4) tertiaire (encyclopédie, Wikipédia). Plus bas
+  dans la hiérarchie : piste à remonter vers ses sources, pas appui d'une affirmation. Wikidata est un
+  **index**, jamais une source.
+- **Critique externe et interne** de chaque source de contexte : auteur (qualité, institution), date de
+  rédaction ou de publication, intention (témoignage, propagande, commémoration, synthèse), échelle
+  d'observation, sources de l'auteur (les cite-t-il ? sont-elles accessibles ?). Une source dont on ne peut
+  établir ces points est signalée comme telle.
+- **Échelle et portée** : une tendance nationale ou régionale ne prouve rien pour un individu (erreur de
+  généralisation). Préciser pour chaque élément la population et le territoire concernés (commune, bassin,
+  département, pays) et son niveau de rattachement à l'individu : *lieu* exact, *région*, *pays*. Un élément
+  ne devient « attesté pour l'individu » que par une citation de l'arbre qui porte sur lui.
+- **Anachronisme** : borner le contexte au **lieu** et à la **période de vie** de l'individu ; employer le
+  vocabulaire et les divisions administratives de l'époque (ne pas projeter commune, département, région,
+  appellations ou catégories postérieures) ; un élément hors de la période ou hors du pays du lieu est écarté,
+  pas atténué. Le pays se lit sur le lieu et à sa date (homonymes : Charleroi de Pennsylvanie ≠ Charleroi de
+  Belgique).
+- **Causalité** : le contexte n'explique pas une décision individuelle sans source individuelle. Une
+  coïncidence de dates ou de lieux n'est pas une cause ; « émigre à cause de… », « poussé par… », « fuyant… »
+  ne s'écrit que si une source de l'individu le dit. Sinon : **hypothèse**, formulée au conditionnel, comme
+  telle (voir Réfutabilité).
+- **Réfutabilité** : toute hypothèse contextuelle est accompagnée de la **source qui la trancherait** (pièce
+  à consulter, fonds, cote ou type de document) et de ce qui la réfuterait. Une hypothèse qu'aucune source ne
+  peut départager n'est pas retenue.
+- **Citation normée** de chaque source de contexte : auteur, titre, publication, date, page, **identifiant
+  pérenne** (DOI, ARK, HAL, PPN) quand il existe. Style ISO 690 par défaut ; *Evidence Explained* pour les
+  sources généalogiques. Un identifiant non vu dans la source n'est pas recopié de mémoire.
+- **Rien trouvé n'est un résultat** : sans littérature ni presse documentant le lieu et la période, écrire
+  « contexte non documenté », jamais un paragraphe générique sur la région ou l'époque.
+- **Traçabilité** : chaque recherche de contexte est tracée au journal (`journal_ajouter`, `source_collee`),
+  **y compris négative**, avec lieu, période, termes et source interrogée. Aucun nom de personne vivante ni
+  donnée personnelle ne part vers un service externe : le contexte se cherche par lieu, période et métier.
+
+## 9. Forme des réponses
 
 Français, concis. Pour chaque fait : valeur — statut (icône) — sources (titre, cote/URL) — raisonnement
 en une ou deux phrases — prochaine source si non confirmé. Distinguer clairement **faits sourcés**,
-**déductions** et **hypothèses**. Signaler les limites (OCR, index, arbres en ligne).
+**déductions** et **hypothèses** (le contexte n'est jamais présenté comme un fait de l'individu). Signaler les limites (OCR, index, arbres en ligne).
