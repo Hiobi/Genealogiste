@@ -44,6 +44,7 @@ EXEMPLES: dict[str, dict] = {
     "archives_naviguer": {"source": REGISTRE, "page": 1, "pas": 3},
     "archives_registres": {"service": "AD59", "commune": "Lille", "annee": 1850},
     "archives_planche": {"source": REGISTRE, "de": 1, "a": 2},
+    "presse_recherche": {"texte": "grève", "lieu": "Courrières"},
     "contexte_bibliographie": {"sujet": "mines", "lieu": "Lille", "services": ["HAL"]},
 }
 

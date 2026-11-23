@@ -37,6 +37,7 @@ APPELS: dict[str, dict] = {
     "gramps_personne": {"handle": "h1"},
     "diagnostic": {},
     "archives_planche": {"source": "ark:/33518/registrefictif", "de": 1},
+    "presse_recherche": {"texte": "grève", "lieu": "Courrières"},
     "contexte_bibliographie": {"sujet": "mines", "lieu": "Courrières"},
 }
 # Hors périmètre : lit un fichier local avant tout appel réseau (couvert par test_sources).

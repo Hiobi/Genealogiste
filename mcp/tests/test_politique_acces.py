@@ -76,6 +76,7 @@ HOTES_OUTILS = {
     "geo_commune": {"geo.api.gouv.fr"}, "geo_historique": {"www.insee.fr"},
     "lieu_historique": {"www.insee.fr", "geo.api.gouv.fr", "api.insee.fr", "data.geopf.fr", "query.wikidata.org"},
     "matchid_recherche": {"deces.matchid.io"},
+    "presse_recherche": {"gallica.bnf.fr"},
     "recherche_multi": {"deces.matchid.io", "api.wikitree.com", "gallica.bnf.fr", "query.wikidata.org"},
     "wikidata_personne": {"query.wikidata.org"}, "wikidata_sparql": {"query.wikidata.org"},
     "contexte_bibliographie": {"api.archives-ouvertes.fr", "api.isidore.science", "www.sudoc.abes.fr",
