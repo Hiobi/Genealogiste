@@ -63,6 +63,11 @@ Les URL acceptent `http` quand le site n'a pas de version https (petits cercles 
   annuaires FFG, RFG et Geneawiki. Ne pas deviner de domaines : plusieurs domaines devinés de cercles ne se
   résolvaient pas ou étaient parqués.
 
+- **Émigration** (relevé HTTP du 2026-11-23, #284) : guides de NARA (`NARA-IMMIGRATION`,
+  `NARA-NATURALISATION`, `NARA-WW1-DRAFT`, `NARA-RECENSEMENTS`) et recherche d'arrivées de la Statue of Liberty &
+  Ellis Island Foundation (`ELLIS-ISLAND`, accès aux images non relevé : `a_determiner`), zone `INT`. Non ajoutés
+  faute de réponse pendant le relevé : Bibliothèque et Archives Canada (délai dépassé), à vérifier.
+
 Écartés au relevé : domaines parqués (egmp.fr, cgma.fr, mariniers.fr), sites commerciaux (geopatronyme.com,
 genealogiequebec.com), Bigenet (hors service), geneafrance.com (reprend l'INSEE et Mémoire des hommes),
 cimetieres-de-france.fr (certificat invalide), jewishgen.org (indisponible, international).

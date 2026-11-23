@@ -1,6 +1,6 @@
 ---
 name: sources-francaises
-description: Connaissance des sources généalogiques françaises et de leur localisation — état civil (1792+), registres paroissiaux BMS, tables décennales, recensements (1836+), registres matricules (classes 1867+), notaires (contrats de mariage, inventaires), enregistrement (tables des successions), cadastre napoléonien, hypothèques, archives départementales, Gallica, matchID, Mémoire des hommes. À utiliser pour « où trouver », « quelle source », « quelle cote », « quelles archives », plan de recherche, lacunes, prochaine source à consulter.
+description: Connaissance des sources généalogiques françaises et de leur localisation — état civil (1792+), registres paroissiaux BMS, tables décennales, recensements (1836+), registres matricules (classes 1867+), notaires (contrats de mariage, inventaires), enregistrement (tables des successions), cadastre napoléonien, hypothèques, archives départementales, Gallica, matchID, Mémoire des hommes, émigration et immigration (passeports, police des étrangers, naturalisation, état civil consulaire). À utiliser pour « où trouver », « quelle source », « quelle cote », « quelles archives », plan de recherche, lacunes, prochaine source à consulter.
 ---
 
 # Sources françaises — quoi, où, pour quoi
@@ -42,6 +42,9 @@ En mode autonome (aucune personne présente), ce blocage devient une tâche manu
 | Presse, annuaires (Gallica) | XVIIᵉ s. → | gallica.bnf.fr | avis de décès, faire-part, annuaires | OCR à vérifier sur l'image |
 | Mémoire des hommes | 1914 → | SGA en ligne | morts pour la France, JMO | |
 | Grand Mémorial | 14-18 | culture.gouv.fr | matricules indexés | |
+| Passeports, police des étrangers | XIXᵉ s. → | 4 M dans plusieurs services (à vérifier dans l'inventaire) | départs, déclarations de résidence des étrangers | classement propre à chaque service |
+| Décrets de naturalisation | inventaire 1883-1948 | Archives nationales | n° de dossier, accès au dossier | partiellement indexé ; cote du dossier auprès des AN |
+| État civil consulaire | | Service central d'état civil (Nantes) ; transcription en commune du dernier domicile | actes de Français à l'étranger | sans garantie d'existence |
 
 ## Types acceptés par les outils
 
@@ -68,5 +71,16 @@ service ne s'applique pas à ce fonds : passer par le lien de consultation, un l
   les noms anciens et anciens départements datés des communes de l'arbre (Gramps affiche alors le nom d'époque
   à la date de l'événement) : diff, accord, annulable ; jamais de fusion des lieux.
 - **Mobilité** : registres matricules (domiciles successifs), recensements, publications de bans.
+- **Émigration, immigration** (`EMIG`, `IMMI`, `NATU`, `RESI` à l'étranger, `RESI_ETRANGER`) : `prochaine_source`
+  donne les deux versants (`versant` : `france` / `etranger`). Côté français : registre matricule de la classe,
+  passeports et police (4 M, à vérifier), recensements avant et après le départ (une absence ne prouve pas
+  l'émigration), transcriptions et état civil consulaire ; pour un fait situé à l'étranger, ces pistes visent le
+  département du dernier domicile en France, sans série d'AD pour le lieu étranger. Côté étranger : intitulés
+  génériques (passagers, recensements, naturalisation, conscription), **aucune cote**, avertissement « existence
+  du fonds non vérifiée », sites relevés par `sources_catalogue(theme="emigration")`. La **fenêtre de départ**
+  (`arbre_lacunes(id)` → `fenetre_depart`, fiche) se lit sur l'arbre seul : dernier fait daté en France, premier
+  fait daté à l'étranger, chacun cité avec son statut ; indéterminée sinon. Un événement générique à l'étranger
+  peut être typé d'après sa source (`typage_propose`, puis `arbre_proposer`, accord explicite) ; jamais d'office.
+  Détail : `docs/contexte-historique.md`, § « Émigration ».
 
 Détails par source : [references/sources-detaillees.md](references/sources-detaillees.md).

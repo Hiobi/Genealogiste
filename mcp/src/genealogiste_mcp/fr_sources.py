@@ -21,7 +21,26 @@ PISTE_TRANSCRIPTION = ("Pour un Français à l'étranger : transcription éventu
                        "commune du dernier domicile en France, ou état civil consulaire (Service central d'état "
                        "civil, Nantes), sans garantie d'existence.")
 FAITS_ETAT_CIVIL = {"BIRT", "CHR", "BAPM", "FILIATION", "DEAT", "BURI", "MARR", "MARB", "MARC", "ENGA"}
-_COTES_AD = frozenset(SERIES.values())
+
+# Parcours émigration / immigration (#284). Provenance des affirmations : docs/contexte-historique.md, § Émigration.
+# Série R et classe = année de naissance + 20, recensements 6 M, état civil consulaire : déjà affirmés par le dépôt.
+# 4 M (police : passeports, police des étrangers) : répertoires de la sous-série 4 M des AD de la Somme et
+# d'Indre-et-Loire consultés le 2026-11-23 ; le classement varie d'un service à l'autre. Décrets de naturalisation
+# aux Archives nationales : document « Devenir français » des Archives nationales consulté le 2026-11-23.
+# Côté étranger : intitulés génériques seulement, aucune cote ni nom de fonds.
+FAITS_MIGRATION = frozenset({"EMIG", "IMMI", "NATU", "RESI_ETRANGER"})
+POLICE_PASSEPORTS = ("série M, sous-série 4 M (police : passeports, police des étrangers) dans plusieurs services ; "
+                     "classement propre à chaque service, à vérifier dans l'inventaire")
+DECRETS_NATURALISATION = ("Archives nationales : collection des décrets de naturalisation (inventaire 1883-1948 "
+                          "partiellement indexé, salle de lecture virtuelle) ; le numéro de dossier porté au décret "
+                          "donne accès au dossier, cote à identifier auprès des Archives nationales")
+AVERT_FONDS_FR = ("Existence et classement du fonds non vérifiés pour ce service : à vérifier auprès du service "
+                  "d'archives avant de conclure.")
+AVERT_FONDS_ETRANGER = ("Existence du fonds non vérifiée par le plugin : intitulé générique, sans cote ; à confirmer "
+                        "auprès du service d'archives du pays.")
+AVERT_TRANSCRIPTION = "Transcription ou acte consulaire sans garantie d'existence."
+SITES_EMIGRATION = 'sources_catalogue(theme="emigration") : sites relevés (guides, index, sources dérivées)'
+_COTES_AD = frozenset(SERIES.values()) | {POLICE_PASSEPORTS}
 
 
 def lieu_texte(lieu: Any) -> str:
@@ -50,10 +69,11 @@ def next_source_hint(fact: str, when: str = "", where: Any = "") -> list[dict]:
     Pays inconnu : séries des AD avec la condition « si le lieu est en France ». Chaque piste porte ``pays``
     quand un lieu est donné ; sans lieu, la sortie est celle d'avant #283."""
     if not _lieu_renseigne(where):
-        return _hints(fact, when, "")
+        return _migration(fact, when, None) if fact in FAITS_MIGRATION else _hints(fact, when, "")
     pays = pays_du_lieu(where)
-    out = _hints(fact, when, lieu_texte(where))
-    if pays["france"] is False:
+    migration = fact in FAITS_MIGRATION or (fact == "RESI" and pays["france"] is False)
+    out = _migration(fact, when, pays) if migration else _hints(fact, when, lieu_texte(where))
+    if pays["france"] is False and not migration:
         out = _hors_france(fact, out, pays)
     elif pays["france"] is None:
         for d in out:
@@ -76,6 +96,103 @@ def _hors_france(fact: str, sources: list[dict], pays: dict) -> list[dict]:
                               "Service central d'état civil (Nantes) pour l'état civil consulaire",
                     "pourquoi": PISTE_TRANSCRIPTION})
     return out + [d for d in sources if d["cote_typique"] not in _COTES_AD]
+
+
+def _migration(fact: str, when: str, pays: dict | None) -> list[dict]:
+    """Chaîne de sources d'un fait de migration (#284), versant français et versant étranger.
+
+    Lieu en France (ou sans lieu, ou pays inconnu) : EMIG = départ de France (séries des AD du lieu, puis pays
+    d'arrivée) ; IMMI, NATU = arrivée en France d'un étranger. Lieu hors de France (et RESI, RESI_ETRANGER) :
+    Français à l'étranger, aucune série d'AD pour ce lieu ; les pistes françaises renvoient au département du
+    dernier domicile en France. Versant étranger : intitulés génériques avec avertissement, aucune cote."""
+    y = _year(when)
+    out: list[dict] = []
+    nom = (pays or {}).get("nom") or ""
+
+    def add(versant: str, source: str, cote: str, pourquoi: str, avertissement: str = "", en_ligne: str = ""):
+        d = {"source": source, "cote_typique": cote, "pourquoi": pourquoi, "versant": versant}
+        if avertissement:
+            d["avertissement"] = avertissement
+        if en_ligne:
+            d["en_ligne"] = en_ligne
+        out.append(d)
+
+    def etranger(source: str, pourquoi: str, ou: str = "pays d'arrivée", pays_nom: str = ""):
+        add("etranger", source + (f" ({pays_nom})" if pays_nom else ""),
+            f"aucune cote connue du plugin : service d'archives du {ou}" + (f" ({pays_nom})" if pays_nom else "")
+            + " ; parcours internationaux : wiki Services-archives", pourquoi, AVERT_FONDS_ETRANGER,
+            SITES_EMIGRATION)
+
+    matricule = y is None or y >= 1867
+    recensement = y is None or y >= 1836
+    if pays is not None and pays["france"] is False or fact == "RESI_ETRANGER":
+        if pays is not None and pays["france"] is False:
+            out.append({"source": f"État civil et archives du lieu ({nom or 'pays étranger'})",
+                        "cote_typique": RENVOI_INTERNATIONAL, "versant": "etranger",
+                        "pourquoi": "lieu hors de France : les séries des archives départementales françaises ne "
+                                    "s'appliquent pas ; chercher l'état civil ou les registres locaux du pays",
+                        "en_ligne": "wiki Services-archives (https://github.com/Hiobi/Genealogiste/wiki/"
+                                    "Services-archives)"})
+        if matricule:
+            add("france", "Registre matricule (classe = année de naissance + 20) du département du dernier "
+                          "domicile en France",
+                "archives départementales du département de recrutement (dernier domicile en France) : registres "
+                "matricules, cote à identifier dans l'inventaire",
+                "homme recensé pour le recrutement : adresses successives déclarées, parcours")
+        if fact in ("EMIG", "IMMI"):
+            add("france", "Passeports et police du département de départ",
+                "archives départementales du département de départ (dernier domicile en France) : fonds de police, "
+                "cote à identifier dans l'inventaire", "passeport ou visa de départ, surveillance des départs",
+                AVERT_FONDS_FR)
+        if recensement:
+            add("france", "Listes nominatives de recensement de la commune du dernier domicile en France",
+                "archives départementales de ce département : recensements, cote à identifier dans l'inventaire",
+                "dernière présence au foyer, puis absence au recensement suivant : encadre le départ (une absence "
+                "ne prouve pas l'émigration)")
+        add("france", "Transcriptions consulaires et état civil consulaire",
+            "registres d'état civil de la commune du dernier domicile en France ; Service central d'état civil "
+            "(Nantes) pour l'état civil consulaire", PISTE_TRANSCRIPTION, AVERT_TRANSCRIPTION)
+        if fact in ("EMIG", "IMMI"):
+            etranger("Listes de passagers à l'arrivée", "date d'arrivée, port, âge et lieu d'origine déclarés", "pays", nom)
+        etranger("Recensements", "présence et date d'arrivée déclarée dans le pays", "pays", nom)
+        etranger("Naturalisation", "déclarations et dossiers de naturalisation : origine, date d'arrivée", "pays",
+                 nom)
+        if fact != "NATU":
+            etranger("Conscription et registres militaires", "enregistrement militaire des résidents", "pays", nom)
+        return out
+    if fact == "EMIG":
+        if matricule:
+            add("france", "Registre matricule (classe = année de naissance + 20)", SERIES["matricules"],
+                "adresses successives déclarées, parcours ; homme recensé pour le recrutement")
+        add("france", "Passeports et police des étrangers", POLICE_PASSEPORTS,
+            "passeport ou visa de départ, surveillance des départs", AVERT_FONDS_FR)
+        if recensement:
+            add("france", "Listes nominatives de recensement avant et après le départ", SERIES["recensements"],
+                "dernière présence au foyer, puis absence au recensement suivant : encadre le départ (une absence "
+                "ne prouve pas l'émigration)", en_ligne="AD")
+        add("france", "Transcriptions consulaires et état civil consulaire",
+            "registres d'état civil de la commune du dernier domicile en France ; Service central d'état civil "
+            "(Nantes) pour l'état civil consulaire", PISTE_TRANSCRIPTION, AVERT_TRANSCRIPTION)
+        etranger("Listes de passagers à l'arrivée", "date d'arrivée, port, âge et lieu d'origine déclarés")
+        etranger("Recensements du pays d'arrivée", "présence et date d'arrivée déclarée")
+        etranger("Naturalisation dans le pays d'arrivée", "déclarations et dossiers : origine, date d'arrivée")
+        etranger("Conscription et registres militaires du pays d'arrivée", "enregistrement militaire des résidents")
+        return out
+    # IMMI, NATU en France : un étranger arrive ou est naturalisé
+    if fact == "NATU":
+        add("france", "Décret et dossier de naturalisation", DECRETS_NATURALISATION,
+            "décret publié, puis dossier : origine, date d'arrivée, famille", AVERT_FONDS_FR)
+    add("france", "Police des étrangers (déclarations de résidence, cartes d'identité d'étranger)", POLICE_PASSEPORTS,
+        "déclaration de résidence, nationalité, date d'arrivée", AVERT_FONDS_FR)
+    if recensement:
+        add("france", "Listes nominatives de recensement", SERIES["recensements"],
+            "première présence au foyer, nationalité déclarée selon les années", en_ligne="AD")
+    if fact == "IMMI":
+        add("france", "Décret et dossier de naturalisation (si demandée)", DECRETS_NATURALISATION,
+            "décret publié, puis dossier : origine, date d'arrivée, famille", AVERT_FONDS_FR)
+    etranger("État civil et archives du pays d'origine", "naissance et famille avant le départ", "pays d'origine")
+    etranger("Passeports et autorisations de sortie du pays d'origine", "date et motif du départ", "pays d'origine")
+    return out
 
 
 def _hints(fact: str, when: str = "", where: str = "") -> list[dict]:

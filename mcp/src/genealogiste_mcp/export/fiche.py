@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from ..coherence import check_person
+from ..emigration import fenetre_depart
 from ..evidence import assess_person
 from ..fr_sources import next_source_hint
 from ..models import EVENT_LABELS, Tree
@@ -105,11 +106,40 @@ def fiche_markdown(tree: Tree, pid: str, strict: bool = False, mask_living: bool
             lines.append(f"- {EVENT_LABELS.get(f['fait'], f['fait'])} ({LABEL[f['statut']]}) → {first['source']} "
                          f"[{first['cote_typique']}]"
                          + (f" · pays : {pays['nom'] or 'inconnu'} ({pays['provenance']})" if pays else ""))
+    lines += _section_fenetre(tree, pid)
     for n in p.notes:
         if not n.startswith("@"):
             lines += ["", "## Notes", "", n]
             break
     return "\n".join(lines) + "\n"
+
+
+def _section_fenetre(tree: Tree, pid: str) -> list[str]:
+    """Section « Fenêtre de départ » (#284), seulement si un fait est situé à l'étranger ou de migration."""
+    w = fenetre_depart(tree, pid)
+    if w is None:
+        return []
+    out = ["", "## Fenêtre de départ", "", w["texte"]]
+    for cle, quoi in (("debut", "Début"), ("fin", "Fin")):
+        b = w.get(cle)
+        if b:
+            out.append(f"- **{quoi}** : {b['libelle']} {b['date_texte']} à {b['lieu']} (pays : {b['pays']['nom']}, "
+                       f"{b['pays']['provenance']}) · {b['statut_libelle']} · "
+                       + ("; ".join(b["citations"]) if b["citations"] else "aucune citation"))
+    if w.get("remarque"):
+        out.append(f"- {w['remarque']}")
+    if w.get("pistes"):
+        out += ["", "Pistes pour l'émigration (EMIG) :", ""]
+        for d in w["pistes"]:
+            arrivee = (d.get("pays_arrivee") or {}).get("nom")
+            cote = "France" if d.get("versant") == "france" else "pays d'arrivée" + (f" : {arrivee}" if arrivee else "")
+            out.append(f"- [{cote}] {d['source']} [{d['cote_typique']}]"
+                       + (f" · {d['avertissement']}" if d.get("avertissement") else ""))
+    for t in w.get("typage_propose", []):
+        out.append(f"- Événement générique {t['date']} à {t['lieu']} : typage possible par arbre_proposer après "
+                   f"lecture de sa source ({', '.join(t['operations_par_type'])}) ; opérations dans arbre_lacunes.")
+    out += ["", f"_{w['avertissement']}_"]
+    return out
 
 
 ESSENTIAL = [("BIRT", ("BIRT", "CHR", "BAPM")), ("DEAT", ("DEAT", "BURI")), ("MARR", None)]
@@ -153,8 +183,14 @@ def gaps(tree: Tree, pid: str, strict: bool = False) -> dict:
     for i in check_person(tree, pid):
         plan.append({"priorite": 0 if i["niveau"] == "erreur" else 2, "fait": i["code"], "probleme": i["message"],
                      "sources": []})
+    w = fenetre_depart(tree, pid)
+    if w and w["determinee"] and not any(e.type in ("EMIG", "IMMI") for e in p.evenements):
+        plan.append({"priorite": 2, "fait": "EMIG", "probleme": "émigration non enregistrée : " + w["texte"],
+                     "sources": w["pistes"]})
     plan.sort(key=lambda x: x["priorite"])
     out = {"personne": p.label(), "nb_actions": len(plan), "plan": plan}
+    if w:
+        out["fenetre_depart"] = w
     medias = [m for m in a_lier(tree) if pid in m["cibles"]]
     if medias:  # images de citation absentes de la fiche (#246) : proposition prête, rien n'est écrit
         out["medias_a_lier"] = medias
