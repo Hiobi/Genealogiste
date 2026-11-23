@@ -1,0 +1,1163 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xml-stylesheet type="text/xsl" href="https://www.sudoc.abes.fr/cbs/sru/DB=2.1/?xsl=searchRetrieveResponse" ?>
+<srw:searchRetrieveResponse xmlns:srw="http://www.loc.gov/zing/srw/"
+			    xmlns:dc="http://purl.org/dc/elements/1.1/"
+			    xmlns:diag="http://www.loc.gov/zing/srw/diagnostic/"
+			    xmlns:xcql="http://www.loc.gov/zing/cql/xcql/">
+    <srw:version>1.1</srw:version>
+    <srw:numberOfRecords>9</srw:numberOfRecords>
+    <srw:resultSetId>SIDc666661e-79S113973</srw:resultSetId>
+    <srw:records>
+    
+
+
+<srw:record>
+<srw:recordSchema>unimarc</srw:recordSchema>
+<srw:recordPacking>xml</srw:recordPacking>
+<srw:recordData>
+<record>
+<controlfield tag="005">20260625173912.000</controlfield>
+<leader>     cam0 22        450 </leader>
+<controlfield tag="001">00335752X</controlfield>
+<controlfield tag="003">http://www.sudoc.fr/00335752X</controlfield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">013481762</subfield>
+<subfield code="9">sudoc</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="3"><subfield code="a">FR</subfield>
+<subfield code="b">Abes</subfield>
+<subfield code="c">20260625</subfield>
+<subfield code="g">AFNOR</subfield>
+<subfield code="h">013481762</subfield></datafield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">022201602</subfield>
+<subfield code="9">sudoc</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="3"><subfield code="a">FR</subfield>
+<subfield code="b">Abes</subfield>
+<subfield code="c">20260625</subfield>
+<subfield code="g">AFNOR</subfield>
+<subfield code="h">022201602</subfield></datafield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">(OCoLC)31322734</subfield></datafield>
+<datafield tag="010" ind1=" " ind2=" "><subfield code="a">2-02-022268-X</subfield>
+<subfield code="b">br.</subfield>
+<subfield code="d">120 F</subfield></datafield>
+<datafield tag="073" ind1=" " ind2="0"><subfield code="a">9782020222686</subfield></datafield>
+<datafield tag="020" ind1=" " ind2=" "><subfield code="a">FR</subfield>
+<subfield code="b">09501429</subfield></datafield>
+<datafield tag="021" ind1=" " ind2=" "><subfield code="a">FR</subfield>
+<subfield code="b">DL 94-23928</subfield></datafield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">ocm34281968</subfield></datafield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">urouen62851</subfield></datafield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">bua32301</subfield></datafield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">sib0563144</subfield></datafield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">ocm31322734</subfield></datafield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">frBN017989120</subfield></datafield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">FRBNF357144690000009</subfield>
+<subfield code="z">FRBNF35714469</subfield></datafield>
+<datafield tag="033" ind1=" " ind2=" "><subfield code="a">http://catalogue.bnf.fr/ark:/12148/cb35714469h</subfield></datafield>
+<datafield tag="100" ind1=" " ind2=" "><subfield code="a">19941007d1994    m  y0frey50      ba</subfield></datafield>
+<datafield tag="101" ind1="0" ind2=" "><subfield code="a">fre</subfield>
+<subfield code="2">639-2</subfield></datafield>
+<datafield tag="105" ind1=" " ind2=" "><subfield code="a">y   zz  000zy</subfield></datafield>
+<datafield tag="106" ind1=" " ind2=" "><subfield code="a">r</subfield></datafield>
+<datafield tag="181" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">txt</subfield>
+<subfield code="2">rdacontent</subfield></datafield>
+<datafield tag="181" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">i#</subfield>
+<subfield code="b">xxxe##</subfield></datafield>
+<datafield tag="182" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">n</subfield>
+<subfield code="2">rdamedia</subfield></datafield>
+<datafield tag="182" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">n</subfield></datafield>
+<datafield tag="102" ind1=" " ind2=" "><subfield code="a">FR</subfield></datafield>
+<datafield tag="320" ind1=" " ind2=" "><subfield code="a">Bibliographie pages 157-160</subfield></datafield>
+<datafield tag="200" ind1="1" ind2=" "><subfield code="a">Une tragédie française</subfield>
+<subfield code="e">été 44, scènes de guerre civile</subfield>
+<subfield code="f">Tzvetan Todorov</subfield>
+<subfield code="a">suivi de Souvenirs d&apos;un maire</subfield>
+<subfield code="f">par René Sadrin</subfield></datafield>
+<datafield tag="517" ind1="|" ind2=" "><subfield code="a">Souvenirs d&apos;un maire</subfield></datafield>
+<datafield tag="700" ind1=" " ind2="1"><subfield code="3">027164721</subfield>
+<subfield code="a">Todorov</subfield>
+<subfield code="b">Tzvetan</subfield>
+<subfield code="f">1939-2017</subfield>
+<subfield code="4">070</subfield></datafield>
+<datafield tag="701" ind1=" " ind2="1"><subfield code="3">033345228</subfield>
+<subfield code="a">Sadrin</subfield>
+<subfield code="b">René</subfield>
+<subfield code="4">070</subfield></datafield>
+<datafield tag="316" ind1=" " ind2=" "><subfield code="5">315552102:890004102</subfield>
+<subfield code="a">Don Pierre Laborie</subfield></datafield>
+<datafield tag="214" ind1=" " ind2="0"><subfield code="a">Paris</subfield>
+<subfield code="c">Éditions du Seuil</subfield>
+<subfield code="d">DL 1994</subfield></datafield>
+<datafield tag="214" ind1=" " ind2="3"><subfield code="a">53-Mayenne</subfield>
+<subfield code="c">Impr. Floch</subfield></datafield>
+<datafield tag="215" ind1=" " ind2=" "><subfield code="a">1 volume (247 pages)</subfield>
+<subfield code="c">couverture illustrée</subfield>
+<subfield code="d">21 cm</subfield></datafield>
+<datafield tag="225" ind1="2" ind2=" "><subfield code="a">L&apos;histoire immédiate</subfield></datafield>
+<datafield tag="410" ind1=" " ind2="|"><subfield code="0">001026461</subfield>
+<subfield code="t">L&apos;Histoire immédiate</subfield>
+<subfield code="x">0750-781X</subfield></datafield>
+<datafield tag="601" ind1="0" ind2="0"><subfield code="3">028307917</subfield>
+<subfield code="a">Milice française</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">028047273</subfield>
+<subfield code="a">Guerre mondiale (1939-1945)</subfield>
+<subfield code="3">027797430</subfield>
+<subfield code="x">Récits personnels français</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">027340570</subfield>
+<subfield code="a">Guerre mondiale (1939-1945)</subfield>
+<subfield code="x">Mouvements de résistance</subfield>
+<subfield code="3">027226794</subfield>
+<subfield code="y">France</subfield>
+<subfield code="3">028399307</subfield>
+<subfield code="y">Saint-Amand-Montrond (Cher ; région)</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">027496171</subfield>
+<subfield code="a">Guerre mondiale (1939-1945)</subfield>
+<subfield code="x">Collaborateurs</subfield>
+<subfield code="3">027226794</subfield>
+<subfield code="y">France</subfield>
+<subfield code="3">028399307</subfield>
+<subfield code="y">Saint-Amand-Montrond (Cher ; région)</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">028047184</subfield>
+<subfield code="a">Guerre mondiale (1939-1945)</subfield>
+<subfield code="x">Atrocités</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="607" ind1=" " ind2=" "><subfield code="3">028399307</subfield>
+<subfield code="a">Saint-Amand-Montrond (Cher ; région)</subfield>
+<subfield code="3">027329380</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="607" ind1=" " ind2=" "><subfield code="3">027322955</subfield>
+<subfield code="a">France</subfield>
+<subfield code="z">1940-1945 (Occupation allemande)</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="607" ind1=" " ind2=" "><subfield code="3">027372995</subfield>
+<subfield code="a">Saint-Amand-Montrond (Cher)</subfield>
+<subfield code="3">027329380</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="676" ind1=" " ind2=" "><subfield code="a">930</subfield></datafield>
+<datafield tag="676" ind1=" " ind2=" "><subfield code="a">940.53</subfield>
+<subfield code="v">21</subfield></datafield>
+<datafield tag="675" ind1=" " ind2=" "><subfield code="a">93</subfield>
+<subfield code="v">Éd. 1967</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="3"><subfield code="a">FR</subfield>
+<subfield code="b">BN</subfield>
+<subfield code="c">19990129</subfield>
+<subfield code="g">AFNOR</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="1"><subfield code="a">US</subfield>
+<subfield code="b">OCLC</subfield>
+<subfield code="g">AACR2</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="2"><subfield code="a">FR</subfield>
+<subfield code="b">AUROC</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="3"><subfield code="a">FR</subfield>
+<subfield code="b">SF</subfield>
+<subfield code="c">19990209</subfield></datafield>
+</record></srw:recordData><srw:recordPosition>1</srw:recordPosition>
+</srw:record>
+
+<srw:record>
+<srw:recordSchema>unimarc</srw:recordSchema>
+<srw:recordPacking>xml</srw:recordPacking>
+<srw:recordData>
+<record>
+<controlfield tag="005">20260528163036.000</controlfield>
+<leader>     cam0 22        450 </leader>
+<controlfield tag="001">003817032</controlfield>
+<controlfield tag="003">http://www.sudoc.fr/003817032</controlfield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">(OCoLC)409449062</subfield></datafield>
+<datafield tag="010" ind1=" " ind2=" "><subfield code="a">2-86959-280-9</subfield>
+<subfield code="b">br.</subfield>
+<subfield code="d">95 F</subfield></datafield>
+<datafield tag="073" ind1=" " ind2="0"><subfield code="a">9782869592803</subfield></datafield>
+<datafield tag="020" ind1=" " ind2=" "><subfield code="a">FR</subfield>
+<subfield code="b">09618045</subfield></datafield>
+<datafield tag="021" ind1=" " ind2=" "><subfield code="a">FR</subfield>
+<subfield code="b">DL 96-11157</subfield></datafield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">ocm34762830</subfield></datafield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">sib0764439</subfield></datafield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">urouen36275</subfield></datafield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">frBN021308439</subfield></datafield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">FRBNF358096160000008</subfield>
+<subfield code="z">FRBNF35809616</subfield></datafield>
+<datafield tag="033" ind1=" " ind2=" "><subfield code="a">http://catalogue.bnf.fr/ark:/12148/cb35809616n</subfield></datafield>
+<datafield tag="100" ind1=" " ind2=" "><subfield code="a">19960503d1996    m  y0frey50      ba</subfield></datafield>
+<datafield tag="101" ind1="0" ind2=" "><subfield code="a">fre</subfield>
+<subfield code="2">639-2</subfield></datafield>
+<datafield tag="105" ind1=" " ind2=" "><subfield code="a">a   zz  00|z|</subfield></datafield>
+<datafield tag="106" ind1=" " ind2=" "><subfield code="a">r</subfield></datafield>
+<datafield tag="181" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">txt</subfield>
+<subfield code="2">rdacontent</subfield></datafield>
+<datafield tag="181" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">i#</subfield>
+<subfield code="b">xxxe##</subfield></datafield>
+<datafield tag="182" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">n</subfield>
+<subfield code="2">rdamedia</subfield></datafield>
+<datafield tag="182" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">n</subfield></datafield>
+<datafield tag="183" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">nga</subfield>
+<subfield code="2">RDAfrCarrier</subfield></datafield>
+<datafield tag="102" ind1=" " ind2=" "><subfield code="a">FR</subfield></datafield>
+<datafield tag="200" ind1="1" ind2=" "><subfield code="a">Guerre et paix sous l&apos;Occupation</subfield>
+<subfield code="e">témoignages recueillis au centre de la France</subfield>
+<subfield code="f">Tzvetan Todorov et Annick Jacquet</subfield></datafield>
+<datafield tag="700" ind1=" " ind2="1"><subfield code="3">027164721</subfield>
+<subfield code="a">Todorov</subfield>
+<subfield code="b">Tzvetan</subfield>
+<subfield code="f">1939-2017</subfield>
+<subfield code="4">070</subfield></datafield>
+<datafield tag="701" ind1=" " ind2="1"><subfield code="3">034379010</subfield>
+<subfield code="a">Jacquet</subfield>
+<subfield code="b">Annick</subfield>
+<subfield code="4">070</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="3"><subfield code="a">FR</subfield>
+<subfield code="b">Abes</subfield>
+<subfield code="c">20260528</subfield>
+<subfield code="g">AFNOR</subfield></datafield>
+<datafield tag="316" ind1=" " ind2=" "><subfield code="5">315552102:887640818</subfield>
+<subfield code="a">Don Pierre Laborie</subfield></datafield>
+<datafield tag="214" ind1=" " ind2="0"><subfield code="a">[Paris]</subfield>
+<subfield code="c">Arléa</subfield>
+<subfield code="d">1996</subfield></datafield>
+<datafield tag="215" ind1=" " ind2=" "><subfield code="a">1 volume (221 pages)</subfield>
+<subfield code="c">ill.</subfield>
+<subfield code="d">21 cm</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">027340570</subfield>
+<subfield code="a">Guerre mondiale (1939-1945)</subfield>
+<subfield code="x">Mouvements de résistance</subfield>
+<subfield code="3">027226794</subfield>
+<subfield code="y">France</subfield>
+<subfield code="3">028399307</subfield>
+<subfield code="y">Saint-Amand-Montrond (Cher ; région)</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">028047273</subfield>
+<subfield code="a">Guerre mondiale (1939-1945)</subfield>
+<subfield code="3">027797430</subfield>
+<subfield code="x">Récits personnels français</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">02766435X</subfield>
+<subfield code="a">Conditions sociales</subfield>
+<subfield code="3">027768570</subfield>
+<subfield code="y">France (centre)</subfield>
+<subfield code="3">027329380</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">02766435X</subfield>
+<subfield code="a">Conditions sociales</subfield>
+<subfield code="3">027260208</subfield>
+<subfield code="y">Centre (France)</subfield>
+<subfield code="3">027795926</subfield>
+<subfield code="z">1918-1945</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">02766435X</subfield>
+<subfield code="a">Conditions sociales</subfield>
+<subfield code="3">027502406</subfield>
+<subfield code="y">Berry (France)</subfield>
+<subfield code="3">027794687</subfield>
+<subfield code="z">1900-1945</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="607" ind1=" " ind2=" "><subfield code="3">027768570</subfield>
+<subfield code="a">France (centre)</subfield>
+<subfield code="3">027329380</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="607" ind1=" " ind2=" "><subfield code="3">027260208</subfield>
+<subfield code="a">Centre (France)</subfield>
+<subfield code="3">027329380</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="607" ind1=" " ind2=" "><subfield code="3">028399307</subfield>
+<subfield code="a">Saint-Amand-Montrond (Cher ; région)</subfield>
+<subfield code="3">027329380</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="607" ind1=" " ind2=" "><subfield code="3">027322955</subfield>
+<subfield code="a">France</subfield>
+<subfield code="z">1940-1945 (Occupation allemande)</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="676" ind1=" " ind2=" "><subfield code="a">930</subfield></datafield>
+<datafield tag="675" ind1=" " ind2=" "><subfield code="a">93</subfield>
+<subfield code="v">Éd. 1967</subfield></datafield>
+<datafield tag="345" ind1=" " ind2=" "><subfield code="b">9782869592803</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="3"><subfield code="a">FR</subfield>
+<subfield code="b">BN</subfield>
+<subfield code="c">19990130</subfield>
+<subfield code="g">AFNOR</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="3"><subfield code="a">FR</subfield>
+<subfield code="b">SF</subfield>
+<subfield code="c">19990209</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="1"><subfield code="a">US</subfield>
+<subfield code="b">OCLC</subfield>
+<subfield code="g">AACR2</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="2"><subfield code="a">FR</subfield>
+<subfield code="b">AUROC</subfield></datafield>
+</record></srw:recordData><srw:recordPosition>2</srw:recordPosition>
+</srw:record>
+
+<srw:record>
+<srw:recordSchema>unimarc</srw:recordSchema>
+<srw:recordPacking>xml</srw:recordPacking>
+<srw:recordData>
+<record>
+<controlfield tag="005">20230116193656.000</controlfield>
+<leader>     cam0 22        450 </leader>
+<controlfield tag="001">081464614</controlfield>
+<controlfield tag="003">http://www.sudoc.fr/081464614</controlfield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">(OCoLC)419944060</subfield></datafield>
+<datafield tag="010" ind1=" " ind2=" "><subfield code="a">2-02-067920-5</subfield>
+<subfield code="b">br.</subfield>
+<subfield code="d">7 EUR</subfield></datafield>
+<datafield tag="073" ind1=" " ind2="1"><subfield code="a">9782020679206</subfield></datafield>
+<datafield tag="021" ind1=" " ind2=" "><subfield code="a">FR</subfield>
+<subfield code="b">DLE-20041014-47107</subfield></datafield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">FRBNF392561810000004</subfield>
+<subfield code="z">FRBNF39256181</subfield></datafield>
+<datafield tag="033" ind1=" " ind2=" "><subfield code="a">http://catalogue.bnf.fr/ark:/12148/cb39256181j</subfield></datafield>
+<datafield tag="100" ind1=" " ind2=" "><subfield code="a">20041014d2004    m  y0frey50      ba</subfield></datafield>
+<datafield tag="101" ind1="0" ind2=" "><subfield code="a">fre</subfield>
+<subfield code="2">639-2</subfield></datafield>
+<datafield tag="105" ind1=" " ind2=" "><subfield code="a">y   a   000yy</subfield></datafield>
+<datafield tag="106" ind1=" " ind2=" "><subfield code="a">r</subfield></datafield>
+<datafield tag="181" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">txt</subfield>
+<subfield code="2">rdacontent</subfield></datafield>
+<datafield tag="181" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">i#</subfield>
+<subfield code="b">xxxe##</subfield></datafield>
+<datafield tag="182" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">n</subfield>
+<subfield code="2">rdamedia</subfield></datafield>
+<datafield tag="182" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">n</subfield></datafield>
+<datafield tag="102" ind1=" " ind2=" "><subfield code="a">FR</subfield></datafield>
+<datafield tag="320" ind1=" " ind2=" "><subfield code="a">Bibliogr. p. [165]-169</subfield></datafield>
+<datafield tag="200" ind1="1" ind2=" "><subfield code="a">Une tragédie française</subfield>
+<subfield code="e">été 1944</subfield>
+<subfield code="e">scènes de guerre civile</subfield>
+<subfield code="f">Tzvetan Todorov</subfield></datafield>
+<datafield tag="700" ind1=" " ind2="1"><subfield code="3">027164721</subfield>
+<subfield code="a">Todorov</subfield>
+<subfield code="b">Tzvetan</subfield>
+<subfield code="f">1939-2017</subfield>
+<subfield code="4">070</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="3"><subfield code="a">FR</subfield>
+<subfield code="b">Abes</subfield>
+<subfield code="c">20230116</subfield>
+<subfield code="g">AFNOR</subfield></datafield>
+<datafield tag="205" ind1=" " ind2=" "><subfield code="a">éd. rev. et corr.</subfield></datafield>
+<datafield tag="210" ind1=" " ind2=" "><subfield code="a">[Paris]</subfield>
+<subfield code="c">Éd. du Seuil</subfield>
+<subfield code="d">2004</subfield>
+<subfield code="e">impr. en Espagne</subfield></datafield>
+<datafield tag="215" ind1=" " ind2=" "><subfield code="a">1 vol. (169 p.)</subfield>
+<subfield code="c">couv. ill.</subfield>
+<subfield code="d">18 cm</subfield></datafield>
+<datafield tag="225" ind1="2" ind2=" "><subfield code="a">Points. Série essais</subfield></datafield>
+<datafield tag="410" ind1=" " ind2="|"><subfield code="0">040430642</subfield>
+<subfield code="t">Points. Série Essais</subfield>
+<subfield code="x">1264-5524</subfield></datafield>
+<datafield tag="410" ind1=" " ind2="|"><subfield code="0">001031767</subfield>
+<subfield code="t">Points (Paris)</subfield>
+<subfield code="x">0768-0481</subfield>
+<subfield code="v">523</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">030664772</subfield>
+<subfield code="a">Guerre mondiale (1939-1945)</subfield>
+<subfield code="x">Mouvements de résistance</subfield>
+<subfield code="y">France</subfield>
+<subfield code="3">028399307</subfield>
+<subfield code="y">Saint-Amand-Montrond (Cher ; région)</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">027496171</subfield>
+<subfield code="a">Guerre mondiale (1939-1945)</subfield>
+<subfield code="x">Collaborateurs</subfield>
+<subfield code="3">027226794</subfield>
+<subfield code="y">France</subfield>
+<subfield code="3">028399307</subfield>
+<subfield code="y">Saint-Amand-Montrond (Cher ; région)</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="607" ind1=" " ind2=" "><subfield code="3">028399307</subfield>
+<subfield code="a">Saint-Amand-Montrond (Cher ; région)</subfield>
+<subfield code="3">027329380</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="607" ind1=" " ind2=" "><subfield code="3">027322734</subfield>
+<subfield code="a">France</subfield>
+<subfield code="z"> (Libération)</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="676" ind1=" " ind2=" "><subfield code="a">944.552 0816</subfield>
+<subfield code="v">21</subfield></datafield>
+<datafield tag="676" ind1=" " ind2=" "><subfield code="a">944.081 6</subfield>
+<subfield code="v">21</subfield></datafield>
+<datafield tag="686" ind1=" " ind2=" "><subfield code="a">944</subfield>
+<subfield code="2">Cadre de classement de la Bibliographie nationale française</subfield></datafield>
+<datafield tag="308" ind1=" " ind2=" "><subfield code="a">Numérotation dans la coll. principale : 523</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="0"><subfield code="a">FR</subfield>
+<subfield code="b">BNF</subfield>
+<subfield code="c">20041014</subfield>
+<subfield code="g">AFNOR</subfield>
+<subfield code="2">intermrc</subfield></datafield>
+</record></srw:recordData><srw:recordPosition>3</srw:recordPosition>
+</srw:record>
+
+<srw:record>
+<srw:recordSchema>unimarc</srw:recordSchema>
+<srw:recordPacking>xml</srw:recordPacking>
+<srw:recordData>
+<record>
+<controlfield tag="005">20260612024447.000</controlfield>
+<leader>     cem0 22        450 </leader>
+<controlfield tag="001">249108798</controlfield>
+<controlfield tag="003">http://www.sudoc.fr/249108798</controlfield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">(OCoLC)1195965482</subfield></datafield>
+<datafield tag="100" ind1=" " ind2=" "><subfield code="a">20200916e18911847k  y0frey50      ba</subfield></datafield>
+<datafield tag="101" ind1="0" ind2=" "><subfield code="a">fre</subfield>
+<subfield code="2">639-2</subfield></datafield>
+<datafield tag="105" ind1=" " ind2=" "><subfield code="a">y   |||||||||</subfield></datafield>
+<datafield tag="120" ind1=" " ind2=" "><subfield code="a">a||dg  ||bg  </subfield></datafield>
+<datafield tag="121" ind1=" " ind2=" "><subfield code="a">aa aabycb</subfield>
+<subfield code="b">|||||||||</subfield></datafield>
+<datafield tag="123" ind1="1" ind2=" "><subfield code="a">a</subfield>
+<subfield code="b">50000</subfield>
+<subfield code="d">e0015460</subfield>
+<subfield code="e">e0024528</subfield>
+<subfield code="f">n0465844</subfield>
+<subfield code="g">n0463708</subfield>
+<subfield code="p">ea</subfield></datafield>
+<datafield tag="124" ind1=" " ind2=" "><subfield code="b">d</subfield></datafield>
+<datafield tag="181" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">cri</subfield>
+<subfield code="2">rdacontent</subfield></datafield>
+<datafield tag="181" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">b#</subfield>
+<subfield code="b">cb2e##</subfield></datafield>
+<datafield tag="182" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">n</subfield>
+<subfield code="2">rdamedia</subfield></datafield>
+<datafield tag="182" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">n</subfield></datafield>
+<datafield tag="183" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">nda</subfield>
+<subfield code="2">RDAfrCarrier</subfield></datafield>
+<datafield tag="102" ind1=" " ind2=" "><subfield code="a">FR</subfield></datafield>
+<datafield tag="200" ind1="1" ind2=" "><subfield code="a">[Carte de la France au 1/50 000, agrandissement de la carte d&apos;Etat-Major au 1/80 000] (type 1889)</subfield>
+<subfield code="h">134</subfield>
+<subfield code="i">Issoudun S.E.</subfield>
+<subfield code="f">levée par les officiers du Corps d&apos;Etat-Major, et publiée par le Dépôt de la guerre en 1847</subfield></datafield>
+<datafield tag="540" ind1="|" ind2=" "><subfield code="a">Carte de France de l&apos;Etat-Major</subfield>
+<subfield code="h">134</subfield>
+<subfield code="i">Issoudun S.E.</subfield></datafield>
+<datafield tag="540" ind1="|" ind2=" "><subfield code="a">Carte topographique de l&apos;Etat-Major</subfield>
+<subfield code="h">134</subfield>
+<subfield code="i">Issoudun S.E.</subfield></datafield>
+<datafield tag="702" ind1=" " ind2="1"><subfield code="3">145536300</subfield>
+<subfield code="a">Hacq</subfield>
+<subfield code="b">Jacques Marie</subfield>
+<subfield code="f">1795-1873</subfield>
+<subfield code="c">graveur</subfield>
+<subfield code="4">350</subfield></datafield>
+<datafield tag="710" ind1="0" ind2="1"><subfield code="3">02836032X</subfield>
+<subfield code="a">France</subfield>
+<subfield code="b">Service géographique de l&apos;armée</subfield>
+<subfield code="c">1887-1940</subfield>
+<subfield code="4">180</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="3"><subfield code="a">FR</subfield>
+<subfield code="b">Abes</subfield>
+<subfield code="c">20260612</subfield>
+<subfield code="g">AFNOR</subfield></datafield>
+<datafield tag="205" ind1=" " ind2=" "><subfield code="a">Révisée en 1891</subfield></datafield>
+<datafield tag="214" ind1=" " ind2="0"><subfield code="a">Paris</subfield>
+<subfield code="c">Service Géographique de l&apos;Armée</subfield>
+<subfield code="d">1891</subfield></datafield>
+<datafield tag="215" ind1=" " ind2=" "><subfield code="a">1 carte</subfield>
+<subfield code="c">Noir et gris</subfield>
+<subfield code="d">50 x 73 cm</subfield></datafield>
+<datafield tag="206" ind1="0" ind2=" "><subfield code="b">1:50 000</subfield>
+<subfield code="d">E 1°54&apos;60&quot; - E 2°45&apos;28&quot;/N 46°58&apos;44&apos;&apos; - N 46°37&apos;08&quot;</subfield></datafield>
+<datafield tag="300" ind1=" " ind2=" "><subfield code="a">Relief représenté par des hachures et des points cotés</subfield></datafield>
+<datafield tag="300" ind1=" " ind2=" "><subfield code="a">Carroyage kilométrique_projection Lambert  II - zone centrale</subfield></datafield>
+<datafield tag="300" ind1=" " ind2=" "><subfield code="a">Echelle en système métrique (mètres et km)</subfield></datafield>
+<datafield tag="300" ind1=" " ind2=" "><subfield code="a">Gravée: le trait par Vidal, la lettre par Hacq, le figuré du terrain par Gombault, les eaux par Rouillard</subfield></datafield>
+<datafield tag="300" ind1=" " ind2=" "><subfield code="a">Tirage avant la retouche</subfield></datafield>
+<datafield tag="300" ind1=" " ind2=" "><subfield code="a">Prix:0fr.50</subfield></datafield>
+<datafield tag="607" ind1=" " ind2=" "><subfield code="3">027372995</subfield>
+<subfield code="a">Saint-Amand-Montrond (Cher)</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="608" ind1=" " ind2=" "><subfield code="3">027567729</subfield>
+<subfield code="a">Cartes topographiques</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="305" ind1=" " ind2=" "><subfield code="a">Cette série au 1/50 000 est l&apos;amplification des cartes d&apos;Etat-Major au 1/80 000. Chaque carte de cette série au 1/50 000 est composée de 4 feuilles : N.O. / N.E. / S.O. / S.E.. Le tableau d&apos;assemblage des feuilles voisines ainsi que le nom des officiers ayant exécutés les travaux figurent sur la feuille N.O., le nom des graveurs sont sur la feuille S.E.</subfield></datafield>
+<datafield tag="305" ind1=" " ind2=" "><subfield code="a">Les coordonnées mathématiques de la notice correspondent à celles de la carte entière au 1/50 000 (4 feuilles réunifiées)</subfield></datafield>
+<datafield tag="315" ind1=" " ind2=" "><subfield code="a">Les coordonnées géographiques indiquées en grades sur les cartes, par rapport au Méridien de Paris, ont été converties en degrés par rapport au Méridien de Greenwich.</subfield></datafield>
+</record></srw:recordData><srw:recordPosition>4</srw:recordPosition>
+</srw:record>
+
+<srw:record>
+<srw:recordSchema>unimarc</srw:recordSchema>
+<srw:recordPacking>xml</srw:recordPacking>
+<srw:recordData>
+<record>
+<controlfield tag="005">20260611025105.000</controlfield>
+<leader>     clm0 22        450 </leader>
+<controlfield tag="001">245186433</controlfield>
+<controlfield tag="003">http://www.sudoc.fr/245186433</controlfield>
+<datafield tag="856" ind1="4" ind2=" "><subfield code="u">https://folia.scdi-montpellier.fr/recherche-folia/2124</subfield>
+<subfield code="z">[Foli@ - Cartes et plans Faculté des Sciences Humaines et Sciences de l&apos;Environnement/UFR3 Université Paul Valéry Montpellier 3]</subfield></datafield>
+<datafield tag="100" ind1=" " ind2=" "><subfield code="a">20200624e20201903k  y0frey50      ba</subfield></datafield>
+<datafield tag="101" ind1="0" ind2=" "><subfield code="a">fre</subfield>
+<subfield code="2">639-2</subfield></datafield>
+<datafield tag="105" ind1=" " ind2=" "><subfield code="a">y   |||||||||</subfield></datafield>
+<datafield tag="120" ind1=" " ind2=" "><subfield code="a">a||dg  ||bg  </subfield></datafield>
+<datafield tag="121" ind1=" " ind2=" "><subfield code="a">aa aabycb</subfield>
+<subfield code="b">|||||||||</subfield></datafield>
+<datafield tag="123" ind1="1" ind2=" "><subfield code="a">a</subfield>
+<subfield code="b">50000</subfield>
+<subfield code="d">e0015500</subfield>
+<subfield code="e">e0024528</subfield>
+<subfield code="f">n0465844</subfield>
+<subfield code="g">n0463708</subfield></datafield>
+<datafield tag="124" ind1=" " ind2=" "><subfield code="b">d</subfield></datafield>
+<datafield tag="135" ind1=" " ind2=" "><subfield code="a">vrm|#|||m|aa|</subfield></datafield>
+<datafield tag="181" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">cri</subfield>
+<subfield code="2">rdacontent</subfield></datafield>
+<datafield tag="181" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">b#</subfield>
+<subfield code="b">cb2e##</subfield></datafield>
+<datafield tag="182" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">c</subfield>
+<subfield code="2">rdamedia</subfield></datafield>
+<datafield tag="182" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">b</subfield></datafield>
+<datafield tag="183" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">ceb</subfield>
+<subfield code="2">RDAfrCarrier</subfield></datafield>
+<datafield tag="102" ind1=" " ind2=" "><subfield code="a">FR</subfield></datafield>
+<datafield tag="200" ind1="1" ind2=" "><subfield code="a">[Carte de la France au 1/50 000] (type 1889)</subfield>
+<subfield code="h">134</subfield>
+<subfield code="i">Issoudun S.E.</subfield>
+<subfield code="f">levée par les officiers du Corps d&apos;Etat-Major, et publiée par le Dépôt de la guerre en 1847</subfield></datafield>
+<datafield tag="540" ind1="|" ind2=" "><subfield code="a">Carte de France de l&apos;Etat-Major</subfield>
+<subfield code="h">134</subfield>
+<subfield code="i">Issoudun S.E.</subfield></datafield>
+<datafield tag="540" ind1="|" ind2=" "><subfield code="a">Carte topographique de l&apos;Etat-Major</subfield>
+<subfield code="h">134</subfield>
+<subfield code="i">Issoudun S.E.</subfield></datafield>
+<datafield tag="702" ind1=" " ind2="1"><subfield code="3">145536300</subfield>
+<subfield code="a">Hacq</subfield>
+<subfield code="b">Jacques Marie</subfield>
+<subfield code="f">1795-1873</subfield>
+<subfield code="c">graveur</subfield>
+<subfield code="4">350</subfield></datafield>
+<datafield tag="710" ind1="0" ind2="1"><subfield code="3">02836032X</subfield>
+<subfield code="a">France</subfield>
+<subfield code="b">Service géographique de l&apos;armée</subfield>
+<subfield code="c">1887-1940</subfield>
+<subfield code="4">180</subfield></datafield>
+<datafield tag="712" ind1="0" ind2="1"><subfield code="3">026407442</subfield>
+<subfield code="a">Institut géographique national</subfield>
+<subfield code="c">France</subfield>
+<subfield code="c">1940-2011</subfield>
+<subfield code="4">180</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="3"><subfield code="a">FR</subfield>
+<subfield code="b">Abes</subfield>
+<subfield code="c">20260611</subfield>
+<subfield code="g">AFNOR</subfield></datafield>
+<datafield tag="205" ind1=" " ind2=" "><subfield code="a">Révisée en 1903</subfield></datafield>
+<datafield tag="214" ind1=" " ind2="0"><subfield code="a">Montpellier</subfield>
+<subfield code="c">SCDI de Montpellier</subfield>
+<subfield code="d">2021</subfield></datafield>
+<datafield tag="230" ind1=" " ind2=" "><subfield code="a">1 image fixe</subfield></datafield>
+<datafield tag="206" ind1="0" ind2=" "><subfield code="b">1:50 000</subfield>
+<subfield code="d">E 1°54&apos;60&quot; - E 2°45&apos;28&quot;/N 46°58&apos;44&apos;&apos; - N 46°37&apos;08&quot;</subfield></datafield>
+<datafield tag="455" ind1=" " ind2="|"><subfield code="0">238377873</subfield>
+<subfield code="t">[Carte de la France au 1/50 000] (type 1889)</subfield>
+<subfield code="h">134</subfield>
+<subfield code="i">Issoudun S.E.</subfield>
+<subfield code="f">levée par les officiers du Corps d&apos;Etat-Major, et publiée par le Dépôt de la guerre en 1847</subfield>
+<subfield code="e">Révisée en 1903</subfield>
+<subfield code="p">1 carte</subfield></datafield>
+<datafield tag="300" ind1=" " ind2=" "><subfield code="a">Relief représenté par des hachures et des points cotés</subfield></datafield>
+<datafield tag="300" ind1=" " ind2=" "><subfield code="a">Carroyage kilométrique_projection Lambert  II - zone centrale</subfield></datafield>
+<datafield tag="300" ind1=" " ind2=" "><subfield code="a">Echelle en système métrique (mètres et km)</subfield></datafield>
+<datafield tag="300" ind1=" " ind2=" "><subfield code="a">Gravée: le trait par Vidal, la lettre par Hacq, le figuré du terrain par Gombault, les eaux par Rouillard</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">02725318X</subfield>
+<subfield code="a">Topographie</subfield>
+<subfield code="3">027372995</subfield>
+<subfield code="y">Saint-Amand-Montrond (Cher)</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">02725318X</subfield>
+<subfield code="a">Topographie</subfield>
+<subfield code="3">08476256X</subfield>
+<subfield code="y">Charenton-sur-Cher (Cher ; région)</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="607" ind1=" " ind2=" "><subfield code="3">191141569</subfield>
+<subfield code="a">Centre-Val de Loire (France)</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="608" ind1=" " ind2=" "><subfield code="3">027567729</subfield>
+<subfield code="a">Cartes topographiques</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="608" ind1=" " ind2=" "><subfield code="3">027497259</subfield>
+<subfield code="a">Cartes</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="305" ind1=" " ind2=" "><subfield code="a">Tirage: R.F. 6-41</subfield></datafield>
+<datafield tag="305" ind1=" " ind2=" "><subfield code="a">Prix:3 fr. 50</subfield></datafield>
+<datafield tag="305" ind1=" " ind2=" "><subfield code="a">Cette série au 1/50 000 est l&apos;amplification photographique des cartes d&apos;Etat-Major au 1/80 000. Chaque carte de cette série au 1/50 000 est composée de 4 feuilles : N.O. / N.E. / S.O. / S.E.. Le tableau d&apos;assemblage des feuilles voisines ainsi que le nom des officiers ayant exécutés les travaux figurent sur la feuille N.O., le nom des graveurs sont sur la feuille S.E.</subfield></datafield>
+<datafield tag="305" ind1=" " ind2=" "><subfield code="a">Les coordonnées mathématiques de la notice correspondent à celles de la carte entière au 1/50 000 (4 feuilles réunifiées)</subfield></datafield>
+<datafield tag="315" ind1=" " ind2=" "><subfield code="a">Les coordonnées géographiques indiquées en grades sur les cartes, par rapport au Méridien de Paris, ont été converties en degrés par rapport au Méridien de Greenwich.</subfield></datafield>
+<datafield tag="324" ind1=" " ind2=" "><subfield code="a">Reproduction numérique de l&apos;édition de Paris : Service Géographique de l&apos;Armée , 1903</subfield></datafield>
+<datafield tag="337" ind1=" " ind2=" "><subfield code="a">Nécessite un logiciel capable de lire un fichier aux formats jpeg, pdf</subfield></datafield>
+</record></srw:recordData><srw:recordPosition>5</srw:recordPosition>
+</srw:record>
+
+<srw:record>
+<srw:recordSchema>unimarc</srw:recordSchema>
+<srw:recordPacking>xml</srw:recordPacking>
+<srw:recordData>
+<record>
+<controlfield tag="005">20260610124329.000</controlfield>
+<leader>     cem0 22        450 </leader>
+<controlfield tag="001">238377873</controlfield>
+<controlfield tag="003">http://www.sudoc.fr/238377873</controlfield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">(OCoLC)1493419115</subfield></datafield>
+<datafield tag="100" ind1=" " ind2=" "><subfield code="a">20191002e19031847k  y0frey50      ba</subfield></datafield>
+<datafield tag="101" ind1="0" ind2=" "><subfield code="a">fre</subfield>
+<subfield code="2">639-2</subfield></datafield>
+<datafield tag="105" ind1=" " ind2=" "><subfield code="a">y   |||||||||</subfield></datafield>
+<datafield tag="120" ind1=" " ind2=" "><subfield code="a">a||dg  ||bg  </subfield></datafield>
+<datafield tag="121" ind1=" " ind2=" "><subfield code="a">aa aabycb</subfield>
+<subfield code="b">|||||||||</subfield></datafield>
+<datafield tag="123" ind1="1" ind2=" "><subfield code="a">a</subfield>
+<subfield code="b">50000</subfield>
+<subfield code="d">e0015500</subfield>
+<subfield code="e">e0024528</subfield>
+<subfield code="f">n0465844</subfield>
+<subfield code="g">n0463708</subfield>
+<subfield code="p">ea</subfield></datafield>
+<datafield tag="124" ind1=" " ind2=" "><subfield code="b">d</subfield></datafield>
+<datafield tag="181" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">cri</subfield>
+<subfield code="2">rdacontent</subfield></datafield>
+<datafield tag="181" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">b#</subfield>
+<subfield code="b">cb2e##</subfield></datafield>
+<datafield tag="182" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">n</subfield>
+<subfield code="2">rdamedia</subfield></datafield>
+<datafield tag="182" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">n</subfield></datafield>
+<datafield tag="183" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">nda</subfield>
+<subfield code="2">RDAfrCarrier</subfield></datafield>
+<datafield tag="102" ind1=" " ind2=" "><subfield code="a">FR</subfield></datafield>
+<datafield tag="200" ind1="1" ind2=" "><subfield code="a">[Carte de la France au 1/50 000] (type 1889)</subfield>
+<subfield code="h">134</subfield>
+<subfield code="i">Issoudun S.E.</subfield>
+<subfield code="f">levée par les officiers du Corps d&apos;Etat-Major, et publiée par le Dépôt de la guerre en 1847</subfield></datafield>
+<datafield tag="540" ind1="|" ind2=" "><subfield code="a">Carte de France de l&apos;Etat-Major</subfield>
+<subfield code="h">134</subfield>
+<subfield code="i">Issoudun S.E.</subfield></datafield>
+<datafield tag="540" ind1="|" ind2=" "><subfield code="a">Carte topographique de l&apos;Etat-Major</subfield>
+<subfield code="h">134</subfield>
+<subfield code="i">Issoudun S.E.</subfield></datafield>
+<datafield tag="702" ind1=" " ind2="1"><subfield code="3">145536300</subfield>
+<subfield code="a">Hacq</subfield>
+<subfield code="b">Jacques Marie</subfield>
+<subfield code="f">1795-1873</subfield>
+<subfield code="c">graveur</subfield>
+<subfield code="4">350</subfield></datafield>
+<datafield tag="710" ind1="0" ind2="1"><subfield code="3">02836032X</subfield>
+<subfield code="a">France</subfield>
+<subfield code="b">Service géographique de l&apos;armée</subfield>
+<subfield code="c">1887-1940</subfield>
+<subfield code="4">180</subfield></datafield>
+<datafield tag="712" ind1="0" ind2="1"><subfield code="3">026407442</subfield>
+<subfield code="a">Institut géographique national</subfield>
+<subfield code="c">France</subfield>
+<subfield code="c">1940-2011</subfield>
+<subfield code="4">180</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="3"><subfield code="a">FR</subfield>
+<subfield code="b">Abes</subfield>
+<subfield code="c">20260610</subfield>
+<subfield code="g">AFNOR</subfield></datafield>
+<datafield tag="205" ind1=" " ind2=" "><subfield code="a">Révisée en 1903</subfield></datafield>
+<datafield tag="214" ind1=" " ind2="0"><subfield code="a">Paris</subfield>
+<subfield code="c">Service Géographique de l&apos;Armée</subfield>
+<subfield code="d">1903</subfield></datafield>
+<datafield tag="215" ind1=" " ind2=" "><subfield code="a">1 carte</subfield>
+<subfield code="d">54 x 76 cm</subfield></datafield>
+<datafield tag="206" ind1="0" ind2=" "><subfield code="b">1:50 000</subfield>
+<subfield code="d">E 1°54&apos;60&quot; - E 2°45&apos;28&quot;/N 46°58&apos;44&apos;&apos; - N 46°37&apos;08&quot;</subfield></datafield>
+<datafield tag="456" ind1=" " ind2="|"><subfield code="0">245186433</subfield>
+<subfield code="t">[Carte de la France au 1/50 000] (type 1889)</subfield>
+<subfield code="h">134</subfield>
+<subfield code="i">Issoudun S.E.</subfield>
+<subfield code="f">levée par les officiers du Corps d&apos;Etat-Major, et publiée par le Dépôt de la guerre en 1847</subfield>
+<subfield code="e">Révisée en 1903</subfield></datafield>
+<datafield tag="300" ind1=" " ind2=" "><subfield code="a">Relief représenté par des hachures et des points cotés</subfield></datafield>
+<datafield tag="300" ind1=" " ind2=" "><subfield code="a">Carroyage kilométrique_projection Lambert  II - zone centrale</subfield></datafield>
+<datafield tag="300" ind1=" " ind2=" "><subfield code="a">Echelle en système métrique (mètres et km)</subfield></datafield>
+<datafield tag="300" ind1=" " ind2=" "><subfield code="a">Gravée: le trait par Vidal, la lettre par Hacq, le figuré du terrain par Gombault, les eaux par Rouillard</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">02725318X</subfield>
+<subfield code="a">Topographie</subfield>
+<subfield code="3">027372995</subfield>
+<subfield code="y">Saint-Amand-Montrond (Cher)</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">02725318X</subfield>
+<subfield code="a">Topographie</subfield>
+<subfield code="3">08476256X</subfield>
+<subfield code="y">Charenton-sur-Cher (Cher ; région)</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="607" ind1=" " ind2=" "><subfield code="3">191141569</subfield>
+<subfield code="a">Centre-Val de Loire (France)</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="608" ind1=" " ind2=" "><subfield code="3">027567729</subfield>
+<subfield code="a">Cartes topographiques</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="608" ind1=" " ind2=" "><subfield code="3">027497259</subfield>
+<subfield code="a">Cartes</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="305" ind1=" " ind2=" "><subfield code="a">Tirage: R.F. 6-41, 7-40</subfield></datafield>
+<datafield tag="305" ind1=" " ind2=" "><subfield code="a">Prix:3 fr. 50</subfield></datafield>
+<datafield tag="305" ind1=" " ind2=" "><subfield code="a">Cette série au 1/50 000 est l&apos;amplification photographique des cartes d&apos;Etat-Major au 1/80 000. Chaque carte de cette série au 1/50 000 est composée de 4 feuilles : N.O. / N.E. / S.O. / S.E.. Le tableau d&apos;assemblage des feuilles voisines ainsi que le nom des officiers ayant exécutés les travaux figurent sur la feuille N.O., le nom des graveurs sont sur la feuille S.E.</subfield></datafield>
+<datafield tag="305" ind1=" " ind2=" "><subfield code="a">Les coordonnées mathématiques de la notice correspondent à celles de la carte entière au 1/50 000 (4 feuilles réunifiées)</subfield></datafield>
+<datafield tag="315" ind1=" " ind2=" "><subfield code="a">Les coordonnées géographiques indiquées en grades sur les cartes, par rapport au Méridien de Paris, ont été converties en degrés par rapport au Méridien de Greenwich.</subfield></datafield>
+</record></srw:recordData><srw:recordPosition>6</srw:recordPosition>
+</srw:record>
+
+<srw:record>
+<srw:recordSchema>unimarc</srw:recordSchema>
+<srw:recordPacking>xml</srw:recordPacking>
+<srw:recordData>
+<record>
+<controlfield tag="005">20201030152419.000</controlfield>
+<leader>     cam0 22        450 </leader>
+<controlfield tag="001">159423066</controlfield>
+<controlfield tag="003">http://www.sudoc.fr/159423066</controlfield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">(OCoLC)800772913</subfield></datafield>
+<datafield tag="012" ind1=" " ind2=" "><subfield code="a">165204 - b1 B ur : b2 D x</subfield>
+<subfield code="2">STCN</subfield></datafield>
+<datafield tag="100" ind1=" " ind2=" "><subfield code="a">20120319d1652    |||y0frey50      ba</subfield></datafield>
+<datafield tag="101" ind1="0" ind2=" "><subfield code="a">fre</subfield>
+<subfield code="2">639-2</subfield></datafield>
+<datafield tag="105" ind1=" " ind2=" "><subfield code="a">y   |||||||||</subfield></datafield>
+<datafield tag="106" ind1=" " ind2=" "><subfield code="a">r</subfield></datafield>
+<datafield tag="140" ind1=" " ind2=" "><subfield code="a">|||||||||dbeayyb|1001</subfield></datafield>
+<datafield tag="181" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">txt</subfield>
+<subfield code="2">rdacontent</subfield></datafield>
+<datafield tag="181" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">i#</subfield>
+<subfield code="b">xxxe##</subfield></datafield>
+<datafield tag="182" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">n</subfield>
+<subfield code="2">rdamedia</subfield></datafield>
+<datafield tag="182" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">n</subfield></datafield>
+<datafield tag="183" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">ngb</subfield>
+<subfield code="2">RDAfrCarrier</subfield></datafield>
+<datafield tag="102" ind1=" " ind2=" "><subfield code="a">FR</subfield></datafield>
+<datafield tag="200" ind1="1" ind2=" "><subfield code="a">La reduction du chasteau et forteresse de Mouront, avec les motifs de la capitulation, &amp; la sortie des gens de guerre qui estoient dans la place. Ensemble les veritables articles accordés à monsieur le marquis de Persan, par le comte de Paluau : et tout ce qui s&apos;est fait &amp; passé entre les deux armés [sic] depuis ladite capitulation jusqu&apos;au deuxiesme septembre 1652.</subfield></datafield>
+<datafield tag="503" ind1="|" ind2=" "><subfield code="a">Mazarinade</subfield>
+<subfield code="j">1652</subfield></datafield>
+<datafield tag="514" ind1="|" ind2=" "><subfield code="a">La reduction du chasteau &amp; forteresse de Mourond, avec les motifs de la capitulation, &amp; la sortie des gens de guerre qui estoient dans la place. Ensemble les veritables articles accordés à monsieur le marquis de Persan, par le comte de Paluau : et tout ce qui s&apos;est fait &amp; passé entre les deux armés [sic] depuis ladite capitulation jusques au 2. septembre 1652.</subfield></datafield>
+<datafield tag="518" ind1="|" ind2=" "><subfield code="a">La réduction du château et forteresse de Mouront, avec les motifs de la capitulation, et la sortie des gens de guerre qui étaient dans la place. Ensemble les véritables articles accordés à monsieur le marquis de Persan, par le comte de Palluau. Et tout ce qui s&apos;est fait et passé entre les deux armées depuis ladite capitulation jusqu&apos;au deuxième septembre 1652.</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="3"><subfield code="a">FR</subfield>
+<subfield code="b">Abes</subfield>
+<subfield code="c">20201030</subfield>
+<subfield code="g">AFNOR</subfield></datafield>
+<datafield tag="316" ind1=" " ind2=" "><subfield code="5">751063002:446762326</subfield>
+<subfield code="a">M 13607 : p. de titre, ancien n° ms de pièce &quot;28&quot;</subfield></datafield>
+<datafield tag="316" ind1=" " ind2=" "><subfield code="5">751063002:662493613</subfield>
+<subfield code="a">4° 19125-27 : dans un recueil factice, reliure parchemin rigide. Sur la p. de titre, ancien n° ms de pièce &quot;44&quot; (barré)</subfield></datafield>
+<datafield tag="317" ind1=" " ind2=" "><subfield code="5">751063002:662493613</subfield>
+<subfield code="a">4° 19125-27 : sur la p. de titre de la première pièce, cachet de la Bibliothèque du Séminaire Saint-Sulpice de Paris</subfield></datafield>
+<datafield tag="712" ind1="0" ind2="2"><subfield code="5">751063002:662493613</subfield>
+<subfield code="3">061074683</subfield>
+<subfield code="a">Séminaire de Saint-Sulpice</subfield>
+<subfield code="c">Paris</subfield>
+<subfield code="b">Bibliothèque</subfield>
+<subfield code="c">1645-1789</subfield>
+<subfield code="4">390</subfield></datafield>
+<datafield tag="316" ind1=" " ind2=" "><subfield code="5">751063002:662552857</subfield>
+<subfield code="a">4° A 11246-28 : dans un recueil factice, reliure veau marbré</subfield></datafield>
+<datafield tag="317" ind1=" " ind2=" "><subfield code="5">751063002:662552857</subfield>
+<subfield code="a">4° A 11246-28 : sur la p. de titre de la première pièce, cachet de la Bibliothèque du Séminaire Saint-Sulpice de Paris</subfield></datafield>
+<datafield tag="712" ind1="0" ind2="2"><subfield code="5">751063002:662552857</subfield>
+<subfield code="3">061074683</subfield>
+<subfield code="a">Séminaire de Saint-Sulpice</subfield>
+<subfield code="c">Paris</subfield>
+<subfield code="b">Bibliothèque</subfield>
+<subfield code="c">1645-1789</subfield>
+<subfield code="4">390</subfield></datafield>
+<datafield tag="316" ind1=" " ind2=" "><subfield code="5">751063002:66286428X</subfield>
+<subfield code="a">4° A 13944-10 : dans un recueil factice, reliure parchemin, traces de lacets</subfield></datafield>
+<datafield tag="317" ind1=" " ind2=" "><subfield code="5">751063002:66286428X</subfield>
+<subfield code="a">4° A 13944-10 : sur la p. de titre de la première pièce, cachet de la bibliothèque du séminaire Saint-Sulpice de Paris</subfield></datafield>
+<datafield tag="712" ind1="0" ind2="2"><subfield code="5">751063002:66286428X</subfield>
+<subfield code="3">061074683</subfield>
+<subfield code="a">Séminaire de Saint-Sulpice</subfield>
+<subfield code="c">Paris</subfield>
+<subfield code="b">Bibliothèque</subfield>
+<subfield code="c">1645-1789</subfield>
+<subfield code="4">390</subfield></datafield>
+<datafield tag="316" ind1=" " ind2=" "><subfield code="5">751063002:662864638</subfield>
+<subfield code="a">4° 17633-49 : dans un recueil factice, reliure veau brun marbré. Foliotation ms. &quot;332&quot;-&quot;339&quot;</subfield></datafield>
+<datafield tag="317" ind1=" " ind2=" "><subfield code="5">751063002:662864638</subfield>
+<subfield code="a">4° 17633-49 : au contreplat supérieur ex-libris gravé aux nom, armes, devise de Jacques Bachelier (Meyer-Noirel, B14)</subfield></datafield>
+<datafield tag="702" ind1=" " ind2="1"><subfield code="5">751063002:662864638</subfield>
+<subfield code="a">Bachelier</subfield>
+<subfield code="b">Jacques</subfield>
+<subfield code="4">390</subfield></datafield>
+<datafield tag="316" ind1=" " ind2=" "><subfield code="5">751063002:670705004</subfield>
+<subfield code="a">4° A 13919-40 : dans un recueil factice, reliure parchemin rigide</subfield></datafield>
+<datafield tag="317" ind1=" " ind2=" "><subfield code="5">751063002:670705004</subfield>
+<subfield code="a">4° A 13919-40 : sur la p. de titre de la première pièce du recueil, cachet de la bibliothèque du séminaire Saint-Sulpice de Paris</subfield></datafield>
+<datafield tag="712" ind1="0" ind2="2"><subfield code="5">751063002:670705004</subfield>
+<subfield code="3">061074683</subfield>
+<subfield code="a">Séminaire de Saint-Sulpice</subfield>
+<subfield code="c">Paris</subfield>
+<subfield code="b">Bibliothèque</subfield>
+<subfield code="c">1645-1789</subfield>
+<subfield code="4">390</subfield></datafield>
+<datafield tag="214" ind1=" " ind2=" "><subfield code="r">A Paris, M. DC. LII.</subfield></datafield>
+<datafield tag="215" ind1=" " ind2=" "><subfield code="a">15-[1 bl.] p.</subfield>
+<subfield code="d">in-4</subfield></datafield>
+<datafield tag="600" ind1=" " ind2="1"><subfield code="3">132627191</subfield>
+<subfield code="a">Clérambault</subfield>
+<subfield code="b">Philippe de</subfield>
+<subfield code="f">1606-1665</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="600" ind1=" " ind2="1"><subfield code="3">244960062</subfield>
+<subfield code="a">Persan</subfield>
+<subfield code="b">François de Vaudeter</subfield>
+<subfield code="f">16..-1690</subfield>
+<subfield code="c">marquis de</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="607" ind1=" " ind2=" "><subfield code="3">027372995</subfield>
+<subfield code="a">Saint-Amand-Montrond (Cher)</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="607" ind1=" " ind2=" "><subfield code="3">027380815</subfield>
+<subfield code="a">France</subfield>
+<subfield code="z"> (Fronde)</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="608" ind1=" " ind2=" "><subfield code="3">027797376</subfield>
+<subfield code="a">Ouvrages avant 1800</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="620" ind1=" " ind2="1"><subfield code="d">Paris</subfield></datafield>
+<datafield tag="306" ind1=" " ind2=" "><subfield code="a">D&apos;après Hubert Carrier, texte paru vers le 1er septembre 1652 (Bibliothèque Mazarine, Ms. 4682-5, f. 51v)</subfield></datafield>
+<datafield tag="307" ind1=" " ind2=" "><subfield code="a">Sig. [ ]2, B-D2</subfield></datafield>
+<datafield tag="307" ind1=" " ind2=" "><subfield code="a">Marque décorative (fleuron) sur la p. de titre et bandeau (frise de fleurons) au titre de départ, gravés sur bois</subfield></datafield>
+<datafield tag="321" ind1="1" ind2=" "><subfield code="a">BM01240</subfield>
+<subfield code="u">https://mazarinades.bibliotheque-mazarine.fr/ark:/61562/bm50165</subfield></datafield>
+<datafield tag="321" ind1="1" ind2=" "><subfield code="a">C. Moreau, Bibliographie des mazarinades, n° 3058</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="1"><subfield code="a">FR</subfield>
+<subfield code="b">Mazarine</subfield>
+<subfield code="c">20120319</subfield>
+<subfield code="g">AFNOR</subfield></datafield>
+</record></srw:recordData><srw:recordPosition>7</srw:recordPosition>
+</srw:record>
+
+<srw:record>
+<srw:recordSchema>unimarc</srw:recordSchema>
+<srw:recordPacking>xml</srw:recordPacking>
+<srw:recordData>
+<record>
+<controlfield tag="005">20250522150050.000</controlfield>
+<leader>     cam0 22        450 </leader>
+<controlfield tag="001">159413435</controlfield>
+<controlfield tag="003">http://www.sudoc.fr/159413435</controlfield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">(OCoLC)800767029</subfield></datafield>
+<datafield tag="012" ind1=" " ind2=" "><subfield code="a">165204 - b1 A2 s€ga : b2 D in</subfield>
+<subfield code="2">STCN</subfield></datafield>
+<datafield tag="100" ind1=" " ind2=" "><subfield code="a">20120319d1652    k  y0frey50      ba</subfield></datafield>
+<datafield tag="101" ind1="0" ind2=" "><subfield code="a">fre</subfield>
+<subfield code="2">639-2</subfield></datafield>
+<datafield tag="105" ind1=" " ind2=" "><subfield code="a">y   |||||||||</subfield></datafield>
+<datafield tag="106" ind1=" " ind2=" "><subfield code="a">r</subfield></datafield>
+<datafield tag="140" ind1=" " ind2=" "><subfield code="a">|||||||||db  yyb|1001</subfield></datafield>
+<datafield tag="181" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">txt</subfield>
+<subfield code="2">rdacontent</subfield></datafield>
+<datafield tag="181" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">i#</subfield>
+<subfield code="b">xxxe##</subfield></datafield>
+<datafield tag="182" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">n</subfield>
+<subfield code="2">rdamedia</subfield></datafield>
+<datafield tag="182" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">n</subfield></datafield>
+<datafield tag="183" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">ngb</subfield>
+<subfield code="2">RDAfrCarrier</subfield></datafield>
+<datafield tag="102" ind1=" " ind2=" "><subfield code="a">XX</subfield></datafield>
+<datafield tag="200" ind1="1" ind2=" "><subfield code="a">Advis a messieurs les notables, convoquez a present en l&apos;assemblée de l&apos;hostel de Ville de Paris, pour l&apos;expulsion du cardinal Mazarin.</subfield></datafield>
+<datafield tag="503" ind1="|" ind2=" "><subfield code="a">Mazarinade</subfield>
+<subfield code="j">1652</subfield></datafield>
+<datafield tag="518" ind1="|" ind2=" "><subfield code="a">Avis à messieurs les notables, convoqués à present en l&apos;assemblée de l&apos;hôtel de Ville de Paris, pour l&apos;expulsion du cardinal Mazarin.</subfield></datafield>
+<datafield tag="710" ind1="0" ind2="2"><subfield code="3">026531178</subfield>
+<subfield code="a">France</subfield>
+<subfield code="b">Parlement de Paris</subfield>
+<subfield code="4">070</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="3"><subfield code="a">FR</subfield>
+<subfield code="b">Abes</subfield>
+<subfield code="c">20250522</subfield>
+<subfield code="g">AFNOR</subfield></datafield>
+<datafield tag="316" ind1=" " ind2=" "><subfield code="5">751063002:446751758</subfield>
+<subfield code="a">M 12526 : sur la p. de titre, ancien n° ms. de pièce, &quot;90&quot;</subfield></datafield>
+<datafield tag="317" ind1=" " ind2=" "><subfield code="5">751063002:446751758</subfield>
+<subfield code="a">M 12526 : provient d&apos;un recueil factice de la Bibliothèque Mazarine coté 4° A 12837</subfield></datafield>
+<datafield tag="318" ind1=" " ind2=" "><subfield code="5">751063002:446751758</subfield>
+<subfield code="a">Numérisé, 2020</subfield></datafield>
+<datafield tag="316" ind1=" " ind2=" "><subfield code="5">751063002:638579376</subfield>
+<subfield code="a">4° 17608-21/10 : dans un recueil factice, reliure parchemin</subfield></datafield>
+<datafield tag="317" ind1=" " ind2=" "><subfield code="5">751063002:638579376</subfield>
+<subfield code="a">4° 17608-21/10 : au titre de la première pièce du recueil, ex libris ms. &quot;S. Eligii Paris. Cler. Regul. Barnab. Congreg.is S. Pauli&quot; et cachet du prieuré des Barnabites de Saint-Eloi de Paris</subfield></datafield>
+<datafield tag="712" ind1="0" ind2="2"><subfield code="5">751063002:638579376</subfield>
+<subfield code="3">086869019</subfield>
+<subfield code="a">Prieuré Saint-Eloi</subfield>
+<subfield code="c">Paris ; 1631-1791</subfield>
+<subfield code="b">Bibliothèque</subfield>
+<subfield code="4">390</subfield></datafield>
+<datafield tag="316" ind1=" " ind2=" "><subfield code="5">751063002:638588960</subfield>
+<subfield code="a">4° 17629-16 : dans un recueil factice, reliure veau brun marbré</subfield></datafield>
+<datafield tag="317" ind1=" " ind2=" "><subfield code="5">751063002:638588960</subfield>
+<subfield code="a">4° 17629-16 :  au contreplat supérieur, ex-libris gravé aux nom, armes, devise de Jacques Bachelier</subfield></datafield>
+<datafield tag="702" ind1=" " ind2="1"><subfield code="5">751063002:638588960</subfield>
+<subfield code="a">Bachelier</subfield>
+<subfield code="b">Jacques</subfield>
+<subfield code="4">390</subfield></datafield>
+<datafield tag="316" ind1=" " ind2=" "><subfield code="5">751063002:638592100</subfield>
+<subfield code="a">4° 17646 Gx-7 : dans un recueil factice</subfield></datafield>
+<datafield tag="317" ind1=" " ind2=" "><subfield code="5">751063002:638592100</subfield>
+<subfield code="a">4° 17646 Gx-7 : reliure veau blond, France, 18e siècle aux nom (plat inférieur) et armes (plat supérieur) dorés de Joseph Bonnier de La Mosson</subfield></datafield>
+<datafield tag="702" ind1=" " ind2="1"><subfield code="5">751063002:638592100</subfield>
+<subfield code="3">076071154</subfield>
+<subfield code="a">Bonnier de La Mosson</subfield>
+<subfield code="b">Joseph</subfield>
+<subfield code="f">1702-1744</subfield>
+<subfield code="4">390</subfield></datafield>
+<datafield tag="316" ind1=" " ind2=" "><subfield code="5">751063002:638612470</subfield>
+<subfield code="a">4° 19064-24 : dans un recueil factice, reliure parchemin avec traces de lacets</subfield></datafield>
+<datafield tag="317" ind1=" " ind2=" "><subfield code="5">751063002:638612470</subfield>
+<subfield code="a">4° 19064-24 : sur la p. de titre de la 1ère pièce du recueil, cachet de la bibliothèque du Séminaire Saint-Sulpice à Paris</subfield></datafield>
+<datafield tag="712" ind1="0" ind2="2"><subfield code="5">751063002:638612470</subfield>
+<subfield code="3">061074683</subfield>
+<subfield code="a">Séminaire de Saint-Sulpice</subfield>
+<subfield code="c">Paris</subfield>
+<subfield code="b">Bibliothèque</subfield>
+<subfield code="c">1645-1789</subfield>
+<subfield code="4">390</subfield></datafield>
+<datafield tag="316" ind1=" " ind2=" "><subfield code="5">751063002:638617995</subfield>
+<subfield code="a">4° A 11308-54 : dans un recueil factice, reliure veau marbré</subfield></datafield>
+<datafield tag="317" ind1=" " ind2=" "><subfield code="5">751063002:638617995</subfield>
+<subfield code="a">4° A 11308-54 : au titre de la 1ere pièce, cachet de la Bibliothèque du Séminaire Saint-Sulpice de Paris</subfield></datafield>
+<datafield tag="712" ind1="0" ind2="2"><subfield code="5">751063002:638617995</subfield>
+<subfield code="3">061074683</subfield>
+<subfield code="a">Séminaire de Saint-Sulpice</subfield>
+<subfield code="c">Paris</subfield>
+<subfield code="b">Bibliothèque</subfield>
+<subfield code="c">1645-1789</subfield>
+<subfield code="4">390</subfield></datafield>
+<datafield tag="316" ind1=" " ind2=" "><subfield code="5">751063002:638618630</subfield>
+<subfield code="a">4° A 12816-13 : dans un recueil factice</subfield></datafield>
+<datafield tag="317" ind1=" " ind2=" "><subfield code="5">751063002:638618630</subfield>
+<subfield code="a">4° A 12816-13 :  reliure parchemin portant au dos une étiquette aux armes dorées de Henri Du Bouchet ; sur la p. de titre de la première pièce du recueil, ex-libris ms. du mêe, &quot;Du Bouchet 8 lb. 1652.&quot; ; au contreplat supérieur, ancienne cote ms. de la bibliothèque de l&apos;abbaye Saint-Victor de Paris</subfield></datafield>
+<datafield tag="702" ind1=" " ind2="1"><subfield code="5">751063002:638618630</subfield>
+<subfield code="3">069088535</subfield>
+<subfield code="a">Du Bouchet</subfield>
+<subfield code="b">Henri</subfield>
+<subfield code="f">1593-1654</subfield>
+<subfield code="4">390</subfield></datafield>
+<datafield tag="712" ind1="0" ind2="2"><subfield code="5">751063002:638618630</subfield>
+<subfield code="3">027627551</subfield>
+<subfield code="a">Abbaye Saint-Victor</subfield>
+<subfield code="c">Paris</subfield>
+<subfield code="b">Bibliothèque</subfield>
+<subfield code="c">11..-1792</subfield>
+<subfield code="4">390</subfield></datafield>
+<datafield tag="214" ind1=" " ind2=" "><subfield code="r">M. DC. LII.</subfield></datafield>
+<datafield tag="215" ind1=" " ind2=" "><subfield code="a">16 p.</subfield>
+<subfield code="d">in-4</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">029974674</subfield>
+<subfield code="a">Militaires</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">027872920</subfield>
+<subfield code="a">Dépenses militaires</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">02746783X</subfield>
+<subfield code="a">Finances publiques</subfield>
+<subfield code="3">027380815</subfield>
+<subfield code="y">France</subfield>
+<subfield code="z"> (Fronde)</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="607" ind1=" " ind2=" "><subfield code="3">027380815</subfield>
+<subfield code="a">France</subfield>
+<subfield code="z"> (Fronde)</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="607" ind1=" " ind2=" "><subfield code="3">027372995</subfield>
+<subfield code="a">Saint-Amand-Montrond (Cher)</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="608" ind1=" " ind2=" "><subfield code="3">027797376</subfield>
+<subfield code="a">Ouvrages avant 1800</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="306" ind1=" " ind2=" "><subfield code="a">D&apos;après Hubert Carrier, texte paru le 18 ou le 19 avril 1652 (Bibliothèque Mazarine, Ms. 4682-1, f. 243v)</subfield></datafield>
+<datafield tag="307" ind1=" " ind2=" "><subfield code="a">Sig. A-D2</subfield></datafield>
+<datafield tag="307" ind1=" " ind2=" "><subfield code="a">Marque décorative (couronne fermée) sur la p. de titre et bandeau (frise de fleurons) au titre de départ, gravés sur bois</subfield></datafield>
+<datafield tag="321" ind1="1" ind2=" "><subfield code="a">BM00967</subfield>
+<subfield code="u">https://mazarinades.bibliotheque-mazarine.fr/ark:/61562/bm49870</subfield></datafield>
+<datafield tag="321" ind1="1" ind2=" "><subfield code="a">C. Moreau, Bibliographie des mazarinades, n° 474</subfield></datafield>
+<datafield tag="325" ind1="1" ind2="1"><subfield code="b">Document numérisé</subfield>
+<subfield code="c">Paris</subfield>
+<subfield code="d">Bibliothèque Mazarine</subfield>
+<subfield code="e">2020</subfield>
+<subfield code="g">Bibliothèques numériques de l&apos;Institut de France</subfield>
+<subfield code="h">1</subfield>
+<subfield code="j">1xx##</subfield>
+<subfield code="n">Cote de l’original : M 12526</subfield>
+<subfield code="u">https://bibnum.institutdefrance.fr/ark:/61562/mz14825</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="1"><subfield code="a">FR</subfield>
+<subfield code="b">Mazarine</subfield>
+<subfield code="c">20120319</subfield>
+<subfield code="g">AFNOR</subfield></datafield>
+</record></srw:recordData><srw:recordPosition>8</srw:recordPosition>
+</srw:record>
+
+<srw:record>
+<srw:recordSchema>unimarc</srw:recordSchema>
+<srw:recordPacking>xml</srw:recordPacking>
+<srw:recordData>
+<record>
+<controlfield tag="005">20230115145810.000</controlfield>
+<leader>     cam0 22        450 </leader>
+<controlfield tag="001">081306385</controlfield>
+<controlfield tag="003">http://www.sudoc.fr/081306385</controlfield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">(OCoLC)689890089</subfield></datafield>
+<datafield tag="010" ind1=" " ind2=" "><subfield code="a">2-913790-35-6</subfield>
+<subfield code="b">br</subfield>
+<subfield code="d">18 €</subfield></datafield>
+<datafield tag="100" ind1=" " ind2=" "><subfield code="a">20041025d2004    m  y0frey50      ba</subfield></datafield>
+<datafield tag="101" ind1="0" ind2=" "><subfield code="a">fre</subfield>
+<subfield code="2">639-2</subfield></datafield>
+<datafield tag="105" ind1=" " ind2=" "><subfield code="a">f   ||||000ya</subfield></datafield>
+<datafield tag="106" ind1=" " ind2=" "><subfield code="a">r</subfield></datafield>
+<datafield tag="181" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">txt</subfield>
+<subfield code="2">rdacontent</subfield></datafield>
+<datafield tag="181" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">i#</subfield>
+<subfield code="b">xxxe##</subfield></datafield>
+<datafield tag="182" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">n</subfield>
+<subfield code="2">rdamedia</subfield></datafield>
+<datafield tag="182" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">n</subfield></datafield>
+<datafield tag="102" ind1=" " ind2=" "><subfield code="a">FR</subfield></datafield>
+<datafield tag="200" ind1="1" ind2=" "><subfield code="a">Un gamin de l&apos;hospice</subfield>
+<subfield code="e">pensionnaire en Bourbonnais</subfield>
+<subfield code="h">2e partie</subfield>
+<subfield code="i">Le temps des orages</subfield>
+<subfield code="f">Jean Léopold</subfield>
+<subfield code="g">[préf. Serge Vinçon]</subfield>
+<subfield code="g">[postf. Michel Galas]</subfield></datafield>
+<datafield tag="700" ind1=" " ind2="1"><subfield code="3">078048311</subfield>
+<subfield code="a">Léopold</subfield>
+<subfield code="b">Jean</subfield>
+<subfield code="f">1924-....</subfield>
+<subfield code="4">070</subfield></datafield>
+<datafield tag="702" ind1=" " ind2="1"><subfield code="3">034276343</subfield>
+<subfield code="a">Vinçon</subfield>
+<subfield code="b">Serge</subfield>
+<subfield code="f">1949-....</subfield>
+<subfield code="4">080</subfield></datafield>
+<datafield tag="702" ind1=" " ind2="1"><subfield code="3">081306164</subfield>
+<subfield code="a">Galas</subfield>
+<subfield code="b">Michel</subfield>
+<subfield code="4">080</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="3"><subfield code="a">FR</subfield>
+<subfield code="b">Abes</subfield>
+<subfield code="c">20230115</subfield>
+<subfield code="g">AFNOR</subfield></datafield>
+<datafield tag="210" ind1=" " ind2=" "><subfield code="a">Sury-en-Vaux</subfield>
+<subfield code="c">AàZ Patrimoine éd.</subfield>
+<subfield code="d">2004</subfield>
+<subfield code="e">18-Sury-en-Vaux</subfield>
+<subfield code="g">Impr. AàZ</subfield></datafield>
+<datafield tag="215" ind1=" " ind2=" "><subfield code="a">240 p.-XV f. de pl.</subfield>
+<subfield code="c">couv. ill.</subfield>
+<subfield code="d">20 cm</subfield></datafield>
+<datafield tag="461" ind1=" " ind2="|"><subfield code="t">Un gamin de l&apos;hospice</subfield>
+<subfield code="v">2</subfield></datafield>
+<datafield tag="300" ind1=" " ind2=" "><subfield code="a">Glossaire</subfield></datafield>
+<datafield tag="600" ind1=" " ind2="1"><subfield code="3">078048311</subfield>
+<subfield code="a">Léopold</subfield>
+<subfield code="b">Jean</subfield>
+<subfield code="f">1924-....</subfield>
+<subfield code="3">027262308</subfield>
+<subfield code="x">Jeunesse</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">02731300X</subfield>
+<subfield code="a">Enfants abandonnés</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">027267679</subfield>
+<subfield code="a">Vie rurale</subfield>
+<subfield code="3">027226794</subfield>
+<subfield code="y">France</subfield>
+<subfield code="3">027250857</subfield>
+<subfield code="y">Cher (France)</subfield>
+<subfield code="3">027794687</subfield>
+<subfield code="z">1900-1945</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">027239640</subfield>
+<subfield code="a">Moeurs et coutumes</subfield>
+<subfield code="3">027250857</subfield>
+<subfield code="y">Cher (France)</subfield>
+<subfield code="3">027794687</subfield>
+<subfield code="z">1900-1945</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="607" ind1=" " ind2=" "><subfield code="3">027372995</subfield>
+<subfield code="a">Saint-Amand-Montrond (Cher)</subfield>
+<subfield code="3">03096315X</subfield>
+<subfield code="z">1939-1945(Guerre mondiale)</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="608" ind1=" " ind2=" "><subfield code="3">027805441</subfield>
+<subfield code="a">Récits personnels</subfield>
+<subfield code="2">rameau</subfield></datafield>
+</record></srw:recordData><srw:recordPosition>9</srw:recordPosition>
+</srw:record>
+</srw:records>
+    <srw:echoedSearchRetrieveRequest>
+	<srw:version>1.1</srw:version>
+	<srw:query>(tou%3D%22Saint-Amand-Montrond%22+or+tou%3D%22Belloy-en-Santerre%22)+and+tou%3Dguerre</srw:query>
+	<srw:xQuery><xcql:triple><xcql:boolean> <xcql:value>and</xcql:value></xcql:boolean><xcql:leftOperand><xcql:triple><xcql:boolean> <xcql:value>or</xcql:value></xcql:boolean><xcql:leftOperand><xcql:searchClause><xcql:index>tou</xcql:index><xcql:relation><xcql:value>=</xcql:value></xcql:relation><xcql:term>"Saint-Amand-Montrond"</xcql:term></xcql:searchClause></xcql:leftOperand><xcql:rightOperand><xcql:searchClause><xcql:index>tou</xcql:index><xcql:relation><xcql:value>=</xcql:value></xcql:relation><xcql:term>"Belloy-en-Santerre"</xcql:term></xcql:searchClause></xcql:rightOperand></xcql:triple></xcql:leftOperand><xcql:rightOperand><xcql:searchClause><xcql:index>tou</xcql:index><xcql:relation><xcql:value>=</xcql:value></xcql:relation><xcql:term>guerre</xcql:term></xcql:searchClause></xcql:rightOperand></xcql:triple></srw:xQuery>
+	<startRecord>1</startRecord>
+	<maximumRecords>10</maximumRecords>
+	<srw:recordPacking>xml</srw:recordPacking>
+	<srw:recordSchema>unimarc</srw:recordSchema>
+	
+	<srw:stylesheet>https://www.sudoc.abes.fr/cbs/sru/DB=2.1/?xsl=searchRetrieveResponse</srw:stylesheet>
+    </srw:echoedSearchRetrieveRequest>
+    <diag:diagnostics>
+        <diag:uri>info:srw/diagnostic/1/0</diag:uri>
+	
+	
+    </diag:diagnostics>
+    <srw:extraResponseData>
+	<rob:authenticationToken xmlns:rob="info:srw/extension/2/auth-1.0">U10178,Klecteurweb,D2.1,Ec666661e-79,I250,B341720009,SY,QDEF,A%5C9008+1,,J,H2-26,,29,,34,,39,,44,,49-50,,53-78,,80-87,NLECTEUR+PSI,R10.34.103.198,FN,MNNN</rob:authenticationToken>
+        <mg:resultGrouping xmlns:mg="info:srw/extension/5/metadata-grouping-v1.0">
+	    
+	    <mg:grouping key="9001" description="Type de document"></mg:grouping>
+	    
+	    <mg:grouping key="9000" description="Année de publication"></mg:grouping>
+	    
+	    <mg:grouping key="9005" description="Pays de publication"></mg:grouping>
+	    
+	    <mg:grouping key="9004" description="Langue du document"></mg:grouping>
+	    
+
+	
+	</mg:resultGrouping>
+	
+    </srw:extraResponseData>
+</srw:searchRetrieveResponse>

@@ -271,6 +271,13 @@ REDUCTIONS: dict[tuple[str, str], Callable[[bytes], bytes]] = {
     ("SUDOC", "courrieres-mines.xml"): _sudoc,
     ("SUDOC", "billy-montigny-mines.xml"): _sudoc,
     ("PERSEE", "getrecord-rnord-1982-3879.xml"): _persee,
+    # cas témoins du cultivateur et du soldat (#324)
+    ("SUDOC", "vouille-les-marais-prieur.xml"): _sudoc,
+    ("SUDOC", "vouille-les-marais-laboureur.xml"): _sudoc,
+    ("SUDOC", "saint-amand-belloy-forgeron.xml"): _sudoc,
+    ("SUDOC", "saint-amand-belloy-guerre.xml"): _sudoc,
+    ("BNF-CATALOGUE", "vouille-les-marais-prieur.xml"): lambda c: c,
+    ("THESES-FR", "saint-amand-montrond-forgeron.json"): _theses,
 }
 
 

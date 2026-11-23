@@ -23,6 +23,62 @@
       "reduction": "champs locaux UNIMARC 9XX (exemplaires) retirés",
       "empreinte": "sha256:38e3a9b82fa28289f8bdedccceb1ccfa634ba3f721f3b9fba315280344d9b998",
       "client": "httpx, User-Agent générique, sans clé ni mailto"
+    },
+    {
+      "fichier": "vouille-les-marais-prieur.xml",
+      "url": "https://www.sudoc.abes.fr/cbs/sru/?operation=searchRetrieve&version=1.1&query=tou%3D%22Vouill%C3%A9-les-Marais%22+and+tou%3Dprieur&recordSchema=unimarc&maximumRecords=10",
+      "methode": "GET",
+      "date": "2026-11-23T13:25:16Z",
+      "statut": 200,
+      "type": "text/xml",
+      "octets_origine": 6542,
+      "reduction": "champs locaux UNIMARC 9XX (exemplaires) retirés",
+      "empreinte": "sha256:93fc52ac82cc5225009f76dac4478f72a00322715ce2d32039a7dd0a1cd0ca9a",
+      "client": "httpx, User-Agent générique, sans clé ni mailto",
+      "duree_s": 0.1,
+      "note": "cas témoin cultivateur_ancien_regime (#324) : contexte_local(personne, echelles=commune, themes=prieur)"
+    },
+    {
+      "fichier": "vouille-les-marais-laboureur.xml",
+      "url": "https://www.sudoc.abes.fr/cbs/sru/?operation=searchRetrieve&version=1.1&query=tou%3D%22Vouill%C3%A9-les-Marais%22+and+tou%3Dlaboureur&recordSchema=unimarc&maximumRecords=10",
+      "methode": "GET",
+      "date": "2026-11-23T13:25:21Z",
+      "statut": 200,
+      "type": "text/xml",
+      "octets_origine": 2402,
+      "reduction": "champs locaux UNIMARC 9XX (exemplaires) retirés",
+      "empreinte": "sha256:e92faa718a1d905ac7471656fc0dd0ae8fd5445472b511db7dbb6424df327f8d",
+      "client": "httpx, User-Agent générique, sans clé ni mailto",
+      "duree_s": 0.0,
+      "note": "cas témoin cultivateur_ancien_regime (#324) : requête par défaut (premier métier sourcé), aucune notice"
+    },
+    {
+      "fichier": "saint-amand-belloy-forgeron.xml",
+      "url": "https://www.sudoc.abes.fr/cbs/sru/?operation=searchRetrieve&version=1.1&query=%28tou%3D%22Saint-Amand-Montrond%22+or+tou%3D%22Belloy-en-Santerre%22%29+and+tou%3Dforgeron&recordSchema=unimarc&maximumRecords=10",
+      "methode": "GET",
+      "date": "2026-11-23T13:25:26Z",
+      "statut": 200,
+      "type": "text/xml",
+      "octets_origine": 2761,
+      "reduction": "champs locaux UNIMARC 9XX (exemplaires) retirés",
+      "empreinte": "sha256:248ef2f20394d1b272bd20943d16d5f30767eaa6d0c49779fdd067e2ea67f08e",
+      "client": "httpx, User-Agent générique, sans clé ni mailto",
+      "duree_s": 0.1,
+      "note": "cas témoin soldat_1914_1918 (#324) : requête par défaut (premier métier sourcé)"
+    },
+    {
+      "fichier": "saint-amand-belloy-guerre.xml",
+      "url": "https://www.sudoc.abes.fr/cbs/sru/?operation=searchRetrieve&version=1.1&query=%28tou%3D%22Saint-Amand-Montrond%22+or+tou%3D%22Belloy-en-Santerre%22%29+and+tou%3Dguerre&recordSchema=unimarc&maximumRecords=10",
+      "methode": "GET",
+      "date": "2026-11-23T13:25:32Z",
+      "statut": 200,
+      "type": "text/xml",
+      "octets_origine": 113531,
+      "reduction": "champs locaux UNIMARC 9XX (exemplaires) retirés",
+      "empreinte": "sha256:d896e68363c223c4ff3efdef775289fbefffe0b208d47d3023e4adb322485d4d",
+      "client": "httpx, User-Agent générique, sans clé ni mailto",
+      "duree_s": 0.6,
+      "note": "cas témoin soldat_1914_1918 (#324) : contexte_local(personne, echelles=commune, themes=guerre)"
     }
   ]
 }

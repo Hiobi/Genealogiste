@@ -12,6 +12,20 @@
       "reduction": "clés directeurs, rapporteurs, examinateurs, president, ecolesDoctorale, partenairesDeRecherche retirées ; JSON réindenté",
       "empreinte": "sha256:826d59ec26f6157b246678bd0a513ce4db727ed9b16c2b5f403c756dbe109848",
       "client": "httpx, User-Agent générique, sans clé ni mailto"
+    },
+    {
+      "fichier": "saint-amand-montrond-forgeron.json",
+      "url": "https://theses.fr/api/v1/theses/recherche/?q=Saint-Amand-Montrond+forgeron&debut=0&nombre=10",
+      "methode": "GET",
+      "date": "2026-11-23T13:25:46Z",
+      "statut": 200,
+      "type": "application/json",
+      "octets_origine": 38,
+      "reduction": "clés directeurs, rapporteurs, examinateurs, president, ecolesDoctorale, partenairesDeRecherche retirées ; JSON réindenté",
+      "empreinte": "sha256:6e4ca519dcd6d7501b17eed77a4f4a86385121959b5dbf89889fcd0c6fe187b3",
+      "client": "httpx, User-Agent générique, sans clé ni mailto",
+      "duree_s": 0.2,
+      "note": "cas témoin soldat_1914_1918 (#324) : requête par défaut (premier métier sourcé)"
     }
   ]
 }

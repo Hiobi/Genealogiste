@@ -64,6 +64,8 @@ OUTILS: dict[str, tuple[str, str]] = {  # nom -> (effet, classe)
     "contexte_bibliographie": (RESEAU, COLLECTE),  # littérature savante (#286) ; registre des références
     # contexte d'un individu (#289) : assemble géographie, index Wikidata, bibliographie, presse ; aucune écriture
     "contexte_local": (RESEAU, COLLECTE),
+    # contrôle déterministe d'un texte de contexte (#324) : registre et arbre lus, aucune requête ni écriture
+    "contexte_verifier": (LECTURE, LECTURE),
     # pistes réfutables (#290) : contexte_local + faits de l'arbre + chaînes de sources ; rien n'est écrit (le
     # dépôt dans l'enquête ou la file reste à l'appelant : enquete_noter, propositions_deposer)
     "pistes_contexte": (RESEAU, COLLECTE),

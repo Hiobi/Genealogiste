@@ -10,7 +10,8 @@
     {"evenement": "OCCU", "lieu": "Saint-Amand-Montrond, Cher, France", "pays": "France"},
     {"evenement": "DEAT", "lieu": "Belloy-en-Santerre, Somme, France", "pays": "France"}
   ],
-  "contexte_documente": true,
+  "contexte_documente": false,
+  "contexte_documente_motif": "Corrigé par #324 (était true) sur réponses réelles enregistrées le 2026-11-23 : la requête par défaut de contexte_local (métier « forgeron », échelle commune) ne renvoie aucune notice (reponses/sudoc/saint-amand-belloy-forgeron.xml : 0 ; reponses/theses-fr/saint-amand-montrond-forgeron.json : 0) ; avec le thème « guerre », Sudoc renvoie 9 notices (reponses/sudoc/saint-amand-belloy-guerre.xml), toutes écartées par contexte_local (cartes non textuelles, titres qui ne citent aucun lieu de vie). Aucun élément borné au lieu et à la période : « contexte non documenté » attendu tant qu'aucune réponse ne documente ces lieux.",
   "ne_doit_pas_contenir": {
     "causalites": [
       "s'est engagé par patriotisme",
