@@ -460,3 +460,98 @@ def test_serveur_lacunes_priorisees(tmp_path, fake, tree):
 
 def test_priorite_lacune_table():
     assert [taches.priorite_lacune(x) for x in (0, 1, 2, 3, 4)] == ["1", "1", "5", "9", "9"]
+
+
+# ------------------------------------------------- #325 : une piste « contexte seul » n'est jamais une tâche
+
+# Forme de pistes_contexte._depot (règle element_de_contexte) : énoncé fictif, aucun fait historique.
+PISTE_CONTEXTE_SEUL = {"question": "Élément de contexte sourcé (Rochefort, 1850) : Notice X",
+                       "hypotheses": ["Élément de contexte sourcé (Rochefort, 1850) : Notice X"], "sources": [],
+                       "note": "pistes_contexte, règle element_de_contexte ; statut contexte seul",
+                       "contexte_seul": True}
+PISTE_ORDINAIRE = {"question": "Mariage à Rochefort vers 1850 ?", "sources": ["Registre des mariages 1850"]}
+
+
+def _enquete_contexte(tmp_path, fake, tree, piste=None):
+    a = _tapp(tmp_path, fake, tree)
+    server.enquete_ouvrir("Mariage de Jean MARTIN", ["I1"], "mariage-martin")
+    assert "erreur" not in server.enquete_noter("mariage-martin", piste=PISTE_ORDINAIRE)  # p1
+    r = server.enquete_noter("mariage-martin", piste=piste or PISTE_CONTEXTE_SEUL)  # p2
+    assert "erreur" not in r, r
+    return a
+
+
+def test_contexte_seul_sans_elements_jamais_une_tache(tmp_path, fake, tree):
+    _enquete_contexte(tmp_path, fake, tree)
+    etat = server.enquete_reprendre("mariage-martin", taches=True)
+    prop = etat["taches_a_proposer"]
+    assert [o["element"] for o in prop["operations"]] == ["p1"]  # non-régression : la piste ordinaire passe
+    assert [x["element"] for x in prop["refuses"]] == ["p2"]
+    assert "contexte seul" in prop["refuses"][0]["motif"] and "jamais" in prop["refuses"][0]["motif"]
+    # ni « à lier » à une tâche, ni action à faire ; présentée comme telle dans les pistes ouvertes
+    assert etat["taches_gramps"]["non_liees"] == ["p1"]
+    assert etat["taches_gramps"]["contexte_seul"]["elements"] == ["p2"]
+    assert [x["piste"] for x in etat["a_faire"]] == ["p1"]
+    ouvertes = {p["id"]: p for p in etat["pistes_ouvertes"]}
+    assert ouvertes["p2"]["contexte_seul"] is True and ouvertes["p2"]["motif"]
+    assert "contexte_seul" not in ouvertes["p1"]
+
+
+def test_contexte_seul_designee_par_elements_refusee_avec_motif(tmp_path, fake, tree):
+    _enquete_contexte(tmp_path, fake, tree)
+    prop = server.enquete_reprendre("mariage-martin", taches=True, elements=["p2"])["taches_a_proposer"]
+    assert prop["operations"] == []
+    assert prop["refuses"] == [{"element": "p2", "motif": taches.MOTIF_CONTEXTE_SEUL}]
+    mixte = server.enquete_reprendre("mariage-martin", taches=True, elements=["p2", "p1"])["taches_a_proposer"]
+    assert [o["element"] for o in mixte["operations"]] == ["p1"] and mixte["refuses"][0]["element"] == "p2"
+
+
+def test_contexte_seul_reconnue_sans_marqueur_enquete_existante(tmp_path, fake, tree):
+    """Piste notée avant le marqueur explicite : reconnue à la note que pistes_contexte lui donnait."""
+    a = _enquete_contexte(tmp_path, fake, tree)
+    fichier = a.enquetes._chemin("mariage-martin")
+    etat = json.loads(fichier.read_text(encoding="utf-8"))
+    assert etat["pistes"][1].pop("contexte_seul") is True  # état d'avant #325
+    fichier.write_text(json.dumps(etat, ensure_ascii=False), encoding="utf-8")
+    prop = server.enquete_reprendre("mariage-martin", taches=True, elements=["p2"])["taches_a_proposer"]
+    assert prop["operations"] == [] and prop["refuses"][0]["element"] == "p2"
+    # la première mise à jour pose le marqueur, qui survit à la réécriture de la note
+    assert "erreur" not in server.enquete_noter("mariage-martin", piste={"id": "p2", "note": "note réécrite"})
+    assert server.enquete_etat("mariage-martin")["pistes"][1]["contexte_seul"] is True
+    prop = server.enquete_reprendre("mariage-martin", taches=True, elements=["p2"])["taches_a_proposer"]
+    assert prop["operations"] == [] and prop["refuses"][0]["element"] == "p2"
+
+
+def test_contexte_seul_jamais_dans_la_file_ni_proposee(tmp_path, fake, tree):
+    """Opération ajouter_tache écrite à la main avec la référence de la piste : refusée avant toute proposition."""
+    a = _enquete_contexte(tmp_path, fake, tree)
+    n_tx = len(fake.transactions)
+    op = _tache(enquete="mariage-martin", element="p2")
+    for r in (server.arbre_proposer([op], "Tâche", "Piste de contexte (test)."),
+              server.propositions_deposer([op], "Tâche", "Piste de contexte (test).", enquete="mariage-martin")):
+        assert r["motif"] == "contexte_seul" and "contexte seul" in r["erreur"] and "jeton" not in r, r
+    assert server.propositions_lister("tous")["propositions"] == []
+    assert not list(a.file.dir.glob("*.json")) and len(fake.transactions) == n_tx
+    # non-régression : la même opération pour la piste ordinaire est proposée et déposée
+    ok = _tache(enquete="mariage-martin", element="p1")
+    assert "jeton" in server.arbre_proposer([ok], "Tâche", "Piste ordinaire (test).")
+    assert "id" in server.propositions_deposer([ok], "Tâche", "Piste ordinaire (test).")
+
+
+def test_contexte_seul_ni_tache_manuelle_ni_lien_ni_retrait_du_marqueur(tmp_path, fake, tree):
+    a = _enquete_contexte(tmp_path, fake, tree)
+    fichier = a.enquetes._chemin("mariage-martin")
+    avant = fichier.read_text(encoding="utf-8")
+    for kw in ({"tache": {"description": "Vérifier la piste de contexte", "piste": "p2"}},
+               {"piste": {"id": "p2", "tache_gramps": "S12"}},
+               {"piste": {"id": "p2", "contexte_seul": False}},
+               {"piste": {"id": "p2", "contexte_seul": "non"}}):
+        r = server.enquete_noter("mariage-martin", **kw)
+        assert "erreur" in r, (kw, r)
+        assert fichier.read_text(encoding="utf-8") == avant  # refus sans écriture
+    # non-régression : tâche manuelle et lien de tâche pour la piste ordinaire
+    assert "erreur" not in server.enquete_noter("mariage-martin", tache={"description": "Table décennale",
+                                                                         "piste": "p1"})
+    assert "erreur" not in server.enquete_noter("mariage-martin", piste={"id": "p1", "tache_gramps": "S12"})
+    # la piste « contexte seul » reste une piste : statut et note se mettent à jour
+    assert "erreur" not in server.enquete_noter("mariage-martin", piste={"id": "p2", "statut": "negatif"})

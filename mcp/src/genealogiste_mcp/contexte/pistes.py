@@ -155,6 +155,7 @@ def _depot(piste: dict, personne: str) -> dict:
                      "note": f"pistes_contexte, règle {piste['regle']} ; statut {piste['statut_libelle']}"}
     if piste["statut"] == "contexte_seul":
         piste_enquete["note"] += " ; " + MOTIF_CONTEXTE_SEUL
+        piste_enquete["contexte_seul"] = True  # marqueur lu par les enquêtes : jamais une tâche, jamais la file (#325)
     parametres = {"piste": piste_enquete}
     if personne:
         parametres["personnes"] = [personne]

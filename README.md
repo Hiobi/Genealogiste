@@ -67,7 +67,7 @@ présents dans votre arbre. Le [tutoriel avec les données fictives du projet](h
 détaille ce parcours et le résultat attendu.
 
 Toutes les commandes : `cherche`, `enquete`, `campagne`, `acte`, `transcris`, `fiche`, `lacunes`, `verifie`,
-`recoupe`, `preuve`, `recit`, `ascendance`, `descendance`, `ajoute`, `modifie`, `fusionne`, `valide`, `import`,
+`recoupe`, `preuve`, `recit`, `contexte`, `ascendance`, `descendance`, `ajoute`, `modifie`, `fusionne`, `valide`, `import`,
 `export`, `organise`, `billet`, `journal` et `diagnostic`, chacune préfixée de `/genealogiste:`
 ([rôle et arguments de chaque commande, outils du serveur](https://github.com/Hiobi/Genealogiste/wiki/Commandes)).
 
@@ -95,9 +95,15 @@ dossier existant, base depuis zéro, arbre GEDCOM ou Gramps Web. Obsidian n’es
 - Aucun contact personnel n’est envoyé aux sites par défaut ; `GENEALOGISTE_CONTACT` (facultatif) ajoute
   l’adresse ou l’URL de votre choix au User-Agent de chaque requête externe
   ([identification](docs/securite.md#identification--user-agent-et-contact-facultatif)).
+- Contexte historique : `/genealogiste:contexte <personne ou lieu>` situe un individu dans son époque à partir des
+  seules références consultées par le plugin (rien n’est affirmé de mémoire ; « contexte non documenté » quand rien
+  n’est trouvé) et propose des pistes de recherche ; le contexte oriente, il ne conclut pas. Six outils :
+  `contexte_local`, `pistes_contexte`, `contexte_bibliographie`, `presse_recherche`, `lieu_historique`,
+  `contexte_verifier` ([parcours d’usage](docs/contexte-historique.md#parcours-dusage)).
 - Services de contexte historique (HAL, Sudoc, Persée, Crossref…) : `GENEALOGISTE_CONTEXTE_SERVICES` choisit
   ceux qui sont interrogés ; clés personnelles `GENEALOGISTE_CLE_EUROPEANA`, `GENEALOGISTE_CLE_OPENALEX`,
-  `GENEALOGISTE_CLE_NARA`, `GENEALOGISTE_CLE_APE`, jamais affichées ; `GENEALOGISTE_CROSSREF_MAILTO` vide par défaut
+  `GENEALOGISTE_CLE_NARA`, `GENEALOGISTE_CLE_APE`, jamais affichées ; `GENEALOGISTE_CROSSREF_MAILTO` vide par défaut ;
+  `GENEALOGISTE_CONTEXTE_STYLE_CITATION` (`iso690` ou `evidence_explained`) pour le style des références
   ([services de contexte](docs/contexte-historique.md#services-de-contexte)).
 - Pour une recherche sans surveillance (`/genealogiste:campagne`, tâche planifiée), `GENEALOGISTE_ECRITURE=interdite`
   fait refuser par le serveur lui-même toute écriture, quel que soit le mode de permission du client ; les

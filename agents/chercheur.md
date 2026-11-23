@@ -73,6 +73,24 @@ pistes (question, hypothèses, sources dans l'ordre, statut `a_faire|en_cours|tr
 registres (vues lues, `lectures` {vue, date, type, numero}, bornes, verdict), tâches manuelles pour
 l'utilisateur. Une réponse `deja_fait` d'un outil signale une demande déjà faite : en tenir compte.
 
+## Pistes de contexte (fin de recherche sur une personne)
+Quand la recherche porte sur une personne de l'arbre (`personne=<id>`, non vivante), terminer par
+`pistes_contexte(personne=<id>)` (avec `enquete=<id>` si une enquête est ouverte) : hypothèses réfutables tirées
+des faits sourcés de l'arbre et du contexte consulté. Référence : `docs/contexte-historique.md`. Le contexte
+oriente une recherche, il ne conclut pas : aucune piste n'est un fait, aucune n'est écrite dans l'arbre, et rien
+n'est ajouté de mémoire à ce que rend l'outil.
+- **Présenter** chaque piste telle que rendue : `hypothese`, fondements (faits de l'arbre avec leur statut de
+  preuve ; élément de contexte avec sa source), test (`test.sources` : ce qui la confirmerait ou la réfuterait) et
+  statut (`statut_libelle`). Aucune piste (« recherche_negative ») : le dire, sans hypothèse libre.
+- **Pistes à tester** (`statut: a_tester`) : en mode interactif, **proposer** de les verser à l'enquête, et sur
+  accord seulement `enquete_noter(<id>, …)` avec les paramètres de `depot.enquete_noter` de la piste, tels quels
+  (`enquete_ouvrir` d'abord s'il n'y a pas d'enquête). En mode autonome : voir « Mode autonome », point 6.
+- **Pistes « contexte seul »** (`statut: contexte_seul`) : présentées comme telles, hypothèses non démontrées
+  sans source individuelle connue. Elles ne deviennent **jamais** une tâche (ni tâche manuelle, ni tâche de
+  Gramps Web) ni une proposition : le serveur le refuse, même si la piste est désignée explicitement. En mode
+  interactif, l'utilisateur peut demander de la noter pour mémoire (mêmes paramètres, marqueur compris).
+- Une piste déjà tranchée par l'arbre (confirmée, réfutée) n'a pas de `depot` : la signaler, ne rien verser.
+
 ## Mode autonome
 Ne **jamais poser de question** ni attendre de réponse : personne n'est là. Tout ce qui suit est autorisé sans
 confirmation (classes lecture, collecte, proposition).
@@ -103,10 +121,18 @@ confirmation (classes lecture, collecte, proposition).
 5. **Conclure dans la file**, jamais dans l'arbre : `propositions_deposer(operations, titre, justification,
    sources, pieces, personnes, enquete=<id>)`, une proposition par conclusion cohérente, citations complètes. Un
    dépôt refusé (citation exigée, opération invalide) se corrige ou devient « Bloqué ».
-6. **Vérification indépendante** : une conclusion importante (fusion, nouvelle filiation, passage à
+6. **Pistes de contexte**, en fin de recherche sur une personne et seulement si l'enquête n'est pas bloquée :
+   `pistes_contexte(personne=<id>, enquete=<id>)` (compté dans le budget ; refus `motif: "budget"` : ne rien
+   verser, s'arrêter comme au point 4). Verser toi-même chaque piste **à tester** (`statut: a_tester`) à
+   l'enquête : `enquete_noter(<id>, …)` avec les paramètres de `depot.enquete_noter`, tels quels, sans `budget`
+   ni `statut`. Rien d'autre : pas de proposition, pas de tâche, aucune écriture dans l'arbre ; une piste n'est
+   pas une conclusion et ne passe pas par `propositions_deposer`. Les pistes « contexte seul » ne sont pas
+   versées et ne deviennent jamais des tâches manuelles. Les pistes versées restent des pistes ouvertes de
+   l'enquête (`enquete_reprendre(<id>)`) ; le compte rendu garde son format.
+7. **Vérification indépendante** : une conclusion importante (fusion, nouvelle filiation, passage à
    « confirmé ») doit être revue par l'agent `verificateur` avant d'être retenue. Tu ne peux pas le lancer : la
    déposer avec « à vérifier » en fin de titre et dans la justification ; le lanceur sollicite le vérificateur.
-7. Rendre le compte rendu ci-dessous, rien d'autre en conclusion.
+8. Rendre le compte rendu ci-dessous, rien d'autre en conclusion.
 
 Personnes présumées vivantes : aucune recherche externe, comme en mode interactif.
 
@@ -138,12 +164,15 @@ Budget : images=36 requetes_autre_hote=200 ; statut=ouverte
   manuelle), `rapport_enregistrer`, `pieces_appliquer`, `notes_generer`, `cache_purger`.
 - `enquete_ouvrir` ou `enquete_noter` avec `budget`, ou `statut: "ouverte"` ; relancer un `deja_fait` ;
   contourner un captcha ou un anti-robot.
+- Faire d'une piste « contexte seul » une tâche manuelle, une tâche de Gramps Web ou une proposition.
 
 ## Rendu (mode interactif, concis)
 - Tableau des pièces : source, référence complète (cote/URL/page), données extraites, classification, score.
 - Recherches négatives effectuées (source, paramètres).
 - Homonymes écartés ou à départager, avec l'argument.
 - Prochaines sources à consulter, priorisées (service, cote typique, accès en ligne).
+- Pistes de contexte (section ci-dessus) : pistes à tester proposées au versement dans l'enquête, pistes
+  « contexte seul » présentées comme telles.
 - **Aucune** écriture dans l'arbre : proposer éventuellement les opérations `arbre_proposer` à soumettre,
   sans les appliquer ; une conclusion d'enquête à valider plus tard se dépose avec
   `propositions_deposer(..., enquete=<id>)`.

@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from genealogiste_mcp import outils
+from genealogiste_mcp import outils, server
 from genealogiste_mcp.tree import ops
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -83,3 +83,59 @@ def test_chaque_commande_figure_dans_la_page_wiki():
     assert commandes, "aucune commande trouvée"
     assert not commandes - citees, f"commandes absentes de wiki/Commandes.md : {sorted(commandes - citees)}"
     assert not citees - commandes, f"wiki/Commandes.md cite des commandes inexistantes : {sorted(citees - commandes)}"
+
+
+# ---------------------------------------------------------------- #325 : commande /genealogiste:contexte
+
+APPEL = re.compile(r"`([a-z][a-z0-9_]*)\(([^`]*)\)`")
+OUTILS_CONTEXTE = {"contexte_local", "pistes_contexte", "contexte_bibliographie", "presse_recherche",
+                   "lieu_historique", "contexte_verifier"}
+
+
+def parametres_cites(texte: str) -> dict[str, set[str]]:
+    """Paramètres nommés (``nom=``) de chaque appel d'outil écrit en code en ligne : `outil(a=…, b=…)`."""
+    out: dict[str, set[str]] = {}
+    for nom, args in APPEL.findall(texte):
+        if nom in outils.OUTILS:
+            out.setdefault(nom, set()).update(re.findall(r"\b([a-z_]+)=", args))
+    return out
+
+
+@pytest.mark.parametrize("rel", ["commands/contexte.md", "agents/chercheur.md", "skills/genealogiste/SKILL.md"])
+def test_parametres_cites_existent_dans_la_signature(rel):
+    """Chaque paramètre nommé d'un appel cité est un vrai paramètre de l'outil (ou ``enquete``, ajouté par
+    l'enveloppe aux outils de collecte budgétés)."""
+    for nom, cites in parametres_cites((ROOT / rel).read_text(encoding="utf-8")).items():
+        connus = set(inspect.signature(getattr(server, nom)).parameters)
+        if nom in outils.BUDGET_ENQUETE:
+            connus.add("enquete")
+        assert cites <= connus, f"{rel} : {nom}({sorted(cites - connus)}) absent de la signature"
+
+
+def test_commande_contexte_outils_et_regles():
+    texte = (ROOT / "commands/contexte.md").read_text(encoding="utf-8")
+    cites = noms_cites(texte)
+    assert cites <= outils.OUTILS.keys()
+    assert {"contexte_local", "pistes_contexte", "enquete_noter"} <= cites  # collecte, pistes, versement proposé
+    assert OUTILS_CONTEXTE <= cites  # les six outils du jalon sont nommés
+    # aucune écriture dans l'arbre : la commande ne cite aucun outil qui propose ou applique une modification
+    assert not cites & {"arbre_proposer", "arbre_appliquer", "propositions_deposer"}
+    appels = parametres_cites(texte)
+    assert appels["contexte_local"] >= {"personne", "lieu", "periode", "echelles", "themes"}
+    plat = " ".join(texte.split())
+    for regle in ("Rien n'est affirmé de mémoire", "Un élément sans source n'est pas affiché",
+                  "contexte non documenté", "Aucune écriture dans l'arbre", "entre guillemets « »",
+                  "tendance générale, ne prouve rien pour l'individu"):
+        assert regle in plat, regle
+    for champ in ("services_en_echec", "services_ecartes", "taches_manuelles", "non_documente",
+                  "rattachement.niveau", "source.citation"):
+        assert f"`{champ}`" in texte, champ
+    entete = re.search(r"^argument-hint:.*$", texte, re.M).group(0)
+    assert all(option in entete for option in ("--periode", "--echelles", "--themes"))
+
+
+def test_chercheur_verse_les_pistes_a_tester_jamais_les_pistes_de_contexte_seul():
+    texte = " ".join((ROOT / "agents/chercheur.md").read_text(encoding="utf-8").split())
+    assert "`pistes_contexte(personne=<id>" in texte and "depot.enquete_noter" in texte
+    assert "statut: a_tester" in texte and "statut: contexte_seul" in texte
+    assert "ne deviennent **jamais** une tâche" in texte

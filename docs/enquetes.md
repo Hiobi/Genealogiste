@@ -40,7 +40,7 @@ ouvert sans action automatique.
 | Outil | Effet |
 |---|---|
 | `enquete_ouvrir(sujet, personnes, id, budget)` | crée l'enquête ; `id` dérivé du sujet si absent ; `budget` facultatif |
-| `enquete_noter(enquete, piste, registre, tache, requete, statut, personnes, budget)` | ajoute ou met à jour (par `id`, ou pour un registre par ARK/cote) ; `budget` modifie les limites |
+| `enquete_noter(enquete, piste, registre, tache, requete, statut, personnes, budget)` | ajoute ou met à jour (par `id`, ou pour un registre par ARK/cote) ; `budget` modifie les limites ; `piste.contexte_seul: true` : piste tirée du seul contexte, jamais une tâche (voir « Tâches de Gramps Web ») |
 | `enquete_etat(enquete)` | état complet + `coherence_journal` ; sans argument : liste des enquêtes |
 | `archives_sonder(source, date_cible, type_acte, lecture, conclusion, enquete)` | sondage guidé d'un registre (#156) : note la lecture d'une vue et propose la suivante ; arrêt `localise`, `absent` (registre négatif journalisé avec les bornes examinées) ou `budget` ; voir `docs/archives.md` |
 | `enquete_reprendre(enquete, taches, elements)` | `a_faire` (outil et paramètres prêts, dans l'ordre ; d'abord le reste à faire refusé faute de budget), pistes ouvertes, registres en cours avec `vues_restantes`, tâches manuelles, `deja_fait`, `budget`, `blocage` |
@@ -142,6 +142,23 @@ automatique ni caché :
    `negatif`), ou l'inverse ; tâche liée supprimée ou qui a perdu `ToDo`. Chaque écart donne les deux sens,
    **jamais exécutés** : `vers_gramps` (`modifier_tache` à passer par `arbre_proposer`) et `vers_enquete`
    (`enquete_noter`, après accord de l'utilisateur ; pour une piste, choisir `trouve` ou `negatif`).
+
+**Piste « contexte seul » : jamais une tâche (#325).** Une piste de `pistes_contexte` tirée du seul contexte
+historique (règle `element_de_contexte`, statut `contexte_seul`) se note dans l'enquête avec le marqueur
+`"contexte_seul": true`, que `pistes_contexte` place dans `depot.enquete_noter.piste` et qui ne se retire plus. Une
+piste notée avant ce marqueur est reconnue à la note que l'outil lui donnait (« pistes_contexte, règle
+element_de_contexte ; statut contexte seul »), et reçoit le marqueur à sa première mise à jour. Verrous, dans le
+code (`enquetes.est_contexte_seul`, `taches.operations_enquete`, `server._refus_tache_contexte_seul`) :
+
+| Chemin | Effet |
+|---|---|
+| `enquete_reprendre(id, taches=true)`, avec ou sans `elements` | aucune opération `ajouter_tache` pour cette piste, même nommée dans `elements` ; elle est rendue dans `taches_a_proposer.refuses` (`element`, `motif`) |
+| `enquete_reprendre(id)`, `enquete_etat(id)` | reprise : piste ouverte rendue avec `contexte_seul: true` et son `motif`, sans action dans `a_faire` ; les deux : hors de `taches_gramps.non_liees`, listée dans `taches_gramps.contexte_seul` |
+| `arbre_proposer`, `propositions_deposer`, `propositions_reprendre` | une opération `ajouter_tache` qui la référence (`enquete` + `element`) est refusée avant toute proposition (`erreur`, `motif: "contexte_seul"`) : rien n'entre dans la file |
+| `enquete_noter` | refus d'une tâche manuelle rattachée à cette piste (`tache.piste`), d'un lien `tache_gramps`, et du retrait du marqueur ; statut et note de la piste restent modifiables |
+
+Une source portant sur l'individu ne « débloque » pas la piste : elle se note dans une nouvelle piste, ordinaire.
+Les classes de permission des outils d'enquête sont inchangées.
 
 Correspondance des statuts : tâche manuelle `a_faire` ↔ tâche ouverte (`Open`, `In Progress`, `Blocked`),
 `faite` / `abandonnee` ↔ `Done` ; piste `trouve` / `negatif` ↔ `Done`, autres statuts ↔ ouverte. Réglage
@@ -300,7 +317,12 @@ suivie de la personne et de la question. Sans la ligne `MODE AUTONOME`, l'agent 
 5. conclusions **uniquement** par `propositions_deposer(..., enquete=<id>)`, jamais `arbre_proposer` ni
    `arbre_appliquer` ; une conclusion importante (fusion, filiation, passage à « confirmé ») est déposée
    « à vérifier » et le lanceur sollicite l'agent `verificateur` ;
-6. compte rendu à format fixe (ci-dessous).
+6. pistes de contexte, en fin de recherche sur une personne et dans le budget :
+   `pistes_contexte(personne=<id>, enquete=<id>)`, puis versement des pistes **à tester** par
+   `enquete_noter(<id>, …)` avec les paramètres de `depot.enquete_noter` ; les pistes « contexte seul » ne sont
+   pas versées et ne deviennent jamais des tâches ; rien n'est écrit dans l'arbre ni déposé dans la file
+   ([contexte historique](contexte-historique.md#pistes_contexte)) ;
+7. compte rendu à format fixe (ci-dessous).
 
 Tous les outils du parcours autonome sont des classes lecture, collecte ou proposition : le hook les autorise
 sans confirmation. `tests/test_chercheur_autonome.py` le vérifie sur la section « Mode autonome » de l'agent.

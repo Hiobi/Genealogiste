@@ -7,7 +7,9 @@ lesquels sont activés et si un service est **interrogeable** ; les outils de co
 
 Règles :
 
-- mode ``lien_seulement`` : jamais interrogé (protection relevée, pas d'API qualifiée) ; lien pour l'utilisateur ;
+- mode ``lien_seulement`` : jamais interrogé comme service de contexte (protection relevée, pas d'API qualifiée) ;
+  lien pour l'utilisateur. Seule exception nommée (``INTERROGE_HORS_REFERENTIEL``) : Gallica, que ``presse_recherche``
+  interroge par le client Gallica existant, sans passer par ``refus`` ;
 - activation : ``GENEALOGISTE_CONTEXTE_SERVICES`` (défaut : services ``api`` sans clé requise et sans protection) ;
 - clé requise absente : aucune requête, le motif nomme la variable (jamais sa valeur) ;
 - hôtes : seuls ceux du référentiel sont interrogés (``url_autorisee``) ; chacun est déclaré dans la politique
@@ -265,6 +267,12 @@ class EtatService:
         return {k: v for k, v in asdict(self).items() if v != ""}
 
 
+# Service en lien seulement qu'un outil interroge pourtant par un client antérieur au référentiel, sans passer par
+# ``refus`` (#288, #323) : le motif de refus le dit, pour ne pas affirmer « jamais interrogé par le plugin ». La
+# décision ne change pas : ``refus`` refuse toujours ce service aux outils de contexte.
+INTERROGE_HORS_REFERENTIEL = {"GALLICA": "presse_recherche"}
+
+
 def etat(code: str, config) -> EtatService:
     """Le service peut-il être interrogé maintenant ? Ordre des motifs : inconnu, lien seulement, protection,
     désactivé, clé requise absente, hors ligne."""
@@ -278,7 +286,10 @@ def etat(code: str, config) -> EtatService:
     etat_cle = "sans_objet" if s["cle"] == "aucune" else ("presente" if cle(c, config) else "absente")
     motif = ""
     if s["mode"] == "lien_seulement":
-        motif = (f"{s['nom']} : jamais interrogé par le plugin (mode lien_seulement). "
+        hors = INTERROGE_HORS_REFERENTIEL.get(c)
+        portee = (f"non interrogé comme service de contexte ; seul {hors} l'interroge, par son client existant"
+                  if hors else "jamais interrogé par le plugin")
+        motif = (f"{s['nom']} : {portee} (mode lien_seulement). "
                  f"{s.get('notes') or 'Accès machine non qualifié.'} "
                  f"À consulter par l'utilisateur : {s.get('site') or s.get('url_api')}")
     elif s["protection"] != "aucune":

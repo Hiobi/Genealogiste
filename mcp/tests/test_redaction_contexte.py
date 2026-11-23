@@ -352,8 +352,10 @@ def test_verificateur_commandes_et_skill_alignes():
     assert "`contexte_verifier(texte=" in billet and '"personne"' in billet and "conforme: false" in billet
     skill = _plat(_lire("skills/methodologie-gps/SKILL.md"))
     assert "`contexte_verifier`" in skill and "contexte à documenter" in skill
-    # périmètre : la commande /genealogiste:contexte et le branchement du chercheur relèvent de #325
-    assert not (ROOT / "commands" / "contexte.md").exists()
+    # #325 : la commande /genealogiste:contexte existe et suit la même règle (rien d'affiché sans source)
+    contexte = _plat(_lire("commands/contexte.md"))
+    assert "`contexte_local(" in contexte and "`pistes_contexte`" in contexte
+    assert "contexte non documenté" in contexte and "Rien n'est affirmé de mémoire" in contexte
 
 
 def test_exemple_de_la_doc_repris_des_textes_conformes():

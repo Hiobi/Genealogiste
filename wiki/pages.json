@@ -114,6 +114,12 @@
     "groupe": "Utiliser le plugin"
   },
   {
+    "slug": "Contexte-historique",
+    "source": "docs/contexte-historique.md",
+    "titre": "Contexte historique",
+    "groupe": "Utiliser le plugin"
+  },
+  {
     "slug": "Notes-et-Obsidian",
     "source": "docs/notes.md",
     "titre": "Notes et Obsidian",

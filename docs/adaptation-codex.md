@@ -55,6 +55,9 @@ Le sélecteur de skills expose notamment `genealogiste:genealogiste` et
 ou les invoquer par leur nom affiché. Exemple : demander au skill Genealogiste d’importer un GEDCOM fictif,
 puis de présenter la fiche et les lacunes d’une personne. Le [tutoriel](../wiki/Demarrage.md) fournit le
 fichier de démonstration ; les commandes Claude qui y figurent sont à remplacer par ces demandes.
+La commande Claude `/genealogiste:contexte` n'existe pas dans Codex : demander au skill Genealogiste le contexte
+historique d'une personne ou d'un lieu ; il appelle les mêmes outils (`contexte_local`, `pistes_contexte`), chacun
+avec son approbation native ([contexte historique](contexte-historique.md#parcours-dusage)).
 
 Pour une édition :
 
@@ -152,6 +155,10 @@ implicite ; les 20 demandes d’approbation natives (16 acceptées, 4 refusées 
 toutes les assertions passent. L’avertissement provient de Codex, qui refuse de créer ses binaires
 auxiliaires dans un `CODEX_HOME` sous `/tmp` ; il est sans effet sur la recette. La configuration
 personnelle `~/.codex` n’est pas modifiée (le `CODEX_HOME` est temporaire).
+
+23 novembre 2026, même machine, `codex-cli 0.169.0` (#325, après l'ajout du parcours « Contexte historique » au
+skill `genealogiste`) : `make test-codex` rend le même résultat (sept skills, 20 approbations natives,
+`"resultat": "OK"`, code de sortie 0).
 
 ## Mise à jour
 

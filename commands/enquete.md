@@ -61,6 +61,9 @@ conclusions déposées dans la file de propositions, compte rendu à format fixe
      - recherches négatives (notées dans l'enquête, tracées au journal) ;
      - tâches manuelles en attente (`enquete_reprendre(id).taches_manuelles`) ;
      - plan de recherche priorisé et regroupé par service d'archives (cotes typiques) ;
+     - pistes de contexte rendues par les chercheurs (`pistes_contexte`) : pistes à tester proposées au
+       versement dans l'enquête (`enquete_noter`, après accord), pistes « contexte seul » présentées comme
+       telles, jamais comme des tâches ; détail par `/genealogiste:contexte <id>` ;
      - une **proposition unique** `arbre_proposer` regroupant les ajouts sourcés (citations complètes,
        `consultation` précisée, témoins et parrains en `associations`), présentée en diff.
        Si la validation est différée, la déposer avec `propositions_deposer(..., enquete=<id>)` (file durable,

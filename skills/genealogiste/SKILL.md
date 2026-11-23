@@ -23,6 +23,14 @@ description: Rechercher une personne, importer un GEDCOM, préparer une édition
      autonome de [docs/enquetes.md](../../docs/enquetes.md) : enquête ouverte ou reprise, `enquete=<id>` sur
      la collecte, aucune question (tâches manuelles par `enquete_noter`), arrêt sur budget, conclusions par
      `propositions_deposer`, compte rendu à format fixe. Dans Codex, chaque outil garde son approbation native.
+   - **Contexte historique** : pour situer une personne ou un lieu dans son époque, ou chercher des pistes
+     quand les sources de l'individu manquent, `/genealogiste:contexte <personne | lieu>` dans Claude Code ;
+     ailleurs, les mêmes outils : `contexte_local` (éléments sourcés, par échelle) puis `pistes_contexte`
+     (hypothèses réfutables) ; pour approfondir, `contexte_bibliographie`, `presse_recherche`, `lieu_historique` ;
+     avant de rendre un texte, `contexte_verifier`. Règle : **le contexte oriente, il ne conclut pas** ; rien
+     n'est affirmé de mémoire, un élément sans source n'est pas affiché, et une piste tirée du seul contexte ne
+     devient ni un fait, ni une tâche, ni une proposition. Méthode : `methodologie-gps`, § « Contexte
+     historique » ; signatures et sorties : [docs/contexte-historique.md](../../docs/contexte-historique.md).
    - **Édition** : `arbre_proposer` prépare les opérations et renvoie diff, alertes et jeton.
 3. Présenter le diff, les sources, les incertitudes et les alertes avant de demander l’application.
    Un diff tronqué exige une inspection complète avant l’accord. Faire valider séparément une fusion

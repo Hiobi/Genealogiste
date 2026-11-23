@@ -30,6 +30,7 @@ from __future__ import annotations
 import math
 import re
 
+from .enquetes import MOTIF_CONTEXTE_SEUL, est_contexte_seul
 from .models import Source, Tree
 
 TODO = "ToDo"  # nom exact de l'étiquette (sensible à la casse : tag.name === 'ToDo')
@@ -193,10 +194,13 @@ def correspondance(e: dict, tree: Tree) -> dict:
     sens, l'appel à faire après accord (jamais exécuté ici), liens à mémoriser, éléments ouverts sans tâche."""
     eid = e.get("id", "")
     liens = _liens(e, tree)
-    liees, ecarts, a_memoriser, non_liees = [], [], [], []
+    liees, ecarts, a_memoriser, non_liees, contexte_seul = [], [], [], [], []
     for xid, nature, el in _elements(e):
         ouvert = _ouvert(nature, el)
         cle = "piste" if nature == "piste" else "tache"
+        if nature == "piste" and est_contexte_seul(el) and xid not in liens:
+            contexte_seul.append(xid)  # #325 : jamais une tâche, donc jamais « à lier »
+            continue
         if xid not in liens:
             if ouvert:
                 non_liees.append(xid)
@@ -235,6 +239,8 @@ def correspondance(e: dict, tree: Tree) -> dict:
                                "enquete": eid, cle: {"id": xid, "statut": "a_faire" if nature == "tache_manuelle"
                                                      else "en_cours"}}}})
     out = {"liees": liees, "ecarts": ecarts, "non_liees": non_liees}
+    if contexte_seul:
+        out["contexte_seul"] = {"elements": contexte_seul, "motif": MOTIF_CONTEXTE_SEUL}
     if a_memoriser:
         out["a_memoriser"] = a_memoriser
     if ecarts:
@@ -252,14 +258,18 @@ def _court(texte: str, n: int = 90) -> str:
 def operations_enquete(e: dict, tree: Tree, elements: list[str] | None = None) -> dict:
     """Opérations ``ajouter_tache`` prêtes pour arbre_proposer : une par piste ou tâche manuelle ouverte sans
     tâche liée (ou par élément demandé), privée, priorité moyenne, statut dérivé de l'élément, personnes de
-    l'enquête nommées, ligne de référence de l'enquête. Rien n'est écrit."""
+    l'enquête nommées, ligne de référence de l'enquête. Une piste « contexte seul » ne donne jamais d'opération,
+    même demandée par ``elements`` : elle est rendue dans ``refuses`` avec le motif (#325). Rien n'est écrit."""
     eid = e.get("id", "")
     liens = _liens(e, tree)
     voulus = set(elements or [])
-    ops, ignores = [], []
+    ops, ignores, refuses = [], [], []
     personnes = [p for p in e.get("personnes", []) if p in tree.personnes]
     for xid, nature, el in _elements(e):
         if voulus and xid not in voulus:
+            continue
+        if nature == "piste" and est_contexte_seul(el):  # #325 : verrou, avec ou sans sélection explicite
+            refuses.append({"element": xid, "motif": MOTIF_CONTEXTE_SEUL})
             continue
         if xid in liens:
             ignores.append(f"{xid} : déjà liée à {liens[xid][0]}")
@@ -289,6 +299,8 @@ def operations_enquete(e: dict, tree: Tree, elements: list[str] | None = None) -
            "apres_application": ("Pour chaque tâche créée, mémoriser le lien : enquete_noter(enquete, piste|tache="
                                  "{id: <élément>, tache_gramps: references_creees[<élément>]})."),
            "ignores": ignores}
+    if refuses:
+        out["refuses"] = refuses
     if inconnus:
         out["inconnus"] = inconnus
     return out
