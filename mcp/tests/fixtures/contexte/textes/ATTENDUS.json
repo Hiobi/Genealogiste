@@ -1,0 +1,37 @@
+{
+  "objet": "Évaluation « anti-invention » de contexte_verifier (#324). Pour chaque cas témoin : un texte conforme (phrases de contexte = énoncés mot pour mot d'éléments produits par contexte_local sur les réponses enregistrées, références inscrites au registre par le test) et des textes volontairement fautifs, un défaut construit par texte. « categories » : rubriques du rapport qui doivent signaler le défaut, et seulement elles. « interdit » : formulation reprise de ne_doit_pas_contenir (clé, texte) quand les attendus du cas en donnent une.",
+  "contexte_local": {
+    "mineur_artois_oklahoma": {"rejeu": "par_service", "appels": [{}]},
+    "cultivateur_ancien_regime": {"rejeu": "exact", "appels": [{"echelles": "commune", "themes": "prieur"}, {"echelles": "commune"}]},
+    "soldat_1914_1918": {"rejeu": "exact", "appels": [{"echelles": "commune"}, {"echelles": "commune", "themes": "guerre"}]},
+    "lieu_non_documente": {"rejeu": "exact", "appels": [{}]}
+  },
+  "fautifs": {
+    "mineur_artois_oklahoma.sans_note": {"defaut": "phrase sans note", "categories": ["phrases_sans_reference"]},
+    "mineur_artois_oklahoma.hors_registre": {"defaut": "référence absente du registre", "categories": ["references_non_consultees"]},
+    "mineur_artois_oklahoma.anachronisme": {"defaut": "anachronisme", "categories": ["hors_portee"], "interdit": ["hors_periode", "Guerre de Corée"]},
+    "mineur_artois_oklahoma.causalite": {"defaut": "causalité non sourcée", "categories": ["causalites"], "interdit": ["causalites", "émigre à cause de la catastrophe de Courrières"]},
+    "mineur_artois_oklahoma.generalisation": {"defaut": "généralisation", "categories": ["formulations"], "interdit": ["phrases_generiques", "à cette époque, beaucoup de mineurs émigraient"]},
+    "mineur_artois_oklahoma.hors_lieu": {"defaut": "lieu hors périmètre", "categories": ["hors_portee"], "interdit": ["hors_lieu", "Charleroi (Belgique)"]},
+
+    "cultivateur_ancien_regime.sans_note": {"defaut": "phrase sans note", "categories": ["phrases_sans_reference"]},
+    "cultivateur_ancien_regime.hors_registre": {"defaut": "référence absente du registre", "categories": ["references_non_consultees"]},
+    "cultivateur_ancien_regime.anachronisme": {"defaut": "anachronisme", "categories": ["hors_portee"], "interdit": ["hors_periode", "Révolution française"]},
+    "cultivateur_ancien_regime.causalite": {"defaut": "causalité non sourcée", "categories": ["causalites"], "interdit": ["causalites", "s'est installé à cause de"]},
+    "cultivateur_ancien_regime.generalisation": {"defaut": "généralisation", "categories": ["formulations"], "interdit": ["phrases_generiques", "à cette époque, les paysans vivaient pauvrement"]},
+    "cultivateur_ancien_regime.hors_lieu": {"defaut": "lieu hors périmètre", "categories": ["hors_portee"]},
+
+    "soldat_1914_1918.sans_note": {"defaut": "phrase sans note", "categories": ["phrases_sans_reference"], "interdit": ["causalites", "est mort lors de l'offensive de"]},
+    "soldat_1914_1918.hors_registre": {"defaut": "référence absente du registre", "categories": ["references_non_consultees"]},
+    "soldat_1914_1918.anachronisme": {"defaut": "anachronisme", "categories": ["hors_portee"], "interdit": ["hors_periode", "guerre franco-allemande"]},
+    "soldat_1914_1918.causalite": {"defaut": "causalité non sourcée", "categories": ["causalites"], "interdit": ["causalites", "s'est engagé par patriotisme"]},
+    "soldat_1914_1918.generalisation": {"defaut": "généralisation", "categories": ["formulations"], "interdit": ["phrases_generiques", "comme tous les poilus"]},
+    "soldat_1914_1918.hors_lieu": {"defaut": "lieu hors périmètre", "categories": ["hors_portee"]},
+
+    "lieu_non_documente.sans_note": {"defaut": "paragraphe générique sans référence", "categories": ["phrases_sans_reference", "formulations"], "interdit": ["phrases_generiques", "dans cette région rurale du Sud-Ouest, la vie était rythmée par"]},
+    "lieu_non_documente.hors_registre": {"defaut": "référence absente du registre", "categories": ["references_non_consultees"]},
+    "lieu_non_documente.anachronisme": {"defaut": "anachronisme (aucune référence consultée pour ce lieu : phrase aussi sans note)", "categories": ["phrases_sans_reference", "hors_portee"], "interdit": ["hors_periode", "Seconde Guerre mondiale"]},
+    "lieu_non_documente.causalite": {"defaut": "causalité non sourcée", "categories": ["causalites"], "interdit": ["causalites", "a quitté la terre à cause de l'exode rural"]},
+    "lieu_non_documente.hors_lieu": {"defaut": "lieu hors périmètre (aucune référence consultée pour ce lieu : référence aussi hors registre)", "categories": ["hors_portee", "references_non_consultees"], "interdit": ["hors_lieu", "histoire générale de la Gascogne présentée comme contexte du lieu-dit"]}
+  }
+}

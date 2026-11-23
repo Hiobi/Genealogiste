@@ -11,6 +11,7 @@
     {"evenement": "DEAT", "lieu": "Vouillé-les-Marais, Vendée, France", "pays": "France"}
   ],
   "contexte_documente": true,
+  "contexte_documente_motif": "Vérifié par #324 sur réponses réelles enregistrées le 2026-11-23 : avec le thème « prieur » (échelle commune), Sudoc et le catalogue de la BnF renvoient un factum imprimé en 1727-1729 dont le titre cite Vouillé-les-Marais (reponses/sudoc/vouille-les-marais-prieur.xml, reponses/bnf-catalogue/vouille-les-marais-prieur.xml) : deux éléments compatibles. La requête par défaut (métier « laboureur ») ne renvoie rien (reponses/sudoc/vouille-les-marais-laboureur.xml).",
   "ne_doit_pas_contenir": {
     "causalites": [
       "s'est installé à cause de",

@@ -41,6 +41,7 @@ from .contexte import lieux as lieux_contexte
 from .contexte import local as contexte_local_mod
 from .contexte import presse
 from .contexte import services as services_contexte
+from .contexte import verifier as contexte_verifier_mod
 from .contexte.registre import RegistreReferences
 from .contexte.requete import residus_identite
 from .enquetes import EnqueteError, Enquetes
@@ -749,6 +750,46 @@ def contexte_local(personne: str = "", lieu: str = "", periode: str = "", echell
                                                  echelles, themes, a.config.contexte_style_citation, residus)
     except contexte_local_mod.ContexteInvalide as exc:
         return {"erreur": str(exc), "requetes_emises": 0}
+
+
+@mcp.tool()
+def contexte_verifier(texte: str = "", note: str = "", personne: str = "") -> dict:
+    """Contrôle déterministe d'un texte de contexte (#324) : note du coffre, récit ou billet, sans réseau ni écriture.
+    texte : le texte (Markdown) ; ou note : id d'une fiche du coffre (I1, F1, S1) ou chemin relatif d'une note
+    (lue sans être générée) ; personne : id de l'arbre (défaut : la personne de la fiche). Signale les phrases de la
+    section « Contexte » sans appel de note, les références absentes du registre des références consultées, la
+    portée (années hors de la période de vie sourcée, lieux hors des lieux de vie), les connecteurs causaux appliqués
+    à l'individu sans source individuelle et les formulations contraires au niveau de rattachement ou généralisantes.
+    Rend {conforme, phrases_sans_reference, references_non_consultees, hors_portee, causalites, formulations,
+    mesures, limites}. conforme: false bloque la publication d'un billet ; conforme ne veut pas dire vrai."""
+    if bool(texte.strip()) == bool(note.strip()):
+        return {"erreur": "donner texte OU note (id d'une fiche ou chemin relatif dans le répertoire des notes)"}
+    a = app()
+    tree = a.tree()
+    source = {"texte": "fourni"}
+    if note.strip():
+        if not a.notes.enabled():
+            return {"erreur": "GENEALOGISTE_NOTES_DIR non défini : pas de note à lire"}
+        try:
+            if note.endswith(".md") or "/" in note:
+                chemin = sous(a.notes.dir, note)
+            else:
+                kind, oid = a.notes._targets(tree, note.strip())[0]
+                chemin = a.notes.path(tree, kind, oid)
+                personne = personne or (oid if kind == "personne" else "")
+        except (CheminRefuse, NotesError) as exc:
+            return {"erreur": str(exc)}
+        if not chemin.is_file():
+            return {"erreur": f"note absente : {chemin.name} (notes_generer crée la fiche ; rien n'est généré ici)"}
+        texte = chemin.read_text(encoding="utf-8")
+        source = {"note": str(chemin)}
+    if not personne.strip():
+        return {"erreur": "personne obligatoire (id de l'arbre) : la portée se vérifie sur ses faits sourcés"}
+    try:
+        rapport = contexte_verifier_mod.verifier(texte, tree, personne.strip(), a.registre_references)
+    except contexte_local_mod.ContexteInvalide as exc:
+        return {"erreur": str(exc)}
+    return {**rapport, "source": source}
 
 
 @mcp.tool()

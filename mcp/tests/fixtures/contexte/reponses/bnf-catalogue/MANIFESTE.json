@@ -23,6 +23,20 @@
       "reduction": "aucune ; index volontairement inexistant pour enregistrer un diagnostic SRU réel",
       "empreinte": "sha256:41f6cb2178721fcb2c376da3f4a57f0a1aa87c521fc997cb10d7fdd379600837",
       "client": "curl, User-Agent générique, sans clé"
+    },
+    {
+      "fichier": "vouille-les-marais-prieur.xml",
+      "url": "https://catalogue.bnf.fr/api/SRU?version=1.2&operation=searchRetrieve&query=bib.anywhere+all+%22Vouill%C3%A9-les-Marais%22+and+bib.anywhere+all+%22prieur%22&recordSchema=dublincore&maximumRecords=10",
+      "methode": "GET",
+      "date": "2026-11-23T13:25:46Z",
+      "statut": 200,
+      "type": "text/xml;charset=UTF-8",
+      "octets_origine": 2430,
+      "reduction": "aucune",
+      "empreinte": "sha256:7b6cf6319ecc4cf2ef27173ba88649fb0513b085248eabd9895f452c64403700",
+      "client": "httpx, User-Agent générique, sans clé ni mailto",
+      "duree_s": 13.7,
+      "note": "cas témoin cultivateur_ancien_regime (#324) : contexte_local(personne, echelles=commune, themes=prieur)"
     }
   ]
 }

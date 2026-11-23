@@ -742,3 +742,191 @@ plusieurs dizaines de requêtes, bornées par le budget d'enquête).
 ## Rédaction et contrôle
 
 <!-- #291, #324 -->
+
+### Rédaction
+
+<!-- #291 : emplacement réservé. Règle de rédaction (structure du texte, formulation selon le niveau de rattachement,
+sorties note, récit et billet, branchement du redacteur) : à écrire par #291, pas par #324. -->
+
+*À compléter par #291.* Le contrôle ci-dessous lit la forme déjà produite par le `redacteur` (appels `[n]`, notes en
+fin de texte) et la structure annoncée par #291 (section « Contexte » séparée, « contexte à documenter » dans les
+questions ouvertes).
+
+### contexte_verifier
+
+<!-- #324 -->
+
+`contexte_verifier(texte="", note="", personne="")` (classe **lecture** : aucune requête, aucune écriture ; code :
+`contexte/verifier.py`, l'outil de `server.py` ne fait que lire le texte et appeler le module). Contrôle
+**déterministe** d'un texte produit (note du coffre, récit, billet) : règles et listes fermées, jamais un jugement du
+modèle.
+
+| Argument | Rôle |
+|---|---|
+| `texte` | texte Markdown à contrôler |
+| `note` | à la place de `texte` : id d'une fiche du coffre (`I1`, `F1`, `S1`) ou chemin relatif dans `GENEALOGISTE_NOTES_DIR` (confiné au répertoire) ; la fiche est lue telle quelle, **jamais générée** (absente : erreur, `notes_generer` la crée) |
+| `personne` | id de l'arbre ; défaut : la personne de la fiche. Obligatoire : la portée se mesure sur ses faits **sourcés** (`requete.depuis_personne`, comme `contexte_local`) |
+
+Aucun nom ne sort : l'outil est local, la garde des vivants (`GARDE_VIVANTS`) ne s'applique qu'aux outils réseau.
+
+**Format lu** (celui du `redacteur` et de [notes.md](notes.md)) :
+
+- sections : titre Markdown (`## Contexte`, `## Contexte historique`) ou ligne en gras seule (`**Contexte**`, billet de
+  Gramps Web, où seuls gras, italique et liens sont interprétés) ; un intertitre plus profond reste dans la section ;
+  autres sections reconnues : `Notes et sources` (ou `Notes`, `Sources`, `Références`, `Bibliographie`),
+  `Hypothèses…`, `Questions ouvertes` ;
+- appels de note : `[1]`, `[1, 3]`, `[2-4]` ou `[^cle]` ; un lien `[8](https://…)` n'est pas un appel ;
+- notes : lignes `[1] citation`, `1. citation` (dans la section des notes) ou `[^cle]: citation` ; lignes de
+  continuation indentées ;
+- énoncés repris d'une source entre guillemets `« »` : leurs années et lieux comptent pour la portée, mais ils ne sont
+  pas lus comme une affirmation du rédacteur (causalité, généralisation, lieu hors périmètre) ;
+- ignorés : frontmatter, sections générées (`<!-- genealogiste:debut … -->` ou `sosa:`), commentaires HTML, blocs de
+  code.
+
+**Règles.**
+
+| Rubrique | Où | Signalé |
+|---|---|---|
+| `phrases_sans_reference` | section « Contexte » | phrase sans appel de note ; « Contexte non documenté. » ou « contexte à documenter : … » en est dispensée |
+| `references_non_consultees` | notes appelées dans « Contexte » | appel sans note ; note sans identifiant pérenne lisible (DOI, ARK, HAL, PPN, Handle, LCCN, Europeana ; URL seulement à défaut) ; identifiant absent du **registre des références consultées** (référence de mémoire). Une note qui contient le titre d'une source de l'arbre citée pour un fait de la personne est une **source individuelle**, pas une référence de contexte |
+| `hors_portee` | « Contexte » | `periode` : année ou intervalle cité hors de la période de vie sourcée (anachronisme ; siècles en chiffres romains compris) ; `lieu` : département ou pays cité, hors guillemets, qui n'est pas un lieu de vie ; phrase appuyée sur une référence dont ni le texte ni le titre de la référence (registre) ne citent un lieu de vie (portée géographique non établie) ; période de vie inconnue : portée non vérifiable |
+| `causalites` | tout le texte, sauf questions (`?`) et hypothèses déclarées | connecteur causal ou motif prêté (liste `CONNECTEURS`) appliqué à l'individu (prénoms, nom, il, elle, ils, elles, lui ; tournures impersonnelles exclues) sans appel vers une source individuelle ; catégorie `causatif` (« le poussa à ») : toujours appliqué à l'individu |
+| `formulations` | tout le texte (`generalisation`) ; « Contexte » (autres) | `generalisation` : marqueur de la liste `GENERALISATIONS` ; `rattachement` : niveau déclaré `compatible` (« à la même époque et au même endroit ») ou `non_demontre` (« plus généralement », « à l'échelle du département… ») avec une affirmation sur l'individu, `atteste` (« (rattachement : attesté) ») sans source individuelle, ou affirmation sur l'individu appuyée sur une seule référence de contexte ; `mention` : élément d'échelle supérieure à la commune (département, pays de vie cités sans commune de vie) sans « tendance générale, ne prouve rien pour l'individu » |
+
+Hypothèse déclarée : section « Hypothèses », ou phrase au conditionnel (`aurait`, `serait`, `pourrait`, `devrait`),
+avec « peut-être », « il est possible que », « hypothèse ». Elle n'est pas contrôlée pour la causalité : c'est la
+forme exigée par la méthode (§ 5, 6).
+
+**Listes fermées** (`VERSION_LISTES = "1"`, `contexte/verifier.py`). Chaque entrée porte un exemple qui doit être
+signalé et un contre-exemple qui ne doit pas l'être, tous deux testés (`tests/test_contexte_verifier.py`).
+
+- `CONNECTEURS`, causal : à cause de, en raison de, poussé par, fuyant, c'est pourquoi, contraint par / de, fut (a
+  été, est…) forcé de, se vit (fut…) obligé de, par conséquent, en conséquence, de ce fait, du fait de, grâce à,
+  faute de, chassé par, pour fuir / pour échapper, attiré par, parce que, puisque, « , car », dû à, causé / provoqué
+  par, ce qui explique ; causatif : l'amena / le conduisit / le poussa / l'obligea / le força / le contraignit / le
+  décida / l'incita à ; motif prêté : dans l'espoir de, espérant, désireux de, rêvant de, par patriotisme
+  (conviction, nécessité, ambition, misère, devoir, amour, idéal, désespoir, vocation).
+- `GENERALISATIONS` : à cette époque, à l'époque, en ce temps-là, de tout temps, comme tous les, comme beaucoup
+  de / la plupart de, comme ses contemporains, beaucoup de, la plupart des, en général, la vie était, était rythmée
+  par, dans cette région (ces campagnes), nos ancêtres, typique.
+- Formules : `FORMULE_COMPATIBLE`, `FORMULE_NON_DEMONTRE`, `FORMULE_ATTESTE`, `MENTION`, `ECHELLE_SUPERIEURE`,
+  `HYPOTHESE`, `IMPERSONNELS` ; unités (`UNITES`) qui font d'un nombre autre chose qu'une année (« 1099 morts »).
+
+Ajouter une entrée : la mettre dans la liste avec son exemple et son contre-exemple, incrémenter `VERSION_LISTES`,
+relancer `tests/test_contexte_verifier.py` et l'évaluation ci-dessous (aucun faux positif sur les textes conformes).
+
+**Sortie.**
+
+```json
+{"outil": "contexte_verifier", "personne": "I1", "version_listes": "1", "conforme": false,
+ "contexte": "present | non_documente | absent", "publication_billet": "bloquée (conforme: false)",
+ "phrases_sans_reference": [{"phrase": "…", "section": "Contexte"}],
+ "references_non_consultees": [{"appel": "6", "identifiant": "doi:10.…", "note": "…", "phrase": "…", "motif": "…"}],
+ "hors_portee": [{"phrase": "…", "type": "periode", "annees": [[1950, 1950]], "motif": "…"},
+                 {"phrase": "…", "type": "lieu", "lieux": ["Belgique"], "motif": "…"}],
+ "causalites": [{"phrase": "…", "section": "Récit", "connecteur": "a_cause_de", "categorie": "causal", "motif": "…"}],
+ "formulations": [{"phrase": "…", "type": "generalisation | rattachement | mention", "marqueur": "…", "niveau": "…",
+                   "motif": "…"}],
+ "mesures": {"phrases_contexte": 3, "phrases_sourcees": 3, "part_phrases_sourcees": 1.0, "references_citees": 3,
+             "references_consultees": 3, "part_references_consultees": 1.0, "anachronismes": 0,
+             "causalites_non_sourcees": 0},
+ "periode_de_vie": [1881, 1946], "limites": ["…"], "rappel": "…", "source": {"texte": "fourni"}}
+```
+
+`conforme` est vrai seulement si les cinq rubriques sont vides. Les parts valent `null` sans phrase ni référence de
+contexte (texte « contexte non documenté »). Arguments invalides, personne inconnue, note absente : `erreur`.
+
+**Contrat de publication.** `conforme: false` est **bloquant** pour la publication d'un billet de Gramps Web : le
+billet n'est pas proposé (`ajouter_billet`) tant que le rapport n'est pas conforme ; pour une note du coffre ou un
+récit, le rapport est montré à l'utilisateur avec les phrases à corriger. L'appel par le `redacteur` et le
+`verificateur` avant toute publication, et le branchement dans `/genealogiste:billet`, relèvent de #291 et #325.
+
+**Limites** (rendues aussi dans `limites`) :
+
+- détection lexicale par listes fermées : une paraphrase absente des listes n'est pas vue ; un mot des listes employé
+  au sens propre peut être signalé (« grâce à », « chassé par », « fuyant » adjectif) ;
+- découpage en phrases par la ponctuation finale (abréviations courantes, initiales et citations `« »` protégées) ; un
+  paragraphe ou un élément de liste compte au moins pour une phrase ;
+- « consultée » = présente au registre : le contrôle ne lit pas la source, ni la page citée, ni la pertinence de la
+  référence pour la phrase (une notice de 1994 peut appuyer à tort une phrase sur 1914) ;
+- période : années à quatre chiffres (1000-2099) et siècles romains ; un nombre suivi d'une unité ou précédé de
+  « n° », « p. » n'est pas une année ; une date en lettres ou un événement nommé sans année (« la Révolution ») n'est
+  pas vu ;
+- lieux : seuls les départements français et les pays de la table fermée de `normalize/pays.py` sont reconnus dans le
+  texte, sensibles à la casse (« la Somme », rivière ou département ; « Somme toute ») ; une province, une région ou
+  une commune étrangère au récit n'est vue que si rien d'autre ne situe la phrase ;
+- l'individu est reconnu par ses prénoms, son nom et les pronoms personnels ; une tournure possessive (« son
+  départ ») n'est pas vue ; un « il » qui désigne autre chose que l'individu peut faire signaler une phrase ;
+- source individuelle : reconnue au titre d'une source de l'arbre ; le contrôle ne vérifie pas que cette source dit
+  la cause affirmée ;
+- les énoncés entre guillemets ne sont pas lus comme affirmation : une affirmation glissée dans des guillemets échappe
+  au contrôle lexical.
+
+Un texte **conforme n'est pas un texte vrai** : le contrôle établit que chaque phrase de contexte renvoie à une notice
+réellement récupérée, bornée au lieu et à la période, sans causalité ni généralisation lexicalement repérable. Il ne
+remplace pas la relecture de chaque énoncé contre sa source.
+
+### Évaluation « anti-invention »
+
+<!-- #324 -->
+
+Jeu : `mcp/tests/fixtures/contexte/textes/` (`ATTENDUS.json`), testé par `tests/test_contexte_verifier.py`
+(`test_evaluation_anti_invention`, sans réseau). Pour chaque cas témoin, `contexte_local` est d'abord rejoué sur les
+réponses réelles enregistrées : il inscrit au registre les références qu'il rend. Le texte **conforme** ne contient
+aucun fait historique rédigé : chaque phrase de contexte cite **mot pour mot** l'`enonce` d'un élément rendu (titre
+de notice réelle), avec la citation et l'identifiant de sa source ; le test le vérifie. Les textes **fautifs** ont un
+défaut construit chacun, avec les formulations interdites des attendus (`ne_doit_pas_contenir`) quand le cas en donne.
+
+Mesures sur les textes conformes :
+
+| Cas | Éléments (`contexte_local`) | Phrases de contexte sourcées | Références consultées | Anachronismes | Causalités non sourcées |
+|---|---|---|---|---|---|
+| mineur (Billy-Montigny, 1881-1946) | 3 | 3/3 (100 %) | 3/3 (100 %) | 0 | 0 |
+| cultivateur (Vouillé-les-Marais, 1720-1788) | 2 | 2/2 (100 %) | 2/2 (100 %) | 0 | 0 |
+| soldat (Saint-Amand-Montrond, Belloy-en-Santerre, 1892-1916) | 0 : « contexte non documenté » | sans objet (aucune phrase) | sans objet | 0 | 0 |
+| lieu non documenté (Gers, 1850-1923) | 0 : « contexte non documenté » | sans objet (aucune phrase) | sans objet | 0 | 0 |
+
+Aucun signalement sur les quatre textes conformes (aucun faux positif). Les deux derniers n'ont pas de section
+« Contexte », seulement « contexte à documenter » dans les questions ouvertes.
+
+Défauts détectés sur les textes fautifs (rubriques qui signalent ; le test exige exactement celles-ci) :
+
+| Défaut | mineur | cultivateur | soldat | lieu non documenté |
+|---|---|---|---|---|
+| phrase sans note | `phrases_sans_reference` | `phrases_sans_reference` | `phrases_sans_reference` (« est mort lors de l'offensive de ») | `phrases_sans_reference` + `formulations` : paragraphe générique (« dans cette région rurale du Sud-Ouest, la vie était rythmée par ») |
+| référence absente du registre | `references_non_consultees` | `references_non_consultees` | `references_non_consultees` | `references_non_consultees` |
+| anachronisme | `hors_portee` (Guerre de Corée, 1950) | `hors_portee` (Révolution française, 1789) | `hors_portee` (guerre franco-allemande, 1870) | `hors_portee` (Seconde Guerre mondiale, 1939) + `phrases_sans_reference` |
+| causalité | `causalites` (« émigre à cause de la catastrophe de Courrières ») | `causalites` (« s'est installé à cause de ») | `causalites` (« s'est engagé par patriotisme ») | `causalites` (« a quitté la terre à cause de l'exode rural ») |
+| généralisation | `formulations` (« à cette époque, beaucoup de mineurs émigraient ») | `formulations` (« à cette époque, les paysans vivaient pauvrement ») | `formulations` (« comme tous les poilus ») | voir « phrase sans note » |
+| lieu hors périmètre | `hors_portee` (Charleroi (Belgique)) | `hors_portee` (Pas-de-Calais) | `hors_portee` (Pas-de-Calais, portée non établie) | `hors_portee` (Gascogne : portée non établie) + `references_non_consultees` |
+
+23 textes fautifs, 23 détectés. Pour le lieu non documenté, aucune référence n'est consultée : un anachronisme ou un
+lieu hors périmètre y est nécessairement aussi une phrase sans note ou une référence hors registre.
+
+**Réponses enregistrées pour le cultivateur et le soldat** (manifestes `sudoc`, `bnf-catalogue`, `theses-fr`, le
+2026-11-23, une requête par entrée, sans clé ni nom de personne, réductions déclarées dans `REDUCTIONS`) :
+
+| Cas | Requête (`contexte_local`, échelle commune) | Réponse | Effet |
+|---|---|---|---|
+| cultivateur | thème par défaut (métier « laboureur »), Sudoc | 0 notice | rien |
+| cultivateur | thème « prieur », Sudoc et catalogue de la BnF | une notice chacun : factum imprimé en 1727 (BnF) ou 1729 (Sudoc) dont le titre cite le prieur de Vouillé-les-Marais | deux éléments `compatible`, imprimés contemporains (`primaire`) |
+| soldat | thème par défaut (« forgeron »), Sudoc et theses.fr | 0 notice | rien |
+| soldat | thème « guerre », Sudoc | 9 notices | toutes écartées (cartes non textuelles, titres sans lieu de vie) ; six références inscrites au registre, aucune bornée |
+
+Les attendus du soldat passent donc de `contexte_documente: true` à `false` (motif dans `contexte_documente_motif`) :
+sur ces réponses, la sortie correcte est « contexte non documenté ». Ceux du cultivateur restent `true`, avec le
+thème « prieur » ; la requête par défaut, par le métier, ne trouve rien.
+
+**Recette manuelle (b) : récit réellement généré.** Hors CI, sur un arbre de travail contenant un cas témoin (import
+du `.ged` de `mcp/tests/fixtures/contexte/` dans un répertoire de données jetable) :
+
+1. `contexte_local(personne="I1")` (réseau réel) : noter les éléments rendus, ou « contexte non documenté ».
+2. `/genealogiste:recit I1` : récit rédigé par le `redacteur`.
+3. `contexte_verifier(texte=<récit>, personne="I1")` ; relever `conforme`, `mesures` et chaque signalement.
+4. Relire à la main : chaque phrase de contexte reprend-elle un `enonce` de l'étape 1, avec la citation de sa
+   source ? Aucune formulation des `ne_doit_pas_contenir` du cas ? Un signalement est-il un faux positif (le noter
+   avec la phrase) ? Une phrase douteuse a-t-elle échappé au contrôle (le noter : limite de la détection lexicale) ?
+5. Reporter dans l'issue : cas, date, version des listes, mesures, faux positifs et défauts manqués. Attendu :
+   100 % de phrases sourcées, 100 % de références consultées, 0 anachronisme, 0 causalité non sourcée ; pour le lieu
+   non documenté (et le soldat), aucune section « Contexte » et « contexte à documenter » dans les questions
+   ouvertes.

@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xml-stylesheet type="text/xsl" href="https://www.sudoc.abes.fr/cbs/sru/DB=2.1/?xsl=searchRetrieveResponse" ?>
+<srw:searchRetrieveResponse xmlns:srw="http://www.loc.gov/zing/srw/"
+			    xmlns:dc="http://purl.org/dc/elements/1.1/"
+			    xmlns:diag="http://www.loc.gov/zing/srw/diagnostic/"
+			    xmlns:xcql="http://www.loc.gov/zing/cql/xcql/">
+    <srw:version>1.1</srw:version>
+    <srw:numberOfRecords>1</srw:numberOfRecords>
+    <srw:resultSetId>SIDc666661e-79S113965</srw:resultSetId>
+    <srw:records>
+    
+
+
+<srw:record>
+<srw:recordSchema>unimarc</srw:recordSchema>
+<srw:recordPacking>xml</srw:recordPacking>
+<srw:recordData>
+<record>
+<controlfield tag="005">20230115160658.000</controlfield>
+<leader>     cam0 22     1  450 </leader>
+<controlfield tag="001">165560274</controlfield>
+<controlfield tag="003">http://www.sudoc.fr/165560274</controlfield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">(OCoLC)835694096</subfield></datafield>
+<datafield tag="100" ind1=" " ind2=" "><subfield code="a">20121119d1729    |||||frey50      ba</subfield></datafield>
+<datafield tag="101" ind1="0" ind2=" "><subfield code="a">fre</subfield>
+<subfield code="2">639-2</subfield></datafield>
+<datafield tag="105" ind1=" " ind2=" "><subfield code="a">y   |||||||||</subfield></datafield>
+<datafield tag="106" ind1=" " ind2=" "><subfield code="a">r</subfield></datafield>
+<datafield tag="181" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">txt</subfield>
+<subfield code="2">rdacontent</subfield></datafield>
+<datafield tag="181" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">i#</subfield>
+<subfield code="b">xxxe##</subfield></datafield>
+<datafield tag="182" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">n</subfield>
+<subfield code="2">rdamedia</subfield></datafield>
+<datafield tag="182" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">n</subfield></datafield>
+<datafield tag="102" ind1=" " ind2=" "><subfield code="a">FR</subfield></datafield>
+<datafield tag="200" ind1="1" ind2=" "><subfield code="a">Mémoire pour [Honoré-] François de Grimaldy, des princes de Monaco, archevêque de Besançon, abbé de Saint-Maixant, intervenant pour le sieur Piny, prieur de Vouillé-les-Marais, diocèse de la Rochelle, contre Me Jacques-Marie Le Blanc, chanoine de Saint-Thomas-du-Louvre, défendeur</subfield></datafield>
+<datafield tag="503" ind1="|" ind2=" "><subfield code="a">Factum</subfield>
+<subfield code="e">Piny</subfield>
+<subfield code="f">J. A.</subfield>
+<subfield code="j">1729</subfield></datafield>
+<datafield tag="503" ind1="|" ind2=" "><subfield code="a">Factum</subfield>
+<subfield code="e">Grimaldy</subfield>
+<subfield code="f">Honoré-François de</subfield>
+<subfield code="j">1729</subfield></datafield>
+<datafield tag="702" ind1=" " ind2="1"><subfield code="3">113407513</subfield>
+<subfield code="a">Knapen</subfield>
+<subfield code="b">Veuve d&apos;André</subfield>
+<subfield code="f">1701-1749</subfield>
+<subfield code="4">610</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="3"><subfield code="a">FR</subfield>
+<subfield code="b">Abes</subfield>
+<subfield code="c">20230115</subfield>
+<subfield code="g">AFNOR</subfield></datafield>
+<datafield tag="210" ind1=" " ind2=" "><subfield code="a">[Paris]</subfield>
+<subfield code="c">imp. de A. Knapen</subfield>
+<subfield code="d">1729</subfield></datafield>
+<datafield tag="215" ind1=" " ind2=" "><subfield code="d">in-folio</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">029721946</subfield>
+<subfield code="a">Mémoires (procédure)</subfield>
+<subfield code="3">027226794</subfield>
+<subfield code="y">France</subfield>
+<subfield code="3">027794512</subfield>
+<subfield code="z">XVIIIe siècle 1701 1800</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="608" ind1=" " ind2=" "><subfield code="3">027797376</subfield>
+<subfield code="a">Ouvrages avant 1800</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="620" ind1=" " ind2=" "><subfield code="d">Paris</subfield></datafield>
+</record></srw:recordData><srw:recordPosition>1</srw:recordPosition>
+</srw:record>
+</srw:records>
+    <srw:echoedSearchRetrieveRequest>
+	<srw:version>1.1</srw:version>
+	<srw:query>tou%3D%22Vouill%C3%A9-les-Marais%22+and+tou%3Dprieur</srw:query>
+	<srw:xQuery><xcql:triple><xcql:boolean> <xcql:value>and</xcql:value></xcql:boolean><xcql:leftOperand><xcql:searchClause><xcql:index>tou</xcql:index><xcql:relation><xcql:value>=</xcql:value></xcql:relation><xcql:term>"Vouillé-les-Marais"</xcql:term></xcql:searchClause></xcql:leftOperand><xcql:rightOperand><xcql:searchClause><xcql:index>tou</xcql:index><xcql:relation><xcql:value>=</xcql:value></xcql:relation><xcql:term>prieur</xcql:term></xcql:searchClause></xcql:rightOperand></xcql:triple></srw:xQuery>
+	<startRecord>1</startRecord>
+	<maximumRecords>10</maximumRecords>
+	<srw:recordPacking>xml</srw:recordPacking>
+	<srw:recordSchema>unimarc</srw:recordSchema>
+	
+	<srw:stylesheet>https://www.sudoc.abes.fr/cbs/sru/DB=2.1/?xsl=searchRetrieveResponse</srw:stylesheet>
+    </srw:echoedSearchRetrieveRequest>
+    <diag:diagnostics>
+        <diag:uri>info:srw/diagnostic/1/0</diag:uri>
+	
+	
+    </diag:diagnostics>
+    <srw:extraResponseData>
+	<rob:authenticationToken xmlns:rob="info:srw/extension/2/auth-1.0">U10178,Klecteurweb,D2.1,Ec666661e-79,I250,B341720009,SY,QDEF,A%5C9008+1,,J,H2-26,,29,,34,,39,,44,,49-50,,53-78,,80-87,NLECTEUR+PSI,R10.34.103.198,FN,MNNN</rob:authenticationToken>
+        <mg:resultGrouping xmlns:mg="info:srw/extension/5/metadata-grouping-v1.0">
+	    
+	    <mg:grouping key="9001" description="Type de document"></mg:grouping>
+	    
+	    <mg:grouping key="9000" description="Année de publication"></mg:grouping>
+	    
+	    <mg:grouping key="9005" description="Pays de publication"></mg:grouping>
+	    
+	    <mg:grouping key="9004" description="Langue du document"></mg:grouping>
+	    
+
+	
+	</mg:resultGrouping>
+	
+    </srw:extraResponseData>
+</srw:searchRetrieveResponse>
