@@ -41,6 +41,9 @@ def _hotes_sources() -> dict[str, str]:
                 out[urlsplit(noeud.value.value).hostname] = f.name
     for champ in ("cog_mvt_url", "cog_communes_url"):
         out[urlsplit(getattr(Config, champ)).hostname] = "config.py"
+    from genealogiste_mcp.contexte import services as services_contexte  # outils de contexte : hôtes du référentiel
+    for hote in services_contexte.tous_les_hotes():
+        out.setdefault(hote, "sources_contexte.json")
     return out
 
 
@@ -72,6 +75,8 @@ HOTES_OUTILS = {
     "matchid_recherche": {"deces.matchid.io"},
     "recherche_multi": {"deces.matchid.io", "api.wikitree.com", "gallica.bnf.fr", "query.wikidata.org"},
     "wikidata_personne": {"query.wikidata.org"}, "wikidata_sparql": {"query.wikidata.org"},
+    "contexte_bibliographie": {"api.archives-ouvertes.fr", "api.isidore.science", "www.sudoc.abes.fr",
+                               "catalogue.bnf.fr", "theses.fr", "api.crossref.org"},
     **{f"wikitree_{n}": {"api.wikitree.com"} for n in ("ascendants", "descendants", "personne", "profil",
                                                         "recherche")},
 }
