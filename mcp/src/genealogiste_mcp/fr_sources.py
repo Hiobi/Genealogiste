@@ -7,9 +7,30 @@ leur numérotation exacte varie d'un service à l'autre : toujours vérifier dan
 from __future__ import annotations
 
 from datetime import date
+from typing import Any
 
 from .normalize.dates import parse_date
+from .normalize.pays import pays_du_lieu, pays_resume
 from .types_documents import RULES, SERIES, normaliser
+
+# Aiguillage par pays (#283) : séries des AD seulement en France ; ailleurs, renvoi générique sans cote inventée.
+SI_FRANCE = "si le lieu est en France"
+RENVOI_INTERNATIONAL = ("source à identifier pour ce pays (aucune série d'archives départementales françaises) ; "
+                        "parcours internationaux : wiki Services-archives")
+PISTE_TRANSCRIPTION = ("Pour un Français à l'étranger : transcription éventuelle de l'acte sur les registres de la "
+                       "commune du dernier domicile en France, ou état civil consulaire (Service central d'état "
+                       "civil, Nantes), sans garantie d'existence.")
+FAITS_ETAT_CIVIL = {"BIRT", "CHR", "BAPM", "FILIATION", "DEAT", "BURI", "MARR", "MARB", "MARC", "ENGA"}
+_COTES_AD = frozenset(SERIES.values())
+
+
+def lieu_texte(lieu: Any) -> str:
+    """Libellé d'un lieu donné en texte ou en objet (Place)."""
+    return lieu if isinstance(lieu, str) else (getattr(lieu, "nom", "") or "") if lieu else ""
+
+
+def _lieu_renseigne(lieu: Any) -> bool:
+    return bool(lieu_texte(lieu).strip() or (not isinstance(lieu, str) and getattr(lieu, "code_insee", "")))
 
 
 def _year(d: str) -> int | None:
@@ -21,8 +42,43 @@ def _year(d: str) -> int | None:
     return (jdn_to_gregorian(lo)[0] + jdn_to_gregorian(hi)[0]) // 2
 
 
-def next_source_hint(fact: str, when: str = "", where: str = "") -> list[dict]:
-    """Sources à consulter pour étayer un fait, par ordre de priorité."""
+def next_source_hint(fact: str, when: str = "", where: Any = "") -> list[dict]:
+    """Sources à consulter pour étayer un fait, par ordre de priorité, aiguillées par le pays du lieu (#283).
+
+    ``where`` : libellé ou ``Place`` (code INSEE et hiérarchie pris en compte). Lieu en France : cotes du cadre
+    de classement des AD. Hors de France : aucune série des AD, renvoi générique et piste de transcription.
+    Pays inconnu : séries des AD avec la condition « si le lieu est en France ». Chaque piste porte ``pays``
+    quand un lieu est donné ; sans lieu, la sortie est celle d'avant #283."""
+    if not _lieu_renseigne(where):
+        return _hints(fact, when, "")
+    pays = pays_du_lieu(where)
+    out = _hints(fact, when, lieu_texte(where))
+    if pays["france"] is False:
+        out = _hors_france(fact, out, pays)
+    elif pays["france"] is None:
+        for d in out:
+            if d["cote_typique"] in _COTES_AD:
+                d["cote_typique"] = f"{d['cote_typique']} — {SI_FRANCE}"
+                d["condition"] = SI_FRANCE
+    court = pays_resume(pays)
+    return [{**d, "pays": dict(court)} for d in out]
+
+
+def _hors_france(fact: str, sources: list[dict], pays: dict) -> list[dict]:
+    nom = pays["nom"] or "pays étranger"
+    out = [{"source": f"État civil et archives du lieu ({nom})", "cote_typique": RENVOI_INTERNATIONAL,
+            "pourquoi": "lieu hors de France : les séries des archives départementales françaises ne s'appliquent "
+                        "pas ; chercher l'état civil ou les registres locaux du pays",
+            "en_ligne": "wiki Services-archives (https://github.com/Hiobi/Genealogiste/wiki/Services-archives)"}]
+    if fact in FAITS_ETAT_CIVIL:
+        out.append({"source": "Transcription de l'acte en France (commune du dernier domicile) ou état civil "
+                              "consulaire", "cote_typique": "registres d'état civil de la commune française ; "
+                              "Service central d'état civil (Nantes) pour l'état civil consulaire",
+                    "pourquoi": PISTE_TRANSCRIPTION})
+    return out + [d for d in sources if d["cote_typique"] not in _COTES_AD]
+
+
+def _hints(fact: str, when: str = "", where: str = "") -> list[dict]:
     y = _year(when)
     lieu = f" de {where.split(',')[0]}" if where else ""
     out: list[dict] = []

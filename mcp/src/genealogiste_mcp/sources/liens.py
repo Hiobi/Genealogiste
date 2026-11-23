@@ -8,8 +8,9 @@ from __future__ import annotations
 from urllib.parse import urlencode
 
 from .. import archives, sites_tiers
-from ..fr_sources import SERIES, next_source_hint
+from ..fr_sources import PISTE_TRANSCRIPTION, RENVOI_INTERNATIONAL, SERIES, SI_FRANCE, next_source_hint
 from ..normalize.dates import parse_date
+from ..normalize.pays import pays_du_lieu
 from ..normalize.places import DEPARTEMENTS, normalize_place
 
 
@@ -23,7 +24,8 @@ def search_links(nom: str, prenom: str = "", ne_vers: str = "", lieu: str = "", 
     dy = _year(decede_vers)
     place = normalize_place(lieu) if lieu else {}
     commune = place.get("commune", "")
-    dep_code = place.get("departement_code") or ""
+    # lieu hors de France (#283) : un département homonyme (Jura, Suisse) ne désigne pas d'AD française
+    dep_code = (place.get("departement_code") or "") if pays_du_lieu(lieu)["france"] is not False else ""
     dep = place.get("departement") or ""
     links = []
 
@@ -93,16 +95,38 @@ DOCS = {"BIRT": "naissance", "CHR": "naissance", "BAPM": "naissance", "MARR": "m
 
 def cote_suggestions(fait: str, date: str = "", lieu: str = "") -> dict:
     place = normalize_place(lieu) if lieu else {}
+    pays = pays_du_lieu(lieu)
+    if pays["france"] is False:  # #283 : aucune série ni service d'AD hors de France
+        return {
+            "fait": fait,
+            "lieu": place.get("commune") or lieu,
+            "pays": pays,
+            "service": f"Service d'état civil ou d'archives du lieu ({pays['nom'] or 'pays étranger'}) : "
+                       f"{RENVOI_INTERNATIONAL}",
+            "service_archives": None,
+            "sources": next_source_hint(fait.upper(), date, lieu),
+            "series": {},
+            "piste_francaise": PISTE_TRANSCRIPTION,
+            "avertissement": "Lieu hors de France : aucune cote d'archives départementales françaises ; aucune cote "
+                             "n'est proposée pour ce pays.",
+        }
     dep_code = place.get("departement_code")
     svc = archives.service(departement=dep_code, document=DOCS.get(fait.upper(), ""),
                            annee=_year(date)) if dep_code in DEPARTEMENTS else None
-    return {
+    out = {
         "fait": fait,
         "lieu": place.get("commune") or lieu,
-        "service": (svc["nom"] if svc else "Archives départementales du lieu (département à préciser)"),
+        "pays": pays,
+        "service": (svc["nom"] if svc else "Archives départementales du lieu (département à préciser)"
+                    + ("" if pays["france"] else f", {SI_FRANCE}")),
         "service_archives": svc,
         "sources": next_source_hint(fait.upper(), date, lieu),
         "series": SERIES,
         **({"sites_tiers": tiers} if (tiers := sites_tiers_du_lieu(dep_code or "", _year(date))) else {}),
         "avertissement": "Cotes typiques du cadre de classement : vérifier dans l'inventaire du service.",
     }
+    if pays["france"] is None:
+        out["pays_a_preciser"] = (f"Pays du lieu inconnu ({pays['detail']}) : les séries ci-dessus ne valent que "
+                                  f"{SI_FRANCE} ; préciser le pays ou le département.")
+    return out
+

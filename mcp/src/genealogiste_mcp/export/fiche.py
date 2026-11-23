@@ -101,8 +101,10 @@ def fiche_markdown(tree: Tree, pid: str, strict: bool = False, mask_living: bool
         lines += ["", "## Prochaines sources à consulter", ""]
         for f in todo:
             first = f["prochaine_source"][0]
+            pays = first.get("pays")
             lines.append(f"- {EVENT_LABELS.get(f['fait'], f['fait'])} ({LABEL[f['statut']]}) → {first['source']} "
-                         f"[{first['cote_typique']}]")
+                         f"[{first['cote_typique']}]"
+                         + (f" · pays : {pays['nom'] or 'inconnu'} ({pays['provenance']})" if pays else ""))
     for n in p.notes:
         if not n.startswith("@"):
             lines += ["", "## Notes", "", n]
