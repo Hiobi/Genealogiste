@@ -776,6 +776,17 @@ class _Reader:
                 return f"{name}, {up}" if name else up
         return name
 
+    def place_country(self, p: dict) -> str:
+        """Nom du niveau de type pays (Country) de la hiérarchie du lieu, lui compris (#283) ; "" sinon."""
+        for _ in range(9):
+            if tcanon(p.get("place_type"), "PlaceType") == "Country":
+                return (p.get("name") or {}).get("value", "")
+            refs = p.get("placeref_list") or []
+            p = self.db.get("Place", refs[0].get("ref")) if refs else None
+            if p is None:
+                return ""
+        return ""
+
     def place(self, h: str) -> Place | None:
         if not h:
             return None
@@ -789,8 +800,11 @@ class _Reader:
                         return float(v) if v not in (None, "") else None
                     except (TypeError, ValueError):
                         return None
-                self.places[h] = Place(nom=self.place_name(p), code_insee=p.get("code") or "",
-                                       latitude=num(p.get("lat")), longitude=num(p.get("long")))
+                pl = Place(nom=self.place_name(p), code_insee=p.get("code") or "",
+                           latitude=num(p.get("lat")), longitude=num(p.get("long")))
+                # pays de la hiérarchie (#283) : attribut dérivé, hors des champs du modèle (ni écrit ni comparé)
+                pl.pays = self.place_country(p)
+                self.places[h] = pl
         pl = self.places[h]
         return copy.deepcopy(pl) if pl else None
 

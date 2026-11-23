@@ -789,7 +789,9 @@ def sources_catalogue(departement: str = "", type: str = "", acces: str = "", th
 
 @mcp.tool()
 def cotes_a_consulter(fait: str, date_fait: str = "", lieu: str = "") -> dict:
-    """Sources et cotes typiques (cadre de classement des AD) pour étayer un fait (BIRT, DEAT, MARR, FILIATION…)."""
+    """Sources et cotes typiques (cadre de classement des AD) pour étayer un fait (BIRT, DEAT, MARR, FILIATION…).
+    pays : pays du lieu et provenance ; hors de France, aucune série d'AD (renvoi générique, piste de transcription) ;
+    pays inconnu : séries « si le lieu est en France » et pays_a_preciser."""
     return liens.cote_suggestions(fait, date_fait, lieu)
 
 
@@ -803,7 +805,7 @@ def archives_service(lieu: str = "", departement: str = "", code: str = "", docu
     consultation_manuelle : protection anti-robot relevée (ex. Anubis) et consigne (vue fournie par
     l'utilisateur, media_enregistrer) ; un nouvel essai réseau reste possible. defi_observe : dernier défi
     observé depuis cette installation sur ses hôtes (détections, exclusion en cours) ; acces_vps : mesure de
-    recette depuis le VPS."""
+    recette depuis le VPS. Avec lieu seul : pays du lieu ; hors de France, aucun service d'AD (renvoi, piste_francaise)."""
     res = archives.service(lieu, departement, code, document, annee or None)
     hotes = [normaliser_hote(res.get(k) or "") for k in ("site", "visionneuse")] if "erreur" not in res else []
     if any(hotes):  # politique d'accès effective (intervalle, plafond/jour, provenance) de ses hôtes (#211)
@@ -1102,13 +1104,15 @@ def communicabilite(document: str, date_document: str = "", date_naissance: str 
     judiciaire (alias justice), vie_privee, medical, cadastre, hypotheques, tables_decennales.
     Paroissiaux, enregistrement et insinuation : régime à préciser, réponse inconnue sans délai inventé.
     Les pluriels recensements, notaires et matricules sont acceptés. Avec lieu : distingue
-    « communicable » et « en ligne » (référentiel des archives) et propose sinon une demande avec modèle de courrier."""
+    « communicable » et « en ligne » (référentiel des archives) et propose sinon une demande avec modèle de courrier ;
+    lieu hors de France : pays, communicable null et communicable_si_transcrit_en_france, sans service d'AD."""
     return communicability_online(document, date_document, date_naissance, date_deces, lieu, personne)
 
 
 @mcp.tool()
 def prochaine_source(fait: str, date_fait: str = "", lieu: str = "") -> list[dict]:
-    """Sources à consulter en priorité pour étayer un fait."""
+    """Sources à consulter en priorité pour étayer un fait. Avec lieu, chaque piste porte pays (code, nom,
+    provenance) : hors de France, aucune série d'AD ; pays inconnu, séries d'AD « si le lieu est en France »."""
     return next_source_hint(fait.upper(), date_fait, lieu)
 
 
