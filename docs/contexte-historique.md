@@ -301,6 +301,75 @@ n'indiquent que « définie » ou « absente » (test `test_cles_jamais_renvoyee
 
 <!-- #286 à #290 -->
 
+### Émigration
+
+<!-- #284 -->
+
+Parcours émigration / immigration : sources des deux côtés et fenêtre de départ tirée de l'arbre. Aucun outil
+ni paramètre nouveau : `prochaine_source`, `cotes_a_consulter`, `arbre_fiche` et `arbre_lacunes` sont enrichis.
+
+**Chaînes de sources** (`fr_sources._migration`). Chaque piste porte `versant` (`france` ou `etranger`) et, si
+l'existence du fonds n'est pas vérifiée, un `avertissement` explicite.
+
+| Fait et lieu | Versant français | Versant étranger (générique, sans cote) |
+|---|---|---|
+| `EMIG` en France, sans lieu ou pays inconnu | registre matricule (1 R, classe = année de naissance + 20, dès 1867), passeports et police des étrangers (4 M, avertissement), recensements avant et après le départ (6 M, dès 1836 ; une absence ne prouve pas l'émigration), transcriptions et état civil consulaire | listes de passagers, recensements, naturalisation, conscription du pays d'arrivée |
+| `IMMI`, `NATU` en France | décret et dossier de naturalisation (Archives nationales, avertissement), police des étrangers (4 M, avertissement), recensements (6 M) | état civil et archives, passeports et autorisations de sortie du pays d'origine |
+| `EMIG`, `IMMI`, `NATU`, `RESI` hors de France ; `RESI_ETRANGER` | aucune série d'AD : registre matricule, police et recensements « du département du dernier domicile en France », cote à identifier ; transcriptions consulaires | état civil et archives du lieu, puis passagers (`EMIG`, `IMMI`), recensements, naturalisation, conscription (sauf `NATU`), nommés avec le pays |
+
+Pays inconnu : séries d'AD suffixées « si le lieu est en France », comme pour les autres faits. Le versant
+étranger renvoie au wiki Services-archives et à `sources_catalogue(theme="emigration")`.
+
+Provenance des affirmations :
+
+| Affirmation | Provenance |
+|---|---|
+| Registre matricule en série R, sous-série 1 R, classes 1867 et suivantes ; classe = année de naissance + 20 ; adresses successives | déjà affirmé par le dépôt (`types_documents.py`, skill `sources-francaises`) |
+| Recensements en 6 M, quinquennaux depuis 1836 | déjà affirmé par le dépôt |
+| État civil consulaire au Service central d'état civil (Nantes) ; transcription sur les registres de la commune du dernier domicile | déjà affirmé par le dépôt (#283) |
+| Passeports et police des étrangers en sous-série 4 M dans plusieurs services | répertoires de la sous-série 4 M « Police » des AD de la Somme (rubriques « Étrangers », « Passeports à l'étranger ») et d'Indre-et-Loire (« Police des étrangers ») consultés le 23 novembre 2026 ; classement variable : « à vérifier dans l'inventaire » et avertissement |
+| Décrets de naturalisation aux Archives nationales, inventaire 1883-1948 partiellement indexé, numéro de dossier porté au décret | document « Devenir français : aide à la saisie » des Archives nationales (Girophares) consulté le 23 novembre 2026 ; cote du dossier non donnée |
+| Fonds étrangers | aucune affirmation : intitulés génériques et avertissement |
+
+**Fenêtre de départ** (`emigration.fenetre_depart`), dans `arbre_lacunes(id)` (`fenetre_depart`) et la fiche
+(section « Fenêtre de départ »), seulement si un fait de la personne (ou de ses unions) est situé à l'étranger ou
+est un fait de migration. Le pays de chaque fait vient de `pays_du_lieu` ; un fait non daté ou de pays inconnu
+n'est jamais une borne (`faits_ecartes`).
+
+```json
+{"determinee": true,
+ "debut": {"fait": "RESI", "date": "JUL 1906", "date_texte": "juillet 1906", "lieu": "Denain, Nord, France",
+           "pays": {"code": "FR", "nom": "France", "provenance": "libelle"}, "uid": "…", "porteur": "I1",
+           "statut": "hypothese", "statut_libelle": "hypothèse", "sources_independantes": 1,
+           "citations": ["Registres de population de Denain (fictif), Registre de population 1906, f° 41 […]."],
+           "source_de_la_borne": "fait de l'arbre"},
+ "fin": {"fait": "EVEN", "date": "17 SEP 1917", "lieu": "Krebs, Pittsburg, Oklahoma, États-Unis", "…": "…"},
+ "texte": "Départ de France entre juillet 1906 (…) et 17 septembre 1917 (…).",
+ "pistes": ["next_source_hint(\"EMIG\", date et lieu du début) ; versant étranger avec pays_arrivee"],
+ "typage_propose": [{"uid": "…", "operations_par_type": {"IMMI": ["ajouter_evenement", "supprimer_evenement"]}}],
+ "avertissement": "Fenêtre tirée des seuls faits datés et situés de l'arbre : elle encadre le départ, …"}
+```
+
+- Début : dernier fait daté situé en France dont la date commence au plus tard avec celle du premier fait daté
+  situé à l'étranger (fin). Une borne sans citation est dite « non sourcé » ; son statut de preuve est donné.
+- Indéterminée (`determinee: false`, `motif`, `texte` « Fenêtre de départ indéterminée : … ») : aucun fait daté à
+  l'étranger, ou aucun fait daté en France avant lui. Des faits en France après le premier fait à l'étranger sont
+  listés (`faits_en_france_apres`, `remarque` : retour ou séjours multiples possibles).
+- Fenêtre déterminée sans événement `EMIG` ni `IMMI` : `arbre_lacunes` ajoute une action « émigration non
+  enregistrée » (priorité 2) avec les pistes.
+- **Typage** : un événement générique (`EVEN`) situé à l'étranger reçoit `typage_propose` : pour chaque type
+  plausible (`IMMI`, `NATU`, `RESI`, `CENS`, `MILI`), `ajouter_evenement` (même date, lieu, citations) puis
+  `supprimer_evenement`. Le type se choisit d'après la source ; les opérations passent par `arbre_proposer` et
+  `arbre_appliquer` après accord. Rien n'est appliqué automatiquement. Médias et intervenants éventuels sont à
+  reporter (`a_reporter`).
+
+Sites relevés (thème `emigration`, `docs/sites-tiers.md`) : guides de NARA (immigrants, naturalisation,
+enregistrement militaire de 1917-1918, recensements) et recherche d'arrivées de la Statue of Liberty & Ellis
+Island Foundation, en plus de Fichier Origine et du PRDH.
+
+Limites : la fenêtre ne voit que l'arbre ; elle ne déduit aucune date d'un contexte ; un lieu de pays inconnu
+(« Charleroi » seul) est écarté, à préciser ; seul le premier départ attesté est encadré.
+
 ### lieu_historique
 
 <!-- #287 -->
