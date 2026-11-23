@@ -40,6 +40,7 @@ APPELS: dict[str, dict] = {
     "presse_recherche": {"texte": "grève", "lieu": "Courrières"},
     "contexte_bibliographie": {"sujet": "mines", "lieu": "Courrières"},
     "contexte_local": {"lieu": "Courrières, Pas-de-Calais", "periode": "1880-1914"},
+    "pistes_contexte": {"lieu": "Courrières, Pas-de-Calais", "periode": "1880-1914"},
 }
 # Hors périmètre : lit un fichier local avant tout appel réseau (couvert par test_sources).
 SANS_APPEL = {"matchid_appariement_csv"}

@@ -47,6 +47,7 @@ EXEMPLES: dict[str, dict] = {
     "presse_recherche": {"texte": "grève", "lieu": "Courrières"},
     "contexte_bibliographie": {"sujet": "mines", "lieu": "Lille", "services": ["HAL"]},
     "contexte_local": {"lieu": "Lille, Nord", "periode": "1880-1914"},
+    "pistes_contexte": {"lieu": "Lille, Nord", "periode": "1880-1914"},
 }
 
 

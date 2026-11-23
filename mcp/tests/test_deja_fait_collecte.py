@@ -46,6 +46,7 @@ VARIANTES: dict[str, dict] = {
     "presse_recherche": {"texte": "grève", "lieu": "Courrières", "periode": "1906"},
     "contexte_bibliographie": {"sujet": "mines", "lieu": "Lille", "services": ["HAL"], "periode": "1880-1914"},
     "contexte_local": {"lieu": "Douai, Nord", "periode": "1880-1914"},
+    "pistes_contexte": {"lieu": "Douai, Nord", "periode": "1880-1914"},
 }
 # Même demande écrite autrement (casse, accents, espaces, défaut explicite) : « la même demande ».
 EQUIVALENTS: dict[str, dict] = {

@@ -739,6 +739,71 @@ retenu ; le type est un classement lexical ; la géographie historique ne donne 
 fait » (voir [enquetes.md](enquetes.md)) ; l'outil enchaîne plusieurs services (une collecte complète peut émettre
 plusieurs dizaines de requêtes, bornées par le budget d'enquête).
 
+### pistes_contexte
+
+<!-- #290 -->
+
+`pistes_contexte(personne="", lieu="", periode="", echelles="", themes="")` (classe collecte, budget d'enquête via
+`enquete`) produit des **hypothèses de recherche réfutables** en combinant les faits sourcés de l'arbre, les éléments
+de `contexte_local` (mêmes arguments, même collecte) et les chaînes de sources. Code : `contexte/pistes.py` ; l'outil
+de `server.py` ne fait que la garde et l'appel. Règle d'inférence : **le contexte oriente une recherche, il ne
+conclut jamais.**
+
+- **Vivants** : `_garde` sur `personne` et `themes`, puis sur `lieu`, avant toute requête (`GARDE_VIVANTS`,
+  `GARDE_AVANT_BUDGET`) ; les requêtes sont celles de `contexte_local` (contrôle `residus_identite`).
+- **Sans `personne`** (`lieu` et `periode`) : seules des pistes `contexte_seul` ; les deux règles tirées des faits
+  sont listées dans `regles_non_appliquees`.
+
+**Règles.** Chaque piste est engendrée par une règle fermée (`REGLES`, rendue dans la sortie) ; aucun intitulé n'est
+rédigé librement, aucun fait historique n'est ajouté.
+
+| Règle | Si | Piste (`hypothese`) | `test` | `statut` |
+|---|---|---|---|---|
+| `fenetre_depart` | fenêtre de départ déterminée par deux faits datés et situés (`emigration.fenetre_depart`) | « Départ de France entre *date du dernier fait en France* et *date du premier fait à l'étranger* » | chaîne du parcours émigration (`next_source_hint("EMIG", début)`, versants français et étranger) | `confirmee` si un `EMIG` ou `IMMI` cité, au statut confirmé ou probable, est daté dans la fenêtre ; sinon `a_tester` |
+| `meme_metier_a_l_arrivee` | métier attesté (`OCCU` cité, ni réfuté, ni contradictoire, en France ou sans lieu, au plus tard au premier fait à l'étranger) et premier fait daté situé à l'étranger | « Même profession après l'arrivée (*pays*) : *intitulé du métier dans l'arbre* » | sources nominatives du pays d'arrivée (versant étranger de `next_source_hint("RESI", premier fait à l'étranger)`) | `confirmee` si un `OCCU` situé à l'étranger, cité, au statut confirmé ou probable, porte le même intitulé ; sinon `a_tester` |
+| `element_de_contexte` | élément de `contexte_local` retenu, rattachement `compatible` ou `non_demontre`, hors géographie descriptive (population INSEE, cartes) | « Élément de contexte sourcé (*lieu*, *années*) : *`enonce` de l'élément* », sans connecteur causal | aucune source individuelle connue : `sources: []`, `motif` « reste non démontrée » | toujours `contexte_seul`, `plafond_gps: hypothese` |
+
+`refutee` n'est attribué par aucune règle livrée : la fenêtre est tirée de l'arbre (un fait contraire la déplace) et
+une autre profession attestée n'exclut pas la première. Un fait de l'arbre au statut « hypothèse » ne tranche
+jamais. Un élément `atteste` (déjà porté par une citation de l'arbre) ou de géographie descriptive ne fait pas de
+piste (`elements_non_retenus`, avec le motif).
+
+**Piste.**
+
+| Champ | Contenu |
+|---|---|
+| `id`, `regle`, `hypothese` | `h1`… dans l'ordre des règles ; intitulé du gabarit de la règle |
+| `fondements` | `arbre` : faits avec `uid`, `porteur`, `fait`, date, lieu, `statut` de preuve (`evidence`) et citations, `role` (borne, métier attesté, fait qui tranche) ; `contexte` : l'élément tel que rendu par `contexte_local` (`enonce`, `portee`, `source` avec citation et identifiant au registre, `rattachement`, `mention`) |
+| `test` | `sources` : entrées des chaînes existantes telles quelles (`source`, `cote_typique`, `versant`, `avertissement`, `pays`), plus `cout` ; aucune cote étrangère, aucun fonds inventé |
+| `cout` | `en_ligne` seulement si une source du test est déclarée « en ligne » par la chaîne ; sinon `a_determiner` (`courrier` et `deplacement` : aucun champ du référentiel ne permet de les déduire) |
+| `statut`, `statut_libelle` | `a_tester`, `confirmee`, `refutee`, `contexte_seul` |
+| `depot` | `null` pour une piste déjà tranchée ; sinon `enquete_noter` (paramètres `piste` et `personnes`, à compléter par `enquete`) et `file` : chemin vers la file comme **tâche** (`enquete_reprendre(taches=true, elements=…)`, opération `ajouter_tache`, backend gramps et `GENEALOGISTE_GRAMPS_TACHES=true`) ; `contexte_seul` : `file: null` et `motif_file` |
+| autres | `contexte_seul` : `plafond_gps`, `echelle`, `recoupe_fenetre_depart` (années de l'élément et de la fenêtre) ; `meme_metier_a_l_arrivee` : `pays_arrivee` |
+
+**Destination.** L'outil n'écrit rien : ni l'arbre, ni l'enquête, ni la file, aucune opération d'arbre ni jeton dans
+sa sortie. Le versement à l'enquête passe par `enquete_noter` (classe écriture d'un état local, collecte sans
+`budget` ni réouverture : `CONDITIONS`), la file par `propositions_deposer` ou `arbre_proposer` (classe
+proposition) : laissé à l'appelant, l'outil reste en collecte. Une piste `contexte_seul` n'est jamais convertie en
+proposition d'écriture ni en tâche de la file ; notée dans une enquête, ne pas la passer à
+`enquete_reprendre(taches=true)` (choisir les éléments par `elements`).
+
+**Sortie.** `outil`, `personne`, `regle_inference`, `regles`, `nb_pistes`, `pistes`, `regles_non_appliquees`
+(règle et motif), `elements_non_retenus`, `contexte` (résumé de `contexte_local` : `resultat`, `nb_elements`,
+`non_documente`, services en échec et écartés, tâches manuelles, `journal`), `fenetre_depart` (déterminée, texte,
+avertissement), `journal` (synthèse `contexte`/`pistes_contexte`), `depot` (consigne), `avertissement`. Aucune
+piste : `pistes: []` et `recherche_negative`, jamais une hypothèse libre.
+
+Cas témoin du mineur (réponses enregistrées) : `h1` « Départ de France entre juillet 1906 et 17 septembre 1917 »
+(`a_tester`, test : registre matricule, passeports, recensements, transcriptions, passagers, recensements,
+naturalisation et conscription du pays d'arrivée) ; `h2` « Même profession après l'arrivée (États-Unis) : mineur,
+attestée en 1904 » (`a_tester`) ; trois pistes `contexte_seul`, dont la notice Sudoc « Billy-Montigny au coeur de
+la catastrophe minière de 1906 » (rattachement `non_demontre`, recoupe la fenêtre). Lieu non documenté : aucune
+piste.
+
+Limites : trois règles seulement ; la fenêtre ne couvre que le premier départ attesté (`emigration`) ; la
+comparaison de métiers est littérale (casse et accents ignorés) ; `personne` est hors de l'identité « déjà fait »,
+comme pour `contexte_local`.
+
 ## Rédaction et contrôle
 
 <!-- #291, #324 -->
