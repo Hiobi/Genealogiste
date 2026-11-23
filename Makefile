@@ -2,7 +2,7 @@
 MCP := mcp
 UV  := uv --directory $(MCP)
 
-.PHONY: version help install hooks profil-campagne test sauvegarde restauration test-archives test-gramps test-gramps-matrice test-gramps-desktop test-codex lint format check run run-http docker-build docker-up docker-gramps docker-down validate clean verifier-archives verifier-telechargements
+.PHONY: version help install hooks profil-campagne test sauvegarde restauration test-archives test-contexte test-gramps test-gramps-matrice test-gramps-desktop test-codex lint format check run run-http docker-build docker-up docker-gramps docker-down validate clean enregistrer-contexte verifier-archives verifier-telechargements
 
 help: ## Liste des cibles
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-14s %s\n", $$1, $$2}'
@@ -42,6 +42,12 @@ test-gramps-desktop: ## Export Gramps XML relu par Gramps Desktop 5.2/6.0/6.1 sa
 
 test-archives: ## Recette de contrat sur les services d'archives réels (réseau, quelques requêtes par service)
 	GENEALOGISTE_TEST_ARCHIVES=1 GENEALOGISTE_RECETTE_ECRIRE=$(or $(ECRIRE),1) $(UV) run pytest -m archives_live tests/test_archives_live.py -rs
+
+test-contexte: ## Recette de contrat sur les services de contexte historique réels (réseau, une à deux requêtes par service ; AVERT si protégé)
+	GENEALOGISTE_TEST_CONTEXTE=1 $(UV) run pytest -m contexte_live tests/test_contexte_live.py -rs
+
+enregistrer-contexte: ## Réponses de contexte : compare la forme (défaut) ; ECRIRE=1 réécrit les réponses et manifestes (réseau, hors CI)
+	$(UV) run python scripts/enregistrer_contexte.py $(if $(ECRIRE),--ecrire,--verifier) $(foreach s,$(SERVICE),--service $(s))
 
 sauvegarde: ## Archive datée des données, médias et notes (SORTIE=dossier ; secrets exclus, droits 600)
 	$(UV) run python -m genealogiste_mcp.sauvegarde sauvegarder --sortie $(or $(SORTIE),$(HOME)/sauvegardes-genealogiste)

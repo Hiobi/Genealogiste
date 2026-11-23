@@ -1,24 +1,28 @@
 {
   "service": "SUDOC",
+  "objet": "Réponses réelles enregistrées pour les tests de contexte_bibliographie (#286), rejouées par respx ; aucun test n'accède au réseau.",
   "reponses": [
     {
       "fichier": "courrieres-mines.xml",
       "url": "https://www.sudoc.abes.fr/cbs/sru/?operation=searchRetrieve&version=1.1&query=tou%3D%22Courri%C3%A8res%22+and+tou%3Dmines&recordSchema=unimarc&maximumRecords=5",
+      "methode": "GET",
       "date": "2026-11-23",
-      "statut_http": 200,
-      "content_type": "text/xml",
-      "client": "httpx, User-Agent générique, sans clé ni mailto",
-      "reduction": "champs locaux UNIMARC 9XX (exemplaires) retirés"
+      "statut": 200,
+      "type": "text/xml",
+      "reduction": "champs locaux UNIMARC 9XX (exemplaires) retirés",
+      "empreinte": "sha256:daea19fe2137176092a12493f0be776de3798209a9ce2a2eb62929b1bab85379",
+      "client": "httpx, User-Agent générique, sans clé ni mailto"
     },
     {
       "fichier": "billy-montigny-mines.xml",
       "url": "https://www.sudoc.abes.fr/cbs/sru/?operation=searchRetrieve&version=1.1&query=tou%3D%22Billy-Montigny%22+and+tou%3Dmines&recordSchema=unimarc&maximumRecords=5",
+      "methode": "GET",
       "date": "2026-11-23",
-      "statut_http": 200,
-      "content_type": "text/xml",
-      "client": "httpx, User-Agent générique, sans clé ni mailto",
-      "reduction": "champs locaux UNIMARC 9XX (exemplaires) retirés"
+      "statut": 200,
+      "type": "text/xml",
+      "reduction": "champs locaux UNIMARC 9XX (exemplaires) retirés",
+      "empreinte": "sha256:38e3a9b82fa28289f8bdedccceb1ccfa634ba3f721f3b9fba315280344d9b998",
+      "client": "httpx, User-Agent générique, sans clé ni mailto"
     }
-  ],
-  "objet": "Réponses réelles enregistrées pour les tests de contexte_bibliographie (#286), rejouées par respx ; aucun test n'accède au réseau."
+  ]
 }

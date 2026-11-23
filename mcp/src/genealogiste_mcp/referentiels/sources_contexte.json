@@ -496,7 +496,7 @@
    "verifie_le": "",
    "origine": "relevé curl du 2026-11-21 (#285) ; sondage du 2026-11-23 (une requête GET, sans clé)",
    "releve": "2026-11-21 : 403 Cloudflare (exclu par le coupe-circuit jusqu'au 26/11) ; 2026-11-23 : 403",
-   "notes": "Lien seulement tant que le SRU répond 403 : consultation par l'utilisateur, aucun contournement."
+   "notes": "Pour les services de contexte (contexte_bibliographie, lieu_historique) : lien seulement tant que le SRU répond 403, consultation par l'utilisateur, aucun contournement. Seul presse_recherche l'interroge, par le client Gallica existant (sources/gallica.py, comme gallica_recherche), soumis au coupe-circuit anti-robot : un blocage y est rendu tel quel (bloque_antirobot), jamais contourné."
   },
   {
    "code": "CHRONICLING-AMERICA",

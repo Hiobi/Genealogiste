@@ -1,26 +1,31 @@
 {
- "client": "Mozilla/5.0 (compatible; client-generique) ; sans clé, sans paramètre personnel",
- "commune_temoin": "Billy-Montigny (code INSEE 62133, obtenu par geo_commune du plugin)",
- "service": "COG INSEE (sources/geo.py, hors référentiel de contexte)",
- "usage": "lieu_historique (#287) : communes depuis 1943 (millésime configuré, 2024)",
- "reponses": [
-  {
-   "fichier": "v_commune_depuis_1943.csv",
-   "url": "https://www.insee.fr/fr/statistiques/fichier/7766585/v_commune_depuis_1943.csv",
-   "date": "2026-11-23T10:15:01Z",
-   "statut": 200,
-   "type": "text/csv",
-   "octets": 3173639,
-   "reduction": "en-tête et lignes des codes 03029, 14005, 14074, 41016, 62132, 62133"
-  },
-  {
-   "fichier": "v_mvt_commune_2024.csv",
-   "url": "https://www.insee.fr/fr/statistiques/fichier/7766585/v_mvt_commune_2024.csv",
-   "date": "2026-11-23T10:15:09Z",
-   "statut": 200,
-   "type": "text/csv",
-   "octets": 2014516,
-   "reduction": "en-tête et mouvements dont le code avant ou après est l'un des codes ci-dessus"
-  }
- ]
+  "service": "COG-INSEE",
+  "objet": "COG INSEE (sources/geo.py, hors référentiel de contexte) pour lieu_historique (#287) : communes depuis 1943 (millésime configuré, 2024)",
+  "commune_temoin": "Billy-Montigny (code INSEE 62133, obtenu par geo_commune du plugin)",
+  "reponses": [
+    {
+      "fichier": "v_commune_depuis_1943.csv",
+      "url": "https://www.insee.fr/fr/statistiques/fichier/7766585/v_commune_depuis_1943.csv",
+      "methode": "GET",
+      "date": "2026-11-23T10:15:01Z",
+      "statut": 200,
+      "type": "text/csv",
+      "octets_origine": 3173639,
+      "reduction": "en-tête et lignes des codes 03029, 14005, 14074, 41016, 62132, 62133",
+      "empreinte": "sha256:38edbd4771d3345a5e36db409b1fe957f5856b0074f1cddf94ad22a9b32a3be8",
+      "client": "Mozilla/5.0 (compatible; client-generique) ; sans clé, sans paramètre personnel"
+    },
+    {
+      "fichier": "v_mvt_commune_2024.csv",
+      "url": "https://www.insee.fr/fr/statistiques/fichier/7766585/v_mvt_commune_2024.csv",
+      "methode": "GET",
+      "date": "2026-11-23T10:15:09Z",
+      "statut": 200,
+      "type": "text/csv",
+      "octets_origine": 2014516,
+      "reduction": "en-tête et mouvements dont le code avant ou après est l'un des codes ci-dessus",
+      "empreinte": "sha256:ee3fba63e6b1b9e11a7981132189a606e5422e1b26ac603fe404cbace009116a",
+      "client": "Mozilla/5.0 (compatible; client-generique) ; sans clé, sans paramètre personnel"
+    }
+  ]
 }

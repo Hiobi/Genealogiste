@@ -41,7 +41,7 @@ def test_chaque_service_livre_a_une_reponse_enregistree_et_un_manifeste():
         assert manifeste["service"] == code
         for r in manifeste["reponses"]:
             assert (dossier / r["fichier"]).is_file(), r
-            assert r["statut_http"] == 200 and r["date"] and r["url"].startswith("https://")
+            assert r["statut"] == 200 and r["date"] and r["url"].startswith("https://")
             assert srv.url_autorisee(code, r["url"]), r["url"]
             assert "mailto" not in r["url"] and "api_key" not in r["url"]
         assert srv.par_code(code)["protocole"] == GABARITS[code].protocole.replace("oai", "oai-pmh")
