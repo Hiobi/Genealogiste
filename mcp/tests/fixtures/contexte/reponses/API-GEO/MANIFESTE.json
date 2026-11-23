@@ -1,17 +1,19 @@
 {
- "client": "Mozilla/5.0 (compatible; client-generique) ; sans clé, sans paramètre personnel",
- "commune_temoin": "Billy-Montigny (code INSEE 62133, obtenu par geo_commune du plugin)",
- "service": "API Géo (sources/geo.py, hors référentiel de contexte)",
- "usage": "lieu_historique (#287) : centre de la commune actuelle",
- "reponses": [
-  {
-   "fichier": "communes_62133.json",
-   "url": "https://geo.api.gouv.fr/communes/62133?fields=nom,code,codesPostaux,codeDepartement,departement,region,population,centre",
-   "date": "2026-11-23T10:15:17Z",
-   "statut": 200,
-   "type": "application/json; charset=utf-8",
-   "octets": 259,
-   "reduction": "aucune (réindentée)"
-  }
- ]
+  "service": "API-GEO",
+  "objet": "API Géo (sources/geo.py, hors référentiel de contexte) pour lieu_historique (#287) : centre de la commune actuelle",
+  "commune_temoin": "Billy-Montigny (code INSEE 62133, obtenu par geo_commune du plugin)",
+  "reponses": [
+    {
+      "fichier": "communes_62133.json",
+      "url": "https://geo.api.gouv.fr/communes/62133?fields=nom,code,codesPostaux,codeDepartement,departement,region,population,centre",
+      "methode": "GET",
+      "date": "2026-11-23T10:15:17Z",
+      "statut": 200,
+      "type": "application/json; charset=utf-8",
+      "octets_origine": 259,
+      "reduction": "aucune (réindentée)",
+      "empreinte": "sha256:e57a3bb94fd3cba4eb8098d220b35af6deee0dd2555f02a3f3ff2899b76aa89a",
+      "client": "Mozilla/5.0 (compatible; client-generique) ; sans clé, sans paramètre personnel"
+    }
+  ]
 }

@@ -187,3 +187,27 @@ def test_sites_tiers_sondes_et_protection_signalee(monkeypatch, capsys, protecti
     ligne = next(x for x in capsys.readouterr().out.splitlines() if "T1" in x)
     assert ligne.startswith(attendu) and "site_tiers" in ligne
     assert appels == ["HEAD"]
+
+
+def test_contexte_seulement_ne_sonde_ni_archives_ni_sites_tiers(monkeypatch, capsys):
+    """#323 : --contexte-seulement n'interroge que les services de contexte."""
+    appels = []
+    creer_client = httpx.Client
+
+    def repondre(request):
+        appels.append(str(request.url))
+        return httpx.Response(200)
+
+    monkeypatch.setattr(verifier.archives, "services", lambda: [{"code": "A1", "site": URL + "archives"}])
+    monkeypatch.setattr(verifier.archives, "validate", lambda: [])
+    monkeypatch.setattr(verifier.sites_tiers, "validate", lambda: [])
+    monkeypatch.setattr(verifier.sites_tiers, "sites", lambda: ({"code": "T1", "url": URL + "tiers"},))
+    monkeypatch.setattr(verifier.services_contexte, "validate", lambda: [])
+    monkeypatch.setattr(verifier.services_contexte, "services", lambda: (
+        {"code": "C1", "mode": "api", "url_api": URL + "contexte", "cle": "aucune", "protection": "aucune"},))
+    monkeypatch.setattr(verifier.httpx, "Client", lambda **kwargs: creer_client(
+        transport=httpx.MockTransport(repondre), **kwargs))
+    assert verifier.main(["--contexte-seulement"]) == 0
+    assert appels == [URL + "contexte"]
+    sortie = capsys.readouterr().out
+    assert "C1" in sortie and "A1" not in sortie and "T1" not in sortie

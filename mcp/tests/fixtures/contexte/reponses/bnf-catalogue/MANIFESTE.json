@@ -1,24 +1,28 @@
 {
   "service": "BNF-CATALOGUE",
+  "objet": "Réponses réelles enregistrées pour les tests de contexte_bibliographie (#286), rejouées par respx ; aucun test n'accède au réseau.",
   "reponses": [
     {
       "fichier": "courrieres-mines.xml",
       "url": "https://catalogue.bnf.fr/api/SRU?version=1.2&operation=searchRetrieve&query=bib.anywhere+all+%22Courri%C3%A8res%22+and+bib.anywhere+all+%22mines%22&recordSchema=dublincore&maximumRecords=5",
+      "methode": "GET",
       "date": "2026-11-23",
-      "statut_http": 200,
-      "content_type": "text/xml;charset=UTF-8",
-      "client": "httpx, User-Agent générique, sans clé ni mailto",
-      "reduction": "aucune"
+      "statut": 200,
+      "type": "text/xml;charset=UTF-8",
+      "reduction": "aucune",
+      "empreinte": "sha256:06039ebd8c2b2ae835e65994a0187c2b9dcb75257c96a6df8795e7cdb1f9c6f6",
+      "client": "httpx, User-Agent générique, sans clé ni mailto"
     },
     {
       "fichier": "diagnostic-index-inconnu.xml",
       "url": "https://catalogue.bnf.fr/api/SRU?version=1.2&operation=searchRetrieve&query=bib.inexistant+all+%22Courri%c3%a8res%22&recordSchema=dublincore&maximumRecords=5",
+      "methode": "GET",
       "date": "2026-11-23",
-      "statut_http": 200,
-      "content_type": "text/xml;charset=UTF-8",
-      "client": "curl, User-Agent générique, sans clé",
-      "reduction": "aucune ; index volontairement inexistant pour enregistrer un diagnostic SRU réel"
+      "statut": 200,
+      "type": "text/xml;charset=UTF-8",
+      "reduction": "aucune ; index volontairement inexistant pour enregistrer un diagnostic SRU réel",
+      "empreinte": "sha256:41f6cb2178721fcb2c376da3f4a57f0a1aa87c521fc997cb10d7fdd379600837",
+      "client": "curl, User-Agent générique, sans clé"
     }
-  ],
-  "objet": "Réponses réelles enregistrées pour les tests de contexte_bibliographie (#286), rejouées par respx ; aucun test n'accède au réseau."
+  ]
 }
