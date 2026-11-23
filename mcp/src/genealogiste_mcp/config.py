@@ -91,6 +91,7 @@ class Config:
     notes_auto: bool = True  # régénérer les fiches touchées après arbre_appliquer / journal_ajouter
     notes_kit: bool = True  # kit Obsidian (vues, modèles, extrait CSS) déposé par notes_generer « tout »
     marqueurs: str = "genealogiste"  # forme écrite des marqueurs (notes, Gramps) : genealogiste | sosa (#182)
+    contexte_style_citation: str = "iso690"  # GENEALOGISTE_CONTEXTE_STYLE_CITATION : iso690 | evidence_explained
     sosa_racine: str = ""  # personne n° 1 de la numérotation Sosa des notes
     cog_mvt_url: str = "https://www.insee.fr/fr/statistiques/fichier/7766585/v_mvt_commune_2024.csv"
     cog_communes_url: str = "https://www.insee.fr/fr/statistiques/fichier/7766585/v_commune_depuis_1943.csv"
@@ -182,6 +183,11 @@ class Config:
     def pieces_registre(self) -> Path:
         """Registre des pièces archivées (source -> fichier, empreinte) : une pièce n'est jamais retéléchargée."""
         return self.data_dir / "pieces-archivees.jsonl"
+
+    @property
+    def references_consultees_path(self) -> Path:
+        """Registre des références consultées du contexte historique (#321) : hors du cache, jamais purgé."""
+        return self.data_dir / "references-consultees.jsonl"
 
     def media_ref(self, path: Path) -> str:
         """Référence d'un média enregistrée dans l'arbre (#193) : relative au répertoire de données quand il s'y
@@ -333,6 +339,20 @@ def marqueurs_mode(value: str | None) -> str:
     return v
 
 
+STYLES_CITATION = ("iso690", "evidence_explained")
+
+
+def style_citation(value: str | None) -> str:
+    """GENEALOGISTE_CONTEXTE_STYLE_CITATION (#321) : style des références du contexte historique."""
+    v = (value or "").strip().lower()
+    if not v:
+        return "iso690"
+    if v not in STYLES_CITATION:
+        raise ValueError(f"GENEALOGISTE_CONTEXTE_STYLE_CITATION={value!r} : valeurs possibles iso690 | "
+                         "evidence_explained")
+    return v
+
+
 def secondes(value: str | None, default: float, variable: str) -> float:
     if value is None or value.strip() == "":
         return default
@@ -455,6 +475,7 @@ def load_config() -> Config:
         notes_auto=_bool(env("GENEALOGISTE_NOTES_AUTO"), True),
         notes_kit=_bool(env("GENEALOGISTE_NOTES_KIT"), True),
         marqueurs=marqueurs_mode(env("GENEALOGISTE_MARQUEURS")),
+        contexte_style_citation=style_citation(env("GENEALOGISTE_CONTEXTE_STYLE_CITATION")),
         sosa_racine=env("GENEALOGISTE_SOSA_RACINE", ""),
         hotes_autorises=[h for h in env("GENEALOGISTE_HOTES_AUTORISES", "").split(",") if h.strip()],
         http_timeout=secondes(env("GENEALOGISTE_HTTP_TIMEOUT"), 30.0, "GENEALOGISTE_HTTP_TIMEOUT") or 30.0,
