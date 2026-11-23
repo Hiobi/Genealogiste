@@ -36,6 +36,7 @@ from .budget import PlafondJour, mesurer
 from .cache import Cache
 from .chemins import CheminRefuse, nom_simple, sous
 from .config import Config, load_config
+from .contexte.registre import RegistreReferences
 from .enquetes import EnqueteError, Enquetes
 from .export import charts, chemins_medias, gramps_xml
 from .export.fiche import fiche_markdown, gaps, tree_gaps
@@ -110,6 +111,8 @@ class App:
         self.store.ensure()
         self.journal = Journal(self.config.journal_path)
         self.enquetes = Enquetes(self.config.data_dir, self.journal, self.config.budget_defaut())
+        # Références consultées du contexte historique (#321) : hors du cache, jamais vidé par cache_purger.
+        self.registre_references = RegistreReferences(self.config.references_consultees_path)
         self.proposals = Proposals(self.store, self.config.proposals_dir, self.config.exiger_source,
                                    self.config.media_reference)
         self.tokens = TokenStore(self.config.proposals_dir)

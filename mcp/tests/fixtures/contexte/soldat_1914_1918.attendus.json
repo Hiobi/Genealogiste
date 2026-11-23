@@ -1,0 +1,33 @@
+{
+  "cas": "soldat_1914_1918",
+  "description": "Soldat né en 1892, mobilisé en 1914, mort en 1916. Le contexte militaire collectif ne vaut pas parcours individuel : aucune bataille ni régiment sans source individuelle.",
+  "gedcom": "soldat_1914_1918.ged",
+  "personne": "I1",
+  "vie": {"naissance": "1892", "deces": "1916", "mobilisation": "3 AUG 1914"},
+  "metier": "forgeron",
+  "lieux": [
+    {"evenement": "BIRT", "lieu": "Saint-Amand-Montrond, Cher, France", "pays": "France"},
+    {"evenement": "OCCU", "lieu": "Saint-Amand-Montrond, Cher, France", "pays": "France"},
+    {"evenement": "DEAT", "lieu": "Belloy-en-Santerre, Somme, France", "pays": "France"}
+  ],
+  "contexte_documente": true,
+  "ne_doit_pas_contenir": {
+    "causalites": [
+      "s'est engagé par patriotisme",
+      "a combattu à Verdun",
+      "est mort lors de l'offensive de"
+    ],
+    "hors_periode": [
+      {"element": "guerre franco-allemande", "annee": 1870},
+      {"element": "Seconde Guerre mondiale", "annee": 1939}
+    ],
+    "hors_lieu": [],
+    "anachronismes": [
+      "Première Guerre mondiale (appellation postérieure à 1916 pour la période de vie)"
+    ],
+    "phrases_generiques": [
+      "comme tous les poilus"
+    ]
+  },
+  "sortie_si_non_documente": "contexte non documenté"
+}

@@ -1,0 +1,66 @@
+0 HEAD
+1 GEDC
+2 VERS 7.0
+1 LANG fr
+0 @I1@ INDI
+1 NAME Anselme /WATTECAMPS/
+2 GIVN Anselme
+2 SURN WATTECAMPS
+1 SEX M
+1 BIRT
+2 DATE 14 FEB 1881
+2 PLAC Billy-Montigny, Pas-de-Calais, France
+2 SOUR @S1@
+3 PAGE Naissances 1881, acte n° 17
+3 QUAY 3
+3 _TYPE originale
+3 _INFO primaire
+1 OCCU mineur
+2 DATE 1904
+2 PLAC Billy-Montigny, Pas-de-Calais, France
+2 SOUR @S2@
+3 PAGE Registre de population 1904, f° 88
+3 _TYPE originale
+3 _INFO secondaire
+3 _PREUVE indirecte
+1 RESI
+2 DATE JUL 1906
+2 PLAC Denain, Nord, France
+2 SOUR @S3@
+3 PAGE Registre de population 1906, f° 41
+3 _TYPE originale
+3 _INFO secondaire
+3 _PREUVE indirecte
+1 EVEN
+2 DATE 17 SEP 1917
+2 PLAC Krebs, Pittsburg, Oklahoma, États-Unis
+2 SOUR @S4@
+3 PAGE Pièce n° 12
+3 _TYPE originale
+3 _INFO primaire
+3 _PREUVE indirecte
+1 DEAT
+2 DATE 3 NOV 1946
+2 PLAC Charleroi, Washington, Pennsylvanie, États-Unis
+2 SOUR @S5@
+3 PAGE Certificat n° 1946-0412
+3 QUAY 3
+3 _TYPE originale
+3 _INFO primaire
+1 UID c0ffee01-0000-4000-8000-000000000001
+0 @S1@ SOUR
+1 TITL Registres d'état civil de Billy-Montigny (fictif)
+1 _TYPE originale
+0 @S2@ SOUR
+1 TITL Registres de population de Billy-Montigny (fictif)
+1 _TYPE originale
+0 @S3@ SOUR
+1 TITL Registres de population de Denain (fictif)
+1 _TYPE originale
+0 @S4@ SOUR
+1 TITL Dossier administratif américain (fictif)
+1 _TYPE originale
+0 @S5@ SOUR
+1 TITL Certificats de décès de Pennsylvanie (fictif)
+1 _TYPE originale
+0 TRLR

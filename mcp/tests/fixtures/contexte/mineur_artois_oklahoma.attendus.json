@@ -1,0 +1,38 @@
+{
+  "cas": "mineur_artois_oklahoma",
+  "description": "Mineur né dans le Pas-de-Calais, dernier fait en France dans le Nord, puis États-Unis (Oklahoma, Pennsylvanie). Piège : Charleroi est en Pennsylvanie, pas en Belgique.",
+  "gedcom": "mineur_artois_oklahoma.ged",
+  "personne": "I1",
+  "vie": {"naissance": "1881", "deces": "1946", "dernier_fait_en_france": "JUL 1906"},
+  "metier": "mineur",
+  "lieux": [
+    {"evenement": "BIRT", "lieu": "Billy-Montigny, Pas-de-Calais, France", "pays": "France"},
+    {"evenement": "OCCU", "lieu": "Billy-Montigny, Pas-de-Calais, France", "pays": "France"},
+    {"evenement": "RESI", "lieu": "Denain, Nord, France", "pays": "France"},
+    {"evenement": "EVEN", "lieu": "Krebs, Pittsburg, Oklahoma, États-Unis", "pays": "États-Unis"},
+    {"evenement": "DEAT", "lieu": "Charleroi, Washington, Pennsylvanie, États-Unis", "pays": "États-Unis"}
+  ],
+  "contexte_documente": true,
+  "ne_doit_pas_contenir": {
+    "causalites": [
+      "émigre à cause de la catastrophe de Courrières",
+      "poussé par la catastrophe de Courrières",
+      "fuyant la crise minière"
+    ],
+    "hors_periode": [
+      {"element": "Commune de Paris", "annee": 1871},
+      {"element": "Guerre de Corée", "annee": 1950}
+    ],
+    "hors_lieu": [
+      "Charleroi (Belgique)",
+      "bassin minier belge"
+    ],
+    "anachronismes": [
+      "Hauts-de-France"
+    ],
+    "phrases_generiques": [
+      "à cette époque, beaucoup de mineurs émigraient"
+    ]
+  },
+  "sortie_si_non_documente": "contexte non documenté"
+}
