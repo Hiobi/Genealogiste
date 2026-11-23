@@ -123,7 +123,7 @@ class App:
         # Références consultées du contexte historique (#321) : hors du cache, jamais vidé par cache_purger.
         self.registre_references = RegistreReferences(self.config.references_consultees_path)
         self.proposals = Proposals(self.store, self.config.proposals_dir, self.config.exiger_source,
-                                   self.config.media_reference)
+                                   self.config.media_reference, registre=self.registre_references)
         self.tokens = TokenStore(self.config.proposals_dir)
         self.file = fp.FilePropositions(self.config.proposals_dir / "file")  # file durable (#154)
         import threading
@@ -152,7 +152,8 @@ class App:
                                          media_dir=self.config.media_racines[1:] if self.config.media_dir_conf else None,
                                          media=self.config.media_reference, forme=self.config.marqueurs,
                                          taches=self.config.gramps_taches,
-                                         prive_vivants=self.config.gramps_prive_vivants)
+                                         prive_vivants=self.config.gramps_prive_vivants,
+                                         registre=self.registre_references)
 
     def taches_actives(self) -> bool:
         """Tâches de Gramps Web lues et écrites (#263) : backend gramps et GENEALOGISTE_GRAMPS_TACHES=true."""
@@ -1639,8 +1640,9 @@ def arbre_proposer(operations: list[dict], titre: str, justification: str, sourc
     Tâche (ajouter_tache : titre, description, statut Open|In Progress|Blocked|Done, priorite haute|moyenne|basse,
     personnes, enquete + element) : privée par défaut, même garde des vivants que le billet.
     Billet du blog (ajouter_billet, ou source étiquetée Blog) : privé par défaut ; public refusé s'il nomme une
-    personne présumée vivante. Règle de métier : tout événement ou filiation exige une citation, sauf
-    non_source=true + motif.
+    personne présumée vivante ; texte à section « Contexte » : donner personne (id de l'individu), refusé avec le
+    rapport si contexte_verifier ne le déclare pas conforme. Règle de métier : tout événement ou filiation exige
+    une citation, sauf non_source=true + motif.
     Citation : préciser 'consultation' (original | image | transcription | index | non_vu). Référencer un objet créé dans la même proposition par
     "$ref". Voir docs/operations.md."""
     try:
@@ -1840,7 +1842,7 @@ def propositions_deposer(operations: list[dict], titre: str, justification: str,
     def valider() -> dict:
         tree = a.tree()
         ctx = prepare(tree, operations, titre, justification, sources, a.config.exiger_source,
-                      a.config.media_reference, a.backend.name, a.taches_actives())[0]
+                      a.config.media_reference, a.backend.name, a.taches_actives(), a.registre_references)[0]
         if write_gedcom(ctx.tree) == write_gedcom(tree) and not taches_gramps.lignes(tree, ctx.tree):
             raise ProposalError("La proposition ne modifie rien.")
         return {"ctx": ctx, "tree": tree}

@@ -688,6 +688,12 @@ hors présentation) :
   de la source. Le corps privé d'un billet privé est lu dans le modèle (`Source.note`, il peut donc être
   modifié ou retiré par `modifier_source`) ; toute autre note privée reste hors du modèle, intacte (c'est le
   cas du corps privé d'un billet public : jamais publié par Genealogiste) ;
+- **contexte historique** (#291) : un billet dont le texte a une section « Contexte » n'est proposé que si
+  `contexte_verifier` le déclare conforme (aucune phrase de contexte sans référence consultée, portée, causalité,
+  formulation) ; l'opération donne `"personne": "<id>"`, et la proposition est refusée, rapport à l'appui, si le
+  texte n'est pas conforme ou si la personne manque. Contrôlé à la création, au changement de texte et au passage
+  en public ; un billet sans section « Contexte » n'est pas concerné
+  ([contexte historique](contexte-historique.md#rédaction)) ;
 - **compte Invité** (rôle 0, sans `ViewPrivate`) : la base lui est servie à travers le filtre du privé ; un
   billet privé n'apparaît ni dans la liste, ni par son identifiant (`/api/sources/<handle>` : 404 ; `200 {}`, objet vide, sur l'API 3.13.0), et sa note
   non plus (`/api/notes/?gramps_id=…` : 404). Un billet public et son corps lui sont lisibles. Gramps Web

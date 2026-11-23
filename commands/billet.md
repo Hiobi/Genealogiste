@@ -11,8 +11,15 @@ Billet de blog : **$ARGUMENTS**
    (`arbre_recherche(etiquette="Blog", objet="source")`) pour éviter un doublon.
 3. Confier la rédaction à l'agent **`redacteur`** (format « billet ») : récit court, chaque fait sourcé par une
    note `[n]`, aucune personne présumée vivante nommée, Markdown simple (gras, italique, liens) seulement.
+   Contexte historique : seulement des éléments sourcés (`contexte_local`), dans une section `**Contexte**`
+   séparée ; rien de sourcé : pas de section. Contrôler le texte rendu :
+   `contexte_verifier(texte=<texte>, personne=<id>)`. **`conforme: false` est bloquant** : ne rien proposer, renvoyer
+   le texte au `redacteur` avec les signalements (il retire ou documente, jamais il n'invente une référence).
 4. Préparer UNE proposition : images éventuelles par `ajouter_media` (avec `ref`, sans `lier_a`), puis
    `{"op": "ajouter_billet", "titre", "auteur", "texte", "format_texte": "markdown", "medias": ["$img", …]}`.
+   Texte avec une section « Contexte » : ajouter `"personne": "<id>"` (individu du billet). La proposition
+   refait alors le contrôle et **refuse le billet** s'il n'est pas conforme, rapport à l'appui ; sans `"personne"`,
+   un tel billet est refusé. Même règle pour `modifier_source` qui change le texte d'un billet ou le rend public.
    Le premier média sert d'aperçu, tous forment la galerie. **Privé par défaut** : `"prive": false` seulement si
    l'utilisateur demande explicitement un billet public, lisible par les comptes Invité (Guest).
 5. `arbre_proposer(operations, titre, justification)` → montrer le **résumé (visibilité du billet), le diff et

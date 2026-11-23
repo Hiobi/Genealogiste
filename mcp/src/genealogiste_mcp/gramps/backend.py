@@ -204,7 +204,8 @@ class GrampsBackend:
                  strict: bool = False, ttl: float = 30.0, mirror: GitMirror | None = None,
                  clock=time.monotonic, notes_auto: str = "true", media_dir=None,
                  media=None, forme: str = "genealogiste", notes_liens: bool = False, taches: bool = False,
-                 prive_vivants: str = "off"):
+                 prive_vivants: str = "off", registre=None):
+        self.registre = registre  # références consultées : contrôle du contexte d'un billet (#291)
         self.prive_vivants = prive_vivants  # off | propose (GENEALOGISTE_GRAMPS_PRIVE_VIVANTS, #264)
         self.taches = taches  # tâches de Gramps Web lues et écrites (GENEALOGISTE_GRAMPS_TACHES, #263)
         self.notes_liens = notes_liens  # liens internes gramps:// dans les notes générées (#279)
@@ -306,7 +307,7 @@ class GrampsBackend:
         db = self.snapshot(fresh=True)
         tree = self.load()
         ctx, token, message = prepare(tree, operations, titre, justification, sources, self.exiger_source,
-                                      self.media, self.name, self.taches)
+                                      self.media, self.name, self.taches, self.registre)
         only = touched_keys(tree, ctx.tree) if self.notes_auto == "modifies" and not all_notes else None
         avis: list[str] = []
         new = tree_to_gramps(ctx.tree, base=db, strict=self.strict, generated=self.notes_auto != "false", only=only,

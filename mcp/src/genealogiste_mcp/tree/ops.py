@@ -55,6 +55,8 @@ class Ctx:
         self.warnings: list[str] = []
         self.citations_images: list[Citation] = []  # citations à images de la proposition (#246)
         self.proteger: set[str] = set()  # vivants à marquer privés avec leurs données (#264, marquer_vivant prive)
+        self.billets_personnes: dict[str, str] = {}  # billet -> personne du contrôle de contexte (#291)
+        self.markdown: dict[str, str] = {}  # texte converti -> Markdown d'origine (format_texte, #291)
 
     def r(self, value: str | None) -> str:
         if value and isinstance(value, str) and value.startswith("$"):
@@ -485,7 +487,7 @@ def _depot_for(ctx: Ctx, a: ark.Ark) -> str:
 
 
 def op_ajouter_source(ctx: Ctx, o: dict) -> None:
-    d = {k: v for k, v in o.items() if k not in ("op", "ref", "tags", "tags_retrait")}
+    d = {k: v for k, v in o.items() if k not in ("op", "ref", "tags", "tags_retrait", "personne")}
     a = _ark_of(d.get("ark", ""), d.get("url", ""))
     if a:
         same = _source_by_ark(ctx.tree, a)
@@ -507,6 +509,7 @@ def op_ajouter_source(ctx: Ctx, o: dict) -> None:
     if "medias" in d:
         raise OpError("ajouter_source : médias à lier par ajouter_media / modifier_media (lier_a : S…)")
     sid = ctx.tree.next_id("sources")
+    _personne_billet(ctx, o, sid)  # #291 : source étiquetée Blog à section « Contexte »
     d["depot"] = ctx.r(d.get("depot"))
     d["original"] = ctx.r(d.get("original"))
     if d["depot"] and d["depot"] not in ctx.tree.depots:
@@ -530,12 +533,24 @@ def op_ajouter_source(ctx: Ctx, o: dict) -> None:
             s.prive = True
 
 
-BILLET_CHAMPS = ("op", "ref", "titre", "auteur", "texte", "medias", "prive", "tags")
+def _personne_billet(ctx: Ctx, o: dict, sid: str) -> None:
+    """#291 : « personne » d'ajouter_billet ou de modifier_source, individu du contrôle de la section « Contexte »."""
+    if "personne" not in o:
+        return
+    pid = ctx.r(o["personne"]) if isinstance(o["personne"], str) else ""
+    if pid not in ctx.tree.personnes:
+        raise OpError(f"personne inconnue : {o['personne']!r} (id de l'individu du billet, pour le contrôle de la "
+                      "section « Contexte »)")
+    ctx.billets_personnes[sid] = pid
+
+
+BILLET_CHAMPS = ("op", "ref", "titre", "auteur", "texte", "medias", "prive", "tags", "personne")
 
 
 def op_ajouter_billet(ctx: Ctx, o: dict) -> None:
     """Billet du blog de Gramps Web (#261) : source étiquetée Blog (titre, auteur), corps en première note,
-    médias dans l'ordre donné (le premier sert d'aperçu), privé sauf « prive: false »."""
+    médias dans l'ordre donné (le premier sert d'aperçu), privé sauf « prive: false ». personne (#291) : individu
+    du billet, requis si le texte a une section « Contexte » (contrôle de billets.controler_contexte)."""
     if ctx.backend == "fichier":
         raise OpError("le blog est une page de Gramps Web : billet refusé en backend fichier (GEDCOM). Passer en "
                       "GENEALOGISTE_BACKEND=gramps, ou créer une simple source étiquetée (ajouter_source, "
@@ -563,6 +578,7 @@ def op_ajouter_billet(ctx: Ctx, o: dict) -> None:
             raise OpError(f"média {mid} donné deux fois")
         ids.append(mid)
     sid = ctx.tree.next_id("sources")
+    _personne_billet(ctx, o, sid)
     s = Source(id=sid, titre=titre, auteur=o.get("auteur") or "", note=texte, prive=prive, medias=ids)
     ctx.tree.sources[sid] = s
     if o.get("ref"):
@@ -693,6 +709,7 @@ def op_modifier_source(ctx: Ctx, o: dict) -> None:
     s = ctx.tree.sources.get(sid)
     if not s:
         raise OpError(f"Source inconnue : {sid}")
+    _personne_billet(ctx, o, sid)
     for k, v in o.get("champs", {}).items():
         if k in ("id", "extra", "medias", "tags") or not hasattr(s, k):
             raise OpError(f"modifier_source : champ {k!r} invalide"
@@ -1421,6 +1438,7 @@ def _markdown(ctx: Ctx, o: dict) -> dict:
         st = depuis_markdown(v)
         if st["tags"]:
             ctx.tree.styles[st["string"]] = st["tags"]
+        ctx.markdown[st["string"]] = v
         return st["string"]
 
     def walk(x):
@@ -1442,10 +1460,11 @@ def _markdown(ctx: Ctx, o: dict) -> dict:
 
 
 def apply_ops(tree: Tree, ops: list[dict], exiger_source: bool = True, media=None, backend: str = "",
-              taches_actives: bool = False) -> Ctx:
+              taches_actives: bool = False, registre=None) -> Ctx:
     """Applique les opérations sur une COPIE de l'arbre ; lève OpError si l'une échoue. media : résolution des
     fichiers d'ajouter_media (Config.media_reference) ; backend : « fichier » ou « gramps » (billets, #261) ;
-    taches_actives : GENEALOGISTE_GRAMPS_TACHES (#263)."""
+    taches_actives : GENEALOGISTE_GRAMPS_TACHES (#263) ; registre : registre des références consultées, pour le
+    contrôle de la section « Contexte » d'un billet (#291 ; absent : un tel billet est refusé)."""
     ctx = Ctx(copy.deepcopy(tree), exiger_source, media, backend, taches_actives)
     for i, o in enumerate(ops, 1):
         name = o.get("op")
@@ -1468,6 +1487,10 @@ def apply_ops(tree: Tree, ops: list[dict], exiger_source: bool = True, media=Non
     refus, avis, resume = objets_interface.controler(tree, ctx.tree)  # #261, #263 : billets et tâches
     if refus:
         raise OpError(" ; ".join(refus))
-    ctx.summary += resume
+    # #291 : billet à section « Contexte », proposé seulement si contexte_verifier le déclare conforme
+    refus, controles = billets.controler_contexte(tree, ctx.tree, ctx.billets_personnes, registre, ctx.markdown)
+    if refus:
+        raise OpError(" ; ".join(refus))
+    ctx.summary += resume + controles
     ctx.warnings += avis
     return ctx

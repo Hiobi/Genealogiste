@@ -130,8 +130,22 @@ consultée n'est pas écrite. Les faits de l'arbre restent régis par §2 à §6
 - **Citation normée** de chaque source de contexte : auteur, titre, publication, date, page, **identifiant
   pérenne** (DOI, ARK, HAL, PPN) quand il existe. Style ISO 690 par défaut ; *Evidence Explained* pour les
   sources généalogiques. Un identifiant non vu dans la source n'est pas recopié de mémoire.
-- **Rien trouvé n'est un résultat** : sans littérature ni presse documentant le lieu et la période, écrire
-  « contexte non documenté », jamais un paragraphe générique sur la région ou l'époque.
+- **Rien trouvé n'est un résultat** : sans littérature ni presse documentant le lieu et la période, le résultat
+  est « contexte non documenté » : pas de section « Contexte », jamais un paragraphe générique sur la région ou
+  l'époque, et une ligne « contexte à documenter : … » dans les questions ouvertes.
+- **Rédaction** (récit, note du coffre, billet de Gramps Web) : les faits de l'individu d'abord, chaque phrase
+  citée ; puis une section **« Contexte » séparée**, une phrase par élément de `contexte_local`, chacune avec son
+  appel de note et l'énoncé de l'élément repris entre guillemets ; puis les hypothèses de `pistes_contexte`,
+  chacune avec la source qui la trancherait ; les questions ouvertes ; les notes et sources (citation rendue par
+  l'outil, jamais recomposée). La formulation suit le niveau de rattachement : attesté → affirmatif, avec la
+  source de l'arbre qui porte sur l'individu ; compatible → « à la même époque et au même endroit… », sans lien
+  causal ; non démontré → « plus généralement… », et au-delà de la commune la mention « tendance générale, ne
+  prouve rien pour l'individu ». Du contexte seulement s'il éclaire un fait de l'individu (lieu et date communs).
+  Interdits : causalité non démontrée, sentiments, pensées ou détails de vie non sourcés, généralisation d'une
+  tendance à l'individu, anachronisme.
+- **Contrôle avant de rendre** : `contexte_verifier` sur le texte, corrigé jusqu'à `conforme: true` en retirant
+  ou en documentant, jamais en inventant une référence. `conforme: false` bloque la publication d'un billet.
+  Conforme ne veut pas dire vrai : relire chaque phrase contre sa source.
 - **Traçabilité** : chaque recherche de contexte est tracée au journal (`journal_ajouter`, `source_collee`),
   **y compris négative**, avec lieu, période, termes et source interrogée. Aucun nom de personne vivante ni
   donnée personnelle ne part vers un service externe : le contexte se cherche par lieu, période et métier.

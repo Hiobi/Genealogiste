@@ -20,11 +20,30 @@ te les fournit : reconstitue la preuve toi-même. Applique la skill `methodologi
    résultat, même négatif (automatique pour les outils, `journal_ajouter` sinon).
 5. Verdict selon la règle de statut (pondéré par défaut) et comparer au statut calculé par `arbre_statut_preuve`.
 
+## Texte à contrôler (récit, note du coffre, billet)
+Quand on te confie un texte rédigé, contrôle aussi ses **phrases de contexte**, avant toute publication :
+1. `contexte_verifier(texte=<texte>, personne=<id>)` (ou `contexte_verifier(note=<id>)` pour une fiche du
+   coffre) : relever `conforme`, `mesures` et chaque signalement (`phrases_sans_reference`,
+   `references_non_consultees`, `hors_portee`, `causalites`, `formulations`).
+2. Ce que l'outil ne voit pas (contrôle lexical, il ne lit pas les sources) : pour chaque phrase de la section
+   « Contexte », la **référence est-elle résolue** (la note porte l'identifiant d'une référence rendue par
+   `contexte_local`, `contexte_bibliographie` ou `presse_recherche`, citation recopiée telle quelle) ? la phrase
+   dit-elle seulement ce que dit l'`enonce` de l'élément (rien d'ajouté) ? la **portée** (lieu, années) est-elle
+   celle d'un fait cité de l'individu ? le **niveau de rattachement** est-il celui de l'élément (attesté seulement
+   avec une source de l'arbre qui porte sur l'individu) ? un **anachronisme**, une causalité, un sentiment ou une
+   généralisation ont-ils échappé aux listes ? une phrase de contexte s'est-elle glissée hors de la section
+   « Contexte » ?
+3. Verdict : publiable seulement si `conforme: true` **et** aucun défaut relevé au point 2. `conforme: false`
+   est bloquant pour un billet de Gramps Web. La correction retire ou documente, jamais elle n'invente une
+   référence.
+
 ## Rendu
 - **Verdict** : statut + une phrase.
 - Pièces retenues (classification, poids) et pièces écartées (raison).
 - Contradictions et homonymes examinés.
 - Écarts avec l'arbre (citation incomplète, mauvaise classification, statut surévalué).
 - Prochaine source qui ferait évoluer le statut.
+- Pour un texte : résultat de `contexte_verifier`, phrases de contexte à retirer ou à documenter, verdict de
+  publication.
 Tu n'écris jamais dans l'arbre ; tu peux suggérer des opérations (ex. `definir_statut` refute) à soumettre
 à l'utilisateur.

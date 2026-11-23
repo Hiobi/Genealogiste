@@ -25,8 +25,8 @@ Les commandes sont des workflows guidés : elles ne dispensent pas de lire les r
 | `transcris <image, PDF, lien de visionneuse ou IIIF, ARK> [type d’acte, lieu, date]` | Aider à lire un acte ancien (paléographie, latin) et relever les données, avec les incertitudes |
 | `organise <dossier> [triage]` | Proposer le classement et renommage de pièces, sans suppression |
 | `preuve <id> [fait : BIRT, DEAT, MARR, filiation ou uid]` | Rédiger un rapport argumenté sur une conclusion |
-| `recit <id> [courte ou longue]` | Produire une biographie dont chaque phrase factuelle est sourcée, avec le contexte historique local |
-| `billet <id ou sujet> [public]` | Publier un récit sourcé dans le blog de Gramps Web (source étiquetée `Blog`, corps en première note, images) : privé par défaut, refusé s’il est public et nomme une personne présumée vivante ; backend gramps requis |
+| `recit <id> [courte ou longue]` | Produire une biographie dont chaque phrase factuelle est sourcée ; contexte historique dans une section séparée, tiré des seules références consultées et contrôlé (`contexte_verifier`), absent s’il n’est pas documenté |
+| `billet <id ou sujet> [public]` | Publier un récit sourcé dans le blog de Gramps Web (source étiquetée `Blog`, corps en première note, images) : privé par défaut, refusé s’il est public et nomme une personne présumée vivante, ou si sa section « Contexte » n’est pas conforme (`contexte_verifier`) ; backend gramps requis |
 | `journal [source, id de personne ou texte] [nombre]` | Consulter recherches (négatives comprises) et historique des modifications |
 | `diagnostic [local] [vivants]` | Contrôler configuration, dépendances, droits, caches, sources joignables, chemins des médias, et pour Gramps Web version de l’API, rôle du compte et réglages, avec un remède par problème ; `local` : aucune requête externe ; `vivants` : contrôle des personnes vivantes exposées et des marqueurs en double (Gramps Web) |
 

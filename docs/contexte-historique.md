@@ -810,12 +810,132 @@ comme pour `contexte_local`.
 
 ### Rédaction
 
-<!-- #291 : emplacement réservé. Règle de rédaction (structure du texte, formulation selon le niveau de rattachement,
-sorties note, récit et billet, branchement du redacteur) : à écrire par #291, pas par #324. -->
+<!-- #291 -->
 
-*À compléter par #291.* Le contrôle ci-dessous lit la forme déjà produite par le `redacteur` (appels `[n]`, notes en
-fin de texte) et la structure annoncée par #291 (section « Contexte » séparée, « contexte à documenter » dans les
-questions ouvertes).
+Règle : **aucune phrase de contexte sans référence consultée.** Elle s'applique aux récits (`/genealogiste:recit`),
+aux notes du coffre et aux billets de Gramps Web (`/genealogiste:billet`). Elle est portée par l'agent `redacteur`
+(`agents/redacteur.md`), relue par le `verificateur`, et contrôlée par `contexte_verifier` ; pour un billet, le
+contrôle est aussi fait par le code de la proposition (voir « Sorties »).
+
+Une phrase de contexte n'est écrite que si elle reprend un élément rendu par `contexte_local` (ou une référence
+rendue par `contexte_bibliographie` ou `presse_recherche`) dont la source est au registre des références
+consultées. À défaut, elle est **omise**, et une ligne « contexte à documenter : … » va dans les questions ouvertes.
+Quand aucun élément sourcé n'existe, le texte n'a **pas de section « Contexte »** : jamais de paragraphe de
+remplissage.
+
+**Structure du texte**, dans le format que `contexte_verifier` lit :
+
+| Section | Contenu |
+|---|---|
+| titre, puis « Récit » | faits de l'individu ; chaque phrase factuelle porte son appel de note `[n]` vers une source de l'arbre ; le degré de certitude se lit dans la formulation (confirmé, probable, hypothèse, contradictoire) |
+| « Contexte » (séparée ; absente s'il n'y a rien) | une phrase par élément, qui reprend son `enonce` mot pour mot entre guillemets « », avec son appel de note ; formulation selon le niveau de rattachement |
+| « Hypothèses » (absente s'il n'y en a pas) | pistes de `pistes_contexte` : `hypothese` tel quel, au conditionnel ou précédé de « Hypothèse : », ce qui la fonde, et la source qui la trancherait (`test.sources`) ; une piste `contexte_seul` reste « non démontrée » |
+| « Questions ouvertes » | contradictions, lacunes, prochaines sources ; « contexte à documenter : … » quand un contexte a été cherché sans résultat |
+| « Notes et sources » | une note par ligne (`[n] citation`) ; pour une référence de contexte, `source.citation` de l'élément recopiée telle quelle, identifiant pérenne compris, au style de `GENEALOGISTE_CONTEXTE_STYLE_CITATION` : jamais recomposée |
+
+**Formulation selon le niveau de rattachement** (`rattachement.niveau` de l'élément) :
+
+| Niveau | Formulation | Gabarit |
+|---|---|---|
+| `atteste` | affirmative ; deux appels : la source de l'arbre qui porte sur l'individu (`rattachement.citation_arbre`) et la référence | `<fait de l'individu> [n] : « <enonce> » [m].` |
+| `compatible` | « à la même époque et au même endroit… », sans lien causal ni mention de l'individu | `À la même époque et au même endroit : « <enonce> » [n].` |
+| `non_demontre`, commune | « plus généralement… », sans mention de l'individu | `Dans la commune, plus généralement : « <enonce> » [n].` |
+| `non_demontre`, au-delà de la commune (élément qui porte `mention`) | « plus généralement… », avec la mention de tendance générale | `Dans le département, plus généralement : « <enonce> » (tendance générale, ne prouve rien pour l'individu) [n].` |
+
+**Pertinence.** Un élément n'entre dans le texte que s'il éclaire un fait de l'individu : lieu et date communs avec
+un fait cité. Les éléments écartés par `contexte_local` (`ecartes`), les entrées d'index non sourcées
+(`non_sources`) et les échelles sans élément (`non_documente`) ne sont jamais écrits comme contexte.
+
+**Interdits**, dans tout le texte :
+
+- causalité non démontrée entre le contexte et une décision de l'individu (connecteurs de la liste `CONNECTEURS`
+  ci-dessous) : elle ne s'écrit que comme hypothèse, avec la source qui la trancherait ;
+- sentiments, pensées, motifs ou détails de vie non sourcés ;
+- généralisation d'une tendance à l'individu (liste `GENERALISATIONS`) ;
+- anachronisme : élément hors des lieux de vie ou hors de la période de vie sourcée ;
+- référence de mémoire : titre, auteur, date ou identifiant qui ne vient pas d'un outil.
+
+**Vérification avant de rendre.** Le `redacteur` appelle `contexte_verifier(texte=<texte>, personne=<id>)` et
+corrige jusqu'à `conforme: true`, en **retirant** la phrase ou en la **documentant** par un élément réellement
+rendu, jamais en inventant une référence ni en sortant la phrase de la section « Contexte ». Les commandes
+`/genealogiste:recit` et `/genealogiste:billet` refont l'appel sur le texte rendu ; le `verificateur`, quand un
+texte lui est confié, contrôle en plus ce que le contrôle lexical ne voit pas (référence résolue, rien d'ajouté à
+l'énoncé, portée, niveau de rattachement, anachronisme, phrase de contexte hors de sa section).
+
+**Exemple** (texte conforme du cas témoin du mineur, `mcp/tests/fixtures/contexte/textes/` : les phrases de
+contexte sont des titres de notices réelles, repris de `contexte_local` sur les réponses enregistrées ; les sources
+de l'arbre sont fictives) :
+
+```markdown
+# Anselme WATTECAMPS (1881-1946)
+
+## Récit
+
+Anselme WATTECAMPS naît le 14 février 1881 à Billy-Montigny (Pas-de-Calais) [1]. Il est mineur à Billy-Montigny en 1904 [2]. Il réside à Denain (Nord) en juillet 1906 [3]. Il se trouve à Krebs (Oklahoma, États-Unis) le 17 septembre 1917 [4]. Il meurt le 3 novembre 1946 à Charleroi (Pennsylvanie, États-Unis) [5].
+
+## Contexte
+
+À la même époque et au même endroit : « Notice sur la compagnie des mines de Courrières, société anonyme - capital 6.000.000 de francs : siège social : Billy-Montigny (Pas-de-Calais) » [6].
+
+Dans la commune, plus généralement : « Billy-Montigny au coeur de la catastrophe minière de 1906 : 1099 morts » [7].
+
+Dans le département, plus généralement : « Écopolitiques ouvrières : enquête socio-environnementale dans les mines de charbon du Nord-Pas-de-Calais (fin XIXe-début XXe siècle) » (tendance générale, ne prouve rien pour l'individu) [8].
+
+## Questions ouvertes
+
+- Départ de France : entre juillet 1906 [3] et le 17 septembre 1917 [4] ; aucune source de l'arbre ne le date.
+- Lien éventuel de l'individu avec les éléments de contexte ci-dessus : non démontré ; aucune source de l'arbre ne le relie à eux.
+
+## Notes et sources
+
+[1] Registres d'état civil de Billy-Montigny (fictif), Naissances 1881, acte n° 17.
+[2] Registres de population de Billy-Montigny (fictif), Registre de population 1904, f° 88.
+[3] Registres de population de Denain (fictif), Registre de population 1906, f° 41.
+[4] Dossier administratif américain (fictif), Pièce n° 12.
+[5] Certificats de décès de Pennsylvanie (fictif), Certificat n° 1946-0412.
+[6] Notice sur la compagnie des mines de Courrières, société anonyme - capital 6.000.000 de francs : siège social : Billy-Montigny (Pas-de-Calais). Plouvier-Dekindt, 1900. [Consulté le 23 novembre 2026]. PPN 249145197. [Non renseigné : auteur, lieu d'édition.] [Notice seule, non lu.]
+[7] BOURDON, Henri. Billy-Montigny au coeur de la catastrophe minière de 1906 : 1099 morts. Billy-Montigny : H. Bourdon, 1974. 223 p. [Consulté le 23 novembre 2026]. PPN 060478624. [Notice seule, non lu.]
+[8] CABOT, Bastien. Écopolitiques ouvrières : enquête socio-environnementale dans les mines de charbon du Nord-Pas-de-Calais (fin XIXe-début XXe siècle). Thèse de doctorat. Paris, EHESS, 2022. [Consulté le 23 novembre 2026]. DOI 10.70675/2dbefc32z7f71z45f9zba14z182f3ef066ff. [Notice seule, non lu.]
+```
+
+Sans élément sourcé (cas du lieu non documenté) : aucune section « Contexte », et dans les questions ouvertes :
+
+```markdown
+- Contexte à documenter : contexte non documenté pour le lieu-dit des Quatre-Chênes entre 1850 et 1923 (aucune notice trouvée).
+```
+
+**Sorties.**
+
+| Sortie | Forme | Contrôle |
+|---|---|---|
+| récit (`/genealogiste:recit`) | structure ci-dessus, titres `##` | consigne : `contexte_verifier(texte=…, personne=…)` par le `redacteur` puis par la commande ; le rapport est montré avec les phrases à corriger |
+| note du coffre | section manuelle `## Contexte` de la fiche de la personne, hors des sections générées et avant `## Notes libres` ; appels en notes de bas de page (`[^c1]`, définies dans la section) ; écrite après accord de l'utilisateur ; hypothèses et « contexte à documenter » par `notes_ajouter` (`hypothese`, `a_faire`) | la régénération conserve la section telle quelle (test) ; consigne : `contexte_verifier(note=<id>)` ; voir [notes.md](notes.md#section-contexte-291) |
+| billet de Gramps Web (`/genealogiste:billet`) | même structure, intertitres en gras seuls sur leur ligne (`**Contexte**`, `**Notes et sources**`…) ; privé par défaut, diff puis accord | **code** : la proposition est refusée si la section « Contexte » n'est pas conforme (ci-dessous) |
+
+**Billet : `conforme: false` est bloquant, par le code.** Toute proposition (`arbre_proposer`,
+`propositions_deposer`) qui crée un billet, change son texte ou le rend public passe par
+`billets.controler_contexte` (appelé par `tree/ops.apply_ops`, pour `ajouter_billet`, `ajouter_source` ou `etiqueter`
+avec l'étiquette `Blog`, et `modifier_source`) :
+
+- texte **sans** section « Contexte » : aucun contrôle, aucun changement de comportement ;
+- texte **avec** une section « Contexte » : l'opération doit donner `"personne": "<id>"` (individu du billet, sur
+  `ajouter_billet`, `ajouter_source` ou `modifier_source`) ; le texte est contrôlé comme par `contexte_verifier`
+  (mêmes règles, même registre). Non conforme, personne absente ou inconnue, registre indisponible : **refus**, avec
+  le rapport dans le message d'erreur (rubriques signalées, phrases et motifs ; cinq signalements au plus par
+  rubrique) ; conforme : le résumé de la proposition porte « section « Contexte » contrôlée … : conforme » ;
+- le texte contrôlé est le Markdown donné à l'opération ; pour un billet déjà dans Gramps Web (rendu public sans
+  changement de texte), ses intertitres, devenus du gras sans astérisques, sont reconnus quand la ligne est isolée
+  et porte le nom d'une section (« Contexte », « Hypothèses », « Questions ouvertes », « Notes et sources »).
+
+Limites de cette garantie : elle tient à la présence d'une section « Contexte » (une phrase de contexte écrite dans
+le récit, hors de toute section « Contexte », n'est vue que si elle porte un connecteur causal ou une
+généralisation des listes, et seulement quand le texte a par ailleurs une section « Contexte ») ; un billet saisi
+dans l'interface de Gramps Web, ou arrivé par synchronisation (`gramps_synchroniser`, `gramps_tirer`), ne passe pas
+par ce contrôle ; les limites de `contexte_verifier` s'appliquent (contrôle lexical : conforme ne veut pas dire
+vrai).
+
+**Vivants.** Règle existante, inchangée : récit refusé pour une personne présumée vivante, billet public qui en
+nomme une refusé, fiche masquée dans le coffre ; `contexte_local` et `pistes_contexte` n'envoient jamais de nom.
 
 ### contexte_verifier
 
@@ -902,9 +1022,11 @@ relancer `tests/test_contexte_verifier.py` et l'évaluation ci-dessous (aucun fa
 contexte (texte « contexte non documenté »). Arguments invalides, personne inconnue, note absente : `erreur`.
 
 **Contrat de publication.** `conforme: false` est **bloquant** pour la publication d'un billet de Gramps Web : le
-billet n'est pas proposé (`ajouter_billet`) tant que le rapport n'est pas conforme ; pour une note du coffre ou un
-récit, le rapport est montré à l'utilisateur avec les phrases à corriger. L'appel par le `redacteur` et le
-`verificateur` avant toute publication, et le branchement dans `/genealogiste:billet`, relèvent de #291 et #325.
+billet n'est pas proposé (`ajouter_billet`) tant que le rapport n'est pas conforme, et la proposition elle-même le
+refuse (#291, « Rédaction », « Sorties ») ; pour une note du coffre ou un récit, le rapport est montré à
+l'utilisateur avec les phrases à corriger. L'appel par le `redacteur`, le `verificateur`, `/genealogiste:recit` et
+`/genealogiste:billet` est décrit dans « Rédaction » ; la commande `/genealogiste:contexte` et le branchement du
+`chercheur` relèvent de #325.
 
 **Limites** (rendues aussi dans `limites`) :
 
