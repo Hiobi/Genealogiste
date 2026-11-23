@@ -129,6 +129,7 @@ def test_rapport_et_code_sortie_sans_mutation(monkeypatch, capsys, status, heade
     monkeypatch.setattr(verifier.archives, "validate", lambda: erreurs)
     monkeypatch.setattr(verifier.sites_tiers, "sites", lambda: ())
     monkeypatch.setattr(verifier.sites_tiers, "validate", lambda: [])
+    monkeypatch.setattr(verifier.services_contexte, "services", lambda: ())  # #285 : sondés à part
     monkeypatch.setattr(verifier.httpx, "Client", lambda **kwargs: creer_client(
         transport=httpx.MockTransport(repondre), **kwargs))
     assert verifier.main() == attendu
@@ -179,6 +180,7 @@ def test_sites_tiers_sondes_et_protection_signalee(monkeypatch, capsys, protecti
     monkeypatch.setattr(verifier.sites_tiers, "validate", lambda: [])
     monkeypatch.setattr(verifier.sites_tiers, "sites", lambda: (
         {"code": "T1", "url": URL + "tiers", "protection": protection},))
+    monkeypatch.setattr(verifier.services_contexte, "services", lambda: ())  # #285 : sondés à part
     monkeypatch.setattr(verifier.httpx, "Client", lambda **kwargs: creer_client(
         transport=httpx.MockTransport(repondre), **kwargs))
     assert verifier.main() == 0

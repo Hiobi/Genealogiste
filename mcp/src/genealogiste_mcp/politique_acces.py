@@ -34,9 +34,9 @@ PROVENANCES = {
     "environnement": "surcharge par variable d'environnement",
     "defaut": "défaut prudent du plugin",
 }
-CATEGORIES = ("api", "archives", "autre")
+CATEGORIES = ("api", "archives", "autre", "contexte")  # contexte : services de contexte historique (#285)
 VARIABLE_PLAFOND = {"archives": "GENEALOGISTE_PLAFOND_JOUR_ARCHIVES", "autre": "GENEALOGISTE_PLAFOND_JOUR_DEFAUT",
-                    "api": "GENEALOGISTE_PLAFOND_JOUR_DEFAUT"}
+                    "api": "GENEALOGISTE_PLAFOND_JOUR_DEFAUT", "contexte": "GENEALOGISTE_PLAFOND_JOUR_DEFAUT"}
 
 
 @dataclass(frozen=True)
@@ -130,6 +130,14 @@ class Politique:
         return d
 
 
+def services_contexte() -> dict[str, Entree]:
+    """Hôtes des services de contexte historique (referentiels/sources_contexte.json), déclarés avec les valeurs
+    par défaut ; une entrée de SERVICES pour le même hôte (Gallica, Wikidata) reste prioritaire."""
+    from .contexte import services
+
+    return services.entrees_politique()
+
+
 def normaliser_hote(hote: str) -> str:
     """Nom d'hôte en minuscules, sans port ni identifiants (``netloc`` ou nom nu)."""
     h = (hote or "").strip()
@@ -147,7 +155,9 @@ class PolitiqueAcces:
                  hotes_archives: frozenset[str] | set[str] = frozenset(), services_archives: dict[str, str] | None = None,
                  debits: dict[str, float] | None = None, debit_defaut: float = 0.0,
                  plafond_archives: int = 0, plafond_defaut: int = 0, plafonds: dict[str, int] | None = None):
-        self.services = {normaliser_hote(h): e for h, e in (SERVICES if services is None else services).items()}
+        if services is None:  # table du plugin, complétée par les hôtes du référentiel de contexte (#285)
+            services = {**services_contexte(), **SERVICES}
+        self.services = {normaliser_hote(h): e for h, e in services.items()}
         self.referentiel = {normaliser_hote(h): float(v) for h, v in (referentiel or {}).items()}
         self.hotes_archives = frozenset(_sans_www(normaliser_hote(h)) for h in hotes_archives if h)
         self.services_archives = {normaliser_hote(h): n for h, n in (services_archives or {}).items()}
@@ -236,6 +246,9 @@ class PolitiqueAcces:
                          "note": "intervalle_requetes du référentiel prioritaire s'il est renseigné"},
             "autre": {"intervalle": self.debit_defaut, "plafond_jour": self.plafond_defaut,
                       "variables": ["GENEALOGISTE_DEBIT_DEFAUT", "GENEALOGISTE_PLAFOND_JOUR_DEFAUT"]},
+            "contexte": {"intervalle": self.debit_defaut, "plafond_jour": self.plafond_defaut,
+                         "variables": ["GENEALOGISTE_DEBIT_DEFAUT", "GENEALOGISTE_PLAFOND_JOUR_DEFAUT"],
+                         "note": "hôtes du référentiel des services de contexte (sources_contexte.json)"},
         }
 
 

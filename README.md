@@ -95,6 +95,10 @@ dossier existant, base depuis zéro, arbre GEDCOM ou Gramps Web. Obsidian n’es
 - Aucun contact personnel n’est envoyé aux sites par défaut ; `GENEALOGISTE_CONTACT` (facultatif) ajoute
   l’adresse ou l’URL de votre choix au User-Agent de chaque requête externe
   ([identification](docs/securite.md#identification--user-agent-et-contact-facultatif)).
+- Services de contexte historique (HAL, Sudoc, Persée, Crossref…) : `GENEALOGISTE_CONTEXTE_SERVICES` choisit
+  ceux qui sont interrogés ; clés personnelles `GENEALOGISTE_CLE_EUROPEANA`, `GENEALOGISTE_CLE_OPENALEX`,
+  `GENEALOGISTE_CLE_NARA`, `GENEALOGISTE_CLE_APE`, jamais affichées ; `GENEALOGISTE_CROSSREF_MAILTO` vide par défaut
+  ([services de contexte](docs/contexte-historique.md#services-de-contexte)).
 - Pour une recherche sans surveillance (`/genealogiste:campagne`, tâche planifiée), `GENEALOGISTE_ECRITURE=interdite`
   fait refuser par le serveur lui-même toute écriture, quel que soit le mode de permission du client ; les
   conclusions attendent dans la file de propositions ([campagne sans surveillance](docs/campagne.md)).

@@ -1,5 +1,8 @@
-"""Vérifie que les sites du référentiel des archives et des sites tiers (#181) répondent (requête HEAD ; repli GET limité aux en-têtes,
-corps jamais lu, quand le site refuse HEAD).
+"""Vérifie que les sites du référentiel des archives, des sites tiers (#181) et des services de contexte historique
+(#285) répondent (requête HEAD ; repli GET limité aux en-têtes, corps jamais lu, quand le site refuse HEAD).
+
+Services de contexte : une requête par service, sans clé ni paramètre (aucune donnée personnelle) ; un service en
+lien seulement, protégé ou à clé requise rend AVERT (jamais KO), sans contournement.
 
 Usage : uv run python scripts/verifier_archives.py
 Rapport seulement : ``verifie_le`` atteste une vérification humaine de l'entrée et n'est jamais modifié ici.
@@ -12,9 +15,10 @@ import sys
 import httpx
 
 from genealogiste_mcp import archives, sites_tiers
+from genealogiste_mcp.contexte import services as services_contexte
 
 UA = "genealogiste-mcp (verification du referentiel des archives ; en-tetes uniquement)"
-REPLI = {403, 405, 501}  # sites qui refusent HEAD mais répondent en GET
+REPLI = {400, 403, 405, 501}  # sites qui refusent HEAD (400 : OAI-PMH de Persée, #285) mais répondent en GET
 
 
 def sonder(client: httpx.Client, url: str) -> tuple[str, str]:
@@ -53,8 +57,24 @@ def sonder(client: httpx.Client, url: str) -> tuple[str, str]:
     return "KO", str(r.status_code)
 
 
+def sonder_contexte(client: httpx.Client, s: dict) -> tuple[str, str, str]:
+    """(verdict, détail, url) d'un service de contexte : url_sonde (requête minimale sans donnée personnelle), sinon
+    son point d'accès, sinon son site. KO réservé aux services interrogeables par défaut (api, sans clé requise,
+    sans protection) ; les autres rendent AVERT."""
+    url = services_contexte.url_de_sondage(s)
+    verdict, detail = sonder(client, url)
+    if verdict == "OK" and s.get("protection") != "aucune":
+        verdict, detail = "AVERT", f"{detail}, protection relevée : {s['protection']}"
+    if verdict == "KO" and not services_contexte.actif_par_defaut(s):
+        raison = ("lien seulement" if s["mode"] == "lien_seulement" else
+                  f"clé requise ({s['variable_cle']}), sondé sans clé" if s["cle"] == "requise" else "protégé")
+        verdict, detail = "AVERT", f"{detail} ({raison})"
+    return verdict, detail, url
+
+
 def main() -> int:
-    errs = archives.validate() + [f"sites_tiers : {e}" for e in sites_tiers.validate()]
+    errs = (archives.validate() + [f"sites_tiers : {e}" for e in sites_tiers.validate()]
+            + [f"sources_contexte : {e}" for e in services_contexte.validate()])
     for e in errs:
         print(f"FORMAT  {e}")
     bad = 0
@@ -75,6 +95,10 @@ def main() -> int:
                 verdict, detail = "AVERT", f"{detail}, protection relevée : {s['protection']}"
             bad += verdict == "KO"
             print(f"{verdict:<6}  {s['code']:<16} {'site_tiers':<18} {detail}  {s['url']}")
+        for s in services_contexte.services():  # rapport seulement : le référentiel n'est jamais modifié
+            verdict, detail, url = sonder_contexte(client, s)
+            bad += verdict == "KO"
+            print(f"{verdict:<6}  {s['code']:<16} {'contexte':<18} {detail}  {url}")
     return 1 if errs or bad else 0
 
 

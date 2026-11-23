@@ -92,6 +92,12 @@ class Config:
     notes_kit: bool = True  # kit Obsidian (vues, modèles, extrait CSS) déposé par notes_generer « tout »
     marqueurs: str = "genealogiste"  # forme écrite des marqueurs (notes, Gramps) : genealogiste | sosa (#182)
     contexte_style_citation: str = "iso690"  # GENEALOGISTE_CONTEXTE_STYLE_CITATION : iso690 | evidence_explained
+    # Services de contexte historique (#285) : GENEALOGISTE_CONTEXTE_SERVICES (None = défaut du référentiel : services
+    # api sans clé requise ni protection ; () = aucun). Clés GENEALOGISTE_CLE_* (code -> valeur) et mailto Crossref :
+    # hors repr, jamais affichées, journalisées ni écrites (diagnostic : « définie » / « absente »).
+    contexte_services: tuple[str, ...] | None = None
+    cles_contexte: dict[str, str] = field(default_factory=dict, repr=False)
+    crossref_mailto: str = field(default="", repr=False)  # vide par défaut : donnée personnelle
     sosa_racine: str = ""  # personne n° 1 de la numérotation Sosa des notes
     cog_mvt_url: str = "https://www.insee.fr/fr/statistiques/fichier/7766585/v_mvt_commune_2024.csv"
     cog_communes_url: str = "https://www.insee.fr/fr/statistiques/fichier/7766585/v_commune_depuis_1943.csv"
@@ -450,6 +456,8 @@ def load_config() -> Config:
         or _xdg("XDG_CACHE_HOME", ".cache") / "genealogiste" / "cache.sqlite"
     ).expanduser()
     env = os.environ.get
+    from .contexte import services as services_ctx
+
     cfg = Config(
         data_dir=data_dir,
         cache_path=cache,
@@ -476,6 +484,9 @@ def load_config() -> Config:
         notes_kit=_bool(env("GENEALOGISTE_NOTES_KIT"), True),
         marqueurs=marqueurs_mode(env("GENEALOGISTE_MARQUEURS")),
         contexte_style_citation=style_citation(env("GENEALOGISTE_CONTEXTE_STYLE_CITATION")),
+        contexte_services=services_ctx.parser_services(env(services_ctx.VARIABLE_SERVICES)),
+        cles_contexte=services_ctx.cles_depuis_env(env),
+        crossref_mailto=services_ctx.parser_mailto(env(services_ctx.VARIABLE_MAILTO)),
         sosa_racine=env("GENEALOGISTE_SOSA_RACINE", ""),
         hotes_autorises=[h for h in env("GENEALOGISTE_HOTES_AUTORISES", "").split(",") if h.strip()],
         http_timeout=secondes(env("GENEALOGISTE_HTTP_TIMEOUT"), 30.0, "GENEALOGISTE_HTTP_TIMEOUT") or 30.0,
