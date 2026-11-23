@@ -60,6 +60,7 @@ OUTILS: dict[str, tuple[str, str]] = {  # nom -> (effet, classe)
     # géographie historique (#287) : COG, API Géo, Melodi, Géoplateforme, index Wikidata ; lieu et date seulement
     "lieu_historique": (RESEAU, COLLECTE),
     "recherche_multi": (RESEAU, COLLECTE),
+    "contexte_bibliographie": (RESEAU, COLLECTE),  # littérature savante (#286) ; registre des références
     "liens_recherche": (LECTURE, LECTURE),
     "cotes_a_consulter": (LECTURE, LECTURE),
     "sources_catalogue": (LECTURE, LECTURE),  # référentiels embarqués (archives, sites tiers, API)
@@ -263,7 +264,7 @@ BUDGET_ENQUETE = frozenset(n for n, (effet, classe) in OUTILS.items()
 # Outils réseau qui envoient des noms, un texte libre ou un identifiant de personne : garde « vivants » obligatoire.
 GARDE_VIVANTS = {"matchid_recherche", "matchid_appariement_csv", "wikitree_recherche", "gallica_recherche",
                  "gallica_recherche_document", "wikidata_personne", "wikidata_sparql", "recherche_multi",
-                 "archives_registres"}
+                 "archives_registres", "contexte_bibliographie"}
 
 # Garde « vivants » avant le budget d'enquête (#211) : pour les outils gardés dont l'enveloppe générique
 # (ServeurMCP.mesure) contrôle le budget avant d'exécuter l'outil, paramètres de l'appel passés à _garde, comme
@@ -281,6 +282,7 @@ GARDE_AVANT_BUDGET: dict[str, dict[str, str]] = {
     "wikidata_personne": {"personne": "personne", "nom": "nom", "prenom": "prenom", "ne_vers": "ne_vers"},
     "wikidata_sparql": {"texte": "requete"},
     "archives_registres": {"personne": "personne", "texte": "commune"},
+    "contexte_bibliographie": {"personne": "personne", "texte": "sujet"},
 }
 
 # Paramètres qui désignent une personne ; exemptions justifiées (outil réseau, paramètre sans rapport).
@@ -326,6 +328,8 @@ IDENTITE_REQUETE: dict[str, dict[str, tuple[str, object]]] = {
     "lieu_historique": {"lieu": (TEXTE, ""), "date": (TEXTE, "")},
     "archives_registres": {"service": (EXACT, ""), "commune": (TEXTE, ""), "annee": (ENTIER, 0),
                            "type_acte": (EXACT, ""), "page": (ENTIER, 1), "annee_fin": (ENTIER, 0)},
+    "contexte_bibliographie": {"sujet": (TEXTE, ""), "lieu": (TEXTE, ""), "periode": (EXACT, ""),
+                               "echelle": (EXACT, "commune"), "services": (EXACT, None), "limite": (ENTIER, 10)},
     "archives_planche": {"source": (EXACT, ""), "de": (ENTIER, 0), "a": (ENTIER, 0), "pas": (ENTIER, 1),
                          "bandeau": (EXACT, ""), "largeur": (ENTIER, 1200), "gris": (BOOLEEN, True),
                          "miniatures": (BOOLEEN, False)},

@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xml-stylesheet type="text/xsl" href="https://www.sudoc.abes.fr/cbs/sru/DB=2.1/?xsl=searchRetrieveResponse" ?>
+<srw:searchRetrieveResponse xmlns:srw="http://www.loc.gov/zing/srw/"
+			    xmlns:dc="http://purl.org/dc/elements/1.1/"
+			    xmlns:diag="http://www.loc.gov/zing/srw/diagnostic/"
+			    xmlns:xcql="http://www.loc.gov/zing/cql/xcql/">
+    <srw:version>1.1</srw:version>
+    <srw:numberOfRecords>3</srw:numberOfRecords>
+    <srw:resultSetId>SIDc666661e-79S104579</srw:resultSetId>
+    <srw:records>
+    
+
+
+<srw:record>
+<srw:recordSchema>unimarc</srw:recordSchema>
+<srw:recordPacking>xml</srw:recordPacking>
+<srw:recordData>
+<record>
+<controlfield tag="005">20200918090336.000</controlfield>
+<leader>     nam0 22        450 </leader>
+<controlfield tag="001">249145197</controlfield>
+<controlfield tag="003">http://www.sudoc.fr/249145197</controlfield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">(OCoLC)1196171460</subfield></datafield>
+<datafield tag="100" ind1=" " ind2=" "><subfield code="a">20200918d1900    m  y0frey50      ba</subfield></datafield>
+<datafield tag="101" ind1="0" ind2=" "><subfield code="a">fre</subfield>
+<subfield code="2">639-2</subfield></datafield>
+<datafield tag="105" ind1=" " ind2=" "><subfield code="a">ab  z   000yd</subfield></datafield>
+<datafield tag="181" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">txt</subfield>
+<subfield code="2">rdacontent</subfield></datafield>
+<datafield tag="181" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">i#</subfield>
+<subfield code="b">xxxe##</subfield></datafield>
+<datafield tag="182" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">n</subfield>
+<subfield code="2">rdamedia</subfield></datafield>
+<datafield tag="182" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">n</subfield></datafield>
+<datafield tag="183" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">nga</subfield>
+<subfield code="2">RDAfrCarrier</subfield></datafield>
+<datafield tag="102" ind1=" " ind2=" "><subfield code="a">FR</subfield></datafield>
+<datafield tag="200" ind1="1" ind2=" "><subfield code="a">Notice sur la compagnie des mines de Courrières, société anonyme - capital 6.000.000 de francs</subfield>
+<subfield code="e">siège social : Billy-Montigny (Pas-de-Calais)</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="3"><subfield code="a">FR</subfield>
+<subfield code="b">Abes</subfield>
+<subfield code="c">20200918</subfield>
+<subfield code="g">AFNOR</subfield></datafield>
+<datafield tag="214" ind1=" " ind2="2"><subfield code="a">Lieu d&apos;impression inconnu</subfield>
+<subfield code="c">Plouvier-Dekindt</subfield>
+<subfield code="d">1900</subfield></datafield>
+<datafield tag="215" ind1=" " ind2=" "><subfield code="a">1 vol. (15 p. - 12 p. de pl.)</subfield>
+<subfield code="c">ill., cartes</subfield>
+<subfield code="d">32 cm</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">027260267</subfield>
+<subfield code="a">Mines de charbon</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="607" ind1=" " ind2=" "><subfield code="3">027252353</subfield>
+<subfield code="a">Pas-de-Calais (France)</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="303" ind1=" " ind2=" "><subfield code="a">Il est indiqué en haut de la couverture &quot;Exposition universelle de 1900&quot;.</subfield></datafield>
+</record></srw:recordData><srw:recordPosition>1</srw:recordPosition>
+</srw:record>
+
+<srw:record>
+<srw:recordSchema>unimarc</srw:recordSchema>
+<srw:recordPacking>xml</srw:recordPacking>
+<srw:recordData>
+<record>
+<controlfield tag="005">20231031185016.000</controlfield>
+<leader>     cam0 22        450 </leader>
+<controlfield tag="001">060478624</controlfield>
+<controlfield tag="003">http://www.sudoc.fr/060478624</controlfield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">(OCoLC)461518429</subfield></datafield>
+<datafield tag="010" ind1=" " ind2=" "><subfield code="b">Br.</subfield>
+<subfield code="d">25 F</subfield></datafield>
+<datafield tag="020" ind1=" " ind2=" "><subfield code="a">FR</subfield>
+<subfield code="b">07512463</subfield></datafield>
+<datafield tag="021" ind1=" " ind2=" "><subfield code="a">FR</subfield>
+<subfield code="b">D.L. 74-25531</subfield></datafield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">PRITEC.MAZARINE.010291103001</subfield></datafield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">frBN000253288</subfield></datafield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">FRBNF345714720000005</subfield>
+<subfield code="z">FRBNF34571472</subfield></datafield>
+<datafield tag="033" ind1=" " ind2=" "><subfield code="a">http://catalogue.bnf.fr/ark:/12148/cb34571472f</subfield></datafield>
+<datafield tag="100" ind1=" " ind2=" "><subfield code="a">19750829d1974    |||y0frey50      ba</subfield></datafield>
+<datafield tag="101" ind1="0" ind2=" "><subfield code="a">fre</subfield>
+<subfield code="2">639-2</subfield></datafield>
+<datafield tag="105" ind1=" " ind2=" "><subfield code="a">a   z   00|z|</subfield></datafield>
+<datafield tag="106" ind1=" " ind2=" "><subfield code="a">r</subfield></datafield>
+<datafield tag="181" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">txt</subfield>
+<subfield code="2">rdacontent</subfield></datafield>
+<datafield tag="181" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">i#</subfield>
+<subfield code="b">xxxe##</subfield></datafield>
+<datafield tag="182" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">n</subfield>
+<subfield code="2">rdamedia</subfield></datafield>
+<datafield tag="182" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">n</subfield></datafield>
+<datafield tag="102" ind1=" " ind2=" "><subfield code="a">FR</subfield></datafield>
+<datafield tag="320" ind1=" " ind2=" "><subfield code="a">Bibliogr. p. 217</subfield></datafield>
+<datafield tag="200" ind1="1" ind2=" "><subfield code="a">Billy-Montigny au coeur de la catastrophe minière de 1906</subfield>
+<subfield code="e">1099 morts</subfield>
+<subfield code="f">Henri Bourdon</subfield></datafield>
+<datafield tag="700" ind1=" " ind2="1"><subfield code="3">083712267</subfield>
+<subfield code="a">Bourdon</subfield>
+<subfield code="b">Henri</subfield>
+<subfield code="f">19..-....</subfield>
+<subfield code="4">070</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="3"><subfield code="a">FR</subfield>
+<subfield code="b">Abes</subfield>
+<subfield code="c">20231031</subfield>
+<subfield code="g">AFNOR</subfield></datafield>
+<datafield tag="210" ind1=" " ind2=" "><subfield code="a">Billy-Montigny</subfield>
+<subfield code="b">12, rue Alfred-Dupont, 62420</subfield>
+<subfield code="c">H. Bourdon</subfield>
+<subfield code="d">1974</subfield>
+<subfield code="e">62-Lens</subfield>
+<subfield code="g">Impr. de la Centrale</subfield></datafield>
+<datafield tag="215" ind1=" " ind2=" "><subfield code="a">223 p.</subfield>
+<subfield code="c">ill., couv. ill.</subfield>
+<subfield code="d">21 cm</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">027852431</subfield>
+<subfield code="a">Mines (sites d&apos;extraction)</subfield>
+<subfield code="x">Accidents</subfield>
+<subfield code="3">027226794</subfield>
+<subfield code="y">France</subfield>
+<subfield code="3">140518169</subfield>
+<subfield code="y">Billy-Montigny (Pas-de-Calais)</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="676" ind1=" " ind2=" "><subfield code="a">920</subfield></datafield>
+<datafield tag="675" ind1=" " ind2=" "><subfield code="a">92</subfield>
+<subfield code="v">Éd. 1967</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="3"><subfield code="a">FR</subfield>
+<subfield code="b">BN</subfield>
+<subfield code="c">19981016</subfield>
+<subfield code="g">AFNOR</subfield></datafield>
+</record></srw:recordData><srw:recordPosition>2</srw:recordPosition>
+</srw:record>
+
+<srw:record>
+<srw:recordSchema>unimarc</srw:recordSchema>
+<srw:recordPacking>xml</srw:recordPacking>
+<srw:recordData>
+<record>
+<controlfield tag="005">20230619184244.000</controlfield>
+<leader>     cem0 22        450 </leader>
+<controlfield tag="001">083326308</controlfield>
+<controlfield tag="003">http://www.sudoc.fr/083326308</controlfield>
+<datafield tag="035" ind1=" " ind2=" "><subfield code="a">(OCoLC)493048972</subfield></datafield>
+<datafield tag="073" ind1=" " ind2="0"><subfield code="a">3282117231011</subfield></datafield>
+<datafield tag="100" ind1=" " ind2=" "><subfield code="a">20050114d2000    k  y0frey50      ba</subfield></datafield>
+<datafield tag="101" ind1="0" ind2=" "><subfield code="a">fre</subfield>
+<subfield code="a">eng</subfield>
+<subfield code="a">ger</subfield>
+<subfield code="2">639-2</subfield></datafield>
+<datafield tag="105" ind1=" " ind2=" "><subfield code="a">y   |||||||||</subfield></datafield>
+<datafield tag="120" ind1=" " ind2=" "><subfield code="a">baya   ||aabg</subfield></datafield>
+<datafield tag="121" ind1=" " ind2=" "><subfield code="a">a||aabyaz</subfield>
+<subfield code="b">|||||||||</subfield></datafield>
+<datafield tag="123" ind1="1" ind2=" "><subfield code="a">a</subfield>
+<subfield code="b">13000</subfield>
+<subfield code="d">e0</subfield>
+<subfield code="e">e0</subfield>
+<subfield code="f">n0</subfield>
+<subfield code="g">n0</subfield></datafield>
+<datafield tag="124" ind1=" " ind2=" "><subfield code="a">a</subfield>
+<subfield code="b">d</subfield></datafield>
+<datafield tag="181" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">cri</subfield>
+<subfield code="2">rdacontent</subfield></datafield>
+<datafield tag="181" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">b#</subfield>
+<subfield code="b">cb2e##</subfield></datafield>
+<datafield tag="182" ind1=" " ind2=" "><subfield code="6">z01</subfield>
+<subfield code="c">n</subfield>
+<subfield code="2">rdamedia</subfield></datafield>
+<datafield tag="182" ind1=" " ind2="1"><subfield code="6">z01</subfield>
+<subfield code="a">n</subfield></datafield>
+<datafield tag="102" ind1=" " ind2=" "><subfield code="a">FR</subfield></datafield>
+<datafield tag="200" ind1="1" ind2=" "><subfield code="a">Plan de ville</subfield>
+<subfield code="h">V 62-3</subfield>
+<subfield code="i">Lens et son agglomération</subfield>
+<subfield code="e">index des rues, sens uniques, parkings, stations-services 24h/24</subfield>
+<subfield code="f">Institut géographique national</subfield></datafield>
+<datafield tag="710" ind1="0" ind2="2"><subfield code="3">026407442</subfield>
+<subfield code="a">Institut géographique national</subfield>
+<subfield code="c">France</subfield>
+<subfield code="c">1940-2011</subfield>
+<subfield code="4">180</subfield></datafield>
+<datafield tag="801" ind1=" " ind2="3"><subfield code="a">FR</subfield>
+<subfield code="b">Abes</subfield>
+<subfield code="c">20230619</subfield>
+<subfield code="g">AFNOR</subfield></datafield>
+<datafield tag="210" ind1=" " ind2=" "><subfield code="a">Paris</subfield>
+<subfield code="c">Institut géographique national</subfield>
+<subfield code="d">cop. 2000</subfield></datafield>
+<datafield tag="215" ind1=" " ind2=" "><subfield code="a">1 plan</subfield>
+<subfield code="c">en coul.</subfield>
+<subfield code="d">64 x 111 cm, pliée 22 x 12 cm</subfield></datafield>
+<datafield tag="206" ind1="0" ind2=" "><subfield code="b">1:13 000</subfield></datafield>
+<datafield tag="606" ind1=" " ind2=" "><subfield code="3">027255778</subfield>
+<subfield code="a">Villes</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="607" ind1=" " ind2=" "><subfield code="3">027367363</subfield>
+<subfield code="a">Lens (Pas-de-Calais)</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="607" ind1=" " ind2=" "><subfield code="3">027252353</subfield>
+<subfield code="a">Pas-de-Calais (France)</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="608" ind1=" " ind2=" "><subfield code="3">028630661</subfield>
+<subfield code="a">Plans</subfield>
+<subfield code="2">rameau</subfield></datafield>
+<datafield tag="302" ind1=" " ind2=" "><subfield code="a">Texte en français, anglais et allemand</subfield></datafield>
+<datafield tag="315" ind1=" " ind2=" "><subfield code="a">Index des rues</subfield></datafield>
+<datafield tag="327" ind1="1" ind2=" "><subfield code="a">Contient les agglomérations : Aix-Noulette ; Angres ; Annay ; Avion ; Billy-Montigny ; Bully-les-Mines ; Eleu-Dit-Leauwette ; Fouquières-les-Lens ; Givenchy-en-Gohelle ; Grenay ; Harnes ; Liévin ; Loison-sous-Lens ; Loos-en-Gohelle ; Mazingarbe ; Méricourt ; Noyelles-sous-Lens ; Rouvroy ; Sallaumines ; Souchez ; Vendin-le-Vieil</subfield></datafield>
+</record></srw:recordData><srw:recordPosition>3</srw:recordPosition>
+</srw:record>
+</srw:records>
+    <srw:echoedSearchRetrieveRequest>
+	<srw:version>1.1</srw:version>
+	<srw:query>tou%3D%22Billy-Montigny%22+and+tou%3Dmines</srw:query>
+	<srw:xQuery><xcql:triple><xcql:boolean> <xcql:value>and</xcql:value></xcql:boolean><xcql:leftOperand><xcql:searchClause><xcql:index>tou</xcql:index><xcql:relation><xcql:value>=</xcql:value></xcql:relation><xcql:term>"Billy-Montigny"</xcql:term></xcql:searchClause></xcql:leftOperand><xcql:rightOperand><xcql:searchClause><xcql:index>tou</xcql:index><xcql:relation><xcql:value>=</xcql:value></xcql:relation><xcql:term>mines</xcql:term></xcql:searchClause></xcql:rightOperand></xcql:triple></srw:xQuery>
+	<startRecord>1</startRecord>
+	<maximumRecords>5</maximumRecords>
+	<srw:recordPacking>xml</srw:recordPacking>
+	<srw:recordSchema>unimarc</srw:recordSchema>
+	
+	<srw:stylesheet>https://www.sudoc.abes.fr/cbs/sru/DB=2.1/?xsl=searchRetrieveResponse</srw:stylesheet>
+    </srw:echoedSearchRetrieveRequest>
+    <diag:diagnostics>
+        <diag:uri>info:srw/diagnostic/1/0</diag:uri>
+	
+	
+    </diag:diagnostics>
+    <srw:extraResponseData>
+	<rob:authenticationToken xmlns:rob="info:srw/extension/2/auth-1.0">U10178,Klecteurweb,D2.1,Ec666661e-79,I250,B341720009,SY,QDEF,A%5C9008+1,,J,H2-26,,29,,34,,39,,44,,49-50,,53-78,,80-87,NLECTEUR+PSI,R10.34.103.198,FN,MNNN</rob:authenticationToken>
+        <mg:resultGrouping xmlns:mg="info:srw/extension/5/metadata-grouping-v1.0">
+	    
+	    <mg:grouping key="9001" description="Type de document"></mg:grouping>
+	    
+	    <mg:grouping key="9000" description="Année de publication"></mg:grouping>
+	    
+	    <mg:grouping key="9005" description="Pays de publication"></mg:grouping>
+	    
+	    <mg:grouping key="9004" description="Langue du document"></mg:grouping>
+	    
+
+	
+	</mg:resultGrouping>
+	
+    </srw:extraResponseData>
+</srw:searchRetrieveResponse>

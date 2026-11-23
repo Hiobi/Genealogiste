@@ -1,0 +1,360 @@
+{
+ "totalHits": 5,
+ "took": 88,
+ "theses": [
+  {
+   "id": "s409364",
+   "titrePrincipal": "Exploitation de grands modèles linguistiques pour l'exploration prédictive des processus metier basés sur le courrier électronique",
+   "titreEN": "Leveraging Large Language Models for Predictive Process Mining in Email-Based Business Processes",
+   "etabSoutenanceN": "Institut polytechnique de Paris",
+   "etabSoutenancePpn": "238327159",
+   "dateSoutenance": null,
+   "datePremiereInscriptionDoctorat": "01/10/2023",
+   "auteurs": [
+    {
+     "ppn": null,
+     "nom": "Sidi mohamed",
+     "prenom": "Aslamhom"
+    }
+   ],
+   "nnt": null,
+   "doi": null,
+   "discipline": "Informatique, données, IA",
+   "status": "enCours",
+   "sujets": [
+    {
+     "langue": "fr",
+     "libelle": "Processus Metier"
+    },
+    {
+     "langue": "fr",
+     "libelle": "Processus d'exploitation minière"
+    },
+    {
+     "langue": "fr",
+     "libelle": "Prédiction des processus"
+    },
+    {
+     "langue": "fr",
+     "libelle": "Large Language Model"
+    },
+    {
+     "langue": "fr",
+     "libelle": "Processus commercial basé sur le courrier électronique"
+    },
+    {
+     "langue": "fr",
+     "libelle": "Ingénieri des invites"
+    },
+    {
+     "langue": "en",
+     "libelle": "Business process"
+    },
+    {
+     "langue": "en",
+     "libelle": "Process mining"
+    },
+    {
+     "langue": "en",
+     "libelle": "Process prediction"
+    },
+    {
+     "langue": "en",
+     "libelle": "Large Language Model"
+    },
+    {
+     "langue": "en",
+     "libelle": "Email-based Business process"
+    },
+    {
+     "langue": "en",
+     "libelle": "Prompt Engineering"
+    }
+   ],
+   "sujetsRameau": []
+  },
+  {
+   "id": "2022EHES0095",
+   "titrePrincipal": "Écopolitiques ouvrières : enquête socio-environnementale dans les mines de charbon du Nord-Pas-de-Calais (fin XIXe-début XXe siècle)",
+   "titreEN": "Working-Class Ecopolitics : A Socio-Environmental Survey of French Northern Coal Mines (Late 19th-Early 20th Century)",
+   "etabSoutenanceN": "Paris, EHESS",
+   "etabSoutenancePpn": "026374889",
+   "dateSoutenance": "10/11/2022",
+   "datePremiereInscriptionDoctorat": null,
+   "auteurs": [
+    {
+     "ppn": "20004432X",
+     "nom": "Cabot",
+     "prenom": "Bastien"
+    }
+   ],
+   "nnt": "2022EHES0095",
+   "doi": "10.70675/2dbefc32z7f71z45f9zba14z182f3ef066ff",
+   "discipline": "Histoire et civilisations",
+   "status": "soutenue",
+   "sujets": [
+    {
+     "langue": "fr",
+     "libelle": "Travail"
+    },
+    {
+     "langue": "fr",
+     "libelle": "Environnement"
+    },
+    {
+     "langue": "fr",
+     "libelle": "Syndicalisme"
+    },
+    {
+     "langue": "fr",
+     "libelle": "Santé"
+    },
+    {
+     "langue": "fr",
+     "libelle": "Ouvriers"
+    },
+    {
+     "langue": "fr",
+     "libelle": "Mines"
+    },
+    {
+     "langue": "en",
+     "libelle": "Work"
+    },
+    {
+     "langue": "en",
+     "libelle": "Health"
+    },
+    {
+     "langue": "en",
+     "libelle": "Environment"
+    },
+    {
+     "langue": "en",
+     "libelle": "Labour"
+    },
+    {
+     "langue": "en",
+     "libelle": "Mines"
+    }
+   ],
+   "sujetsRameau": [
+    {
+     "ppn": "129129453",
+     "libelle": "Écologie politique"
+    },
+    {
+     "ppn": "027226794",
+     "libelle": "France"
+    },
+    {
+     "ppn": "027279812",
+     "libelle": "Nord-Pas-de-Calais (France)"
+    },
+    {
+     "ppn": "12007432X",
+     "libelle": "1900-1939"
+    },
+    {
+     "ppn": "027260267",
+     "libelle": "Mines de charbon"
+    },
+    {
+     "ppn": "049647490",
+     "libelle": "Sociologie"
+    },
+    {
+     "ppn": "027286134",
+     "libelle": "Classe ouvrière"
+    },
+    {
+     "ppn": "027797015",
+     "libelle": "Aspect sanitaire"
+    },
+    {
+     "ppn": "027481352",
+     "libelle": "Syndicalisme"
+    }
+   ]
+  },
+  {
+   "id": "2011LIL2S009",
+   "titrePrincipal": "Automated detection of adverse drug events by data mining of electronic health records",
+   "titreEN": "Automated detection of adverse drug events by data mining of electronic health records",
+   "etabSoutenanceN": "Lille 2",
+   "etabSoutenancePpn": "026404389",
+   "dateSoutenance": "09/02/2011",
+   "datePremiereInscriptionDoctorat": null,
+   "auteurs": [
+    {
+     "ppn": "103895019",
+     "nom": "Chazard",
+     "prenom": "Emmanuel"
+    }
+   ],
+   "nnt": "2011LIL2S009",
+   "doi": "10.70675/e2b348dbzc682z43c7z8ce2zfc237a012e6c",
+   "discipline": "Biostastistiques, informatique médecine et technologies de communication",
+   "status": "soutenue",
+   "sujets": [
+    {
+     "langue": "fr",
+     "libelle": "Système de prescription connectée"
+    },
+    {
+     "langue": "en",
+     "libelle": "Data mining"
+    },
+    {
+     "langue": "en",
+     "libelle": "Semantic mining"
+    }
+   ],
+   "sujetsRameau": [
+    {
+     "ppn": "027578712",
+     "libelle": "Médicaments -- Effets secondaires"
+    },
+    {
+     "ppn": "035198222",
+     "libelle": "Exploration de données"
+    },
+    {
+     "ppn": "146988655",
+     "libelle": "Arbres de décision"
+    },
+    {
+     "ppn": "184183243",
+     "libelle": "Effets secondaires indésirables des médicaments"
+    },
+    {
+     "ppn": "040839486",
+     "libelle": "Dissertations académiques"
+    },
+    {
+     "ppn": "040690210",
+     "libelle": "Arbres de décision"
+    },
+    {
+     "ppn": "040697010",
+     "libelle": "Préparations pharmaceutiques"
+    },
+    {
+     "ppn": "038961105",
+     "libelle": "effets indésirables"
+    }
+   ]
+  },
+  {
+   "id": "2024IPPAS017",
+   "titrePrincipal": "Enhancing email management efficiency : A business process mining approach",
+   "titreEN": "Optimiser la gestion des e-mails : Une approche basée sur les processus métier",
+   "etabSoutenanceN": "Institut polytechnique de Paris",
+   "etabSoutenancePpn": "238327159",
+   "dateSoutenance": "30/10/2024",
+   "datePremiereInscriptionDoctorat": null,
+   "auteurs": [
+    {
+     "ppn": "281519919",
+     "nom": "Bou nader",
+     "prenom": "Ralph"
+    }
+   ],
+   "nnt": "2024IPPAS017",
+   "doi": "10.70675/02f3e47bze0f9z4b1fza539zb43906890cdc",
+   "discipline": "Informatique, données, IA",
+   "status": "soutenue",
+   "sujets": [
+    {
+     "langue": "fr",
+     "libelle": "Analyse des processus métier"
+    },
+    {
+     "langue": "fr",
+     "libelle": "Vérification de conformité"
+    },
+    {
+     "langue": "fr",
+     "libelle": "Prédiction des processus"
+    },
+    {
+     "langue": "fr",
+     "libelle": "Processus pilotés par courriel"
+    },
+    {
+     "langue": "en",
+     "libelle": "Business Process Mining"
+    },
+    {
+     "langue": "en",
+     "libelle": "Process Prediction"
+    },
+    {
+     "langue": "en",
+     "libelle": "Conformance Checking"
+    },
+    {
+     "langue": "en",
+     "libelle": "Email-Driven Processes"
+    }
+   ],
+   "sujetsRameau": [
+    {
+     "ppn": "027228096",
+     "libelle": "Gestion d'entreprise"
+    },
+    {
+     "ppn": "203675797",
+     "libelle": "Modélisation des données (informatique)"
+    }
+   ]
+  },
+  {
+   "id": "s354478",
+   "titrePrincipal": "La régulation des crypto-monnaies en droit international public et droit de l'Union Européenne",
+   "titreEN": "Cryptocurrency regulation in international public law and European Union Law",
+   "etabSoutenanceN": "Paris 12",
+   "etabSoutenancePpn": "028021037",
+   "dateSoutenance": null,
+   "datePremiereInscriptionDoctorat": "01/11/2022",
+   "auteurs": [
+    {
+     "ppn": null,
+     "nom": "Mubenga",
+     "prenom": "Félix"
+    }
+   ],
+   "nnt": null,
+   "doi": null,
+   "discipline": "Droit",
+   "status": "enCours",
+   "sujets": [
+    {
+     "langue": "fr",
+     "libelle": "Crypto-monnaie"
+    },
+    {
+     "langue": "fr",
+     "libelle": "Droit"
+    },
+    {
+     "langue": "fr",
+     "libelle": "International"
+    },
+    {
+     "langue": "en",
+     "libelle": "Cryptocurrency"
+    },
+    {
+     "langue": "en",
+     "libelle": "Law"
+    },
+    {
+     "langue": "en",
+     "libelle": "International"
+    }
+   ],
+   "sujetsRameau": []
+  }
+ ]
+}

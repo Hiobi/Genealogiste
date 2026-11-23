@@ -1,0 +1,15 @@
+{
+  "service": "PERSEE",
+  "reponses": [
+    {
+      "fichier": "getrecord-rnord-1982-3879.xml",
+      "url": "https://oai.persee.fr/oai?verb=GetRecord&identifier=oai%3apersee%3aarticle%2frnord_0035-2624_1982_num_64_253_3879&metadataPrefix=oai_dc",
+      "date": "2026-11-23",
+      "statut_http": 200,
+      "content_type": "text/xml",
+      "client": "curl, User-Agent générique, sans clé",
+      "reduction": "éléments dc:description (résumés) retirés"
+    }
+  ],
+  "objet": "Réponse OAI-PMH réelle (GetRecord, oai_dc) pour le test de l'analyseur contexte/protocoles/oai.py (#286). Persée n'est pas interrogé par contexte_bibliographie : OAI-PMH n'offre pas de recherche."
+}
