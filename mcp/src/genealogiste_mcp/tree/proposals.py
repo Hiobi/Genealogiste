@@ -249,13 +249,13 @@ def validated(message: str, token: str) -> str:
 
 
 def prepare(tree, operations: list[dict], titre: str, justification: str, sources: list[str] | None,
-            exiger_source: bool, media=None, backend: str = "", taches_actives: bool = False
-            ) -> tuple[Ctx, str, str]:
+            exiger_source: bool, media=None, backend: str = "", taches_actives: bool = False,
+            registre=None) -> tuple[Ctx, str, str]:
     """Applique les opérations sur une copie : (contexte, jeton, message). Commun aux deux backends."""
     if not justification.strip():
         raise ProposalError("Justification obligatoire (raisonnement + sources).")
     try:
-        ctx = apply_ops(tree, operations, exiger_source, media, backend, taches_actives)
+        ctx = apply_ops(tree, operations, exiger_source, media, backend, taches_actives, registre)
     except OpError as exc:
         raise ProposalError(str(exc)) from exc
     token = new_token()
@@ -267,8 +267,9 @@ class Proposals:
 
     name = "fichier"
 
-    def __init__(self, store: TreeStore, directory: Path, exiger_source: bool = True, media=None):
+    def __init__(self, store: TreeStore, directory: Path, exiger_source: bool = True, media=None, registre=None):
         self.store = store
+        self.registre = registre  # références consultées : contrôle du contexte d'un billet (#291)
         self.media = media
         self.tokens = TokenStore(directory)
         self.dir = self.tokens.dir
@@ -285,7 +286,7 @@ class Proposals:
         before = self.store.text()  # un seul instantané : diff et empreinte portent sur le même état (#38)
         tree = read_gedcom(before)[0]
         ctx, token, message = prepare(tree, operations, titre, justification, sources, self.exiger_source,
-                                      self.media, self.name)
+                                      self.media, self.name, registre=self.registre)
         after = write_gedcom(ctx.tree)
         if after == before:
             raise ProposalError("La proposition ne modifie rien.")

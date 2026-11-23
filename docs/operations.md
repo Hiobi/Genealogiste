@@ -24,11 +24,11 @@ est refusé, sauf `"non_source": true` + `"motif": "…"` (la mention « Non sou
 | op | Paramètres |
 |---|---|
 | `ajouter_source` | `titre`*, `auteur`, `publication`, `depot`, `cote`, `url`, `ark`, `type_source`, `original`, `note`, `prive`, `tags`, `ref` (avec l'étiquette `Blog` : privée sauf `prive: false`, voir « Billets ») |
-| `ajouter_billet` | `titre`*, `texte`* (corps), `auteur`, `medias` `[ids | $ref]` (ordre gardé : le premier sert d'aperçu), `prive` (défaut `true`), `tags` (en plus de `Blog`), `ref` ; `format_texte` possible. Backend gramps seulement ([billets](#billets-du-blog-de-gramps-web-261)) |
+| `ajouter_billet` | `titre`*, `texte`* (corps), `auteur`, `medias` `[ids | $ref]` (ordre gardé : le premier sert d'aperçu), `prive` (défaut `true`), `tags` (en plus de `Blog`), `personne` (individu du billet : requis si le texte a une section « Contexte », #291), `ref` ; `format_texte` possible. Backend gramps seulement ([billets](#billets-du-blog-de-gramps-web-261)) |
 | `ajouter_tache` | `titre`*, `description` (première note ; `format_texte` possible), `statut` (`Open` défaut, `In Progress`, `Blocked`, `Done` ; ou `ouverte`, `en_cours`, `bloquee`, `terminee`), `priorite` (`haute` 1, `moyenne` 5 défaut, `basse` 9, ou entier 0-9), `prive` (défaut `true`), `tags` (en plus de `ToDo`), `personnes` `[ids]` (nommées dans la description), `enquete` + `element` (`t1`, `p2` : ligne de référence), `ref`. Backend gramps et `GENEALOGISTE_GRAMPS_TACHES=true` seulement ([tâches](#tâches-de-gramps-web-263)) |
 | `modifier_tache` | `id`, `statut`, `priorite`, `titre`, `description` (remplace le texte ; la ligne de référence d'enquête est gardée), `prive`, `tags`, `tags_retrait` |
 | `ajouter_depot` | `nom`, `sigle`, `adresse`, `url`, `tags`, `ref` |
-| `modifier_source` | `id`, `champs` (sauf `tags`), `tags`, `tags_retrait` |
+| `modifier_source` | `id`, `champs` (sauf `tags`), `tags`, `tags_retrait` ; `personne` pour un billet à section « Contexte » dont le texte change ou qui devient public (#291) |
 | `supprimer_source` | `id`, `cascade` (défaut `false` : refus si la source est encore citée ; `true` : chaque citation retirée est listée avec son porteur). Médias de la source détachés, jamais supprimés ; refus si elle est la source originale d'une autre |
 | `fusionner_sources` | `de` (doublon), `vers` (source gardée) : citations réécrites, citations devenues identiques (même source et page) sur un même porteur fondues (médias réunis), médias et sources dérivées reportés, doublon supprimé |
 | `ajouter_personne` | `noms`* `[{prenoms, nom, surnom, type, citations}]`, `sexe`, `evenements`, `citations`, `notes`, `vivant`, `tags`, `ref` |
@@ -117,6 +117,12 @@ opération, lisible dans le diff comme une source :
   `{"op": "modifier_media", "id": "O…", "champs": {"prive": true}}` et les autres objets qui le lient ;
   `gramps_proteger_vivants` (tout l'arbre) propose de rendre privé un média dont le seul référent est un billet
   ou une tâche privés.
+- **Contexte historique** (#291) : un billet créé, dont le texte change ou qui devient public, et dont le texte a
+  une section « Contexte » (`**Contexte**` en gras seul sur sa ligne, ou `## Contexte`), n'est proposé que si
+  `contexte_verifier` le déclare conforme pour `"personne": "<id>"` (sur `ajouter_billet`, `ajouter_source` ou
+  `modifier_source`). Sinon **refus**, avec le rapport (rubriques, phrases, motifs) ; sans `personne`, refus aussi.
+  Conforme : ligne « section « Contexte » contrôlée … » au résumé. Un texte sans section « Contexte » n'est pas
+  contrôlé. Détail : [contexte historique](contexte-historique.md#rédaction).
 - **Backend fichier** : `ajouter_billet` est refusé (le blog n'existe que dans Gramps Web) ; une source étiquetée
   `Blog` reste possible (`ajouter_source`, `etiqueter`), sans effet hors de Gramps Web.
 - **Preuve** : un billet n'est pas une source généalogique ; une citation qui le désigne pèse 0 et ne compte

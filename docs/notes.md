@@ -97,6 +97,41 @@ Parcours pas à pas : [organiser un fonds](../wiki/Organiser-un-fonds.md#reprend
 Régénérer sans changement dans l'arbre ne modifie **aucun** fichier (`mis_a_jour` ne bouge que si le contenu
 change).
 
+### Section Contexte (#291)
+
+Le contexte historique d'une personne s'écrit dans sa fiche comme une **section manuelle** `## Contexte`, placée
+hors des sections générées et **avant** `## Notes libres` :
+
+```markdown
+<!-- genealogiste:fin -->
+
+## Contexte
+
+<une phrase par élément de contexte, selon son niveau de rattachement> [^c1].
+
+[^c1]: <citation de la référence, telle que rendue par contexte_local>
+
+## Notes libres
+```
+
+- **Régénération** : la section est du texte hors balises, elle est conservée telle quelle par `notes_generer` et
+  par la régénération automatique (testé : `tests/test_redaction_contexte.py`). Une section générée manquante est
+  réinsérée juste avant `## Notes libres`, donc après la section « Contexte », sans la modifier.
+- **Avant, pas après, `## Notes libres`** : `notes_ajouter` ajoute ses entrées à la fin du texte libre ; une section
+  « Contexte » placée après recevrait ces entrées, que le contrôle lirait comme des phrases de contexte sans
+  référence.
+- **Appels de note** : notes de bas de page (`[^c1]`, définition `[^c1]: …` dans la section), lues par
+  `contexte_verifier` où qu'elles soient ; la citation est celle de l'outil, recopiée telle quelle.
+- **Écriture** : aucun outil n'écrit cette section ; le `redacteur` la propose et la fiche n'est modifiée qu'après
+  accord. Hypothèses et « contexte à documenter » vont dans le texte libre par `notes_ajouter`
+  (`section="hypothese"`, `section="a_faire"`).
+- **Contrôle** : `contexte_verifier(note="I1")` lit la fiche telle quelle (sections générées ignorées) et signale
+  les phrases de la section sans référence consultée. Rien sans élément sourcé : pas de section.
+- **Vivants** : fiche masquée d'une personne présumée vivante : rien n'y est écrit (règle inchangée ; un texte
+  manuel resté dans une fiche remasquée est signalé par `notes_generer`, comme avant).
+
+Règle de rédaction complète : [contexte historique](contexte-historique.md#rédaction).
+
 ## Marqueurs historiques (`sosa:`)
 
 Les fiches écrites avant le renommage (#182) portent `<!-- sosa:debut NOM -->` / `<!-- sosa:fin -->`. Les deux
