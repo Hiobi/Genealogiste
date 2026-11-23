@@ -18,6 +18,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from . import acces_archives, ark, capacites_archives, couverture_archives
+from .normalize.pays import pays_du_lieu
 from .normalize.places import DEPARTEMENTS, normalize_place
 from .types_documents import DOCUMENTS, normaliser
 
@@ -273,10 +274,19 @@ def service(lieu: str = "", departement: str = "", code: str = "", document: str
         return view(s, document, annee, lieu)
     dep = departement.strip().upper().zfill(2) if departement and departement.strip().isdigit() else \
         departement.strip().upper()
+    pays = None
     if lieu and not dep:
+        pays = pays_du_lieu(lieu)
+        if pays["france"] is False:  # #283 : aucun service d'AD français pour un lieu hors de France
+            from .fr_sources import PISTE_TRANSCRIPTION, RENVOI_INTERNATIONAL
+            return {"pays": pays, "service": None,
+                    "message": f"Lieu hors de France ({pays['nom'] or 'pays étranger'}, {pays['detail']}) : aucun "
+                               "service d'archives départementales français.",
+                    "renvoi": RENVOI_INTERNATIONAL, "piste_francaise": PISTE_TRANSCRIPTION}
         dep = normalize_place(lieu).get("departement_code") or ""
     if not dep:
-        return {"erreur": "Préciser un lieu avec son département, un numéro de département ou un code de service."}
+        return {"erreur": "Préciser un lieu avec son département, un numéro de département ou un code de service.",
+                **({"pays": pays} if pays else {})}
     s = departemental(dep)
     if s:
         return view(s, document, annee, lieu)
@@ -330,6 +340,16 @@ def communicability_online(document: str, date_document: str = "", date_naissanc
     if not lieu or "erreur" in res:
         return res
     key = normaliser(document)
+    pays = pays_du_lieu(lieu)
+    res["pays"] = pays
+    if pays["france"] is False:  # #283 : délais français et service d'AD hors de propos pour l'acte local
+        from .fr_sources import PISTE_TRANSCRIPTION
+        res["communicable_si_transcrit_en_france"] = res.get("communicable")
+        res["communicable"] = None
+        res["hors_france"] = (f"Lieu hors de France ({pays['nom'] or 'pays étranger'}) : les délais du Code du "
+                              "patrimoine valent pour les archives publiques françaises, pas pour l'acte local, dont "
+                              "le régime est à vérifier auprès du service du pays. " + PISTE_TRANSCRIPTION)
+        return res
     svc = service(lieu=lieu, document=key, annee=_year(date_document))
     res["service_archives"] = svc
     res["en_ligne"] = svc.get("en_ligne_pour_la_demande")
