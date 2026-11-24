@@ -105,6 +105,13 @@ dossier existant, base depuis zéro, arbre GEDCOM ou Gramps Web. Obsidian n’es
   `GENEALOGISTE_CLE_NARA`, `GENEALOGISTE_CLE_APE`, jamais affichées ; `GENEALOGISTE_CROSSREF_MAILTO` vide par défaut ;
   `GENEALOGISTE_CONTEXTE_STYLE_CITATION` (`iso690` ou `evidence_explained`) pour le style des références
   ([services de contexte](docs/contexte-historique.md#services-de-contexte)).
+- Clé Europeana : gratuite et **personnelle**, à demander par chaque utilisateur depuis son compte europeana.eu
+  (menu du compte, « Manage API keys », accepter les conditions d’usage de la clé, « Request a Personal API key »),
+  puis à écrire dans `<données>/.env` (`GENEALOGISTE_CLE_EUROPEANA=…` et
+  `GENEALOGISTE_CONTEXTE_SERVICES=defaut,EUROPEANA`) ou dans le fichier d’environnement du conteneur Docker. Elle
+  ne se partage pas et le plugin n’en fournit aucune. Sans elle, Europeana est écarté sans erreur. État actuel :
+  l’analyseur Europeana de `presse_recherche` n’est pas encore livré, la clé n’a donc pas encore d’effet
+  ([démarche, emplacements et limites](docs/contexte-historique.md#clé-personnelle-europeana)).
 - Pour une recherche sans surveillance (`/genealogiste:campagne`, tâche planifiée), `GENEALOGISTE_ECRITURE=interdite`
   fait refuser par le serveur lui-même toute écriture, quel que soit le mode de permission du client ; les
   conclusions attendent dans la file de propositions ([campagne sans surveillance](docs/campagne.md)).

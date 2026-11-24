@@ -310,8 +310,8 @@
    "site_repond_le": "2026-11-23",
    "verifie_le": "",
    "origine": "relevé curl du 2026-11-21 (#285) ; sondage du 2026-11-23 (une requête GET, sans clé)",
-   "releve": "2026-11-21 : 200 avec la clé de démonstration ; 2026-11-23 : 400 sans clé",
-   "notes": "Clé wskey personnelle requise ; la clé de démonstration n'est pas embarquée."
+   "releve": "2026-11-21 : 200 avec la clé de démonstration ; 2026-11-23 : 400 sans clé ; 2026-11-24 : clé de démonstration plus publiée par la documentation, non utilisée",
+   "notes": "Clé personnelle requise, gratuite, à demander depuis son compte europeana.eu (« Manage API keys ») ; en-tête X-Api-Key préféré, paramètre wskey déprécié ; aucune clé de démonstration embarquée ni utilisée. Analyseur non livré (#343)."
   },
   {
    "code": "NAKALA",
