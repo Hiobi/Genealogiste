@@ -15,7 +15,9 @@ personne de l'arbre :
 5. **Formulations** : généralisation (``GENERALISATIONS``, tout le texte) ; dans la section « Contexte »,
    formulation contraire au niveau de rattachement déclaré (``compatible`` ou ``non démontré`` : aucune
    affirmation sur l'individu ; ``attesté`` : source individuelle) ou affirmation sur l'individu appuyée sur une
-   seule référence de contexte ; mention « tendance générale » absente au-delà de la commune.
+   seule référence de contexte ; mention « tendance générale » absente au-delà de la commune ;
+   hors de la section « Contexte » (récit), phrase de contexte : appel vers une référence de contexte ou événement
+   nommé de la liste ``EVENEMENTS`` (``hors_section``, #348).
 
 Format lu (celui du ``redacteur``, docs/notes.md, #291) : titres Markdown (``## Contexte``) ou ligne en gras seule
 (``**Contexte**``, billet de Gramps Web) ; section des notes « Notes et sources » (ou « Notes », « Sources »,
@@ -42,7 +44,7 @@ from .portee import _departement
 from .registre import RegistreReferences
 
 OUTIL = "contexte_verifier"
-VERSION_LISTES = "1"
+VERSION_LISTES = "2"
 NON_DOCUMENTE = "contexte non documenté"
 RAPPEL = ("Contrôle de forme, lexical et déterministe : « conforme » signifie qu'aucune règle n'a été enfreinte, pas "
           "que le texte est vrai. Relire chaque énoncé contre sa source. conforme: false bloque la publication d'un "
@@ -59,7 +61,9 @@ LIMITES = (
     "ni la pertinence de la référence pour la phrase.",
     "Période : années à quatre chiffres (1000-2099), intervalles « 1880-1914 » et siècles en chiffres romains "
     "(« XIXe ») ; un nombre suivi d'une unité (habitants, morts, francs…) ou précédé de « n° », « p. » n'est pas une "
-    "année. Une date en lettres ou un événement nommé sans année n'est pas vu.",
+    "année. Une date en lettres n'est pas vue ; un événement nommé sans année n'est vu que s'il est dans la liste "
+    "fermée des événements nommés (« la Révolution », « la Grande Guerre », « bataille de… ») : « la guerre », « la "
+    "catastrophe », un règne ou une institution d'époque ne le sont pas.",
     "Lieux : communes, départements et pays des faits sourcés de la personne (requete.depuis_personne). Dans le "
     "texte, seuls les départements français et les pays de la table fermée sont reconnus (sensibles à la casse : "
     "« la Somme » rivière ou département) ; une province, une région ou une commune étrangère n'est vue que si rien "
@@ -67,13 +71,22 @@ LIMITES = (
     "Les mots entre guillemets « » sont lus comme la citation d'une source : leurs années et leurs lieux de vie "
     "comptent pour la portée, mais ils ne sont pas lus comme affirmation (causalité, généralisation, lieu hors "
     "périmètre).",
-    "L'individu est reconnu par ses prénoms, son nom et les pronoms il, elle, ils, elles, lui (tournures "
-    "impersonnelles exclues) ; une tournure possessive (« son départ ») n'est pas vue.",
+    "L'individu est reconnu par ses prénoms, son nom, les pronoms il, elle, ils, elles, lui (tournures "
+    "impersonnelles exclues) et un possessif suivi d'un nom de la liste fermée des faits de vie (« son départ », "
+    "« sa décision ») ; un autre possessif (« sa trace », « ses bras ») ou un pronom complément (« le trouver ») "
+    "n'est pas vu, et un possessif de la liste qui désigne autre chose peut faire signaler une phrase.",
     "Source individuelle : note qui contient le titre d'une source de l'arbre citée pour un fait de la personne ou "
     "de ses unions. Le contrôle ne vérifie pas que cette source dit la cause ou le rattachement affirmés.",
     "Les appels de note, la présence au registre et la portée sont contrôlés dans la section « Contexte » "
     "seulement ; les causalités et les généralisations dans tout le texte, hors questions (phrase finissant par "
     "« ? ») et hypothèses déclarées (section « Hypothèses », conditionnel, « peut-être », « hypothèse »).",
+    "Phrase de contexte hors de la section « Contexte » : vue seulement si elle appelle une note de contexte "
+    "(référence du registre, ou note appelée aussi dans « Contexte ») ou nomme un événement de la liste fermée, et "
+    "seulement hors des sections « Hypothèses », « Questions ouvertes » et des notes. Un contexte écrit de mémoire "
+    "dans le récit, sans note ni événement de la liste (« loin des siens », « le pays noir », « la catastrophe »), "
+    "un détail de vie inventé ou un fait déformé ne sont pas vus : le contrôle ne lit pas les sources de l'arbre.",
+    "Recette sur des récits réellement rédigés par un modèle (#348, docs/contexte-historique.md) : une part "
+    "importante des défauts relevés à la main échappe encore au contrôle. Un texte conforme reste à relire.",
 )
 
 
@@ -195,7 +208,101 @@ GENERALISATIONS: tuple[Regle, ...] = (
           "L'ancêtre est cité dans la source [1]."),
     Regle("typique", r"\btypique(?:s|ment)?\b", "generalisation", "Il menait une vie typique de laboureur.",
           "La notice décrit la typologie des fermes [1]."),
+    # #348, récits réellement rédigés (premier lot) : cliché de métier, extrapolation d'une vie à partir de quelques
+    # actes, traversée d'une époque.
+    Regle("louait_ses_bras", r"\b(?:lou|vend)(?:ait|aient|a|erent|e|ent) (?:ses|leurs) bras\b", "generalisation",
+          "Journalier, il louait ses bras à la journée.", "Le bail le dit loueur de terres [1]."),
+    Regle("toute_sa_vie", r"\btoute (?:sa|leur) vie\b", "generalisation",
+          "Toute sa vie semble tenir dans ce coin de terre.", "Le registre couvre toute la vie de la paroisse [1]."),
+    Regle("jamais_quitte", r"\bjamais (?:avoir |n'avoir )?quitte", "generalisation",
+          "Il ne semble jamais avoir quitté sa paroisse.", "Il quitte la paroisse en 1750 [1]."),
+    Regle("traverse_epoque", r"\b(?:travers|conn)(?:e|a|ait|u|ut|erent)\b[^.;:]{0,60}\b(?:regimes?|guerres?"
+                             r"|revolutions?|republiques?|empires?|regnes?)\b", "generalisation",
+          "Il aura traversé trois régimes et une guerre.", "Il traversa la rue du Régiment pour signer l'acte [1]."),
+    # #348, contre-épreuve (second lot) : appartenance à un groupe prêtée à l'individu.
+    Regle("comme_les_de_son", r"\bcomme (?:les|ceux|celles)\b[^.;:]{0,40}\bde (?:son|leur) (?:age|temps|epoque"
+                              r"|condition|etat|milieu|village|pays|rang)\b", "generalisation",
+          "Il a connu la mine jeune, comme les garçons de son âge.",
+          "Le registre le nomme comme les autres parrains de l'acte [1]."),
+    Regle("cette_generation", r"\b(?:cette|sa|leur) generation\b", "generalisation",
+          "Il appartient à cette génération que la guerre fauche.",
+          "La notice décrit la génération de vapeur à la fosse [1]."),
+    Regle("fait_partie_de_ces", r"\b(?:fait|faisait|font|faisaient) partie de ces\b", "generalisation",
+          "Il fait partie de ces petites gens de la terre.", "Il fait partie des témoins de l'acte [1]."),
+    Regle("compte_parmi", r"\bcompt(?:e|ait|ent|aient|a) (?:alors |deja |encore )?parmi (?:les|ces)\b",
+          "generalisation", "Il compte alors parmi les notables du village.",
+          "L'acte compte quatre témoins, parmi lesquels son frère [1]."),
+    Regle("tant_d_autres", r"\btant d'autres\b", "generalisation",
+          "Resté au pays quand tant d'autres gagnaient la ville, il y meurt.",
+          "Le registre cite d'autres parrains [1]."),
 )
+
+
+@dataclass(frozen=True)
+class Evenement:
+    """Événement ou période nommés sans année (#348) : ``motif`` s'applique au texte **tel quel** (casse et accents :
+    « la Révolution », pas « une révolution »), ``de``-``a`` sont ses années quand elles sont fixes (None sinon :
+    « bataille de… »). Un ``exemple`` qui doit être signalé et un ``contre_exemple`` qui ne doit pas l'être, placés
+    par le test dans le récit (hors de la section « Contexte »)."""
+
+    cle: str
+    motif: str
+    de: int | None
+    a: int | None
+    exemple: str
+    contre_exemple: str
+
+    def cherche(self, texte: str) -> re.Match | None:
+        return re.search(self.motif, texte)
+
+
+# Dans la section « Contexte », les années de l'événement comptent pour la portée (anachronisme) ; ailleurs, hors
+# hypothèses, questions et notes, l'événement est une phrase de contexte hors de sa section (``hors_section``).
+EVENEMENTS: tuple[Evenement, ...] = (
+    Evenement("revolution_francaise", r"\bR[ée]volution(?: fran[çc]aise)?\b(?! (?:industrielle|agricole|russe"
+              r"|nationale|de (?:1830|1848|[Jj]uillet|[Ff][ée]vrier)))", 1789, 1799,
+              "Il meurt à la veille de la Révolution [3].", "Il meurt la veille de la Saint-Jean [3]."),
+    Evenement("ancien_regime", r"\bAncien R[ée]gime\b", 1000, 1789,
+              "Sa vie entière s'écoule sous l'Ancien Régime [3].", "Sa vie entière s'écoule dans la paroisse [3]."),
+    Evenement("terreur", r"\bla Terreur\b", 1793, 1794, "Il se marie sous la Terreur [3].",
+              "Il se marie sans terreur apparente du qu'en-dira-t-on [3]."),
+    Evenement("guerre_de_vendee", r"\b[Gg]uerres? de Vend[ée]e\b", 1793, 1796,
+              "Il naît pendant la guerre de Vendée [1].", "Il naît en Vendée [1]."),
+    Evenement("guerres_napoleoniennes", r"\b[Gg]uerres napol[ée]oniennes\b|\bPremier Empire\b", 1803, 1815,
+              "Il est conscrit des guerres napoléoniennes [2].", "Il est conscrit de la classe 1812 [2]."),
+    Evenement("code_civil", r"\bCode civil\b", 1804, 1804, "Il se marie selon le Code civil [2].",
+              "Il se marie devant l'officier de l'état civil [2]."),
+    Evenement("restauration", r"\bla Restauration\b", 1814, 1830, "Il s'établit sous la Restauration [2].",
+              "Il travaille à la restauration de l'église [2]."),
+    Evenement("monarchie_de_juillet", r"\b[Mm]onarchie de Juillet\b", 1830, 1848,
+              "Il est électeur sous la monarchie de Juillet [2].", "Il est électeur en juillet 1846 [2]."),
+    Evenement("second_empire", r"\bSecond Empire\b", 1852, 1870, "Il grandit sous le Second Empire [1].",
+              "Il est le second fils du couple [1]."),
+    Evenement("guerre_de_1870", r"\b[Gg]uerre franco-(?:allemande|prussienne)\b", 1870, 1871,
+              "Il sert pendant la guerre franco-allemande [2].", "Il sert au 95e régiment d'infanterie [2]."),
+    Evenement("commune_de_paris", r"\bCommune de Paris\b", 1871, 1871, "Il vit la Commune de Paris [2].",
+              "Il vit dans la commune de Denain [3]."),
+    Evenement("grande_guerre", r"\bGrande Guerre\b|\bPremi[èe]re Guerre mondiale\b|\b[Gg]uerre de (?:19)?14\b",
+              1914, 1918, "Il est mobilisé au début de la Grande Guerre [3].", "Il est mobilisé le 3 août 1914 [3]."),
+    Evenement("front_populaire", r"\bFront populaire\b", 1936, 1938, "Il adhère sous le Front populaire [2].",
+              "Il adhère à une société de secours mutuels [2]."),
+    Evenement("seconde_guerre_mondiale", r"\b(?:Seconde|Deuxi[èe]me) Guerre mondiale\b|\bl'Occupation\b"
+              r"|\bla Lib[ée]ration\b", 1939, 1945, "Il meurt sous l'Occupation [5].",
+              "L'occupation du logement est attestée en 1906 [3]."),
+    Evenement("guerre_de_coree", r"\b[Gg]uerre de Cor[ée]e\b", 1950, 1953, "Il meurt avant la guerre de Corée [5].",
+              "Il meurt à Charleroi [5]."),
+    Evenement("guerre_d_algerie", r"\b[Gg]uerre d'Alg[ée]rie\b", 1954, 1962,
+              "Il sert pendant la guerre d'Algérie [2].", "Il sert à Alger [2]."),
+    # #348, contre-épreuve (second lot)
+    Evenement("etats_generaux", r"\b[ÉE]tats g[ée]n[ée]raux\b", 1789, 1789,
+              "Il meurt quelques mois avant la convocation des États généraux [3].",
+              "Il meurt quelques mois après son père [3]."),
+    Evenement("bataille_de", r"\b(?:bataille|offensive|si[èe]ge) (?:de |du |des |d')(?:la |l')?[A-ZÀ-Þ]", None, None,
+              "Il tombe en pleine bataille de la Somme [3].", "Il meurt à Belloy-en-Santerre (Somme) [3]."),
+    Evenement("entree_en_guerre", r"\bentr(?:e|ee|er|ent|a|ait) en guerre\b|\bentr[ée]e en guerre\b", None, None,
+              "Il part alors que l'Amérique vient d'entrer en guerre [4].", "Il entre en apprentissage en 1895 [2]."),
+)
+
 
 # Formules de rattachement (#291) et mention de tendance (#321), sur le texte aplati.
 FORMULE_COMPATIBLE = (r"\ba la meme epoque et au meme endroit\b|\bau meme endroit et a la meme epoque\b"
@@ -210,6 +317,12 @@ HYPOTHESE = (r"\bhypothese\b|\bpeut-etre\b|\bil est possible qu|\bil se peut qu|
              r"|pourrai(?:t|ent)|devrai(?:t|ent))\b")
 ABSENCE = r"^\W*(?:le\s+)?contexte (?:non documente|a documenter)\b"
 PRONOMS = r"\b(?:il|elle|ils|elles|lui)\b|\bl'(?:individu|ancetre|interesse)\b|\bnotre ancetre\b"
+# Possessif suivi d'un fait de vie (#348) : « son départ », « sa décision » désignent l'individu. Liste fermée de noms :
+# un possessif quelconque (« la commune perdit ses habitants ») ne le désigne pas.
+FAITS_DE_VIE = ("depart", "emigration", "immigration", "migration", "exil", "fuite", "installation", "arrivee",
+                "retour", "venue", "engagement", "enrolement", "choix", "decision", "mariage", "union", "metier",
+                "deces", "mort", "disparition", "parcours", "destin", "sort")
+POSSESSIFS = rf"\b(?:son|sa|ses|leur|leurs) (?:{'|'.join(FAITS_DE_VIE)})s?\b"
 IMPERSONNELS = (r"\bil (?:y a|y avait|y eut|n'y a|n'y avait|existe|existait|faut|fallait|s'agit|s'agissait|semble"
                 r"|semblait|reste|restait|convient|se peut|est (?:possible|probable|vraisemblable|certain|difficile"
                 r"|impossible|utile|necessaire))\b")
@@ -536,10 +649,10 @@ def personne_depuis_arbre(tree, personne: str) -> Personne:
 
 def vise_individu(texte: str, p: Personne) -> bool:
     """La phrase (hors citations entre guillemets) désigne-t-elle l'individu ? Nom, prénoms, pronoms personnels
-    (tournures impersonnelles exclues)."""
+    (tournures impersonnelles exclues), possessif suivi d'un fait de vie (``POSSESSIFS``)."""
     t = re.sub(IMPERSONNELS, " ", plat(hors_guillemets(sans_appels(texte))))
     t = re.sub(r"\bne prouve rien pour l'individu\b", " ", t)  # mention de tendance (#321) : pas une affirmation
-    if re.search(PRONOMS, t):
+    if re.search(PRONOMS, t) or re.search(POSSESSIFS, t):
         return True
     return any(re.search(rf"(?<![\w-]){re.escape(x)}(?![\w-])", t) for x in p.identite)
 
@@ -569,6 +682,13 @@ def verifier(texte: str, tree, personne: str, registre: RegistreReferences) -> d
     nb_contexte = nb_sourcees = nb_anachronismes = 0
     references: dict[str, bool] = {}  # clé -> consultée
     vus_non_consultees: set[tuple] = set()
+    appels_contexte = {c for ph in a.phrases if ph.genre == "contexte" for c in ph.appels}
+
+    def note_de_contexte(c: str) -> bool:
+        """Note appelée aussi dans « Contexte », ou dont un identifiant est au registre : référence de contexte."""
+        if c not in a.notes or _est_individuelle(a.notes[c], p):
+            return False
+        return c in appels_contexte or any(registre.lire(i) is not None for i in identifiants(a.notes[c]))
 
     for ph in a.phrases:
         libre = hors_guillemets(sans_appels(ph.texte))
@@ -589,6 +709,20 @@ def verifier(texte: str, tree, personne: str, registre: RegistreReferences) -> d
                     formulations.append({"phrase": ph.texte, "section": ph.section, "type": "generalisation",
                                          "marqueur": r.cle, "motif": "généralisation d'une tendance (époque, groupe, "
                                          "région) : ne s'applique pas à l'individu"})
+        if ph.genre == "autre" and not _question(ph):
+            # phrase de contexte hors de la section « Contexte » (#348)
+            for c in ph.appels:
+                if note_de_contexte(c):
+                    formulations.append({"phrase": ph.texte, "section": ph.section, "type": "hors_section",
+                                         "marqueur": f"appel [{c}]", "motif": (
+                                             "référence de contexte appelée hors de la section « Contexte » : le "
+                                             "contexte ne se mêle pas aux faits de l'individu")})
+            for e in EVENEMENTS:
+                if e.cherche(libre):
+                    formulations.append({"phrase": ph.texte, "section": ph.section, "type": "hors_section",
+                                         "marqueur": e.cle, "motif": (
+                                             "événement ou période nommés hors de la section « Contexte » : contexte "
+                                             "écrit de mémoire, à retirer ou à documenter par un élément sourcé")})
         if ph.genre != "contexte":
             continue
         if re.search(ABSENCE, plat(sans_appels(ph.texte))):
@@ -647,7 +781,8 @@ def verifier(texte: str, tree, personne: str, registre: RegistreReferences) -> d
                                     "inconnue (aucun fait daté et cité) : portée non vérifiable"})
         else:
             de, a_ = p.periode
-            dehors = [x for x in annees(ph.texte) if x[1] < de or x[0] > a_]
+            nommes = [(e.de, e.a) for e in EVENEMENTS if e.de is not None and e.cherche(sans_appels(ph.texte))]
+            dehors = [x for x in annees(ph.texte) + nommes if x[1] < de or x[0] > a_]
             if dehors:
                 nb_anachronismes += len(dehors)
                 lib = ", ".join(f"{x}" if x == y else f"{x}-{y}" for x, y in dehors)

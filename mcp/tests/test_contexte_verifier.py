@@ -65,7 +65,7 @@ def test_classe_lecture_sans_garde_reseau():
 
 
 def test_listes_versionnees_et_uniques():
-    assert v.VERSION_LISTES == "1"
+    assert v.VERSION_LISTES == "2"  # #348 : généralisations ajoutées, EVENEMENTS, POSSESSIFS
     for liste in (v.CONNECTEURS, v.GENERALISATIONS):
         cles = [r.cle for r in liste]
         assert len(cles) == len(set(cles))

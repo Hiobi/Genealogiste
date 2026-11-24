@@ -93,7 +93,10 @@ section « Contexte » :
   dans les questions ouvertes) ;
 - `hors_portee` : retirer l'élément (anachronisme, lieu hors périmètre) ;
 - `causalites` : retirer le lien causal, ou le reformuler en hypothèse avec la source qui la trancherait ;
-- `formulations` : reprendre la formulation du niveau de rattachement, ou la mention de tendance générale.
+- `formulations` : reprendre la formulation du niveau de rattachement, ou la mention de tendance générale ;
+  `generalisation` : retirer la phrase ; `hors_section` : retirer du récit la phrase de contexte (référence de
+  contexte ou événement nommé parmi les faits de l'individu) : un élément sourcé a sa place dans « Contexte », sous
+  sa formulation, et nulle part ailleurs.
 Rendre le texte avec le résultat du dernier contrôle (`conforme`, `mesures`). « Conforme » ne veut pas dire
 « vrai » : relire chaque phrase de contexte contre l'`enonce` et la citation de son élément.
 
