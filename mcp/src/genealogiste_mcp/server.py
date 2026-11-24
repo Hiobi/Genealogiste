@@ -376,15 +376,19 @@ def _mesure_enquete(nom: str, fn, args: tuple, kwargs: dict, enquete: str):
 
 
 def _garde_avant_budget(nom: str, fn, appel: dict) -> dict | None:
-    """Garde « vivants » de l'outil (outils.GARDE_AVANT_BUDGET), rejouée avant le contrôle de budget : même
-    refus que l'outil, mêmes paramètres (défauts de la signature pour ceux omis)."""
-    correspondance = outils.GARDE_AVANT_BUDGET.get(nom)
-    if not correspondance:
+    """Garde « vivants » de l'outil (outils.GARDE_AVANT_BUDGET), rejouée avant le contrôle de budget : mêmes
+    appels _garde que l'outil, dans le même ordre et avec les mêmes paramètres (défauts de la signature pour ceux
+    omis) ; premier refus renvoyé, comme dans l'outil (#347 : tous les appels, pas seulement le premier)."""
+    appels_garde = outils.GARDE_AVANT_BUDGET.get(nom)
+    if not appels_garde:
         return None
     valeurs = {p: v.default for p, v in inspect.signature(fn).parameters.items()
                if v.default is not inspect.Parameter.empty}
     valeurs.update(appel)
-    return _garde(**{arg: valeurs.get(param) or "" for arg, param in correspondance.items()})
+    for correspondance in appels_garde:
+        if refus := _garde(**{arg: valeurs.get(param) or "" for arg, param in correspondance.items()}):
+            return refus
+    return None
 
 
 def _suivi_collecte(nom: str, appel: dict, res: dict, enquete: str) -> dict:

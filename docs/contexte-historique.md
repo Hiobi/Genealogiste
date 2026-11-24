@@ -690,7 +690,7 @@ pays inconnu : `INT`) ; sinon le service est écarté avec son motif.
 | Collecte | Échelle | D'où vient l'élément | `enonce` |
 |---|---|---|---|
 | géographie historique (`lieux.lieu_historique`, communes françaises, trois au plus, aux années de présence) | commune | population INSEE Melodi ; cartes de la Géoplateforme dont la tuile contient le centre de la commune. Les niveaux « inconnu » ne donnent rien | valeurs du jeu (`titre : valeur (mesure, année)`) ; titre de la couche |
-| index Wikidata (`index_wikidata`, gabarit `evenements_commune`) | commune | entrée de l'index dont une référence externe (BnF `P268`, IdRef `P269`, Persée `P8758`) présente dans la réponse est déjà au registre | titre de cette référence, jamais le libellé Wikidata |
+| index Wikidata (`index_wikidata`, gabarits `evenements_commune` et `evenements_departement`) | commune ; département | entrée de l'index dont une référence externe (BnF `P268`, IdRef `P269`, Persée `P8758`) présente dans la réponse est déjà au registre | titre de cette référence, jamais le libellé Wikidata |
 | bibliographie (`bibliographie.rechercher`, mêmes services et classement que `contexte_bibliographie`) | chaque échelle demandée, par pays | notice dont le **titre** cite un lieu de vie (sinon le département de ce lieu : échelle `departement`) | titre de la notice |
 | presse (`presse.rechercher`, deux communes par pays) | commune | numéro au registre dont l'extrait OCR cite la commune | extrait cité, suivi de « (lecture OCR non vérifiée) » |
 
@@ -722,10 +722,31 @@ la référence n'est pas consultée est signalée dans `non_sources` (`statut: �
 consultation), jamais présentée comme source. Le code INSEE vient du COG (communes depuis 1943) : sans lui, le
 gabarit n'est pas applicable (motif).
 
-| Gabarit | État | Réponses réelles enregistrées (`reponses/WIKIDATA/`, 2026-11-23) |
+<!-- #345 -->
+
+**Gabarit départemental** (`evenements_departement`, échelle `departement` demandée, une requête par département
+français des lieux de vie, trois lieux au plus). Le département est désigné par son code INSEE (`P2586`, tiré du nom
+du département sans réseau : `62`, `2A`, `971`) ; mêmes classes fermées, même filtre d'années, `LIMIT 100`. Forme
+légère, à **profondeur bornée** : l'événement est situé (`P276` ou `P131`) dans le département lui-même ou dans un
+lieu rattaché **directement** au département par `P131` (un seul niveau, jamais `P131*`). Trois sous-requêtes
+nommées, évaluées une fois chacune et jointes sur le type : les éléments situés dans le département (`%lieux`), les
+sous-classes des classes fermées (`%types`, seul parcours de `P279*`), le type des éléments situés (`%situes`). Seuls
+le code du département et deux années partent. Les lignes sont lues par le même analyseur et suivent les mêmes
+règles que le gabarit communal : index seulement, énoncé tiré de la référence consultée, jamais du libellé ; un
+élément retenu est d'échelle `departement` et porte la mention de tendance générale. `limite_atteinte` (dans
+`services_interroges`) signale une réponse plafonnée par `LIMIT` : partie des entrées, sans ordre.
+
+Limites du gabarit départemental : un événement situé plus profondément (dans un édifice, un lieu-dit ou une commune
+rattachée au département par un seul arrondissement ou canton) n'est pas renvoyé ; deux réponses réelles sont
+enregistrées (Pas-de-Calais 1881-1946, Somme 1892-1916, 2,9 s et 2,8 s), et aucune de leurs 26 et 16 entrées ne porte
+d'identifiant BnF, IdRef ou Persée : sur ces cas l'index ne produit aucun élément, toutes les entrées sont écartées
+avec leur motif. La durée sur un département plus chargé ou une période plus longue n'a pas été mesurée.
+
+| Gabarit | État | Réponses réelles enregistrées (`reponses/WIKIDATA/`) |
 |---|---|---|
-| `evenements_commune` | livré | Billy-Montigny 1881-1946 (vide, 3,2 s), Courrières 1881-1946 (une entrée sans identifiant externe, 2,6 s), Belloy-en-Santerre 1892-1916 (vide, 2,5 s) |
-| `evenements_departement` | non livré | deux formes essayées une fois chacune (`P2586` puis `P131*` ; communes du département par le préfixe du code INSEE) : délai dépassé (60 s) ; consigné dans `MANIFESTE.json` (`sans_reponse`), aucune requête émise |
+| `evenements_commune` | livré | 2026-11-23 : Billy-Montigny 1881-1946 (vide, 3,2 s), Courrières 1881-1946 (une entrée sans identifiant externe, 2,6 s), Belloy-en-Santerre 1892-1916 (vide, 2,5 s) |
+| `evenements_departement` | livré (#345) | 2026-11-24, forme à profondeur bornée, deux essais, deux réponses : Pas-de-Calais (`62`) 1881-1946 (200 en 2,9 s, 27 lignes, 26 entrées) ; Somme (`80`) 1892-1916 (200 en 2,8 s, 16 entrées) ; aucune entrée avec identifiant externe |
+| formes départementales écartées (`NON_LIVRES`) | non livrées, jamais émises | 2026-11-23, une fois chacune : `P2586` puis `P131*` non borné ; communes du département par le préfixe du code INSEE : délai dépassé (60 s) ; consigné dans `MANIFESTE.json` (`non_verifie`) |
 
 **Sortie.**
 
@@ -757,7 +778,8 @@ n'écrit de note de lieu (`lieux/…`).
 
 Limites : un lieu cité seulement dans les sujets ou les mots-clés d'une notice (pas dans son titre) n'est pas
 retenu ; le type est un classement lexical ; la géographie historique ne donne rien avant 1943 (COG) ni avant 1968
-(population), sauf les cartes ; pas de gabarit Wikidata départemental ; `personne` est hors de l'identité « déjà
+(population), sauf les cartes ; le gabarit Wikidata départemental ne descend que d'un niveau sous le département ;
+`personne` est hors de l'identité « déjà
 fait » (voir [enquetes.md](enquetes.md)) ; l'outil enchaîne plusieurs services (une collecte complète peut émettre
 plusieurs dizaines de requêtes, bornées par le budget d'enquête).
 

@@ -6,7 +6,7 @@ Assemblage des modules du jalon, sans nouvelle définition de format (socle #321
    faits **sourcés** de l'arbre (``requete.depuis_personne``) ; sinon un ``lieu`` et une ``periode`` donnés.
 2. **Collecte**, service par service, l'échec de l'un n'arrêtant pas les autres : géographie historique
    (``lieux.lieu_historique`` : population et cartes sourcées), index Wikidata (``index_wikidata``, gabarits
-   légers), bibliographie (``bibliographie.rechercher``), presse (``presse.rechercher``). Hors de France, seuls les
+   légers à l'échelle de la commune et du département), bibliographie (``bibliographie.rechercher``), presse (``presse.rechercher``). Hors de France, seuls les
    services dont la ``couverture`` du référentiel inclut le pays sont interrogés.
 3. **Éléments** : ``ElementContexte`` dont l'``enonce`` est tiré de la source (titre de la notice, extrait OCR cité,
    valeur d'un jeu de données, titre d'une couche cartographique), jamais rédigé ; la source est une référence du
@@ -396,7 +396,37 @@ def _index_wikidata(ctx: SourceContext, c: Collecte, codes: dict[str, str], pers
             _ligne_index(c, ligne, lv.commune)
 
 
-def _ligne_index(c: Collecte, ligne: wdi.LigneIndex, commune: str) -> None:
+def _index_wikidata_departement(ctx: SourceContext, c: Collecte, personne: str | None, residus) -> None:
+    """Gabarit ``evenements_departement`` (#345) : une requête par département français des lieux de vie, désigné par
+    son code INSEE (tiré du nom du département, sans réseau). Index seulement, comme le gabarit communal."""
+    e = c.entrees
+    operation = "index:evenements_departement"
+    vus: set[str] = set()
+    for lv in e.lieux[:MAX_LIEUX]:
+        if not lv.departement or not _couvre(wdi.SERVICE, _code_pays(lv)):
+            continue
+        code = normalize_place(f"x, {lv.departement}").get("departement_code") or ""
+        if code in vus:
+            continue
+        vus.add(code)
+        if not re.fullmatch(wdi.CODE_DEPARTEMENT, code):
+            c.services_ecartes.append({"service": wdi.SERVICE, "operation": operation, "lieu": lv.departement,
+                                       "motif": "code INSEE du département non établi : gabarit non applicable"})
+            continue
+        r = wdi.interroger(ctx, "evenements_departement", code, e.periode.de, e.periode.a, personne, residus)
+        lignes = r.pop("lignes")
+        r["lieu"] = lv.departement
+        if r["statut"] == "interroge":
+            c.interroges.append(r)
+        elif r["statut"] == "erreur":
+            c.echecs.append({**{k: v for k, v in r.items() if k != "motif"}, "erreur": r["motif"]})
+        else:
+            c.services_ecartes.append(r)
+        for ligne in lignes:
+            _ligne_index(c, ligne, lv.departement, "departement")
+
+
+def _ligne_index(c: Collecte, ligne: wdi.LigneIndex, lieu: str, echelle: str = "commune") -> None:
     origine = f"{wdi.SERVICE} (index)"
     idents = ligne.identifiants()
     if not idents:
@@ -405,13 +435,13 @@ def _ligne_index(c: Collecte, ligne: wdi.LigneIndex, commune: str) -> None:
         return
     ref = next((r for i in idents if (r := c.registre.lire(i)) is not None), None)
     if ref is None:
-        c.non_sources.append({**ligne.to_dict(), "lieu": commune, "statut": "non sourcé",
+        c.non_sources.append({**ligne.to_dict(), "lieu": lieu, "echelle": echelle, "statut": "non sourcé",
                               "motif": "référence externe présente dans l'index mais non consultée : à consulter "
                                        "(liens) avant tout usage"})
         c.ecarter(origine, ligne.libelle, "référence externe non consultée (signalée dans non_sources)",
                   qid=ligne.qid)
         return
-    c.proposer(origine, ref, ref.titre, "evenement", commune, "commune", ligne.de, ligne.a)
+    c.proposer(origine, ref, ref.titre, "evenement", lieu, echelle, ligne.de, ligne.a)
 
 
 def _groupes(e: Entrees) -> dict[str, list[LieuDeVie]]:
@@ -590,9 +620,8 @@ def contexte_local(ctx: SourceContext, registre: RegistreReferences, tree=None, 
         codes = _geographie(ctx, c, residus) if "commune" in e.echelles else {}
         if "commune" in e.echelles:
             _index_wikidata(ctx, c, codes, p, residus)
-        for nom, motif in wdi.NON_LIVRES.items():
-            if "departement" in e.echelles and nom == "evenements_departement":
-                c.services_ecartes.append({"service": wdi.SERVICE, "operation": f"index:{nom}", "motif": motif})
+        if "departement" in e.echelles:
+            _index_wikidata_departement(ctx, c, p, residus)
         _bibliographie(ctx, c, p, residus)
         _presse(ctx, c, residus)
     return _enveloppe(ctx, c, p)

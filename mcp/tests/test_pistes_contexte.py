@@ -229,7 +229,8 @@ def test_aucune_ecriture_ni_operation_d_arbre(app_contexte, services_enregistres
 def test_catalogue_collecte_garde_et_budget():
     assert outils.OUTILS["pistes_contexte"] == (outils.RESEAU, outils.COLLECTE)
     assert "pistes_contexte" in outils.GARDE_VIVANTS and "pistes_contexte" in outils.BUDGET_ENQUETE
-    assert outils.GARDE_AVANT_BUDGET["pistes_contexte"] == {"personne": "personne", "texte": "themes"}
+    assert outils.GARDE_AVANT_BUDGET["pistes_contexte"] == ({"personne": "personne", "texte": "themes"},
+                                                            {"texte": "lieu"})  # deux appels _garde (#347)
 
 
 def test_vivant_refuse_sans_requete(app_famille):

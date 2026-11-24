@@ -275,26 +275,28 @@ GARDE_VIVANTS = {"matchid_recherche", "matchid_appariement_csv", "wikitree_reche
                  "archives_registres", "contexte_bibliographie", "presse_recherche", "contexte_local",
                  "pistes_contexte"}
 
-# Garde « vivants » avant le budget d'enquête (#211) : pour les outils gardés dont l'enveloppe générique
-# (ServeurMCP.mesure) contrôle le budget avant d'exécuter l'outil, paramètres de l'appel passés à _garde, comme
-# dans l'outil lui-même ({argument de _garde: paramètre de l'outil}). Un refus « vivant » est ainsi renvoyé avant
-# tout contrôle de budget : rien consommé, rien consigné au reste à faire. La garde interne de l'outil reste en
-# place. recherche_multi déclare lui-même enquete (garde, puis budget) ; matchid_appariement_csv est hors budget
-# (pas d'enquete) et exclut les lignes vivantes du CSV au lieu de refuser. Correspondance vérifiée par
-# test_garde_avant_budget (couverture et identité avec l'appel _garde de chaque outil).
-GARDE_AVANT_BUDGET: dict[str, dict[str, str]] = {
-    "matchid_recherche": {"personne": "personne", "nom": "nom", "prenom": "prenom", "ne_vers": "ne_vers",
-                          "texte": "texte"},
-    "wikitree_recherche": {"personne": "personne", "nom": "nom", "prenom": "prenom", "ne_vers": "ne_vers"},
-    "gallica_recherche": {"personne": "personne", "texte": "texte"},
-    "gallica_recherche_document": {"texte": "texte"},
-    "wikidata_personne": {"personne": "personne", "nom": "nom", "prenom": "prenom", "ne_vers": "ne_vers"},
-    "wikidata_sparql": {"texte": "requete"},
-    "archives_registres": {"personne": "personne", "texte": "commune"},
-    "presse_recherche": {"texte": "texte"},
-    "contexte_bibliographie": {"personne": "personne", "texte": "sujet"},
-    "contexte_local": {"personne": "personne", "texte": "themes"},
-    "pistes_contexte": {"personne": "personne", "texte": "themes"},
+# Garde « vivants » avant le budget d'enquête (#211, #347) : pour les outils gardés dont l'enveloppe générique
+# (ServeurMCP.mesure) contrôle le budget avant d'exécuter l'outil, appels _garde de l'outil, dans l'ordre et avec
+# les mêmes paramètres ({argument de _garde: paramètre de l'outil} par appel ; plusieurs appels quand l'outil
+# garde plusieurs textes, ex. themes puis lieu). Tous sont rejoués avant le budget (server._garde_avant_budget) :
+# un refus « vivant » est ainsi renvoyé avant tout contrôle de budget, quel que soit le paramètre en cause : rien
+# consommé, rien consigné au reste à faire. La garde interne de l'outil reste en place. recherche_multi déclare
+# lui-même enquete (garde, puis budget) ; matchid_appariement_csv est hors budget (pas d'enquete) et exclut les
+# lignes vivantes du CSV au lieu de refuser. Correspondance vérifiée par test_garde_avant_budget (couverture ;
+# identité avec chaque appel _garde écrit dans l'outil, lu dans son code et observé à l'exécution).
+_NOM_GARDE = {"personne": "personne", "nom": "nom", "prenom": "prenom", "ne_vers": "ne_vers"}
+GARDE_AVANT_BUDGET: dict[str, tuple[dict[str, str], ...]] = {
+    "matchid_recherche": ({**_NOM_GARDE, "texte": "texte"},),
+    "wikitree_recherche": (_NOM_GARDE,),
+    "gallica_recherche": ({"personne": "personne", "texte": "texte"},),
+    "gallica_recherche_document": ({"texte": "texte"},),
+    "wikidata_personne": (_NOM_GARDE,),
+    "wikidata_sparql": ({"texte": "requete"},),
+    "archives_registres": ({"personne": "personne", "texte": "commune"},),
+    "presse_recherche": ({"texte": "texte"}, {"texte": "lieu"}),
+    "contexte_bibliographie": ({"personne": "personne", "texte": "sujet"},),
+    "contexte_local": ({"personne": "personne", "texte": "themes"}, {"texte": "lieu"}),
+    "pistes_contexte": ({"personne": "personne", "texte": "themes"}, {"texte": "lieu"}),
 }
 
 # Paramètres qui désignent une personne ; exemptions justifiées (outil réseau, paramètre sans rapport).

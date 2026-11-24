@@ -1,6 +1,6 @@
 {
   "service": "WIKIDATA",
-  "objet": "Wikidata Query Service, index seulement : identifiant Cassini/EHESS (P8422) par le code INSEE (P374) pour lieu_historique (#287) ; gabarit evenements_commune pour contexte_local (#289)",
+  "objet": "Wikidata Query Service, index seulement : identifiant Cassini/EHESS (P8422) par le code INSEE (P374) pour lieu_historique (#287) ; gabarit evenements_commune pour contexte_local (#289) ; gabarit evenements_departement pour contexte_local (#345)",
   "commune_temoin": "Billy-Montigny (code INSEE 62133, obtenu par geo_commune du plugin)",
   "reponses": [
     {
@@ -58,7 +58,35 @@
       "client": "Mozilla/5.0 (compatible; client-generique) ; sans clé, sans paramètre personnel",
       "duree_s": 2.5,
       "note": "gabarit evenements_commune de contexte_local (#289), index seulement ; cas témoin du soldat : Belloy-en-Santerre (80080), vie 1892-1916 ; aucun événement"
+    },
+    {
+      "fichier": "evenements_departement_P2586_62.json",
+      "url": "https://query.wikidata.org/sparql?query=SELECT%20DISTINCT%20%3Fitem%20%3FitemLabel%20%3Fclasse%20%3Fdate%20%3Fdebut%20%3Ffin%20%3Fbnf%20%3Fidref%20%3Fpersee%0AWITH%20%7B%0A%20%20SELECT%20DISTINCT%20%3Fitem%20WHERE%20%7B%0A%20%20%20%20%3Fdept%20wdt%3AP2586%20%2262%22%20.%0A%20%20%20%20%7B%20%3Fitem%20wdt%3AP276%7Cwdt%3AP131%20%3Fdept%20.%20%7D%0A%20%20%20%20UNION%0A%20%20%20%20%7B%20%3Flieu%20wdt%3AP131%20%3Fdept%20.%20%3Fitem%20wdt%3AP276%7Cwdt%3AP131%20%3Flieu%20.%20%7D%0A%20%20%7D%0A%7D%20AS%20%25lieux%0AWITH%20%7B%0A%20%20SELECT%20%3Ftype%20%3Fclasse%20WHERE%20%7B%0A%20%20%20%20VALUES%20%3Fclasse%20%7B%20wd%3AQ3839081%20wd%3AQ1550225%20wd%3AQ49776%20wd%3AQ44512%20wd%3AQ178561%20wd%3AQ8068%20wd%3AQ168983%20%7D%0A%20%20%20%20%3Ftype%20wdt%3AP279%2A%20%3Fclasse%20.%0A%20%20%7D%0A%7D%20AS%20%25types%0AWITH%20%7B%0A%20%20SELECT%20%3Fitem%20%3Ftype%20WHERE%20%7B%0A%20%20%20%20INCLUDE%20%25lieux%20.%0A%20%20%20%20%3Fitem%20wdt%3AP31%20%3Ftype%20.%0A%20%20%7D%0A%7D%20AS%20%25situes%0AWHERE%20%7B%0A%20%20INCLUDE%20%25situes%20.%0A%20%20INCLUDE%20%25types%20.%0A%20%20OPTIONAL%20%7B%20%3Fitem%20wdt%3AP585%20%3Fdate%20%7D%0A%20%20OPTIONAL%20%7B%20%3Fitem%20wdt%3AP580%20%3Fdebut%20%7D%0A%20%20OPTIONAL%20%7B%20%3Fitem%20wdt%3AP582%20%3Ffin%20%7D%0A%20%20BIND%28COALESCE%28YEAR%28%3Fdate%29%2C%20YEAR%28%3Fdebut%29%29%20AS%20%3Fan0%29%0A%20%20BIND%28COALESCE%28YEAR%28%3Fdate%29%2C%20YEAR%28%3Ffin%29%2C%20%3Fan0%29%20AS%20%3Fan1%29%0A%20%20FILTER%28BOUND%28%3Fan0%29%20%26%26%20%3Fan0%20%3C%3D%201946%20%26%26%20%3Fan1%20%3E%3D%201881%29%0A%20%20OPTIONAL%20%7B%20%3Fitem%20wdt%3AP268%20%3Fbnf%20%7D%0A%20%20OPTIONAL%20%7B%20%3Fitem%20wdt%3AP269%20%3Fidref%20%7D%0A%20%20OPTIONAL%20%7B%20%3Fitem%20wdt%3AP8758%20%3Fpersee%20%7D%0A%20%20SERVICE%20wikibase%3Alabel%20%7B%20bd%3AserviceParam%20wikibase%3Alanguage%20%22fr%2Cen%22%20.%20%7D%0A%7D%20LIMIT%20100%0A&format=json",
+      "methode": "GET",
+      "date": "2026-11-24T12:42:28Z",
+      "statut": 200,
+      "type": "application/sparql-results+json;charset=utf-8",
+      "octets_origine": 17603,
+      "reduction": "aucune (réindentée)",
+      "empreinte": "sha256:3073eefe229fa4a9b02003f554fb165513fea27a4c6119fc4ca9d7d64172a2fd",
+      "client": "genealogiste-mcp (enregistrement des reponses de contexte ; hors CI, une requete par entree) ; scripts/enregistrer_contexte.py ; sans clé, sans paramètre personnel",
+      "duree_s": 2.86,
+      "note": "gabarit evenements_departement de contexte_local (#345), index seulement ; département témoin du mineur : Pas-de-Calais (code INSEE 62, P2586), 1881-1946 ; profondeur bornée (département ou lieu rattaché directement), sous-requêtes nommées ; premier essai de cette forme : 27 lignes, 26 entrées, aucune avec identifiant externe (BnF, IdRef, Persée)"
+    },
+    {
+      "fichier": "evenements_departement_P2586_80.json",
+      "url": "https://query.wikidata.org/sparql?query=SELECT%20DISTINCT%20%3Fitem%20%3FitemLabel%20%3Fclasse%20%3Fdate%20%3Fdebut%20%3Ffin%20%3Fbnf%20%3Fidref%20%3Fpersee%0AWITH%20%7B%0A%20%20SELECT%20DISTINCT%20%3Fitem%20WHERE%20%7B%0A%20%20%20%20%3Fdept%20wdt%3AP2586%20%2280%22%20.%0A%20%20%20%20%7B%20%3Fitem%20wdt%3AP276%7Cwdt%3AP131%20%3Fdept%20.%20%7D%0A%20%20%20%20UNION%0A%20%20%20%20%7B%20%3Flieu%20wdt%3AP131%20%3Fdept%20.%20%3Fitem%20wdt%3AP276%7Cwdt%3AP131%20%3Flieu%20.%20%7D%0A%20%20%7D%0A%7D%20AS%20%25lieux%0AWITH%20%7B%0A%20%20SELECT%20%3Ftype%20%3Fclasse%20WHERE%20%7B%0A%20%20%20%20VALUES%20%3Fclasse%20%7B%20wd%3AQ3839081%20wd%3AQ1550225%20wd%3AQ49776%20wd%3AQ44512%20wd%3AQ178561%20wd%3AQ8068%20wd%3AQ168983%20%7D%0A%20%20%20%20%3Ftype%20wdt%3AP279%2A%20%3Fclasse%20.%0A%20%20%7D%0A%7D%20AS%20%25types%0AWITH%20%7B%0A%20%20SELECT%20%3Fitem%20%3Ftype%20WHERE%20%7B%0A%20%20%20%20INCLUDE%20%25lieux%20.%0A%20%20%20%20%3Fitem%20wdt%3AP31%20%3Ftype%20.%0A%20%20%7D%0A%7D%20AS%20%25situes%0AWHERE%20%7B%0A%20%20INCLUDE%20%25situes%20.%0A%20%20INCLUDE%20%25types%20.%0A%20%20OPTIONAL%20%7B%20%3Fitem%20wdt%3AP585%20%3Fdate%20%7D%0A%20%20OPTIONAL%20%7B%20%3Fitem%20wdt%3AP580%20%3Fdebut%20%7D%0A%20%20OPTIONAL%20%7B%20%3Fitem%20wdt%3AP582%20%3Ffin%20%7D%0A%20%20BIND%28COALESCE%28YEAR%28%3Fdate%29%2C%20YEAR%28%3Fdebut%29%29%20AS%20%3Fan0%29%0A%20%20BIND%28COALESCE%28YEAR%28%3Fdate%29%2C%20YEAR%28%3Ffin%29%2C%20%3Fan0%29%20AS%20%3Fan1%29%0A%20%20FILTER%28BOUND%28%3Fan0%29%20%26%26%20%3Fan0%20%3C%3D%201916%20%26%26%20%3Fan1%20%3E%3D%201892%29%0A%20%20OPTIONAL%20%7B%20%3Fitem%20wdt%3AP268%20%3Fbnf%20%7D%0A%20%20OPTIONAL%20%7B%20%3Fitem%20wdt%3AP269%20%3Fidref%20%7D%0A%20%20OPTIONAL%20%7B%20%3Fitem%20wdt%3AP8758%20%3Fpersee%20%7D%0A%20%20SERVICE%20wikibase%3Alabel%20%7B%20bd%3AserviceParam%20wikibase%3Alanguage%20%22fr%2Cen%22%20.%20%7D%0A%7D%20LIMIT%20100%0A&format=json",
+      "methode": "GET",
+      "date": "2026-11-24T12:46:53Z",
+      "statut": 200,
+      "type": "application/sparql-results+json;charset=utf-8",
+      "octets_origine": 11616,
+      "reduction": "aucune (réindentée)",
+      "empreinte": "sha256:08aa510c575813542a3c531d4a4e6e8dc6a760340a737abd9643121bc02d0540",
+      "client": "genealogiste-mcp (enregistrement des reponses de contexte ; hors CI, une requete par entree) ; scripts/enregistrer_contexte.py ; sans clé, sans paramètre personnel",
+      "duree_s": 2.84,
+      "note": "gabarit evenements_departement de contexte_local (#345), index seulement ; département témoin du soldat : Somme (code INSEE 80, P2586), 1892-1916 ; second et dernier essai de cette forme : 16 lignes, 16 entrées, aucune avec identifiant externe (BnF, IdRef, Persée)"
     }
   ],
-  "non_verifie": "gabarit evenements_departement de contexte_local (#289), non livré : evenements_departement (P2586 puis P131*), département 62, 1881-1946, 2026-11-23T12:28:04Z : délai dépassé (60 s, aucun octet reçu) ; evenements_departement (communes par préfixe du code INSEE, un saut P276|P131), département 80, 1892-1916, 2026-11-23T12:30:21Z : délai dépassé (60 s, aucun octet reçu)"
+  "non_verifie": "formes du gabarit evenements_departement essayées sans réponse (#289), non livrées, remplacées par la forme à profondeur bornée enregistrée le 2026-11-24 (#345) : evenements_departement (P2586 puis P131*), département 62, 1881-1946, 2026-11-23T12:28:04Z : délai dépassé (60 s, aucun octet reçu) ; evenements_departement (communes par préfixe du code INSEE, un saut P276|P131), département 80, 1892-1916, 2026-11-23T12:30:21Z : délai dépassé (60 s, aucun octet reçu) ; forme livrée : deux départements enregistrés (62, 1881-1946 ; 80, 1892-1916), aucune réponse réelle portant un identifiant externe (BnF, IdRef, Persée) ; durée non mesurée sur un département plus chargé ou une période plus longue"
 }
