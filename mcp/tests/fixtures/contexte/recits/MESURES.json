@@ -1,0 +1,433 @@
+{
+  "objet": "Recette de bout en bout (#348) : récits réellement rédigés par un modèle qui suit agents/redacteur.md, sur les quatre cas témoins, à partir des sorties d'outils rejouées hors ligne (réponses enregistrées). Chaque récit est figé tel qu'écrit, d'un jet, sans retouche après contrôle. « defauts » : relevé manuel, phrase par phrase, contre les règles du jalon ; « signale_par » : rubrique[:type[:marqueur]] du rapport de contexte_verifier qui doit signaler la phrase (absent : défaut échappé, limite de la détection lexicale). Tout signalement hors de ces défauts serait une fausse alerte.",
+  "date": "2026-11-24",
+  "redacteur": "claude-fable-5-2, dans le rôle de l'agent redacteur ; relevé manuel par le même modèle (auto-évaluation)",
+  "portee": "Quatorze récits, un seul modèle, un seul relecteur qui est aussi l'auteur ; listes de la version 2 ajustées sur ces mêmes textes. Mesure de non-régression, pas preuve de conformité.",
+  "version_listes": {
+    "avant": "1",
+    "apres": "2"
+  },
+  "lots": {
+    "premier": "naturel (consigne suivie strictement), fluide (consigne suivie en cherchant la fluidité littéraire), billet (format billet, fluide) ; écrits avant toute lecture de verifier.py, les listes de la version 1 étant toutefois connues par docs/contexte-historique.md",
+    "contre_epreuve": "récit volontairement relâché (le style narratif prime sur la consigne), écrit après le dépouillement du premier lot et avant toute modification du code"
+  },
+  "ajouts": {
+    "lot_1": [
+      "louait_ses_bras",
+      "toute_sa_vie",
+      "jamais_quitte",
+      "traverse_epoque",
+      "hors_section:appel",
+      "revolution_francaise",
+      "ancien_regime",
+      "terreur",
+      "guerre_de_vendee",
+      "guerres_napoleoniennes",
+      "code_civil",
+      "restauration",
+      "monarchie_de_juillet",
+      "second_empire",
+      "guerre_de_1870",
+      "commune_de_paris",
+      "grande_guerre",
+      "front_populaire",
+      "seconde_guerre_mondiale",
+      "guerre_de_coree",
+      "guerre_d_algerie",
+      "possessifs"
+    ],
+    "lot_2": [
+      "comme_les_de_son",
+      "cette_generation",
+      "fait_partie_de_ces",
+      "compte_parmi",
+      "tant_d_autres",
+      "etats_generaux",
+      "bataille_de",
+      "entree_en_guerre"
+    ]
+  },
+  "contexte_local": "plan de rejeu de textes/ATTENDUS.json (clé contexte_local)",
+  "totaux": {
+    "mineur_artois_oklahoma": {
+      "phrases": 64,
+      "defauts": 11,
+      "detectes_v1": 2,
+      "detectes_lot_1": 4,
+      "detectes": 6,
+      "fausses_alertes": 0
+    },
+    "cultivateur_ancien_regime": {
+      "phrases": 42,
+      "defauts": 11,
+      "detectes_v1": 1,
+      "detectes_lot_1": 5,
+      "detectes": 7,
+      "fausses_alertes": 0
+    },
+    "soldat_1914_1918": {
+      "phrases": 27,
+      "defauts": 7,
+      "detectes_v1": 0,
+      "detectes_lot_1": 0,
+      "detectes": 2,
+      "fausses_alertes": 0
+    },
+    "lieu_non_documente": {
+      "phrases": 23,
+      "defauts": 6,
+      "detectes_v1": 0,
+      "detectes_lot_1": 3,
+      "detectes": 5,
+      "fausses_alertes": 0
+    }
+  },
+  "recits": {
+    "mineur_artois_oklahoma.naturel": {
+      "lot": "premier",
+      "phrases": 18,
+      "defauts": [],
+      "fausses_alertes": []
+    },
+    "mineur_artois_oklahoma.fluide": {
+      "lot": "premier",
+      "phrases": 19,
+      "defauts": [
+        {
+          "id": "D1",
+          "extrait": "Il ne reviendra sans doute pas en France, puisqu'il s'éteint",
+          "nature": "déduction non fondée présentée avec un connecteur (un décès aux États-Unis n'exclut pas un retour) ; la note individuelle [5] dispense du contrôle de causalité",
+          "signale_par": null
+        },
+        {
+          "id": "D2",
+          "extrait": "Le pays où grandit Anselme est celui de la houille.",
+          "nature": "phrase de contexte écrite de mémoire, sans référence, appliquée à l'individu",
+          "signale_par": [
+            "phrases_sans_reference"
+          ]
+        },
+        {
+          "id": "D3",
+          "extrait": "l'arbre ne dit pas où se trouvait Anselme ce jour-là",
+          "nature": "individu mentionné dans une phrase de rattachement non démontré ; « ce jour-là » ajoute à l'énoncé",
+          "signale_par": [
+            "formulations:rattachement"
+          ]
+        },
+        {
+          "id": "D4",
+          "extrait": "des luttes ouvrières du bassin [8]",
+          "nature": "paraphrase qui ajoute à l'énoncé de l'élément (section « Hypothèses », non contrôlée)",
+          "signale_par": null
+        }
+      ],
+      "fausses_alertes": []
+    },
+    "mineur_artois_oklahoma.billet": {
+      "lot": "premier",
+      "phrases": 15,
+      "defauts": [
+        {
+          "id": "D5",
+          "extrait": "l'année de la catastrophe minière qui endeuille sa commune natale [7]",
+          "nature": "phrase de contexte hors de la section « Contexte », paraphrasée et rapprochée de l'individu",
+          "signale_par": [
+            "formulations:hors_section:appel [7]"
+          ]
+        }
+      ],
+      "fausses_alertes": []
+    },
+    "mineur_artois_oklahoma.contre_epreuve": {
+      "lot": "contre_epreuve",
+      "phrases": 12,
+      "defauts": [
+        {
+          "id": "C1",
+          "extrait": "appartient à une commune dont la compagnie minière a fait son siège [1] [6]",
+          "nature": "contexte hors section, rattaché à l'individu",
+          "signale_par": [
+            "formulations:hors_section:appel [6]"
+          ]
+        },
+        {
+          "id": "C2",
+          "extrait": "Rien d'étonnant, dès lors, à le trouver mineur en 1904",
+          "nature": "causalité contexte vers individu par paraphrase (« dès lors »), avec note individuelle",
+          "signale_par": null
+        },
+        {
+          "id": "C3",
+          "extrait": "comme les garçons de son âge",
+          "nature": "généralisation d'un groupe à l'individu, sans note",
+          "signale_par": [
+            "formulations:generalisation:comme_les_de_son"
+          ]
+        },
+        {
+          "id": "C4",
+          "extrait": "quatre mois après la catastrophe",
+          "nature": "contexte de mémoire dans le récit (date d'un événement non nommé, sans référence)",
+          "signale_par": null
+        },
+        {
+          "id": "C5",
+          "extrait": "alors que l'Amérique vient d'entrer en guerre",
+          "nature": "événement évoqué de mémoire sans année ni référence",
+          "signale_par": [
+            "formulations:hors_section:entree_en_guerre"
+          ]
+        },
+        {
+          "id": "C6",
+          "extrait": "au cœur d'un autre pays noir",
+          "nature": "contexte de mémoire sur le lieu du décès, sans référence",
+          "signale_par": null
+        }
+      ],
+      "fausses_alertes": []
+    },
+    "cultivateur_ancien_regime.naturel": {
+      "lot": "premier",
+      "phrases": 12,
+      "defauts": [
+        {
+          "id": "P1",
+          "extrait": "À la même époque et au même endroit : « Mémoire pour [Honoré-] François de Grimaldy",
+          "nature": "pertinence : seconde notice du même imprimé comptée comme un second élément sourcé ; aucun fait de l'individu n'est éclairé par ce mémoire",
+          "signale_par": null
+        }
+      ],
+      "fausses_alertes": []
+    },
+    "cultivateur_ancien_regime.fluide": {
+      "lot": "premier",
+      "phrases": 15,
+      "defauts": [
+        {
+          "id": "D6",
+          "extrait": "qu'il ne semble jamais avoir quittée",
+          "nature": "extrapolation d'une vie entière à partir de trois actes",
+          "signale_par": [
+            "formulations:generalisation:jamais_quitte"
+          ]
+        },
+        {
+          "id": "D7",
+          "extrait": "il tient un enfant sur les fonts d'une sépulture où le curé le qualifie de laboureur",
+          "nature": "fait déformé (la source le cite comme parrain dans un acte de sépulture) et détail inventé (« le curé »)",
+          "signale_par": null
+        },
+        {
+          "id": "D8",
+          "extrait": "à la veille de la Révolution",
+          "nature": "événement nommé sans année, de mémoire, hors de la section « Contexte » et hors de la période de vie",
+          "signale_par": [
+            "formulations:hors_section:revolution_francaise"
+          ]
+        },
+        {
+          "id": "D9",
+          "extrait": "Pendant l'enfance de Mathurin, le prieuré de sa paroisse est au cœur d'un procès.",
+          "nature": "phrase de contexte sans référence, interprétation de l'énoncé, appliquée à l'individu",
+          "signale_par": [
+            "phrases_sans_reference"
+          ]
+        },
+        {
+          "id": "D10",
+          "extrait": "Le même mémoire est signalé par une seconde notice, datée de 1729",
+          "nature": "phrase de contexte hors gabarit : commentaire et date ajoutés à l'énoncé, formule de rattachement absente",
+          "signale_par": null
+        },
+        {
+          "id": "D11",
+          "extrait": "La famille de Mathurin aurait pu avoir affaire au prieur, comme tenancière ou comme redevable de la dîme",
+          "nature": "hypothèse d'intuition, absente de pistes_contexte, avec détails de mémoire (section « Hypothèses », non contrôlée)",
+          "signale_par": null
+        }
+      ],
+      "fausses_alertes": []
+    },
+    "cultivateur_ancien_regime.billet": {
+      "lot": "premier",
+      "phrases": 8,
+      "defauts": [
+        {
+          "id": "D12",
+          "extrait": "sous l'Ancien Régime, dans un village où l'Église tient une grande place, comme le montre le procès du prieur [4]",
+          "nature": "contexte hors section : généralisation de mémoire et conclusion tirée d'une notice non lue",
+          "signale_par": [
+            "formulations:hors_section:appel [4]",
+            "formulations:hors_section:ancien_regime"
+          ]
+        }
+      ],
+      "fausses_alertes": []
+    },
+    "cultivateur_ancien_regime.contre_epreuve": {
+      "lot": "contre_epreuve",
+      "phrases": 7,
+      "defauts": [
+        {
+          "id": "C7",
+          "extrait": "il compte alors parmi les notables du village, ceux qui possèdent leur train de labour",
+          "nature": "généralisation d'un groupe (laboureurs) à l'individu",
+          "signale_par": [
+            "formulations:generalisation:compte_parmi"
+          ]
+        },
+        {
+          "id": "C8",
+          "extrait": "Il vit sous le règne de Louis XV, puis de Louis XVI, dans une paroisse dont le prieur plaide jusqu'à Paris [4]",
+          "nature": "contexte hors section, de mémoire (règnes) et interprétation d'une notice",
+          "signale_par": [
+            "formulations:hors_section:appel [4]"
+          ]
+        },
+        {
+          "id": "C9",
+          "extrait": "quelques mois avant la convocation des États généraux",
+          "nature": "événement nommé sans année, hors de la période de vie",
+          "signale_par": [
+            "formulations:hors_section:etats_generaux"
+          ]
+        }
+      ],
+      "fausses_alertes": []
+    },
+    "soldat_1914_1918.naturel": {
+      "lot": "premier",
+      "phrases": 8,
+      "defauts": [],
+      "fausses_alertes": []
+    },
+    "soldat_1914_1918.fluide": {
+      "lot": "premier",
+      "phrases": 12,
+      "defauts": [
+        {
+          "id": "D13",
+          "extrait": "lorsque vient pour lui l'heure du conseil de révision",
+          "nature": "contexte de mémoire (institution) appliqué à l'individu sans source",
+          "signale_par": null
+        },
+        {
+          "id": "D14",
+          "extrait": "Il n'aura guère le temps d'exercer ce métier",
+          "nature": "commentaire causal par juxtaposition (mobilisation), non sourcé",
+          "signale_par": null
+        },
+        {
+          "id": "D15",
+          "extrait": "Suivent deux années de guerre",
+          "nature": "contexte de mémoire dans le récit : événement évoqué sans le nommer ni le dater",
+          "signale_par": null
+        },
+        {
+          "id": "D16",
+          "extrait": "loin des siens",
+          "nature": "détail de vie ou sentiment non sourcé",
+          "signale_par": null
+        }
+      ],
+      "fausses_alertes": []
+    },
+    "soldat_1914_1918.contre_epreuve": {
+      "lot": "contre_epreuve",
+      "phrases": 7,
+      "defauts": [
+        {
+          "id": "C10",
+          "extrait": "il appartient à cette génération que la guerre fauche à vingt ans",
+          "nature": "généralisation d'une génération à l'individu",
+          "signale_par": [
+            "formulations:generalisation:cette_generation"
+          ]
+        },
+        {
+          "id": "C11",
+          "extrait": "il rejoint le front avec les hommes de sa classe",
+          "nature": "détail de parcours non sourcé",
+          "signale_par": null
+        },
+        {
+          "id": "C12",
+          "extrait": "en pleine bataille de la Somme",
+          "nature": "bataille nommée sans source individuelle ni année (interdit des attendus du cas)",
+          "signale_par": [
+            "formulations:hors_section:bataille_de"
+          ]
+        }
+      ],
+      "fausses_alertes": []
+    },
+    "lieu_non_documente.naturel": {
+      "lot": "premier",
+      "phrases": 7,
+      "defauts": [],
+      "fausses_alertes": []
+    },
+    "lieu_non_documente.fluide": {
+      "lot": "premier",
+      "phrases": 10,
+      "defauts": [
+        {
+          "id": "D17",
+          "extrait": "Toute sa vie semble tenir dans ce coin de terre",
+          "nature": "extrapolation d'une vie entière à partir de trois actes",
+          "signale_par": [
+            "formulations:generalisation:toute_sa_vie"
+          ]
+        },
+        {
+          "id": "D18",
+          "extrait": "il louait ses bras à la journée chez les propriétaires des environs",
+          "nature": "cliché de métier appliqué à l'individu comme un fait, sans note",
+          "signale_par": [
+            "formulations:generalisation:louait_ses_bras"
+          ]
+        },
+        {
+          "id": "D19",
+          "extrait": "Il aura traversé, sans que l'on sache comment, trois régimes et une guerre.",
+          "nature": "contexte de mémoire : événements évoqués sans les nommer ni les dater",
+          "signale_par": [
+            "formulations:generalisation:traverse_epoque"
+          ]
+        }
+      ],
+      "fausses_alertes": []
+    },
+    "lieu_non_documente.contre_epreuve": {
+      "lot": "contre_epreuve",
+      "phrases": 6,
+      "defauts": [
+        {
+          "id": "C14",
+          "extrait": "il fait partie de ces petites gens de la terre gasconne",
+          "nature": "généralisation d'un groupe et d'une région (hors lieu : Gascogne) à l'individu",
+          "signale_par": [
+            "formulations:generalisation:fait_partie_de_ces"
+          ]
+        },
+        {
+          "id": "C15",
+          "extrait": "Resté au pays quand tant d'autres gagnaient la ville",
+          "nature": "tendance générale (exode rural paraphrasé) appliquée à l'individu",
+          "signale_par": [
+            "formulations:generalisation:tant_d_autres"
+          ]
+        },
+        {
+          "id": "C16",
+          "extrait": "a vu son village se vider",
+          "nature": "détail de vie inventé, contexte de mémoire",
+          "signale_par": null
+        }
+      ],
+      "fausses_alertes": []
+    }
+  }
+}
