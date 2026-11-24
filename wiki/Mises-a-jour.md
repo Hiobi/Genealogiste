@@ -85,5 +85,12 @@ Le détail est dans chaque note de version.
   série d’archives départementales, et un lieu sans pays ni département les reçoit avec « si le lieu est en
   France » ; un billet dont le texte a une section « Contexte » n’est proposé que s’il est conforme et porte
   le champ `personne`.
+- [0.30.0](https://github.com/Hiobi/Genealogiste/releases/tag/v0.30.0) : base Cassini des lieux d’avant 1943,
+  installée à part par chaque utilisateur avec acceptation de sa licence (`cassini_preparer`,
+  `cassini_installer`, `cassini_desinstaller`), jamais fournie avec le plugin ; presse Europeana avec une clé
+  personnelle (`GENEALOGISTE_CLE_EUROPEANA`, envoyée en en-tête) ; gabarit Wikidata départemental pour
+  `contexte_local`. **Changement** : `contexte_verifier` (listes v3) refuse un billet dont le récit nomme un
+  événement de sa liste sans source individuelle, et n’émet qu’un avertissement quand la phrase porte une
+  source individuelle ; nouvelle variable `GENEALOGISTE_REFERENTIELS_DIR` (dossier de la base Cassini).
 
 Pour la version publiée actuellement, se référer à la page Releases et au numéro du pied de page du wiki.
