@@ -2,7 +2,9 @@
 GENEALOGISTE_TEST_CONTEXTE=1 : jamais exécutée par make test ni par la CI.
 
 Une à deux requêtes par service qui a un analyseur (gabarits de contexte_bibliographie, services de
-lieu_historique, Gallica de presse_recherche, OAI-PMH de Persée). On vérifie la FORME attendue par l'analyseur
+lieu_historique, Gallica et Europeana de presse_recherche, OAI-PMH de Persée). Europeana exige la clé personnelle
+de l'utilisateur (GENEALOGISTE_CLE_EUROPEANA, lue par le chargement de configuration du plugin dans
+l'environnement ou <données>/.env, jamais affichée) : sans clé, AVERT. On vérifie la FORME attendue par l'analyseur
 (les champs qu'il lit), jamais le contenu : un service qui répond autrement qu'un 2xx lisible (protégé, limité,
 muet, en panne) rend AVERT (test ignoré avec le motif), pas un échec. Seule une réponse reçue mais illisible par
 l'analyseur est un échec : le service a changé, relire l'analyseur et réenregistrer la réponse
@@ -20,7 +22,7 @@ import re
 import pytest
 
 from genealogiste_mcp import server
-from genealogiste_mcp.config import Config
+from genealogiste_mcp.config import Config, load_config
 from genealogiste_mcp.contexte import services
 from genealogiste_mcp.contexte.gabarits import GABARITS, Notice, Recherche
 from genealogiste_mcp.contexte.protocoles import ReponseInvalide, oai
@@ -33,6 +35,24 @@ pytestmark = [pytest.mark.contexte_live,
 RECHERCHE = Recherche(lieux=("Courrières",), sujet="mines", limite=3)
 # Identifiant OAI de la réponse GetRecord enregistrée (tests/fixtures/contexte/reponses/persee/MANIFESTE.json).
 PERSEE_ID = "oai:persee:article/rnord_0035-2624_1982_num_64_253_3879"
+
+
+def _cle_europeana() -> str:
+    """Clé personnelle Europeana de la configuration réelle de l'utilisateur, lue à l'import (avant l'isolement de
+    configuration des tests) par ``load_config`` ; l'environnement est restauré. Vide si absente ou illisible."""
+    if not ACTIVE:
+        return ""  # make test et la CI ne lisent jamais la configuration de l'utilisateur
+    avant = dict(os.environ)
+    try:
+        return load_config().cles_contexte.get("EUROPEANA", "")
+    except Exception:  # noqa: BLE001 — configuration invalide : la recette saute, elle n'échoue pas
+        return ""
+    finally:
+        os.environ.clear()
+        os.environ.update(avant)
+
+
+CLE_EUROPEANA = _cle_europeana()
 DISPONIBILITE = re.compile(r"HTTP \d{3}|accès refusé|blocage|protection|tentatives|indisponible|Timeout|timed? out|"
                            r"échec|mémorisé|plafond|hors-ligne|coupe-circuit|exclu|ralenti|pas de réponse", re.I)
 
@@ -160,3 +180,33 @@ def test_forme_gallica_presse(app_reelle):
             or etat.get("echec_memorise") or DISPONIBILITE.search(motif)):
         avert(f"GALLICA : {etat['statut']} {motif[:200]}")
     pytest.fail(f"GALLICA : réponse reçue mais illisible par parse_sru ({motif[:200]})")
+
+
+def test_forme_europeana_presse(app_reelle):
+    """Une requête à la Search API, clé personnelle en en-tête. Sans clé : AVERT (aucune requête)."""
+    cfg = app_reelle.config
+    avant = cfg.cles_contexte, cfg.contexte_services
+    cfg.cles_contexte = {**cfg.cles_contexte, **({"EUROPEANA": CLE_EUROPEANA} if CLE_EUROPEANA else {})}
+    cfg.contexte_services = (*services.actifs(cfg), "EUROPEANA")
+    try:
+        if refus := services.refus("EUROPEANA", cfg):  # clé personnelle absente : aucune requête
+            avert(refus["erreur"])
+        res = server.presse_recherche("Courrières", periode="1850-1950", services="EUROPEANA", nombre=5)
+    finally:
+        cfg.cles_contexte, cfg.contexte_services = avant
+    fuite = CLE_EUROPEANA in repr(res)  # booléen calculé à part : un échec n'affiche jamais la clé
+    assert not fuite, "la clé d'API figure dans la sortie de l'outil"
+    etat = next(e for e in res["services"] if e["service"] == "EUROPEANA")
+    if etat["statut"] == "interroge":
+        assert isinstance(etat["total"], int) and etat["nb_resultats"] <= 5
+        assert etat["nb_resultats"] or not etat["total"], "résultats annoncés mais aucune notice lisible"
+        for r in res["resultats"]:
+            assert r["identifiant"]["type"] == "europeana" and r["au_registre"] and r["url"]
+        return
+    motif = etat.get("motif", "")
+    if "réponse illisible" in motif:
+        pytest.fail(f"EUROPEANA : réponse reçue mais illisible par l'analyseur ({motif[:200]})")
+    if (etat["statut"] in ("bloque_antirobot", "refuse") or etat.get("coupe_circuit") or etat.get("echec_memorise")
+            or DISPONIBILITE.search(motif)):
+        avert(f"EUROPEANA : {etat['statut']} {motif[:200]}")
+    pytest.fail(f"EUROPEANA : {etat['statut']} {motif[:200]}")

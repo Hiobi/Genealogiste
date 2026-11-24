@@ -1,0 +1,2331 @@
+{
+ "success": true,
+ "itemsCount": 5,
+ "totalResults": 11,
+ "items": [
+  {
+   "completeness": 6,
+   "country": [
+    "Germany"
+   ],
+   "dataProvider": [
+    "Library of the Friedrich Ebert Foundation"
+   ],
+   "dcLanguage": [
+    "deu"
+   ],
+   "dcLanguageLangAware": {
+    "def": [
+     "deu"
+    ]
+   },
+   "dcTitleLangAware": {
+    "de": [
+     "Ist ein deutsches Courrières möglich?"
+    ],
+    "def": [
+     "Ist ein deutsches Courrières möglich?"
+    ]
+   },
+   "edmDatasetName": [
+    "2022038_Ag_EU_HOPE_FESLibrary"
+   ],
+   "edmIsShownAt": [
+    "http://hdl.handle.net/11088/de-bo133:4205#1"
+   ],
+   "edmIsShownBy": [
+    "http://hdl.handle.net/11088/de-bo133:doc:4205"
+   ],
+   "edmPreview": [
+    "https://api.europeana.eu/thumbnail/v2/url.json?uri=http%3A%2F%2Fhdl.handle.net%2F11088%2Fde-bo133%3Adoc%3A4205&type=TEXT"
+   ],
+   "edmTimespanLabel": [
+    {
+     "def": "Second millenium AD"
+    },
+    {
+     "def": "Second millenium AD, years 1001-2000"
+    },
+    {
+     "def": "Time"
+    },
+    {
+     "def": "Chronological period"
+    },
+    {
+     "def": "2e millénaire après J.-C."
+    },
+    {
+     "def": "1906"
+    }
+   ],
+   "edmTimespanLabelLangAware": {
+    "en": [
+     "Second millenium AD",
+     "Second millenium AD, years 1001-2000",
+     "Time",
+     "Chronological period"
+    ],
+    "zxx": [
+     "1906"
+    ],
+    "fr": [
+     "2e millénaire après J.-C."
+    ]
+   },
+   "europeanaCollectionName": [
+    "2022038_Ag_EU_HOPE_FESLibrary"
+   ],
+   "europeanaCompleteness": 6,
+   "guid": "https://www.europeana.eu/item/2022038/11088_de_bo133_4205",
+   "id": "/2022038/11088_de_bo133_4205",
+   "index": 0,
+   "language": [
+    "de"
+   ],
+   "previewNoDistribute": false,
+   "provider": [
+    "Heritage of the People's Europe"
+   ],
+   "rights": [
+    "http://rightsstatements.org/vocab/InC/1.0/"
+   ],
+   "score": 42.55708,
+   "timestamp": 1788047488977,
+   "timestamp_created": "2014-08-08T14:14:27.106Z",
+   "timestamp_created_epoch": 1407507267106,
+   "timestamp_update": "2014-08-08T14:14:27.106Z",
+   "timestamp_update_epoch": 1407507267106,
+   "title": [
+    "Ist ein deutsches Courrières möglich?",
+    "Ist ein deutsches Courrières möglich?"
+   ],
+   "type": "TEXT",
+   "ugc": [
+    false
+   ],
+   "year": [
+    "1906"
+   ]
+  },
+  {
+   "completeness": 8,
+   "country": [
+    "France"
+   ],
+   "dataProvider": [
+    "National Library of France"
+   ],
+   "dcCreator": [
+    "Steinlen, Théophile Alexandre (1859-1923). Lithographe"
+   ],
+   "dcCreatorLangAware": {
+    "def": [
+     "Steinlen, Théophile Alexandre (1859-1923). Lithographe"
+    ]
+   },
+   "dcDescription": [
+    "Collectionneur : Crauzat, Ernest de (1866-1944). Collectionneur",
+    "Référence bibliographique : Crauzat 291",
+    "Collectionneur : Crauzat, Ernest de (1866-1944). Collectionneur",
+    "Référence bibliographique : Crauzat 291",
+    "Collectioner: Crauzat, Ernest de (1866-1944). Collector",
+    "Bibliographical Reference: Crauzat 291"
+   ],
+   "dcDescriptionLangAware": {
+    "def": [
+     "Collectionneur : Crauzat, Ernest de (1866-1944). Collectionneur",
+     "Référence bibliographique : Crauzat 291"
+    ],
+    "en": [
+     "Collectioner: Crauzat, Ernest de (1866-1944). Collector",
+     "Bibliographical Reference: Crauzat 291"
+    ],
+    "fr": [
+     "Collectionneur : Crauzat, Ernest de (1866-1944). Collectionneur",
+     "Référence bibliographique : Crauzat 291"
+    ]
+   },
+   "dcTitleLangAware": {
+    "def": [
+     "[Les veuves des Courrières] : [estampe] / [Steinlen]"
+    ]
+   },
+   "edmConcept": [
+    "http://data.europeana.eu/concept/2538"
+   ],
+   "edmConceptLabel": [
+    {
+     "def": "Druckgrafik"
+    },
+    {
+     "def": "Эстамп"
+    },
+    {
+     "def": "Grafiikka"
+    },
+    {
+     "def": "Tryck"
+    },
+    {
+     "def": "Estampa"
+    },
+    {
+     "def": "Печатна графика"
+    },
+    {
+     "def": "Εκτύπωση"
+    },
+    {
+     "def": "Estampas"
+    },
+    {
+     "def": "Print"
+    },
+    {
+     "def": "Estamps"
+    },
+    {
+     "def": "Stampa"
+    },
+    {
+     "def": "Estampe"
+    },
+    {
+     "def": "Metszet"
+    },
+    {
+     "def": "Grabado"
+    },
+    {
+     "def": "Trükipilt"
+    },
+    {
+     "def": "Tisk"
+    },
+    {
+     "def": "Natis"
+    },
+    {
+     "def": "Prionta"
+    },
+    {
+     "def": "Sztych"
+    },
+    {
+     "def": "Stampă"
+    },
+    {
+     "def": "Tryk"
+    },
+    {
+     "def": "Estampa"
+    },
+    {
+     "def": "Prent"
+    }
+   ],
+   "edmConceptPrefLabelLangAware": {
+    "de": [
+     "Druckgrafik"
+    ],
+    "ru": [
+     "Эстамп"
+    ],
+    "fi": [
+     "Grafiikka"
+    ],
+    "sv": [
+     "Tryck"
+    ],
+    "pt": [
+     "Estampa"
+    ],
+    "bg": [
+     "Печатна графика"
+    ],
+    "el": [
+     "Εκτύπωση"
+    ],
+    "lt": [
+     "Estampas"
+    ],
+    "en": [
+     "Print"
+    ],
+    "lv": [
+     "Estamps"
+    ],
+    "it": [
+     "Stampa"
+    ],
+    "fr": [
+     "Estampe"
+    ],
+    "hu": [
+     "Metszet"
+    ],
+    "es": [
+     "Grabado"
+    ],
+    "et": [
+     "Trükipilt"
+    ],
+    "cs": [
+     "Tisk"
+    ],
+    "sl": [
+     "Natis"
+    ],
+    "ga": [
+     "Prionta"
+    ],
+    "pl": [
+     "Sztych"
+    ],
+    "ro": [
+     "Stampă"
+    ],
+    "da": [
+     "Tryk"
+    ],
+    "ca": [
+     "Estampa"
+    ],
+    "nl": [
+     "Prent"
+    ]
+   },
+   "edmDatasetName": [
+    "9200518_Ag_BnF_Gallica_typedoc_images"
+   ],
+   "edmIsShownAt": [
+    "http://gallica.bnf.fr/ark:/12148/btv1b10510810s"
+   ],
+   "edmIsShownBy": [
+    "http://gallica.bnf.fr/iiif/ark:/12148/btv1b10510810s/f1/full/512,/0/native.jpg"
+   ],
+   "edmPreview": [
+    "https://api.europeana.eu/thumbnail/v2/url.json?uri=https%3A%2F%2Fgallica.bnf.fr%2Fiiif%2Fark%3A%2F12148%2Fbtv1b10510810s%2Ff1%2Ffull%2F512%2C%2F0%2Fnative.jpg&type=IMAGE"
+   ],
+   "edmTimespanLabel": [
+    {
+     "def": "Second millenium AD"
+    },
+    {
+     "def": "Second millenium AD, years 1001-2000"
+    },
+    {
+     "def": "Time"
+    },
+    {
+     "def": "Chronological period"
+    },
+    {
+     "def": "20-th"
+    },
+    {
+     "def": "20th"
+    },
+    {
+     "def": "20th century"
+    },
+    {
+     "def": "2e millénaire après J.-C."
+    },
+    {
+     "def": "20e siècle"
+    },
+    {
+     "def": "1909"
+    },
+    {
+     "def": "20й век"
+    },
+    {
+     "def": "20.."
+    },
+    {
+     "def": "20??"
+    },
+    {
+     "def": "20e"
+    },
+    {
+     "def": "20de eeuw"
+    }
+   ],
+   "edmTimespanLabelLangAware": {
+    "ru": [
+     "20й век"
+    ],
+    "def": [
+     "20..",
+     "20??",
+     "20e"
+    ],
+    "en": [
+     "Second millenium AD",
+     "Second millenium AD, years 1001-2000",
+     "Time",
+     "Chronological period",
+     "20-th",
+     "20th",
+     "20th century"
+    ],
+    "zxx": [
+     "1909"
+    ],
+    "fr": [
+     "2e millénaire après J.-C.",
+     "20e siècle"
+    ],
+    "nl": [
+     "20de eeuw"
+    ]
+   },
+   "europeanaCollectionName": [
+    "9200518_Ag_BnF_Gallica_typedoc_images"
+   ],
+   "europeanaCompleteness": 8,
+   "guid": "https://www.europeana.eu/item/9200518/ark__12148_btv1b10510810s",
+   "id": "/9200518/ark__12148_btv1b10510810s",
+   "index": 0,
+   "language": [
+    "fr"
+   ],
+   "previewNoDistribute": false,
+   "provider": [
+    "National Library of France"
+   ],
+   "rights": [
+    "http://rightsstatements.org/vocab/NoC-OKLR/1.0/"
+   ],
+   "score": 38.30792,
+   "timestamp": 1787965992987,
+   "timestamp_created": "2019-09-02T18:45:50.692Z",
+   "timestamp_created_epoch": 1567449950692,
+   "timestamp_update": "2019-09-02T18:45:50.692Z",
+   "timestamp_update_epoch": 1567449950692,
+   "title": [
+    "[Les veuves des Courrières] : [estampe] / [Steinlen]"
+   ],
+   "type": "IMAGE",
+   "ugc": [
+    false
+   ],
+   "year": [
+    "1909"
+   ]
+  },
+  {
+   "completeness": 8,
+   "country": [
+    "France"
+   ],
+   "dataProvider": [
+    "National Library of France"
+   ],
+   "dcDescription": [
+    "Appartient à l’ensemble documentaire : NordPdeC1",
+    "Avec mode texte",
+    "Appartient à l’ensemble documentaire : NordPdeC1",
+    "Avec mode texte",
+    "Part of the documentary ensemble: NordPdeC1",
+    "With text mode"
+   ],
+   "dcDescriptionLangAware": {
+    "def": [
+     "Appartient à l’ensemble documentaire : NordPdeC1",
+     "Avec mode texte"
+    ],
+    "en": [
+     "Part of the documentary ensemble: NordPdeC1",
+     "With text mode"
+    ],
+    "fr": [
+     "Appartient à l’ensemble documentaire : NordPdeC1",
+     "Avec mode texte"
+    ]
+   },
+   "dcLanguage": [
+    "fre",
+    "français",
+    "fra"
+   ],
+   "dcLanguageLangAware": {
+    "def": [
+     "fre",
+     "français",
+     "fra"
+    ]
+   },
+   "dcTitleLangAware": {
+    "en": [
+     "Funeral of M. Louis Breton, Brewer, Mayor of Courrières"
+    ],
+    "fr": [
+     "Funérailles de M. Louis Breton, brasseur, maire de Courrières"
+    ]
+   },
+   "edmConcept": [
+    "http://data.europeana.eu/concept/2841",
+    "http://www.wikidata.org/entity/Q193495"
+   ],
+   "edmConceptLabel": [
+    {
+     "def": "Monografie"
+    },
+    {
+     "def": "Monografie"
+    },
+    {
+     "def": "Monografia"
+    },
+    {
+     "def": "monografia"
+    },
+    {
+     "def": "Монография"
+    },
+    {
+     "def": "монография"
+    },
+    {
+     "def": "Monografia"
+    },
+    {
+     "def": "monografia"
+    },
+    {
+     "def": "Монография"
+    },
+    {
+     "def": "монография"
+    },
+    {
+     "def": "Monografija"
+    },
+    {
+     "def": "Monografija"
+    },
+    {
+     "def": "Monogrāfija"
+    },
+    {
+     "def": "monogrāfija"
+    },
+    {
+     "def": "Monografija"
+    },
+    {
+     "def": "Monografija"
+    },
+    {
+     "def": "Monographie"
+    },
+    {
+     "def": "monographie"
+    },
+    {
+     "def": "Monográfia"
+    },
+    {
+     "def": "monográfia"
+    },
+    {
+     "def": "Monografia"
+    },
+    {
+     "def": "monografia"
+    },
+    {
+     "def": "Monografija"
+    },
+    {
+     "def": "monografija"
+    },
+    {
+     "def": "Monagraf"
+    },
+    {
+     "def": "monagraf"
+    },
+    {
+     "def": "Monografia"
+    },
+    {
+     "def": "monografia"
+    },
+    {
+     "def": "Monografi"
+    },
+    {
+     "def": "monografi"
+    },
+    {
+     "def": "Μονογραφία"
+    },
+    {
+     "def": "Μονογραφία"
+    },
+    {
+     "def": "Monograph"
+    },
+    {
+     "def": "monograph"
+    },
+    {
+     "def": "Monografia"
+    },
+    {
+     "def": "monografia"
+    },
+    {
+     "def": "Monografía"
+    },
+    {
+     "def": "monografía"
+    },
+    {
+     "def": "Monograafia"
+    },
+    {
+     "def": "Monograafia"
+    },
+    {
+     "def": "Monografia"
+    },
+    {
+     "def": "monografia"
+    },
+    {
+     "def": "Monografie"
+    },
+    {
+     "def": "monografie"
+    },
+    {
+     "def": "Monografia"
+    },
+    {
+     "def": "monografia"
+    },
+    {
+     "def": "Monografi"
+    },
+    {
+     "def": "monografi"
+    },
+    {
+     "def": "Monografie"
+    },
+    {
+     "def": "monografie"
+    },
+    {
+     "def": "Monografie"
+    },
+    {
+     "def": "monografie"
+    }
+   ],
+   "edmConceptPrefLabelLangAware": {
+    "de": [
+     "Monografie"
+    ],
+    "fi": [
+     "Monografia",
+     "monografia"
+    ],
+    "ru": [
+     "Монография",
+     "монография"
+    ],
+    "pt": [
+     "Monografia",
+     "monografia"
+    ],
+    "bg": [
+     "Монография",
+     "монография"
+    ],
+    "lt": [
+     "Monografija"
+    ],
+    "lv": [
+     "Monogrāfija",
+     "monogrāfija"
+    ],
+    "hr": [
+     "Monografija"
+    ],
+    "fr": [
+     "Monographie",
+     "monographie"
+    ],
+    "hu": [
+     "Monográfia",
+     "monográfia"
+    ],
+    "sk": [
+     "Monografia",
+     "monografia"
+    ],
+    "sl": [
+     "Monografija",
+     "monografija"
+    ],
+    "ga": [
+     "monagraf",
+     "Monagraf"
+    ],
+    "ca": [
+     "Monografia",
+     "monografia"
+    ],
+    "sv": [
+     "Monografi",
+     "monografi"
+    ],
+    "el": [
+     "Μονογραφία"
+    ],
+    "en": [
+     "Monograph",
+     "monograph"
+    ],
+    "it": [
+     "Monografia",
+     "monografia"
+    ],
+    "es": [
+     "Monografía",
+     "monografía"
+    ],
+    "et": [
+     "Monograafia"
+    ],
+    "eu": [
+     "Monografia",
+     "monografia"
+    ],
+    "cs": [
+     "Monografie",
+     "monografie"
+    ],
+    "pl": [
+     "Monografia",
+     "monografia"
+    ],
+    "da": [
+     "Monografi",
+     "monografi"
+    ],
+    "ro": [
+     "Monografie",
+     "monografie"
+    ],
+    "nl": [
+     "Monografie",
+     "monografie"
+    ]
+   },
+   "edmDatasetName": [
+    "794_Ag_BnF_Gallica_typedoc_monographies_v2"
+   ],
+   "edmIsShownAt": [
+    "https://gallica.bnf.fr/ark:/12148/bpt6k6581459x"
+   ],
+   "edmIsShownBy": [
+    "https://gallica.bnf.fr/iiif/ark:/12148/bpt6k6581459x/f1/full/full/0/native.jpg"
+   ],
+   "edmPreview": [
+    "https://api.europeana.eu/thumbnail/v2/url.json?uri=https%3A%2F%2Fgallica.bnf.fr%2Fiiif%2Fark%3A%2F12148%2Fbpt6k6581459x%2Ff1%2Ffull%2F512%2C%2F0%2Fnative.jpg&type=TEXT"
+   ],
+   "edmTimespanLabel": [
+    {
+     "def": "1891"
+    }
+   ],
+   "edmTimespanLabelLangAware": {
+    "zxx": [
+     "1891"
+    ]
+   },
+   "europeanaCollectionName": [
+    "794_Ag_BnF_Gallica_typedoc_monographies_v2"
+   ],
+   "europeanaCompleteness": 8,
+   "guid": "https://www.europeana.eu/item/794/ark__12148_bpt6k6581459x",
+   "id": "/794/ark__12148_bpt6k6581459x",
+   "index": 0,
+   "language": [
+    "fr"
+   ],
+   "previewNoDistribute": false,
+   "provider": [
+    "National Library of France"
+   ],
+   "rights": [
+    "http://rightsstatements.org/vocab/NoC-OKLR/1.0/"
+   ],
+   "score": 36.054005,
+   "timestamp": 1787949797447,
+   "timestamp_created": "2021-07-09T15:28:10.286Z",
+   "timestamp_created_epoch": 1625844490286,
+   "timestamp_update": "2022-07-21T07:15:02.348Z",
+   "timestamp_update_epoch": 1658387702348,
+   "title": [
+    "Funérailles de M. Louis Breton, brasseur, maire de Courrières",
+    "Funeral of M. Louis Breton, Brewer, Mayor of Courrières"
+   ],
+   "type": "TEXT",
+   "ugc": [
+    false
+   ],
+   "year": [
+    "1891"
+   ]
+  },
+  {
+   "completeness": 8,
+   "country": [
+    "Germany"
+   ],
+   "dataProvider": [
+    "Montanhistorisches Dokumentationszentrum"
+   ],
+   "dcDescription": [
+    "Transport eines Leichenrestes, welcher durch die Detonationswirkung der Explosion in Stücke gerissen wurde"
+   ],
+   "dcDescriptionLangAware": {
+    "def": [
+     "Transport eines Leichenrestes, welcher durch die Detonationswirkung der Explosion in Stücke gerissen wurde"
+    ]
+   },
+   "dcTitleLangAware": {
+    "de": [
+     "Catastrophe de Courrières - Les Restes d´une Victime"
+    ]
+   },
+   "edmConcept": [
+    "http://data.europeana.eu/concept/50",
+    "http://vocab.getty.edu/aat/300026816",
+    "https://d-nb.info/gnd/4016009-9"
+   ],
+   "edmConceptLabel": [
+    {
+     "def": "Postkarte"
+    },
+    {
+     "def": "Postkarte"
+    },
+    {
+     "def": "Explosion"
+    },
+    {
+     "def": "Vykort"
+    },
+    {
+     "def": "Почтовая карточка"
+    },
+    {
+     "def": "Postikortti"
+    },
+    {
+     "def": "Cartão-postal"
+    },
+    {
+     "def": "Пощенска картичка"
+    },
+    {
+     "def": "Καρτ ποστάλ"
+    },
+    {
+     "def": "Postcard"
+    },
+    {
+     "def": "postcards"
+    },
+    {
+     "def": "Cartolina postale"
+    },
+    {
+     "def": "Carte postale"
+    },
+    {
+     "def": "cartes postales"
+    },
+    {
+     "def": "Levelezőlap"
+    },
+    {
+     "def": "Tarjeta postal"
+    },
+    {
+     "def": "tarjetas postales"
+    },
+    {
+     "def": "Postkaart"
+    },
+    {
+     "def": "Postal"
+    },
+    {
+     "def": "Korespondenční lístek"
+    },
+    {
+     "def": "Razglednica"
+    },
+    {
+     "def": "Kartka pocztowa"
+    },
+    {
+     "def": "Postkort"
+    },
+    {
+     "def": "Carte poștală"
+    },
+    {
+     "def": "Ansichtkaart"
+    },
+    {
+     "def": "briefkaarten"
+    },
+    {
+     "def": "Postal"
+    }
+   ],
+   "edmConceptPrefLabelLangAware": {
+    "de": [
+     "Explosion",
+     "Postkarte"
+    ],
+    "sv": [
+     "Vykort"
+    ],
+    "ru": [
+     "Почтовая карточка"
+    ],
+    "fi": [
+     "Postikortti"
+    ],
+    "pt": [
+     "Cartão-postal"
+    ],
+    "bg": [
+     "Пощенска картичка"
+    ],
+    "el": [
+     "Καρτ ποστάλ"
+    ],
+    "en": [
+     "Postcard",
+     "postcards"
+    ],
+    "it": [
+     "Cartolina postale"
+    ],
+    "fr": [
+     "Carte postale",
+     "cartes postales"
+    ],
+    "hu": [
+     "Levelezőlap"
+    ],
+    "es": [
+     "Tarjeta postal",
+     "tarjetas postales"
+    ],
+    "et": [
+     "Postkaart"
+    ],
+    "eu": [
+     "Postal"
+    ],
+    "cs": [
+     "Korespondenční lístek"
+    ],
+    "sl": [
+     "Razglednica"
+    ],
+    "pl": [
+     "Kartka pocztowa"
+    ],
+    "da": [
+     "Postkort"
+    ],
+    "ro": [
+     "Carte poștală"
+    ],
+    "nl": [
+     "briefkaarten",
+     "Ansichtkaart"
+    ],
+    "ca": [
+     "Postal"
+    ]
+   },
+   "edmDatasetName": [
+    "1043_DDB_MHD"
+   ],
+   "edmIsShownAt": [
+    "https://westfalen.museum-digital.de/object/22917"
+   ],
+   "edmIsShownBy": [
+    "https://www.montandok.de/bild_start.fau?prj=montandok&dm=Montanhistorisches+Dokumentationszentrum&zeig=112476&rpos=1"
+   ],
+   "edmPlaceAltLabel": [
+    {
+     "def": "Courrières"
+    },
+    {
+     "def": "Union Européenne"
+    },
+    {
+     "def": "Espace Schengen"
+    },
+    {
+     "def": "Europe de l'Ouest"
+    },
+    {
+     "def": "Zone euro"
+    },
+    {
+     "def": "République française"
+    },
+    {
+     "def": "RF"
+    },
+    {
+     "def": "La République française"
+    },
+    {
+     "def": "Fr."
+    },
+    {
+     "def": "La France"
+    },
+    {
+     "def": "L'Hexagone"
+    },
+    {
+     "def": "Europäische Union"
+    },
+    {
+     "def": "Schengen-Raum"
+    },
+    {
+     "def": "Westeuropa"
+    },
+    {
+     "def": "Eurozone"
+    },
+    {
+     "def": "Französische Republik"
+    },
+    {
+     "def": "RF"
+    },
+    {
+     "def": "Den europeiske union"
+    },
+    {
+     "def": "Европейский союз"
+    },
+    {
+     "def": "Западная Европа"
+    },
+    {
+     "def": "Французская Республика"
+    },
+    {
+     "def": "ФР"
+    },
+    {
+     "def": "Французская республика"
+    },
+    {
+     "def": "Республика Франция"
+    },
+    {
+     "def": "Пятая Французская Республика"
+    },
+    {
+     "def": "Euroopan unioni"
+    },
+    {
+     "def": "Ranskan tasavalta"
+    },
+    {
+     "def": "União Europeia"
+    },
+    {
+     "def": "Europa Ocidental"
+    },
+    {
+     "def": "República Francesa"
+    },
+    {
+     "def": "República da França"
+    },
+    {
+     "def": "Европейски съюз"
+    },
+    {
+     "def": "Република Франция"
+    },
+    {
+     "def": "Френска република"
+    },
+    {
+     "def": "Europos Sąjunga"
+    },
+    {
+     "def": "Vakarų Europa"
+    },
+    {
+     "def": "Prancuzija"
+    },
+    {
+     "def": "Prancūzijos Respublika"
+    },
+    {
+     "def": "Europska unija"
+    },
+    {
+     "def": "Republika Francuska"
+    },
+    {
+     "def": "Francuska republika"
+    },
+    {
+     "def": "Eiropas Savienība"
+    },
+    {
+     "def": "Francijas Republika"
+    },
+    {
+     "def": "Európai Unió"
+    },
+    {
+     "def": "Francia Köztársaság"
+    },
+    {
+     "def": "Európska únia"
+    },
+    {
+     "def": "Francúzska republika"
+    },
+    {
+     "def": "Evropska unija"
+    },
+    {
+     "def": "Francoska republika"
+    },
+    {
+     "def": "An tAontas Eorpach"
+    },
+    {
+     "def": "Fhrainc"
+    },
+    {
+     "def": "Frainc"
+    },
+    {
+     "def": "An Frainc"
+    },
+    {
+     "def": "An Fhrainc"
+    },
+    {
+     "def": "Unió Europea"
+    },
+    {
+     "def": "República Francesa"
+    },
+    {
+     "def": "França Metropolitana"
+    },
+    {
+     "def": "República de França"
+    },
+    {
+     "def": "Estat francès"
+    },
+    {
+     "def": "Europeiska unionen"
+    },
+    {
+     "def": "La France"
+    },
+    {
+     "def": "Republiken Frankrike"
+    },
+    {
+     "def": "Franska republiken"
+    },
+    {
+     "def": "Ευρωπαϊκή Ένωση"
+    },
+    {
+     "def": "Γαλλική Δημοκρατία"
+    },
+    {
+     "def": "Unjoni Ewropea"
+    },
+    {
+     "def": "Repubblika Franċiża"
+    },
+    {
+     "def": "European Union"
+    },
+    {
+     "def": "Schengen Area"
+    },
+    {
+     "def": "Western Europe"
+    },
+    {
+     "def": "Euro area"
+    },
+    {
+     "def": "French Republic"
+    },
+    {
+     "def": "Unione europea"
+    },
+    {
+     "def": "Europa occidentale"
+    },
+    {
+     "def": "Repubblica francese"
+    },
+    {
+     "def": "Repubblica Francese"
+    },
+    {
+     "def": "Unión Europea"
+    },
+    {
+     "def": "Europa Occidental"
+    },
+    {
+     "def": "República Francesa"
+    },
+    {
+     "def": "Courrieres"
+    },
+    {
+     "def": "Euroopa Liit"
+    },
+    {
+     "def": "Evropská unie"
+    },
+    {
+     "def": "Francouzská republika"
+    },
+    {
+     "def": "Unia Europejska"
+    },
+    {
+     "def": "Republika Francji"
+    },
+    {
+     "def": "Republika Francuska"
+    },
+    {
+     "def": "Francji"
+    },
+    {
+     "def": "Uniunea Europeană"
+    },
+    {
+     "def": "Republica Franceză"
+    },
+    {
+     "def": "Den Europæiske Union"
+    },
+    {
+     "def": "Europese Unie"
+    },
+    {
+     "def": "West-Europa"
+    },
+    {
+     "def": "Franse Republiek"
+    },
+    {
+     "def": "Courrieres"
+    }
+   ],
+   "edmPlaceAltLabelLangAware": {
+    "de": [
+     "Europäische Union",
+     "Schengen-Raum",
+     "Westeuropa",
+     "Eurozone",
+     "Französische Republik",
+     "RF"
+    ],
+    "no": [
+     "Den europeiske union"
+    ],
+    "ru": [
+     "Европейский союз",
+     "Западная Европа",
+     "Французская Республика",
+     "ФР",
+     "Французская республика",
+     "Республика Франция",
+     "Пятая Французская Республика"
+    ],
+    "fi": [
+     "Euroopan unioni",
+     "Ranskan tasavalta"
+    ],
+    "pt": [
+     "União Europeia",
+     "Europa Ocidental",
+     "República Francesa",
+     "República da França"
+    ],
+    "bg": [
+     "Европейски съюз",
+     "Република Франция",
+     "Френска република"
+    ],
+    "lt": [
+     "Europos Sąjunga",
+     "Vakarų Europa",
+     "Prancuzija",
+     "Prancūzijos Respublika"
+    ],
+    "hr": [
+     "Europska unija",
+     "Republika Francuska",
+     "Francuska republika"
+    ],
+    "lv": [
+     "Eiropas Savienība",
+     "Francijas Republika"
+    ],
+    "fr": [
+     "Courrières",
+     "Union Européenne",
+     "Espace Schengen",
+     "Europe de l'Ouest",
+     "Zone euro",
+     "République française",
+     "RF",
+     "La République française",
+     "Fr.",
+     "La France",
+     "L'Hexagone"
+    ],
+    "hu": [
+     "Európai Unió",
+     "Francia Köztársaság"
+    ],
+    "sk": [
+     "Európska únia",
+     "Francúzska republika"
+    ],
+    "sl": [
+     "Evropska unija",
+     "Francoska republika"
+    ],
+    "ga": [
+     "An tAontas Eorpach",
+     "Fhrainc",
+     "Frainc",
+     "An Frainc",
+     "An Fhrainc"
+    ],
+    "ca": [
+     "Unió Europea",
+     "República Francesa",
+     "França Metropolitana",
+     "República de França",
+     "Estat francès"
+    ],
+    "sv": [
+     "Europeiska unionen",
+     "La France",
+     "Republiken Frankrike",
+     "Franska republiken"
+    ],
+    "el": [
+     "Ευρωπαϊκή Ένωση",
+     "Γαλλική Δημοκρατία"
+    ],
+    "mt": [
+     "Unjoni Ewropea",
+     "Repubblika Franċiża"
+    ],
+    "en": [
+     "European Union",
+     "Schengen Area",
+     "Western Europe",
+     "Euro area",
+     "French Republic"
+    ],
+    "it": [
+     "Unione europea",
+     "Europa occidentale",
+     "Repubblica francese",
+     "Repubblica Francese"
+    ],
+    "es": [
+     "Unión Europea",
+     "Europa Occidental",
+     "República Francesa",
+     "Courrieres"
+    ],
+    "et": [
+     "Euroopa Liit"
+    ],
+    "cs": [
+     "Evropská unie",
+     "Francouzská republika"
+    ],
+    "pl": [
+     "Unia Europejska",
+     "Republika Francji",
+     "Republika Francuska",
+     "Francji"
+    ],
+    "ro": [
+     "Uniunea Europeană",
+     "Republica Franceză"
+    ],
+    "da": [
+     "Den Europæiske Union"
+    ],
+    "nl": [
+     "Europese Unie",
+     "West-Europa",
+     "Franse Republiek",
+     "Courrieres"
+    ]
+   },
+   "edmPlaceLabel": [
+    {
+     "def": "Courrières"
+    },
+    {
+     "def": "Courrières"
+    },
+    {
+     "def": "European Union"
+    },
+    {
+     "def": "Schengen Area"
+    },
+    {
+     "def": "Western Europe"
+    },
+    {
+     "def": "Mediterranean Basin"
+    },
+    {
+     "def": "Bochum"
+    },
+    {
+     "def": "Frankreich"
+    },
+    {
+     "def": "Courrières"
+    },
+    {
+     "def": "Eurozone"
+    },
+    {
+     "def": "France"
+    },
+    {
+     "def": "Courrières"
+    },
+    {
+     "def": "France"
+    },
+    {
+     "def": "Ranska"
+    },
+    {
+     "def": "Courrières"
+    },
+    {
+     "def": "Франция"
+    },
+    {
+     "def": "Курьер"
+    },
+    {
+     "def": "França"
+    },
+    {
+     "def": "Courrières"
+    },
+    {
+     "def": "Франция"
+    },
+    {
+     "def": "Prancūzija"
+    },
+    {
+     "def": "Courrières"
+    },
+    {
+     "def": "Francuska"
+    },
+    {
+     "def": "Courrières"
+    },
+    {
+     "def": "Francija"
+    },
+    {
+     "def": "Courrières"
+    },
+    {
+     "def": "France"
+    },
+    {
+     "def": "Courrières"
+    },
+    {
+     "def": "Franciaország"
+    },
+    {
+     "def": "Courrières"
+    },
+    {
+     "def": "Francúzsko"
+    },
+    {
+     "def": "Courrières"
+    },
+    {
+     "def": "Francija"
+    },
+    {
+     "def": "An Fhrainc"
+    },
+    {
+     "def": "Courrières"
+    },
+    {
+     "def": "França"
+    },
+    {
+     "def": "Courrières"
+    },
+    {
+     "def": "Frankrike"
+    },
+    {
+     "def": "Courrières"
+    },
+    {
+     "def": "Franza"
+    },
+    {
+     "def": "Γαλλία"
+    },
+    {
+     "def": "Francia"
+    },
+    {
+     "def": "Courrières"
+    },
+    {
+     "def": "Francia"
+    },
+    {
+     "def": "Courrières"
+    },
+    {
+     "def": "Prantsusmaa"
+    },
+    {
+     "def": "Courrières"
+    },
+    {
+     "def": "Francie"
+    },
+    {
+     "def": "Courrières"
+    },
+    {
+     "def": "Frantzia"
+    },
+    {
+     "def": "Courrières"
+    },
+    {
+     "def": "Francja"
+    },
+    {
+     "def": "Courrières"
+    },
+    {
+     "def": "Frankrig"
+    },
+    {
+     "def": "Courrières"
+    },
+    {
+     "def": "Franța"
+    },
+    {
+     "def": "Courrières"
+    },
+    {
+     "def": "Frankrijk"
+    },
+    {
+     "def": "Courrières"
+    }
+   ],
+   "edmPlaceLabelLangAware": {
+    "de": [
+     "Bochum",
+     "Frankreich",
+     "Courrières"
+    ],
+    "fi": [
+     "Ranska",
+     "Courrières"
+    ],
+    "ru": [
+     "Франция",
+     "Курьер"
+    ],
+    "def": [
+     "Courrières",
+     "Courrières",
+     "European Union",
+     "Schengen Area",
+     "Western Europe",
+     "Mediterranean Basin"
+    ],
+    "pt": [
+     "França",
+     "Courrières"
+    ],
+    "bg": [
+     "Франция"
+    ],
+    "lt": [
+     "Prancūzija",
+     "Courrières"
+    ],
+    "hr": [
+     "Francuska",
+     "Courrières"
+    ],
+    "lv": [
+     "Francija",
+     "Courrières"
+    ],
+    "fr": [
+     "France",
+     "Courrières"
+    ],
+    "hu": [
+     "Franciaország",
+     "Courrières"
+    ],
+    "sk": [
+     "Francúzsko",
+     "Courrières"
+    ],
+    "sl": [
+     "Francija"
+    ],
+    "ga": [
+     "An Fhrainc",
+     "Courrières"
+    ],
+    "ca": [
+     "França",
+     "Courrières"
+    ],
+    "sv": [
+     "Frankrike",
+     "Courrières"
+    ],
+    "mt": [
+     "Franza"
+    ],
+    "el": [
+     "Γαλλία"
+    ],
+    "en": [
+     "Eurozone",
+     "France",
+     "Courrières",
+     "France"
+    ],
+    "it": [
+     "Francia",
+     "Courrières"
+    ],
+    "es": [
+     "Francia",
+     "Courrières"
+    ],
+    "et": [
+     "Prantsusmaa",
+     "Courrières"
+    ],
+    "cs": [
+     "Francie",
+     "Courrières"
+    ],
+    "eu": [
+     "Frantzia",
+     "Courrières"
+    ],
+    "pl": [
+     "Francja",
+     "Courrières"
+    ],
+    "da": [
+     "Frankrig",
+     "Courrières"
+    ],
+    "ro": [
+     "Franța",
+     "Courrières"
+    ],
+    "nl": [
+     "Frankrijk",
+     "Courrières"
+    ]
+   },
+   "edmPlaceLatitude": [
+    "50.45806",
+    "50.83857",
+    "49.47",
+    "50.21909",
+    "50.10841",
+    "47.0",
+    "50.458057",
+    "35.78"
+   ],
+   "edmPlaceLongitude": [
+    "2.94722",
+    "4.37599",
+    "6.36",
+    "7.42676",
+    "8.70177",
+    "2.0",
+    "2.9472222",
+    "19.33"
+   ],
+   "edmPreview": [
+    "https://api.europeana.eu/thumbnail/v2/url.json?uri=https%3A%2F%2Fwww.montandok.de%2Fbild_start.fau%3Fprj%3Dmontandok%26dm%3DMontanhistorisches%2BDokumentationszentrum%26zeig%3D112476%26rpos%3D1&type=IMAGE"
+   ],
+   "edmTimespanLabel": [
+    {
+     "def": "1906"
+    },
+    {
+     "def": "1986"
+    },
+    {
+     "def": "20. Jahrhundert"
+    },
+    {
+     "def": "XX век"
+    },
+    {
+     "def": "1900-luku"
+    },
+    {
+     "def": "Século XX"
+    },
+    {
+     "def": "20 век"
+    },
+    {
+     "def": "XX amžius"
+    },
+    {
+     "def": "20. gadsimts"
+    },
+    {
+     "def": "20. stoljeće"
+    },
+    {
+     "def": "XXe siècle"
+    },
+    {
+     "def": "20. század"
+    },
+    {
+     "def": "20. storočie"
+    },
+    {
+     "def": "20. stoletje"
+    },
+    {
+     "def": "20ú haois"
+    },
+    {
+     "def": "Segle XX"
+    },
+    {
+     "def": "1900-talet"
+    },
+    {
+     "def": "20ός αιώνας"
+    },
+    {
+     "def": "20th century"
+    },
+    {
+     "def": "XX secolo"
+    },
+    {
+     "def": "Siglo XX"
+    },
+    {
+     "def": "20. sajand"
+    },
+    {
+     "def": "XX. mendea"
+    },
+    {
+     "def": "20. století"
+    },
+    {
+     "def": "XX wiek"
+    },
+    {
+     "def": "Secolul al XX-lea"
+    },
+    {
+     "def": "20. århundrede"
+    },
+    {
+     "def": "20e eeuw"
+    },
+    {
+     "def": "http://www.wikidata.org/entity/Q6927"
+    },
+    {
+     "def": "http://id.loc.gov/authorities/names/sh85139020"
+    },
+    {
+     "def": "http://id.loc.gov/authorities/names/sh2002012476"
+    },
+    {
+     "def": "http://data.bnf.fr/ark:/12148/cb11975995h"
+    },
+    {
+     "def": "http://www.idref.fr/086305646/id"
+    },
+    {
+     "def": "http://id.nlm.nih.gov/mesh/D049673"
+    },
+    {
+     "def": "https://www.freebase.com/m/089_x"
+    },
+    {
+     "def": "https://g.co/kg/m/089_x"
+    },
+    {
+     "def": "http://id.nlm.nih.gov/mesh/K01.400.504.968"
+    },
+    {
+     "def": "http://vocab.getty.edu/aat/300404514"
+    },
+    {
+     "def": "http://id.worldcat.org/fast/1159810"
+    },
+    {
+     "def": "http://dbpedia.org/resource/20th_century"
+    }
+   ],
+   "edmTimespanLabelLangAware": {
+    "de": [
+     "20. Jahrhundert"
+    ],
+    "ru": [
+     "XX век"
+    ],
+    "fi": [
+     "1900-luku"
+    ],
+    "pt": [
+     "Século XX"
+    ],
+    "bg": [
+     "20 век"
+    ],
+    "lt": [
+     "XX amžius"
+    ],
+    "lv": [
+     "20. gadsimts"
+    ],
+    "hr": [
+     "20. stoljeće"
+    ],
+    "fr": [
+     "XXe siècle"
+    ],
+    "hu": [
+     "20. század"
+    ],
+    "sk": [
+     "20. storočie"
+    ],
+    "sl": [
+     "20. stoletje"
+    ],
+    "ga": [
+     "20ú haois"
+    ],
+    "ca": [
+     "Segle XX"
+    ],
+    "sv": [
+     "1900-talet"
+    ],
+    "el": [
+     "20ός αιώνας"
+    ],
+    "en": [
+     "20th century"
+    ],
+    "it": [
+     "XX secolo"
+    ],
+    "es": [
+     "Siglo XX"
+    ],
+    "et": [
+     "20. sajand"
+    ],
+    "eu": [
+     "XX. mendea"
+    ],
+    "cs": [
+     "20. století"
+    ],
+    "zxx": [
+     "1906",
+     "1986"
+    ],
+    "pl": [
+     "XX wiek"
+    ],
+    "ro": [
+     "Secolul al XX-lea"
+    ],
+    "da": [
+     "20. århundrede"
+    ],
+    "nl": [
+     "20e eeuw"
+    ]
+   },
+   "europeanaCollectionName": [
+    "1043_DDB_MHD"
+   ],
+   "europeanaCompleteness": 8,
+   "guid": "https://www.europeana.eu/item/1043/item_Y4M3JVLABJ7JVICOE2KTYYWKNEGQXNEG",
+   "id": "/1043/item_Y4M3JVLABJ7JVICOE2KTYYWKNEGQXNEG",
+   "index": 0,
+   "language": [
+    "de"
+   ],
+   "previewNoDistribute": false,
+   "provider": [
+    "German Digital Library"
+   ],
+   "rights": [
+    "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+   ],
+   "score": 35.50844,
+   "timestamp": 1788044420492,
+   "timestamp_created": "2024-02-23T11:58:01.492Z",
+   "timestamp_created_epoch": 1708689481492,
+   "timestamp_update": "2025-05-15T13:11:46.969Z",
+   "timestamp_update_epoch": 1747314706969,
+   "title": [
+    "Catastrophe de Courrières - Les Restes d´une Victime"
+   ],
+   "type": "IMAGE",
+   "ugc": [
+    false
+   ],
+   "year": [
+    "1906"
+   ]
+  },
+  {
+   "completeness": 9,
+   "country": [
+    "France"
+   ],
+   "dataProvider": [
+    "National Library of France"
+   ],
+   "dcCreator": [
+    "Agence de presse Meurisse. Agence photographique",
+    "Agence de presse Meurisse. Agence photographique"
+   ],
+   "dcCreatorLangAware": {
+    "def": [
+     "Agence de presse Meurisse. Agence photographique"
+    ],
+    "fr": [
+     "Agence de presse Meurisse. Agence photographique"
+    ]
+   },
+   "dcDescription": [
+    "Référence bibliographique : Meurisse, 92020 A",
+    "Appartient à l’ensemble documentaire : Pho20Meu",
+    "Image de presse",
+    "Référence bibliographique : Meurisse, 92020 A",
+    "Appartient à l’ensemble documentaire : Pho20Meu",
+    "Image de presse",
+    "Bibliographical Reference: Meurisse, 92020 A",
+    "Part of the documentary ensemble: Pho20Meu",
+    "Press image"
+   ],
+   "dcDescriptionLangAware": {
+    "def": [
+     "Référence bibliographique : Meurisse, 92020 A",
+     "Appartient à l’ensemble documentaire : Pho20Meu",
+     "Image de presse"
+    ],
+    "en": [
+     "Bibliographical Reference: Meurisse, 92020 A",
+     "Part of the documentary ensemble: Pho20Meu",
+     "Press image"
+    ],
+    "fr": [
+     "Référence bibliographique : Meurisse, 92020 A",
+     "Appartient à l’ensemble documentaire : Pho20Meu",
+     "Image de presse"
+    ]
+   },
+   "dcLanguage": [
+    "fra",
+    "fra"
+   ],
+   "dcLanguageLangAware": {
+    "def": [
+     "fra",
+     "fra"
+    ]
+   },
+   "dcTitleLangAware": {
+    "def": [
+     "Paris-Roubaix : Bidot et Sieronski au pont de Courrières : [photographie de presse] / Agence Meurisse"
+    ],
+    "fr": [
+     "Paris-Roubaix : Bidot et Sieronski au pont de Courrières : [photographie de presse] / Agence Meurisse"
+    ]
+   },
+   "edmConcept": [
+    "http://data.europeana.eu/concept/48"
+   ],
+   "edmConceptLabel": [
+    {
+     "def": "Fotografie"
+    },
+    {
+     "def": "Фотография"
+    },
+    {
+     "def": "Valokuva"
+    },
+    {
+     "def": "Fotografia"
+    },
+    {
+     "def": "Снимка"
+    },
+    {
+     "def": "Fotografija"
+    },
+    {
+     "def": "Fotografija"
+    },
+    {
+     "def": "Fotoattēls"
+    },
+    {
+     "def": "Photographie"
+    },
+    {
+     "def": "Fénykép"
+    },
+    {
+     "def": "Fotografia"
+    },
+    {
+     "def": "Fotografija"
+    },
+    {
+     "def": "Grianghraf"
+    },
+    {
+     "def": "Fotografia"
+    },
+    {
+     "def": "Fotografi"
+    },
+    {
+     "def": "Fotografija"
+    },
+    {
+     "def": "Φωτογραφία"
+    },
+    {
+     "def": "Photograph"
+    },
+    {
+     "def": "Fotografia"
+    },
+    {
+     "def": "Fotografía"
+    },
+    {
+     "def": "Foto"
+    },
+    {
+     "def": "Fotografie"
+    },
+    {
+     "def": "Argazki"
+    },
+    {
+     "def": "Fotografia"
+    },
+    {
+     "def": "Fotografi"
+    },
+    {
+     "def": "Fotografie"
+    },
+    {
+     "def": "Foto"
+    }
+   ],
+   "edmConceptPrefLabelLangAware": {
+    "de": [
+     "Fotografie"
+    ],
+    "ru": [
+     "Фотография"
+    ],
+    "fi": [
+     "Valokuva"
+    ],
+    "pt": [
+     "Fotografia"
+    ],
+    "bg": [
+     "Снимка"
+    ],
+    "lt": [
+     "Fotografija"
+    ],
+    "hr": [
+     "Fotografija"
+    ],
+    "lv": [
+     "Fotoattēls"
+    ],
+    "fr": [
+     "Photographie"
+    ],
+    "hu": [
+     "Fénykép"
+    ],
+    "sk": [
+     "Fotografia"
+    ],
+    "sl": [
+     "Fotografija"
+    ],
+    "ga": [
+     "Grianghraf"
+    ],
+    "ca": [
+     "Fotografia"
+    ],
+    "sv": [
+     "Fotografi"
+    ],
+    "mt": [
+     "Fotografija"
+    ],
+    "el": [
+     "Φωτογραφία"
+    ],
+    "en": [
+     "Photograph"
+    ],
+    "it": [
+     "Fotografia"
+    ],
+    "es": [
+     "Fotografía"
+    ],
+    "et": [
+     "Foto"
+    ],
+    "cs": [
+     "Fotografie"
+    ],
+    "eu": [
+     "Argazki"
+    ],
+    "pl": [
+     "Fotografia"
+    ],
+    "da": [
+     "Fotografi"
+    ],
+    "ro": [
+     "Fotografie"
+    ],
+    "nl": [
+     "Foto"
+    ]
+   },
+   "edmDatasetName": [
+    "9200518_Ag_BnF_Gallica_typedoc_images"
+   ],
+   "edmIsShownAt": [
+    "http://gallica.bnf.fr/ark:/12148/btv1b90485686"
+   ],
+   "edmIsShownBy": [
+    "http://gallica.bnf.fr/iiif/ark:/12148/btv1b90485686/f1/full/512,/0/native.jpg"
+   ],
+   "edmPreview": [
+    "https://api.europeana.eu/thumbnail/v2/url.json?uri=https%3A%2F%2Fgallica.bnf.fr%2Fiiif%2Fark%3A%2F12148%2Fbtv1b90485686%2Ff1%2Ffull%2F512%2C%2F0%2Fnative.jpg&type=IMAGE"
+   ],
+   "edmTimespanLabel": [
+    {
+     "def": "Second millenium AD"
+    },
+    {
+     "def": "Second millenium AD, years 1001-2000"
+    },
+    {
+     "def": "Time"
+    },
+    {
+     "def": "Chronological period"
+    },
+    {
+     "def": "20-th"
+    },
+    {
+     "def": "20th"
+    },
+    {
+     "def": "20th century"
+    },
+    {
+     "def": "2e millénaire après J.-C."
+    },
+    {
+     "def": "20e siècle"
+    },
+    {
+     "def": "1932"
+    },
+    {
+     "def": "20й век"
+    },
+    {
+     "def": "20.."
+    },
+    {
+     "def": "20??"
+    },
+    {
+     "def": "20e"
+    },
+    {
+     "def": "20de eeuw"
+    }
+   ],
+   "edmTimespanLabelLangAware": {
+    "ru": [
+     "20й век"
+    ],
+    "def": [
+     "20..",
+     "20??",
+     "20e"
+    ],
+    "en": [
+     "Second millenium AD",
+     "Second millenium AD, years 1001-2000",
+     "Time",
+     "Chronological period",
+     "20-th",
+     "20th",
+     "20th century"
+    ],
+    "zxx": [
+     "1932"
+    ],
+    "fr": [
+     "2e millénaire après J.-C.",
+     "20e siècle"
+    ],
+    "nl": [
+     "20de eeuw"
+    ]
+   },
+   "europeanaCollectionName": [
+    "9200518_Ag_BnF_Gallica_typedoc_images"
+   ],
+   "europeanaCompleteness": 9,
+   "guid": "https://www.europeana.eu/item/9200518/ark__12148_btv1b90485686",
+   "id": "/9200518/ark__12148_btv1b90485686",
+   "index": 0,
+   "language": [
+    "fr"
+   ],
+   "previewNoDistribute": false,
+   "provider": [
+    "National Library of France"
+   ],
+   "rights": [
+    "http://rightsstatements.org/vocab/NoC-OKLR/1.0/"
+   ],
+   "score": 29.143505,
+   "timestamp": 1787967775565,
+   "timestamp_created": "2019-09-02T15:33:21.617Z",
+   "timestamp_created_epoch": 1567438401617,
+   "timestamp_update": "2019-09-02T15:33:21.617Z",
+   "timestamp_update_epoch": 1567438401617,
+   "title": [
+    "Paris-Roubaix : Bidot et Sieronski au pont de Courrières : [photographie de presse] / Agence Meurisse",
+    "Paris-Roubaix : Bidot et Sieronski au pont de Courrières : [photographie de presse] / Agence Meurisse"
+   ],
+   "type": "IMAGE",
+   "ugc": [
+    false
+   ],
+   "year": [
+    "1932"
+   ]
+  }
+ ]
+}

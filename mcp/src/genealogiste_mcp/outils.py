@@ -49,7 +49,7 @@ OUTILS: dict[str, tuple[str, str]] = {  # nom -> (effet, classe)
     "gallica_texte": (RESEAU, COLLECTE),
     "gallica_alto": (RESEAU, COLLECTE),
     "gallica_iiif": (LECTURE, LECTURE),  # construit des URL, sans requête
-    "presse_recherche": (RESEAU, COLLECTE),  # Gallica (client existant) ; registre des références consultées
+    "presse_recherche": (RESEAU, COLLECTE),  # Gallica, Europeana (clé en en-tête) ; registre des références consultées
     "ark_resoudre": (RESEAU, COLLECTE),  # requête HEAD, cache
     "archive_image": (RESEAU, COLLECTE),  # téléchargement dans le cache d'images
     "pdf_markdown": (LECTURE, LECTURE),  # fichier local ; écrit seulement dans le cache cache-pdf

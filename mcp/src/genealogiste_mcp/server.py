@@ -582,7 +582,8 @@ def presse_recherche(texte: str, lieu: str = "", periode: str = "", services: st
     services (codes séparés par des virgules). Repli explicite : service bloqué, désactivé, sans clé ou en lien
     seulement = motif, puis le suivant ; sans résultat, tâche manuelle avec liens de consultation. periode :
     « 1906 » ou « 1900-1910 ». Résultats : références primaires (titre du périodique, date, ARK), extrait OCR
-    marqué « lecture OCR non vérifiée », inscrites au registre des références consultées."""
+    marqué « lecture OCR non vérifiée », inscrites au registre des références consultées. Europeana (clé
+    personnelle requise) : notices de documents datés, identifiant europeana, sans extrait ni texte des journaux."""
     if refus := _garde(texte=texte) or _garde(texte=lieu):
         return refus
     a = app()

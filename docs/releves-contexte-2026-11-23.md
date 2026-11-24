@@ -85,6 +85,13 @@ n'a été émise vers l'API, et aucune réponse réelle n'est enregistrée : l'a
 clé personnelle. Démarche pour l'utilisateur :
 [contexte-historique.md](contexte-historique.md#clé-personnelle-europeana).
 
+**Suite du 2026-11-24 (#343).** Avec une clé personnelle fournie par le mainteneur, envoyée dans l'en-tête
+`X-Api-Key` et jamais écrite : trois requêtes à la Search API, toutes en HTTP 200. Recherche sur les journaux
+(`theme=newspaper`, année 1906, « grève des mineurs Courrières ») : aucun résultat, de même avec le champ
+`fulltext:` ; recherche sur toutes les notices (« Courrières », années 1850 à 1950) : 11 notices. L'analyseur de
+`presse_recherche` est livré sur cette dernière forme ; la recherche dans le texte des journaux n'est pas
+qualifiée. Réponses réduites : `mcp/tests/fixtures/contexte/reponses/EUROPEANA/`.
+
 ## Sources
 
 - Sondage : `scripts/verifier_archives.py --contexte-seulement`, 25 services du référentiel.

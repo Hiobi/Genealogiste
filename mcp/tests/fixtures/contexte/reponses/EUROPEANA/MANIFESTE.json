@@ -1,7 +1,7 @@
 {
   "service": "EUROPEANA",
-  "objet": "Europeana pour presse_recherche (#288) : site public (lien de consultation), pas l'API",
-  "enregistre_par": "#288 (presse_recherche)",
+  "objet": "Europeana pour presse_recherche (#288, #343) : Search API (analyseur, clé personnelle en en-tête, jamais enregistrée) et site public (lien de consultation)",
+  "enregistre_par": "#288 (lien de consultation), #343 (Search API)",
   "reponses": [
     {
       "fichier": "site-recherche-200.html",
@@ -15,7 +15,50 @@
       "client": "curl, User-Agent générique, sans clé ni cookie",
       "resultat": "page de recherche du site public ; la requête est reprise dans le titre et og:url",
       "rejouable": false,
-      "note": "Site public (lien de consultation), pas l'API. Aucune requête à l'API Search : GENEALOGISTE_CLE_EUROPEANA absente lors de l'enregistrement, aucun analyseur livré, clé de démonstration non utilisée."
+      "note": "Site public (lien de consultation), pas l'API."
+    },
+    {
+      "fichier": "api-recherche-courrieres-1850-1950.json",
+      "url": "https://api.europeana.eu/record/v2/search.json?query=Courri%C3%A8res&rows=5&qf=YEAR%3A%5B1850+TO+1950%5D",
+      "methode": "GET",
+      "date": "2026-11-24T17:51:47Z",
+      "statut": 200,
+      "type": "application/json;charset=UTF-8",
+      "reduction": "champ où le service répète la clé d'API, requestNumber (compteur du compte) et link (URL portant la clé) retirés, paramètres d'URL de guid retirés ; JSON réindenté",
+      "empreinte": "sha256:591647601efeb33dbcc7fbd26f8ee9f8b2d2fa5240a1c2ff5864b6d21ba5ca31",
+      "client": "client HTTP du plugin (presse_recherche par la recette tests/test_contexte_live.py), User-Agent du plugin, clé personnelle en en-tête (valeur jamais enregistrée)",
+      "resultat": "200, totalResults 11, 5 notices (profil standard) : forme lue par l'analyseur de presse_recherche",
+      "duree_s": 2.1,
+      "note": "Corps repris du cache du plugin, déjà épuré par presse.epurer_europeana (mêmes retraits que la réduction) : taille d'origine non relevée."
+    },
+    {
+      "fichier": "api-presse-greve-mineurs-1906-vide.json",
+      "url": "https://api.europeana.eu/record/v2/search.json?query=gr%C3%A8ve%20des%20mineurs%20Courri%C3%A8res&theme=newspaper&qf=YEAR%3A%5B1906%20TO%201906%5D&rows=5",
+      "methode": "GET",
+      "date": "2026-11-24T17:47:04Z",
+      "statut": 200,
+      "type": "application/json;charset=UTF-8",
+      "reduction": "champ où le service répète la clé d'API, requestNumber (compteur du compte) et link (URL portant la clé) retirés, paramètres d'URL de guid retirés ; JSON réindenté",
+      "empreinte": "sha256:4ee5270f1e67ec0aec9aa8d3f893e2a91d77d8690f3c566d7a005218da894a56",
+      "client": "httpx (scripts/enregistrer_contexte.py), User-Agent du script, clé personnelle en en-tête (valeur jamais enregistrée)",
+      "duree_s": 0.3,
+      "octets_origine": 101,
+      "resultat": "200, totalResults 0 : la recherche restreinte aux journaux (theme=newspaper) porte sur les notices, pas sur le texte ; forme d'une réponse sans résultat"
+    },
+    {
+      "fichier": null,
+      "url": "https://api.europeana.eu/record/v2/search.json?query=fulltext%3A%28gr%C3%A8ve%20des%20mineurs%20Courri%C3%A8res%29&theme=newspaper&qf=YEAR%3A%5B1906%20TO%201906%5D&rows=5",
+      "methode": "GET",
+      "date": "2026-11-24T17:47:53Z",
+      "statut": 200,
+      "type": "application/json;charset=UTF-8",
+      "reduction": "corps non conservé",
+      "empreinte": null,
+      "client": "httpx (scripts/enregistrer_contexte.py), User-Agent du script, clé personnelle en en-tête (valeur jamais enregistrée)",
+      "duree_s": 0.3,
+      "rejouable": false,
+      "resultat": "200, totalResults 0 (corps identique à la réponse précédente après réduction)",
+      "note": "Essai du champ fulltext: sur les journaux : accepté (200) mais sans résultat pour la requête témoin ; la recherche en plein texte des journaux n'est pas qualifiée, l'analyseur ne l'utilise pas."
     }
   ]
 }

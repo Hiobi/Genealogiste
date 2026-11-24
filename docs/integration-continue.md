@@ -70,7 +70,9 @@ partout) de « adresse bloquée » (`protection` depuis le VPS, `ok` ailleurs).
 `GENEALOGISTE_TEST_CONTEXTE=1`) : une à deux requêtes par service de contexte historique qui a un analyseur, forme
 de la réponse seulement. **Hors CI par défaut** : aucun workflow ne la lance, `make test` l'ignore (test ignoré
 sans la variable), comme `gramps_live`. Un service protégé, limité ou muet rend AVERT (test ignoré avec le motif,
-visible avec `-rs`), jamais un échec ; seule une réponse illisible par l'analyseur échoue.
+visible avec `-rs`), jamais un échec ; seule une réponse illisible par l'analyseur échoue. Europeana (#343) n'est
+interrogé que si la clé personnelle `GENEALOGISTE_CLE_EUROPEANA` est configurée sur le poste (environnement ou
+`<données>/.env`, jamais affichée) ; sans clé, AVERT sans requête.
 
 À lancer à la main, rarement : les services publics sont fragiles (le relevé du 2026-11-23 a vu Wikidata passer
 en 429 après trois exécutions en cinq minutes). Débit, coupe-circuit anti-robot et plafonds du plugin s'appliquent.
