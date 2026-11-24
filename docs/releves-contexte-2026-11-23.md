@@ -31,7 +31,7 @@ pas. « — » : pas d'analyseur, pas de recette.
 | `DATA-BNF` | OK 200 | — | — | pas d'analyseur |
 | `OPENALEX` | OK 200 | — | — | analyseur non livré (#286) |
 | `CROSSREF` | OK 200 | OK (analyseur REST) | forme conforme | |
-| `EUROPEANA` | AVERT 400, clé requise, sondé sans clé | — | non rejoué (extrait du site public) | aucun analyseur : aucune clé pour enregistrer une réponse réelle de l'API |
+| `EUROPEANA` | AVERT 400, clé requise, sondé sans clé | — | non rejoué (extrait du site public) | aucun analyseur : aucune clé pour enregistrer une réponse réelle de l'API ; voir le constat du 2026-11-24 ci-dessous |
 | `NAKALA` | OK 200 | — | — | pas d'analyseur |
 | `WIKIPEDIA` | OK 200 | — | — | |
 | `WIKIDATA` | OK 200 | OK (SPARQL P374 vers P8422 : une liaison lue) | **AVERT 502**, puis **AVERT 429** (`Retry-After: 120`) au second rejeu | service instable ; chaque rejeu supplémentaire a aggravé la limitation, arrêt après deux tentatives |
@@ -74,6 +74,16 @@ reproduisent donc, sur des réponses réelles, celles des manifestes. Un second 
   recette qui le vérifie.
 - **Charge** : trois exécutions en cinq minutes ont suffi à faire passer Wikidata en 429. La recette n'est pas
   faite pour être enchaînée ; elle s'exécute à la main, rarement, hors CI.
+
+## Constat du 2026-11-24 : Europeana, clé de démonstration
+
+Le relevé du 2026-11-21 (#285) notait une réponse 200 avec une clé de démonstration. Le 2026-11-24, la
+documentation d'Europeana (pages « Search API Documentation », « Accessing the APIs », « API FAQ », lues ce jour)
+ne publie plus de clé de démonstration : les exemples demandent une clé personnelle, obtenue depuis un compte
+europeana.eu, et les clés sont à garder privées. La clé de démonstration n'a donc pas été utilisée, aucune requête
+n'a été émise vers l'API, et aucune réponse réelle n'est enregistrée : l'analyseur reste à faire (#343), avec une
+clé personnelle. Démarche pour l'utilisateur :
+[contexte-historique.md](contexte-historique.md#clé-personnelle-europeana).
 
 ## Sources
 

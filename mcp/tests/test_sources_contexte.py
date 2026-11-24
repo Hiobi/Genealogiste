@@ -146,6 +146,7 @@ def test_interrogeable_par_defaut(tmp_path):
 @pytest.mark.parametrize("code,kw,mot", [
     ("EUROPEANA", {}, "désactivé"),
     ("EUROPEANA", {"contexte_services": ("EUROPEANA",)}, "GENEALOGISTE_CLE_EUROPEANA"),
+    ("EUROPEANA", {"contexte_services": ("EUROPEANA",)}, "Manage API keys"),  # comment obtenir la clé (#343)
     ("HAL", {"contexte_services": ()}, "désactivé"),
     ("GALLICA", {"contexte_services": ("GALLICA",)}, "lien_seulement"),
     ("NARA", {"contexte_services": ("NARA",), "cles_contexte": {"NARA": "x"}}, "lien_seulement"),

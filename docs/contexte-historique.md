@@ -245,7 +245,7 @@ l'analyseur précise notice par notice.
 | `DATA-BNF` | data.bnf.fr (SPARQL) | sparql | aucune | index | FR | actif par défaut | 2026-11-21 : 200 JSON ; 2026-11-23 : 302 sans paramètre |
 | `OPENALEX` | OpenAlex (API works) | rest | facultative | index | INT | actif par défaut | 2026-11-21 : 200 JSON (sans clé : budget quotidien partagé par adresse IP) ; 2026-11-23 : 200 |
 | `CROSSREF` | Crossref (API works) | rest | aucune (`mailto` facultatif) | index | INT | actif par défaut | 2026-11-21 : 200 JSON ; 2026-11-23 : 200 |
-| `EUROPEANA` | Europeana (Search API) | rest | requise | primaire | EU | clé requise, à activer | 2026-11-21 : 200 avec la clé de démonstration (non embarquée) ; 2026-11-23 : 400 sans clé |
+| `EUROPEANA` | Europeana (Search API) | rest | requise | primaire | EU | clé requise, à activer | 2026-11-21 : 200 avec la clé de démonstration (non embarquée) ; 2026-11-23 : 400 sans clé ; 2026-11-24 : la documentation d'Europeana ne publie plus de clé de démonstration, elle n'est pas utilisée ; [clé personnelle](#clé-personnelle-europeana) |
 | `NAKALA` | Nakala (Huma-Num) | rest | aucune | index | FR | actif par défaut | 2026-11-21 : 200 JSON ; 2026-11-23 : 200 |
 | `WIKIPEDIA` | Wikipédia en français (REST) | rest | aucune | **tertiaire** | FR | actif par défaut | 2026-11-21 : 200 ; 2026-11-23 : 301 sans paramètre ; sert seulement à remonter aux références |
 | `WIKIDATA` | Wikidata Query Service (SPARQL) | sparql | aucune | **index** | INT | actif par défaut | 2026-11-21 : 200 simple, délai dépassé en requête géographique, 429 ensuite ; 2026-11-23 : 200 ; jamais source |
@@ -271,11 +271,95 @@ Dans `<données>/.env` (par défaut `~/.local/share/genealogiste/.env`, hors du 
 | Variable | Effet |
 |---|---|
 | `GENEALOGISTE_CONTEXTE_SERVICES` | services activés, codes séparés par des virgules. Absente ou vide : services `api` sans clé requise ni protection ; `aucun` : aucun ; `defaut` ajoute les services par défaut (`defaut,EUROPEANA`). Code inconnu : refus au démarrage. |
-| `GENEALOGISTE_CLE_EUROPEANA`, `GENEALOGISTE_CLE_OPENALEX`, `GENEALOGISTE_CLE_NARA`, `GENEALOGISTE_CLE_APE` | clés d'API personnelles. Europeana exige la sienne (la clé de démonstration n'est pas embarquée) ; OpenAlex fonctionne sans ; NARA et APE restent en lien seulement tant que leur API n'est pas qualifiée. |
+| `GENEALOGISTE_CLE_EUROPEANA`, `GENEALOGISTE_CLE_OPENALEX`, `GENEALOGISTE_CLE_NARA`, `GENEALOGISTE_CLE_APE` | clés d'API personnelles. Europeana exige la sienne ([comment l'obtenir](#clé-personnelle-europeana) ; aucune clé de démonstration n'est embarquée ni utilisée) ; OpenAlex fonctionne sans ; NARA et APE restent en lien seulement tant que leur API n'est pas qualifiée. |
 | `GENEALOGISTE_CROSSREF_MAILTO` | **vide par défaut**. Une adresse courriel est une donnée personnelle : elle n'est envoyée à Crossref que si l'utilisateur la renseigne. |
 
 Plafond journalier et intervalle par hôte : `GENEALOGISTE_PLAFONDS_JOUR` et `GENEALOGISTE_DEBITS` (hôte=valeur),
 sinon `GENEALOGISTE_PLAFOND_JOUR_DEFAUT` et `GENEALOGISTE_DEBIT_DEFAUT`.
+
+### Clé personnelle Europeana
+
+Europeana n'est interrogeable qu'avec une clé d'API **personnelle** : chaque utilisateur du plugin demande la
+sienne. Le plugin n'en fournit aucune et n'utilise aucune clé partagée ou de démonstration.
+
+**État au 2026-11-24 : la clé n'a pas encore d'effet sur `presse_recherche`.** L'analyseur Europeana n'est pas
+livré, faute de réponse réelle de l'API enregistrée (règle de #323, suivi dans #343). Avec une clé et le service
+activé, `presse_recherche` rend Europeana en `sans_analyseur`, n'émet aucune requête vers l'API et renvoie au lien
+de consultation du site public. Configurer la clé dès maintenant prépare l'installation : quand l'analyseur sera
+livré, elle permettra à `presse_recherche` de chercher dans Europeana (presse et patrimoine européens), notamment
+quand Gallica est bloqué.
+
+**Obtenir la clé** (démarche décrite par la page « Accessing the APIs » d'Europeana, lue le 2026-11-24) :
+
+1. Avoir un compte Europeana et s'y connecter sur le site europeana.eu (depuis le 28 mai 2025, un compte est
+   nécessaire pour accéder aux API).
+2. Ouvrir le menu en haut à droite, à côté du pseudonyme, puis « Manage API keys ». Le portail des API
+   d'Europeana renvoie pour cela à la page <https://www.europeana.eu/account/api-keys>.
+3. Dans la section « Personal API key », cocher « I confirm that I have read and accept the API key terms of
+   use » après les avoir lues.
+4. Cliquer sur « Request a Personal API key » : la clé s'affiche dans cette section et est utilisable aussitôt.
+   Elle reste consultable au même endroit.
+
+Ce que disent les pages lues :
+
+- **Gratuité** : « Europeana gives access to all of its APIs free of charge » (FAQ).
+- **Une seule clé personnelle active par compte.**
+- **Limites** : les limites d'usage des clés personnelles ont été progressivement réduites jusqu'en avril 2026 ;
+  les pages lues ne donnent aucun chiffre, ce document n'en donne donc pas. Les clés de projet (limites plus
+  hautes, sur demande motivée) visent les services, pas l'usage personnel du plugin.
+- **Usage raisonnable** : nombre raisonnable de requêtes concurrentes, attente entre les appels ; en cas d'abus,
+  la clé peut être limitée, suspendue ou révoquée (« Fair use policy & guidelines »). Le débit et le plafond
+  journalier du plugin s'appliquent à `api.europeana.eu` comme à tout hôte.
+- **Clé confidentielle** : Europeana demande de ne pas la partager avec des tiers ni de l'exposer dans du code
+  ou une interface. Elle est personnelle : ne pas la prêter, ne pas la publier, ne pas la committer.
+
+Non lus, donc non décrits ici : le texte des conditions d'usage de la clé (« API key terms of use ») et le
+parcours de création du compte ; les lire sur le site d'Europeana avant d'accepter.
+
+**Où la mettre.** Deux variables : la clé, et l'activation du service (Europeana n'est pas actif par défaut).
+
+```
+GENEALOGISTE_CLE_EUROPEANA=<votre clé personnelle>
+GENEALOGISTE_CONTEXTE_SERVICES=defaut,EUROPEANA
+```
+
+- **Claude Code (plugin, serveur stdio)** : dans `<données>/.env` (par défaut
+  `~/.local/share/genealogiste/.env`, droits `600`), ou exportées dans le terminal qui lance Claude Code ; puis
+  redémarrer le serveur MCP.
+- **Conteneur Docker HTTP (`docker-compose.yml`)** : dans le fichier privé transmis au conteneur par `env_file`
+  (`serveur.env` du guide [Docker et Portainer](../wiki/Docker-et-Portainer.md)), puis recréer le conteneur.
+- **Stack Portainer (`docker-compose.portainer.yml`)** : la composition ne relaie pas ces variables ; les
+  écrire dans le fichier `.env` à la racine du volume de données (`/data/.env` dans le conteneur), puis
+  redémarrer le conteneur.
+
+**Sans clé** : aucune erreur et aucune requête. Le service est écarté avec un motif qui nomme la variable et
+rappelle la démarche ; la presse repose sur Gallica et sur les liens de consultation (tâche manuelle).
+
+**Vérifier** : `/genealogiste:diagnostic` (contrôle `services_contexte`) et `sources_catalogue(type="contexte")`
+disent si la clé est « définie » ou « absente », jamais sa valeur. La clé n'est ni journalisée, ni écrite, ni
+renvoyée par un outil (`services.masquer_cles`).
+
+**Pour l'analyseur à venir (#343), sans code ici.** La même page indique que l'en-tête `X-Api-Key` est l'option
+préférée et que le paramètre d'URL `wskey` est déprécié (une clé dans une URL fuit quand le lien est partagé).
+L'analyseur devra envoyer la clé en en-tête, pour qu'elle ne figure dans aucune URL, donc ni au journal, ni dans
+la clé de cache, ni dans un manifeste ; à vérifier alors : le traitement des en-têtes par le client HTTP commun.
+La réponse réelle exigée par #323 devra être enregistrée avec une clé personnelle, jamais écrite dans le dépôt.
+
+Pages d'Europeana lues le 2026-11-24 (base de connaissances `europeana.atlassian.net`) :
+
+- [Accessing the APIs](https://europeana.atlassian.net/wiki/spaces/EF/pages/2462351393/Accessing+the+APIs)
+  (version du 2026-02-06) : niveaux d'accès, démarche, confidentialité, `X-Api-Key` et `wskey` ;
+- [Search API Documentation](https://europeana.atlassian.net/wiki/spaces/EF/pages/2385739812/Search+API+Documentation)
+  (version du 2026-02-11) : les exemples utilisent une clé à remplacer, aucune clé de démonstration ;
+- [API FAQ](https://europeana.atlassian.net/wiki/spaces/EF/pages/2360508417/Europeana+API+FAQ)
+  (version du 2026-02-11) : gratuité ;
+- [Fair use policy & guidelines](https://europeana.atlassian.net/wiki/spaces/EF/pages/2704146433)
+  (version du 2024-09-05) : usage raisonnable.
+
+Les pages `pro.europeana.eu` (dont « Get your API Key here ») répondaient 403 ce jour-là et n'ont pas été lues.
+**Clé de démonstration** : le relevé du 2026-11-21 notait une réponse 200 avec une clé de démonstration ; le
+2026-11-24, aucune des pages ci-dessus ne publie une telle clé (les exemples demandent une clé personnelle). Elle
+n'est ni embarquée ni utilisée, y compris pour enregistrer les réponses de test.
 
 ### Interrogeabilité : aucune requête sans service utilisable
 
@@ -399,7 +483,8 @@ dérive du code la liste des services qu'un outil interroge avec un analyseur (g
 moins une réponse 2xx. Exception nommée et motivée : **GALLICA** (analyseur SRU et recherche dans le document du
 client existant, antérieurs à #323, testés sur une fixture au format du parseur ; le SRU répond 403 Cloudflare et
 ContentSearch n'a jamais été joint). Le test exige que l'exception reste nécessaire : elle disparaît dès qu'une
-réponse 200 réelle est enregistrée. Europeana n'a pas d'analyseur (aucune clé), donc pas d'exception.
+réponse 200 réelle est enregistrée. Europeana n'a pas d'analyseur (aucune réponse réelle : pas de clé personnelle
+à l'enregistrement, clé de démonstration non utilisée, #343), donc pas d'exception.
 
 **Courriels dans les réponses.** Le test refuse toute adresse courriel dans les réponses, sauf trois adresses
 institutionnelles de réponses réelles laissées telles quelles (contact du `GetCapabilities` de la Géoplateforme,
@@ -518,7 +603,7 @@ Limites : la fenêtre ne voit que l'arbre ; elle ne déduit aucune date d'un con
 | Service | Traitement | Lien de consultation |
 |---|---|---|
 | Gallica | client existant (`sources/gallica.py` : SRU sur les fascicules, puis `ContentSearch` pour la vue et l'extrait OCR des 3 premiers documents) ; coupe-circuit et plafonds du client commun | page d'accueil (recherche en 403 Cloudflare le 2026-11-23, forme non vérifiée) |
-| Europeana | `services.refus` (activation, `GENEALOGISTE_CLE_EUROPEANA`) ; **aucun analyseur** : pas de réponse réelle de l'API enregistrée (aucune clé disponible, clé de démonstration non utilisée). Avec une clé, `sans_analyseur`, aucune requête | recherche du site public (`/fr/search?query=`, vérifiée, HTTP 200) |
+| Europeana | `services.refus` (activation, `GENEALOGISTE_CLE_EUROPEANA`) ; **aucun analyseur** : pas de réponse réelle de l'API enregistrée (aucune clé disponible ; clé de démonstration non utilisée, plus publiée par Europeana au 2026-11-24). Avec une clé, `sans_analyseur`, aucune requête : la [clé personnelle](#clé-personnelle-europeana) n'a pas encore d'effet (#343) | recherche du site public (`/fr/search?query=`, vérifiée, HTTP 200) |
 | Chronicling America | lien seulement (403 Cloudflare, une tentative le 2026-11-23) | page de la collection |
 | Retronews | lien seulement (pas d'API publique) | recherche avancée pré-remplie (`/search?…&q=` : base64 du JSON encodé, forme relevée sur le site) ; période à régler dans le site |
 

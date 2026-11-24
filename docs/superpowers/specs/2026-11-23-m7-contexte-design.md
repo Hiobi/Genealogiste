@@ -58,7 +58,9 @@ arbre (faits sourcés) ──► contexte/requete.py (lieu, période, métier ; 
 - Services bloqués le jour de l'enregistrement : lien seulement, pas d'analyseur.
 - Géographie 1790-1943 : selon l'étude #322 ; à défaut, niveaux « inconnu » et lien de consultation.
 - Niveau `atteste` : jamais attribué sans citation de l'arbre portant sur l'individu.
-- Clé de démonstration Europeana : non embarquée.
+- Clé de démonstration Europeana : non embarquée. Constat du 2026-11-24 : elle n'est plus publiée par la
+  documentation d'Europeana ; non utilisée, y compris pour l'enregistrement. Chaque utilisateur configure sa clé
+  personnelle (docs/contexte-historique.md, « Clé personnelle Europeana »).
 - `contexte_verifier` : règles et listes fermées, pas un jugement du modèle ; limites documentées.
 
 ## Lots et critères d'arrêt

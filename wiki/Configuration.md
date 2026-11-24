@@ -58,9 +58,39 @@ Les identifiants FamilySearch ne doivent plus être configurés : l’ancien exp
 | Session sans surveillance | `GENEALOGISTE_ECRITURE=interdite` : le serveur refuse toute écriture, quel que soit le client (défaut `autorisee`) ; [campagne planifiée](../docs/campagne.md) |
 | Être joignable par les sites interrogés | `GENEALOGISTE_CONTACT` (adresse ou URL, facultatif, jamais par défaut) : ajouté au User-Agent de chaque requête externe ; donnée personnelle envoyée à tous les sites, jamais journalisée ; sans effet si `GENEALOGISTE_USER_AGENT` est défini ; [identification](../docs/securite.md#identification--user-agent-et-contact-facultatif) |
 | Ménager les sites interrogés | Défauts prudents, à ne baisser qu’en connaissance de cause : `GENEALOGISTE_DEBIT_DEFAUT` (1,5 s : intervalle entre deux requêtes vers un hôte sans règle propre) et `GENEALOGISTE_DEBITS` (`hote=secondes,…`, prioritaire) ; `GENEALOGISTE_RALENTISSEMENT_MAX` (60 s : intervalle maximal d’un hôte ralenti après une surcharge 429 ou 5xx, 0 désactive) ; `GENEALOGISTE_COUPE_CIRCUIT` (1800 s de pause après un défi anti-robot) ; `GENEALOGISTE_EXCLUSION_ANTIROBOT` (604800 s, soit 7 jours d’exclusion si le défi persiste ; 0 = pause seule) ; aucun contournement n’est tenté ; [débit](../docs/securite.md#débit--jamais-de-requêtes-en-rafale), [anti-robot](../docs/securite.md#échecs-mémorisés-coupe-circuit-caches-bornés) |
-| Contexte historique | `GENEALOGISTE_CONTEXTE_SERVICES` (codes séparés par des virgules ; vide : services sans clé requise ni protection ; `aucun` ; `defaut,EUROPEANA` ajoute Europeana) ; clés personnelles `GENEALOGISTE_CLE_EUROPEANA` (requise pour Europeana), `GENEALOGISTE_CLE_OPENALEX` (facultative), `GENEALOGISTE_CLE_NARA`, `GENEALOGISTE_CLE_APE` (services en lien seulement pour l’instant), jamais journalisées ni affichées ; `GENEALOGISTE_CROSSREF_MAILTO` vide par défaut (adresse envoyée à Crossref seulement si elle est renseignée) ; `GENEALOGISTE_CONTEXTE_STYLE_CITATION` (`iso690` par défaut, ou `evidence_explained`) ; état des services : `sources_catalogue(type="contexte")` et `diagnostic` ; [services de contexte](../docs/contexte-historique.md#services-de-contexte) |
+| Contexte historique | `GENEALOGISTE_CONTEXTE_SERVICES` (codes séparés par des virgules ; vide : services sans clé requise ni protection ; `aucun` ; `defaut,EUROPEANA` ajoute Europeana) ; clés personnelles `GENEALOGISTE_CLE_EUROPEANA` (requise pour Europeana, voir [ci-dessous](#clé-personnelle-europeana)), `GENEALOGISTE_CLE_OPENALEX` (facultative), `GENEALOGISTE_CLE_NARA`, `GENEALOGISTE_CLE_APE` (services en lien seulement pour l’instant), jamais journalisées ni affichées ; `GENEALOGISTE_CROSSREF_MAILTO` vide par défaut (adresse envoyée à Crossref seulement si elle est renseignée) ; `GENEALOGISTE_CONTEXTE_STYLE_CITATION` (`iso690` par défaut, ou `evidence_explained`) ; état des services : `sources_catalogue(type="contexte")` et `diagnostic` ; [services de contexte](../docs/contexte-historique.md#services-de-contexte) |
 | Service de source sur réseau interne | `GENEALOGISTE_HOTES_AUTORISES` ; dérogation ciblée décrite dans la [sécurité technique](../docs/securite.md) |
 
 Le [modèle de configuration](../.env.example) et les guides thématiques donnent les réglages détaillés.
+
+## Clé personnelle Europeana
+
+Europeana ne répond qu’avec une clé d’API. Elle est gratuite et **personnelle** : chacun demande la sienne, le
+plugin n’en fournit aucune, et elle ne se partage pas (Europeana demande de la garder privée).
+
+1. Se connecter à son compte sur europeana.eu.
+2. Ouvrir le menu en haut à droite, à côté du pseudonyme, puis « Manage API keys ».
+3. Dans « Personal API key », lire puis accepter les conditions d’usage de la clé (case à cocher).
+4. Cliquer sur « Request a Personal API key » : la clé s’affiche et fonctionne aussitôt. Une seule clé par compte.
+
+Puis renseigner les deux variables et redémarrer le serveur MCP :
+
+```
+GENEALOGISTE_CLE_EUROPEANA=<votre clé personnelle>
+GENEALOGISTE_CONTEXTE_SERVICES=defaut,EUROPEANA
+```
+
+- Claude Code : dans le `.env` du dossier privé de données, ou exportées dans le terminal qui lance Claude Code.
+- Docker (`docker-compose.yml`) : dans le fichier privé transmis par `env_file`
+  ([Docker/Portainer](Docker-et-Portainer.md)).
+- Portainer : la stack ne relaie pas ces variables ; les écrire dans le `.env` à la racine du volume de données.
+
+Sans clé, Europeana est simplement écarté (aucune erreur, aucune requête). `/genealogiste:diagnostic` indique si
+la clé est définie, jamais sa valeur. Europeana a réduit les limites d’usage des clés personnelles jusqu’en
+avril 2026 sans en publier le chiffre dans les pages consultées ; rester sur un usage raisonnable.
+
+**État actuel** : l’analyseur Europeana de `presse_recherche` n’est pas encore livré ; la clé n’a donc pas encore
+d’effet sur la recherche de presse. Détails et pages d’Europeana consultées le 2026-11-24 :
+[clé personnelle Europeana](../docs/contexte-historique.md#clé-personnelle-europeana).
 Ne recopier une configuration complète d’une autre installation qu’après avoir vérifié ses chemins,
 son backend et ses comptes : chaque foyer et chaque arbre doivent garder leurs propres données.

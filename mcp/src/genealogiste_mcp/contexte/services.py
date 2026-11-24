@@ -49,6 +49,11 @@ VARIABLE_SERVICES = "GENEALOGISTE_CONTEXTE_SERVICES"
 VARIABLE_MAILTO = "GENEALOGISTE_CROSSREF_MAILTO"
 MASQUE = "***"
 CATEGORIE_POLITIQUE = "contexte"
+# Comment obtenir la clé personnelle d'un service (ajouté au motif « clé requise absente ») ; démarche relevée sur
+# la documentation du service (docs/contexte-historique.md, « Clé personnelle Europeana »). Pas d'URL ici.
+OBTENIR_CLE = {"EUROPEANA": "clé personnelle gratuite, à demander depuis son compte europeana.eu : menu du compte, "
+                            "« Manage API keys », « Request a Personal API key » "
+                            "(docs/contexte-historique.md, « Clé personnelle Europeana »)"}
 
 AVERTISSEMENT = ("Service de contexte : situe un individu, ne prouve rien sur lui. Citer la référence consultée "
                  "(jamais de mémoire) ; Wikipédia est tertiaire, Wikidata un index.")
@@ -299,6 +304,8 @@ def etat(code: str, config) -> EtatService:
                  "(<données>/.env) pour l'interroger")
     elif s["cle"] == "requise" and etat_cle == "absente":
         motif = f"{s['nom']} : clé d'API requise absente ; définir {s['variable_cle']} (<données>/.env)"
+        if c in OBTENIR_CLE:
+            motif += f" ; {OBTENIR_CLE[c]}"
     elif getattr(config, "offline", False):
         motif = f"{s['nom']} : mode hors ligne (GENEALOGISTE_OFFLINE) ; aucune requête émise"
     return EtatService(c, not motif, motif, est_actif, s["mode"], etat_cle, s["variable_cle"])
