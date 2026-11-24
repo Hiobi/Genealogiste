@@ -97,7 +97,13 @@ section « Contexte » :
   `generalisation` : retirer la phrase ; `hors_section` : retirer du récit la phrase de contexte (référence de
   contexte ou événement nommé parmi les faits de l'individu) : un élément sourcé a sa place dans « Contexte », sous
   sa formulation, et nulle part ailleurs.
-Rendre le texte avec le résultat du dernier contrôle (`conforme`, `mesures`). « Conforme » ne veut pas dire
+`avertissements` (non bloquants, le rapport reste `conforme: true` et un billet passe) : `evenement_source` signale
+un événement nommé dans une phrase du récit appuyée par une source individuelle. **Relire cette source** (acte,
+fiche matricule, citation de l'arbre) : si elle nomme l'événement, conserver la phrase ; sinon retirer l'événement
+de la phrase, ou le documenter dans « Contexte » par un élément sourcé. Ne jamais ajouter une note individuelle à
+une phrase pour faire passer un signalement `hors_section` en avertissement.
+Rendre le texte avec le résultat du dernier contrôle (`conforme`, `mesures`, `avertissements` restants avec, pour
+chacun, ce que dit la source relue). « Conforme » ne veut pas dire
 « vrai » : relire chaque phrase de contexte contre l'`enonce` et la citation de son élément.
 
 ## Format « billet » (/genealogiste:billet)

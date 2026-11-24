@@ -18,6 +18,10 @@ personne de l'arbre :
    seule référence de contexte ; mention « tendance générale » absente au-delà de la commune ;
    hors de la section « Contexte » (récit), phrase de contexte : appel vers une référence de contexte ou événement
    nommé de la liste ``EVENEMENTS`` (``hors_section``, #348).
+6. **Avertissements** (non bloquants, #360) : événement de la liste ``EVENEMENTS`` nommé dans une phrase du récit
+   qui porte un appel vers une source individuelle (``evenement_source``) : la source peut le nommer (« tué à la
+   bataille de la Somme [fiche matricule] »), le contrôle ne la lit pas. Sans appel de note individuelle, le même
+   événement reste un signalement ``hors_section`` de ``formulations``.
 
 Format lu (celui du ``redacteur``, docs/notes.md, #291) : titres Markdown (``## Contexte``) ou ligne en gras seule
 (``**Contexte**``, billet de Gramps Web) ; section des notes « Notes et sources » (ou « Notes », « Sources »,
@@ -25,8 +29,9 @@ Format lu (celui du ``redacteur``, docs/notes.md, #291) : titres Markdown (``## 
 sources entre guillemets « ». Frontmatter, sections générées (``<!-- genealogiste:debut … -->``), commentaires
 HTML et blocs de code sont ignorés.
 
-``conforme`` est vrai seulement si aucune liste n'a d'entrée. Un texte conforme n'est pas un texte vrai : voir
-``LIMITES``. Référence : docs/contexte-historique.md, « Rédaction et contrôle ».
+``conforme`` est vrai seulement si aucune rubrique bloquante n'a d'entrée ; ``avertissements`` ne compte pas :
+un avertissement demande une relecture, il ne bloque ni le rapport ni un billet. Un texte conforme n'est pas un
+texte vrai : voir ``LIMITES``. Référence : docs/contexte-historique.md, « Rédaction et contrôle ».
 """
 
 from __future__ import annotations
@@ -44,11 +49,14 @@ from .portee import _departement
 from .registre import RegistreReferences
 
 OUTIL = "contexte_verifier"
-VERSION_LISTES = "2"
+VERSION_LISTES = "3"  # 3 (#360) : listes inchangées, événement nommé dans un fait sourcé classé en avertissement
+MOTIF_EVENEMENT_SOURCE = ("événement nommé dans un fait sourcé : vérifier que la source individuelle le nomme bien ; "
+                          "sinon le retirer ou le documenter dans « Contexte »")
 NON_DOCUMENTE = "contexte non documenté"
 RAPPEL = ("Contrôle de forme, lexical et déterministe : « conforme » signifie qu'aucune règle n'a été enfreinte, pas "
           "que le texte est vrai. Relire chaque énoncé contre sa source. conforme: false bloque la publication d'un "
-          "billet de Gramps Web.")
+          "billet de Gramps Web ; un avertissement (« avertissements ») ne bloque rien, il demande de relire la "
+          "source individuelle de la phrase.")
 
 LIMITES = (
     f"Détection lexicale par listes fermées (version {VERSION_LISTES}) : connecteurs causaux et motifs prêtés, "
@@ -257,7 +265,8 @@ class Evenement:
 
 
 # Dans la section « Contexte », les années de l'événement comptent pour la portée (anachronisme) ; ailleurs, hors
-# hypothèses, questions et notes, l'événement est une phrase de contexte hors de sa section (``hors_section``).
+# hypothèses, questions et notes, l'événement est une phrase de contexte hors de sa section (``hors_section``), sauf
+# dans une phrase appuyée par une source individuelle : avertissement ``evenement_source``, non bloquant (#360).
 EVENEMENTS: tuple[Evenement, ...] = (
     Evenement("revolution_francaise", r"\bR[ée]volution(?: fran[çc]aise)?\b(?! (?:industrielle|agricole|russe"
               r"|nationale|de (?:1830|1848|[Jj]uillet|[Ff][ée]vrier)))", 1789, 1799,
@@ -679,6 +688,7 @@ def verifier(texte: str, tree, personne: str, registre: RegistreReferences) -> d
     hors_portee: list[dict] = []
     causalites: list[dict] = []
     formulations: list[dict] = []
+    avertissements: list[dict] = []  # non bloquants (#360)
     nb_contexte = nb_sourcees = nb_anachronismes = 0
     references: dict[str, bool] = {}  # clé -> consultée
     vus_non_consultees: set[tuple] = set()
@@ -718,11 +728,18 @@ def verifier(texte: str, tree, personne: str, registre: RegistreReferences) -> d
                                              "référence de contexte appelée hors de la section « Contexte » : le "
                                              "contexte ne se mêle pas aux faits de l'individu")})
             for e in EVENEMENTS:
-                if e.cherche(libre):
-                    formulations.append({"phrase": ph.texte, "section": ph.section, "type": "hors_section",
-                                         "marqueur": e.cle, "motif": (
-                                             "événement ou période nommés hors de la section « Contexte » : contexte "
-                                             "écrit de mémoire, à retirer ou à documenter par un élément sourcé")})
+                if not e.cherche(libre):
+                    continue
+                if notes_individuelles:
+                    # #360 : la source individuelle peut nommer l'événement ; à relire, sans bloquer
+                    avertissements.append({"phrase": ph.texte, "section": ph.section, "type": "evenement_source",
+                                           "marqueur": e.cle, "appels": list(notes_individuelles),
+                                           "motif": MOTIF_EVENEMENT_SOURCE})
+                else:
+                    formulations.append({
+                        "phrase": ph.texte, "section": ph.section, "type": "hors_section", "marqueur": e.cle,
+                        "motif": ("événement ou période nommés hors de la section « Contexte » : contexte écrit de "
+                                  "mémoire, à retirer ou à documenter par un élément sourcé")})
         if ph.genre != "contexte":
             continue
         if re.search(ABSENCE, plat(sans_appels(ph.texte))):
@@ -832,18 +849,23 @@ def verifier(texte: str, tree, personne: str, registre: RegistreReferences) -> d
                      else "absent"),
         "phrases_sans_reference": sans_ref, "references_non_consultees": non_consultees,
         "hors_portee": hors_portee, "causalites": causalites, "formulations": formulations,
+        "avertissements": avertissements,
         "mesures": {
             "phrases_contexte": nb_contexte, "phrases_sourcees": nb_sourcees,
             "part_phrases_sourcees": round(nb_sourcees / nb_contexte, 4) if nb_contexte else None,
             "references_citees": nb_refs, "references_consultees": nb_consultees,
             "part_references_consultees": round(nb_consultees / nb_refs, 4) if nb_refs else None,
             "anachronismes": nb_anachronismes, "causalites_non_sourcees": len(causalites),
+            "avertissements": len(avertissements),
         },
         "periode_de_vie": list(p.periode) if p.periode else None,
         "limites": list(LIMITES),
         "rappel": RAPPEL,
     }
-    rapport["publication_billet"] = "autorisée" if rapport["conforme"] else "bloquée (conforme: false)"
+    rapport["publication_billet"] = (
+        "bloquée (conforme: false)" if not rapport["conforme"]
+        else f"autorisée, {len(avertissements)} avertissement(s) non bloquant(s) à relire" if avertissements
+        else "autorisée")
     if rapport["contexte"] != "present":
         rapport["limites"] = [("Aucune phrase de contexte à contrôler : sortie attendue « contexte non documenté » "
                                "dans les questions ouvertes, jamais un paragraphe général.")] + rapport["limites"]

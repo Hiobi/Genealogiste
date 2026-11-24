@@ -1,11 +1,19 @@
 {
-  "objet": "Recette de bout en bout (#348) : récits réellement rédigés par un modèle qui suit agents/redacteur.md, sur les quatre cas témoins, à partir des sorties d'outils rejouées hors ligne (réponses enregistrées). Chaque récit est figé tel qu'écrit, d'un jet, sans retouche après contrôle. « defauts » : relevé manuel, phrase par phrase, contre les règles du jalon ; « signale_par » : rubrique[:type[:marqueur]] du rapport de contexte_verifier qui doit signaler la phrase (absent : défaut échappé, limite de la détection lexicale). Tout signalement hors de ces défauts serait une fausse alerte.",
+  "objet": "Recette de bout en bout (#348) : récits réellement rédigés par un modèle qui suit agents/redacteur.md, sur les quatre cas témoins, à partir des sorties d'outils rejouées hors ligne (réponses enregistrées). Chaque récit est figé tel qu'écrit, d'un jet, sans retouche après contrôle. « defauts » : relevé manuel, phrase par phrase, contre les règles du jalon ; « signale_par » : rubrique[:type[:marqueur]] du rapport de contexte_verifier qui doit signaler la phrase (absent : défaut échappé, limite de la détection lexicale). Tout signalement hors de ces défauts serait une fausse alerte. « averti_par » (#360) : avertissement non bloquant du rapport (rubrique avertissements) qui porte sur la phrase ; un défaut qui n'a que cela n'est pas détecté (le texte reste conforme, un billet passe) : il est compté à part dans « avertis », jamais dans « detectes ».",
   "date": "2026-11-24",
   "redacteur": "claude-fable-5-2, dans le rôle de l'agent redacteur ; relevé manuel par le même modèle (auto-évaluation)",
   "portee": "Quatorze récits, un seul modèle, un seul relecteur qui est aussi l'auteur ; listes de la version 2 ajustées sur ces mêmes textes. Mesure de non-régression, pas preuve de conformité.",
   "version_listes": {
     "avant": "1",
-    "apres": "2"
+    "apres": "3"
+  },
+  "decision_360": {
+    "date": "2026-11-24",
+    "regle": "événement de la liste EVENEMENTS nommé dans une phrase du récit : bloquant (formulations, hors_section) sans appel de note individuelle ; avertissement non bloquant (avertissements, evenement_source) avec au moins un appel de note individuelle",
+    "avant": {"version_listes": "2", "detectes_lot_1": 12, "detectes": 20, "avertis": 0, "fausses_alertes": 0},
+    "apres": {"version_listes": "3", "detectes_lot_1": 11, "detectes": 16, "avertis": 4, "fausses_alertes": 0},
+    "defauts_passes_en_avertissement": ["C5", "D8", "C9", "C12"],
+    "lecture": "Quatre défauts réels, relevés à la main, ne bloquent plus : la phrase porte une note individuelle que le contrôle ne lit pas. Les colonnes detectes_v1 et detectes_lot_1 sont recalculées avec la règle actuelle restreinte aux listes de l'étape."
   },
   "lots": {
     "premier": "naturel (consigne suivie strictement), fluide (consigne suivie en cherchant la fluidité littéraire), billet (format billet, fluide) ; écrits avant toute lecture de verifier.py, les listes de la version 1 étant toutefois connues par docs/contexte-historique.md",
@@ -54,15 +62,17 @@
       "defauts": 11,
       "detectes_v1": 2,
       "detectes_lot_1": 4,
-      "detectes": 6,
+      "detectes": 5,
+      "avertis": 1,
       "fausses_alertes": 0
     },
     "cultivateur_ancien_regime": {
       "phrases": 42,
       "defauts": 11,
       "detectes_v1": 1,
-      "detectes_lot_1": 5,
-      "detectes": 7,
+      "detectes_lot_1": 4,
+      "detectes": 5,
+      "avertis": 2,
       "fausses_alertes": 0
     },
     "soldat_1914_1918": {
@@ -70,7 +80,8 @@
       "defauts": 7,
       "detectes_v1": 0,
       "detectes_lot_1": 0,
-      "detectes": 2,
+      "detectes": 1,
+      "avertis": 1,
       "fausses_alertes": 0
     },
     "lieu_non_documente": {
@@ -79,6 +90,7 @@
       "detectes_v1": 0,
       "detectes_lot_1": 3,
       "detectes": 5,
+      "avertis": 0,
       "fausses_alertes": 0
     }
   },
@@ -175,8 +187,9 @@
           "id": "C5",
           "extrait": "alors que l'Amérique vient d'entrer en guerre",
           "nature": "événement évoqué de mémoire sans année ni référence",
-          "signale_par": [
-            "formulations:hors_section:entree_en_guerre"
+          "signale_par": null,
+          "averti_par": [
+            "avertissements:evenement_source:entree_en_guerre"
           ]
         },
         {
@@ -223,8 +236,9 @@
           "id": "D8",
           "extrait": "à la veille de la Révolution",
           "nature": "événement nommé sans année, de mémoire, hors de la section « Contexte » et hors de la période de vie",
-          "signale_par": [
-            "formulations:hors_section:revolution_francaise"
+          "signale_par": null,
+          "averti_par": [
+            "avertissements:evenement_source:revolution_francaise"
           ]
         },
         {
@@ -290,8 +304,9 @@
           "id": "C9",
           "extrait": "quelques mois avant la convocation des États généraux",
           "nature": "événement nommé sans année, hors de la période de vie",
-          "signale_par": [
-            "formulations:hors_section:etats_generaux"
+          "signale_par": null,
+          "averti_par": [
+            "avertissements:evenement_source:etats_generaux"
           ]
         }
       ],
@@ -356,8 +371,9 @@
           "id": "C12",
           "extrait": "en pleine bataille de la Somme",
           "nature": "bataille nommée sans source individuelle ni année (interdit des attendus du cas)",
-          "signale_par": [
-            "formulations:hors_section:bataille_de"
+          "signale_par": null,
+          "averti_par": [
+            "avertissements:evenement_source:bataille_de"
           ]
         }
       ],

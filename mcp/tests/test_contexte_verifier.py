@@ -65,7 +65,9 @@ def test_classe_lecture_sans_garde_reseau():
 
 
 def test_listes_versionnees_et_uniques():
-    assert v.VERSION_LISTES == "2"  # #348 : généralisations ajoutées, EVENEMENTS, POSSESSIFS
+    # 2 (#348) : généralisations ajoutées, EVENEMENTS, POSSESSIFS ; 3 (#360) : mêmes listes, événement nommé dans
+    # un fait sourcé classé en avertissement (le verdict d'un même texte change)
+    assert v.VERSION_LISTES == "3"
     for liste in (v.CONNECTEURS, v.GENERALISATIONS):
         cles = [r.cle for r in liste]
         assert len(cles) == len(set(cles))
@@ -103,6 +105,54 @@ def test_causalite_admise_avec_source_individuelle_question_ou_hypothese(mineur)
     assert out["causalites"] == []
     out = _verifier(mineur, "## Récit\n\nIl aurait pu partir à cause de la crise.\n")
     assert out["causalites"] == []
+
+
+def test_evenement_nomme_dans_un_fait_source_avertissement_non_bloquant(mineur):
+    """#360 : événement de la liste dans une phrase du récit. Avec une note individuelle : avertissement, rapport
+    conforme ; sans note individuelle : ``hors_section``, bloquant, comme avant."""
+    notes = ("\n## Notes et sources\n\n[1] Registres de population de Denain (fictif), Registre de population 1906."
+             "\n[2] Un livre lu autrefois, p. 12.\n")
+    phrase = "Il est tué à la bataille de la Somme [1]."
+    out = _verifier(mineur, f"## Récit\n\n{phrase}\n" + notes)
+    assert out["conforme"] is True and _signalees(out) == set(), out
+    assert out["avertissements"] == [{
+        "phrase": phrase, "section": "Récit", "type": "evenement_source", "marqueur": "bataille_de", "appels": ["1"],
+        "motif": "événement nommé dans un fait sourcé : vérifier que la source individuelle le nomme bien ; sinon le "
+                 "retirer ou le documenter dans « Contexte »"}]
+    assert out["mesures"]["avertissements"] == 1
+    assert out["publication_billet"] == "autorisée, 1 avertissement(s) non bloquant(s) à relire"
+    # sans appel de note, appel sans note correspondante, ou note qui n'est pas une source de l'arbre : bloquant
+    for sans in ("Il est tué à la bataille de la Somme.", "Il est tué à la bataille de la Somme [9].",
+                 "Il est tué à la bataille de la Somme [2]."):
+        out = _verifier(mineur, f"## Récit\n\n{sans}\n" + notes)
+        assert out["conforme"] is False and out["avertissements"] == [], sans
+        assert [(f["type"], f["marqueur"]) for f in out["formulations"]] == [("hors_section", "bataille_de")], sans
+        assert out["publication_billet"] == "bloquée (conforme: false)" and out["mesures"]["avertissements"] == 0
+    # une note individuelle parmi d'autres suffit ; hypothèse ou question : ni signalement ni avertissement
+    out = _verifier(mineur, "## Récit\n\nIl est tué à la bataille de la Somme [1] [2].\n" + notes)
+    assert out["conforme"] is True and [x["appels"] for x in out["avertissements"]] == [["1"]]
+    for ailleurs in ("## Hypothèses\n\nIl aurait été tué à la bataille de la Somme [1] : hypothèse à vérifier.",
+                     "## Questions ouvertes\n\n- Est-il tué à la bataille de la Somme [1] ?"):
+        out = _verifier(mineur, ailleurs + "\n" + notes)
+        assert out["conforme"] is True and out["avertissements"] == [], ailleurs
+
+
+def test_avertissement_ne_leve_aucun_signalement_bloquant(mineur):
+    """#360 : la note individuelle n'excuse que l'événement nommé. Une référence de contexte appelée dans la même
+    phrase, une généralisation ou une causalité restent ce qu'elles étaient."""
+    _inscrire(mineur.registre_references, "ppn:249145197", "Notice sur la commune")
+    notes = ("\n## Notes et sources\n\n[1] Registres de population de Denain (fictif), Registre de population 1906."
+             "\n[6] Notice. PPN 249145197.\n")
+    out = _verifier(mineur, "## Récit\n\nIl est tué à la bataille de la Somme [1] [6].\n" + notes)
+    assert out["conforme"] is False
+    assert [(f["type"], f["marqueur"]) for f in out["formulations"]] == [("hors_section", "appel [6]")]
+    assert [x["marqueur"] for x in out["avertissements"]] == ["bataille_de"]
+    out = _verifier(mineur, "## Récit\n\nComme tant d'autres, il est tué à la bataille de la Somme [1].\n" + notes)
+    assert out["conforme"] is False and {f["type"] for f in out["formulations"]} == {"generalisation"}
+    assert [x["type"] for x in out["avertissements"]] == ["evenement_source"]
+    out = _verifier(mineur, "## Récit\n\nIl part à cause de la Grande Guerre.\n" + notes)
+    assert out["conforme"] is False and out["causalites"] and out["avertissements"] == []
+    assert [f["marqueur"] for f in out["formulations"]] == ["grande_guerre"]
 
 
 def test_tournure_impersonnelle_ne_vise_pas_l_individu(mineur):
@@ -178,7 +228,8 @@ def test_reference_consultee_ou_non(mineur):
     assert out["mesures"] == {"phrases_contexte": 1, "phrases_sourcees": 1, "part_phrases_sourcees": 1.0,
                               "references_citees": 1, "references_consultees": 1,
                               "part_references_consultees": 1.0, "anachronismes": 0,
-                              "causalites_non_sourcees": 0}
+                              "causalites_non_sourcees": 0, "avertissements": 0}
+    assert out["avertissements"] == [] and out["publication_billet"] == "autorisée"
 
 
 def test_note_absente_ou_sans_identifiant(mineur):

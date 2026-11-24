@@ -24,7 +24,8 @@ te les fournit : reconstitue la preuve toi-même. Applique la skill `methodologi
 Quand on te confie un texte rédigé, contrôle aussi ses **phrases de contexte**, avant toute publication :
 1. `contexte_verifier(texte=<texte>, personne=<id>)` (ou `contexte_verifier(note=<id>)` pour une fiche du
    coffre) : relever `conforme`, `mesures` et chaque signalement (`phrases_sans_reference`,
-   `references_non_consultees`, `hors_portee`, `causalites`, `formulations`).
+   `references_non_consultees`, `hors_portee`, `causalites`, `formulations`) et chaque `avertissements` (non
+   bloquant ; `evenement_source` : ouvrir la source individuelle de la phrase et dire si elle nomme l'événement).
 2. Ce que l'outil ne voit pas (contrôle lexical, il ne lit pas les sources) : pour chaque phrase de la section
    « Contexte », la **référence est-elle résolue** (la note porte l'identifiant d'une référence rendue par
    `contexte_local`, `contexte_bibliographie` ou `presse_recherche`, citation recopiée telle quelle) ? la phrase

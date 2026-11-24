@@ -15,6 +15,9 @@ Billet de blog : **$ARGUMENTS**
    séparée ; rien de sourcé : pas de section. Contrôler le texte rendu :
    `contexte_verifier(texte=<texte>, personne=<id>)`. **`conforme: false` est bloquant** : ne rien proposer, renvoyer
    le texte au `redacteur` avec les signalements (il retire ou documente, jamais il n'invente une référence).
+   Un `avertissements` (`evenement_source` : événement nommé dans un fait sourcé) ne bloque pas : relire la source
+   individuelle de la phrase, conserver la phrase seulement si elle nomme l'événement, et montrer l'avertissement
+   à l'utilisateur avec le diff (il figure aussi dans le résumé de la proposition).
 4. Préparer UNE proposition : images éventuelles par `ajouter_media` (avec `ref`, sans `lier_a`), puis
    `{"op": "ajouter_billet", "titre", "auteur", "texte", "format_texte": "markdown", "medias": ["$img", …]}`.
    Texte avec une section « Contexte » : ajouter `"personne": "<id>"` (individu du billet). La proposition

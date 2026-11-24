@@ -16,7 +16,9 @@ Garde-fous appliqués à toute proposition qui crée ou modifie un billet (:func
 - contexte historique (#291) : un billet créé, dont le texte change ou qui devient public, et dont le texte a une
   section « Contexte », n'est proposé que si ``contexte_verifier`` le déclare conforme pour la personne donnée
   (``personne`` d'``ajouter_billet``, d'``ajouter_source`` ou de ``modifier_source``) ; sinon refus, avec le rapport
-  (:func:`controler_contexte`). Un texte sans section « Contexte » n'est pas contrôlé.
+  (:func:`controler_contexte`). Un texte sans section « Contexte » n'est pas contrôlé. Un avertissement du rapport
+  (``avertissements``, #360 : événement nommé dans un fait sourcé) ne refuse rien : il est porté au résumé de la
+  proposition, pour être relu avant l'accord.
 """
 
 from __future__ import annotations
@@ -92,7 +94,8 @@ def controler(before: Tree, after: Tree) -> tuple[list[str], list[str], list[str
 # ------------------------------------------------------------------------------------ contexte historique (#291)
 
 RUBRIQUES_CONTEXTE = ("phrases_sans_reference", "references_non_consultees", "hors_portee", "causalites",
-                      "formulations")
+                      "formulations")  # rubriques bloquantes
+RUBRIQUE_AVERTISSEMENTS = "avertissements"  # non bloquante (#360) : au résumé de la proposition, jamais un refus
 _MAX_SIGNALEMENTS = 5  # par rubrique, dans le message de refus (le rapport complet : contexte_verifier)
 
 
@@ -121,10 +124,10 @@ def a_section_contexte(texte: str) -> bool:
     return analyser(texte).sections_contexte > 0
 
 
-def resume_rapport(rapport: dict) -> str:
+def resume_rapport(rapport: dict, rubriques: tuple[str, ...] = RUBRIQUES_CONTEXTE) -> str:
     """Rapport de ``contexte_verifier`` en une ligne par rubrique signalée (phrase et motif)."""
     lignes = []
-    for r in RUBRIQUES_CONTEXTE:
+    for r in rubriques:
         items = rapport.get(r) or []
         if not items:
             continue
@@ -147,6 +150,7 @@ def resume_rapport(rapport: dict) -> str:
 def controler_contexte(before: Tree, after: Tree, personnes: dict[str, str], registre,
                        bruts: dict[str, str] | None = None) -> tuple[list[str], list[str]]:
     """#291 : (refus, lignes de résumé) pour les billets créés, dont le texte change ou qui deviennent publics.
+    Les avertissements du rapport (#360) ne refusent rien : ils suivent la ligne de contrôle, dans le résumé.
     ``personnes`` : billet -> personne donnée par l'opération ; ``registre`` : registre des références consultées
     (absent : un billet à section « Contexte » est refusé, le contrôle ne pouvant pas être fait)."""
     refus, resume = [], []
@@ -190,4 +194,7 @@ def controler_contexte(before: Tree, after: Tree, personnes: dict[str, str], reg
         resume.append(f"Billet {sid} : section « Contexte » contrôlée (contexte_verifier, personne {pid}) : conforme, "
                       f"{m['phrases_contexte']} phrase(s) de contexte, {m['references_consultees']} référence(s) "
                       "consultée(s)")
+        if rapport.get(RUBRIQUE_AVERTISSEMENTS):
+            resume.append(f"Billet {sid} : AVERTISSEMENT non bloquant, à relire avant d'accepter (contexte_verifier) : "
+                          f"{resume_rapport(rapport, (RUBRIQUE_AVERTISSEMENTS,))}")
     return refus, resume

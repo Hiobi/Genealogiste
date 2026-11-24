@@ -96,6 +96,39 @@ def test_billet_conforme_propose_prive_avec_controle_au_resume(arbre, registre):
                         "3 phrase(s) de contexte, 3 référence(s) consultée(s)"]
 
 
+def test_billet_evenement_dans_un_fait_source_propose_avec_avertissement_au_resume(arbre, registre):
+    """#360 : événement nommé dans une phrase du récit appuyée par une source individuelle. Aucun refus, et
+    l'avertissement est dans le résumé de la proposition ; sans la note individuelle, refus comme avant."""
+    conforme = _forme_billet(_texte(f"{CAS}.conforme"))
+    pivot = "[4]. Il meurt"
+    assert conforme.count(pivot) == 1
+    texte = conforme.replace(pivot, "[4]. Il est tué à la bataille de la Somme [4]. Il meurt")
+    ctx = apply_ops(arbre, [_billet(texte, personne="I1")], backend="gramps", registre=registre)
+    sid = ctx.refs["b"]
+    assert ctx.tree.sources[sid].prive is True
+    lignes = [x for x in ctx.summary if x.startswith(f"Billet {sid} : ")]
+    assert lignes[-2:] == [
+        f"Billet {sid} : section « Contexte » contrôlée (contexte_verifier, personne I1) : conforme, "
+        "3 phrase(s) de contexte, 3 référence(s) consultée(s)",
+        f"Billet {sid} : AVERTISSEMENT non bloquant, à relire avant d'accepter (contexte_verifier) : "
+        "avertissements (1) : « Il est tué à la bataille de la Somme [4]. » [bataille_de] (événement nommé dans un "
+        "fait sourcé : vérifier que la source individuelle le nomme bien ; sinon le retirer ou le documenter dans "
+        "« Contexte »)"]
+    assert billets.RUBRIQUE_AVERTISSEMENTS not in billets.RUBRIQUES_CONTEXTE
+    # billet conforme sans avertissement : aucune ligne d'avertissement
+    ctx = apply_ops(arbre, [_billet(conforme, personne="I1")], backend="gramps", registre=registre)
+    assert not [x for x in ctx.summary if "AVERTISSEMENT" in x]
+    # même phrase sans note individuelle : refus (hors_section), sans rubrique d'avertissement dans le message
+    sans_note = conforme.replace(pivot, "[4]. Il est tué à la bataille de la Somme. Il meurt")
+    with pytest.raises(OpError, match=r"formulations \(1\) : « Il est tué à la bataille de la Somme\. »") as exc:
+        apply_ops(arbre, [_billet(sans_note, personne="I1")], backend="gramps", registre=registre)
+    assert "avertissements (" not in str(exc.value)
+    # référence de contexte appelée hors de la section « Contexte » : toujours un refus
+    hors = conforme.replace(pivot, "[4]. Il est tué à la bataille de la Somme [4] [6]. Il meurt")
+    with pytest.raises(OpError, match=r"\[appel \[6\]\]"):
+        apply_ops(arbre, [_billet(hors, personne="I1")], backend="gramps", registre=registre)
+
+
 @pytest.mark.parametrize("nom", FAUTIFS)
 def test_billet_fautif_refuse_avec_le_rapport(arbre, registre, nom):
     texte = _forme_billet(_texte(nom))

@@ -1140,6 +1140,10 @@ avec l'étiquette `Blog`, et `modifier_source`) :
   (mêmes règles, même registre). Non conforme, personne absente ou inconnue, registre indisponible : **refus**, avec
   le rapport dans le message d'erreur (rubriques signalées, phrases et motifs ; cinq signalements au plus par
   rubrique) ; conforme : le résumé de la proposition porte « section « Contexte » contrôlée … : conforme » ;
+- **avertissement** du rapport (`avertissements`, #360 : événement nommé dans une phrase du récit appuyée par une
+  source individuelle) : **aucun refus**. Le résumé de la proposition porte une ligne de plus, « Billet … :
+  AVERTISSEMENT non bloquant, à relire avant d'accepter (contexte_verifier) : avertissements (1) : « phrase »
+  [marqueur] (motif) », pour que l'utilisateur relise la source avant de donner son accord ;
 - le texte contrôlé est le Markdown donné à l'opération ; pour un billet déjà dans Gramps Web (rendu public sans
   changement de texte), ses intertitres, devenus du gras sans astérisques, sont reconnus quand la ligne est isolée
   et porte le nom d'une section (« Contexte », « Hypothèses », « Questions ouvertes », « Notes et sources »).
@@ -1202,10 +1206,36 @@ Hypothèse déclarée : section « Hypothèses », ou phrase au conditionnel (`a
 avec « peut-être », « il est possible que », « hypothèse ». Elle n'est pas contrôlée pour la causalité : c'est la
 forme exigée par la méthode (§ 5, 6).
 
-**Listes fermées** (`VERSION_LISTES = "2"`, `contexte/verifier.py`). Chaque entrée porte un exemple qui doit être
+**Avertissements, non bloquants** (#360, décision du mainteneur du 2026-11-24). Une sixième rubrique,
+`avertissements`, ne compte pas pour `conforme` et ne fait refuser aucun billet.
+
+| Rubrique | Où | Signalé |
+|---|---|---|
+| `avertissements` | récit, hors « Contexte », « Hypothèses », « Questions ouvertes » et notes | `evenement_source` : événement nommé de la liste `EVENEMENTS` dans une phrase qui porte **au moins un appel vers une source individuelle** (note qui contient le titre d'une source de l'arbre citée pour un fait de la personne, comme pour `causalites`), sauf question. Motif : « événement nommé dans un fait sourcé : vérifier que la source individuelle le nomme bien ; sinon le retirer ou le documenter dans « Contexte » » |
+
+Un événement nommé dans le récit se lit donc de deux façons, selon la phrase qui le porte :
+
+| Phrase du récit | Note `[1]` | Rapport |
+|---|---|---|
+| « Il est tué à la bataille de la Somme [1]. » | source de l'arbre citée pour un fait de la personne (fiche matricule) | `conforme: true`, `avertissements` : `evenement_source`, `bataille_de` ; un billet passe, l'avertissement est au résumé de la proposition |
+| « Il est tué à la bataille de la Somme. » | aucune (ou appel sans note, ou note qui n'est pas une source de l'arbre) | `conforme: false`, `formulations` : `hors_section`, `bataille_de` ; un billet est refusé |
+| « Il est tué à la bataille de la Somme [1] [6]. » | `[6]` : référence de contexte (registre, ou appelée dans « Contexte ») | `conforme: false`, `formulations` : `hors_section`, `appel [6]` (la référence de contexte hors de sa section reste bloquante) ; l'événement, lui, est en avertissement |
+
+L'avertissement ne dit pas que la phrase est juste : le contrôle ne lit pas la source individuelle. Il demande de
+la relire. Elle nomme l'événement : la phrase reste. Elle ne le nomme pas (« tué à l'ennemi le 12 juillet 1916 ») :
+l'événement est du contexte écrit de mémoire, à retirer, ou à documenter dans « Contexte » par un élément sourcé.
+Le prix de cette règle est mesuré dans la recette (« Mesure après la décision #360 ») : quatre défauts réels des
+récits rédigés ne sont plus bloquants. `generalisations` et `causalites` ne changent pas : une généralisation reste
+bloquante avec ou sans note, une causalité reste dispensée par une note individuelle sans avertissement.
+
+**Listes fermées** (`VERSION_LISTES = "3"`, `contexte/verifier.py`). Chaque entrée porte un exemple qui doit être
 signalé et un contre-exemple qui ne doit pas l'être, tous deux testés (`tests/test_contexte_verifier.py` ;
 `tests/test_contexte_recits.py` pour `EVENEMENTS` et `POSSESSIFS`). La version 2 (#348) ajoute neuf généralisations,
 la liste `EVENEMENTS` et la liste `POSSESSIFS`, d'après des récits réellement rédigés (« Recette du 2026-11-24 »).
+La version 3 (#360) n'ajoute ni ne retire aucune entrée : elle change ce que vaut un événement de `EVENEMENTS` dans
+une phrase à source individuelle (avertissement, plus un signalement bloquant) et ajoute la rubrique
+`avertissements` à la sortie. La version est incrémentée parce qu'un même texte peut recevoir un autre verdict
+(`conforme`) : un rapport archivé se relit avec la version qui l'a produit.
 
 - `CONNECTEURS`, causal : à cause de, en raison de, poussé par, fuyant, c'est pourquoi, contraint par / de, fut (a
   été, est…) forcé de, se vit (fut…) obligé de, par conséquent, en conséquence, de ce fait, du fait de, grâce à,
@@ -1226,20 +1256,22 @@ la liste `EVENEMENTS` et la liste `POSSESSIFS`, d'après des récits réellement
   populaire (1936-1938), Seconde (Deuxième) Guerre mondiale / l'Occupation / la Libération (1939-1945), guerre de
   Corée (1950-1953), guerre d'Algérie (1954-1962), États généraux (1789) ; sans année : bataille (offensive, siège)
   de + nom propre, entrer (entrée) en guerre. Dans « Contexte », leurs années comptent pour la portée ; dans le
-  récit, l'événement est signalé `hors_section`.
+  récit, l'événement est signalé `hors_section` (bloquant), ou porté en avertissement `evenement_source` si la
+  phrase appelle une source individuelle (version 3).
 - `POSSESSIFS` (version 2) : son, sa, ses, leur(s) + départ, émigration, immigration, migration, exil, fuite,
   installation, arrivée, retour, venue, engagement, enrôlement, choix, décision, mariage, union, métier, décès,
   mort, disparition, parcours, destin, sort : la phrase vise l'individu (« son départ fut provoqué par… »).
 - Formules : `FORMULE_COMPATIBLE`, `FORMULE_NON_DEMONTRE`, `FORMULE_ATTESTE`, `MENTION`, `ECHELLE_SUPERIEURE`,
   `HYPOTHESE`, `IMPERSONNELS` ; unités (`UNITES`) qui font d'un nombre autre chose qu'une année (« 1099 morts »).
 
-Ajouter une entrée : la mettre dans la liste avec son exemple et son contre-exemple, incrémenter `VERSION_LISTES`,
+Ajouter une entrée, ou changer ce que vaut une règle : la mettre dans la liste avec son exemple et son
+contre-exemple, incrémenter `VERSION_LISTES`,
 relancer `tests/test_contexte_verifier.py` et l'évaluation ci-dessous (aucun faux positif sur les textes conformes).
 
 **Sortie.**
 
 ```json
-{"outil": "contexte_verifier", "personne": "I1", "version_listes": "2", "conforme": false,
+{"outil": "contexte_verifier", "personne": "I1", "version_listes": "3", "conforme": false,
  "contexte": "present | non_documente | absent", "publication_billet": "bloquée (conforme: false)",
  "phrases_sans_reference": [{"phrase": "…", "section": "Contexte"}],
  "references_non_consultees": [{"appel": "6", "identifiant": "doi:10.…", "note": "…", "phrase": "…", "motif": "…"}],
@@ -1248,18 +1280,25 @@ relancer `tests/test_contexte_verifier.py` et l'évaluation ci-dessous (aucun fa
  "causalites": [{"phrase": "…", "section": "Récit", "connecteur": "a_cause_de", "categorie": "causal", "motif": "…"}],
  "formulations": [{"phrase": "…", "type": "generalisation | rattachement | mention | hors_section", "marqueur": "…", "niveau": "…",
                    "motif": "…"}],
+ "avertissements": [{"phrase": "Il est tué à la bataille de la Somme [1].", "section": "Récit",
+                     "type": "evenement_source", "marqueur": "bataille_de", "appels": ["1"],
+                     "motif": "événement nommé dans un fait sourcé : vérifier que la source individuelle le nomme bien ; sinon le retirer ou le documenter dans « Contexte »"}],
  "mesures": {"phrases_contexte": 3, "phrases_sourcees": 3, "part_phrases_sourcees": 1.0, "references_citees": 3,
              "references_consultees": 3, "part_references_consultees": 1.0, "anachronismes": 0,
-             "causalites_non_sourcees": 0},
+             "causalites_non_sourcees": 0, "avertissements": 1},
  "periode_de_vie": [1881, 1946], "limites": ["…"], "rappel": "…", "source": {"texte": "fourni"}}
 ```
 
-`conforme` est vrai seulement si les cinq rubriques sont vides. Les parts valent `null` sans phrase ni référence de
+`conforme` est vrai seulement si les cinq rubriques bloquantes sont vides ; `avertissements` (toujours présente,
+liste vide le plus souvent ; `appels` : les appels de note individuelle de la phrase) ne compte pas.
+`publication_billet` vaut « autorisée », « autorisée, N avertissement(s) non bloquant(s) à relire » ou « bloquée
+(conforme: false) ». Les parts valent `null` sans phrase ni référence de
 contexte (texte « contexte non documenté »). Arguments invalides, personne inconnue, note absente : `erreur`.
 
 **Contrat de publication.** `conforme: false` est **bloquant** pour la publication d'un billet de Gramps Web : le
 billet n'est pas proposé (`ajouter_billet`) tant que le rapport n'est pas conforme, et la proposition elle-même le
-refuse (#291, « Rédaction », « Sorties ») ; pour une note du coffre ou un récit, le rapport est montré à
+refuse (#291, « Rédaction », « Sorties ») ; un avertissement ne bloque rien, il est porté au résumé de la
+proposition (#360) ; pour une note du coffre ou un récit, le rapport est montré à
 l'utilisateur avec les phrases à corriger. L'appel par le `redacteur`, le `verificateur`, `/genealogiste:recit` et
 `/genealogiste:billet` est décrit dans « Rédaction » ; la commande `/genealogiste:contexte` et le branchement du
 `chercheur` sont décrits dans « Parcours d'usage », en tête de ce document (#325).
@@ -1407,7 +1446,42 @@ registre : 100 %), aucune année hors période dans « Contexte », pas de secti
 lieu non documenté, « contexte à documenter » dans les questions ouvertes. Les défauts sont **dans le récit**, pas
 dans la section « Contexte » : c'est là que le contrôle ne regardait que les connecteurs et les généralisations.
 
-**Défauts échappés restants** (version 2 ; identifiants de `MESURES.json`) :
+**Mesure après la décision #360** (2026-11-24, version 3). Le mainteneur a décidé qu'un événement de `EVENEMENTS`
+nommé dans une phrase du récit qui appelle une source individuelle n'est plus bloquant : il devient un
+avertissement (`avertissements`, `evenement_source`). Les récits n'ont pas été modifiés ; le relevé manuel des
+défauts non plus. Quatre défauts réels portaient une note individuelle que le contrôle ne lit pas : ils passent en
+avertissement et **ne sont plus comptés comme détectés** (colonne à part) :
+
+| Défaut | Récit | Phrase | Marqueur |
+|---|---|---|---|
+| D8 | cultivateur, `fluide` | « … à la veille de la Révolution [3]. » | `revolution_francaise` |
+| C9 | cultivateur, `contre_epreuve` | « … quelques mois avant la convocation des États généraux [3]. » | `etats_generaux` |
+| C5 | mineur, `contre_epreuve` | « … alors que l'Amérique vient d'entrer en guerre, un dossier administratif le situe à Krebs, en Oklahoma [4]. » | `entree_en_guerre` |
+| C12 | soldat, `contre_epreuve` | « Il tombe vraisemblablement le 12 juillet 1916 à Belloy-en-Santerre (Somme), en pleine bataille de la Somme [3]. » | `bataille_de` |
+
+| Cas | Défauts | Détectés (bloquants), avant | Détectés (bloquants), après | En avertissement seulement | Échappés sans aucun signal | Fausses alertes, avertissements compris |
+|---|---|---|---|---|---|---|
+| mineur | 11 | 6 | 5 | 1 | 5 | 0 |
+| cultivateur | 11 | 7 | 5 | 2 | 4 | 0 |
+| soldat | 7 | 2 | 1 | 1 | 5 | 0 |
+| lieu non documenté | 6 | 5 | 5 | 0 | 1 | 0 |
+| **total** | 35 | 20 | 16 | 4 | 15 | 0 |
+
+Après la décision, le contrôle bloque sur 16 sur 35 défauts (20 avant), avertit sans bloquer sur 4, et n'en voit
+toujours pas 15. La colonne « après le premier lot d'ajouts » du tableau précédent, recalculée avec la règle
+actuelle, passe de 12 à 11 (D8). Le `contre_epreuve` du soldat ne garde qu'un signalement bloquant (C10) ; aucun
+récit ne change de verdict : les quatre récits concernés portent chacun un autre défaut bloquant, et 5 récits
+restent déclarés conformes. Aucun avertissement ne tombe hors des défauts relevés : dans ces 14 récits, **les
+quatre avertissements émis sont quatre défauts réels** (d'après le relevé manuel, l'événement y est écrit de
+mémoire ; les sources des cas témoins sont fictives et ne le nomment pas), et aucun
+n'est une phrase légitime. L'échantillon ne contient donc aucun cas du type que la décision veut laisser passer
+(« tué à la bataille de la Somme [fiche matricule] », la fiche nommant la bataille) : le bénéfice de la règle
+n'est pas mesuré ici, seul son coût l'est. D12 (billet du cultivateur, « sous l'Ancien Régime … [4] ») et les
+autres défauts `hors_section` restent bloquants (phrase sans note individuelle, ou référence de contexte appelée
+hors section).
+
+**Défauts échappés restants** (version 2, inchangés en version 3, auxquels s'ajoutent les quatre défauts passés en
+avertissement ci-dessus ; identifiants de `MESURES.json`) :
 
 | Nature | Exemples | Pourquoi le contrôle lexical ne les voit pas |
 |---|---|---|
@@ -1423,7 +1497,7 @@ dans la section « Contexte » : c'est là que le contrôle ne regardait que les
 | Limite | Reproduite | Exemple minimal | Sort |
 |---|---|---|---|
 | paraphrase hors liste | oui (D18, C3, C7, C10, C14, C15 ; C2, D14) | « Journalier, il louait ses bras à la journée. » | partiellement corrigée : neuf généralisations ajoutées ; la causalité par paraphrase ou juxtaposition reste (`test_limite_paraphrase_hors_liste`) |
-| événement nommé sans année | oui (D8, D12, C9, C12, C5) | « Il meurt à la veille de la Révolution [3]. » | corrigée pour une liste fermée (`EVENEMENTS`) ; un événement hors liste ou évoqué sans nom reste (`test_limite_evenement_nomme_sans_annee`) |
+| événement nommé sans année | oui (D8, D12, C9, C12, C5) | « Il meurt à la veille de la Révolution [3]. » | corrigée pour une liste fermée (`EVENEMENTS`) ; un événement hors liste ou évoqué sans nom reste (`test_limite_evenement_nomme_sans_annee`) ; depuis #360, bloquant seulement sans note individuelle dans la phrase : D8, C9, C12 et C5 ne sont plus qu'avertis, D12 reste bloquant |
 | possessifs | pas dans les récits (les possessifs y portent des déductions sourcées ou des questions) ; oui sur exemple | « Son départ fut provoqué par la crise minière. » | corrigée pour une liste fermée de faits de vie (`POSSESSIFS`) ; un possessif hors liste reste |
 | pertinence d'une référence consultée | oui (P1) | une référence du registre sous un énoncé qu'elle ne porte pas : conforme | laissée : demande de lire la source ou de comparer l'énoncé à ce que l'outil a rendu (issue de suivi) |
 | phrase de contexte hors de la section « Contexte » d'un billet | oui (D5, D12 ; C1, C8 dans un récit) | « En 1906, l'année de la catastrophe minière qui endeuille sa commune natale [7], il réside… » | partiellement corrigée : `hors_section` (appel d'une note de contexte, événement nommé) ; un billet sans section « Contexte » n'est toujours pas contrôlé à la proposition (issue de suivi) |
@@ -1434,7 +1508,8 @@ proposé les ajouts : c'est une auto-évaluation. Le rédacteur connaissait les 
 ce document). Les listes de la version 2 sont ajustées sur ces mêmes récits : « 20 sur 35 » mesure cet ajustement,
 pas la détection sur un récit nouveau (la seule mesure hors échantillon est 2 sur 15). Aucune fausse alerte n'a été
 relevée, mais sur 14 textes seulement ; les ajouts (« toute sa vie », « tant d'autres », `bataille_de`, `hors_section`)
-signaleront aussi des phrases légitimes, par exemple un événement que la source individuelle nomme. La détection
+signaleront aussi des phrases légitimes, par exemple un événement que la source individuelle nomme (cas traité
+par #360 : avertissement non bloquant, au prix de quatre défauts réels qui ne bloquent plus). La détection
 reste lexicale : un récit déclaré conforme n'est pas un récit conforme, il reste à relire phrase par phrase contre
 ses sources. La recette avec réseau réel et la commande `/genealogiste:recit` lancée dans une session n'ont pas
 été exécutées.

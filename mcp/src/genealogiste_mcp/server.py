@@ -811,7 +811,9 @@ def contexte_verifier(texte: str = "", note: str = "", personne: str = "") -> di
     portée (années hors de la période de vie sourcée, lieux hors des lieux de vie), les connecteurs causaux appliqués
     à l'individu sans source individuelle et les formulations contraires au niveau de rattachement ou généralisantes.
     Rend {conforme, phrases_sans_reference, references_non_consultees, hors_portee, causalites, formulations,
-    mesures, limites}. conforme: false bloque la publication d'un billet ; conforme ne veut pas dire vrai."""
+    avertissements, mesures, limites}. conforme: false bloque la publication d'un billet ; conforme ne veut pas dire
+    vrai. avertissements (non bloquants, type evenement_source) : événement nommé dans une phrase du récit appuyée
+    par une source individuelle ; relire la source, garder la phrase seulement si elle nomme l'événement."""
     if bool(texte.strip()) == bool(note.strip()):
         return {"erreur": "donner texte OU note (id d'une fiche ou chemin relatif dans le répertoire des notes)"}
     a = app()
