@@ -975,11 +975,14 @@ avec l'étiquette `Blog`, et `modifier_source`) :
   et porte le nom d'une section (« Contexte », « Hypothèses », « Questions ouvertes », « Notes et sources »).
 
 Limites de cette garantie : elle tient à la présence d'une section « Contexte » (une phrase de contexte écrite dans
-le récit, hors de toute section « Contexte », n'est vue que si elle porte un connecteur causal ou une
-généralisation des listes, et seulement quand le texte a par ailleurs une section « Contexte ») ; un billet saisi
-dans l'interface de Gramps Web, ou arrivé par synchronisation (`gramps_synchroniser`, `gramps_tirer`), ne passe pas
-par ce contrôle ; les limites de `contexte_verifier` s'appliquent (contrôle lexical : conforme ne veut pas dire
-vrai).
+le récit, hors de toute section « Contexte », n'est vue que si elle porte un connecteur causal, une généralisation,
+un événement nommé des listes ou un appel vers une référence de contexte, et seulement quand le texte a par
+ailleurs une section « Contexte ») ; un billet saisi dans l'interface de Gramps Web n'est pas contrôlé : en backend
+`gramps` il est dans l'arbre et dans le miroir (`gramps_synchroniser`) tel quel, et seul son passage en public par
+le plugin est contrôlé ; en backend `fichier`, `gramps_tirer` passe par le contrôle sans pouvoir donner `personne`,
+si bien qu'un billet à section « Contexte » fait refuser tout le tirage (constat de #348, tests
+`test_limite_billet_*` de `tests/test_contexte_recits.py`) ; les limites de `contexte_verifier` s'appliquent
+(contrôle lexical : conforme ne veut pas dire vrai).
 
 **Vivants.** Règle existante, inchangée : récit refusé pour une personne présumée vivante, billet public qui en
 nomme une refusé, fiche masquée dans le coffre ; `contexte_local` et `pistes_contexte` n'envoient jamais de nom.
@@ -1021,16 +1024,18 @@ Aucun nom ne sort : l'outil est local, la garde des vivants (`GARDE_VIVANTS`) ne
 |---|---|---|
 | `phrases_sans_reference` | section « Contexte » | phrase sans appel de note ; « Contexte non documenté. » ou « contexte à documenter : … » en est dispensée |
 | `references_non_consultees` | notes appelées dans « Contexte » | appel sans note ; note sans identifiant pérenne lisible (DOI, ARK, HAL, PPN, Handle, LCCN, Europeana ; URL seulement à défaut) ; identifiant absent du **registre des références consultées** (référence de mémoire). Une note qui contient le titre d'une source de l'arbre citée pour un fait de la personne est une **source individuelle**, pas une référence de contexte |
-| `hors_portee` | « Contexte » | `periode` : année ou intervalle cité hors de la période de vie sourcée (anachronisme ; siècles en chiffres romains compris) ; `lieu` : département ou pays cité, hors guillemets, qui n'est pas un lieu de vie ; phrase appuyée sur une référence dont ni le texte ni le titre de la référence (registre) ne citent un lieu de vie (portée géographique non établie) ; période de vie inconnue : portée non vérifiable |
-| `causalites` | tout le texte, sauf questions (`?`) et hypothèses déclarées | connecteur causal ou motif prêté (liste `CONNECTEURS`) appliqué à l'individu (prénoms, nom, il, elle, ils, elles, lui ; tournures impersonnelles exclues) sans appel vers une source individuelle ; catégorie `causatif` (« le poussa à ») : toujours appliqué à l'individu |
-| `formulations` | tout le texte (`generalisation`) ; « Contexte » (autres) | `generalisation` : marqueur de la liste `GENERALISATIONS` ; `rattachement` : niveau déclaré `compatible` (« à la même époque et au même endroit ») ou `non_demontre` (« plus généralement », « à l'échelle du département… ») avec une affirmation sur l'individu, `atteste` (« (rattachement : attesté) ») sans source individuelle, ou affirmation sur l'individu appuyée sur une seule référence de contexte ; `mention` : élément d'échelle supérieure à la commune (département, pays de vie cités sans commune de vie) sans « tendance générale, ne prouve rien pour l'individu » |
+| `hors_portee` | « Contexte » | `periode` : année ou intervalle cité hors de la période de vie sourcée (anachronisme ; siècles en chiffres romains et événements nommés de la liste `EVENEMENTS` compris) ; `lieu` : département ou pays cité, hors guillemets, qui n'est pas un lieu de vie ; phrase appuyée sur une référence dont ni le texte ni le titre de la référence (registre) ne citent un lieu de vie (portée géographique non établie) ; période de vie inconnue : portée non vérifiable |
+| `causalites` | tout le texte, sauf questions (`?`) et hypothèses déclarées | connecteur causal ou motif prêté (liste `CONNECTEURS`) appliqué à l'individu (prénoms, nom, il, elle, ils, elles, lui, possessif suivi d'un fait de vie de la liste `POSSESSIFS` ; tournures impersonnelles exclues) sans appel vers une source individuelle ; catégorie `causatif` (« le poussa à ») : toujours appliqué à l'individu |
+| `formulations` | tout le texte (`generalisation`) ; récit, hors « Contexte », « Hypothèses », « Questions ouvertes » et notes (`hors_section`) ; « Contexte » (autres) | `generalisation` : marqueur de la liste `GENERALISATIONS` ; `hors_section` (#348) : phrase de contexte hors de sa section, reconnue à un appel vers une note de contexte (référence du registre, ou note appelée aussi dans « Contexte » ; une source de l'arbre n'en est pas une) ou à un événement nommé de la liste `EVENEMENTS`, sauf question ; `rattachement` : niveau déclaré `compatible` (« à la même époque et au même endroit ») ou `non_demontre` (« plus généralement », « à l'échelle du département… ») avec une affirmation sur l'individu, `atteste` (« (rattachement : attesté) ») sans source individuelle, ou affirmation sur l'individu appuyée sur une seule référence de contexte ; `mention` : élément d'échelle supérieure à la commune (département, pays de vie cités sans commune de vie) sans « tendance générale, ne prouve rien pour l'individu » |
 
 Hypothèse déclarée : section « Hypothèses », ou phrase au conditionnel (`aurait`, `serait`, `pourrait`, `devrait`),
 avec « peut-être », « il est possible que », « hypothèse ». Elle n'est pas contrôlée pour la causalité : c'est la
 forme exigée par la méthode (§ 5, 6).
 
-**Listes fermées** (`VERSION_LISTES = "1"`, `contexte/verifier.py`). Chaque entrée porte un exemple qui doit être
-signalé et un contre-exemple qui ne doit pas l'être, tous deux testés (`tests/test_contexte_verifier.py`).
+**Listes fermées** (`VERSION_LISTES = "2"`, `contexte/verifier.py`). Chaque entrée porte un exemple qui doit être
+signalé et un contre-exemple qui ne doit pas l'être, tous deux testés (`tests/test_contexte_verifier.py` ;
+`tests/test_contexte_recits.py` pour `EVENEMENTS` et `POSSESSIFS`). La version 2 (#348) ajoute neuf généralisations,
+la liste `EVENEMENTS` et la liste `POSSESSIFS`, d'après des récits réellement rédigés (« Recette du 2026-11-24 »).
 
 - `CONNECTEURS`, causal : à cause de, en raison de, poussé par, fuyant, c'est pourquoi, contraint par / de, fut (a
   été, est…) forcé de, se vit (fut…) obligé de, par conséquent, en conséquence, de ce fait, du fait de, grâce à,
@@ -1040,7 +1045,21 @@ signalé et un contre-exemple qui ne doit pas l'être, tous deux testés (`tests
   (conviction, nécessité, ambition, misère, devoir, amour, idéal, désespoir, vocation).
 - `GENERALISATIONS` : à cette époque, à l'époque, en ce temps-là, de tout temps, comme tous les, comme beaucoup
   de / la plupart de, comme ses contemporains, beaucoup de, la plupart des, en général, la vie était, était rythmée
-  par, dans cette région (ces campagnes), nos ancêtres, typique.
+  par, dans cette région (ces campagnes), nos ancêtres, typique ; version 2 : louait (vendait) ses bras, toute sa
+  vie, jamais (avoir) quitté, traversa (connut) … régimes / guerres / révolutions / règnes, comme les … de son âge
+  (temps, époque, condition, village…), cette (sa) génération, fait partie de ces, compte parmi les, tant d'autres.
+- `EVENEMENTS` (version 2 ; sensibles à la casse et aux accents, années entre parenthèses quand elles sont fixes) :
+  Révolution (française) (1789-1799), Ancien Régime (jusqu'à 1789), la Terreur (1793-1794), guerre(s) de Vendée
+  (1793-1796), guerres napoléoniennes / Premier Empire (1803-1815), Code civil (1804), la Restauration (1814-1830),
+  monarchie de Juillet (1830-1848), Second Empire (1852-1870), guerre franco-allemande / franco-prussienne
+  (1870-1871), Commune de Paris (1871), Grande Guerre / Première Guerre mondiale / guerre de 14 (1914-1918), Front
+  populaire (1936-1938), Seconde (Deuxième) Guerre mondiale / l'Occupation / la Libération (1939-1945), guerre de
+  Corée (1950-1953), guerre d'Algérie (1954-1962), États généraux (1789) ; sans année : bataille (offensive, siège)
+  de + nom propre, entrer (entrée) en guerre. Dans « Contexte », leurs années comptent pour la portée ; dans le
+  récit, l'événement est signalé `hors_section`.
+- `POSSESSIFS` (version 2) : son, sa, ses, leur(s) + départ, émigration, immigration, migration, exil, fuite,
+  installation, arrivée, retour, venue, engagement, enrôlement, choix, décision, mariage, union, métier, décès,
+  mort, disparition, parcours, destin, sort : la phrase vise l'individu (« son départ fut provoqué par… »).
 - Formules : `FORMULE_COMPATIBLE`, `FORMULE_NON_DEMONTRE`, `FORMULE_ATTESTE`, `MENTION`, `ECHELLE_SUPERIEURE`,
   `HYPOTHESE`, `IMPERSONNELS` ; unités (`UNITES`) qui font d'un nombre autre chose qu'une année (« 1099 morts »).
 
@@ -1050,14 +1069,14 @@ relancer `tests/test_contexte_verifier.py` et l'évaluation ci-dessous (aucun fa
 **Sortie.**
 
 ```json
-{"outil": "contexte_verifier", "personne": "I1", "version_listes": "1", "conforme": false,
+{"outil": "contexte_verifier", "personne": "I1", "version_listes": "2", "conforme": false,
  "contexte": "present | non_documente | absent", "publication_billet": "bloquée (conforme: false)",
  "phrases_sans_reference": [{"phrase": "…", "section": "Contexte"}],
  "references_non_consultees": [{"appel": "6", "identifiant": "doi:10.…", "note": "…", "phrase": "…", "motif": "…"}],
  "hors_portee": [{"phrase": "…", "type": "periode", "annees": [[1950, 1950]], "motif": "…"},
                  {"phrase": "…", "type": "lieu", "lieux": ["Belgique"], "motif": "…"}],
  "causalites": [{"phrase": "…", "section": "Récit", "connecteur": "a_cause_de", "categorie": "causal", "motif": "…"}],
- "formulations": [{"phrase": "…", "type": "generalisation | rattachement | mention", "marqueur": "…", "niveau": "…",
+ "formulations": [{"phrase": "…", "type": "generalisation | rattachement | mention | hors_section", "marqueur": "…", "niveau": "…",
                    "motif": "…"}],
  "mesures": {"phrases_contexte": 3, "phrases_sourcees": 3, "part_phrases_sourcees": 1.0, "references_citees": 3,
              "references_consultees": 3, "part_references_consultees": 1.0, "anachronismes": 0,
@@ -1084,13 +1103,19 @@ l'utilisateur avec les phrases à corriger. L'appel par le `redacteur`, le `veri
 - « consultée » = présente au registre : le contrôle ne lit pas la source, ni la page citée, ni la pertinence de la
   référence pour la phrase (une notice de 1994 peut appuyer à tort une phrase sur 1914) ;
 - période : années à quatre chiffres (1000-2099) et siècles romains ; un nombre suivi d'une unité ou précédé de
-  « n° », « p. » n'est pas une année ; une date en lettres ou un événement nommé sans année (« la Révolution ») n'est
-  pas vu ;
+  « n° », « p. » n'est pas une année ; une date en lettres n'est pas vue ; un événement nommé sans année n'est vu que
+  s'il est dans `EVENEMENTS` (« la guerre », « la catastrophe », un règne, une institution d'époque ne le sont pas) ;
 - lieux : seuls les départements français et les pays de la table fermée de `normalize/pays.py` sont reconnus dans le
   texte, sensibles à la casse (« la Somme », rivière ou département ; « Somme toute ») ; une province, une région ou
   une commune étrangère au récit n'est vue que si rien d'autre ne situe la phrase ;
-- l'individu est reconnu par ses prénoms, son nom et les pronoms personnels ; une tournure possessive (« son
-  départ ») n'est pas vue ; un « il » qui désigne autre chose que l'individu peut faire signaler une phrase ;
+- l'individu est reconnu par ses prénoms, son nom, les pronoms personnels et un possessif suivi d'un fait de vie de
+  la liste `POSSESSIFS` ; un autre possessif (« sa trace »), un pronom complément (« le trouver ») ne sont pas vus ;
+  un « il » ou un possessif de la liste qui désigne autre chose que l'individu peut faire signaler une phrase ;
+- phrase de contexte hors de la section « Contexte » : vue seulement par un appel vers une note de contexte ou un
+  événement de `EVENEMENTS` ; un contexte écrit de mémoire dans le récit sans l'un ni l'autre (« loin des siens »,
+  « un autre pays noir »), un détail de vie inventé, un fait déformé ne sont pas vus : le contrôle ne lit pas les
+  sources de l'arbre, et ne contrôle pas que chaque phrase du récit porte une note ;
+- section « Hypothèses » : non contrôlée (une hypothèse d'intuition, absente de `pistes_contexte`, n'est pas vue) ;
 - source individuelle : reconnue au titre d'une source de l'arbre ; le contrôle ne vérifie pas que cette source dit
   la cause affirmée ;
 - les énoncés entre guillemets ne sont pas lus comme affirmation : une affirmation glissée dans des guillemets échappe
@@ -1164,3 +1189,82 @@ du `.ged` de `mcp/tests/fixtures/contexte/` dans un répertoire de données jeta
    100 % de phrases sourcées, 100 % de références consultées, 0 anachronisme, 0 causalité non sourcée ; pour le lieu
    non documenté (et le soldat), aucune section « Contexte » et « contexte à documenter » dans les questions
    ouvertes.
+
+### Recette du 2026-11-24 : récits réellement rédigés
+
+<!-- #348 -->
+
+Première exécution de la recette (b), **hors ligne** : pour chaque cas témoin, une `App` isolée sur une copie du
+`.ged`, les outils appelés comme le fait `/genealogiste:recit` (`arbre_vivant`, `arbre_fiche`, `contexte_local`,
+`pistes_contexte`, `contexte_bibliographie`, `lieu_historique`, `presse_recherche`), le réseau rejoué depuis les
+réponses enregistrées (plan de rejeu de `textes/ATTENDUS.json` : thème « prieur » pour le cultivateur, « guerre »
+pour le soldat). Écart avec la recette décrite ci-dessus : pas de réseau réel à l'étape 1, et pas de session
+Claude Code lançant la commande ; le récit est rédigé par un modèle (claude-fable-5-2) à qui l'on donne
+`agents/redacteur.md` et les sorties d'outils, d'un jet, sans retouche après contrôle. `presse_recherche` n'a rien
+rendu (Gallica bloqué ou 404 dans les réponses enregistrées) : aucune référence de presse n'a été évaluée.
+
+Jeu : `mcp/tests/fixtures/contexte/recits/` (14 récits, `MESURES.json`), testé par `tests/test_contexte_recits.py`.
+
+| Lot | Récits | Consigne de rédaction |
+|---|---|---|
+| premier | `naturel` (4), `fluide` (4), `billet` (mineur, cultivateur) | consigne suivie strictement ; consigne suivie en cherchant la fluidité littéraire ; format billet |
+| contre-épreuve | `contre_epreuve` (4) | récit volontairement relâché (le style prime sur la consigne), écrit après le dépouillement du premier lot et avant toute modification du code |
+
+Chaque récit est passé à `contexte_verifier`, puis relu à la main phrase par phrase contre les règles du jalon
+(référence citée seulement si elle est au registre ; le contexte oriente et ne conclut pas ; aucune généralisation
+appliquée à l'individu sans source ; faits, déductions et hypothèses distingués ; consigne du `redacteur`).
+
+**Mesures** (phrases hors notes ; défauts relevés à la main ; « détectés » : la phrase fautive est signalée) :
+
+| Cas | Récits | Phrases | Défauts | Détectés, listes v1 | Détectés après le premier lot d'ajouts | Détectés, listes v2 | Échappés (v2) | Fausses alertes (v1 / v2) |
+|---|---|---|---|---|---|---|---|---|
+| mineur | 4 | 64 | 11 | 2 | 4 | 6 | 5 | 0 / 0 |
+| cultivateur | 4 | 42 | 11 | 1 | 5 | 7 | 4 | 0 / 0 |
+| soldat | 3 | 27 | 7 | 0 | 0 | 2 | 5 | 0 / 0 |
+| lieu non documenté | 3 | 23 | 6 | 0 | 3 | 5 | 1 | 0 / 0 |
+| **total** | 14 | 156 | 35 | 3 | 12 | 20 | 15 | 0 / 0 |
+
+Par lot : premier lot, 20 défauts, 3 détectés en v1, 10 en v2 ; contre-épreuve, 15 défauts, 0 détecté en v1, 2 après
+les ajouts tirés du premier lot (seule mesure hors échantillon : les deux appels de référence hors section), 10
+après les ajouts tirés de la contre-épreuve elle-même. Avec les listes de la version 1, le contrôle voyait
+3 défauts sur 35, et **12 des 14 récits étaient déclarés conformes**, dont les quatre contre-épreuves, les deux
+billets et les récits fluides du soldat et du lieu non documenté ; avec la version 2, 20 sur 35, et 5 récits sont
+déclarés conformes : les quatre `naturel` (celui du cultivateur porte le défaut de pertinence P1) et le `fluide` du
+soldat, qui garde quatre défauts non vus.
+
+Ce qui tient dans tous les récits, y compris relâchés : aucune référence de mémoire (toute note de contexte est au
+registre : 100 %), aucune année hors période dans « Contexte », pas de section « Contexte » pour le soldat ni le
+lieu non documenté, « contexte à documenter » dans les questions ouvertes. Les défauts sont **dans le récit**, pas
+dans la section « Contexte » : c'est là que le contrôle ne regardait que les connecteurs et les généralisations.
+
+**Défauts échappés restants** (version 2 ; identifiants de `MESURES.json`) :
+
+| Nature | Exemples | Pourquoi le contrôle lexical ne les voit pas |
+|---|---|---|
+| contexte de mémoire dans le récit, sans note ni événement de la liste | « au cœur d'un autre pays noir » (C6), « quatre mois après la catastrophe » (C4), « deux années de guerre » (D15), « l'heure du conseil de révision » (D13) | aucune marque lexicale fermée ; demanderait de contrôler chaque phrase du récit contre les faits de l'arbre |
+| détail de vie ou sentiment inventé | « loin des siens » (D16), « il rejoint le front avec les hommes de sa classe » (C11), « a vu son village se vider » (C16) | idem |
+| fait déformé | « il tient un enfant sur les fonts d'une sépulture où le curé le qualifie de laboureur » (D7) | le contrôle ne lit pas les sources de l'arbre |
+| causalité par paraphrase ou juxtaposition, déduction non fondée | « Rien d'étonnant, dès lors, à le trouver mineur » (C2), « Il n'aura guère le temps d'exercer ce métier : … mobilisé » (D14), « Il ne reviendra sans doute pas en France, puisqu'il s'éteint… [5] » (D1) | paraphrase hors liste ; une note individuelle dans la phrase dispense du contrôle de causalité |
+| section « Hypothèses » | hypothèse d'intuition absente de `pistes_contexte` (D11), paraphrase qui ajoute à un énoncé (D4) | section non contrôlée |
+| section « Contexte » | phrase hors gabarit, commentaire ajouté à l'énoncé (D10) ; deux notices du même imprimé comptées comme deux éléments sourcés (P1) | la formule de rattachement n'est pas exigée ; la pertinence d'une référence n'est pas jugée |
+
+**Limites examinées** (#348) :
+
+| Limite | Reproduite | Exemple minimal | Sort |
+|---|---|---|---|
+| paraphrase hors liste | oui (D18, C3, C7, C10, C14, C15 ; C2, D14) | « Journalier, il louait ses bras à la journée. » | partiellement corrigée : neuf généralisations ajoutées ; la causalité par paraphrase ou juxtaposition reste (`test_limite_paraphrase_hors_liste`) |
+| événement nommé sans année | oui (D8, D12, C9, C12, C5) | « Il meurt à la veille de la Révolution [3]. » | corrigée pour une liste fermée (`EVENEMENTS`) ; un événement hors liste ou évoqué sans nom reste (`test_limite_evenement_nomme_sans_annee`) |
+| possessifs | pas dans les récits (les possessifs y portent des déductions sourcées ou des questions) ; oui sur exemple | « Son départ fut provoqué par la crise minière. » | corrigée pour une liste fermée de faits de vie (`POSSESSIFS`) ; un possessif hors liste reste |
+| pertinence d'une référence consultée | oui (P1) | une référence du registre sous un énoncé qu'elle ne porte pas : conforme | laissée : demande de lire la source ou de comparer l'énoncé à ce que l'outil a rendu (issue de suivi) |
+| phrase de contexte hors de la section « Contexte » d'un billet | oui (D5, D12 ; C1, C8 dans un récit) | « En 1906, l'année de la catastrophe minière qui endeuille sa commune natale [7], il réside… » | partiellement corrigée : `hors_section` (appel d'une note de contexte, événement nommé) ; un billet sans section « Contexte » n'est toujours pas contrôlé à la proposition (issue de suivi) |
+| billet saisi dans Gramps Web ou arrivé par synchronisation | oui, et constat nouveau | billet fautif saisi dans l'interface : présent dans l'arbre et le miroir sans contrôle (backend `gramps`) ; `gramps_tirer` refusé en entier faute de `personne` (backend `fichier`) | laissée : demande une conception (où contrôler, comment désigner la personne, que faire d'un billet non conforme déjà en base) ; issue de suivi |
+
+**Portée de cette recette.** Quatorze récits, un seul modèle, et le même modèle a rédigé, relevé les défauts et
+proposé les ajouts : c'est une auto-évaluation. Le rédacteur connaissait les listes de la version 1 (elles sont dans
+ce document). Les listes de la version 2 sont ajustées sur ces mêmes récits : « 20 sur 35 » mesure cet ajustement,
+pas la détection sur un récit nouveau (la seule mesure hors échantillon est 2 sur 15). Aucune fausse alerte n'a été
+relevée, mais sur 14 textes seulement ; les ajouts (« toute sa vie », « tant d'autres », `bataille_de`, `hors_section`)
+signaleront aussi des phrases légitimes, par exemple un événement que la source individuelle nomme. La détection
+reste lexicale : un récit déclaré conforme n'est pas un récit conforme, il reste à relire phrase par phrase contre
+ses sources. La recette avec réseau réel et la commande `/genealogiste:recit` lancée dans une session n'ont pas
+été exécutées.
