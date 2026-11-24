@@ -114,7 +114,8 @@ def test_verifier_par_defaut_n_ecrit_rien(racine, reseau, capsys):
     assert code == 0 and _instantane(racine) == avant, sortie
     assert "DERIVE" not in sortie and "OK" in sortie
     rejouables = {str(httpx.URL(e["url"])) for _, s, e in _entrees(racine)
-                  if e.get("fichier") and e["statut"] < 400 and e.get("rejouable") is not False}
+                  if e.get("fichier") and e["statut"] < 400 and e.get("rejouable") is not False
+                  and s.upper() not in rec.EN_TETES_CLE}  # service à clé : jamais rejoué sans clé (#343)
     assert set(reseau.appels) == rejouables and len(reseau.appels) == len(rejouables)
     # ni service protégé (403 enregistré), ni extrait manuel n'ont été sollicités
     assert not any("gallica.bnf.fr" in u or "loc.gov" in u or "retronews" in u or "europeana" in u
@@ -242,3 +243,106 @@ def test_ecrire_ne_touche_pas_aux_services_non_choisis(racine, reseau, capsys):
     ref = _instantane(REPONSES)
     now = _instantane(racine)
     assert {k for k in ref if ref[k] != now[k]} <= {"WIKIDATA/MANIFESTE.json", "WIKIDATA/sparql_P374_62133.json"}
+
+
+# ------------------------------------------------------------------- service à clé personnelle (#343)
+
+CLE = "cle-europeana-tres-secrete"  # factice, comme tests/test_sources_contexte.py
+EUROPEANA = "api-recherche-courrieres-1850-1950.json"
+
+
+def _europeana_du_service(racine: Path, nom: str = EUROPEANA) -> bytes:
+    """Réponse enregistrée telle que le service la rend : il y répète la clé reçue."""
+    d = json.loads((REPONSES / "EUROPEANA" / nom).read_text(encoding="utf-8"))
+    d = {"apikey": CLE, "requestNumber": 12, **d}
+    for item in d["items"]:
+        item["link"] = f"https://api.europeana.eu/record{item['id']}.json?wskey={CLE}"
+        item["guid"] += f"?utm_campaign={CLE}"
+    return json.dumps(d, ensure_ascii=False).encode("utf-8")
+
+
+def _lancer_avec_cle(racine, *args, capsys, corps=None, cles=None):
+    """Rejeu d'Europeana seul : (code, sortie, requêtes reçues)."""
+    recues: list[httpx.Request] = []
+
+    def repondre(requete):
+        recues.append(requete)
+        nom = EUROPEANA if "Courri" in str(requete.url) and "newspaper" not in str(requete.url) else \
+            "api-presse-greve-mineurs-1906-vide.json"
+        return httpx.Response(200, content=corps or _europeana_du_service(racine, nom),
+                              headers={"Content-Type": "application/json;charset=UTF-8"})
+
+    with respx.mock(assert_all_called=False) as router:
+        router.route().mock(side_effect=repondre)
+        with httpx.Client() as client:
+            code = rec.main(["--service", "EUROPEANA", *args], client=client, racine=racine, dormir=lambda s: None,
+                            cles={"EUROPEANA": CLE} if cles is None else cles)
+    return code, capsys.readouterr().out, recues
+
+
+def test_service_a_cle_jamais_rejoue_sans_cle(racine, capsys):
+    avant = _instantane(racine)
+    code, sortie, recues = _lancer_avec_cle(racine, "--ecrire", capsys=capsys, cles={})
+    assert code == 0 and not recues and "clé d'API personnelle absente" in sortie
+    assert _instantane(racine) == avant
+
+
+def test_cle_en_en_tete_jamais_dans_l_url_la_sortie_ni_les_fichiers(racine, capsys):
+    avant = _instantane(racine)
+    code, sortie, recues = _lancer_avec_cle(racine, "--ecrire", capsys=capsys)
+    assert code == 0 and "DERIVE" not in sortie and sortie.count("; réécrit\n") == 2
+    assert len(recues) == 2  # les deux réponses de la Search API ; ni le site public ni le corps non conservé
+    for requete in recues:
+        assert requete.headers["X-Api-Key"] == CLE and CLE not in str(requete.url)
+    assert CLE not in sortie
+    assert all(CLE.encode() not in p.read_bytes() for p in racine.rglob("*") if p.is_file())
+    apres = _instantane(racine)
+    for nom in (EUROPEANA, "api-presse-greve-mineurs-1906-vide.json"):
+        assert apres[f"EUROPEANA/{nom}"] == avant[f"EUROPEANA/{nom}"]  # réduction exacte : fichier inchangé
+    manifeste = json.loads((racine / "EUROPEANA" / "MANIFESTE.json").read_text(encoding="utf-8"))
+    entree = next(e for e in manifeste["reponses"] if e["fichier"] == EUROPEANA)
+    assert entree["octets_origine"] > 0 and isinstance(entree["duree_s"], float)
+
+
+def test_cle_restee_dans_la_reponse_reduite_rien_n_est_ecrit(racine, capsys):
+    """Le service répète la clé dans un champ que la réduction ne connaît pas : dérive, aucun fichier écrit."""
+    d = json.loads(_europeana_du_service(racine))
+    d["items"][0]["champ_nouveau"] = f"https://exemple.org/?cle={CLE}"
+    avant = _instantane(racine)
+    code, sortie, _ = _lancer_avec_cle(racine, "--ecrire", capsys=capsys, corps=json.dumps(d).encode("utf-8"))
+    assert code == 1 and "contient encore la clé" in sortie and CLE not in sortie
+    assert _instantane(racine) == avant
+
+
+def test_premier_enregistrement_seulement_avec_ecrire(racine, capsys):
+    (racine / "EUROPEANA" / EUROPEANA).unlink()
+    code, sortie, recues = _lancer_avec_cle(racine, capsys=capsys)  # --verifier : pas de requête pour un fichier absent
+    assert code == 0 and len(recues) == 1 and "pas encore enregistrée" in sortie
+    code, sortie, _ = _lancer_avec_cle(racine, "--ecrire", capsys=capsys)
+    assert code == 0 and "premier enregistrement" in sortie
+    assert (racine / "EUROPEANA" / EUROPEANA).read_bytes() == (REPONSES / "EUROPEANA" / EUROPEANA).read_bytes()
+
+
+def test_erreur_du_service_message_sans_cle(racine, capsys):
+    corps = json.dumps({"success": False, "error": f"Invalid query for key {CLE}"}).encode("utf-8")
+    recues = []
+
+    def repondre(requete):
+        recues.append(requete)
+        return httpx.Response(400, content=corps, headers={"Content-Type": "application/json"})
+
+    avant = _instantane(racine)
+    with respx.mock(assert_all_called=False) as router:
+        router.route().mock(side_effect=repondre)
+        with httpx.Client() as client:
+            code = rec.main(["--service", "EUROPEANA", "--ecrire"], client=client, racine=racine,
+                            dormir=lambda s: None, cles={"EUROPEANA": CLE})
+    sortie = capsys.readouterr().out
+    assert code == 0 and len(recues) == 1  # service laissé de côté après le premier refus
+    assert "HTTP 400" in sortie and "Invalid query" in sortie and CLE not in sortie
+    assert _instantane(racine) == avant
+
+
+def test_contient_secret_formes_encodees():
+    assert rec.contient_secret(b"x cle%2Bsecrete y", "cle+secrete") and rec.contient_secret(b"cle+secrete", "cle+secrete")
+    assert not rec.contient_secret(b"rien", "cle") and not rec.contient_secret(b"rien", "")

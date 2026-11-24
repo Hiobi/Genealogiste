@@ -310,8 +310,8 @@
    "site_repond_le": "2026-11-23",
    "verifie_le": "",
    "origine": "relevé curl du 2026-11-21 (#285) ; sondage du 2026-11-23 (une requête GET, sans clé)",
-   "releve": "2026-11-21 : 200 avec la clé de démonstration ; 2026-11-23 : 400 sans clé ; 2026-11-24 : clé de démonstration plus publiée par la documentation, non utilisée",
-   "notes": "Clé personnelle requise, gratuite, à demander depuis son compte europeana.eu (« Manage API keys ») ; en-tête X-Api-Key préféré, paramètre wskey déprécié ; aucune clé de démonstration embarquée ni utilisée. Analyseur non livré (#343)."
+   "releve": "2026-11-21 : 200 avec la clé de démonstration ; 2026-11-23 : 400 sans clé ; 2026-11-24 : clé de démonstration plus publiée par la documentation, non utilisée ; 2026-11-24 : 200 JSON avec une clé personnelle en en-tête X-Api-Key",
+   "notes": "Clé personnelle requise, gratuite, à demander depuis son compte europeana.eu (« Manage API keys ») ; en-tête X-Api-Key préféré, paramètre wskey déprécié ; aucune clé de démonstration embarquée ni utilisée. Interrogé par presse_recherche (#343) : clé en en-tête, recherche sur les notices (le texte des journaux n'est pas cherché), réponse épurée de la clé avant le cache."
   },
   {
    "code": "NAKALA",

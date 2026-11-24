@@ -18,6 +18,12 @@ le jour de l'enregistrement) n'est pas rejouée. Les réductions de ``REDUCTIONS
 (clés retirées, lignes filtrées, couches extraites) ; une réponse sans réducteur (extrait fait à la main) n'est pas
 rejouée.
 
+Clé d'API (#343) : un service de ``EN_TETES_CLE`` (Europeana) n'est rejoué qu'avec la clé personnelle de
+l'utilisateur, lue par la configuration du plugin (``<données>/.env``) et envoyée en en-tête, jamais dans l'URL ni
+dans un fichier. Sans clé : IGNORE. La réduction retire les champs où le service répète la clé ; une réponse
+réduite qui la contiendrait encore n'est jamais écrite (DERIVE). Une entrée de manifeste dont le fichier n'existe
+pas encore est enregistrée par ``--ecrire`` (premier enregistrement).
+
 Usage : uv run python scripts/enregistrer_contexte.py [--verifier | --ecrire] [--service CODE]... [--intervalle S]
 
 Verdicts : OK (forme conforme), DERIVE (champ de la réponse enregistrée absent de la réponse actuelle : le service
@@ -40,11 +46,12 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import NamedTuple
-from urllib.parse import urlsplit
+from urllib.parse import quote, quote_plus, urlsplit
 
 import httpx
 
 from genealogiste_mcp.contexte.lieux import COUCHES
+from genealogiste_mcp.contexte.presse import epurer_europeana
 
 FIXTURES = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "contexte"
 REPONSES = FIXTURES / "reponses"
@@ -56,6 +63,9 @@ CODES_COG = ("03029", "14005", "14074", "41016", "62132", "62133")  # communes d
 COUCHE_ETAT_MAJOR_1900 = "GEOGRAPHICALGRIDSYSTEMS.1900TYPEMAPS"
 INTERDITS_URL = re.compile(r"(?i)(?:^|[?&;])(?:api[_-]?key|wskey|key|token|apikey|mailto|access[_-]?token)=|@")
 STATUTS_CONSIGNES = (401, 403, 429)
+# Service -> en-tête qui porte la clé d'API personnelle (jamais un paramètre d'URL : ``wskey`` est déprécié par
+# Europeana et une URL se retrouve dans les manifestes). La valeur vient de la configuration du plugin.
+EN_TETES_CLE = {"EUROPEANA": "X-Api-Key"}
 
 
 # --------------------------------------------------------------------------------------------- noms de personnes
@@ -130,6 +140,20 @@ def _theses(corps: bytes) -> bytes:
                     "partenairesDeRecherche"):
             t.pop(cle, None)
     return _ecrire_json(d, True)
+
+
+def _europeana(corps: bytes) -> bytes:
+    """Search API d'Europeana : ``apikey`` (la clé, répétée par le service), ``requestNumber`` (compteur du compte)
+    et tout champ ``link`` (URL de la notice JSON portant ``wskey=<clé>``) retirés, paramètres d'URL de ``guid``
+    retirés (``utm_campaign`` reprend la clé). Même épuration que celle du plugin avant sa mise en cache."""
+    return _ecrire_json(epurer_europeana(_json(corps)), True)
+
+
+def contient_secret(corps: bytes, secret: str) -> bool:
+    """Vrai si ``corps`` contient ``secret`` sous forme brute ou encodée pour une URL."""
+    if not secret:
+        return False
+    return any(f.encode("utf-8") in corps for f in {secret, quote(secret, safe=""), quote_plus(secret, safe="")})
 
 
 def _melodi_catalogue(corps: bytes) -> bytes:
@@ -280,6 +304,9 @@ REDUCTIONS: dict[tuple[str, str], Callable[[bytes], bytes]] = {
     ("SUDOC", "saint-amand-belloy-guerre.xml"): _sudoc,
     ("BNF-CATALOGUE", "vouille-les-marais-prieur.xml"): lambda c: c,
     ("THESES-FR", "saint-amand-montrond-forgeron.json"): _theses,
+    # presse_recherche : analyseur Europeana (#343), enregistré avec une clé personnelle en en-tête
+    ("EUROPEANA", "api-recherche-courrieres-1850-1950.json"): _europeana,
+    ("EUROPEANA", "api-presse-greve-mineurs-1906-vide.json"): _europeana,
 }
 
 
@@ -344,7 +371,9 @@ class Enregistreur:
 
     def __init__(self, client: httpx.Client, racine: Path, *, ecrire: bool, intervalle: float = INTERVALLE,
                  dormir: Callable[[float], None] = time.sleep, horloge: Callable[[], float] = time.monotonic,
-                 maintenant: Callable[[], datetime] = lambda: datetime.now(UTC)):
+                 maintenant: Callable[[], datetime] = lambda: datetime.now(UTC),
+                 cles: dict[str, str] | None = None):
+        self.cles = {k.upper(): v for k, v in (cles or {}).items() if v}  # jamais affichées ni écrites
         self.client, self.racine, self.ecrire, self.intervalle = client, Path(racine), ecrire, intervalle
         self.dormir, self.horloge, self.maintenant = dormir, horloge, maintenant
         self.derniere: dict[str, float] = {}
@@ -357,13 +386,15 @@ class Enregistreur:
                 self.dormir(reste)
         self.derniere[hote] = self.horloge()
 
-    def _obtenir(self, url: str) -> tuple[httpx.Response | None, str]:
+    def _obtenir(self, url: str, en_tetes: dict | None = None) -> tuple[httpx.Response | None, str]:
         """(réponse, motif de consignation) : motif non vide pour un silence, un défi anti-robot, 401/403/429, 5xx."""
         from genealogiste_mcp.http import _protection
 
         self._attendre(urlsplit(url).hostname or "")
         try:
-            reponse = self.client.get(url, headers={"User-Agent": UA}, timeout=DELAI)
+            # Une clé en en-tête ne suit aucune redirection (elle partirait vers une autre origine).
+            suivre = {"follow_redirects": False} if en_tetes else {}
+            reponse = self.client.get(url, headers={"User-Agent": UA, **(en_tetes or {})}, timeout=DELAI, **suivre)
         except httpx.HTTPError as exc:
             return None, f"pas de réponse ({type(exc).__name__})"
         if protection := _protection(reponse):
@@ -399,20 +430,33 @@ class Enregistreur:
             return res("IGNORE", "extrait manuel ou corps non conservé : non rejoué")
         if motif := controle_url(entree["url"]):
             return res("IGNORE", f"requête refusée : {motif}")
-        reponse, motif = self._obtenir(entree["url"])
+        en_tete, secret = EN_TETES_CLE.get(service.upper()), self.cles.get(service.upper(), "")
+        if en_tete and not secret:
+            return res("IGNORE", f"clé d'API personnelle absente (en-tête {en_tete}) : non rejoué")
+        nouveau = not (dossier / fichier).is_file()
+        if nouveau and not self.ecrire:
+            return res("IGNORE", "réponse pas encore enregistrée (--ecrire pour le premier enregistrement)")
+        debut = self.horloge()
+        reponse, motif = self._obtenir(entree["url"], {en_tete: secret} if en_tete else None)
+        duree = round(self.horloge() - debut, 1)
         if motif:
             self.de_cote[service] = motif
             return res("AVERT", f"{motif} ; service laissé de côté, consigné")
         if reponse.status_code != entree["statut"]:
             self.de_cote[service] = f"HTTP {reponse.status_code}"
-            return res("AVERT", f"HTTP {reponse.status_code} au lieu de {entree['statut']} : consigné, rien écrit")
+            return res("AVERT", f"HTTP {reponse.status_code} au lieu de {entree['statut']} : consigné, rien écrit"
+                       + _message_erreur(reponse, secret))
         try:
             reduit = reduire(service, fichier, reponse.content)
         except (ValueError, KeyError, ET.ParseError) as exc:
             return res("DERIVE", f"réduction impossible, la réponse n'a plus la forme attendue ({exc})")
-        stocke = (dossier / fichier).read_bytes()
-        avant, apres = forme(fichier, stocke), forme(fichier, reduit)
-        if avant is None or apres is None:
+        if contient_secret(reduit, secret):
+            return res("DERIVE", "la réponse réduite contient encore la clé d'API : rien écrit, compléter la réduction")
+        avant = None if nouveau else forme(fichier, (dossier / fichier).read_bytes())
+        apres = forme(fichier, reduit)
+        if nouveau:
+            verdict, detail = "OK", "premier enregistrement"
+        elif avant is None or apres is None:
             verdict, detail = "OK", "forme non comparable (statut seul)"
         elif avant - apres:
             manque = sorted(avant - apres)
@@ -430,9 +474,25 @@ class Enregistreur:
                           type=reponse.headers.get("Content-Type", entree.get("type", "")),
                           octets_origine=len(reponse.content),
                           empreinte="sha256:" + hashlib.sha256(reduit).hexdigest())
+            if "duree_s" in entree:
+                entree["duree_s"] = duree
             ecrit = True
             detail += " ; réécrit"
         return res(verdict, detail, ecrit)
+
+
+def _message_erreur(reponse: httpx.Response, secret: str) -> str:
+    """Message d'erreur JSON du service (champs ``error`` / ``message``), clé masquée ; vide sinon."""
+    try:
+        d = reponse.json()
+    except ValueError:
+        return ""
+    if not isinstance(d, dict):
+        return ""
+    texte = " ; ".join(str(d[k]) for k in ("error", "message") if isinstance(d.get(k), str | int))[:300]
+    for forme_ in {secret, quote(secret, safe=""), quote_plus(secret, safe="")} - {""}:
+        texte = texte.replace(forme_, "***")
+    return f" ({texte})" if texte else ""
 
 
 def manifestes(racine: Path, services: list[str] | None = None) -> list[tuple[Path, dict]]:
@@ -447,8 +507,17 @@ def manifestes(racine: Path, services: list[str] | None = None) -> list[tuple[Pa
     return out
 
 
+def cles_configurees() -> dict[str, str]:
+    """Clés d'API personnelles de la configuration du plugin (environnement, ``<données>/.env``), pour les seuls
+    services de ``EN_TETES_CLE``. Jamais affichées."""
+    from genealogiste_mcp.config import load_config
+
+    cles = load_config().cles_contexte
+    return {code: cles[code] for code in EN_TETES_CLE if cles.get(code)}
+
+
 def main(argv: list[str] | None = None, *, client: httpx.Client | None = None, racine: Path = REPONSES,
-         dormir: Callable[[float], None] = time.sleep) -> int:
+         dormir: Callable[[float], None] = time.sleep, cles: dict[str, str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     mode = ap.add_mutually_exclusive_group()
     mode.add_argument("--verifier", action="store_true", help="compare la forme, n'écrit rien (défaut)")
@@ -463,10 +532,13 @@ def main(argv: list[str] | None = None, *, client: httpx.Client | None = None, r
         print(f"service(s) sans manifeste : {', '.join(sorted(inconnus))}", file=sys.stderr)
         return 2
     propre = client is None
+    if cles is None:  # exécution réelle : clés de la configuration ; client fourni (tests) : aucune clé lue
+        cles = cles_configurees() if propre else {}
     client = client or httpx.Client(follow_redirects=True, max_redirects=5)
     derives = 0
     try:
-        rec = Enregistreur(client, racine, ecrire=args.ecrire, intervalle=args.intervalle, dormir=dormir)
+        rec = Enregistreur(client, racine, ecrire=args.ecrire, intervalle=args.intervalle, dormir=dormir,
+                           cles=cles)
         for dossier, manifeste in liste:
             for r in rec.traiter(dossier, manifeste):
                 derives += r.verdict == "DERIVE"

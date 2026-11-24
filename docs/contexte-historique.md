@@ -245,7 +245,7 @@ l'analyseur précise notice par notice.
 | `DATA-BNF` | data.bnf.fr (SPARQL) | sparql | aucune | index | FR | actif par défaut | 2026-11-21 : 200 JSON ; 2026-11-23 : 302 sans paramètre |
 | `OPENALEX` | OpenAlex (API works) | rest | facultative | index | INT | actif par défaut | 2026-11-21 : 200 JSON (sans clé : budget quotidien partagé par adresse IP) ; 2026-11-23 : 200 |
 | `CROSSREF` | Crossref (API works) | rest | aucune (`mailto` facultatif) | index | INT | actif par défaut | 2026-11-21 : 200 JSON ; 2026-11-23 : 200 |
-| `EUROPEANA` | Europeana (Search API) | rest | requise | primaire | EU | clé requise, à activer | 2026-11-21 : 200 avec la clé de démonstration (non embarquée) ; 2026-11-23 : 400 sans clé ; 2026-11-24 : la documentation d'Europeana ne publie plus de clé de démonstration, elle n'est pas utilisée ; [clé personnelle](#clé-personnelle-europeana) |
+| `EUROPEANA` | Europeana (Search API) | rest | requise | primaire | EU | clé requise, à activer | 2026-11-21 : 200 avec la clé de démonstration (non embarquée) ; 2026-11-23 : 400 sans clé ; 2026-11-24 : la documentation d'Europeana ne publie plus de clé de démonstration, elle n'est pas utilisée ; 2026-11-24 : 200 JSON avec une [clé personnelle](#clé-personnelle-europeana) en en-tête `X-Api-Key` (analyseur de `presse_recherche`, #343) |
 | `NAKALA` | Nakala (Huma-Num) | rest | aucune | index | FR | actif par défaut | 2026-11-21 : 200 JSON ; 2026-11-23 : 200 |
 | `WIKIPEDIA` | Wikipédia en français (REST) | rest | aucune | **tertiaire** | FR | actif par défaut | 2026-11-21 : 200 ; 2026-11-23 : 301 sans paramètre ; sert seulement à remonter aux références |
 | `WIKIDATA` | Wikidata Query Service (SPARQL) | sparql | aucune | **index** | INT | actif par défaut | 2026-11-21 : 200 simple, délai dépassé en requête géographique, 429 ensuite ; 2026-11-23 : 200 ; jamais source |
@@ -282,12 +282,12 @@ sinon `GENEALOGISTE_PLAFOND_JOUR_DEFAUT` et `GENEALOGISTE_DEBIT_DEFAUT`.
 Europeana n'est interrogeable qu'avec une clé d'API **personnelle** : chaque utilisateur du plugin demande la
 sienne. Le plugin n'en fournit aucune et n'utilise aucune clé partagée ou de démonstration.
 
-**État au 2026-11-24 : la clé n'a pas encore d'effet sur `presse_recherche`.** L'analyseur Europeana n'est pas
-livré, faute de réponse réelle de l'API enregistrée (règle de #323, suivi dans #343). Avec une clé et le service
-activé, `presse_recherche` rend Europeana en `sans_analyseur`, n'émet aucune requête vers l'API et renvoie au lien
-de consultation du site public. Configurer la clé dès maintenant prépare l'installation : quand l'analyseur sera
-livré, elle permettra à `presse_recherche` de chercher dans Europeana (presse et patrimoine européens), notamment
-quand Gallica est bloqué.
+**État au 2026-11-24 : l'analyseur Europeana de `presse_recherche` est livré (#343), la clé a un effet.** Avec
+une clé et le service activé, `presse_recherche` interroge la Search API d'Europeana (une requête par recherche,
+mise en cache 30 jours) et rend les notices trouvées, notamment quand Gallica est bloqué. La recherche porte sur
+les **notices** (titre, institution, année), pas sur le texte des journaux : elle trouve des documents
+patrimoniaux datés (imprimés, estampes, photographies de presse), sans extrait OCR. Détail :
+[`presse_recherche`](#presse_recherche).
 
 **Obtenir la clé** (démarche décrite par la page « Accessing the APIs » d'Europeana, lue le 2026-11-24) :
 
@@ -339,11 +339,24 @@ rappelle la démarche ; la presse repose sur Gallica et sur les liens de consult
 disent si la clé est « définie » ou « absente », jamais sa valeur. La clé n'est ni journalisée, ni écrite, ni
 renvoyée par un outil (`services.masquer_cles`).
 
-**Pour l'analyseur à venir (#343), sans code ici.** La même page indique que l'en-tête `X-Api-Key` est l'option
-préférée et que le paramètre d'URL `wskey` est déprécié (une clé dans une URL fuit quand le lien est partagé).
-L'analyseur devra envoyer la clé en en-tête, pour qu'elle ne figure dans aucune URL, donc ni au journal, ni dans
-la clé de cache, ni dans un manifeste ; à vérifier alors : le traitement des en-têtes par le client HTTP commun.
-La réponse réelle exigée par #323 devra être enregistrée avec une clé personnelle, jamais écrite dans le dépôt.
+**Où va la clé (#343).** La même page indique que l'en-tête `X-Api-Key` est l'option préférée et que le
+paramètre d'URL `wskey` est déprécié (une clé dans une URL fuit quand le lien est partagé). Le plugin envoie donc
+la clé dans l'en-tête `X-Api-Key`, jamais dans une URL : elle ne figure ni au journal, ni au registre, ni dans un
+manifeste. Trois précautions du client HTTP commun (`http.py`) :
+
+- **cache** : une requête qui porte un en-tête d'authentification (`X-Api-Key`, `Authorization`, `Cookie`) a une
+  clé de cache marquée par la **présence** de l'en-tête, jamais par sa valeur ; une réponse obtenue avec une clé
+  n'est pas servie à une requête sans clé, ni l'inverse (cache des réponses et cache d'échecs) ;
+- **réponse épurée avant le cache** : la Search API peut répéter la clé dans sa réponse (`apikey`, `link` avec
+  `wskey=`, `utm_campaign` de `guid`). `presse.epurer_europeana` retire `apikey`, `requestNumber` et `link` et
+  coupe les paramètres de `guid` avant la mise en cache et l'analyse ; toute autre occurrence d'un secret
+  configuré est masquée (`services.masquer_cles`). Le cache ne contient que la réponse épurée ;
+- **erreurs** : le corps d'une réponse d'erreur (400, 5xx) est masqué avant d'entrer dans un message ; une
+  redirection vers une autre origine ne reçoit jamais l'en-tête.
+
+Une clé refusée (401, 403) rend Europeana en `erreur` avec un motif qui nomme la variable, jamais la valeur ; la
+recherche continue par les autres services et les liens de consultation. Les réponses réelles exigées par #323
+ont été enregistrées le 2026-11-24 avec une clé personnelle, jamais écrite dans le dépôt.
 
 Pages d'Europeana lues le 2026-11-24 (base de connaissances `europeana.atlassian.net`) :
 
@@ -468,10 +481,23 @@ enregistrée. Verdicts : `OK`, `DERIVE` (un champ enregistré a disparu : le ser
 requêtes qui ont répondu 200, puis le diff est relu avant commit. Une URL contenant une clé, un `mailto` ou un nom
 des cas témoins n'est jamais émise. Testé sans réseau (`tests/test_enregistrer_contexte.py`, respx).
 
+**Service à clé personnelle (Europeana, #343).** Les réponses de la Search API ne sont rejouées qu'avec la clé de
+l'utilisateur, lue par la configuration du plugin et envoyée dans l'en-tête `X-Api-Key` (`EN_TETES_CLE`), sans
+suivre de redirection ; sans clé, `IGNORE`. La réduction est l'épuration du plugin (`presse.epurer_europeana`) ;
+une réponse réduite qui contiendrait encore la clé n'est jamais écrite (`DERIVE`). Une entrée de manifeste dont le
+fichier n'existe pas encore est enregistrée par `--ecrire`. Réponses du 2026-11-24 (trois requêtes, HTTP 200) :
+`api-recherche-courrieres-1850-1950.json` (mot « Courrières », filtre `YEAR:[1850 TO 1950]` : 11 notices, 5
+rendues, reprise du cache du plugin après la recette), `api-presse-greve-mineurs-1906-vide.json` (requête
+restreinte aux journaux par `theme=newspaper` : aucun résultat, forme d'une réponse vide) et un essai du champ
+`fulltext:` sur les journaux (aucun résultat, corps non conservé). Non vérifié : la recherche dans le texte des
+journaux d'Europeana ; l'analyseur ne l'utilise pas.
+
 **Recette de contrat** (`tests/test_contexte_live.py`, `make test-contexte`). Une à deux requêtes par service qui a
 un analyseur : les six gabarits de `contexte_bibliographie`, l'OAI-PMH de Persée, les cinq services de
-`lieu_historique` (COG INSEE, API Géo, Wikidata, Melodi, Géoplateforme, par un seul appel de l'outil) et Gallica par
-`presse_recherche`. Elle vérifie la **forme** que lit l'analyseur (conteneur de la réponse, titre lu sur au moins une
+`lieu_historique` (COG INSEE, API Géo, Wikidata, Melodi, Géoplateforme, par un seul appel de l'outil), Gallica et
+Europeana par `presse_recherche`. Europeana n'est interrogé qu'avec la clé personnelle de l'utilisateur, lue par le
+chargement de configuration du plugin (environnement ou `<données>/.env`) et jamais affichée ; sans clé, AVERT
+avec le motif, sans requête. Elle vérifie la **forme** que lit l'analyseur (conteneur de la réponse, titre lu sur au moins une
 notice, observations, couches), jamais le contenu. Un service protégé, limité, muet ou en panne rend **AVERT** (test
 ignoré avec le motif, `-rs`), pas un échec ; seule une réponse reçue mais illisible par l'analyseur échoue. Débit,
 coupe-circuit, plafonds et cache du plugin sont ceux du client commun. Ignorée sans `GENEALOGISTE_TEST_CONTEXTE=1` :
@@ -483,8 +509,8 @@ dérive du code la liste des services qu'un outil interroge avec un analyseur (g
 moins une réponse 2xx. Exception nommée et motivée : **GALLICA** (analyseur SRU et recherche dans le document du
 client existant, antérieurs à #323, testés sur une fixture au format du parseur ; le SRU répond 403 Cloudflare et
 ContentSearch n'a jamais été joint). Le test exige que l'exception reste nécessaire : elle disparaît dès qu'une
-réponse 200 réelle est enregistrée. Europeana n'a pas d'analyseur (aucune réponse réelle : pas de clé personnelle
-à l'enregistrement, clé de démonstration non utilisée, #343), donc pas d'exception.
+réponse 200 réelle est enregistrée. Europeana a un analyseur depuis #343 et des réponses 200 réelles enregistrées
+avec une clé personnelle (2026-11-24) : pas d'exception.
 
 **Courriels dans les réponses.** Le test refuse toute adresse courriel dans les réponses, sauf trois adresses
 institutionnelles de réponses réelles laissées telles quelles (contact du `GetCapabilities` de la Géoplateforme,
@@ -584,26 +610,35 @@ Limites : la fenêtre ne voit que l'arbre ; elle ne déduit aucune date d'un con
 - **Vivants** : `_garde` sur `texte` puis sur `lieu` avant toute requête (`GARDE_VIVANTS`, `GARDE_AVANT_BUDGET`).
 - **Repli explicite** : chaque service est essayé ou écarté avec son motif (`services[]` : `service`, `statut`,
   `motif`, `journal`) ; un service bloqué n'arrête pas les suivants. Statuts : `interroge`, `bloque_antirobot`
-  (coupe-circuit compris), `erreur`, `refuse` (désactivé, clé absente, hors ligne : `services.refus`),
-  `lien_seulement`, `sans_analyseur`.
+  (coupe-circuit compris), `erreur` (dont une clé refusée par Europeana), `refuse` (désactivé, clé absente, hors
+  ligne : `services.refus`), `lien_seulement`.
 - **Résultats** (`resultats[]`) : une `Reference` sérialisée (`nature: primaire`, `type_document: presse`,
   `publication` = titre du périodique, `date`, `annee`, identifiant ARK, `service`, `requete`, `consulte_le`,
   `citation`), plus `url`, `vue` (numéro de vue Gallica `fN`, pas forcément la page imprimée), `ocr`, `extrait`
   et, si un extrait OCR est donné, `mention: « lecture OCR non vérifiée »`, `au_registre`, `suite`. Chaque
   référence est inscrite au registre des références consultées (réponse 2xx contenant l'ARK) ; `lu` reste
   `notice_seule` : relire l'image (`gallica_iiif`), l'archiver (`piece_archiver`), puis citer numéro et page lus.
+- **Résultats d'Europeana** (#343) : une `Reference` par notice (`nature: primaire`, `type_document: autre`,
+  `titre`, `auteurs`, `publication` = institution qui conserve le document, `annee`, identifiant de type
+  `europeana` (`/jeu/notice`), `service: EUROPEANA`, `requete` sans clé, `citation`), plus `url` (page de la notice
+  sur europeana.eu), `url_fournisseur`, `type_europeana` (`TEXT`, `IMAGE`…), `pays`, `langue`, `droits`,
+  `au_registre`, `mention: « tendance générale, ne prouve rien pour l'individu »`, `ocr: false`, sans extrait.
+  Chaque référence est inscrite au registre des références consultées (réponse 2xx contenant l'identifiant) ;
+  rien n'est écrit dans l'arbre. `contexte_local` écarte ces notices sans extrait (« aucun extrait lu ») : elles
+  restent des pistes de lecture.
 - **Sans résultat** : `statut: tache_manuelle` (ou `bloque_antirobot` si Gallica oppose un défi, avec `consigne`,
   `suite` sans navigateur et, avec `enquete`, une tâche manuelle dans l'enquête), `recherche_negative` et
   `tache_manuelle` : motif par service, liens de consultation, ce qu'il faut relever (titre, date, numéro, page,
   extrait lu sur l'image), reprise par `source_collee`, `piece_archiver` ou `media_enregistrer`. Jamais de
   résultat inventé.
-- **Journal** : recherche Gallica (`gallica`/`sru`, positive, négative ou bloquée) et synthèse
+- **Journal** : recherche Gallica (`gallica`/`sru`, positive, négative ou bloquée), recherche Europeana
+  (`europeana`/`search`, URL sans clé) et synthèse
   `presse`/`presse_recherche` (motifs par service ; statut `positif`, `negatif`, `bloque_antirobot` ou `manuel`).
 
 | Service | Traitement | Lien de consultation |
 |---|---|---|
 | Gallica | client existant (`sources/gallica.py` : SRU sur les fascicules, puis `ContentSearch` pour la vue et l'extrait OCR des 3 premiers documents) ; coupe-circuit et plafonds du client commun | page d'accueil (recherche en 403 Cloudflare le 2026-11-23, forme non vérifiée) |
-| Europeana | `services.refus` (activation, `GENEALOGISTE_CLE_EUROPEANA`) ; **aucun analyseur** : pas de réponse réelle de l'API enregistrée (aucune clé disponible ; clé de démonstration non utilisée, plus publiée par Europeana au 2026-11-24). Avec une clé, `sans_analyseur`, aucune requête : la [clé personnelle](#clé-personnelle-europeana) n'a pas encore d'effet (#343) | recherche du site public (`/fr/search?query=`, vérifiée, HTTP 200) |
+| Europeana | `services.refus` (activation, `GENEALOGISTE_CLE_EUROPEANA` : sans [clé personnelle](#clé-personnelle-europeana), écarté avec le motif, aucune requête). Avec la clé (#343) : Search API du référentiel, une requête (`query` = mots sans syntaxe de recherche, `qf=YEAR:[début TO fin]` si une période est donnée, `rows`), clé dans l'en-tête `X-Api-Key`, réponse épurée de la clé avant le cache ; recherche sur les notices, pas sur le texte des journaux (réponses réelles du 2026-11-24) | recherche du site public (`/fr/search?query=`, vérifiée, HTTP 200) |
 | Chronicling America | lien seulement (403 Cloudflare, une tentative le 2026-11-23) | page de la collection |
 | Retronews | lien seulement (pas d'API publique) | recherche avancée pré-remplie (`/search?…&q=` : base64 du JSON encodé, forme relevée sur le site) ; période à régler dans le site |
 
