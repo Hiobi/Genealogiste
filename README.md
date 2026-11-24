@@ -100,6 +100,12 @@ dossier existant, base depuis zéro, arbre GEDCOM ou Gramps Web. Obsidian n’es
   n’est trouvé) et propose des pistes de recherche ; le contexte oriente, il ne conclut pas. Six outils :
   `contexte_local`, `pistes_contexte`, `contexte_bibliographie`, `presse_recherche`, `lieu_historique`,
   `contexte_verifier` ([parcours d’usage](docs/contexte-historique.md#parcours-dusage)).
+- Base Cassini locale (facultative) : avant 1943, `lieu_historique` répond « inconnu ». Si vous le demandez,
+  `cassini_preparer` présente la base Cassini de l’EHESS redéposée sur Nakala (25 Mo, licence CC BY-NC-SA 4.0 : pas
+  d’usage commercial, attribution, partage dans les mêmes conditions ; licence d’origine non vérifiée), puis
+  `cassini_installer` la télécharge après votre accord, hors du plugin et de tout dépôt Git
+  (`GENEALOGISTE_REFERENTIELS_DIR`). Le plugin ne contient ni ne redistribue ce fichier ; `cassini_desinstaller`
+  le retire ([détail](docs/contexte-historique.md#base-cassini-locale-facultative)).
 - Services de contexte historique (HAL, Sudoc, Persée, Crossref…) : `GENEALOGISTE_CONTEXTE_SERVICES` choisit
   ceux qui sont interrogés ; clés personnelles `GENEALOGISTE_CLE_EUROPEANA`, `GENEALOGISTE_CLE_OPENALEX`,
   `GENEALOGISTE_CLE_NARA`, `GENEALOGISTE_CLE_APE`, jamais affichées ; `GENEALOGISTE_CROSSREF_MAILTO` vide par défaut ;

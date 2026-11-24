@@ -60,6 +60,13 @@ OUTILS: dict[str, tuple[str, str]] = {  # nom -> (effet, classe)
     "geo_historique": (RESEAU, COLLECTE),
     # géographie historique (#287) : COG, API Géo, Melodi, Géoplateforme, index Wikidata ; lieu et date seulement
     "lieu_historique": (RESEAU, COLLECTE),
+    # base Cassini installée par l'utilisateur (#349, CC BY-NC-SA 4.0, jamais embarquée). preparer : métadonnées
+    # publiques du dépôt Nakala (aucune donnée de personne, aucun téléchargement du jeu) + jeton : la proposition
+    # l'emporte, comme gramps_dater_lieux. installer : télécharge et écrit hors du plugin et de tout dépôt Git, vaut
+    # acceptation de la licence ; desinstaller : suppression. Les deux demandent l'accord.
+    "cassini_preparer": (PROPOSITION, PROPOSITION),
+    "cassini_installer": (RESEAU, ECRITURE),
+    "cassini_desinstaller": (ECRITURE, ECRITURE),
     "recherche_multi": (RESEAU, COLLECTE),
     "contexte_bibliographie": (RESEAU, COLLECTE),  # littérature savante (#286) ; registre des références
     # contexte d'un individu (#289) : assemble géographie, index Wikidata, bibliographie, presse ; aucune écriture

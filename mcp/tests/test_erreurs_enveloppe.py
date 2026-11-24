@@ -30,6 +30,7 @@ APPELS: dict[str, dict] = {
     "geo_commune": {"nom": "Lille"},
     "geo_historique": {"nom": "Lille"},
     "lieu_historique": {"lieu": "Lille, Nord", "date": "1975"},
+    "cassini_installer": {"jeton": "0123abcd"},  # jeton inconnu : refus avant toute requête (test_cassini_local)
     "recherche_multi": {"nom": "Durand", "prenom": "Jean"},
     "archives_naviguer": {"source": "https://iiif.example/iiif/registre/manifest.json"},
     "archives_registres": {"service": "AD59", "commune": "Somain", "annee": 1860},

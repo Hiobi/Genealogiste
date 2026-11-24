@@ -728,8 +728,9 @@ ni par le modèle.
 Chaque niveau « inconnu » porte `source: null`, `periode_de_validite: null`, `statut: "à établir"`, un `motif` et
 `consultation` : fiche « Des villages de Cassini aux communes d'aujourd'hui » (EHESS) par son identifiant, trouvé
 dans l'index Wikidata (P374 → P8422, jamais source ; site EHESS sans réponse aux relevés), sinon le site ; base
-Cassini redéposée sur Nakala (`doi:10.34847/nkl.e0556oog`, CC BY-NC-SA 4.0, ni embarquée ni interrogée). Ne jamais
-compléter un niveau « inconnu » de mémoire.
+Cassini redéposée sur Nakala (`doi:10.34847/nkl.e0556oog`, CC BY-NC-SA 4.0, ni embarquée ni interrogée ; l'utilisateur
+peut l'installer lui-même, voir [Base Cassini locale](#base-cassini-locale-facultative)). Ne jamais compléter un
+niveau « inconnu » de mémoire.
 
 Cartes : la période d'une couche est lue dans son titre (`Carte de l'état-major (1820-1866)`), sinon dans
 l'étendue temporelle de sa fiche de métadonnées CSW (Cassini : 1756-1815). Sont retenues les couches contemporaines
@@ -745,6 +746,90 @@ service et une pour l'ensemble. Réponses réelles enregistrées (Billy-Montigny
 chacun avec `MANIFESTE.json`). Limites : la requête Wikidata a pris 45 s au premier essai (0,7 s ensuite) ; au-delà
 du délai HTTP, la fiche Cassini n'est pas identifiée et le lien générique est donné. Les liens `GetTile` suivent
 les jeux de tuiles déclarés par les couches (`PM_6_15`…) ; seule une tuile du jeu `PM` a été demandée par l'étude.
+
+#### Base Cassini locale (facultative)
+
+<!-- #349 -->
+
+Avant 1943, aucune source structurée sous licence ouverte n'existe (étude #322). La base Cassini de l'EHESS,
+redéposée sur Nakala par G. Bideau et N. Verdier (`doi:10.34847/nkl.e0556oog`), documente cette période, mais sous
+**CC BY-NC-SA 4.0** : elle n'est **jamais** dans le dépôt du plugin (GPL-3.0), ni entière, ni en extrait, ni en
+fixture de test. Chaque utilisateur peut l'installer à part, pour lui-même, par un geste explicite et tracé. Code :
+`contexte/cassini.py`.
+
+| Étape | Outil | Classe | Ce qui se passe |
+|---|---|---|---|
+| 1. Présenter | `cassini_preparer()` | proposition (sans accord) | lit les **métadonnées** du dépôt Nakala (une requête, aucune donnée de personne, aucun téléchargement du jeu) et rend : source, auteurs et déposant, DOI, version ; licence en clair ; réserve ; taille et empreinte SHA-1 publiées ; URL ; destination ; état de l'installation ; **jeton** à usage unique, valable une heure |
+| 2. Installer | `cassini_installer(jeton)` | **écriture** (accord demandé par Claude Code à chaque appel ; refusé avec `GENEALOGISTE_ECRITURE=interdite`) | relit les métadonnées (refus si le fichier publié a changé depuis l'étape 1), télécharge le fichier (25 Mo) par le client HTTP commun, vérifie taille, **empreinte publiée par Nakala** et en-tête, écrit le fichier puis `acceptation.json` |
+| 3. Utiliser | `lieu_historique` (et `contexte_local`, `pistes_contexte` qui l'appellent) | collecte | lit le fichier local s'il est présent **et** accepté **et** d'empreinte conforme ; sinon rien ne change |
+| 4. Retirer | `cassini_desinstaller()` | **écriture** (accord demandé) | supprime le fichier, l'acceptation et les restes d'un téléchargement interrompu ; un fichier étranger du dossier n'est pas touché |
+
+**Licence, telle que présentée à l'utilisateur avant tout téléchargement** : pas d'usage commercial ; attribution
+obligatoire ; toute copie, même modifiée ou extraite, reste sous la même licence. **Réserve** : le dépôt Nakala est
+une redéposition par des tiers d'un fichier téléchargé auprès de l'EHESS, dont la licence d'origine n'a pas pu être
+lue (site injoignable aux relevés). `cassini_preparer` refuse si la licence publiée par Nakala n'est plus
+`CC-BY-NC-SA-4.0`, si le dépôt n'est plus publié ou si le fichier n'y est plus : il ne présente jamais une licence
+qu'il n'a pas relue. L'appel de `cassini_installer` vaut acceptation de la licence **par l'utilisateur** ; il ne
+se fait qu'après son accord explicite. Attribution à reprendre : « Base Cassini (LaDéHis, EHESS), redéposée par
+G. Bideau et N. Verdier, Nakala, doi:10.34847/nkl.e0556oog, CC BY-NC-SA 4.0 ».
+
+**Emplacement.** `<référentiels>/cassini/lieux_cassini_devenus_communes.csv` et, à côté, `acceptation.json` (date,
+licence, conditions, réserve, DOI, version du dépôt, taille, empreintes SHA-1 et SHA-256, URL d'origine).
+`<référentiels>` : `GENEALOGISTE_REFERENTIELS_DIR`, par défaut `~/.local/share/genealogiste-referentiels`
+(`$XDG_DATA_HOME`), `/cache/referentiels` dans l'image Docker. Le dossier est refusé, avant toute requête, s'il se
+trouve dans le répertoire de données (dépôt Git de l'arbre), dans un dossier de l'utilisateur géré par le plugin
+(médias, pièces, notes, rapports, exports), dans le plugin, ou sous un dépôt Git quel qu'il soit (liens
+symboliques résolus) : le fichier ne peut pas être commité, et il n'entre pas dans une sauvegarde de l'arbre. Le
+même contrôle est refait à chaque lecture. Écriture atomique (temporaire du même dossier, puis renommage) ;
+l'acceptation est écrite après le fichier : un téléchargement ou une écriture qui échoue ne laisse ni fichier
+partiel ni acceptation. Le fichier n'est jamais copié dans le cache SQLite.
+
+**Ce que cela change dans `lieu_historique`.** Jointure par code INSEE (colonne `commune_mars_2021`, géographie de
+mars 2021). Seuls des niveaux « inconnu » sont complétés ; un niveau sourcé par le COG ou par Melodi n'est jamais
+remplacé.
+
+| Niveau | Valeur tirée du fichier | Période de validité rendue |
+|---|---|---|
+| `nom` (avant 1943) | noms de l'an III, de 1801 et de 1999, et nom sur la carte de Cassini | 1794-1999, « instantanés, pas un historique continu » : le nom à la date demandée n'est pas établi |
+| `departement` (avant 1943) | nom du département en l'an III, code en 1999 | 1794-1999, instantanés |
+| `district` | district de l'an III | 1794-1795 |
+| `generalite` | intendance, type, subdélégations | fin de l'Ancien Régime, date non précisée par le jeu ; rattachement hérité de la carte par traitement automatique, pas un rattachement établi pour la commune |
+| `population` (si « inconnu » : avant 1968, ou Melodi non interrogeable) | recensement le plus proche avant la date (`annee`, `recensement`, `ecart_annees`, `annees_disponibles`) ; « an III » = 1794-1795, « an VIII » = 1799-1800 | année du recensement, aucune valeur interpolée |
+
+Chaque valeur porte `statut: "indication"`, un `avertissement` (elle oriente, ne conclut rien, ne remplace pas une
+source primaire) et une `source` : `service: "CASSINI-LOCAL"`, `licence`, `conditions`, `attribution`, `reserve`,
+`reference: "doi:10.34847/nkl.e0556oog"`, `au_registre`, empreinte et date d'acceptation du fichier local. La
+référence suit les règles du registre des références consultées : elle y est inscrite à l'installation (réponse 2xx
+des métadonnées Nakala, qui contient le DOI) ; `contexte_local` n'en tire un élément (population, type
+`demographie`, origine `NAKALA`, licence et attribution dans `source.localisation`) que si elle y figure. Le
+résultat gagne un bloc `cassini` : lieux de la carte rattachés au code INSEE (identifiant, type, noms, chef-lieu
+communal en 1999, chefs-lieux de 1789-1790, lien de fiche), 30 au plus, avec leur nombre. Un lieu qui n'est pas
+chef-lieu communal en 1999 peut être une ancienne commune réunie : le jeu ne date aucune réunion, il oriente vers
+une fusion à établir. `canton`, `arrondissement`, `province`, `bailliage_ou_senechaussee` et `diocese` restent
+« inconnu » (le jeu n'a que des booléens de chef-lieu). Rien n'est écrit dans l'arbre.
+
+Sans fichier, ou si le fichier est présent sans acceptation, si l'acceptation est illisible ou d'une autre
+licence, si l'empreinte du fichier diffère de celle de l'acceptation, si l'en-tête n'est pas reconnu, ou si le
+dossier est devenu un emplacement refusé : le fichier **n'est pas lu** et `lieu_historique` rend exactement sa
+réponse habituelle (« inconnu » + lien). `cassini_preparer` donne l'état et le motif (`etat`).
+
+**Lecture.** Aucun index n'est écrit sur disque : au premier appel du processus, une passe lit le fichier, contrôle
+son empreinte (ce qui impose de toute façon une lecture complète) et garde en mémoire la position des lignes par
+code INSEE ; chaque consultation relit ensuite quelques lignes. Mesures du 2026-11-24 sur le fichier réel
+(43 792 lieux, 34 819 codes INSEE) : installation 4,7 s (métadonnées, téléchargement de 25,5 Mo, contrôles,
+écriture) ; première lecture 0,41 s (dont 0,03 s d'empreinte), environ 11 Mo retenus en mémoire ; consultations
+suivantes 1 à 2 ms, sur un appel de `lieu_historique` de 5 à 6 s (COG, cartes, services). Un fichier modifié ou
+remplacé (taille, date) est relu et recontrôlé.
+
+**Limites.** Commune absente du COG depuis 1943 (disparue avant) : pas de code INSEE, donc pas de jointure ; elle
+peut apparaître dans le bloc `cassini` de la commune qui l'a absorbée. Code INSEE de 2021 : une commune créée ou
+renumérotée depuis n'est pas rejointe. Plusieurs chefs-lieux communaux de 1999 pour un même code (797 codes au
+relevé) : celui dont le nom de 1999 égale le nom du COG est retenu, sinon aucun, et les niveaux restent
+« inconnu ». Les valeurs sont rendues telles quelles (`non citée`, graphies d'époque). `contexte_local` retient un
+seul élément par source et par appel : avec plusieurs communes de vie, une seule population Cassini est rendue.
+Les métadonnées Nakala servant aux tests sont fabriquées à l'image de la réponse réelle (aucune réponse réelle
+enregistrée dans le dépôt). Recette sur le fichier réel : `make test-cassini` (ignorée si le fichier n'est pas
+installé).
 
 ### contexte_local
 

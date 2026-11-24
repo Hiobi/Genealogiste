@@ -37,6 +37,7 @@ from .cache import Cache
 from .chemins import CheminRefuse, nom_simple, sous
 from .config import Config, load_config
 from .contexte import bibliographie as biblio_contexte
+from .contexte import cassini as cassini_contexte
 from .contexte import lieux as lieux_contexte
 from .contexte import local as contexte_local_mod
 from .contexte import pistes as pistes_contexte_mod
@@ -727,10 +728,53 @@ def lieu_historique(lieu: str, date: str) -> dict:
     depuis 1968 (INSEE Melodi) ; cartes anciennes de la Géoplateforme choisies selon la date (liens de tuile, aucun
     téléchargement). Tout le reste (avant 1943 ; canton, arrondissement, district ; province, généralité,
     bailliage, diocèse ; population avant 1968) vaut « inconnu » (à établir) avec un lien de consultation : ne
-    jamais le compléter de mémoire. lieu : commune avec son département (« Billy-Montigny, Pas-de-Calais ») ou code
+    jamais le compléter de mémoire. Si l'utilisateur a installé la base Cassini (cassini_preparer puis
+    cassini_installer), certains de ces niveaux portent une indication (statut « indication », licence
+    CC BY-NC-SA 4.0 et attribution à reprendre) qui oriente sans conclure ; bloc cassini : lieux rattachés. lieu : commune avec son département (« Billy-Montigny, Pas-de-Calais ») ou code
     INSEE ; date : GEDCOM ou texte (« 1906 », « vers 1750 »). Hors de France : hors périmètre ; pays inconnu ou
     homonymes : préciser le département ou le code INSEE. Aucune donnée de personne n'est envoyée."""
     return lieux_contexte.lieu_historique(app().sctx, lieu, date)
+
+
+@mcp.tool()
+def cassini_preparer() -> dict:
+    """Prépare l'installation locale de la base Cassini (#349), SANS la télécharger : lit les métadonnées du dépôt
+    Nakala (doi:10.34847/nkl.e0556oog) et rend la source, les auteurs, la licence CC BY-NC-SA 4.0 en clair (pas
+    d'usage commercial, attribution obligatoire, toute copie même modifiée sous la même licence), la réserve
+    (licence d'origine EHESS non vérifiée), la taille, l'empreinte publiée, la destination et un jeton à usage
+    unique, valable une heure. À présenter à l'utilisateur : cassini_installer(jeton) seulement après son accord
+    explicite. Aucune donnée de personne n'est envoyée ; le plugin ne redistribue jamais ce fichier."""
+    a = app()
+    out = cassini_contexte.preparer(a.sctx)
+    record = out.pop("enregistrement", None)
+    if record is not None:
+        out["jeton"] = a.tokens.create(record)
+        out["jeton_valable"] = "usage unique, une heure"
+    return out
+
+
+@mcp.tool()
+def cassini_installer(jeton: str) -> dict:
+    """Installe la base Cassini préparée par cassini_preparer. À n'appeler qu'après accord EXPLICITE de
+    l'utilisateur sur la licence présentée (CC BY-NC-SA 4.0) et sa réserve : l'appel vaut acceptation et
+    l'enregistre. Télécharge le fichier depuis Nakala (25 Mo), vérifie taille, empreinte publiée et en-tête, puis
+    l'écrit hors du plugin et hors de tout dépôt Git (GENEALOGISTE_REFERENTIELS_DIR), avec un fichier
+    d'acceptation (date, licence, DOI, empreinte, version). Écriture atomique : en cas d'échec, rien n'est installé.
+    Jeton à usage unique. Ensuite lieu_historique lit ce fichier ; cassini_desinstaller le retire."""
+    a = app()
+    try:
+        record = a.tokens.take(jeton)
+    except ProposalError as exc:
+        return {"erreur": f"{exc} Relancer cassini_preparer.", "installe": False}
+    return cassini_contexte.installer(a.sctx, record, a.registre_references)
+
+
+@mcp.tool()
+def cassini_desinstaller() -> dict:
+    """Désinstalle la base Cassini locale : supprime le fichier téléchargé, son fichier d'acceptation et les restes
+    d'un téléchargement interrompu (aucun index n'est écrit à côté). lieu_historique revient à « inconnu » + lien.
+    À n'appeler qu'à la demande de l'utilisateur."""
+    return cassini_contexte.desinstaller(app().sctx)
 
 
 @mcp.tool()

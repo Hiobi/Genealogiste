@@ -59,6 +59,10 @@ source n'est pas affiché. Le contexte oriente une recherche, il ne conclut pas.
      proposition (le serveur le refuse) ;
    - lire une référence avant de s'y appuyer (« non lu » : notice seule) ; approfondir par
      `contexte_bibliographie`, `presse_recherche` ou `lieu_historique` ;
+   - si des niveaux de `lieu_historique` restent « inconnu » avant 1943 et que l'utilisateur le souhaite :
+     `cassini_preparer` présente la base Cassini (licence CC BY-NC-SA 4.0, réserve, taille, destination) ;
+     `cassini_installer(jeton)` seulement après son accord explicite sur cette licence. Une valeur tirée de cette
+     base est une indication à confirmer, à citer avec sa licence et son attribution ;
    - rédiger : `/genealogiste:recit <id>` reprend ces éléments et les contrôle par `contexte_verifier`.
 8. Rappeler en une ligne : éléments et pistes viennent des références consultées par le plugin ; rien n'a été
    écrit dans l'arbre ; les recherches, négatives comprises, sont au journal (`journal`).

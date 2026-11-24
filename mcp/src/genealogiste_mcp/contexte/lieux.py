@@ -11,7 +11,11 @@ code ni par le modèle. Périmètre fixé par l'étude #322 (docs/etudes/lieux-1
   couche, sinon dans sa fiche de métadonnées CSW) ; liens de tuile centrés sur le lieu, aucune image téléchargée ;
 - tout le reste (noms et fusions avant 1943 ; canton, arrondissement, district ; province, généralité, bailliage,
   diocèse ; population avant 1968) : « inconnu », « à établir », avec un lien de consultation (fiche Cassini/EHESS
-  par l'identifiant Wikidata P8422, dépôt Nakala de la base Cassini).
+  par l'identifiant Wikidata P8422, dépôt Nakala de la base Cassini) ;
+- si l'utilisateur a installé et accepté la base Cassini (#349, ``cassini.py``, CC BY-NC-SA 4.0, jamais embarquée) :
+  certains de ces niveaux « inconnu » reçoivent une **indication** tirée du fichier local (noms, district et
+  département de l'an III, intendance, population), marquée de la licence, de l'attribution et de sa référence
+  ``doi:``. Sans ce fichier, rien ne change.
 
 Lieu hors de France : hors périmètre, sans requête. Pays inconnu ou homonymie : demande de précision (département
 ou code INSEE), sans choisir. Seul le code INSEE part vers les services de contexte (aucune donnée de personne).
@@ -31,6 +35,7 @@ from ..normalize.pays import pays_du_lieu, pays_resume
 from ..normalize.places import normalize_place
 from ..sources import geo
 from ..sources.base import DAY, SourceContext, error_envelope
+from . import cassini as cassini_local
 from . import services
 
 INCONNU = "inconnu"
@@ -112,7 +117,9 @@ def _niveaux(ctx: SourceContext, base: dict, quand: dict, rec: dict | None, hist
     d0, d1 = quand["debut"], quand["fin"]
     requetes: dict[str, str] = {"cog": "positif" if rec else "negatif"}
     cassini = _cassini(ctx, rec["code_insee"], requetes) if rec else {}
-    consultation = _consultation(cassini)
+    # Base Cassini installée et acceptée par l'utilisateur (#349) ; None sinon : rien ne change ci-dessous.
+    local = cassini_local.consulter(ctx.config, rec["code_insee"], rec.get("libelle", "")) if rec else None
+    consultation = _consultation(cassini, installee=local is not None)
     niveaux: list[dict] = []
     centre = None
     if rec:
@@ -146,6 +153,9 @@ def _niveaux(ctx: SourceContext, base: dict, quand: dict, rec: dict | None, hist
     population = _population(ctx, rec["code_insee"], d0, d1, requetes, consultation) if rec else \
         _inconnu("population", "commune absente du COG : population non recherchée", consultation)
     cartes = _cartes(ctx, d0, d1, centre, requetes)
+    if local is not None:
+        requetes["cassini_local"] = "positif" if local["bloc"]["nombre_de_lieux"] else "negatif"
+        niveaux, population = cassini_local.completer(niveaux, population, local, d0, d1)
     sources = sum(1 for x in [*niveaux, population] if x["valeur"] != INCONNU)
     jid = ctx.journal.add(source="lieu_historique", operation="niveaux",
                           parametres={"lieu": base["lieu"], "date": quand["original"],
@@ -153,9 +163,12 @@ def _niveaux(ctx: SourceContext, base: dict, quand: dict, rec: dict | None, hist
                           statut="positif" if sources else "negatif", nb_resultats=sources,
                           resume=f"{sources} niveau(x) sourcé(s), {len(cartes.get('retenues', []))} carte(s)",
                           references=[c["lien"] for c in cartes.get("retenues", []) if c.get("lien")][:10])
-    return {**base, "commune": _resume_commune(rec, centre), "niveaux": niveaux, "population": population,
-            "cartes": cartes, "consultation": consultation, "requetes": requetes, "journal": jid,
-            "avertissement": AVERTISSEMENT}
+    out = {**base, "commune": _resume_commune(rec, centre), "niveaux": niveaux, "population": population,
+           "cartes": cartes, "consultation": consultation, "requetes": requetes, "journal": jid,
+           "avertissement": AVERTISSEMENT}
+    if local is not None:
+        out["cassini"] = local["bloc"]
+    return out
 
 
 def _resume_commune(rec: dict | None, centre: dict | None) -> dict | None:
@@ -285,7 +298,7 @@ def _cassini(ctx: SourceContext, code: str, requetes: dict) -> dict:
     return {"ids": trouves}
 
 
-def _consultation(cassini: dict) -> list[dict]:
+def _consultation(cassini: dict, installee: bool = False) -> list[dict]:
     s = services.par_code("CASSINI-EHESS") or {}
     etat = f"site sans réponse aux relevés ({s.get('releve', 'non relevé')})"
     out = []
@@ -296,8 +309,10 @@ def _consultation(cassini: dict) -> list[dict]:
     if not out:
         out.append({"titre": "Des villages de Cassini aux communes d'aujourd'hui (EHESS), rechercher la commune",
                     "url": s.get("site") or None, "note": etat})
+    usage = ("installée par l'utilisateur et lue en local (cassini_installer)" if installee
+             else "ni embarquée ni interrogée par le plugin")
     out.append({"titre": "Base Cassini redéposée sur Nakala (Bideau, Verdier), noms an III, 1801, 1999 et populations "
-                         "an III-1999 ; CC BY-NC-SA 4.0, ni embarquée ni interrogée par le plugin",
+                         f"an III-1999 ; CC BY-NC-SA 4.0, {usage}",
                 "url": LIENS["nakala_cassini"]})
     return out
 
