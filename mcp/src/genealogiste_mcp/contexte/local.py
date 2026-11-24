@@ -345,6 +345,14 @@ def _population(c: Collecte, res: dict, lv: LieuDeVie) -> None:
     if pop.get("valeur") in (None, geo_hist.INCONNU) or not pop.get("source"):
         return
     s = pop["source"]
+    if s.get("service") == "CASSINI-LOCAL":  # base Cassini installée par l'utilisateur (#349) : indication
+        ref = c.registre.lire(s.get("reference", ""))  # inscrite à l'installation (métadonnées Nakala, 2xx)
+        enonce = (f"Base Cassini (EHESS), recensement de {pop.get('recensement') or pop.get('annee')} : "
+                  f"{pop['valeur']} habitants (indication à confirmer sur le recensement lui-même)")
+        c.proposer("NAKALA", ref, enonce, "demographie", lv.commune, "commune", pop.get("annee"), pop.get("annee"),
+                   localisation=f"fichier installé par l'utilisateur ; {s.get('attribution', '')} ; "
+                                f"{s.get('conditions', '')}")
+        return
     ref = _reference_url(c, s.get("url", ""), "INSEE-MELODI", s.get("titre", ""), s.get("jeu", ""))
     enonce = (f"{s.get('titre') or s.get('jeu')} : {pop['valeur']} ({pop.get('mesure', '')}, "
               f"{pop.get('annee')})")

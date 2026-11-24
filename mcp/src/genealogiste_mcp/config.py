@@ -109,6 +109,9 @@ class Config:
     exports_dir_conf: Path | None = None  # GENEALOGISTE_EXPORTS_DIR ; défaut <données>/exports
     cache_images_dir_conf: Path | None = None  # GENEALOGISTE_CACHE_IMAGES_DIR ; défaut <données>/cache-images
     cache_pdf_dir_conf: Path | None = None  # GENEALOGISTE_CACHE_PDF_DIR ; défaut <données>/cache-pdf
+    # GENEALOGISTE_REFERENTIELS_DIR (#349) : jeux de données tiers installés par l'utilisateur sous leur propre
+    # licence (base Cassini) ; défaut $XDG_DATA_HOME/genealogiste-referentiels, toujours hors du répertoire de données
+    referentiels_dir_conf: Path | None = None
     tesseract: str = ""  # GENEALOGISTE_TESSERACT : binaire Tesseract hors du PATH (ou shim Docker)
     hotes_autorises: list[str] = field(default_factory=list)  # exceptions à la politique réseau (hôte[:port])
     cache_max_mo: float = 500.0  # GENEALOGISTE_CACHE_MAX_MO : plafond du cache SQLite (0 = aucun)
@@ -184,6 +187,12 @@ class Config:
     def cache_pdf_dir(self) -> Path:
         """Markdown extrait des PDF (pdf_markdown), clé = empreinte du contenu : hors du vault, jamais versionné."""
         return self.cache_pdf_dir_conf or self.data_dir / "cache-pdf"
+
+    @property
+    def referentiels_dir(self) -> Path:
+        """Jeux de données tiers installés par l'utilisateur (#349, cassini_installer) : hors du plugin et hors du
+        répertoire de données (dépôt Git de l'arbre), jamais versionnés, jamais sauvegardés avec l'arbre."""
+        return self.referentiels_dir_conf or _xdg("XDG_DATA_HOME", ".local/share") / "genealogiste-referentiels"
 
     @property
     def pieces_registre(self) -> Path:
@@ -521,6 +530,7 @@ def load_config() -> Config:
         exports_dir_conf=_dir(env("GENEALOGISTE_EXPORTS_DIR")),
         cache_images_dir_conf=_dir(env("GENEALOGISTE_CACHE_IMAGES_DIR")),
         cache_pdf_dir_conf=_dir(env("GENEALOGISTE_CACHE_PDF_DIR")),
+        referentiels_dir_conf=_dir(env("GENEALOGISTE_REFERENTIELS_DIR")),
         tesseract=str(Path(env("GENEALOGISTE_TESSERACT")).expanduser()) if env("GENEALOGISTE_TESSERACT") else "",
     )
     contact, motif = contact_valide(env("GENEALOGISTE_CONTACT"))

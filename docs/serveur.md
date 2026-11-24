@@ -48,6 +48,7 @@ Toujours lancer Claude Code depuis un **dossier de travail privé**, distinct du
 | Configuration privée | `<données>/.env` | `GENEALOGISTE_ENV_FILE` |
 | Cache des réponses (SQLite) | `~/.cache/genealogiste/cache.sqlite` | `GENEALOGISTE_CACHE`, `GENEALOGISTE_CACHE_MAX_MO` |
 | Cache des images | `<données>/cache-images` | `GENEALOGISTE_CACHE_IMAGES_DIR`, `GENEALOGISTE_CACHE_IMAGES_MAX_MO` |
+| Base Cassini installée par l'utilisateur (`cassini_installer`, facultative) | `~/.local/share/genealogiste-referentiels/cassini` (image Docker : `/cache/referentiels/cassini`) | `GENEALOGISTE_REFERENTIELS_DIR` |
 | Journal d'exploitation | `<données>/logs/serveur.log` | `GENEALOGISTE_LOG_FICHIER`, `GENEALOGISTE_LOG_NIVEAU` |
 | Journal de recherche | `<données>/journal.jsonl` | — |
 

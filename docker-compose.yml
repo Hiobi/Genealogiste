@@ -18,6 +18,7 @@ services:
     environment:
       GENEALOGISTE_DATA_DIR: /data
       GENEALOGISTE_CACHE: /cache/cache.sqlite
+      GENEALOGISTE_REFERENTIELS_DIR: /cache/referentiels
       GENEALOGISTE_GRAMPS_URL: ${GENEALOGISTE_GRAMPS_URL:-http://grampsweb:5000}
       # Jeton exigé, même sur le réseau Docker interne.
       MCP_TOKEN: ${MCP_TOKEN:-}

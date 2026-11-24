@@ -20,6 +20,26 @@ Module `chemins.py` (#41, #51). Les chemins sont résolus (liens symboliques com
 | `diagnostic` : `medias_chemins` / `gramps_medias_chemins` (#280) | Même règle commune : aucune sortie des racines autorisées, aucun contenu lu hors du contrôle d'ambiguïté de `localiser`, 2 000 médias examinés au plus. Comptes par cause et identifiants `gramps_id` en échantillon : ni titre, ni nom de personne, ni chemin dans la sortie. |
 | `arbre_importer_gedcom` sur un fichier Gramps (#269) | Format reconnu au contenu. **XML** : analyseur expat de la bibliothèque standard (aucune dépendance ajoutée) ; DTD interne, déclaration d'entité (générale, paramètre, non analysée), entité externe et notation refusées avant toute expansion (bombe d'entités, lecture de fichier ou requête réseau impossibles) ; le DOCTYPE externe de Gramps n'est jamais résolu ; XML décompressé borné à 512 Mio, décompression gzip arrêtée à la limite ; espace de noms étranger, préfixe, élément ou attribut inconnu : refus. **Paquet `.gpkg`** : membres inspectés avant toute écriture ; seuls des fichiers réguliers (lien symbolique ou physique, périphérique, FIFO : refus du paquet entier) ; noms relatifs sans `..`, composant caché (`.env`), antislash, NUL ni lecteur, uniques, un seul `data.gramps` ; 100 000 membres, 2 Gio par membre et 8 Gio au total au plus. Les médias sont copiés dans une zone d'attente **neuve** `<données>/imports/gramps/<nom>-<horodatage>/` (création exclusive, jamais d'écrasement, chemin final revérifié sous la zone), retirée si la lecture échoue ; jamais dans le vault ni ailleurs. |
 
+### Base Cassini installée par l'utilisateur (#349) : seule écriture hors des données
+
+`cassini_installer(jeton)` écrit **hors** du répertoire de données, dans `<référentiels>/cassini/`
+(`GENEALOGISTE_REFERENTIELS_DIR`, défaut `~/.local/share/genealogiste-referentiels`) : le fichier
+`lieux_cassini_devenus_communes.csv` (25 Mo, CC BY-NC-SA 4.0) et `acceptation.json`. C'est voulu : ce jeu ne doit
+entrer ni dans le dépôt Git de l'arbre, ni dans une sauvegarde, ni dans le plugin.
+
+- Emplacement contrôlé avant toute requête, puis à chaque lecture (`cassini.refus_emplacement`, liens symboliques
+  résolus) : refusé dans le répertoire de données, dans les dossiers de l'utilisateur gérés par le plugin (médias,
+  pièces, notes, rapports, exports), dans le plugin, et sous tout dossier qui porte un `.git`.
+- Noms de fichiers fixes : aucun paramètre de chemin ; le seul paramètre est le jeton à usage unique (une heure)
+  rendu par `cassini_preparer`, qui fige l'empreinte, la taille, l'URL et la destination présentées.
+- Écriture atomique (`fichiers.ecrire_atomique`), acceptation écrite après le fichier ; rien n'est écrit tant que
+  taille, empreinte SHA-1 publiée par Nakala et en-tête ne sont pas conformes. Dossier créé en `0700`.
+- Classe **écriture** pour `cassini_installer` et `cassini_desinstaller` (accord à chaque appel, refus avec
+  `GENEALOGISTE_ECRITURE=interdite`) ; `cassini_preparer` est une proposition. `cassini_desinstaller` ne supprime
+  que ces deux fichiers et leurs temporaires.
+- Lecture : seulement si le fichier est présent, accepté (licence, DOI, date) et d'empreinte égale à celle de
+  l'acceptation ; sinon il est ignoré. Détail : [contexte-historique.md](contexte-historique.md#base-cassini-locale-facultative).
+
 ## Confirmations (hooks)
 
 Chaque outil a une **classe de permission** déclarée une seule fois dans
@@ -31,8 +51,8 @@ de Claude Code (#153).
 |---|---|---|---|
 | Lecture | aucune écriture hors du cache et du journal internes | sans confirmation | `arbre_*` en lecture, `gramps_grouper_noms`, `archives_service`, `sources_catalogue`, `liens_recherche`, `variantes_noms`, `journal_ajouter`, `source_collee`, `pdf_markdown` |
 | Collecte | réseau et/ou écriture **additive et réversible** dans un répertoire géré par le plugin (cache, journal, pièce nouvelle archivée avec sa note) ; jamais d'écrasement ni de suppression, jamais l'arbre ni Gramps Web | sans confirmation | sources externes, `ark_resoudre`, `archive_image`, `archives_naviguer`, `archives_planche`, `piece_archiver`, `enquete_ouvrir`, `enquete_noter`, `archives_sonder`, `gramps_synchroniser`, `rapport_campagne_enregistrer` |
-| Proposition | prépare une modification sans l'écrire (diff et jeton, file de propositions) | sans confirmation | `arbre_proposer`, `propositions_*`, `pieces_proposer`, `marqueurs_migrer_proposer`, `gramps_bascule_proposer`, `gramps_recalculer_notes`, `gramps_structurer_lieux`, `gramps_dater_lieux`, `gramps_normaliser_types`, `gramps_proteger_vivants` |
-| Écriture | arbre, Gramps Web, fichiers de l'utilisateur (notes, pièces existantes, exports), suppression, envoi de ses fichiers à un tiers, identifiants | confirmation demandée | `arbre_appliquer`, `pieces_appliquer`, `marqueurs_migrer_appliquer`, `rapport_enregistrer`, `media_enregistrer`, `arbre_exporter`, `notes_*`, `cache_purger`, `gramps_tirer`, `familysearch_exporter`, `matchid_appariement_csv` |
+| Proposition | prépare une modification sans l'écrire (diff et jeton, file de propositions) | sans confirmation | `cassini_preparer`, `arbre_proposer`, `propositions_*`, `pieces_proposer`, `marqueurs_migrer_proposer`, `gramps_bascule_proposer`, `gramps_recalculer_notes`, `gramps_structurer_lieux`, `gramps_dater_lieux`, `gramps_normaliser_types`, `gramps_proteger_vivants` |
+| Écriture | arbre, Gramps Web, fichiers de l'utilisateur (notes, pièces existantes, exports), suppression, envoi de ses fichiers à un tiers, identifiants | confirmation demandée | `cassini_installer`, `cassini_desinstaller`, `arbre_appliquer`, `pieces_appliquer`, `marqueurs_migrer_appliquer`, `rapport_enregistrer`, `media_enregistrer`, `arbre_exporter`, `notes_*`, `cache_purger`, `gramps_tirer`, `familysearch_exporter`, `matchid_appariement_csv` |
 
 **Outils en deux temps** (table `CONDITIONS`) : classés d'après leur effet maximal, mais le hook lit l'entrée
 de l'appel pour ne demander l'accord qu'au moment de l'écriture :
@@ -45,6 +65,11 @@ de l'appel pour ne demander l'accord qu'au moment de l'écriture :
 
 Cas tranchés d'après le code :
 
+- `cassini_preparer` (#349) est une proposition : il prépare l'installation sans rien écrire hors du jeton, et sa
+  seule requête lit des métadonnées publiques (`api.nakala.fr`), sans donnée de personne ni téléchargement du jeu
+  (même règle que `gramps_dater_lieux` : la proposition l'emporte). `cassini_installer` est une écriture : il
+  télécharge 25 Mo, écrit un fichier de l'utilisateur hors du répertoire de données et enregistre son acceptation
+  d'une licence. `cassini_desinstaller` est une écriture : suppression.
 - `piece_archiver` est une collecte : l'image est écrite sous un nom nouveau (suffixe « (n) » en cas de
   collision, jamais d'écrasement), la note compagnon n'est jamais réécrite, le registre des pièces est en ajout
   seul ; l'arbre n'est touché qu'à la proposition.
@@ -438,6 +463,15 @@ limite publiée relevée) ; `gallica.bnf.fr` et `query.wikidata.org` gardent leu
 seulement, protégé ou sans sa clé requise n'émet aucune requête ; les clés `GENEALOGISTE_CLE_*` et
 `GENEALOGISTE_CROSSREF_MAILTO` (vide par défaut) ne sont jamais journalisées, écrites ni renvoyées par un outil.
 
+**Base Cassini (#349)** : `cassini_preparer` et `cassini_installer` interrogent `api.nakala.fr`, déjà déclaré
+(service `NAKALA` du référentiel, mêmes intervalle, plafond journalier et délais que les autres requêtes, par le
+client HTTP commun ; aucun nouvel hôte). Requêtes : `GET /datas/10.34847/nkl.e0556oog` (métadonnées, une par
+préparation, une par installation, jamais mises en cache) et `GET /data/10.34847/nkl.e0556oog/<sha1>` (le fichier,
+une fois par installation, jamais mis en cache). Aucune donnée de personne, de lieu ni de recherche n'est envoyée :
+ces outils n'ont aucun paramètre de personne (pas de garde « vivants » à poser). Service `NAKALA` désactivé
+(`GENEALOGISTE_CONTEXTE_SERVICES`) ou mode hors ligne : aucune requête. Ensuite, la lecture par `lieu_historique`
+est locale et n'émet rien.
+
 Un test dérive des modules `sources/` (et des URL COG de la configuration) la liste des hôtes réellement
 interrogés et exige qu'ils soient tous déclarés (table ou référentiel) ; un hôte dynamique (manifeste IIIF
 d'un tiers) tombe sur le défaut explicite.
@@ -689,6 +723,15 @@ Les redirections HTTP vers une autre origine ne transmettent plus Authorization,
 Proxy-Authorization ni X-Api-Key. Les identifiants de l’ancien exporteur FamilySearch ne sont plus utilisés
 et son exécution est désactivée : dépendances imposées vulnérables, dont DiskCache sans correctif connu
 lors de l’audit. L’import GEDCOM reste disponible. Voir [production.md](production.md).
+
+**Base Cassini (#349).** Le jeu `lieux_cassini_devenus_communes.csv` (CC BY-NC-SA 4.0) ne doit jamais être
+redistribué par ce dépôt (GPL-3.0), ni entier, ni en extrait, ni en fixture. `scripts/verifier_distribution.py`
+(CI « sécurité » et `test_securite_distribution.py`) refuse tout fichier suivi qui lui ressemble, sur trois
+signaux indépendants : le **nom** (`lieux_cassini…`, ou « cassini » avec une extension de tableur ou d'archive),
+la **taille** (25 497 478 octets, ou tout tableur de plus de 5 Mo) et l'**en-tête** (première ligne portant au
+moins trois colonnes du jeu, quel que soit le nom du fichier). Les tests fabriquent leurs lignes (lieux
+« Factice ») ; `test_depot_sans_fichier_cassini` applique la règle au dépôt entier. Le script se place à la
+racine du dépôt quel que soit le dossier d'appel.
 
 ## Ressources privées communes aux notes et exports (0.14.1)
 

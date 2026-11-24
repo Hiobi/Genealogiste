@@ -11,7 +11,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends git ca-certific
 
 WORKDIR /app
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy \
-    GENEALOGISTE_DATA_DIR=/data GENEALOGISTE_CACHE=/cache/cache.sqlite
+    GENEALOGISTE_DATA_DIR=/data GENEALOGISTE_CACHE=/cache/cache.sqlite \
+    GENEALOGISTE_REFERENTIELS_DIR=/cache/referentiels
 
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
