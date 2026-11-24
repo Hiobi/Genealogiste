@@ -1,0 +1,664 @@
+{
+ "head": {
+  "vars": [
+   "item",
+   "itemLabel",
+   "classe",
+   "date",
+   "debut",
+   "fin",
+   "bnf",
+   "idref",
+   "persee"
+  ]
+ },
+ "results": {
+  "bindings": [
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q2053030"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "bataille de Givenchy"
+    },
+    "date": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1914-12-22T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q4873010"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "bataille de la Scarpe"
+    },
+    "debut": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1918-08-26T00:00:00Z"
+    },
+    "fin": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1918-08-30T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q1989637"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "bataille de Festubert"
+    },
+    "date": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1915-05-27T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q2337604"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "bataille de la cote 70"
+    },
+    "debut": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1917-08-15T00:00:00Z"
+    },
+    "fin": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1917-08-25T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q2331555"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "bataille de Neuve Chapelle"
+    },
+    "debut": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1915-03-10T00:00:00Z"
+    },
+    "fin": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1915-03-13T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q3636304"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "bataille des hauteurs de l'Ancre"
+    },
+    "debut": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-10-01T00:00:00Z"
+    },
+    "fin": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-11-11T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q239255"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "bataille d'Arras"
+    },
+    "debut": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1917-04-09T00:00:00Z"
+    },
+    "fin": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1917-05-16T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q18639292"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "action de la Redoute Hohenzollern, 2-18 mars 1916"
+    },
+    "debut": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-03-02T00:00:00Z"
+    },
+    "fin": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-03-18T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q3636540"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "bataille de Morval"
+    },
+    "debut": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-09-25T00:00:00Z"
+    },
+    "fin": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-09-28T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q4872828"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "itemLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "Battle of the Ancre"
+    },
+    "debut": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-11-13T00:00:00Z"
+    },
+    "fin": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-11-18T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q11636595"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "siège de Boulogne-sur-Mer"
+    },
+    "debut": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1940-05-22T00:00:00Z"
+    },
+    "fin": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1940-05-25T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q2633421"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "bataille d'Hulluch"
+    },
+    "debut": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-04-27T00:00:00Z"
+    },
+    "fin": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-04-29T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q9172758"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "itemLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "Battle of Arras"
+    },
+    "date": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1915-05-09T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q783792"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "bataille de la ligne Hindenburg"
+    },
+    "date": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1918-01-01T00:00:00Z"
+    },
+    "debut": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1918-09-29T00:00:00Z"
+    },
+    "fin": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1918-10-10T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q1245157"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "bataille de Loos"
+    },
+    "date": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1915-10-08T00:00:00Z"
+    },
+    "debut": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1915-09-25T00:00:00Z"
+    },
+    "fin": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1915-10-14T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q641064"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q3839081"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "massacre du Paradis"
+    },
+    "date": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1940-05-27T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q696839"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "bataille d'Arras"
+    },
+    "date": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1940-05-21T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q7443071"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "itemLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "Second Battle of Bapaume"
+    },
+    "date": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1918-09-03T00:00:00Z"
+    },
+    "debut": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1918-08-21T00:00:00Z"
+    },
+    "fin": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1918-09-03T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q1320675"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "bataille d'Havrincourt"
+    },
+    "date": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1918-09-12T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q989075"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "bataille d'Arras"
+    },
+    "date": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1914-01-01T00:00:00Z"
+    },
+    "debut": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1914-10-01T00:00:00Z"
+    },
+    "fin": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1914-10-04T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q1550228"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q1550225"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "catastrophe de Courrières"
+    },
+    "date": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1906-03-10T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q1550228"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q3839081"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "catastrophe de Courrières"
+    },
+    "date": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1906-03-10T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q108101483"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q3839081"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "massacre d'Oignies et Courrières"
+    },
+    "date": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1940-05-28T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q4871545"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "bataille de Le Transloy"
+    },
+    "debut": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-10-01T00:00:00Z"
+    },
+    "fin": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-10-18T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q5251289"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "itemLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "Defence of Festubert"
+    },
+    "date": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1914-11-24T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q2311228"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q49776"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "Grève des mineurs du Nord-Pas-de-Calais"
+    },
+    "debut": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1941-05-27T00:00:00Z"
+    },
+    "fin": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1941-06-10T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q393299"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "bataille de la crête de Vimy"
+    },
+    "debut": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1917-04-09T00:00:00Z"
+    },
+    "fin": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1917-04-12T00:00:00Z"
+    }
+   }
+  ]
+ }
+}

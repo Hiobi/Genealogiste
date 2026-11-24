@@ -1,0 +1,434 @@
+{
+ "head": {
+  "vars": [
+   "item",
+   "itemLabel",
+   "classe",
+   "date",
+   "debut",
+   "fin",
+   "bnf",
+   "idref",
+   "persee"
+  ]
+ },
+ "results": {
+  "bindings": [
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q5454155"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "date": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-07-01T00:00:00Z"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "Premier jour de la bataille de la Somme"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q2634717"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "bataille de la crête de Bazentin"
+    },
+    "debut": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-07-14T00:00:00Z"
+    },
+    "fin": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-07-17T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q1988859"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "bataille de Guillemont"
+    },
+    "debut": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-09-03T00:00:00Z"
+    },
+    "fin": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-09-06T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q1992231"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "date": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-01-01T00:00:00Z"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "bataille d'Albert"
+    },
+    "debut": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-07-01T00:00:00Z"
+    },
+    "fin": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-07-13T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q2890615"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "date": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-09-26T00:00:00Z"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "bataille de la ferme Mouquet"
+    },
+    "debut": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-08-08T00:00:00Z"
+    },
+    "fin": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-08-26T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q3381142"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "date": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-01-01T00:00:00Z"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "bataille de Flers-Courcelette"
+    },
+    "debut": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-09-15T00:00:00Z"
+    },
+    "fin": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-09-22T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q3636304"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "bataille des hauteurs de l'Ancre"
+    },
+    "debut": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-10-01T00:00:00Z"
+    },
+    "fin": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-11-11T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q4872828"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "itemLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "Battle of the Ancre"
+    },
+    "debut": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-11-13T00:00:00Z"
+    },
+    "fin": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-11-18T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q1998995"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "bataille de la crête de Thiepval"
+    },
+    "debut": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-09-25T00:00:00Z"
+    },
+    "fin": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-09-28T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q2889700"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "date": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-09-03T00:00:00Z"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "bataille de Pozières"
+    },
+    "debut": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-07-23T00:00:00Z"
+    },
+    "fin": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-08-07T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q68809773"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "itemLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "Battle of Mametz Wood"
+    },
+    "debut": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-07-07T00:00:00Z"
+    },
+    "fin": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-07-12T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q786656"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "bataille d'Albert"
+    },
+    "debut": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1914-09-25T00:00:00Z"
+    },
+    "fin": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1914-09-29T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q28404744"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "combats à Ovillers-la-Boisselle pendant la Première Guerre mondiale"
+    },
+    "debut": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1914-09-01T00:00:00Z"
+    },
+    "fin": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1918-08-26T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q2455332"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "date": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-09-09T00:00:00Z"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "bataille de Ginchy"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q1096151"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "date": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-09-03T00:00:00Z"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "bataille du bois Delville"
+    },
+    "debut": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-07-14T00:00:00Z"
+    },
+    "fin": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-09-15T00:00:00Z"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q3400101"
+    },
+    "classe": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q178561"
+    },
+    "itemLabel": {
+     "xml:lang": "fr",
+     "type": "literal",
+     "value": "bataille de Mametz Wood"
+    },
+    "debut": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-07-07T00:00:00Z"
+    },
+    "fin": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1916-07-12T00:00:00Z"
+    }
+   }
+  ]
+ }
+}
