@@ -3,11 +3,14 @@
 Pour les outils gardés mesurés par l'enveloppe générique (ServeurMCP.mesure), le contrôle de budget précède
 l'exécution de l'outil ; sans pré-contrôle, une enquête bloquée consignerait au reste à faire les paramètres
 d'une personne vivante. outils.GARDE_AVANT_BUDGET rejoue la garde de l'outil avant le budget : même refus, rien
-consommé ni consigné. Données fictives (fixture famille.ged : I9 Lucas MARTIN, présumé vivant)."""
+consommé ni consigné. #347 : tous les appels _garde de l'outil sont rejoués (lieu compris), pas seulement le
+premier. Données fictives (fixture famille.ged : I9 Lucas MARTIN, présumé vivant)."""
 
 from __future__ import annotations
 
+import ast
 import inspect
+import textwrap
 
 import pytest
 from test_budget_collecte import EXEMPLES, routes  # noqa: F401 — fixture
@@ -15,7 +18,11 @@ from test_budget_collecte import EXEMPLES, routes  # noqa: F401 — fixture
 from genealogiste_mcp import outils, server
 
 VIVANT = {"nom": "Lucas MARTIN", "prenom": "Lucas", "texte": "Lucas MARTIN",
-          "requete": 'SELECT ?p { ?p ?l "Lucas Martin" }', "personne": "I9", "commune": "Lucas MARTIN"}
+          "requete": 'SELECT ?p { ?p ?l "Lucas Martin" }', "personne": "I9", "commune": "Lucas MARTIN",
+          "lieu": "Lucas MARTIN", "themes": "Lucas MARTIN", "sujet": "Lucas MARTIN"}
+
+
+ARGS_GARDE = list(inspect.signature(server._garde).parameters)  # avant tout espion posé par un test
 
 
 def _brute(nom: str):
@@ -23,9 +30,34 @@ def _brute(nom: str):
     return getattr(server, nom).__wrapped__
 
 
+def _params_gardes(nom: str) -> set[str]:
+    """Paramètres de l'outil passés à la garde, tous appels _garde confondus."""
+    return {param for appel in outils.GARDE_AVANT_BUDGET[nom] for param in appel.values()}
+
+
+def _gardes_du_code(nom: str) -> list[dict[str, str]]:
+    """Appels _garde écrits dans le corps de l'outil, dans l'ordre : {argument de _garde: paramètre de l'outil}.
+    Tout argument doit être un paramètre de l'outil passé tel quel (sinon la déclaration ne peut pas le décrire)."""
+    fn = _brute(nom)
+    params = set(inspect.signature(fn).parameters)
+    arbre = ast.parse(textwrap.dedent(inspect.getsource(fn)))
+    appels = sorted((n for n in ast.walk(arbre)
+                     if isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id == "_garde"),
+                    key=lambda n: (n.lineno, n.col_offset))
+    gardes = []
+    for appel in appels:
+        lies = [*zip(ARGS_GARDE, appel.args, strict=False), *((k.arg, k.value) for k in appel.keywords)]
+        for arg, valeur in lies:
+            assert arg in ARGS_GARDE, f"{nom} : argument de _garde inattendu ({arg})"
+            assert isinstance(valeur, ast.Name) and valeur.id in params, \
+                f"{nom} : _garde({arg}=…) ne reçoit pas un paramètre de l'outil tel quel"
+        gardes.append({arg: valeur.id for arg, valeur in lies})
+    return gardes
+
+
 def _appels_vivants():
-    for nom, correspondance in sorted(outils.GARDE_AVANT_BUDGET.items()):
-        for param in sorted(set(correspondance.values()) & VIVANT.keys()):
+    for nom in sorted(outils.GARDE_AVANT_BUDGET):
+        for param in sorted(_params_gardes(nom) & VIVANT.keys()):
             kwargs = dict(EXEMPLES[nom])
             if param == "prenom":
                 kwargs.update(nom="Martin", prenom="Lucas")
@@ -51,10 +83,21 @@ def test_correspondance_couvre_les_outils_gardes_de_l_enveloppe():
 
 
 @pytest.mark.parametrize("nom", sorted(outils.GARDE_AVANT_BUDGET))
+def test_correspondance_declare_chaque_garde_du_code(nom):
+    """Structurel (#347) : chaque appel _garde du corps de l'outil, avec chacun de ses paramètres, figure dans
+    la déclaration, dans le même ordre ; un appel ajouté dans l'outil sans y être déclaré échoue ici."""
+    gardes = _gardes_du_code(nom)
+    assert gardes, f"{nom} : aucun appel _garde direct dans le corps de l'outil"
+    assert list(outils.GARDE_AVANT_BUDGET[nom]) == gardes
+
+
+@pytest.mark.parametrize("nom", sorted(outils.GARDE_AVANT_BUDGET))
 def test_correspondance_identique_a_la_garde_de_l_outil(app, monkeypatch, nom):
-    """L'appel _garde du pré-contrôle reçoit exactement les arguments de l'appel _garde de l'outil."""
+    """Les appels _garde du pré-contrôle reçoivent exactement les arguments des appels _garde de l'outil, un
+    à un et dans l'ordre (l'espion laisse passer les premiers appels pour atteindre les suivants)."""
     sig_garde = inspect.signature(server._garde)
     vus: list[dict] = []
+    limite = 0
 
     class Arret(Exception):
         pass
@@ -63,7 +106,15 @@ def test_correspondance_identique_a_la_garde_de_l_outil(app, monkeypatch, nom):
         lies = sig_garde.bind(*a, **kw)
         lies.apply_defaults()
         vus.append(dict(lies.arguments))
-        raise Arret
+        if len(vus) == limite:
+            raise Arret
+        return None
+
+    def releve(appeler) -> list[dict]:
+        vus.clear()
+        with pytest.raises(Arret):
+            appeler()
+        return list(vus)
 
     fn = _brute(nom)
     params = inspect.signature(fn).parameters
@@ -72,12 +123,10 @@ def test_correspondance_identique_a_la_garde_de_l_outil(app, monkeypatch, nom):
     complet = {**obligatoires, **{p: f"<{p}>" for p, v in params.items() if v.annotation == "str"}}
     monkeypatch.setattr(server, "_garde", espion)
     for kwargs in (complet, obligatoires):  # paramètres omis : défauts de la signature, comme dans l'outil
-        vus.clear()
-        with pytest.raises(Arret):
-            fn(**kwargs)
-        with pytest.raises(Arret):
-            server._garde_avant_budget(nom, fn, kwargs)
-        assert len(vus) == 2 and vus[0] == vus[1], vus
+        for limite in range(1, len(_gardes_du_code(nom)) + 1):
+            outil = releve(lambda: fn(**kwargs))  # noqa: B023 — appelé dans l'itération
+            pre = releve(lambda: server._garde_avant_budget(nom, fn, kwargs))  # noqa: B023
+            assert len(outil) == limite and outil == pre, (outil, pre)
 
 
 # ---------------------------------------------------------------- comportement
@@ -105,7 +154,7 @@ def test_enquete_bloquee_personne_decedee_refus_budget(app_famille, routes, nom)
     eid = server.enquete_ouvrir(f"Décédé {nom}", budget={"requetes_par_hote": 1})["id"]
     _bloquer(eid)
     kwargs = dict(EXEMPLES[nom])
-    if "personne" in outils.GARDE_AVANT_BUDGET[nom].values():
+    if "personne" in _params_gardes(nom):
         kwargs["personne"] = "I1"  # Jean MARTIN, décédé
     appels = len(routes.calls)
     res = getattr(server, nom)(**kwargs, enquete=eid)

@@ -117,8 +117,12 @@ Sans `enquete`, rien ne change, hormis le plafond journalier par hôte d'archive
 avant tout (`_garde`) : un refus « vivant » ne consomme rien et n'est pas noté. Avec `enquete`, la garde
 passe même avant le contrôle de budget : une enquête bloquée renvoie le refus « vivant » (identique à celui de
 l'outil) sans consigner les paramètres au `reste_a_faire`. Pour les outils mesurés par l'enveloppe générique,
-`outils.GARDE_AVANT_BUDGET` déclare quels paramètres passent à la garde, comme dans l'outil (vérifié par
-`tests/test_garde_avant_budget.py`) ; `recherche_multi` appelle lui-même la garde avant le budget.
+`outils.GARDE_AVANT_BUDGET` déclare chaque appel de la garde fait par l'outil, dans l'ordre et avec ses
+paramètres (plusieurs appels quand l'outil garde plusieurs textes : `themes` puis `lieu` pour `contexte_local`
+et `pistes_contexte`, `texte` puis `lieu` pour `presse_recherche`, #347) ; tous sont rejoués avant le budget.
+`tests/test_garde_avant_budget.py` compare la déclaration aux appels `_garde` écrits dans le code de l'outil :
+un paramètre gardé dans l'outil sans y être déclaré fait échouer les tests. `recherche_multi` appelle lui-même
+la garde avant le budget.
 
 ## Tâches de Gramps Web (#263)
 
