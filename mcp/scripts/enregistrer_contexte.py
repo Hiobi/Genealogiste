@@ -254,6 +254,8 @@ REDUCTIONS: dict[tuple[str, str], Callable[[bytes], bytes]] = {
     ("WIKIDATA", "evenements_commune_P374_62133.json"): lambda c: _ecrire_json(_json(c)),  # contexte_local (#289)
     ("WIKIDATA", "evenements_commune_P374_62250.json"): lambda c: _ecrire_json(_json(c)),  # contexte_local (#289)
     ("WIKIDATA", "evenements_commune_P374_80080.json"): lambda c: _ecrire_json(_json(c)),  # contexte_local (#289)
+    ("WIKIDATA", "evenements_departement_P2586_62.json"): lambda c: _ecrire_json(_json(c)),  # contexte_local (#345)
+    ("WIKIDATA", "evenements_departement_P2586_80.json"): lambda c: _ecrire_json(_json(c)),  # contexte_local (#345)
     ("COG-INSEE", "v_commune_depuis_1943.csv"): lambda c: _csv_filtre(c, ("COM",)),
     ("COG-INSEE", "v_mvt_commune_2024.csv"): lambda c: _csv_filtre(c, ("COM_AV", "COM_AP")),
     ("IGN-GEOPLATEFORME", "GetCapabilities.xml"): _capacites,

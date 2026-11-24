@@ -3,13 +3,16 @@
 Toutes les réponses rejouées sont des réponses réelles enregistrées (tests/fixtures/contexte/reponses/<service>/,
 MANIFESTE.json) ; aucun test n'accède au réseau. Les réponses bibliographiques enregistrées portent sur le bassin
 minier du Pas-de-Calais : rejouées pour les autres cas, elles ne doivent y produire aucun élément (lieu non cité).
-Wikidata : réponses du gabarit ``evenements_commune`` ; toute autre requête Wikidata reçoit un 429 simulé (refus
-constaté le 2026-11-21, issue #289), pour vérifier qu'un service en échec n'arrête pas les autres."""
+Wikidata : réponses des gabarits ``evenements_commune`` et ``evenements_departement`` (#345) ; toute autre requête
+Wikidata reçoit un 429 simulé (refus constaté le 2026-11-21, issue #289), pour vérifier qu'un service en échec
+n'arrête pas les autres."""
 
 from __future__ import annotations
 
+import dataclasses
 import hashlib
 import json
+import re
 from pathlib import Path
 from urllib.parse import parse_qs, unquote_plus, urlsplit
 
@@ -58,7 +61,8 @@ def _manifeste_wikidata() -> dict:
 
 
 def _enregistrees() -> dict[str, str]:
-    """Requête SPARQL exacte -> fichier de réponse enregistré (gabarit evenements_commune et lieu_historique)."""
+    """Requête SPARQL exacte -> fichier de réponse enregistré (gabarits evenements_commune et
+    evenements_departement, lieu_historique)."""
     out = {}
     for r in _manifeste_wikidata()["reponses"]:
         q = parse_qs(urlsplit(r["url"]).query).get("query") or [unquote_plus(r["url"].split("query=")[1]
@@ -107,7 +111,6 @@ def _elements(out: dict) -> list[dict]:
 
 
 def _annees(texte: str) -> int:
-    import re
     return int(re.findall(r"\d{4}", texte)[0])
 
 
@@ -125,10 +128,14 @@ def test_gabarits_wikidata_livres_ont_une_reponse_enregistree():
             assert r["empreinte"] == "sha256:" + hashlib.sha256(contenu).hexdigest()
     for code, de, a in (("62133", 1881, 1946), ("62250", 1881, 1946), ("80080", 1892, 1916)):
         assert gabarit.requete(code, de, a) in enregistrees, code  # requête livrée = requête enregistrée
-    assert set(wdi.GABARITS) == {r["fichier"].split("_P374_")[0] for r in manifeste["reponses"]
+    departement = wdi.GABARITS["evenements_departement"]  # #345 : forme à profondeur bornée
+    assert enregistrees[departement.requete("62", 1881, 1946)] == "evenements_departement_P2586_62.json"
+    assert enregistrees[departement.requete("80", 1892, 1916)] == "evenements_departement_P2586_80.json"
+    assert set(wdi.GABARITS) == {re.split(r"_P(?:374|2586)_", r["fichier"])[0] for r in manifeste["reponses"]
                                  if r["fichier"].startswith("evenements_")}
-    assert not set(wdi.NON_LIVRES) & set(wdi.GABARITS)  # un gabarit sans réponse n'est pas livré
-    assert manifeste["non_verifie"].count("délai dépassé") == 2  # deux formes essayées, aucune livrée
+    assert not set(wdi.NON_LIVRES) & set(wdi.GABARITS)  # une forme sans réponse n'est pas livrée
+    assert manifeste["non_verifie"].count("délai dépassé") == 2  # deux formes essayées sans réponse, non livrées
+    assert len(wdi.NON_LIVRES) == 2 and all(n.startswith("evenements_departement:") for n in wdi.NON_LIVRES)
 
 
 def test_gabarit_leger_borne_et_sans_rayon():
@@ -139,6 +146,40 @@ def test_gabarit_leger_borne_et_sans_rayon():
     for mauvais in (("Billy", 1881, 1946), ("62133", 1946, 1881), ("62133", "1881", 1946)):
         with pytest.raises(ValueError):
             wdi.GABARITS["evenements_commune"].requete(*mauvais)
+
+
+def test_gabarit_departemental_leger_et_a_profondeur_bornee():
+    q = wdi.GABARITS["evenements_departement"].requete("62", 1881, 1946)
+    assert 'wdt:P2586 "62"' in q and q.rstrip().endswith("LIMIT 100") and "?an0 <= 1946 && ?an1 >= 1881" in q
+    assert "wdt:P131*" not in q and "wdt:P131+" not in q  # un seul niveau sous le département, jamais non borné
+    assert "around" not in q and "geof:" not in q and "STRSTARTS" not in q
+    assert q.count("wdt:P279*") == 1 and "?type wdt:P279* ?classe" in q  # sous-classes calculées une seule fois
+    for classe in wdi.CLASSES_EVENEMENTS:
+        assert f"wd:{classe}" in q
+    for bon in ("2A", "971", "01"):
+        assert f'"{bon}"' in wdi.GABARITS["evenements_departement"].requete(bon, 1900, 1900)
+    for mauvais in (("62133", 1881, 1946), ("Pas-de-Calais", 1881, 1946), ("6", 1881, 1946), ("62", 1946, 1881),
+                    ('62" . ?x ?y "', 1881, 1946)):
+        with pytest.raises(ValueError):
+            wdi.GABARITS["evenements_departement"].requete(*mauvais)
+    with pytest.raises(ValueError):
+        wdi.GABARITS["evenements_commune"].requete("62", 1881, 1946)  # chaque gabarit garde sa forme de code
+
+
+def test_analyseur_reponse_reelle_du_departement():
+    data = json.loads((WIKIDATA / "evenements_departement_P2586_62.json").read_text())
+    lignes = {x.qid: x for x in wdi.analyser(data)}
+    assert len(data["results"]["bindings"]) == 27 and len(lignes) == 26
+    courrieres = lignes["Q1550228"]  # deux lignes (deux classes) réunies en une entrée
+    assert (courrieres.de, courrieres.a, courrieres.classes) == (1906, 1906, ["Q1550225", "Q3839081"])
+    assert (lignes["Q4873010"].de, lignes["Q4873010"].a) == (1918, 1918)  # P580 et P582, sans P585
+    for x in lignes.values():
+        assert x.de is not None and x.de <= 1946 and x.a >= 1881 and x.classes
+        assert set(x.classes) <= set(wdi.CLASSES_EVENEMENTS)
+        assert x.identifiants() == []  # aucune référence externe dans la réponse réelle : jamais un élément
+    somme = wdi.analyser(json.loads((WIKIDATA / "evenements_departement_P2586_80.json").read_text()))
+    assert len(somme) == 16 and all(x.classes == ["Q178561"] and x.identifiants() == [] for x in somme)
+    assert {(x.de, x.a) for x in somme} == {(1916, 1916), (1914, 1914), (1914, 1918)}
 
 
 def test_analyseur_index_reponses_reelles():
@@ -256,6 +297,52 @@ def test_index_wikidata_retenu_seulement_par_sa_reference_consultee(app):
     assert "sans référence externe" in c.ecartes[-1]["motif"]
 
 
+def _reponse_departement_avec_idref() -> dict:
+    """Réponse réelle du Pas-de-Calais complétée d'une liaison ``idref`` (forme d'une valeur P269) sur la première
+    ligne : aucune réponse enregistrée ne porte d'identifiant externe."""
+    d = json.loads((WIKIDATA / "evenements_departement_P2586_62.json").read_text())
+    d["results"]["bindings"][0]["idref"] = {"type": "literal", "value": "02724640X"}
+    return d
+
+
+def test_index_departemental_reference_consultee_et_mention(app):
+    c = _collecte(app)
+    ligne = wdi.analyser(_reponse_departement_avec_idref())[0]
+    local._ligne_index(c, ligne, "Pas-de-Calais", "departement")
+    assert c.elements == {} and c.non_sources[0]["statut"] == "non sourcé"
+    assert (c.non_sources[0]["lieu"], c.non_sources[0]["echelle"]) == ("Pas-de-Calais", "departement")
+    ref = Reference(identifiant=Identifiant("ppn", "02724640X"), nature="index",
+                    titre="Notice d'autorité (titre lu dans la notice)", service="SUDOC",
+                    requete="https://www.sudoc.abes.fr/cbs/sru/?x=1", consulte_le="2026-11-24")
+    app.registre_references.enregistrer(ref, statut=200, reponse="<r>02724640X</r>")
+    local._ligne_index(c, ligne, "Pas-de-Calais", "departement")
+    el, = c.elements["departement"]
+    assert el["enonce"] == ref.titre and el["enonce"] != ligne.libelle  # jamais le libellé Wikidata
+    assert el["portee"] == {"lieu": "Pas-de-Calais", "echelle": "departement", "de": 1914, "a": 1914,
+                            "population": ""}
+    assert el["mention"] == MENTION_TENDANCE and el["rattachement"]["niveau"] == "non_demontre"
+    assert app.registre_references.est_consultee(Identifiant("ppn", "02724640X"))
+    local._ligne_index(c, ligne, "Nord", "departement")  # hors des lieux de vie : écarté
+    assert "hors des lieux de vie" in c.ecartes[-1]["motif"] and len(c.elements["departement"]) == 1
+
+
+def test_index_departemental_limite_atteinte_et_requete_refusee(app, services_enregistres, monkeypatch):
+    r = wdi.interroger(app.sctx, "evenements_departement", "62", 1881, 1946)
+    assert (r["statut"], r["nb_lignes"], r["operation"]) == ("interroge", 26, "index:evenements_departement")
+    assert "limite_atteinte" not in r
+    entree = next(x for x in app.journal.entries() if x["id"] == r["journal"])
+    assert entree["parametres"] == {"gabarit": "evenements_departement", "departement": "62", "periode": "1881-1946"}
+    gabarit = wdi.GABARITS["evenements_departement"]  # même requête, plafond abaissé aux 27 lignes de la réponse
+    monkeypatch.setitem(wdi.GABARITS, "evenements_departement", dataclasses.replace(
+        gabarit, limite=27, texte=gabarit.texte.replace("%(limite)d", "100")))
+    assert wdi.interroger(app.sctx, "evenements_departement", "62", 1881, 1946)["limite_atteinte"] == 27
+    monkeypatch.undo()
+    refus = wdi.interroger(app.sctx, "evenements_departement", "62", 1881, 1946, residus=lambda q: ["62"])
+    assert refus["statut"] == "erreur" and "requête non émise" in refus["motif"] and refus["lignes"] == []
+    autre = wdi.interroger(app.sctx, "evenements_departement", "59", 1881, 1946)  # non enregistrée : 429 simulé
+    assert autre["statut"] == "erreur" and autre["lignes"] == []
+
+
 def test_type_lexical():
     assert local.type_lexical("Billy-Montigny au coeur de la catastrophe minière de 1906") == "evenement"
     assert local.type_lexical("Les houillères du Nord") == "economie"
@@ -339,6 +426,18 @@ def test_mineur_element_sourcé_et_pays_par_lieu(app_contexte, services_enregist
     assert any(x["service"] == "GALLICA" for x in out["services_en_echec"])
     assert any(x["service"] == "WIKIDATA" and x["lieu"] == "Billy-Montigny" for x in out["services_interroges"])
     assert out["taches_manuelles"]
+    # #345 : gabarit départemental rejoué sur la réponse réelle du Pas-de-Calais ; index seulement
+    dep, = [x for x in out["services_interroges"] if x.get("operation") == "index:evenements_departement"]
+    assert (dep["service"], dep["lieu"], dep["nb_lignes"]) == ("WIKIDATA", "Pas-de-Calais", 26)
+    assert "limite_atteinte" not in dep and not any("evenements_departement" in str(x) for x in out["services_ecartes"])
+    sans_ref = {x["qid"] for x in out["ecartes"] if x["origine"] == "WIKIDATA (index)"
+                and "sans référence externe" in x["motif"]}
+    assert len(sans_ref) == 26 and "Q1550228" in sans_ref  # toutes écartées, avec leur motif
+    assert not any(x["origine"].startswith("WIKIDATA") for x in _elements(out)) and out["non_sources"] == []
+    assert "catastrophe de courrières" not in _texte_sortie(out)  # libellé de l'index : jamais un énoncé
+    demandes = [parse_qs(urlsplit(str(c.request.url)).query)["query"][0] for c in services_enregistres.calls
+                if c.request.url.host == "query.wikidata.org"]
+    assert demandes.count(wdi.GABARITS["evenements_departement"].requete("62", 1881, 1946)) == 1
     # carte de l'état-major (1820-1866) proposée par lieu_historique : hors de la vie, écartée avec son motif
     assert any(x["origine"] == "IGN-GEOPLATEFORME" and "hors de la période" in x["motif"] for x in out["ecartes"])
 

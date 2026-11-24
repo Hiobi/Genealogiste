@@ -14,9 +14,16 @@ Règles des gabarits (constat de l'issue #289 : requête par rayon ou par dépar
 - ``LIMIT`` ; délai : celui du client HTTP commun (``GENEALOGISTE_HTTP_TIMEOUT``, 30 s par défaut), limites de débit,
   plafonds et coupe-circuit du client ; cache de 30 jours.
 
+Gabarit départemental (#345) : le département est désigné par son code INSEE (``P2586``) et la profondeur est
+**bornée** (événement situé, par ``P276`` ou ``P131``, dans le département ou dans un lieu directement rattaché au
+département par ``P131`` : un seul niveau, jamais ``P131*``). Les lieux du département, les sous-classes des classes
+fermées et le type des éléments sont calculés dans des sous-requêtes nommées, jointes sur le type : aucun parcours
+de ``P279*`` élément par élément.
+
 Chaque gabarit livré a une réponse réelle enregistrée (``tests/fixtures/contexte/reponses/WIKIDATA/``, avec
-``MANIFESTE.json``) et un test. Les gabarits essayés sans réponse (délai dépassé) sont listés dans ``NON_LIVRES`` :
-aucun n'est émis. Seuls un code INSEE et deux années partent : jamais de nom ni d'identifiant de personne.
+``MANIFESTE.json``) et un test. Les formes essayées sans réponse (délai dépassé) sont listées dans ``NON_LIVRES`` :
+aucune n'est émise. Seuls un code INSEE (commune ou département) et deux années partent : jamais de nom ni
+d'identifiant de personne.
 """
 
 from __future__ import annotations
@@ -67,6 +74,48 @@ _EVENEMENTS_COMMUNE = """SELECT DISTINCT ?item ?itemLabel ?classe ?date ?debut ?
 } LIMIT %(limite)d
 """
 
+# Profondeur bornée : l'événement est situé dans le département ou dans un lieu rattaché directement au département.
+# Sous-requêtes nommées (évaluées une fois chacune), jointes sur ?type.
+_EVENEMENTS_DEPARTEMENT = """SELECT DISTINCT ?item ?itemLabel ?classe ?date ?debut ?fin ?bnf ?idref ?persee
+WITH {
+  SELECT DISTINCT ?item WHERE {
+    ?dept wdt:P2586 "%(code)s" .
+    { ?item wdt:P276|wdt:P131 ?dept . }
+    UNION
+    { ?lieu wdt:P131 ?dept . ?item wdt:P276|wdt:P131 ?lieu . }
+  }
+} AS %%lieux
+WITH {
+  SELECT ?type ?classe WHERE {
+    VALUES ?classe { %(classes)s }
+    ?type wdt:P279* ?classe .
+  }
+} AS %%types
+WITH {
+  SELECT ?item ?type WHERE {
+    INCLUDE %%lieux .
+    ?item wdt:P31 ?type .
+  }
+} AS %%situes
+WHERE {
+  INCLUDE %%situes .
+  INCLUDE %%types .
+  OPTIONAL { ?item wdt:P585 ?date }
+  OPTIONAL { ?item wdt:P580 ?debut }
+  OPTIONAL { ?item wdt:P582 ?fin }
+  BIND(COALESCE(YEAR(?date), YEAR(?debut)) AS ?an0)
+  BIND(COALESCE(YEAR(?date), YEAR(?fin), ?an0) AS ?an1)
+  FILTER(BOUND(?an0) && ?an0 <= %(a)d && ?an1 >= %(de)d)
+  OPTIONAL { ?item wdt:P268 ?bnf }
+  OPTIONAL { ?item wdt:P269 ?idref }
+  OPTIONAL { ?item wdt:P8758 ?persee }
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "fr,en" . }
+} LIMIT %(limite)d
+"""
+
+CODE_COMMUNE = r"\d[\dAB]\d{3}"
+CODE_DEPARTEMENT = r"\d[\dAB]|97\d"
+
 
 @dataclass(frozen=True)
 class GabaritWikidata:
@@ -76,10 +125,12 @@ class GabaritWikidata:
     limite: int
     description: str
     ttl: float = 30 * DAY
+    code: str = CODE_COMMUNE  # forme du code INSEE attendu (commune ou département)
+    parametre: str = "code_insee"  # nom du code dans les paramètres journalisés
 
     def requete(self, code: str, de: int, a: int) -> str:
-        if not re.fullmatch(r"\d[\dAB]\d{3}", code or ""):
-            raise ValueError(f"code INSEE de commune attendu : {code!r}")
+        if not re.fullmatch(self.code, code or ""):
+            raise ValueError(f"code INSEE de {self.echelle} attendu : {code!r}")
         if not (isinstance(de, int) and isinstance(a, int) and de <= a):
             raise ValueError(f"période invalide : {de}-{a}")
         classes = " ".join(f"wd:{q}" for q in CLASSES_EVENEMENTS)
@@ -91,13 +142,21 @@ GABARITS: dict[str, GabaritWikidata] = {
         nom="evenements_commune", echelle="commune", texte=_EVENEMENTS_COMMUNE, limite=50,
         description="Événements des classes fermées situés dans la commune (P276 ou P131, puis P131*), datés dans "
                     "la période ; identifiants BnF, IdRef et Persée s'ils existent."),
+    "evenements_departement": GabaritWikidata(
+        nom="evenements_departement", echelle="departement", texte=_EVENEMENTS_DEPARTEMENT, limite=100,
+        code=CODE_DEPARTEMENT, parametre="departement",
+        description="Événements des classes fermées situés (P276 ou P131) dans le département (code INSEE P2586) ou "
+                    "dans un lieu rattaché directement au département (un seul niveau de P131), datés dans la "
+                    "période ; identifiants BnF, IdRef et Persée s'ils existent."),
 }
 
-# Gabarits essayés une fois (requête réelle) sans réponse : non livrés, jamais émis.
+# Formes essayées une fois (requête réelle) sans réponse : non livrées, jamais émises.
 NON_LIVRES = {
-    "evenements_departement": "rattachement au département (P2586 puis P131*, ou communes du département par le "
-                              "préfixe du code INSEE) : délai dépassé (60 s) aux deux essais du 2026-11-23 ; non "
-                              "livré",
+    "evenements_departement:P131_non_borne": "rattachement au département par P2586 puis P131* non borné : délai "
+                                             "dépassé (60 s) à l'essai du 2026-11-23 ; forme non livrée",
+    "evenements_departement:prefixe_code_insee": "communes du département par le préfixe du code INSEE, un saut "
+                                                 "P276|P131 : délai dépassé (60 s) à l'essai du 2026-11-23 ; forme "
+                                                 "non livrée",
 }
 
 
@@ -183,12 +242,13 @@ def interroger(ctx: SourceContext, nom: str, code: str, de: int, a: int, personn
     if residus and (trouves := residus(requete)):
         return {**base, "statut": "erreur", "lignes": [],
                 "motif": f"requête non émise : elle contiendrait un élément d'identité ({', '.join(trouves)})"}
-    params = {"gabarit": nom, "code_insee": code, "periode": f"{de}-{a}"}
+    params = {"gabarit": nom, gab.parametre: code, "periode": f"{de}-{a}"}
     try:
         data, cache = ctx.http.get(ENDPOINT, params={"query": requete, "format": "json"},
                                    headers={"Accept": "application/sparql-results+json"}, ttl=gab.ttl,
                                    source="wikidata")
         lignes = analyser(data)
+        atteinte = len(data["results"]["bindings"]) >= gab.limite
     except Exception as exc:  # noqa: BLE001 — un service en échec n'empêche pas les autres
         env = error_envelope(ctx, "wikidata", f"index_{nom}", params, exc, personne)
         return {**base, "statut": "erreur", "motif": env["erreur"], "journal": env["journal"], "lignes": []}
@@ -196,5 +256,8 @@ def interroger(ctx: SourceContext, nom: str, code: str, de: int, a: int, personn
                           nb_resultats=len(lignes), cache=cache, personne=personne,
                           resume="; ".join(x.libelle[:60] for x in lignes[:5]),
                           references=[LIENS["wikidata"].format(x.qid) for x in lignes[:20]])
-    return {**base, "statut": "interroge", "nb_lignes": len(lignes), "depuis_cache": cache, "journal": jid,
-            "lignes": lignes}
+    out = {**base, "statut": "interroge", "nb_lignes": len(lignes), "depuis_cache": cache, "journal": jid,
+           "lignes": lignes}
+    if atteinte:  # LIMIT atteinte : la réponse est une partie des entrées de l'index, sans ordre
+        out["limite_atteinte"] = gab.limite
+    return out
