@@ -16,7 +16,9 @@ Récit de vie : **$ARGUMENTS**
    donnée non sourcée n'est présentée comme un fait ; hypothèses formulées comme telles ; aucune phrase de
    contexte hors de la section « Contexte » ; aucune causalité entre le contexte et une décision de l'individu.
 4. Rendre le récit avec le résultat du contrôle (`conforme`, `mesures`). S'il reste des signalements, les montrer
-   avec les phrases à corriger : « conforme » ne veut pas dire « vrai », le contrôle est lexical.
+   avec les phrases à corriger : « conforme » ne veut pas dire « vrai », le contrôle est lexical. Montrer aussi
+   chaque `avertissements` (non bloquant, `evenement_source` : événement nommé dans un fait sourcé) avec sa
+   phrase : relire la source individuelle, conserver la phrase seulement si elle nomme l'événement.
 5. Proposer l'enregistrement en Markdown dans le répertoire d'exports si l'utilisateur le souhaite. Note du
    coffre : proposer la section « Contexte » de la fiche (format « note du coffre » du `redacteur`), écrite
    seulement après accord, puis `contexte_verifier(note=<id>)`.

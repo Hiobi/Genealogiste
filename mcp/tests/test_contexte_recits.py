@@ -4,7 +4,9 @@ Les récits de ``fixtures/contexte/recits/`` ont été écrits d'un jet à parti
 ligne, puis figés ; ``MESURES.json`` porte le relevé manuel des défauts, phrase par phrase. Ce test est une
 **non-régression des mesures** : chaque défaut déclaré détecté doit l'être par la rubrique indiquée, chaque défaut
 déclaré échappé doit encore échapper (sinon : mettre la mesure à jour), et aucun signalement ne doit tomber hors des
-défauts relevés (fausse alerte). Il ne prouve pas la conformité d'un récit : auto-évaluation d'un seul modèle,
+défauts relevés (fausse alerte). Depuis #360, un défaut que le rapport ne porte plus qu'en avertissement non bloquant
+(``averti_par``, événement nommé dans une phrase à source individuelle) est compté à part (``avertis``) : il n'est pas
+détecté, le texte reste conforme. Il ne prouve pas la conformité d'un récit : auto-évaluation d'un seul modèle,
 détection lexicale. Les limites examinées par #348 sont épinglées en fin de fichier. Aucun accès réseau."""
 
 from __future__ import annotations
@@ -30,19 +32,23 @@ MESURES = json.loads((RECITS / "MESURES.json").read_text(encoding="utf-8"))
 LOT_1, LOT_2 = set(MESURES["ajouts"]["lot_1"]), set(MESURES["ajouts"]["lot_2"])
 
 
-def _signalements(rapport: dict) -> list[tuple[str, str]]:
-    """(phrase, « rubrique[:type[:marqueur]] ») de chaque signalement."""
+TYPEES = ("formulations", "avertissements")  # rubriques dont la clé porte le type et le marqueur
+
+
+def _signalements(rapport: dict, rubriques: tuple[str, ...] = RUBRIQUES) -> list[tuple[str, str]]:
+    """(phrase, « rubrique[:type[:marqueur]] ») de chaque signalement (bloquant par défaut)."""
     out = []
-    for r in RUBRIQUES:
+    for r in rubriques:
         for s in rapport[r]:
-            cle = ":".join(x for x in (r, s.get("type") if r == "formulations" else "",
-                                       s.get("marqueur", "") if r == "formulations" else "") if x)
+            cle = ":".join(x for x in (r, s.get("type") if r in TYPEES else "",
+                                       s.get("marqueur", "") if r in TYPEES else "") if x)
             out.append((s["phrase"], cle))
     return out
 
 
 def _version(cle: str) -> int:
-    """Version des listes qui produit ce signalement : 1 (#324), 2 (premier lot #348), 3 (contre-épreuve #348)."""
+    """Étape des listes qui produit ce signalement : 1 (#324), 2 (premier lot #348), 3 (contre-épreuve #348). Ce
+    n'est pas ``VERSION_LISTES`` : les deux lots de #348 ont été publiés ensemble sous la version 2."""
     parties = cle.split(":")
     marqueur = parties[2] if len(parties) == 3 else ""
     if marqueur in LOT_2:
@@ -60,6 +66,12 @@ def test_jeu_de_recits_complet_et_fige():
     assert MESURES["version_listes"]["apres"] == v.VERSION_LISTES
     connues = {r.cle for r in v.GENERALISATIONS} | {e.cle for e in v.EVENEMENTS} | {"hors_section:appel", "possessifs"}
     assert LOT_1 | LOT_2 <= connues and not LOT_1 & LOT_2
+    for x in MESURES["recits"].values():  # #360 : un avertissement relevé porte sur un événement de la liste
+        for d in x["defauts"]:
+            for cle in d.get("averti_par", []):
+                rubrique, type_, marqueur = cle.split(":")
+                assert (rubrique, type_) == ("avertissements", "evenement_source"), d["id"]
+                assert marqueur in {e.cle for e in v.EVENEMENTS}, d["id"]
     ids = [d["id"] for x in MESURES["recits"].values() for d in x["defauts"]]
     assert len(ids) == len(set(ids))
 
@@ -68,7 +80,8 @@ def test_jeu_de_recits_complet_et_fige():
 def test_mesures_des_recits_generes(app_contexte, request):
     cas = app_contexte.cas
     elements = _elements_du_cas(app_contexte, request, cas)  # inscrit les références au registre, comme /recit
-    totaux = {"phrases": 0, "defauts": 0, "detectes_v1": 0, "detectes_lot_1": 0, "detectes": 0, "fausses_alertes": 0}
+    totaux = {"phrases": 0, "defauts": 0, "detectes_v1": 0, "detectes_lot_1": 0, "detectes": 0, "avertis": 0,
+              "fausses_alertes": 0}
     for nom, attendu in MESURES["recits"].items():
         if not nom.startswith(cas + "."):
             continue
@@ -76,10 +89,17 @@ def test_mesures_des_recits_generes(app_contexte, request):
         rapport = _verifier(app_contexte, texte)
         assert len(v.analyser(texte).phrases) == attendu["phrases"], nom
         signalements = _signalements(rapport)
+        avertissements = _signalements(rapport, ("avertissements",))
+        assert rapport["mesures"]["avertissements"] == len(rapport["avertissements"]) == len(avertissements), nom
         expliques = set()
         for d in attendu["defauts"]:
             trouves = {(ph, cle) for ph, cle in signalements if d["extrait"] in ph}
+            avertis = {(ph, cle) for ph, cle in avertissements if d["extrait"] in ph}
             assert d["extrait"] in texte, (nom, d["id"])
+            # #360 : avertissement non bloquant, relevé à part ; seul, il ne vaut pas détection
+            assert {cle for _, cle in avertis} == set(d.get("averti_par", [])), (nom, d["id"], avertis)
+            totaux["avertis"] += bool(avertis) and d["signale_par"] is None
+            expliques |= avertis
             if d["signale_par"] is None:
                 assert not trouves, (nom, d["id"], "défaut déclaré échappé désormais signalé : mettre à jour", trouves)
             else:
@@ -89,7 +109,7 @@ def test_mesures_des_recits_generes(app_contexte, request):
                 totaux["detectes_lot_1"] += min(versions) <= 2
                 totaux["detectes"] += 1
             expliques |= trouves
-        fausses = sorted(set(signalements) - expliques)
+        fausses = sorted(set(signalements + avertissements) - expliques)
         assert [list(x) for x in fausses] == attendu["fausses_alertes"], (nom, fausses)
         assert rapport["conforme"] is (not signalements), nom
         totaux["phrases"] += attendu["phrases"]
@@ -107,10 +127,19 @@ def test_mesures_des_recits_generes(app_contexte, request):
 def test_totaux_publies():
     """Totaux repris dans docs/contexte-historique.md (« Recette du 2026-11-24 »)."""
     t = {k: sum(x[k] for x in MESURES["totaux"].values()) for k in next(iter(MESURES["totaux"].values()))}
-    assert t == {"phrases": 156, "defauts": 35, "detectes_v1": 3, "detectes_lot_1": 12, "detectes": 20,
+    # #360 : D8, C9, C5 et C12 (événement nommé, phrase à note individuelle) ne sont plus qu'avertis : 20 -> 16
+    assert t == {"phrases": 156, "defauts": 35, "detectes_v1": 3, "detectes_lot_1": 11, "detectes": 16, "avertis": 4,
                  "fausses_alertes": 0}
+    d = MESURES["decision_360"]
+    assert d["apres"] == {"version_listes": v.VERSION_LISTES, **{k: t[k] for k in d["apres"] if k != "version_listes"}}
+    assert d["avant"]["detectes"] == t["detectes"] + t["avertis"]
+    avertis = sorted(x["id"] for r in MESURES["recits"].values() for x in r["defauts"]
+                     if x.get("averti_par") and x["signale_par"] is None)
+    assert avertis == sorted(d["defauts_passes_en_avertissement"])
     doc = (Path(__file__).resolve().parents[2] / "docs" / "contexte-historique.md").read_text(encoding="utf-8")
     assert "Recette du 2026-11-24" in doc and "3 défauts sur 35" in doc and "20 sur 35" in doc
+    assert "Mesure après la décision #360" in doc and "16 sur 35 défauts (20 avant)" in doc
+    assert "| **total** | 35 | 20 | 16 | 4 | 15 | 0 |" in doc
 
 
 # ---------------------------------------------------------------------------------------- listes (#348)
