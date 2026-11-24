@@ -578,18 +578,19 @@ def _resultat_presse(c: Collecte, r: dict, lv: LieuDeVie) -> None:
     ident = f"{r['identifiant']['type']}:{r['identifiant']['valeur']}"
     extrait = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", r.get("extrait") or "")).strip()
     libelle = f"{r.get('publication', '')} {r.get('date') or r.get('annee') or ''}".strip()
+    service = r.get("service") or "GALLICA"
     if not r.get("au_registre"):
-        c.ecarter("GALLICA", libelle, "référence non inscrite au registre", source=ident)
+        c.ecarter(service, libelle, "référence non inscrite au registre", source=ident)
         return
     if not extrait:
-        c.ecarter("GALLICA", libelle, "aucun extrait lu : le numéro n'est pas un énoncé (lien dans la tâche de "
-                                      "lecture)", source=ident)
+        c.ecarter(service, libelle, "aucun extrait lu : le numéro n'est pas un énoncé (lien dans la tâche de "
+                                    "lecture)", source=ident)
         return
     if not _cite(extrait, lv.commune):
-        c.ecarter("GALLICA", libelle, f"le lieu ({lv.commune}) ne figure pas dans l'extrait", source=ident)
+        c.ecarter(service, libelle, f"le lieu ({lv.commune}) ne figure pas dans l'extrait", source=ident)
         return
     enonce = f"« {extrait} » ({presse.MENTION_OCR})"
-    c.proposer("GALLICA", c.registre.lire(ident), enonce, type_lexical(extrait), lv.commune, "commune",
+    c.proposer(service, c.registre.lire(ident), enonce, type_lexical(extrait), lv.commune, "commune",
                r.get("annee"), r.get("annee"), localisation=f"vue {r['vue']}" if r.get("vue") else "")
 
 

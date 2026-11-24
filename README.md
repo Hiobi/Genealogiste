@@ -115,8 +115,9 @@ dossier existant, base depuis zéro, arbre GEDCOM ou Gramps Web. Obsidian n’es
   (menu du compte, « Manage API keys », accepter les conditions d’usage de la clé, « Request a Personal API key »),
   puis à écrire dans `<données>/.env` (`GENEALOGISTE_CLE_EUROPEANA=…` et
   `GENEALOGISTE_CONTEXTE_SERVICES=defaut,EUROPEANA`) ou dans le fichier d’environnement du conteneur Docker. Elle
-  ne se partage pas et le plugin n’en fournit aucune. Sans elle, Europeana est écarté sans erreur. État actuel :
-  l’analyseur Europeana de `presse_recherche` n’est pas encore livré, la clé n’a donc pas encore d’effet
+  ne se partage pas et le plugin n’en fournit aucune. Sans elle, Europeana est écarté sans erreur. Avec elle,
+  `presse_recherche` interroge Europeana (notices de documents patrimoniaux, pas le texte des journaux) ; la clé
+  part dans un en-tête, jamais dans une URL, un journal ni le cache
   ([démarche, emplacements et limites](docs/contexte-historique.md#clé-personnelle-europeana)).
 - Pour une recherche sans surveillance (`/genealogiste:campagne`, tâche planifiée), `GENEALOGISTE_ECRITURE=interdite`
   fait refuser par le serveur lui-même toute écriture, quel que soit le mode de permission du client ; les

@@ -116,6 +116,16 @@ def _protection(resp: httpx.Response) -> str | None:
 
 
 MEMORISES = (403, 404, 429)  # échecs mémorisés par URL (cache négatif)
+# En-têtes d'authentification : jamais renvoyés vers une autre origine (redirection), jamais inscrits dans une clé
+# de cache ; leur seule présence distingue les entrées de cache d'une requête authentifiée (#343).
+EN_TETES_SENSIBLES = frozenset({"authorization", "proxy-authorization", "cookie", "x-api-key"})
+
+
+def marque_authentification(headers: dict | None) -> list[str]:
+    """Noms (en minuscules, triés) des en-têtes d'authentification d'une requête, sans leur valeur : ajoutés à la
+    clé de cache pour qu'une réponse obtenue avec une clé ne soit jamais servie à une requête sans clé, ni
+    l'inverse. Liste vide : clé de cache inchangée."""
+    return sorted({n.lower() for n in (headers or {})} & EN_TETES_SENSIBLES)
 
 
 def retry_after(value: str | None, now: float | None = None) -> float | None:
@@ -259,7 +269,7 @@ class HttpClient:
               timeout: float | None = None, stream: bool = False) -> httpx.Response:
         """Requête avec redirections suivies manuellement ; chaque URL passe la politique réseau."""
         sans_secrets = False
-        sensibles = {"authorization", "proxy-authorization", "cookie", "x-api-key"}
+        sensibles = EN_TETES_SENSIBLES
         for _ in range(MAX_REDIRECTS + 1):
             self._verifier_coupe_circuit(urlparse(url).netloc)
             try:
@@ -308,15 +318,23 @@ class HttpClient:
         parse: str = "json",
         use_cache: bool = True,
         idempotent: bool | None = None,
+        epurer: Callable[[Any], Any] | None = None,
     ) -> tuple[Any, bool]:
         """Renvoie (contenu, depuis_cache). parse = json | text | bytes | image (bytes contrôlés : type, taille)
         | status (en-têtes seuls, corps jamais lu, y compris lors des redirections).
         idempotent : par défaut selon la méthode (GET, HEAD, OPTIONS) ; True pour un POST de pure lecture.
         Une requête non idempotente n'est rejouée que si elle n'a certainement pas été traitée
-        (connexion impossible, 429) ; sinon le résultat est signalé indéterminé, sans nouvel envoi."""
+        (connexion impossible, 429) ; sinon le résultat est signalé indéterminé, sans nouvel envoi.
+        epurer : appliqué au contenu reçu avant sa mise en cache et son retour (réponse qui répète un secret de
+        la requête, comme la clé d'API : le cache ne garde que le contenu épuré).
+        Un en-tête d'authentification (``EN_TETES_SENSIBLES``) marque la clé de cache par sa présence, jamais par
+        sa valeur."""
         params = {k: v for k, v in params.items() if v not in (None, "")} if params is not None else None
         cacheable = use_cache and files is None and ttl > 0
-        key = Cache.key(method, url, params, data, json, parse)
+        auth = marque_authentification(headers)
+        # Sans en-tête d'authentification, la clé garde sa forme d'origine (entrées de cache existantes valides).
+        key = (Cache.key(method, url, params, data, json, parse, {"authentification": auth}) if auth
+               else Cache.key(method, url, params, data, json, parse))
         if cacheable:
             hit = self.cache.get(key)
             if hit is not None:
@@ -327,7 +345,9 @@ class HttpClient:
         self.hotes_contactes.append(self._hote(host))
         self._verifier_coupe_circuit(host)
         memorisable = files is None and (method.upper() in IDEMPOTENT if idempotent is None else idempotent)
-        cle_echec = Cache.key("echec", method.upper(), url, params) if memorisable else ""
+        cle_echec = "" if not memorisable else (
+            Cache.key("echec", method.upper(), url, params, {"authentification": auth}) if auth
+            else Cache.key("echec", method.upper(), url, params))
         if cle_echec:
             echec = self.cache.get(cle_echec)
             if echec is not None:
@@ -338,7 +358,7 @@ class HttpClient:
         try:
             return self._request(method, url, host, params=params, data=data, json=json, files=files,
                                  headers=headers, ttl=ttl, source=source, parse=parse, cacheable=cacheable,
-                                 key=key, idempotent=idempotent)
+                                 key=key, idempotent=idempotent, epurer=epurer)
         except SourceError as exc:
             if cle_echec and (exc.status in MEMORISES or exc.bloque_antirobot):
                 duree = exc.reessayer_apres if exc.status == 429 and exc.reessayer_apres else self.echec_ttl
@@ -414,7 +434,7 @@ class HttpClient:
         budget.compter(hote)
 
     def _request(self, method: str, url: str, host: str, *, params, data, json, files, headers, ttl, source,
-                 parse, cacheable, key, idempotent) -> tuple[Any, bool]:
+                 parse, cacheable, key, idempotent, epurer=None) -> tuple[Any, bool]:
         replay = method.upper() in IDEMPOTENT if idempotent is None else idempotent
         delay = 1.0
         last_exc: Exception | None = None
@@ -485,7 +505,7 @@ class HttpClient:
             if resp.status_code == 404:
                 raise SourceError(f"{host} : ressource introuvable (404) : {self.masque(str(resp.url))}", 404)
             if resp.status_code >= 400:
-                detail = "" if parse == "status" else resp.text[:300]
+                detail = "" if parse == "status" else self.masque(resp.text)[:300]
                 raise SourceError(f"{host} : HTTP {resp.status_code} : {detail}", resp.status_code)
             if parse == "status":
                 content = resp.status_code
@@ -493,13 +513,15 @@ class HttpClient:
                 try:
                     content = resp.json()
                 except ValueError as exc:
-                    raise SourceError(f"{host} : réponse non JSON : {resp.text[:200]}") from exc
+                    raise SourceError(f"{host} : réponse non JSON : {self.masque(resp.text)[:200]}") from exc
             elif parse == "bytes":
                 content = resp.content.decode("latin-1")
             elif parse == "image":
                 content = self._image(host, resp).decode("latin-1")
             else:
                 content = resp.text
+            if epurer is not None:
+                content = epurer(content)
             if cacheable and "no-store" not in resp.headers.get("Cache-Control", "").lower():
                 self.cache.set(key, content, ttl, source)
             return content, False

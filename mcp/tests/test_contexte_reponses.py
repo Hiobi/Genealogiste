@@ -143,7 +143,7 @@ def _reponse_2xx_enregistree(code: str) -> bool:
 
 def test_liste_derivee_du_code():
     attendu = {"HAL", "ISIDORE", "SUDOC", "BNF-CATALOGUE", "THESES-FR", "CROSSREF", "WIKIDATA", "INSEE-MELODI",
-               "IGN-GEOPLATEFORME", "API-GEO", "COG-INSEE", "GALLICA"}
+               "IGN-GEOPLATEFORME", "API-GEO", "COG-INSEE", "GALLICA", "EUROPEANA"}
     assert set(services_avec_analyseur()) == attendu, set(services_avec_analyseur()) ^ attendu
 
 

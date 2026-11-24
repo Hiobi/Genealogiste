@@ -90,8 +90,10 @@ Sans clé, Europeana est simplement écarté (aucune erreur, aucune requête). `
 la clé est définie, jamais sa valeur. Europeana a réduit les limites d’usage des clés personnelles jusqu’en
 avril 2026 sans en publier le chiffre dans les pages consultées ; rester sur un usage raisonnable.
 
-**État actuel** : l’analyseur Europeana de `presse_recherche` n’est pas encore livré ; la clé n’a donc pas encore
-d’effet sur la recherche de presse. Détails et pages d’Europeana consultées le 2026-11-24 :
+**Effet de la clé** : `presse_recherche` interroge Europeana, notamment quand Gallica est bloqué. La recherche
+porte sur les notices (titre, institution, année) de documents patrimoniaux, pas sur le texte des journaux. La clé
+part dans un en-tête de la requête : elle n’apparaît dans aucune adresse, aucun journal ni dans le cache. Détails
+et pages d’Europeana consultées le 2026-11-24 :
 [clé personnelle Europeana](../docs/contexte-historique.md#clé-personnelle-europeana).
 Ne recopier une configuration complète d’une autre installation qu’après avoir vérifié ses chemins,
 son backend et ses comptes : chaque foyer et chaque arbre doivent garder leurs propres données.
