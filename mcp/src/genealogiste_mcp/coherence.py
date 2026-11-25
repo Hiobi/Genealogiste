@@ -241,4 +241,6 @@ def check_tree(tree: Tree) -> list[dict]:
         issues.append(_issue("erreur", "uid_duplique", d, ""))
     for d in dangling(tree):  # références cassées
         issues.append(_issue("erreur", "reference_cassee", d, d.split(" ")[0]))
+    for d in tree.anomalies:  # valeurs illisibles écartées à la lecture (#371)
+        issues.append(_issue("alerte", "qualite_invalide", d, ""))
     return issues

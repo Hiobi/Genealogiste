@@ -306,6 +306,8 @@ class Tree:
     styles: dict[str, list[dict]] = field(default_factory=dict, compare=False, repr=False)
     header_extra: list = field(default_factory=list)
     extra_records: list = field(default_factory=list)
+    # valeurs illisibles écartées à la lecture (#371) : signalées par check_tree, jamais sérialisées
+    anomalies: list[str] = field(default_factory=list, compare=False, repr=False)
 
     _PREFIX = {"personnes": "I", "familles": "F", "sources": "S", "depots": "R", "medias": "O", "notes": "N"}
 

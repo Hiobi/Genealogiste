@@ -8,6 +8,7 @@ Texte des notes : brut par défaut ; `"format_texte": "markdown"` sur l'opérati
 ([texte enrichi](#texte-enrichi-des-notes-279)).
 
 Citation : `{source, page, texte, qualite (0-3), type_source, information, preuve, consultation, note, tags}` —
+`qualite` : entier 0 à 3 (fiabilité QUAY), refusé sinon ; la nature originale/dérivée va dans `type_source`.
 `consultation` : `original` | `image` | `transcription` | `index` | `non_vu`.
 
 **Étiquettes** (`tags`, #262) : `tags` (liste de noms, ajout) sur toutes les opérations d'ajout (au niveau de
