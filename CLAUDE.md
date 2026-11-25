@@ -18,6 +18,7 @@ Toutes passent par `uv --directory mcp` (lancer depuis la racine) :
 ```bash
 make install        # uv sync
 make test           # pytest, APIs mockées, aucun accès réseau
+make test-aleatoire # même suite en ordre aléatoire (SEED=N pour rejouer)
 make lint           # ruff check src tests   (make format pour --fix)
 make test-gramps    # intégration sur Gramps Web jetable (Docker, docker-compose.test.yml ; GRAMPSWEB_IMAGE=…)
 make test-gramps-matrice  # test-gramps sur chaque image de compatibilite-gramps.json

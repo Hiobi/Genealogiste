@@ -7,6 +7,7 @@ du catalogue (outils.OUTILS : classe « ecriture » ; outils.CONDITIONS : seulem
 from __future__ import annotations
 
 import asyncio
+import copy
 import hashlib
 import inspect
 import json
@@ -227,7 +228,8 @@ def test_schemas_inchanges_par_l_enveloppe():
     for t in asyncio.run(server.mcp.list_tools()):
         temoin.add_tool(getattr(server, t.name).__wrapped__, name=t.name)
     attendus = {t.name: (t.description, t.input_schema, t.output_schema) for t in asyncio.run(temoin.list_tools())}
-    obtenus = {t.name: (t.description, t.input_schema, t.output_schema)
+    # Copie : list_tools renvoie les schémas vivants du serveur, que le pop ci-dessous altérerait (#365).
+    obtenus = {t.name: (t.description, copy.deepcopy(t.input_schema), t.output_schema)
                for t in asyncio.run(server.mcp.list_tools())}
     # #211 : l'enveloppe ajoute seulement le paramètre facultatif « enquete » (et sa phrase de description) aux
     # outils de collecte réseau qui ne l'ont pas déjà.

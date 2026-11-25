@@ -315,7 +315,8 @@ def test_installer_refuse_si_le_depot_a_change(app, referentiels):
 def test_installer_refuse_un_jeton_d_un_autre_type(app, referentiels):
     jeton = app.tokens.create({"type": "organisation", "dossier": "x", "plan": {"deplacements": []}})
     out = server.cassini_installer(jeton)
-    assert "n'est pas une préparation" in out["erreur"]
+    assert "à appliquer avec pieces_appliquer" in out["erreur"] and out["installe"] is False
+    assert app.tokens.peek(jeton)["type"] == "organisation"  # non consommé (#364)
     assert "Relancer cassini_preparer" in server.cassini_installer("inconnu123")["erreur"]
     assert "erreur" in server.cassini_installer("../pas-un-jeton")
 

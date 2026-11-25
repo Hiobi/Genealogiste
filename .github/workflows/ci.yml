@@ -40,7 +40,8 @@ jobs:
       - name: Installer les dépendances verrouillées
         run: uv --directory mcp sync --locked
       - name: Tester le serveur et la cohérence des versions
-        run: make test
+        # 3.13 en ordre aléatoire (#365) : graine affichée en tête, rejouer avec make test-aleatoire SEED=N.
+        run: make ${{ matrix.python == '3.13' && 'test-aleatoire' || 'test' }}
         env:
           UV_OFFLINE: "true"
 
