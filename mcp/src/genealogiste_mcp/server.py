@@ -82,7 +82,7 @@ from .sources import (
 )
 from .sources.base import SourceContext, error_envelope
 from .tree import file_propositions as fp
-from .tree.proposals import ProposalError, Proposals, TokenStore, new_alerts, prepare, targets
+from .tree.proposals import ProposalError, Proposals, TokenStore, exiger_type, new_alerts, prepare, targets
 from .tree.store import TreeStore, remote_problem
 
 INSTRUCTIONS = """Assistant généalogique (méthode du Genealogical Proof Standard, sources françaises).
@@ -763,6 +763,14 @@ def cassini_installer(jeton: str) -> dict:
     d'acceptation (date, licence, DOI, empreinte, version). Écriture atomique : en cas d'échec, rien n'est installé.
     Jeton à usage unique. Ensuite lieu_historique lit ce fichier ; cassini_desinstaller le retire."""
     a = app()
+    try:
+        apercu = a.tokens.peek(jeton)
+    except ProposalError as exc:
+        return {"erreur": f"{exc} Relancer cassini_preparer.", "installe": False}
+    try:
+        exiger_type(apercu, "cassini")  # avant de consommer le jeton (#364)
+    except ProposalError as exc:
+        return {"erreur": str(exc), "installe": False}
     try:
         record = a.tokens.take(jeton)
     except ProposalError as exc:
@@ -2681,9 +2689,8 @@ def pieces_appliquer(jeton: str) -> dict:
     a = app()
     store = TokenStore(a.config.proposals_dir)
     try:
+        exiger_type(store.peek(jeton), "organisation")
         rec = store.take(jeton)
-        if rec.get("type") != "organisation":
-            return {"erreur": "Ce jeton n'est pas un plan d'organisation de pièces."}
         # Relevé avant les déplacements (localisation des chemins relatifs) ; obligatoire si le plan suit des médias.
         suivi = any(m.get("media_arbre") for m in rec["plan"]["deplacements"])
         try:
@@ -2931,11 +2938,10 @@ def marqueurs_migrer_appliquer(jeton: str) -> dict:
     Git des notes s'il existe. Jeton à usage unique."""
     a = app()
     try:
+        exiger_type(a.tokens.peek(jeton), "marqueurs")
         rec = a.tokens.take(jeton)
     except ProposalError as exc:
         return {"erreur": str(exc)}
-    if rec.get("type") != "marqueurs":
-        return {"erreur": "Ce jeton n'est pas une migration de marqueurs (marqueurs_migrer_proposer)."}
     out: dict = {}
     if g := rec.get("gramps"):
         try:
@@ -3064,6 +3070,7 @@ def gramps_bascule_appliquer(jeton: str) -> dict:
     « Bascule vers Gramps Web ») ; journal.jsonl reste local. Ensuite : GENEALOGISTE_BACKEND=gramps."""
     from .gramps.backend import bascule_apply
     try:
+        exiger_type(app().tokens.peek(jeton), "bascule")  # avant toute connexion à Gramps Web (#364)
         cfg = app().config
         racines = cfg.media_racines[1:] if cfg.media_dir_conf else None  # mêmes racines que l'envoi (#193)
         return _gramps_guard(lambda: bascule_apply(app().gramps(), app().store, app().tokens, jeton, racines))

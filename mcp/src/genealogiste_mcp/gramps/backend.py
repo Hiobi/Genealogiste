@@ -42,6 +42,7 @@ from ..tree.proposals import (
     TTL_SECONDS,
     ProposalError,
     TokenStore,
+    exiger_type,
     new_alerts,
     prepare,
     targets,
@@ -913,8 +914,7 @@ class GrampsBackend:
         kind = record.get("type")
         if kind in ("reglage", "annulation_reglage"):  # fiche du chercheur, signets (#282) : hors transaction Gramps
             return self._apply_reglage(token, record)
-        if kind not in ("annulation", "transaction"):
-            raise ProposalError("Jeton d'un autre type (bascule : utiliser gramps_bascule_appliquer).")
+        exiger_type(record, "annulation", "transaction")
         exiger_ecriture(self.client)  # avant de consommer le jeton : un refus de droits ne le brûle pas
         self.recover()
         db = self.snapshot(fresh=True)
@@ -1138,9 +1138,8 @@ def bascule_preview(client: GrampsClient, store: TreeStore, tokens: TokenStore, 
 
 
 def bascule_apply(client: GrampsClient, store: TreeStore, tokens: TokenStore, token: str, media_dir=None) -> dict:
+    exiger_type(tokens.peek(token), "bascule")
     record = tokens.take(token)
-    if record.get("type") != "bascule":
-        raise ProposalError("Ce jeton n'est pas une bascule.")
     if store.digest() != record["empreinte_base"]:
         raise ProposalError("arbre.ged a changé depuis la proposition : refaire gramps_bascule_proposer.")
     check_tree(client, store.dir)
