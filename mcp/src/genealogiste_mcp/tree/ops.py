@@ -156,6 +156,10 @@ def _citation(ctx: Ctx, d: dict) -> Citation:
                        ("preuve", ("directe", "indirecte", "negative"))):
         if k in d and d[k] not in allowed:
             raise OpError(f"Citation : {k} doit valoir {', '.join(allowed)}")
+    q = d.get("qualite")
+    if q is not None and (isinstance(q, bool) or not isinstance(q, int) or not 0 <= q <= 3):
+        raise OpError(f"Citation : qualite doit valoir 0, 1, 2 ou 3 (QUAY, fiabilité de la preuve), pas {q!r} ; la "
+                      "nature de la source (originale, derivee…) va dans type_source")
     if d.get("consultation", "") not in CONSULTATIONS + ("",):
         raise OpError(f"Citation : consultation doit valoir {', '.join(CONSULTATIONS)}")
     d.setdefault("date_consultation", date.today().isoformat())

@@ -206,6 +206,10 @@ class _Reader:
             src = self.inline_source(v or "(source sans titre)")
         data = n.first("DATA")
         quay = n.val("QUAY")
+        if quay and quay not in ("0", "1", "2", "3"):  # #371 : signalée, plus perdue en silence
+            self.tree.anomalies.append(f"citation de {src} (page {n.val('PAGE') or '—'}) : QUAY {quay!r} invalide "
+                                       "(0 à 3), qualité ignorée (corriger : supprimer_citation puis ajouter_citation)")
+            quay = ""
         known = {"PAGE", "DATA", "QUAY", "_TYPE", "_INFO", "_PREUVE", "_CONSULT", "_VU", "_ARK", "NOTE", "CONT",
                  "CONC"}
         medias = [strip_xref(x.value) for x in n.all("OBJE") if x.value.strip().startswith("@")]
