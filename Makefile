@@ -2,7 +2,7 @@
 MCP := mcp
 UV  := uv --directory $(MCP)
 
-.PHONY: version help install hooks profil-campagne test sauvegarde restauration test-archives test-contexte test-cassini test-gramps test-gramps-matrice test-gramps-desktop test-codex lint format check run run-http docker-build docker-up docker-gramps docker-down validate clean enregistrer-contexte verifier-archives verifier-telechargements
+.PHONY: version help install hooks profil-campagne test sauvegarde restauration test-aleatoire test-archives test-contexte test-cassini test-gramps test-gramps-matrice test-gramps-desktop test-codex lint format check run run-http docker-build docker-up docker-gramps docker-down validate clean enregistrer-contexte verifier-archives verifier-telechargements
 
 help: ## Liste des cibles
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-14s %s\n", $$1, $$2}'
@@ -12,6 +12,11 @@ install: ## Installe les dépendances du serveur MCP (uv)
 
 test: ## Lance les tests pytest (APIs mockées, aucun accès réseau)
 	$(UV) run pytest
+
+test-aleatoire: ## Tests en ordre aléatoire (graine affichée ; rejouer avec SEED=N)
+	@graine=$(or $(SEED),$$(od -An -N2 -tu2 /dev/urandom | tr -d ' ')); \
+	echo "Ordre aléatoire, graine $$graine (rejouer : make test-aleatoire SEED=$$graine)"; \
+	$(UV) run pytest --random-order-seed=$$graine
 
 test-codex: ## Recette native Codex CLI 0.166 à 0.169, fournisseur local et données fictives
 	python3 scripts/verifier_codex.py

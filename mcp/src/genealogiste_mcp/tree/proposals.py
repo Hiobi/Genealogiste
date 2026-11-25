@@ -39,6 +39,26 @@ class ProposalError(RuntimeError):
     pass
 
 
+# Outil qui applique chaque type de jeton : tous partagent le répertoire des propositions (#364).
+APPLICATEURS = {
+    "modification": "arbre_appliquer", "annulation": "arbre_appliquer",
+    "transaction": "arbre_appliquer (mode gramps)", "reglage": "arbre_appliquer (mode gramps)",
+    "annulation_reglage": "arbre_appliquer (mode gramps)",
+    "organisation": "pieces_appliquer", "marqueurs": "marqueurs_migrer_appliquer",
+    "bascule": "gramps_bascule_appliquer", "cassini": "cassini_installer",
+}
+
+
+def exiger_type(record: dict, *types: str) -> None:
+    """Refuse un jeton émis par un autre outil en deux temps, avant tout effet : le jeton reste valable."""
+    kind = record.get("type")
+    if kind in types:
+        return
+    outil = APPLICATEURS.get(kind)
+    detail = f"{kind}, à appliquer avec {outil}" if outil else f"type inconnu : {kind!r}"
+    raise ProposalError(f"Jeton d'un autre type ({detail}) : rien n'a été écrit, le jeton reste valable.")
+
+
 class TokenStore:
     """Jetons de proposition (fichiers JSON dans <données>/.propositions, hors Git)."""
 
@@ -333,6 +353,7 @@ class Proposals:
         Si le commit échoue, l'arbre précédent est restauré et le jeton reste valable (reprise possible)."""
         with verrou(self.store.dir):
             record = self.tokens.peek(token)
+            exiger_type(record, "modification", "annulation")
             self._frozen()
             avant = self.store.text()
             if _digest(avant) != record["empreinte_base"]:
