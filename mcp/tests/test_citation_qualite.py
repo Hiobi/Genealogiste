@@ -3,11 +3,26 @@
 import dataclasses
 
 import pytest
-from test_gramps_backend import fake, gapp  # noqa: F401 — fixtures
+from gramps_fake import FakeGrampsWeb
+from test_gramps_backend import make_app, seed
 
 from genealogiste_mcp import server
 from genealogiste_mcp.coherence import check_tree
 from genealogiste_mcp.gedcom.mapping import read_gedcom, write_gedcom
+
+
+@pytest.fixture
+def fake():
+    with FakeGrampsWeb() as f:
+        yield f
+
+
+@pytest.fixture
+def gapp(tmp_path, fake, tree):
+    seed(fake, tree)
+    a = make_app(tmp_path)
+    yield a
+    server.set_app(None)
 
 
 def _ops(qualite):
