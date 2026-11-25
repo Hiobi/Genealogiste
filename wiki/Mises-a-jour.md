@@ -92,5 +92,11 @@ Le détail est dans chaque note de version.
   `contexte_local`. **Changement** : `contexte_verifier` (listes v3) refuse un billet dont le récit nomme un
   événement de sa liste sans source individuelle, et n’émet qu’un avertissement quand la phrase porte une
   source individuelle ; nouvelle variable `GENEALOGISTE_REFERENTIELS_DIR` (dossier de la base Cassini).
+- [0.30.1](https://github.com/Hiobi/Genealogiste/releases/tag/v0.30.1) : correctifs. `arbre_appliquer`,
+  `pieces_appliquer`, `marqueurs_migrer_appliquer`, `gramps_bascule_appliquer` et `cassini_installer`
+  refusent un jeton émis par un autre outil avec un message qui nomme le bon outil, sans le consommer (#364) ;
+  `citation.qualite` limitée à un entier de 0 à 3, une valeur illisible déjà présente dans `arbre.ged` ou
+  Gramps Web n’empêche plus le chargement de l’arbre et apparaît dans `arbre_coherence`
+  (`qualite_invalide`) (#371).
 
 Pour la version publiée actuellement, se référer à la page Releases et au numéro du pied de page du wiki.
