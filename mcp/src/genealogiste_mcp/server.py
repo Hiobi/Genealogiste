@@ -1084,10 +1084,14 @@ def archives_registres(service: str, commune: str, annee: int, type_acte: str = 
     AD80, AD90, AD91, AD972 ; AD25 : TD, RM et SUCC seulement ; archives_service ou sources_catalogue pour la
     liste à jour) : leur formulaire public est lu et la commune est prise dans son vocabulaire (commune_service ;
     valeur exacte acceptée en cas d'ambiguïté).
-    Services Mnesys seulement : RM (registres matricules : annee = classe, soit l'année de naissance + 20 ;
-    commune = bureau de recrutement, facultatif ; AD19, AD25, AD27, AD39, AD55, AD58, AD69, AD90, AD972) et SUCC
-    (tables des successions et absences, série 3 Q : commune = bureau de l'enregistrement ; AD25, AD27,
-    AD37 (canton), AD58, AD69, AD90, AD91).
+    RM (registres matricules : annee = classe, soit l'année de naissance + 20 ; commune = bureau de recrutement,
+    facultatif ; AD19, AD25, AD27, AD39, AD55, AD58, AD59, AD69, AD90, AD972). AD59 (série 1 R) : une classe
+    précise interroge deux formulaires, une page chacun ; chaque résultat porte categorie (tables : table
+    alphabétique de la classe et du bureau ; fiches : volumes des états signalétiques, en ligne pour les classes
+    1867 à 1923) et contexte (bureau des fiches) ; matricules donne l'état de chaque formulaire (interroge, bureau,
+    total, page_suivante, bureaux proposés, message). Un intervalle (annee_fin) n'interroge que les tables.
+    Services Mnesys seulement : SUCC (tables des successions et absences, série 3 Q : commune = bureau de
+    l'enregistrement ; AD25, AD27, AD37 (canton), AD58, AD69, AD90, AD91).
     type_acte : N (naissance), M (mariage), D (décès), NMD ou vide (tous), TD (tables décennales : tables dont
     la période affichée recoupe l'année ou l'intervalle demandé). annee_fin (facultatif, >= annee) : intervalle
     [annee, annee_fin], ex. 1790-1802 ou une décennie ; registres dont la période le recoupe. Une seule page de

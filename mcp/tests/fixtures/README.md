@@ -13,3 +13,8 @@ des recensements de population des AD59 (relevé du 27 novembre 2026, #375), san
 `ad59-recensements-positive.html` et `ad59-recensements-page2.html` sont des pages de résultats publiques du même
 relevé (Somain ; Buysscheure, page 2), réduites aux balises lues : cotes et ARK de registres réels, ni script, ni
 cookie, ni personne.
+
+`ad59-matricules-*.html` (#376) : les deux formulaires de recherche des registres matricules des AD59 et huit
+pages de résultats publiques relevés le 27 novembre 2026 (tables et fiches des états signalétiques : bureau
+d'Avesnes, classe 1890 sans bureau, intervalle 1889-1891, page 2 des fiches, négatifs), réduits au formulaire ou
+aux balises lues. Cotes et ARK de registres réels ; ni script, ni cookie, ni personne.

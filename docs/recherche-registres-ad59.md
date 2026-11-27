@@ -19,7 +19,7 @@ commune ; les traits d'union fournis sont conservés. L'année doit être un ent
 Les cases de filtre du formulaire GET portent `name=facet_typology` et les valeurs `Naissances`,
 `Mariages`, `Décès` : ce sont les filtres utilisés pour `N`, `M`, `D`. `NMD` et le type vide conservent la
 recherche sans filtre de typologie. `TD` (tables décennales) et `annee_fin` (intervalle) sont décrits
-ci-dessous ; `REC` (recensements de population, #375) plus bas.
+ci-dessous ; `REC` (recensements de population, #375) et `RM` (registres matricules, #376) plus bas.
 Aucun nom ni identifiant de personne n'est envoyé ; `personne` sert uniquement à la garde de l'outil
 et au journal local.
 
@@ -192,9 +192,114 @@ qu'un recensement n'est qu'en salle de lecture, `couverture_recensements` joint 
 de l'état de la collection du service. Référentiel, cotes, Socface, limites et renouvellement :
 [recensements](recensements.md).
 
+## Registres matricules : `type_acte="RM"` — #376
+
+Relevé public du 27 novembre 2026 (robots.txt inchangé : `/private/`, `/oai-pmh`, `/user/` ; aucune protection
+rencontrée ; une requête par observation, sans image, sans notice, sans nom de personne). La page
+[`/page/matricules-militaires`](https://archivesdepartementales.lenord.fr/page/matricules-militaires) mène à deux
+formulaires de la série 1 R, lus avec `mnesys.lire_formulaire` :
+
+| | Tables des états signalétiques et des services militaires | Fiches des états signalétiques et des services militaires |
+|---|---|---|
+| Formulaire | `0d3ab9ff-3258-4541-bf65-c3094fb024a0` | `9d12049e-510c-4c14-ad31-0fc5487c199c` |
+| Bureau | `0-controlledAccessGeographicName[]` | `0-controlledAccessGeographicName[]` |
+| Vocabulaire | `AVESNES`, `CAMBRAI`, `DUNKERQUE`, `LILLE`, `VALENCIENNES`, `VALENCIENNES-DOUAI`, `VOIR TOUS BUREAUX [1931-1940]` | les six mêmes bureaux, sans « VOIR TOUS BUREAUX » |
+| Date | « Période (facultatif) » `1-date_begin` / `1-date_end`, « Ou année précise » `2-date` | `1-date` seul : « Facultatif : Année (entre 1867 et 1923 / Valenciennes-Douai à partir de 1908) » |
+| Résultats sans critère | 384 (revu) | 1 762 (relevé de l'issue #376, non revu) |
+
+Aucun champ commune ni typologie : les clés sont le **bureau de recrutement** et la **classe** (année de
+naissance + 20). Observations, une requête chacune :
+
+- [tables, classe 1890](https://archivesdepartementales.lenord.fr/search/results?formUuid=0d3ab9ff-3258-4541-bf65-c3094fb024a0&sort=date_asc&mode=list&facet_media=image&2-date=1890) : 5 résultats, une table par bureau, titre `1890 : LILLE`, champ
+  `Date` 1890, cotes `1R 02273` (Lille, 121 médias), `1R 02261` (Dunkerque), `1R 02255` (Cambrai), `1R 02249`
+  (Avesnes, `ark:/33518/50hrtbnjdvcq`, 79 médias), `1R 02278` (Valenciennes) ; contexte « Tables des registres
+  militaires ». Avec le bureau `AVESNES` : la seule table d'Avesnes.
+- [tables, Avesnes, 1889-1891](https://archivesdepartementales.lenord.fr/search/results?formUuid=0d3ab9ff-3258-4541-bf65-c3094fb024a0&sort=date_asc&mode=list&facet_media=image&0-controlledAccessGeographicName%5B%5D=AVESNES&1-date_begin=1889&1-date_end=1891) :
+  3 tables, `1R 02213`, `1R 02249`, `1R 02283`, dans l'ordre des années.
+- [fiches, classe 1890](https://archivesdepartementales.lenord.fr/search/results?formUuid=9d12049e-510c-4c14-ad31-0fc5487c199c&sort=date_asc&mode=list&facet_media=image&1-date=1890) : 30 résultats sur 2 pages de 20 ; titres `Volume 3`,
+  `Volume 7 (3001-2500)` (tel qu'affiché), `Volume 11 (5001-5446)` ; cotes de `1R 2244` à `1R 2277` (les numéros des cinq tables s'y intercalent) ; 147 à 686
+  médias par volume. Le bureau n'est pas dans le titre mais dans la ligne « Contexte : Registres numérisés des
+  matricules militaires (Dunkerque) ». `page=2` : 10 résultats, `value="2"`, `max="2"`. Avec le bureau
+  `AVESNES` : 5 volumes, `1R 2244` à `1R 2248` (`ark:/33518/1kcdl289b36g` pour le volume 1, 569 médias).
+- Négatif (Avesnes, année 1200) pour chacun des deux formulaires : même page `body#display-no-results`.
+- Une liste des tables sans critère (première page, 20 résultats) contenait les classes 1870 à 1930, dont 1928
+  (Valenciennes, `1R 03918`) et 1930 (Cambrai, `1R 03986`) : les tables en ligne dépassent donc 1923. L'issue #376
+  cite une table de 1865 (Avesnes, `1R 01750`), non revue ici.
+
+Les cotes des tables sont écrites `1R 02249` (cinq chiffres), celles des volumes `1R 2244` : elles sont rendues
+telles qu'affichées, sans normalisation.
+
+**Contrat retenu.** `archives_registres(service="AD59", commune=<bureau ou "">, annee=<classe>, type_acte="RM")`
+ne change pas de signature ; les clés existantes de la réponse gardent leur sens.
+
+- Les deux formulaires sont lus en ligne (une requête chacun, en cache une semaine) : noms des champs et
+  vocabulaire des bureaux viennent du formulaire, pas d'une liste recopiée. Un formulaire sans champ de bureau ou
+  d'année est une erreur.
+- `commune` = bureau, **facultatif**, mis en capitales sans accents puis choisi dans le vocabulaire de chaque
+  formulaire (`mnesys.choisir_commune`). Bureau inconnu des deux formulaires (une commune comme « Somain », ou
+  « Douai » seul) ou ambigu : erreur avant toute recherche, qui liste les valeurs proposées. Valeur propre à un
+  formulaire (`VOIR TOUS BUREAUX [1931-1940]`) : seul ce formulaire est interrogé.
+- **Classe précise** (`annee_fin=0` ou égal à `annee`) : les deux formulaires sont interrogés, une page chacun
+  (`2-date` pour les tables, `1-date` pour les fiches). C'est la règle déterministe qui remplace un paramètre de
+  choix : la réponse rend les deux catégories, distinguées.
+- **Intervalle** (`annee < annee_fin`) : les tables seules (`1-date_begin` / `1-date_end`). Le formulaire des
+  fiches n'a pas de période ; un filtre local supposerait de feuilleter des dizaines de pages (1 762 volumes)
+  et n'est pas fait : `matricules.fiches.message` demande de relancer classe par classe.
+- `resultats` : les tables d'abord, puis les fiches ; chaque résultat garde `titre`, `cote`, `ark`, `url`,
+  `bornes`, `nb_vues` et reçoit `categorie` (`tables` ou `fiches`) et `contexte` (texte de la ligne « Contexte »,
+  qui porte le bureau des fiches ; `null` si absent). `total` additionne les totaux lus ; `page_suivante` vaut
+  `page + 1` dès qu'une catégorie a une page suivante.
+- `matricules` (ajout) : `releve_le`, `lecture`, et pour `tables` et `fiches` : `formulaire`, `interroge`,
+  `bureau` (valeur envoyée), `total`, `page_suivante`, `bureaux` (vocabulaire lu) et, s'il y a lieu, `message`.
+- Page > 1 : les deux formulaires reçoivent `page=N`. Une catégorie dont la réponse ne correspond pas à la page
+  demandée est marquée « Aucune page N lue pour cette catégorie », sans rien conclure ; si aucune catégorie ne
+  rend la page demandée, l'appel est une erreur, comme pour l'état civil.
+- Négatif : `recherche_negative` seulement quand aucune catégorie n'a de résultat ; une catégorie vide porte son
+  propre `message`, et celui des fiches rappelle les classes annoncées par le formulaire (1867 à 1923,
+  Valenciennes-Douai à partir de 1908). Ce libellé borne ce qui est en ligne, pas ce qui existe.
+- Ni `classeur_3e` ni `couverture_recensements` ne sont joints. Aucun nom ni identifiant de personne n'est envoyé.
+- Un appel `RM` AD59 fait donc au plus deux recherches (une par formulaire), chacune tentée une seule fois ; une
+  panne ou un défi anti-robot sur l'une arrête l'appel.
+
+**Lecture.** D'après les intitulés des résultats seulement : une table alphabétique par classe et par bureau,
+et des volumes d'états signalétiques par bureau, parfois titrés d'une tranche de numéros matricules. La démarche
+attendue est table, puis numéro matricule, puis volume ; elle n'a pas été vérifiée sur les vues, que ce relevé
+n'a pas ouvertes.
+
+**Classe.** `fr_sources.classe_recrutement(annee_naissance)` rend l'année de naissance + 20, règle déjà
+affirmée par le dépôt ; engagés volontaires, ajournés et classes appelées par anticipation ne sont pas traités.
+Pour un fait de naissance daté dans le Nord, `prochaine_source` et `cotes_a_consulter` joignent
+`matricules_ad59` (`classe`, appel `archives_registres` à lancer, note) à la piste « registre matricule ».
+Pour un autre fait (MILI, EMIG), la date n'est pas une naissance : aucune classe n'est calculée.
+
+**Cotes.** Aucune cote `1R` n'est ajoutée à `cotes_a_consulter` : il n'existe pas de référentiel daté des cotes
+de la sous-série (les 384 tables et 1 762 volumes n'ont pas été relevés, ce qui aurait demandé une centaine de
+requêtes). `cote_typique` reste l'orientation générale ; la cote réelle est celle de la réponse d'`archives_registres`.
+
+**Communicabilité.** `communicabilite("matricule")` est inchangé : 120 ans après la naissance (ou 25 ans après
+le décès). La dernière classe annoncée pour les fiches, 1923, correspond à des hommes nés en 1903, communicables
+depuis 2024 selon cette règle. Les tables alphabétiques en ligne vont au-delà (1928, 1930 observées) : la règle
+de l'outil vise le registre matricule, pas sa table ; le régime des tables n'a pas été vérifié auprès du service.
+
+**Non vérifié.**
+
+- Le contenu des tables et des volumes (aucune vue ouverte) ; `archives_naviguer`, `archives_planche` et
+  `archive_image` sur ces ARK : non testés.
+- Les bornes réelles des tables (première et dernière classe), ce que renvoie `VOIR TOUS BUREAUX [1931-1940]`,
+  et les classes de `VALENCIENNES-DOUAI` par rapport à `VALENCIENNES`.
+- Une page au-delà de la dernière pour ces deux formulaires : la redirection vers `page=1` n'a été observée que
+  sur le formulaire d'état civil (#221).
+- Une deuxième page de tables (plus de 20 tables : intervalle large sans bureau).
+- La stabilité des identifiants de formulaire et du vocabulaire (suivi : #380) ; le lien entre une commune et
+  son bureau de recrutement, que le plugin ne déduit pas.
+- La recette réelle (`test_registres_live.py`) n'a pas de cas `RM` ; le relevé a été fait à la main, hors outil.
+
+Tests : `tests/test_matricules_ad59.py`, sans réseau.
+
 ## HTTP, protection et journal
 
-Un appel effectue au plus une tentative GET de recherche, ou utilise son cache. Il n'enchaîne pas les
+Un appel effectue au plus une tentative GET de recherche, ou utilise son cache (`RM` : une par formulaire, soit
+deux au plus, précédées de la lecture des formulaires, en cache une semaine). Il n'enchaîne pas les
 pages, les registres ou les métadonnées ; la politique commune continue de revalider les redirections.
 Une copie du wrapper HTTP partage le client, le cache, la politique et l'état de limitation de débit,
 avec une limite locale d'une tentative. Elle ne modifie pas les reprises des autres sources. Chaque
@@ -218,6 +323,9 @@ parseur borne la profondeur HTML et refuse un document de plus de deux millions 
 observées, avec une commune, une cote, un ARK, un UUID et une période synthétiques.
 `ad59-recensements-positive.html` et `ad59-recensements-page2.html` (#375) sont, eux, les pages de recensements
 relevées le 27 novembre 2026, réduites aux balises lues (registres publics, aucune personne).
+Les dix fichiers `ad59-matricules-*.html` (#376) sont de même les deux formulaires et huit pages de résultats
+relevés le 27 novembre 2026 (tables et fiches : avec bureau, sans bureau, intervalle, page 2, négatif), réduits
+aux balises lues.
 `ad59-tables-decennales.html` (trois tables décennales) et `ad59-recherche-intervalle-page2.html` (page 2 sur
 2 d'un intervalle, 25 résultats) en dérivent avec les titres, cotes et compteurs relevés le 18 novembre. Aucun export familial,
 HTML complet de production, cookie ou script tiers n'est livré comme fixture.

@@ -210,7 +210,8 @@ def test_tables_des_successions_par_bureau(app, fixtures, service):
 def test_types_de_fonds_sans_formulaire_ou_sur_ad59(app, service):
     r = registres.rechercher(app.sctx, "AD99", "Ville-Fictive", 1880, "RM")
     assert "Aucun formulaire « matricules »" in r["erreur"]
-    assert "RM" in registres.rechercher(app.sctx, "AD59", "Lille", 1880, "RM")["erreur"]
+    # RM est pris en charge pour AD59 depuis #376 (tests/test_matricules_ad59.py) ; SUCC y reste refusé
+    assert "SUCC" in registres.rechercher(app.sctx, "AD59", "Lille", 1880, "SUCC")["erreur"]
 
 
 def test_referentiel_declare_matricules_et_successions():

@@ -135,6 +135,10 @@ Hors des niveaux ci-dessus : le classeur 3 E des AD59 (`ad59_3e.json`, relevé d
 
 Hors des niveaux ci-dessus : l'état de la collection des recensements des AD59 (`ad59_recensements.json`, relevé du 2026-11-27, 4039 volumes, 765 libellés de commune, 2852 en ligne, 1187 en salle de lecture) donne la cote et le mode d'accès de chaque millésime. `archives_registres(type_acte="REC")` le joint (`couverture_recensements`) quand la recherche est vide ou qu'un recensement n'est qu'en salle de lecture ; un millésime inconnu du référentiel n'est pas inexistant. Voir `docs/recensements.md`.
 
+## AD59 : registres matricules
+
+Hors des niveaux ci-dessus : `archives_registres(type_acte="RM")` interroge pour les AD59 les deux formulaires de la série 1 R (relevé du 2026-11-27) : tables alphabétiques et fiches des états signalétiques (classes 1867 à 1923, Valenciennes-Douai à partir de 1908 d'après le formulaire), par classe et bureau de recrutement. Aucun référentiel local des cotes : la cote vient de la réponse ; un résultat vide ne prouve pas l'absence du registre. Navigation et lecture des vues de ces registres non testées. Voir `docs/recherche-registres-ad59.md`.
+
 ## Niveaux par type de document
 
 Chaque cellule reprend le niveau de `archives_service(document=...)`. Une recette dont le fonds n'est pas renseigné ne qualifie aucune de ces colonnes. Les niveaux 0–4 sont des capacités implémentées, toujours à éprouver sur le fonds demandé.

@@ -44,7 +44,7 @@ Le même parcours que `/genealogiste:acte` et la skill `genealogiste`.
 2. **Localiser le registre** (cote + ARK) : un ARK déjà porté par une source `S…` de l'arbre se réutilise
    (`ark_resoudre` pour le vérifier) ; pour AD59 et les services Mnesys du référentiel (AD14, AD19, AD25, AD27, AD37, AD39, AD51, AD55, AD58, AD69, AD80, AD90, AD91, AD972), `archives_registres(service=…, commune=…, annee=…,
    type_acte="N"|"M"|"D"|"TD", personne=id)` (`annee_fin` pour un intervalle ; `RM` registres matricules par classe,
-   `SUCC` tables des successions par bureau, sur les services Mnesys qui les déclarent ; `REC` recensements de population, AD59 seulement), une page par appel ; ailleurs `liens_recherche` et
+   `SUCC` tables des successions par bureau, sur les services Mnesys qui les déclarent ; `REC` recensements de population, AD59 seulement ; `RM` sur AD59 : classe = année de naissance + 20, bureau de recrutement facultatif, résultats distingués par `categorie` tables / fiches), une page par appel ; ailleurs `liens_recherche` et
    `cotes_a_consulter` (cote typique), jamais de cote devinée. Un résultat vide est une recherche négative sur ce
    périmètre, pas une preuve d'absence.
 3. **Sonder et naviguer** : `archives_naviguer(ark_registre, page=…, pas=…)` parcourt les vues (ou la table

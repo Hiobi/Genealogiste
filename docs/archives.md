@@ -285,7 +285,8 @@ formulaire qui ne le type pas (AD25 : classe des matricules en texte libre).
 - Type d'acte non proposé par le formulaire : erreur explicite, relancer sans type.
 - **Registres matricules** (`type_acte="RM"`, #112) : `annee` = classe (naissance + 20), `commune` = bureau de
   recrutement si le formulaire le propose (facultatif) ; AD19, AD25, AD27, AD39, AD55, AD58, AD69, AD90, AD972. Le formulaire
-  d'AD14 renvoie des fiches individuelles (index nominatif) et n'est pas déclaré.
+  d'AD14 renvoie des fiches individuelles (index nominatif) et n'est pas déclaré. AD59 : deux formulaires
+  dédiés, hors de ce référentiel (#376, ci-dessous).
 - **Tables des successions et absences** (`type_acte="SUCC"`, série 3 Q, #112) : `commune` = bureau de
   l'enregistrement (« Nevers », « Bureau de Delle » : le préfixe « Bureau de » est facultatif), `annee` et
   `annee_fin` = période ; AD25, AD27, AD37 (bureau = canton), AD58, AD69, AD90, AD91.
@@ -313,6 +314,17 @@ service (`referentiels/ad59_recensements.json`, relevé du 27 novembre 2026, gé
 `scripts/generer_couverture_recensements_ad59.py`) ; un millésime inconnu du référentiel n'est pas inexistant.
 Pour un autre service, `REC` est refusé tant que son formulaire dédié n'est pas relevé. Détail, Socface et
 limites : [recensements](recensements.md).
+
+Depuis #376, `type_acte="RM"` vaut aussi pour AD59 (série 1 R) : `annee` = classe (année de naissance + 20),
+`commune` = bureau de recrutement, facultatif, pris dans le vocabulaire lu en ligne (Avesnes, Cambrai, Dunkerque,
+Lille, Valenciennes, Valenciennes-Douai au relevé du 27 novembre 2026). Une classe précise interroge deux
+formulaires, une page chacun : les tables alphabétiques et les fiches des états signalétiques (classes 1867 à
+1923 en ligne d'après le formulaire). Chaque résultat porte `categorie` (`tables`, `fiches`) et `contexte` ;
+`matricules` donne l'état de chaque formulaire. Un intervalle (`annee_fin`) n'interroge que les tables.
+`archives_registres(service="AD59", commune="Avesnes", annee=1890, type_acte="RM")` → table `1R 02249` et cinq
+volumes `1R 2244` à `1R 2248`. Aucun référentiel local des cotes 1 R : `cotes_a_consulter` donne la classe et
+l'appel à lancer (`matricules_ad59`), pas de cote. Détail et limites :
+[registres matricules](recherche-registres-ad59.md#registres-matricules--type_acterm--376).
 
 ## Sondage guidé d'un registre — #156
 
