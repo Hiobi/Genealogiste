@@ -32,3 +32,10 @@ une valeur de bureau inexistante ; tables : Cambrai page 1 sur 18, Lille pages 1
 Avesnes page 1 sur 29), réduits au formulaire ou aux balises lues. Titres, cotes et ARK de volumes réels ; les
 plages alphabétiques des titres (« ABADEAU - CRETE ») sont des intitulés de volumes, pas des personnes. Sans
 aucune vue ni contenu : ni script, ni cookie, ni personne.
+
+`ad59-cadastre-*.html` (#379) : les deux formulaires des plans du cadastre des AD59 (cadastre consulaire,
+cadastre napoléonien ; vocabulaires de communes complets, 395 et 650 valeurs) et huit pages de résultats
+publiques relevés le 27 novembre 2026 (napoléonien : Estaires, Marly, Lille, Fives, négatif obtenu avec une
+valeur de commune inexistante ; consulaire : Marly, Saint-Remy-Mal-Bati, négatif obtenu de même), réduits au
+formulaire ou aux balises lues. Titres, cotes et ARK de lots de plans réels, non nominatifs ; aucune liste
+relevée n'a de page 2. Sans aucune vue ni contenu : ni script, ni cookie, ni personne.

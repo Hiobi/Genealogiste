@@ -114,6 +114,12 @@ def tableau(services: list | tuple, recettes: dict, documents: tuple = ()) -> st
                    f"D'après le service : {registres.PERIODE_HYP}. Aucune date dans ces formulaires ; bureau, période et plage alphabétique sont lus dans le titre des volumes, "
                    "et le nom cherché n'est jamais envoyé. Aucun référentiel local des cotes : la cote vient de la réponse ; un résultat vide ne prouve ni l'absence du registre ni celle d'une formalité. "
                    "Navigation et lecture des vues de ces fonds non testées. Voir `docs/recherche-registres-ad59.md`.", ""])
+    lignes.extend(["## AD59 : plans du cadastre", "",
+                   f"Hors des niveaux ci-dessus : `archives_registres(type_acte=\"CAD\")` interroge pour les AD59 les deux formulaires des plans du cadastre (relevé du {registres.RELEVE_CAD}) : "
+                   "cadastre dit du Consulat (cotes P 30) et cadastre dit napoléonien (cotes P 31), par commune, chaque formulaire ayant son vocabulaire. "
+                   f"D'après le service : {registres.PERIODE_CAD}. Aucune date dans ces formulaires ; seuls les plans dont la date affichée ne recoupe pas la période demandée sont écartés. "
+                   "Plans seulement, non nominatifs : matrices cadastrales et états de sections ne sont pas couverts. Aucun référentiel local des cotes : la cote vient de la réponse ; un résultat vide ne prouve pas qu'aucun plan n'existe. "
+                   "Navigation éprouvée sur un seul lot (métadonnées, aucune image) ; planche-contact et lecture des plans non testées. Voir `docs/recherche-registres-ad59.md`.", ""])
     if documents:
         lignes.extend(["## Niveaux par type de document", "",
                        "Chaque cellule reprend le niveau de `archives_service(document=...)`. Une recette dont le fonds n'est pas renseigné ne qualifie aucune de ces colonnes. Les niveaux 0–4 sont des capacités implémentées, toujours à éprouver sur le fonds demandé.", "",

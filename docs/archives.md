@@ -359,6 +359,23 @@ type_acte="HYPI")` → cinq volumes `4Q 63 / 001` à `4Q 63 / 005`. `prochaine_s
 aux pistes notariales du Nord. Détail et limites :
 [hypothèques](recherche-registres-ad59.md#hypothèques--type_actehyp--378).
 
+Depuis #379, `type_acte="CAD"`, propre à AD59, interroge les deux formulaires des plans du cadastre : cadastre
+dit du Consulat (cotes `P 30`, début du XIXe siècle d'après le service) et cadastre dit napoléonien (cotes
+`P 31`, jusqu'au début du XXe siècle pour certaines communes). `commune` est obligatoire et prise dans le
+vocabulaire de chaque formulaire, lu en ligne ; les deux vocabulaires diffèrent (anciens noms, communes réunies,
+subdivisions) : seul le formulaire qui connaît la commune est interrogé, une commune inconnue des deux est une
+erreur qui liste les valeurs proches. Chaque résultat est un lot de plans (non nominatifs) et porte `categorie`
+(`consulaire`, `napoleonien`), `contexte`, `annee_titre` et, de 2 à 9 vues, `planche_contact` (appel
+`archives_planche` proposé, non éprouvé sur un plan). Aucune date n'est envoyée : `annee` n'écarte que les plans
+dont la date affichée ne recoupe pas la période ; un plan valant pour les décennies qui suivent sa levée,
+préférer un intervalle large. `cadastre.noms_lies` propose, d'après le classeur 3 E local et sans réseau, le nom
+actuel ou l'ancien nom sous lequel relancer (Fives et Lille, Saint-Remy-du-Nord et Saint-Remy-Mal-Bati) ; pour
+les autres communes réunies, `geo_historique` puis une relance sous le nom d'alors. Matrices cadastrales et
+états de sections : non couverts. `archives_registres(service="AD59", commune="Estaires", annee=1800,
+annee_fin=1900, type_acte="CAD")` → trois lots `P 31 / 035`, `035_1`, `035_2`. `prochaine_source` joint
+`cadastre_ad59` aux pistes de domicile et de bien du Nord. Détail et limites :
+[plans du cadastre](recherche-registres-ad59.md#plans-du-cadastre--type_actecad--379).
+
 ## Sondage guidé d'un registre — #156
 
 `archives_sonder(source, date_cible, type_acte, lecture, conclusion, enquete)` remplace le tâtonnement
@@ -412,7 +429,7 @@ continuent d'utiliser les clés canoniques.
 | notaire | notaires | minutes et répertoires |
 | paroissiaux | paroissial | préciser période et statut du fonds |
 | enregistrement | — | préciser table ou déclaration |
-| cadastre | — | plans et matrices |
+| cadastre | — | plans et matrices ; recherche des plans pour AD59 (`CAD`, #379), matrices non couvertes |
 | hypotheques | — | ajouté au catalogue, règle historique conservée ; recherche de volumes pour AD59 (`HYP`, #378) |
 | judiciaire | justice | ajouté au catalogue, clé publique historique conservée |
 | insinuation | insinuations | ajouté au catalogue, régime à préciser |

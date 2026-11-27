@@ -1,7 +1,7 @@
 """Recherche de registres sur le HTML serveur Mnesys Expo : AD59 qualifié (relevés des 16, 18 et 27 novembre 2026 ;
 registres matricules : tables et fiches des états signalétiques, #376 ; enregistrement : tables des successions
-et absences et fiches décès, #377 ; hypothèques, sous-série 4 Q : indicateurs, tables et répertoires, #378) et
-services déclarant
+et absences et fiches décès, #377 ; hypothèques, sous-série 4 Q : indicateurs, tables et répertoires, #378 ;
+cadastre : plans du Consulat (P 30) et napoléoniens (P 31), #379) et services déclarant
 ``recherche_registres`` dans le référentiel (formulaire lu en ligne, sources/mnesys.py, #128).
 
 Une page par appel, sans exploration de JavaScript, de notice, de métadonnées ni d'image.
@@ -85,6 +85,28 @@ NON_VERIFIE_HYP = ("La page du service relevée ne dit rien d'un délai de commu
                    "la règle rendue est celle du type « hypotheques » de communicabilite, indicative et non vérifiée "
                    "auprès du service. Un compte de propriétaire peut citer des personnes encore vivantes (contenu "
                    "non lu).")
+# Cadastre (relevé du 27 novembre 2026, #379) : deux formulaires de plans dont le seul champ est la commune (aucune
+# date), chacun avec son vocabulaire. Ordre des cotes : P 30 (plans dits du Consulat), P 31 (plans dits napoléoniens).
+FORMULAIRES_CAD = {"consulaire": "fff966ed-72a2-47ea-8564-ab533e334daa",
+                   "napoleonien": "b57520fe-2768-4335-b138-119f274f0a73"}
+RELEVE_CAD = "2026-11-27"
+PAGE_CAD = HOST + "/page/plans-du-cadastre-du-consulat-et-napoleonien"
+PERIODE_CAD = ("plans du cadastre dit du Consulat : début du XIXe siècle ; plans du cadastre dit napoléonien : une "
+               "plus large période, jusqu'au début du XXe siècle pour certaines communes")
+LECTURE_CAD = ("Un résultat est un lot de plans d'une commune (plans, non nominatifs) : « COMMUNE / numéro » pour le "
+               "cadastre du Consulat, sans date ; « COMMUNE - année » pour le cadastre napoléonien, parfois suivi "
+               "d'une plage de feuilles (« (TA-B12) »). Une commune peut avoir plusieurs lots (levées successives, "
+               "suffixes de cote _1, _2, cote partagée). annee_titre reprend l'année du titre, pour information : "
+               "seule la date affichée par le service (bornes) écarte un plan. Un plan décrit le territoire pour "
+               "les décennies qui suivent sa levée. planche_contact : appel proposé pour les lots de 2 à 9 vues. "
+               "Le contenu des vues n'est pas lu.")
+NON_COUVERT_CAD = ("Matrices cadastrales et états de sections (propriétaires) : absents de ces deux formulaires ; "
+                   "leur mise en ligne et leur cote n'ont pas été relevées : consulter l'inventaire du service.")
+NON_VERIFIE_CAD = ("La page du service relevée ne dit rien d'un délai de communicabilité ; la règle rendue est celle "
+                   "du type « cadastre » de communicabilite, indicative et non vérifiée auprès du service.")
+PISTE_LIEU_CAD = ("Commune réunie à une autre ou renommée : les plans sont classés sous le nom porté par le "
+                  "formulaire, qui diffère d'un cadastre à l'autre ; geo_historique(nom) donne les fusions et "
+                  "changements de nom depuis 1943, lieu_historique(lieu, date) la commune à une date.")
 MAX_HTML = 2_000_000
 MAX_PROFONDEUR = 128
 TYPES = {"N": "Naissances", "M": "Mariages", "D": "Décès"}
@@ -520,6 +542,98 @@ def _hypotheques_ad59(http, type_acte: str, bureau: str, periode: list[int], pag
     return resultats, total, suivante, cached, extra
 
 
+def _cadastre_ad59(http, commune: str, periode: list[int], page: int,
+                   aujourdhui: date) -> tuple[list[dict], int, int | None, bool, dict]:
+    """Plans du cadastre des AD59 (#379) : cadastre dit du Consulat (P 30) et cadastre dit napoléonien (P 31), un
+    formulaire chacun, dont le seul champ est la commune (obligatoire), avec un vocabulaire propre.
+
+    Règle : les deux formulaires sont lus, puis interrogés (une page chacun) quand leur vocabulaire connaît la
+    commune ; une commune inconnue des deux est une erreur avant toute recherche. Aucune date n'est envoyée : la
+    période n'écarte que les plans dont le service affiche une date qui ne la recoupe pas. Les résultats portent
+    ``categorie``, ``contexte`` et ``annee_titre`` ; les noms liés viennent du classeur 3 E local (aucun réseau)."""
+    from ..fr_sources import communicability  # import tardif : fr_sources ne dépend pas des sources réseau
+    etats: dict[str, dict] = {}
+    requetes: dict[str, dict] = {}
+    for categorie, uuid in FORMULAIRES_CAD.items():  # formulaires et commune contrôlés avant toute recherche
+        f = _formulaire(http, HOST, uuid)
+        if not f["commune"]:
+            raise mnesys.FormulaireError(f"Formulaire du cadastre AD59 ({categorie}) non reconnu (commune "
+                                         "absente) : consulter la recherche manuellement.")
+        etat = etats[categorie] = {"formulaire": uuid, "interroge": False, "commune": None, "total": None,
+                                   "page_suivante": None, "nb_communes": len(f["communes"])}
+        exactes = [o for o in f["communes"] if mnesys.cle(o) == mnesys.cle(commune)]  # « MARCHIENNES Ville »
+        try:
+            etat["commune"] = exactes[0] if len(exactes) == 1 else mnesys.choisir_commune(f["communes"], commune)
+        except ValueError as exc:
+            etat["message"] = str(exc).replace("du service", "de ce formulaire", 1)
+        try:
+            lies = [n for n in couverture_3e.noms_lies(commune, f["communes"]) if n["valeur"] != etat["commune"]]
+        except (OSError, ValueError, KeyError):
+            lies = []  # référentiel absent ou illisible : pas d'aide, la recherche reste possible
+        if lies:
+            etat["noms_lies"] = lies
+            if not etat["commune"]:
+                essais = [("l'" if n["lien"][0] in "aeiou" else "le ") + f"{n['lien']} {n['valeur']} (« {n['d_apres']} »)"
+                          for n in lies]
+                etat["message"] += (" D'après le classeur 3 E (référentiel local), essayer sous "
+                                    + " ; sous ".join(essais) + ".")
+        if etat["commune"]:
+            # tri par cote : ordre des lots d'une commune (le tri par défaut du formulaire est la pertinence)
+            requetes[categorie] = {"formUuid": uuid, "sort": "referencecode_asc", "mode": "list",
+                                   "facet_media": "image", f["commune"] + "[]": etat["commune"], "page": page}
+    if not requetes:
+        raise ValueError("Aucun des deux formulaires du cadastre AD59 ne connaît cette commune. "
+                         + " ".join(f"{c} : {e['message']}" for c, e in etats.items()) + " " + PISTE_LIEU_CAD)
+    resultats: list[dict] = []
+    total, suivante, cached, lues, refus, hors = 0, None, True, 0, None, []
+    for categorie, requete in requetes.items():
+        etat = etats[categorie]
+        html, cache = http.get(URL, params=requete, parse="text", ttl=DAY, source="archives")
+        etat["interroge"] = True
+        cached = cached and cache
+        try:
+            lus, etat["total"], etat["page_suivante"] = _lire(html, page, contexte=True)
+        except FormatRegistresError as exc:
+            if page == 1:
+                raise
+            # Page absente d'une catégorie (redirection vers la première, observée sur ce formulaire le 27 novembre
+            # 2026) : rien n'est conclu pour elle, l'autre reste lisible.
+            refus = exc
+            etat["message"] = f"Aucune page {page} lue pour cette catégorie : {exc}"
+            continue
+        lues += 1
+        if not lus:
+            etat["message"] = "Aucun plan renvoyé pour cette commune ; cela ne prouve pas qu'aucun plan n'existe."
+        total += etat["total"]
+        if etat["page_suivante"]:
+            suivante = etat["page_suivante"]
+        for r in lus:
+            m = re.fullmatch(r".*\s-\s(\d{4})(?:\s*\(.*\))?\s*", r["titre"])
+            r.update(categorie=categorie, annee_titre=int(m[1]) if m else None,
+                     couvre_periode=_couvre(r["bornes"], periode))
+            if r["couvre_periode"] is False:
+                hors.append(r["bornes"])
+                continue
+            if r["nb_vues"] and 2 <= r["nb_vues"] <= 9:
+                r["planche_contact"] = f'archives_planche(source="{r["ark"]}", de=1, a={r["nb_vues"]})'
+            resultats.append(r)
+    if refus and not lues:
+        raise refus
+    regle = communicability("cadastre", today=aujourdhui)
+    communes = {e["commune"] for e in etats.values() if e["commune"]}
+    cadastre = {"releve_le": RELEVE_CAD, "reference": PAGE_CAD, "periode_annoncee": PERIODE_CAD,
+                "lecture": LECTURE_CAD, "non_couvert": NON_COUVERT_CAD, "piste_lieu": PISTE_LIEU_CAD,
+                "communicabilite": {"type_document": "cadastre", "regle": regle["regle"],
+                                    "delai_annees": regle["delai_annees"], "source": PAGE_CAD,
+                                    "releve_le": RELEVE_CAD, "non_verifie": NON_VERIFIE_CAD},
+                **etats}
+    if hors:  # dates affichées des plans écartés : de quoi relancer sur la bonne période
+        cadastre["dates_hors_periode"] = sorted({b[0] if b[0] == b[1] else f"{b[0]}-{b[1]}" for b in hors}, key=str)
+    return resultats, total, suivante, cached, {
+        "commune_service": next(iter(communes)) if len(communes) == 1 else None,
+        "registres_hors_periode": len(hors), "cadastre": cadastre}
+
+
 def _communicabilite_fd(resultats: list[dict], periode: list[int], aujourdhui: date) -> tuple[list[dict], dict, str]:
     """Fiches décès (#377) : délai affirmé par le service, jamais « librement communicable ». Rend les résultats
     dont le délai est échu (ou dont la date est inconnue, signalée), le constat et l'avertissement."""
@@ -612,7 +726,8 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
     AD59 : tables et fiches, #376) ; SUCC pour les tables des successions et absences et, pour AD59 seulement, FD
     pour les fiches décès de l'enregistrement (commune = bureau de l'enregistrement, #377) ; AD59 seulement : HYP
     pour les hypothèques, sous-série 4 Q (commune = bureau des hypothèques ; indicateurs, tables et répertoires ;
-    HYPI, HYPT, HYPR pour une seule catégorie, #378). Aucun nom de personne envoyé."""
+    HYPI, HYPT, HYPR pour une seule catégorie, #378) ; CAD pour les plans du cadastre (commune seule ; cadastre du
+    Consulat et cadastre napoléonien, #379). Aucun nom de personne envoyé."""
     params = {"service": service, "commune": commune, "annee": annee, "type_acte": type_acte, "page": page,
               "annee_fin": annee_fin}
     svc = None
@@ -639,20 +754,22 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
             raise ValueError("annee_fin : 0 (année seule) ou fin d'intervalle, de annee à 9999.")
         if type(page) is not int or page < 1:
             raise ValueError("page : entier à partir de 1.")
-        if svc and type_acte in ("REC", "FD", *TYPES_HYP):
-            quoi = {"REC": "REC (recensements de population)", "FD": "FD (fiches décès de l'enregistrement)"}.get(
-                type_acte, f"{type_acte} (hypothèques, sous-série 4 Q)")
+        if svc and type_acte in ("REC", "FD", "CAD", *TYPES_HYP):
+            quoi = {"REC": "REC (recensements de population)", "FD": "FD (fiches décès de l'enregistrement)",
+                    "CAD": "CAD (plans du cadastre)"}.get(type_acte, f"{type_acte} (hypothèques, sous-série 4 Q)")
             raise ValueError(f"type_acte {quoi} : disponible pour AD59 seulement ; le "
                              f"formulaire dédié de {service} n'est pas relevé : chercher dans l'inventaire du "
                              "service (archives_service, lien).")
         if type_acte not in {"", "NMD", "TD", *TYPES} | (set(mnesys.TYPES_FONDS) if svc
-                                                         else {"REC", "RM", *FORMULAIRES_ENREGISTREMENT, *TYPES_HYP}):
+                                                         else {"REC", "RM", "CAD", *FORMULAIRES_ENREGISTREMENT,
+                                                               *TYPES_HYP}):
             raise ValueError("type_acte : N, M, D, NMD, TD (tables décennales) ou vide ; REC (recensements de "
                              "population) pour AD59 ; RM (registres matricules) pour AD59 et les services Mnesys "
                              "qui le déclarent ; SUCC (tables des successions et absences) pour AD59 et les "
                              "services Mnesys qui le déclarent ; FD (fiches décès de l'enregistrement) pour AD59 ; HYP "
                              "(hypothèques, sous-série 4 Q : indicateurs, tables et répertoires ; HYPI, HYPT ou HYPR "
-                             "pour une seule catégorie) pour AD59.")
+                             "pour une seule catégorie) pour AD59 ; CAD (plans du cadastre du Consulat et "
+                             "napoléonien) pour AD59.")
         periode = [annee, annee_fin or annee]
         # Copie du wrapper seulement : cache, client, politique et verrou de débit restent partagés.
         # La limite locale n'altère pas les reprises des autres sources ou appels simultanés.
@@ -660,8 +777,11 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
         http.max_retries = 1
         matricules_ad59 = svc is None and type_acte == "RM"
         hypotheques_ad59 = svc is None and type_acte in TYPES_HYP
+        cadastre_ad59 = svc is None and type_acte == "CAD"
         if matricules_ad59:
             resultats, total, suivante, cached, extra = _matricules_ad59(http, commune, periode, page)
+        elif cadastre_ad59:
+            resultats, total, suivante, cached, extra = _cadastre_ad59(http, commune, periode, page, date.today())
         elif hypotheques_ad59:
             resultats, total, suivante, cached, extra = _hypotheques_ad59(http, type_acte, commune, periode, page,
                                                                           date.today())
@@ -689,7 +809,7 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
                 requete["facet_typology"] = TYPES[type_acte]
             host, naan, url = HOST, "33518", URL
             filtre_local = type_acte in ("TD", "REC")
-        if not matricules_ad59 and not hypotheques_ad59:
+        if not matricules_ad59 and not hypotheques_ad59 and not cadastre_ad59:
             html, cached = http.get(url, params=requete, parse="text", ttl=DAY, source="archives")
             resultats, total, suivante = _lire(html, page, host, naan, contexte)
     except (SourceError, ValueError) as exc:
@@ -717,6 +837,16 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
             + " Cela ne prouve ni l'absence du registre ni celle d'une formalité. Le service annonce : "
             f"{PERIODE_HYP} (relevé du {RELEVE_HYP}). Vérifier le bureau des hypothèques (celui de l'arrondissement "
             "du bien) et l'état de chaque catégorie (hypotheques).")
+    elif not resultats and cadastre_ad59:
+        dates = extra["cadastre"].get("dates_hors_periode")
+        out["recherche_negative"] = (
+            (f"Aucun plan de cette page ne recoupe {periode[0]}-{periode[1]} d'après la date affichée par le service "
+             f"({extra[hors]} écarté(s), datés {', '.join(map(str, dates))}) : un plan décrit le territoire pour les "
+             "décennies qui suivent sa levée, relancer avec une de ces années ou un intervalle (annee_fin)." if dates
+             else "Aucun plan du cadastre renvoyé pour cette commune et cette page.")
+            + " Cela ne prouve pas qu'aucun plan n'existe. Le service annonce : "
+            f"{PERIODE_CAD} (relevé du {RELEVE_CAD}). Vérifier l'état de chaque formulaire (cadastre) et le nom de "
+            "la commune à l'époque du plan (noms_lies, piste_lieu).")
     elif not resultats and extra.get(hors):
         quoi = {"TD": "Aucune table décennale", "REC": "Aucun recensement en ligne",
                 "FD": "Aucun volume de fiches décès"}.get(type_acte, "Aucun registre")
@@ -758,7 +888,7 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
             constat = None  # référentiel absent ou illisible : la recherche en ligne reste rendue telle quelle
         if constat:
             out["couverture_recensements"] = constat
-    elif svc is None and type_acte not in ("TD", "RM", *FORMULAIRES_ENREGISTREMENT, *TYPES_HYP):
+    elif svc is None and type_acte not in ("TD", "RM", "CAD", *FORMULAIRES_ENREGISTREMENT, *TYPES_HYP):
         # Classeur 3 E (#374) : ajout seulement, quand la recherche est vide ou qu'un volume n'est pas en ligne.
         try:
             constat = couverture_3e.pour_recherche(commune, periode, type_acte, resultats)
