@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from . import couverture_3e, couverture_recensements
 from .acces_archives import ecarte_adaptateur_service
+from .sources import registres
 
 CAPACITES = ("resolution_ark", "navigation", "telechargement", "recherche", "archivage")
 
@@ -96,6 +97,11 @@ def tableau(services: list | tuple, recettes: dict, documents: tuple = ()) -> st
                        "Voir `docs/recensements.md`.", ""])
     except (OSError, ValueError, KeyError):
         pass
+    lignes.extend(["## AD59 : registres matricules", "",
+                   f"Hors des niveaux ci-dessus : `archives_registres(type_acte=\"RM\")` interroge pour les AD59 les deux formulaires de la série 1 R (relevé du {registres.RELEVE_RM}) : "
+                   f"tables alphabétiques et fiches des états signalétiques ({registres.PERIODE_FICHES_RM} d'après le formulaire), par classe et bureau de recrutement. "
+                   "Aucun référentiel local des cotes : la cote vient de la réponse ; un résultat vide ne prouve pas l'absence du registre. "
+                   "Navigation et lecture des vues de ces registres non testées. Voir `docs/recherche-registres-ad59.md`.", ""])
     if documents:
         lignes.extend(["## Niveaux par type de document", "",
                        "Chaque cellule reprend le niveau de `archives_service(document=...)`. Une recette dont le fonds n'est pas renseigné ne qualifie aucune de ces colonnes. Les niveaux 0–4 sont des capacités implémentées, toujours à éprouver sur le fonds demandé.", "",

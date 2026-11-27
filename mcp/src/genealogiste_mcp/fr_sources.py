@@ -85,6 +85,7 @@ def next_source_hint(fact: str, when: str = "", where: Any = "") -> list[dict]:
         _cotes_3e(fact, when, lieu_texte(where), out)
     if pays["france"] is True:
         _cotes_recensements(fact, when, lieu_texte(where), out)
+        _matricules_nord(fact, when, lieu_texte(where), out)
     court = pays_resume(pays)
     return [{**d, "pays": dict(court)} for d in out]
 
@@ -127,6 +128,38 @@ def _cotes_recensements(fact: str, when: str, lieu: str, sources: list[dict]) ->
     for d in pistes:
         if volumes:
             d["couverture_recensements"] = volumes
+
+
+def classe_recrutement(annee_naissance: int) -> int:
+    """Classe de recrutement d'un registre matricule : année de naissance + 20 (règle déjà affirmée par le dépôt).
+    Règle générale seulement : engagés volontaires, ajournés ou classes appelées par anticipation ne sont pas
+    traités ; en cas de doute, chercher aussi les classes voisines."""
+    if type(annee_naissance) is not int or not 1 <= annee_naissance <= 9979:
+        raise ValueError("annee_naissance : année précise (entier de 1 à 9979).")
+    return annee_naissance + 20
+
+
+def _matricules_nord(fact: str, when: str, lieu: str, sources: list[dict]) -> None:
+    """Nord : la piste « registre matricule » reçoit la recherche des AD59 (#376) et, pour une naissance datée,
+    la classe ; ajout seulement. Aucune cote 1 R n'est donnée ici : elle vient de la réponse du service."""
+    pistes = [d for d in sources if d["cote_typique"] == SERIES["matricules"]]
+    if not pistes or not lieu:
+        return
+    from .normalize.places import normalize_place
+    if normalize_place(lieu).get("departement_code") != "59":
+        return
+    y = _year(when) if fact in ("BIRT", "CHR", "BAPM", "FILIATION") else None  # seule date qui soit une naissance
+    aide: dict = {"service": "AD59"}
+    if y and 1 <= y <= 9979:
+        aide["classe"] = classe_recrutement(y)
+    aide["recherche"] = (f'archives_registres(service="AD59", commune="", annee={aide.get("classe", "<classe>")}, '
+                         'type_acte="RM")')
+    aide["note"] = ("Classe = année de naissance + 20. La réponse distingue les tables alphabétiques et les volumes "
+                    "des états signalétiques, avec leur cote 1 R réelle : aucune cote n'est proposée ici (pas de "
+                    "référentiel local). Le bureau de recrutement (commune, facultatif) n'est pas déduit du lieu : "
+                    "sans bureau, la réponse liste ceux de la classe. Vérifier communicabilite(\"matricule\").")
+    for d in pistes:
+        d["matricules_ad59"] = dict(aide)
 
 
 def _hors_france(fact: str, sources: list[dict], pays: dict) -> list[dict]:

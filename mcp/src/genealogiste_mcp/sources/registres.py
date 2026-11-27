@@ -1,5 +1,6 @@
-"""Recherche de registres sur le HTML serveur Mnesys Expo : AD59 qualifié (relevés des 16, 18 et 27 novembre 2026)
-et services déclarant ``recherche_registres`` dans le référentiel (formulaire lu en ligne, sources/mnesys.py, #128).
+"""Recherche de registres sur le HTML serveur Mnesys Expo : AD59 qualifié (relevés des 16, 18 et 27 novembre 2026 ;
+registres matricules : tables et fiches des états signalétiques, #376) et services déclarant
+``recherche_registres`` dans le référentiel (formulaire lu en ligne, sources/mnesys.py, #128).
 
 Une page par appel, sans exploration de JavaScript, de notice, de métadonnées ni d'image.
 Les ARK de registre viennent du lien de notice, jamais du lien de miniature (ARK de vue).
@@ -23,6 +24,16 @@ URL = HOST + "/search/results"
 FORMULAIRE = "dc4e871d-0b62-41fb-9921-5ded573781b8"
 FORMULAIRE_TD = "25905104-0354-4e23-aea0-e3b68cf1f881"  # tables décennales (relevé du 18 novembre 2026)
 FORMULAIRE_REC = "f0366f8a-2ef6-4cf2-b47b-6dec4a19e99f"  # recensements de population (relevé du 27 novembre 2026)
+# Registres matricules (série 1 R, relevé du 27 novembre 2026, #376) : deux formulaires, bureau de recrutement et
+# classe. « tables » : une table alphabétique par classe et par bureau (période ou année précise) ; « fiches » :
+# volumes des états signalétiques et des services (année précise seulement).
+FORMULAIRES_RM = {"tables": "0d3ab9ff-3258-4541-bf65-c3094fb024a0", "fiches": "9d12049e-510c-4c14-ad31-0fc5487c199c"}
+RELEVE_RM = "2026-11-27"
+# Libellé du champ d'année du formulaire des fiches, tel que relevé : il borne ce qui est en ligne, pas ce qui existe.
+PERIODE_FICHES_RM = "classes 1867 à 1923, Valenciennes-Douai à partir de 1908"
+LECTURE_RM = ("tables : une table alphabétique par classe et par bureau de recrutement ; fiches : volumes des états "
+              "signalétiques et des services de la classe, par bureau (contexte) et parfois par tranche de numéros "
+              "matricules (titre). D'après les intitulés des résultats : le contenu des vues n'est pas lu.")
 MAX_HTML = 2_000_000
 MAX_PROFONDEUR = 128
 TYPES = {"N": "Naissances", "M": "Mariages", "D": "Décès"}
@@ -88,7 +99,7 @@ def _unique(noeuds: list[_Noeud], champ: str) -> _Noeud:
     return noeuds[0]
 
 
-def _registre(bloc: _Noeud, host: str = HOST, naan: str = "33518") -> dict:
+def _registre(bloc: _Noeud, host: str = HOST, naan: str = "33518", contexte: bool = False) -> dict:
     intitule = _unique(bloc.trouver(classe="intitup"), "intitulé")
     lien = _unique(intitule.trouver("a"), "lien de notice")
     titre = _unique(lien.trouver("h2"), "titre").texte()
@@ -120,11 +131,16 @@ def _registre(bloc: _Noeud, host: str = HOST, naan: str = "33518") -> dict:
         m = re.fullmatch(r"([\d\s\u00a0\u202f]+)\s+medias", medias[0].texte())
         if m:
             nb_vues = int("".join(m[1].split()))
-    return {"titre": titre, "cote": cote, "ark": identifiant.base,
-            "url": url, "bornes": bornes, "nb_vues": nb_vues}
+    registre = {"titre": titre, "cote": cote, "ark": identifiant.base,
+                "url": url, "bornes": bornes, "nb_vues": nb_vues}
+    if contexte:  # « Contexte : Registres numérisés des matricules militaires (Avesnes) » : bureau des fiches (#376)
+        lignes = bloc.trouver("div", classe="context-content")
+        registre["contexte"] = re.sub(r"^Contexte\s*:\s*", "", lignes[0].texte()) or None if lignes else None
+    return registre
 
 
-def _lire(html: str, page: int, host: str = HOST, naan: str = "33518") -> tuple[list[dict], int, int | None]:
+def _lire(html: str, page: int, host: str = HOST, naan: str = "33518",
+          contexte: bool = False) -> tuple[list[dict], int, int | None]:
     if len(html) > MAX_HTML:
         raise FormatRegistresError("Réponse de recherche trop volumineuse : consultation manuelle nécessaire.")
     parser = _HTML()
@@ -165,7 +181,7 @@ def _lire(html: str, page: int, host: str = HOST, naan: str = "33518") -> tuple[
         if (maximum != (total + taille_page - 1) // taille_page
                 or len(blocs) != min(taille_page, total - (page - 1) * taille_page)):
             raise FormatRegistresError("Fenêtre de résultats incomplète ou pagination incohérente.")
-    return [_registre(bloc, host, naan) for bloc in blocs], total, page + 1 if page < maximum else None
+    return [_registre(bloc, host, naan, contexte) for bloc in blocs], total, page + 1 if page < maximum else None
 
 
 def _couvre(bornes: list[int] | None, periode: list[int]) -> bool | None:
@@ -176,6 +192,87 @@ def _couvre(bornes: list[int] | None, periode: list[int]) -> bool | None:
 def services_registres() -> list[str]:
     """Services dont la recherche de registres par commune et année est disponible."""
     return ["AD59", *sorted(s["code"] for s in archives.services() if s.get("recherche_registres"))]
+
+
+def _formulaire(http, host: str, uuid: str) -> dict:
+    """Champs d'un formulaire public Mnesys, lu en ligne (une requête, en cache une semaine)."""
+    form, _ = http.get(f"{host}/search/form/{uuid}", parse="text", ttl=7 * DAY, source="archives")
+    if len(form) > MAX_HTML:
+        raise FormatRegistresError("Formulaire de recherche trop volumineux : consultation manuelle nécessaire.")
+    parser = _HTML()
+    parser.feed(form)
+    return mnesys.lire_formulaire(parser.racine.trouver())
+
+
+def _matricules_ad59(http, bureau: str, periode: list[int], page: int) -> tuple[list[dict], int, int | None, bool, dict]:
+    """Registres matricules des AD59 (#376) : les deux formulaires sont lus puis interrogés, une page chacun.
+
+    Règle : une classe précise interroge les tables et les fiches ; un intervalle n'interroge que les tables, seul
+    formulaire doté d'une période (les fiches, triées par date sur des dizaines de pages, ne se filtrent pas
+    localement). Le bureau, facultatif, est pris dans le vocabulaire de chaque formulaire. Les résultats portent
+    ``categorie`` (tables, fiches) et ``contexte`` ; l'état de chaque formulaire est rendu à part."""
+    etats: dict[str, dict] = {}
+    requetes: dict[str, dict] = {}
+    for categorie, uuid in FORMULAIRES_RM.items():  # formulaires et bureau contrôlés avant toute recherche
+        f = _formulaire(http, HOST, uuid)
+        if not f["commune"] or not f["date"]:
+            raise mnesys.FormulaireError(f"Formulaire des {categorie} des matricules AD59 non reconnu (bureau ou "
+                                         "année absents) : consulter la recherche manuellement.")
+        etat = etats[categorie] = {"formulaire": uuid, "interroge": False, "bureau": None, "total": None,
+                                   "page_suivante": None, "bureaux": f["communes"]}
+        requete = {"formUuid": uuid, "sort": "date_asc", "mode": "list", "facet_media": "image"}
+        if bureau:
+            try:
+                etat["bureau"] = mnesys.choisir_commune(f["communes"], bureau)
+            except ValueError as exc:
+                etat["message"] = str(exc).replace("Commune «", "Bureau de recrutement «", 1)
+                continue
+            requete[f["commune"] + "[]"] = etat["bureau"]
+        if periode[0] == periode[1]:
+            requete[f["date"]] = str(periode[0])
+        elif f["debut"] and f["fin"]:
+            requete[f["debut"]], requete[f["fin"]] = str(periode[0]), str(periode[1])
+        else:
+            etat["message"] = ("Formulaire sans période : non interrogé pour un intervalle. Relancer avec annee "
+                               "seule (annee_fin=0) pour chaque classe.")
+            continue
+        requetes[categorie] = {**requete, "page": page}
+    if bureau and not any(e["bureau"] for e in etats.values()):
+        connus = sorted({b for e in etats.values() for b in e["bureaux"]})
+        raise ValueError(f"{next(iter(etats.values()))['message']} Bureaux de recrutement proposés par les "
+                         f"formulaires : {', '.join(connus)} ; le bureau est facultatif.")
+    if not requetes:  # bureau propre à un formulaire que la période écarte : rien à interroger, rien à conclure
+        raise ValueError("Aucun formulaire des matricules AD59 ne peut être interrogé : "
+                         + " ; ".join(f"{c} : {e['message']}" for c, e in etats.items()))
+    resultats: list[dict] = []
+    total, suivante, cached, lues, refus = 0, None, True, 0, None
+    for categorie, requete in requetes.items():
+        etat = etats[categorie]
+        html, cache = http.get(URL, params=requete, parse="text", ttl=DAY, source="archives")
+        etat["interroge"] = True
+        cached = cached and cache
+        try:
+            lus, etat["total"], etat["page_suivante"] = _lire(html, page, contexte=True)
+        except FormatRegistresError as exc:
+            if page == 1:
+                raise
+            # Page absente d'une catégorie (redirection vers la première observée sur l'état civil, #221 ; non
+            # observée ici) : rien n'est conclu pour elle, l'autre catégorie reste lisible.
+            refus = exc
+            etat["message"] = f"Aucune page {page} lue pour cette catégorie : {exc}"
+            continue
+        lues += 1
+        if not lus:
+            etat["message"] = "Aucun résultat pour cette recherche ; cela ne prouve pas l'absence du registre." + (
+                f" Le formulaire relevé le {RELEVE_RM} annonçait : {PERIODE_FICHES_RM}." if categorie == "fiches"
+                else "") + (" Relancer sans bureau, ou avec une autre valeur de bureaux." if etat["bureau"] else "")
+        total += etat["total"]
+        if etat["page_suivante"]:
+            suivante = etat["page_suivante"]
+        resultats.extend({**r, "categorie": categorie} for r in lus)
+    if refus and not lues:
+        raise refus
+    return resultats, total, suivante, cached, {"matricules": {"releve_le": RELEVE_RM, "lecture": LECTURE_RM, **etats}}
 
 
 def _requete_mnesys(http, svc: dict, commune: str, periode: list[int], type_acte: str,
@@ -194,12 +291,7 @@ def _requete_mnesys(http, svc: dict, commune: str, periode: list[int], type_acte
                          "du service (archives_service, lien)" + (f" ; types disponibles : {autres}." if autres
                                                                      else "."))
     uuid = cfg[cle_form]
-    form, _ = http.get(f"{host}/search/form/{uuid}", parse="text", ttl=7 * DAY, source="archives")
-    if len(form) > MAX_HTML:
-        raise FormatRegistresError("Formulaire de recherche trop volumineux : consultation manuelle nécessaire.")
-    parser = _HTML()
-    parser.feed(form)
-    f = mnesys.lire_formulaire(parser.racine.trouver())
+    f = _formulaire(http, host, uuid)
     # champ d'année déclaré au référentiel quand le formulaire ne le type pas (AD25 : classe en texte libre « 0-title »)
     if annee := svc["recherche_registres"].get("champs_annee", {}).get(cle_form):
         f["date"], f["debut"], f["fin"] = annee, None, None
@@ -243,7 +335,8 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
                personne: str = "", annee_fin: int = 0) -> dict:
     """Registres candidats d'une commune pour une année ou un intervalle [annee, annee_fin] ; type_acte=TD pour
     les tables décennales, REC pour les recensements de population des AD59 (#375), tous deux filtrés localement
-    sur la période. Aucun nom de personne envoyé."""
+    sur la période ; RM pour les registres matricules (annee = classe, commune = bureau de recrutement facultatif ;
+    AD59 : tables et fiches, #376). Aucun nom de personne envoyé."""
     params = {"service": service, "commune": commune, "annee": annee, "type_acte": type_acte, "page": page,
               "annee_fin": annee_fin}
     svc = None
@@ -261,7 +354,7 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
         else:
             commune = " ".join(strip_accents(commune or "").upper().split())
         params.update(service=service, commune=commune, type_acte=type_acte)
-        if len(commune) > 200 or not commune and not (svc and type_acte == "RM"):
+        if len(commune) > 200 or not commune and type_acte != "RM":
             raise ValueError("commune : nom obligatoire (facultatif pour RM), de 1 à 200 caractères.")
         if type(annee) is not int or not 1 <= annee <= 9999:
             raise ValueError("annee : année précise de 1 à 9999 ; pour un intervalle, préciser aussi annee_fin.")
@@ -273,16 +366,20 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
             raise ValueError(f"type_acte REC (recensements de population) : disponible pour AD59 seulement ; le "
                              f"formulaire dédié de {service} n'est pas relevé : chercher dans l'inventaire du "
                              "service (archives_service, lien).")
-        if type_acte not in {"", "NMD", "TD", *TYPES} | (set(mnesys.TYPES_FONDS) if svc else {"REC"}):
+        if type_acte not in {"", "NMD", "TD", *TYPES} | (set(mnesys.TYPES_FONDS) if svc else {"REC", "RM"}):
             raise ValueError("type_acte : N, M, D, NMD, TD (tables décennales) ou vide ; REC (recensements de "
-                             "population) pour AD59 ; RM (registres matricules) et SUCC (tables des successions) "
-                             "pour les services Mnesys qui les déclarent.")
+                             "population) pour AD59 ; RM (registres matricules) pour AD59 et les services Mnesys "
+                             "qui le déclarent ; SUCC (tables des successions) pour les services Mnesys qui le "
+                             "déclarent.")
         periode = [annee, annee_fin or annee]
         # Copie du wrapper seulement : cache, client, politique et verrou de débit restent partagés.
         # La limite locale n'altère pas les reprises des autres sources ou appels simultanés.
         http = copy(ctx.http)
         http.max_retries = 1
-        if svc:
+        matricules_ad59 = svc is None and type_acte == "RM"
+        if matricules_ad59:
+            resultats, total, suivante, cached, extra = _matricules_ad59(http, commune, periode, page)
+        elif svc:
             requete, extra["commune_service"], filtre_local = _requete_mnesys(http, svc, commune, periode,
                                                                               type_acte, page)
             host, naan = svc["site"].rstrip("/"), svc.get("ark_naan", "")
@@ -303,8 +400,9 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
                 requete["facet_typology"] = TYPES[type_acte]
             host, naan, url = HOST, "33518", URL
             filtre_local = type_acte in ("TD", "REC")
-        html, cached = http.get(url, params=requete, parse="text", ttl=DAY, source="archives")
-        resultats, total, suivante = _lire(html, page, host, naan)
+        if not matricules_ad59:
+            html, cached = http.get(url, params=requete, parse="text", ttl=DAY, source="archives")
+            resultats, total, suivante = _lire(html, page, host, naan)
     except (SourceError, ValueError) as exc:
         return error_envelope(ctx, "archives", "registres", params, exc, personne=personne or None)
     hors = "tables_hors_periode" if type_acte == "TD" else "registres_hors_periode"
@@ -329,6 +427,11 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
         out["recherche_negative"] = (
             f"{quoi} de cette page ne couvre {periode[0]}-{periode[1]} "
             f"({extra[hors]} hors période) ; voir page_suivante s'il y en a une. {suite}")
+    elif not resultats and matricules_ad59:
+        out["recherche_negative"] = (
+            "Aucune table ni aucun registre matricule renvoyé pour cette classe et cette page ; cela ne prouve ni "
+            "l'absence du registre ni celle de la personne. Vérifier la classe (année de naissance + 20), le "
+            "bureau de recrutement (facultatif) et l'état de chaque formulaire (matricules).")
     elif not resultats:
         out["recherche_negative"] = ("Aucun registre renvoyé pour cette recherche et cette page ; cela ne prouve pas "
                                       "l'absence générale de fonds numérisés. Vérifier les variantes et le service.")
@@ -341,7 +444,7 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
             constat = None  # référentiel absent ou illisible : la recherche en ligne reste rendue telle quelle
         if constat:
             out["couverture_recensements"] = constat
-    elif svc is None and type_acte != "TD":
+    elif svc is None and type_acte not in ("TD", "RM"):
         # Classeur 3 E (#374) : ajout seulement, quand la recherche est vide ou qu'un volume n'est pas en ligne.
         try:
             constat = couverture_3e.pour_recherche(commune, periode, type_acte, resultats)

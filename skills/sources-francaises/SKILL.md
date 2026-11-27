@@ -25,6 +25,13 @@ de lecture (communicable après 75 ans) et liste les millésimes connus ; « inc
 dire inexistant. `cotes_a_consulter` cite ces cotes. Recherche par nom : base Socface de FranceArchives, à
 consulter soi-même dans un navigateur (jamais automatisée). L'âge déclaré est une information secondaire ;
 une absence dans une liste ne prouve ni décès ni départ (docs/recensements.md).
+Matricules du Nord : `archives_registres(service="AD59", commune=<bureau de recrutement ou "">, annee=<classe>,
+type_acte="RM")` ; classe = année de naissance + 20 (`cotes_a_consulter` la calcule pour une naissance dans le
+Nord : `matricules_ad59`). La réponse distingue `categorie: tables` (table alphabétique de la classe et du
+bureau, à lire d'abord pour le numéro matricule) et `categorie: fiches` (volumes des états signalétiques,
+classes 1867 à 1923 en ligne, bureau dans `contexte`), avec la cote 1 R réelle ; sans bureau, tous les bureaux
+de la classe. Un intervalle (`annee_fin`) ne rend que les tables. Vérifier `communicabilite("matricule")` ;
+une absence dans une table ne prouve rien (autre bureau, autre classe, engagé volontaire).
 Ensuite `archives_naviguer` parcourt les vues, `archive_image` les lit et `piece_archiver` conserve l'original.
 Un résultat vide ne démontre pas que l'acte n'existe pas ; un blocage conserve une tâche manuelle au journal.
 Défi anti-robot (`bloque: "anti-robot"`, ex. Anubis aux AD de la Lozère, redirection JS des AD Arkotheque
