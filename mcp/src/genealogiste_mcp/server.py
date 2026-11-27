@@ -1090,8 +1090,14 @@ def archives_registres(service: str, commune: str, annee: int, type_acte: str = 
     alphabétique de la classe et du bureau ; fiches : volumes des états signalétiques, en ligne pour les classes
     1867 à 1923) et contexte (bureau des fiches) ; matricules donne l'état de chaque formulaire (interroge, bureau,
     total, page_suivante, bureaux proposés, message). Un intervalle (annee_fin) n'interroge que les tables.
-    Services Mnesys seulement : SUCC (tables des successions et absences, série 3 Q : commune = bureau de
-    l'enregistrement ; AD25, AD27, AD37 (canton), AD58, AD69, AD90, AD91).
+    SUCC (tables des successions et absences, série 3 Q : commune = bureau de l'enregistrement, obligatoire ;
+    AD25, AD27, AD37 (canton), AD58, AD59, AD69, AD90, AD91). AD59 : bureau pris dans le vocabulaire du formulaire
+    (inconnu ou ambigu : erreur qui liste les valeurs ; autres_bureaux signale « LILLE (1er bureau) »...),
+    période envoyée telle quelle, successions donne le relevé et la lecture. AD59 seulement : FD (fiches décès
+    de l'enregistrement, versements W, 1969 à 1975 en ligne, suite des tables : commune = bureau, annee = année
+    du décès ; un intervalle est filtré localement). Les fiches décès ne sont pas librement communicables : le
+    service affirme un délai de 50 ans, non vérifié par le plugin ; avertissement_communicabilite et
+    fiches_deces.communicabilite le rappellent, un résultat de moins de 50 ans est écarté.
     type_acte : N (naissance), M (mariage), D (décès), NMD ou vide (tous), TD (tables décennales : tables dont
     la période affichée recoupe l'année ou l'intervalle demandé). annee_fin (facultatif, >= annee) : intervalle
     [annee, annee_fin], ex. 1790-1802 ou une décennie ; registres dont la période le recoupe. Une seule page de

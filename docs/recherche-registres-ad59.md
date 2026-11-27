@@ -19,7 +19,8 @@ commune ; les traits d'union fournis sont conservés. L'année doit être un ent
 Les cases de filtre du formulaire GET portent `name=facet_typology` et les valeurs `Naissances`,
 `Mariages`, `Décès` : ce sont les filtres utilisés pour `N`, `M`, `D`. `NMD` et le type vide conservent la
 recherche sans filtre de typologie. `TD` (tables décennales) et `annee_fin` (intervalle) sont décrits
-ci-dessous ; `REC` (recensements de population, #375) et `RM` (registres matricules, #376) plus bas.
+ci-dessous ; `REC` (recensements de population, #375), `RM` (registres matricules, #376), `SUCC` et `FD`
+(tables des successions et fiches décès de l'enregistrement, #377) plus bas.
 Aucun nom ni identifiant de personne n'est envoyé ; `personne` sert uniquement à la garde de l'outil
 et au journal local.
 
@@ -296,6 +297,123 @@ de l'outil vise le registre matricule, pas sa table ; le régime des tables n'a 
 
 Tests : `tests/test_matricules_ad59.py`, sans réseau.
 
+## Enregistrement : `type_acte="SUCC"` et `type_acte="FD"` — #377
+
+Relevé public du 27 novembre 2026 (robots.txt relu : `/private/`, `/oai-pmh`, `/user/` ; aucune protection
+rencontrée ; une requête par observation, sans image, sans notice, sans nom de personne). La page
+[`/page/tables-des-successions-et-absences-fiches-deces`](https://archivesdepartementales.lenord.fr/page/tables-des-successions-et-absences-fiches-deces)
+mène à deux formulaires, lus avec `mnesys.lire_formulaire` :
+
+| | Tables des successions et absences (3 Q) | Fiches décès (W) |
+|---|---|---|
+| Formulaire | `6eaeac65-9e1b-43ea-bc9f-902abd458466` | `4e904e28-8a75-4be1-b9f6-b4138afe4956` |
+| Bureau | `0-controlledAccessGeographicName[]` | `0-controlledAccessGeographicName[]` |
+| Vocabulaire | 56 valeurs : `ARLEUX` … `WORMHOUT`, dont `LILLE`, `LILLE (1er bureau)`, `LILLE (2e bureau)`, `LILLE (3e bureau)`, `ROUBAIX`, `ROUBAIX (Canton)`, `ROUBAIX (Ville)`, quatre `VALENCIENNES (…)` sans forme nue | 28 valeurs, d'un autre découpage : `LILLE (Centre)`, `LILLE (Est)`, `LILLE (Haubourdin)`, `DOUAI (Nord-Ouest-Est)`, `DENAIN (Canton)`, `AVESNES`… |
+| Date | « Période (facultatif) » `1-date_begin` / `1-date_end`, « Année précise (facultatif) » `2-date` | `1-date` seul : « Année précise entre 1969 et 1975 (facultatif) » |
+| Tri par défaut du formulaire | `referencecode_asc` | `referencecode_asc` |
+| Résultats sans critère | 1 988 (relevé de l'issue #377, non revu) | 1 478 (relevé de l'issue #377, non revu) |
+
+La clé est le **bureau de l'enregistrement**, pas la commune : aucun champ commune ni typologie. Les deux
+vocabulaires diffèrent ; ils sont lus en ligne et ne sont pas recopiés dans le code. Observations, une requête
+chacune :
+
+- [tables, Steenvoorde, 1791-1803](https://archivesdepartementales.lenord.fr/search/results?formUuid=6eaeac65-9e1b-43ea-bc9f-902abd458466&sort=date_asc&mode=list&facet_media=image&0-controlledAccessGeographicName%5B%5D=STEENVOORDE&1-date_begin=1791&1-date_end=1803) :
+  2 résultats, titres `STEENVOORDE / 3Q - 516 / 1 [1791 - An 12]` (cote `3Q - 516 / 1`,
+  `ark:/33518/5hnwpt8xqz67`, champ `Date` 1791-1803, 70 médias) et `STEENVOORDE / 3Q - 516 / 2 [An 12 - 1811]`
+  (`ark:/33518/jqwc3pfb0285`, 1803-1811, 74 médias) ; contexte « Tables des successions et absences (cote 3Q) ».
+- Tables, Steenvoorde, année 1800 : le même volume 1791-An 12, que l'année soit envoyée en `2-date=1800` ou en
+  `1-date_begin=1800&1-date_end=1800`. Sur ce cas, l'année précise trouve donc le volume pluriannuel ; ce n'est
+  pas vrai partout (AD91, relevé du 18 novembre 2026), et le module envoie la période.
+- Tables, Lille, 1791-1969, `page=2` : 20 résultats sur 67, `value="2"`, `max="4"`, 20 par page ; titres datés
+  au jour (`LILLE / 3Q - 338 / 29 [01/10/1841 - 15/07/1842]`), champ `Date` réduit aux années (1841-1842), 169 à
+  198 médias. La valeur `LILLE` ne renvoie sur cette page que des titres `LILLE / …`.
+- Tables, Steenvoorde, 1791-1969, `page=2` : réponse 302 vers `page=1&resultsPerPage=20` (une seule page de
+  résultats). Même redirection pour les fiches (Lille Centre, 1969, `page=2`).
+- [fiches décès, Lille (Centre), 1969](https://archivesdepartementales.lenord.fr/search/results?formUuid=4e904e28-8a75-4be1-b9f6-b4138afe4956&sort=referencecode_asc&mode=list&facet_media=image&0-controlledAccessGeographicName%5B%5D=LILLE%20%28Centre%29&1-date=1969) :
+  6 résultats, un volume par tranche de lettres, `LILLE (Centre) [1969] A - C` (cote `2571 W 01`) à
+  `LILLE (Centre) [1969] T - Z` (`2571 W 06`), dont `L - M` : `2571 W 04`, `ark:/33518/qkwfpghmn457`, 296 médias ;
+  champ `Date` 1969 ; contexte tronqué par le site : « Fiches Décès (W) : Accès aux fiches de + de 50 ans… ».
+  Avec `sort=date_asc`, les six volumes d'une même année sortent dans le désordre ; avec le tri du formulaire
+  (`referencecode_asc`), dans l'ordre des lettres.
+- Négatif (Steenvoorde 1200 pour les tables, Avesnes 1200 pour les fiches) : même page `body#display-no-results`.
+
+**Ce que dit le service** (textes de la page et du formulaire des tables, relus le 27 novembre 2026, résumés) :
+l'ensemble des tables des successions et absences conservées est en ligne, sur une période d'au plus 1791-1968,
+l'année de fin variant selon les bureaux ; les tables, alphabétiques, portent selon les époques profession,
+domicile et âge du défunt, date du décès, situation de famille et date de la déclaration de succession s'il y
+en a une, et couvrent un ressort plus large que la commune ; les fiches décès en sont la suite, classées par
+année de décès puis par ordre alphabétique, et renvoient au numéro de la déclaration de succession. Le fil du
+forum du service cité par l'issue n'a pas été relu et n'est pas utilisé ici.
+
+**Contrat retenu.** La signature d'`archives_registres` ne change pas ; aucun outil MCP n'est ajouté.
+
+- `type_acte="SUCC"` vaut désormais pour AD59 : `commune` = bureau de l'enregistrement, **obligatoire** comme
+  pour `SUCC` sur les autres services ; `annee` et `annee_fin` = période, envoyée dans `1-date_begin` /
+  `1-date_end` même pour une seule année (règle déjà suivie ailleurs) ; tri `date_asc`. Aucun filtre local.
+- `type_acte="FD"` (fiches décès de l'enregistrement, AD59 seulement) : `commune` = bureau, obligatoire ;
+  `annee` = année du décès, envoyée dans `1-date` ; tri `referencecode_asc`. Un intervalle (`annee_fin`) n'envoie
+  que le bureau : la période est filtrée localement sur les bornes affichées (`couvre_periode`,
+  `registres_hors_periode`), comme pour `TD` et `REC`. Pour un autre service, `FD` est refusé avant toute
+  requête, son formulaire n'étant pas relevé.
+- Bureau : mis en capitales sans accents, puis pris dans le vocabulaire lu (`mnesys.choisir_commune`) ; une
+  valeur du formulaire saisie telle quelle (« Lille (Centre) », « Valenciennes (Ville) ») est reconnue malgré la
+  casse. Bureau inconnu (une commune comme « Somain ») : erreur avant toute recherche, avec la liste des bureaux
+  du formulaire. Bureau ambigu (« Valenciennes » pour les tables, « Lille » pour les fiches) : erreur qui liste
+  les valeurs. « Lille » pour les tables désigne la valeur sans qualificatif `LILLE` ; `autres_bureaux` signale
+  alors `LILLE (1er bureau)`, `LILLE (2e bureau)`, `LILLE (3e bureau)`, à interroger à part.
+- Mêmes garde-fous que `RM` et `REC` : hôte et NAAN `33518` contrôlés sur chaque lien de notice, une page par
+  appel, `page_suivante` explicite, une seule tentative de recherche, page hors bornes en erreur.
+- `resultats` : `titre`, `cote`, `ark`, `url`, `bornes`, `nb_vues` et `contexte` (ligne « Contexte »).
+  `commune_service` rend la valeur de bureau envoyée. `successions` ou `fiches_deces` (ajouts) : `releve_le`,
+  `formulaire`, `bureau`, `autres_bureaux`, `reference`, `periode_annoncee`, `lecture`.
+- Négatif : `recherche_negative` rappelle ce que le service annonce en ligne et qu'un résultat vide ne prouve
+  ni l'absence d'un décès ni celle d'une succession. Ni `classeur_3e`, ni `couverture_recensements`, ni
+  `matricules` ne sont joints. Aucun nom ni identifiant de personne n'est envoyé.
+
+**Communicabilité des fiches décès.** La page du service dit, en substance, que seules les fiches décès de plus
+de cinquante ans sont mises en ligne pour respecter les délais de communicabilité du code du patrimoine, d'où
+une recherche possible jusqu'en 1975. C'est la seule source de ce délai : elle ne cite pas d'article. Dans le
+dépôt, ce délai correspond au type existant `vie_privee` de `communicabilite` (50 ans à compter du document) ;
+aucun type n'a été ajouté et `communicabilite` n'est pas modifié. En conséquence :
+
+- une réponse `FD` porte toujours `avertissement_communicabilite` (ne pas tenir les fiches pour librement
+  communicables ; délai affirmé par le service, non vérifié par le plugin ; héritiers peut-être vivants, contenu
+  non lu) et `fiches_deces.communicabilite` : `type_document` (`vie_privee`), `delai_annees` (50), `source`,
+  `releve_le`, `selon_le_service`, `non_verifie`, `periode_demandee_communicable_a_partir_de`,
+  `periode_demandee_communicable`, `fiches_ecartees` ;
+- chaque résultat reçoit `communicable_a_partir_de` (dernière année affichée + 51, même calcul que
+  `communicabilite`) ; un résultat dont ce délai n'est pas échu est **écarté** de la réponse et compté
+  (`fiches_ecartees`). Le service n'en publie pas ; la règle protège d'un changement de sa part ;
+- un résultat sans date lisible est gardé avec `communicable_a_partir_de: null`.
+
+**Non établi** : l'article du code du patrimoine applicable et le point de départ exact du délai (année du
+décès, de la fiche ou de clôture du fichier) ; la nature et l'origine du fichier (les cotes en W indiquent un
+versement contemporain, rien de plus n'a été lu) ; le régime des tables des successions elles-mêmes, hors
+périmètre (le dépôt les dit librement communicables d'après un autre service, voir
+[archives](archives.md)) ; la présence de personnes vivantes sur les fiches.
+
+**Orientation.** Pour un décès ou une filiation dans le Nord, `prochaine_source` et `cotes_a_consulter` joignent
+`successions_ad59` à la piste « table des successions et absences » : appel `SUCC` à lancer (décès jusqu'en
+1968), `fiches_deces` avec son avertissement (décès de 1969 à 1975), note. Le bureau n'est pas déduit de la
+commune ; l'année n'est calculée que pour un fait de décès. Aucune cote 3 Q ou W n'y figure : il n'existe pas de
+référentiel local, la cote vient de la réponse d'`archives_registres`.
+
+**Non vérifié.**
+
+- Le contenu des tables et des fiches (aucune vue ouverte) ; `archives_naviguer`, `archives_planche` et
+  `archive_image` sur ces ARK : non testés.
+- Le ressort de chaque bureau, son évolution, et ce que distinguent `LILLE` et `LILLE (1er bureau)`, ou les
+  découpages `(Ville)` / `(Canton)` : le plugin ne rattache aucune commune à un bureau.
+- La période réellement couverte par bureau ; les totaux sans critère (1 988 et 1 478, relevé de l'issue).
+- Une deuxième page de fiches décès (aucun bureau observé n'en a pour une année) ; le filtre local d'un
+  intervalle de fiches n'a été éprouvé que sur la page relevée de 1969.
+- Le tri `referencecode_asc` sur plusieurs pages ; la stabilité des identifiants de formulaire et des
+  vocabulaires (suivi : #380).
+- La recette réelle (`test_registres_live.py`) n'a pas de cas `SUCC` ni `FD` ; le relevé a été fait à la main,
+  hors outil.
+
+Tests : `tests/test_successions_ad59.py`, sans réseau.
+
 ## HTTP, protection et journal
 
 Un appel effectue au plus une tentative GET de recherche, ou utilise son cache (`RM` : une par formulaire, soit
@@ -326,6 +444,9 @@ relevées le 27 novembre 2026, réduites aux balises lues (registres publics, au
 Les dix fichiers `ad59-matricules-*.html` (#376) sont de même les deux formulaires et huit pages de résultats
 relevés le 27 novembre 2026 (tables et fiches : avec bureau, sans bureau, intervalle, page 2, négatif), réduits
 aux balises lues.
+Les huit fichiers `ad59-successions-*.html` et `ad59-fiches-deces-*.html` (#377) sont les deux formulaires de
+l'enregistrement et six pages de résultats relevés le 27 novembre 2026 (tables : intervalle, année seule,
+page 2 sur 4, négatif ; fiches décès : positif, négatif), réduits de la même façon.
 `ad59-tables-decennales.html` (trois tables décennales) et `ad59-recherche-intervalle-page2.html` (page 2 sur
 2 d'un intervalle, 25 résultats) en dérivent avec les titres, cotes et compteurs relevés le 18 novembre. Aucun export familial,
 HTML complet de production, cookie ou script tiers n'est livré comme fixture.

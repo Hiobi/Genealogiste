@@ -86,6 +86,7 @@ def next_source_hint(fact: str, when: str = "", where: Any = "") -> list[dict]:
     if pays["france"] is True:
         _cotes_recensements(fact, when, lieu_texte(where), out)
         _matricules_nord(fact, when, lieu_texte(where), out)
+        _successions_nord(fact, when, lieu_texte(where), out)
     court = pays_resume(pays)
     return [{**d, "pays": dict(court)} for d in out]
 
@@ -160,6 +161,45 @@ def _matricules_nord(fact: str, when: str, lieu: str, sources: list[dict]) -> No
                     "sans bureau, la réponse liste ceux de la classe. Vérifier communicabilite(\"matricule\").")
     for d in pistes:
         d["matricules_ad59"] = dict(aide)
+
+
+# Enregistrement des AD59 (#377) : ce que la présentation du service annonce en ligne au relevé du 27 novembre 2026.
+SUCCESSIONS_AD59 = (1791, 1968)
+FICHES_DECES_AD59 = (1969, 1975)
+AVERT_FICHES_DECES = ("Fiches décès : ne pas les tenir pour librement communicables. Le service affirme un délai de "
+                      "50 ans (seules les fiches de plus de 50 ans sont en ligne) ; ce régime n'a pas été vérifié "
+                      "par le plugin : voir communicabilite(\"vie_privee\") et interroger le service en cas de doute.")
+
+
+def _successions_nord(fact: str, when: str, lieu: str, sources: list[dict]) -> None:
+    """Nord : la piste « table des successions et absences » reçoit la recherche des AD59 (#377) ; ajout
+    seulement. Aucune cote 3 Q ou W n'est donnée ici : elle vient de la réponse du service. Le bureau de
+    l'enregistrement n'est pas déduit de la commune."""
+    pistes = [d for d in sources if d["cote_typique"] == SERIES["enregistrement"]]
+    if not pistes or not lieu:
+        return
+    from .normalize.places import normalize_place
+    if normalize_place(lieu).get("departement_code") != "59":
+        return
+    y = _year(when) if fact in ("DEAT", "BURI") else None  # seule date qui soit celle du décès
+    annee = y if y else "<année du décès>"
+    aide: dict = {"service": "AD59", "releve_le": "2026-11-27"}
+    appel = 'archives_registres(service="AD59", commune="<bureau de l\'enregistrement>", annee={}, type_acte="{}")'
+    if y is None or y <= SUCCESSIONS_AD59[1]:
+        aide["recherche"] = appel.format(annee, "SUCC")
+    if y is None or FICHES_DECES_AD59[0] <= y <= FICHES_DECES_AD59[1]:
+        aide["fiches_deces"] = {"recherche": appel.format(annee, "FD"), "avertissement": AVERT_FICHES_DECES}
+    aide["note"] = (f"D'après le service : tables des successions et absences en ligne pour {SUCCESSIONS_AD59[0]}-"
+                    f"{SUCCESSIONS_AD59[1]} au plus (fin variable selon les bureaux), fiches décès pour "
+                    f"{FICHES_DECES_AD59[0]}-{FICHES_DECES_AD59[1]}. La clé est le bureau de l'enregistrement, pas la "
+                    "commune : il n'est pas déduit du lieu ; un bureau inconnu ou ambigu rend la liste des valeurs "
+                    "du formulaire. Élargir avec annee_fin si le décès est mal daté. Aucune cote n'est proposée ici "
+                    "(pas de référentiel local) : elle vient de la réponse. Une absence dans une table ne prouve "
+                    "pas l'absence de décès (autre bureau, décès non déclaré)."
+                    + (" Décès postérieur à ce que le service annonce en ligne : aucune recherche proposée."
+                       if y and y > FICHES_DECES_AD59[1] else ""))
+    for d in pistes:
+        d["successions_ad59"] = {k: dict(v) if isinstance(v, dict) else v for k, v in aide.items()}
 
 
 def _hors_france(fact: str, sources: list[dict], pays: dict) -> list[dict]:

@@ -18,3 +18,9 @@ cookie, ni personne.
 pages de résultats publiques relevés le 27 novembre 2026 (tables et fiches des états signalétiques : bureau
 d'Avesnes, classe 1890 sans bureau, intervalle 1889-1891, page 2 des fiches, négatifs), réduits au formulaire ou
 aux balises lues. Cotes et ARK de registres réels ; ni script, ni cookie, ni personne.
+
+`ad59-successions-*.html` et `ad59-fiches-deces-*.html` (#377) : les deux formulaires de l'enregistrement des
+AD59 (tables des successions et absences, fiches décès) et six pages de résultats publiques relevés le
+27 novembre 2026 (tables : Steenvoorde 1791-1803, année 1800, Lille page 2 sur 4, négatif ; fiches décès :
+Lille Centre 1969, négatif), réduits au formulaire ou aux balises lues. Titres, cotes et ARK de volumes réels,
+sans aucune vue ni contenu : ni script, ni cookie, ni personne.

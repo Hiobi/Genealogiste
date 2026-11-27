@@ -139,6 +139,10 @@ Hors des niveaux ci-dessus : l'état de la collection des recensements des AD59 
 
 Hors des niveaux ci-dessus : `archives_registres(type_acte="RM")` interroge pour les AD59 les deux formulaires de la série 1 R (relevé du 2026-11-27) : tables alphabétiques et fiches des états signalétiques (classes 1867 à 1923, Valenciennes-Douai à partir de 1908 d'après le formulaire), par classe et bureau de recrutement. Aucun référentiel local des cotes : la cote vient de la réponse ; un résultat vide ne prouve pas l'absence du registre. Navigation et lecture des vues de ces registres non testées. Voir `docs/recherche-registres-ad59.md`.
 
+## AD59 : tables des successions et fiches décès
+
+Hors des niveaux ci-dessus : `archives_registres` interroge pour les AD59 le formulaire des tables des successions et absences (`type_acte="SUCC"`, série 3 Q, au maximum 1791-1968, l'année de fin variant selon les bureaux d'après le service) et celui des fiches décès de l'enregistrement (`type_acte="FD"`, versements W, 1969 à 1975), par bureau de l'enregistrement (relevé du 2026-11-27). Aucun référentiel local des cotes : la cote vient de la réponse ; un résultat vide ne prouve ni l'absence d'un décès ni celle d'une succession. Fiches décès : le service affirme un délai de 50 ans, non vérifié par le plugin ; elles ne sont jamais présentées comme librement communicables. Navigation et lecture des vues de ces fonds non testées. Voir `docs/recherche-registres-ad59.md`.
+
 ## Niveaux par type de document
 
 Chaque cellule reprend le niveau de `archives_service(document=...)`. Une recette dont le fonds n'est pas renseigné ne qualifie aucune de ces colonnes. Les niveaux 0–4 sont des capacités implémentées, toujours à éprouver sur le fonds demandé.
