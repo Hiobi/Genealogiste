@@ -1,7 +1,7 @@
 """Couverture technique constatée, distincte de la disponibilité déclarée des fonds (#145)."""
 from __future__ import annotations
 
-from . import couverture_3e
+from . import couverture_3e, couverture_recensements
 from .acces_archives import ecarte_adaptateur_service
 
 CAPACITES = ("resolution_ark", "navigation", "telechargement", "recherche", "archivage")
@@ -84,6 +84,16 @@ def tableau(services: list | tuple, recettes: dict, documents: tuple = ()) -> st
                        f"{classeur['volumes']} volumes, {len(classeur['communes'])} libellés de commune) donne la cote et l'année de mise en ligne "
                        "prévue des registres d'état civil. `archives_registres` le joint (`classeur_3e`) quand la recherche est vide ou qu'un "
                        "volume n'est pas en ligne ; un volume inconnu du classeur n'est pas inexistant. Voir `docs/recherche-registres-ad59.md`.", ""])
+    except (OSError, ValueError, KeyError):
+        pass
+    try:
+        etat = couverture_recensements.referentiel()
+        lignes.extend(["## AD59 : recensements de population", "",
+                       f"Hors des niveaux ci-dessus : l'état de la collection des recensements des AD59 (`ad59_recensements.json`, relevé du {etat['releve_le']}, "
+                       f"{etat['volumes']} volumes, {len(etat['communes'])} libellés de commune, {etat['en_ligne']} en ligne, {etat['salle_de_lecture']} en salle de lecture) "
+                       "donne la cote et le mode d'accès de chaque millésime. `archives_registres(type_acte=\"REC\")` le joint (`couverture_recensements`) quand la "
+                       "recherche est vide ou qu'un recensement n'est qu'en salle de lecture ; un millésime inconnu du référentiel n'est pas inexistant. "
+                       "Voir `docs/recensements.md`.", ""])
     except (OSError, ValueError, KeyError):
         pass
     if documents:
