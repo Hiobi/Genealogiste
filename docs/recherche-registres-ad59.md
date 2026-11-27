@@ -743,6 +743,19 @@ bien, à côté de `hypotheques_ad59` : `service`, `releve_le`, `serie` (libell�
 
 Tests : `tests/test_cadastre_ad59.py`, sans réseau.
 
+## Veille des mises en ligne — #380
+
+Les formulaires, le classeur 3 E et l'état de collection des recensements décrits ci-dessus sont des relevés
+datés ; le service ajoute des fonds et des années en continu. `make veille-ad59` (étape réseau explicite, aucun
+outil MCP, 15 requêtes au plus) relit la page de chacun des douze formulaires connus
+(`registres.formulaires_ad59()`, source unique des UUID) et signale toute dérive par rapport au contrat de
+`referentiels/ad59_formulaires.json` (formulaire disparu, champ renommé, ajouté ou disparu, titre changé) ; lit
+le flux Atom du forum des ajouts du service (titre, date et lien des fils, consignés au journal comme annonces à
+vérifier ; `robots.txt` du forum : HTTP 404 au relevé) ; et compare le lien `/document/classeur-3e-…` de la
+page des nouveautés à celui du référentiel (nouveau millésime signalé, jamais téléchargé). `diagnostic`
+(contrôle `referentiels_ad59`) signale sans réseau un référentiel relevé depuis plus de 365 jours. Détail,
+états rendus, renouvellement et limites : [veille des AD59](veille-ad59.md).
+
 ## HTTP, protection et journal
 
 Un appel effectue au plus une tentative GET de recherche, ou utilise son cache (`RM` : une par formulaire, soit

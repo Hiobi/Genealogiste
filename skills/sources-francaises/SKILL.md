@@ -19,6 +19,10 @@ couvrant l'année ; `annee_fin` (≥ `annee`) recherche un intervalle (ex. 1790-
 AD59 : quand la recherche est vide ou qu'un volume n'est pas en ligne, `classeur_3e` donne la cote 3 E et le
 statut du classeur du service (« pas en ligne avant AAAA ; consultation en salle de lecture ») ; « inconnu du
 classeur » ne veut pas dire que le registre n'existe pas. `prochaine_source` cite ces cotes pour un acte du Nord.
+Ces référentiels AD59 sont datés (`releve_le`) et le service met en ligne en continu : un « pas en ligne » ancien
+se revérifie par une recherche. `diagnostic` (contrôle `referentiels_ad59`) signale un relevé de plus d'un an ;
+les entrées de journal de source `veille_ad59` (fils du forum des ajouts, dérive d'un formulaire) sont des
+annonces à vérifier sur le site, jamais une source ni un fait (docs/veille-ad59.md).
 Recensements du Nord : `archives_registres(service="AD59", commune=…, annee=…, type_acte="REC")` localise la
 liste nominative (cote, ARK) ; `couverture_recensements` dit si le millésime est en ligne ou seulement en salle
 de lecture (communicable après 75 ans) et liste les millésimes connus ; « inconnu du référentiel » ne veut pas

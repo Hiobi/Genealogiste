@@ -2,7 +2,7 @@
 MCP := mcp
 UV  := uv --directory $(MCP)
 
-.PHONY: version help install hooks profil-campagne test sauvegarde restauration test-aleatoire test-archives test-contexte test-cassini test-gramps test-gramps-matrice test-gramps-desktop test-codex lint format check run run-http docker-build docker-up docker-gramps docker-down validate clean enregistrer-contexte verifier-archives verifier-telechargements
+.PHONY: version help install hooks profil-campagne test sauvegarde restauration test-aleatoire test-archives test-contexte test-cassini test-gramps test-gramps-matrice test-gramps-desktop test-codex lint format check run run-http docker-build docker-up docker-gramps docker-down validate clean enregistrer-contexte verifier-archives verifier-telechargements veille-ad59
 
 help: ## Liste des cibles
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-14s %s\n", $$1, $$2}'
@@ -115,3 +115,7 @@ verifier-archives: ## Vérifie que les sites des référentiels (archives, sites
 
 verifier-telechargements: ## Recette réseau explicite sur une vue publique (SERVICE=ad59|ad59_td|suisse|loc|tous)
 	$(UV) run python ../scripts/verifier_telechargements.py --service $(or $(SERVICE),ad59)
+
+# FORUM=flux|html|non ; OPTIONS="--sans-formulaires --sans-classeur --sortie veille.json"
+veille-ad59: ## Veille AD59 (réseau, ~15 requêtes espacées) : dérive des formulaires, fils d'ajouts du forum, classeur 3 E
+	$(UV) run python ../scripts/veiller_ad59.py --forum $(or $(FORUM),flux) $(OPTIONS)

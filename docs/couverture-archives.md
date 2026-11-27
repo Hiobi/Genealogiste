@@ -151,6 +151,10 @@ Hors des niveaux ci-dessus : `archives_registres(type_acte="HYP")` interroge pou
 
 Hors des niveaux ci-dessus : `archives_registres(type_acte="CAD")` interroge pour les AD59 les deux formulaires des plans du cadastre (relevé du 2026-11-27) : cadastre dit du Consulat (cotes P 30) et cadastre dit napoléonien (cotes P 31), par commune, chaque formulaire ayant son vocabulaire. D'après le service : plans du cadastre dit du Consulat : début du XIXe siècle ; plans du cadastre dit napoléonien : une plus large période, jusqu'au début du XXe siècle pour certaines communes. Aucune date dans ces formulaires ; seuls les plans dont la date affichée ne recoupe pas la période demandée sont écartés. Plans seulement, non nominatifs : matrices cadastrales et états de sections ne sont pas couverts. Aucun référentiel local des cotes : la cote vient de la réponse ; un résultat vide ne prouve pas qu'aucun plan n'existe. Navigation éprouvée sur un seul lot (métadonnées, aucune image) ; planche-contact et lecture des plans non testées. Voir `docs/recherche-registres-ad59.md`.
 
+## AD59 : veille des mises en ligne
+
+Hors des niveaux ci-dessus : `make veille-ad59` (étape réseau explicite, aucun outil MCP) relit les 12 formulaires de recherche AD59 connus du plugin et signale leur dérive par rapport au contrat relevé le 2026-11-27 (`ad59_formulaires.json`), consigne au journal les fils du forum des ajouts du service (titre, date, lien : annonces à vérifier) et signale un classeur 3 E d'un autre millésime, sans le télécharger. `diagnostic` (contrôle `referentiels_ad59`) signale, sans réseau, un référentiel embarqué relevé depuis plus de 365 jours. Un formulaire conforme ne prouve pas que ses résultats sont inchangés. Voir `docs/veille-ad59.md`.
+
 ## Niveaux par type de document
 
 Chaque cellule reprend le niveau de `archives_service(document=...)`. Une recette dont le fonds n'est pas renseigné ne qualifie aucune de ces colonnes. Les niveaux 0–4 sont des capacités implémentées, toujours à éprouver sur le fonds demandé.

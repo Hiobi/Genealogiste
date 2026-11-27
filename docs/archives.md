@@ -376,6 +376,12 @@ annee_fin=1900, type_acte="CAD")` → trois lots `P 31 / 035`, `035_1`, `035_2`.
 `cadastre_ad59` aux pistes de domicile et de bien du Nord. Détail et limites :
 [plans du cadastre](recherche-registres-ad59.md#plans-du-cadastre--type_actecad--379).
 
+Depuis #380, ces relevés AD59 sont suivis : `make veille-ad59` (étape réseau explicite du mainteneur, hors
+`make test`, aucun outil MCP) signale la dérive des douze formulaires de recherche, les fils du forum des ajouts
+du service et un classeur 3 E d'un autre millésime ; `diagnostic` (contrôle `referentiels_ad59`) signale, sans
+réseau, un référentiel embarqué relevé depuis plus d'un an. Rien n'est téléchargé ni corrigé automatiquement :
+[veille des AD59](veille-ad59.md).
+
 ## Sondage guidé d'un registre — #156
 
 `archives_sonder(source, date_cible, type_acte, lecture, conclusion, enquete)` remplace le tâtonnement

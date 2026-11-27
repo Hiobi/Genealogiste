@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from . import couverture_3e, couverture_recensements
 from .acces_archives import ecarte_adaptateur_service
-from .sources import registres
+from .sources import registres, veille_ad59
 
 CAPACITES = ("resolution_ark", "navigation", "telechargement", "recherche", "archivage")
 
@@ -120,6 +120,12 @@ def tableau(services: list | tuple, recettes: dict, documents: tuple = ()) -> st
                    f"D'après le service : {registres.PERIODE_CAD}. Aucune date dans ces formulaires ; seuls les plans dont la date affichée ne recoupe pas la période demandée sont écartés. "
                    "Plans seulement, non nominatifs : matrices cadastrales et états de sections ne sont pas couverts. Aucun référentiel local des cotes : la cote vient de la réponse ; un résultat vide ne prouve pas qu'aucun plan n'existe. "
                    "Navigation éprouvée sur un seul lot (métadonnées, aucune image) ; planche-contact et lecture des plans non testées. Voir `docs/recherche-registres-ad59.md`.", ""])
+    lignes.extend(["## AD59 : veille des mises en ligne", "",
+                   f"Hors des niveaux ci-dessus : `make veille-ad59` (étape réseau explicite, aucun outil MCP) relit les {len(registres.formulaires_ad59())} formulaires de recherche AD59 connus du plugin "
+                   f"et signale leur dérive par rapport au contrat relevé le {veille_ad59.contrat()['releve_le']} (`ad59_formulaires.json`), consigne au journal les fils du forum des ajouts du service "
+                   "(titre, date, lien : annonces à vérifier) et signale un classeur 3 E d'un autre millésime, sans le télécharger. "
+                   f"`diagnostic` (contrôle `referentiels_ad59`) signale, sans réseau, un référentiel embarqué relevé depuis plus de {veille_ad59.SEUIL_JOURS} jours. "
+                   "Un formulaire conforme ne prouve pas que ses résultats sont inchangés. Voir `docs/veille-ad59.md`.", ""])
     if documents:
         lignes.extend(["## Niveaux par type de document", "",
                        "Chaque cellule reprend le niveau de `archives_service(document=...)`. Une recette dont le fonds n'est pas renseigné ne qualifie aucune de ces colonnes. Les niveaux 0–4 sont des capacités implémentées, toujours à éprouver sur le fonds demandé.", "",
