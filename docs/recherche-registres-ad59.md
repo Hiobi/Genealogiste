@@ -19,7 +19,7 @@ commune ; les traits d'union fournis sont conservés. L'année doit être un ent
 Les cases de filtre du formulaire GET portent `name=facet_typology` et les valeurs `Naissances`,
 `Mariages`, `Décès` : ce sont les filtres utilisés pour `N`, `M`, `D`. `NMD` et le type vide conservent la
 recherche sans filtre de typologie. `TD` (tables décennales) et `annee_fin` (intervalle) sont décrits
-ci-dessous.
+ci-dessous ; `REC` (recensements de population, #375) plus bas.
 Aucun nom ni identifiant de personne n'est envoyé ; `personne` sert uniquement à la garde de l'outil
 et au journal local.
 
@@ -173,6 +173,25 @@ réel : le PDF du relevé a été téléchargé à part, puis lu par le script.
 Tests : `tests/test_couverture_3e.py`, sans réseau. `tests/fixtures/ad59-classeur-3e-extrait.pdf` reprend sans
 modification les pages 1, 4, 11, 74 et 166 du PDF public (454 lignes).
 
+## Recensements de population : `type_acte="REC"` — #375
+
+Relevé public du 27 novembre 2026 (robots.txt inchangé, aucune protection rencontrée, une requête par
+observation, sans image). La page « Recensements de population » mène à un troisième formulaire,
+`f0366f8a-2ef6-4cf2-b47b-6dec4a19e99f`, dont le seul champ est la commune (ni date, ni type), comme celui des
+tables décennales. Pour
+[Somain](https://archivesdepartementales.lenord.fr/search/results?formUuid=f0366f8a-2ef6-4cf2-b47b-6dec4a19e99f&sort=date_asc&mode=list&facet_media=image&0-controlledAccessGeographicName%5B%5D=SOMAIN) :
+4 résultats, même HTML de liste ; titre `SOMAIN` (sans millésime), champ `Date` d'une seule année, cotes
+`M473 063 / 10 SOMAIN` (1901), `M 474 / 572` (1906, `ark:/33518/h2tprnqlw3dj`, 225 médias), `M474 5 / 19 SOMAIN`
+(1931), `M474 7 / 25 SOMAIN` (1946). La ligne « Contexte : Recensement de 1906 » n'est pas lue. Commune
+inexistante : même page négative. Buysscheure, `page=2` : 6 résultats sur 26, `max="2"`, 20 par page.
+
+Contrat retenu : `type_acte="REC"` (AD59 seulement) envoie la commune et la page au formulaire des
+recensements ; la période est filtrée localement comme pour `TD` (`couvre_periode`, `registres_hors_periode`) ;
+titre, cote, ARK, bornes et nombre de vues sont rendus comme pour un registre. Quand la recherche est vide ou
+qu'un recensement n'est qu'en salle de lecture, `couverture_recensements` joint la cote et le mode d'accès tirés
+de l'état de la collection du service. Référentiel, cotes, Socface, limites et renouvellement :
+[recensements](recensements.md).
+
 ## HTTP, protection et journal
 
 Un appel effectue au plus une tentative GET de recherche, ou utilise son cache. Il n'enchaîne pas les
@@ -197,6 +216,8 @@ parseur borne la profondeur HTML et refuse un document de plus de deux millions 
 
 `tests/fixtures/ad59-recherche-positive.html` et `ad59-recherche-negative.html` conservent les balises
 observées, avec une commune, une cote, un ARK, un UUID et une période synthétiques.
+`ad59-recensements-positive.html` et `ad59-recensements-page2.html` (#375) sont, eux, les pages de recensements
+relevées le 27 novembre 2026, réduites aux balises lues (registres publics, aucune personne).
 `ad59-tables-decennales.html` (trois tables décennales) et `ad59-recherche-intervalle-page2.html` (page 2 sur
 2 d'un intervalle, 25 résultats) en dérivent avec les titres, cotes et compteurs relevés le 18 novembre. Aucun export familial,
 HTML complet de production, cookie ou script tiers n'est livré comme fixture.

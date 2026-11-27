@@ -131,6 +131,10 @@ Les URL et pages de référence sont dans `archives_fr.json` ; les verdicts et d
 
 Hors des niveaux ci-dessus : le classeur 3 E des AD59 (`ad59_3e.json`, relevé du 2026-11-27, 17679 volumes, 694 libellés de commune) donne la cote et l'année de mise en ligne prévue des registres d'état civil. `archives_registres` le joint (`classeur_3e`) quand la recherche est vide ou qu'un volume n'est pas en ligne ; un volume inconnu du classeur n'est pas inexistant. Voir `docs/recherche-registres-ad59.md`.
 
+## AD59 : recensements de population
+
+Hors des niveaux ci-dessus : l'état de la collection des recensements des AD59 (`ad59_recensements.json`, relevé du 2026-11-27, 4039 volumes, 765 libellés de commune, 2852 en ligne, 1187 en salle de lecture) donne la cote et le mode d'accès de chaque millésime. `archives_registres(type_acte="REC")` le joint (`couverture_recensements`) quand la recherche est vide ou qu'un recensement n'est qu'en salle de lecture ; un millésime inconnu du référentiel n'est pas inexistant. Voir `docs/recensements.md`.
+
 ## Niveaux par type de document
 
 Chaque cellule reprend le niveau de `archives_service(document=...)`. Une recette dont le fonds n'est pas renseigné ne qualifie aucune de ces colonnes. Les niveaux 0–4 sont des capacités implémentées, toujours à éprouver sur le fonds demandé.

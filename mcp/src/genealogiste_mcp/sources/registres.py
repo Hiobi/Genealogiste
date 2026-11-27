@@ -1,4 +1,4 @@
-"""Recherche de registres sur le HTML serveur Mnesys Expo : AD59 qualifié (relevés des 16 et 18 novembre 2026)
+"""Recherche de registres sur le HTML serveur Mnesys Expo : AD59 qualifié (relevés des 16, 18 et 27 novembre 2026)
 et services déclarant ``recherche_registres`` dans le référentiel (formulaire lu en ligne, sources/mnesys.py, #128).
 
 Une page par appel, sans exploration de JavaScript, de notice, de métadonnées ni d'image.
@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from html.parser import HTMLParser
 from urllib.parse import urljoin, urlsplit
 
-from .. import archives, ark, couverture_3e
+from .. import archives, ark, couverture_3e, couverture_recensements
 from ..normalize.names import strip_accents
 from . import mnesys
 from .base import DAY, SourceContext, SourceError, envelope, error_envelope
@@ -22,6 +22,7 @@ HOST = "https://archivesdepartementales.lenord.fr"
 URL = HOST + "/search/results"
 FORMULAIRE = "dc4e871d-0b62-41fb-9921-5ded573781b8"
 FORMULAIRE_TD = "25905104-0354-4e23-aea0-e3b68cf1f881"  # tables décennales (relevé du 18 novembre 2026)
+FORMULAIRE_REC = "f0366f8a-2ef6-4cf2-b47b-6dec4a19e99f"  # recensements de population (relevé du 27 novembre 2026)
 MAX_HTML = 2_000_000
 MAX_PROFONDEUR = 128
 TYPES = {"N": "Naissances", "M": "Mariages", "D": "Décès"}
@@ -241,7 +242,8 @@ def _requete_mnesys(http, svc: dict, commune: str, periode: list[int], type_acte
 def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_acte: str = "", page: int = 1,
                personne: str = "", annee_fin: int = 0) -> dict:
     """Registres candidats d'une commune pour une année ou un intervalle [annee, annee_fin] ; type_acte=TD pour
-    les tables décennales (filtrées localement sur la période). Aucun nom de personne envoyé."""
+    les tables décennales, REC pour les recensements de population des AD59 (#375), tous deux filtrés localement
+    sur la période. Aucun nom de personne envoyé."""
     params = {"service": service, "commune": commune, "annee": annee, "type_acte": type_acte, "page": page,
               "annee_fin": annee_fin}
     svc = None
@@ -267,9 +269,14 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
             raise ValueError("annee_fin : 0 (année seule) ou fin d'intervalle, de annee à 9999.")
         if type(page) is not int or page < 1:
             raise ValueError("page : entier à partir de 1.")
-        if type_acte not in {"", "NMD", "TD", *TYPES} | (set(mnesys.TYPES_FONDS) if svc else set()):
-            raise ValueError("type_acte : N, M, D, NMD, TD (tables décennales) ou vide ; RM (registres matricules) "
-                             "et SUCC (tables des successions) pour les services Mnesys qui les déclarent.")
+        if svc and type_acte == "REC":
+            raise ValueError(f"type_acte REC (recensements de population) : disponible pour AD59 seulement ; le "
+                             f"formulaire dédié de {service} n'est pas relevé : chercher dans l'inventaire du "
+                             "service (archives_service, lien).")
+        if type_acte not in {"", "NMD", "TD", *TYPES} | (set(mnesys.TYPES_FONDS) if svc else {"REC"}):
+            raise ValueError("type_acte : N, M, D, NMD, TD (tables décennales) ou vide ; REC (recensements de "
+                             "population) pour AD59 ; RM (registres matricules) et SUCC (tables des successions) "
+                             "pour les services Mnesys qui les déclarent.")
         periode = [annee, annee_fin or annee]
         # Copie du wrapper seulement : cache, client, politique et verrou de débit restent partagés.
         # La limite locale n'altère pas les reprises des autres sources ou appels simultanés.
@@ -283,9 +290,10 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
         else:
             base = {"sort": "date_asc", "mode": "list", "facet_media": "image",
                     "0-controlledAccessGeographicName[]": commune}
-            if type_acte == "TD":
-                # Le formulaire TD observé n'a que la commune : aucune date envoyée, la période est filtrée localement.
-                requete = {"formUuid": FORMULAIRE_TD, **base, "page": page}
+            if type_acte in ("TD", "REC"):
+                # Les formulaires TD et REC observés n'ont que la commune : aucune date envoyée, la période est
+                # filtrée localement.
+                requete = {"formUuid": FORMULAIRE_REC if type_acte == "REC" else FORMULAIRE_TD, **base, "page": page}
             elif periode[0] == periode[1]:
                 requete = {"formUuid": FORMULAIRE, **base, "2-date": str(annee), "page": page}
             else:
@@ -294,7 +302,7 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
             if type_acte in TYPES:
                 requete["facet_typology"] = TYPES[type_acte]
             host, naan, url = HOST, "33518", URL
-            filtre_local = type_acte == "TD"
+            filtre_local = type_acte in ("TD", "REC")
         html, cached = http.get(url, params=requete, parse="text", ttl=DAY, source="archives")
         resultats, total, suivante = _lire(html, page, host, naan)
     except (SourceError, ValueError) as exc:
@@ -311,16 +319,29 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
                    avertissement="Un registre candidat ne prouve pas la présence d'un acte : consulter ses vues.",
                    **extra)
     if not resultats and extra.get(hors):
-        quoi = "Aucune table décennale" if type_acte == "TD" else "Aucun registre"
+        quoi = {"TD": "Aucune table décennale", "REC": "Aucun recensement en ligne"}.get(type_acte, "Aucun registre")
+        if type_acte == "REC":
+            suite = ("Cela ne prouve pas que le recensement n'existe pas ni l'absence de la personne : voir "
+                     "couverture_recensements.")
+        else:
+            suite = "Cela ne prouve pas l'absence de l'acte" + (
+                " : consulter les registres de la période (archives_registres sans TD)." if type_acte == "TD" else ".")
         out["recherche_negative"] = (
             f"{quoi} de cette page ne couvre {periode[0]}-{periode[1]} "
-            f"({extra[hors]} hors période) ; voir page_suivante s'il y en a une. Cela ne prouve "
-            "pas l'absence de l'acte" + (" : consulter les registres de la période (archives_registres sans TD)."
-                                          if type_acte == "TD" else "."))
+            f"({extra[hors]} hors période) ; voir page_suivante s'il y en a une. {suite}")
     elif not resultats:
         out["recherche_negative"] = ("Aucun registre renvoyé pour cette recherche et cette page ; cela ne prouve pas "
                                       "l'absence générale de fonds numérisés. Vérifier les variantes et le service.")
-    if svc is None and type_acte != "TD":
+    if svc is None and type_acte == "REC":
+        # État de la collection des recensements (#375) : ajout seulement, quand la recherche est vide ou qu'un
+        # recensement de la période n'est qu'en salle de lecture.
+        try:
+            constat = couverture_recensements.pour_recherche(commune, periode, resultats)
+        except (OSError, ValueError, KeyError):
+            constat = None  # référentiel absent ou illisible : la recherche en ligne reste rendue telle quelle
+        if constat:
+            out["couverture_recensements"] = constat
+    elif svc is None and type_acte != "TD":
         # Classeur 3 E (#374) : ajout seulement, quand la recherche est vide ou qu'un volume n'est pas en ligne.
         try:
             constat = couverture_3e.pour_recherche(commune, periode, type_acte, resultats)

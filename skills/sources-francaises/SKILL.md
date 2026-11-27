@@ -19,6 +19,12 @@ couvrant l'année ; `annee_fin` (≥ `annee`) recherche un intervalle (ex. 1790-
 AD59 : quand la recherche est vide ou qu'un volume n'est pas en ligne, `classeur_3e` donne la cote 3 E et le
 statut du classeur du service (« pas en ligne avant AAAA ; consultation en salle de lecture ») ; « inconnu du
 classeur » ne veut pas dire que le registre n'existe pas. `prochaine_source` cite ces cotes pour un acte du Nord.
+Recensements du Nord : `archives_registres(service="AD59", commune=…, annee=…, type_acte="REC")` localise la
+liste nominative (cote, ARK) ; `couverture_recensements` dit si le millésime est en ligne ou seulement en salle
+de lecture (communicable après 75 ans) et liste les millésimes connus ; « inconnu du référentiel » ne veut pas
+dire inexistant. `cotes_a_consulter` cite ces cotes. Recherche par nom : base Socface de FranceArchives, à
+consulter soi-même dans un navigateur (jamais automatisée). L'âge déclaré est une information secondaire ;
+une absence dans une liste ne prouve ni décès ni départ (docs/recensements.md).
 Ensuite `archives_naviguer` parcourt les vues, `archive_image` les lit et `piece_archiver` conserve l'original.
 Un résultat vide ne démontre pas que l'acte n'existe pas ; un blocage conserve une tâche manuelle au journal.
 Défi anti-robot (`bloque: "anti-robot"`, ex. Anubis aux AD de la Lozère, redirection JS des AD Arkotheque

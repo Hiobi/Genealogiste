@@ -305,6 +305,15 @@ ligne : cote, types, bornes et année de mise en ligne prévue tirés du « clas
 « Pas en ligne avant AAAA » et « inconnu du classeur » ne veulent jamais dire « inexistant ». Source, limites et
 renouvellement : [classeur 3 E](recherche-registres-ad59.md#classeur-3-e--cote-et-mise-en-ligne-prévue--374).
 
+Depuis #375, `type_acte="REC"` (AD59 seulement) interroge le formulaire des recensements de population : commune
+seule, période filtrée localement, mêmes sorties (`archives_registres(service="AD59", commune="Somain",
+annee=1906, type_acte="REC")` → `M 474 / 572`). `couverture_recensements` joint, quand la recherche est vide ou
+qu'un recensement n'est qu'en salle de lecture, la cote et le mode d'accès tirés de l'état de la collection du
+service (`referentiels/ad59_recensements.json`, relevé du 27 novembre 2026, généré par
+`scripts/generer_couverture_recensements_ad59.py`) ; un millésime inconnu du référentiel n'est pas inexistant.
+Pour un autre service, `REC` est refusé tant que son formulaire dédié n'est pas relevé. Détail, Socface et
+limites : [recensements](recensements.md).
+
 ## Sondage guidé d'un registre — #156
 
 `archives_sonder(source, date_cible, type_acte, lecture, conclusion, enquete)` remplace le tâtonnement

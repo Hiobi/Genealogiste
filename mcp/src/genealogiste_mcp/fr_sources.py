@@ -9,7 +9,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Any
 
-from . import couverture_3e
+from . import couverture_3e, couverture_recensements
 from .normalize.dates import parse_date
 from .normalize.pays import pays_du_lieu, pays_resume
 from .types_documents import RULES, SERIES, normaliser
@@ -83,6 +83,8 @@ def next_source_hint(fact: str, when: str = "", where: Any = "") -> list[dict]:
                 d["condition"] = SI_FRANCE
     if pays["france"] is True and not migration:
         _cotes_3e(fact, when, lieu_texte(where), out)
+    if pays["france"] is True:
+        _cotes_recensements(fact, when, lieu_texte(where), out)
     court = pays_resume(pays)
     return [{**d, "pays": dict(court)} for d in out]
 
@@ -104,6 +106,27 @@ def _cotes_3e(fact: str, when: str, lieu: str, sources: list[dict]) -> None:
         if volumes and d["cote_typique"] == SERIES["etat_civil"] and d["source"].startswith("Acte de "):
             d["classeur_3e"] = volumes
             return
+
+
+def _cotes_recensements(fact: str, when: str, lieu: str, sources: list[dict]) -> None:
+    """Nord : cotes de recensement connues de l'état de la collection des AD59 (#375), jointes aux pistes
+    « listes nominatives » ; ajout seulement. Millésime de l'année et recensements connus les plus proches, avant
+    et après (après seulement pour une naissance ou une filiation)."""
+    pistes = [d for d in sources if d["cote_typique"] == SERIES["recensements"]]
+    if not pistes or not lieu:
+        return
+    from .normalize.places import normalize_place
+    place = normalize_place(lieu)
+    if place.get("departement_code") != "59":
+        return
+    try:
+        volumes = couverture_recensements.pour_fait(_year(when), place.get("commune") or "",
+                                                    avant=fact not in ("BIRT", "CHR", "BAPM", "FILIATION"))
+    except (OSError, ValueError, KeyError):
+        return
+    for d in pistes:
+        if volumes:
+            d["couverture_recensements"] = volumes
 
 
 def _hors_france(fact: str, sources: list[dict], pays: dict) -> list[dict]:
