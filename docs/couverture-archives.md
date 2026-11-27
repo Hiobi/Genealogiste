@@ -143,6 +143,10 @@ Hors des niveaux ci-dessus : `archives_registres(type_acte="RM")` interroge pour
 
 Hors des niveaux ci-dessus : `archives_registres` interroge pour les AD59 le formulaire des tables des successions et absences (`type_acte="SUCC"`, série 3 Q, au maximum 1791-1968, l'année de fin variant selon les bureaux d'après le service) et celui des fiches décès de l'enregistrement (`type_acte="FD"`, versements W, 1969 à 1975), par bureau de l'enregistrement (relevé du 2026-11-27). Aucun référentiel local des cotes : la cote vient de la réponse ; un résultat vide ne prouve ni l'absence d'un décès ni celle d'une succession. Fiches décès : le service affirme un délai de 50 ans, non vérifié par le plugin ; elles ne sont jamais présentées comme librement communicables. Navigation et lecture des vues de ces fonds non testées. Voir `docs/recherche-registres-ad59.md`.
 
+## AD59 : hypothèques
+
+Hors des niveaux ci-dessus : `archives_registres(type_acte="HYP")` interroge pour les AD59 les trois formulaires de la sous-série 4 Q (relevé du 2026-11-27) : indicateurs, tables alphabétiques et répertoires des formalités hypothécaires, par bureau des hypothèques (`HYPI`, `HYPT`, `HYPR` pour une seule catégorie). D'après le service : archives des conservations des hypothèques de l'an VII (1799) à 1955 ; Valenciennes : registres de 1800-1940 détruits pendant la Seconde Guerre mondiale ; après 1955 : services de la publicité foncière. Aucune date dans ces formulaires ; bureau, période et plage alphabétique sont lus dans le titre des volumes, et le nom cherché n'est jamais envoyé. Aucun référentiel local des cotes : la cote vient de la réponse ; un résultat vide ne prouve ni l'absence du registre ni celle d'une formalité. Navigation et lecture des vues de ces fonds non testées. Voir `docs/recherche-registres-ad59.md`.
+
 ## Niveaux par type de document
 
 Chaque cellule reprend le niveau de `archives_service(document=...)`. Une recette dont le fonds n'est pas renseigné ne qualifie aucune de ces colonnes. Les niveaux 0–4 sont des capacités implémentées, toujours à éprouver sur le fonds demandé.

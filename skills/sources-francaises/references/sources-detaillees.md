@@ -56,6 +56,12 @@
 
 ## Cadastre (3 P) et hypothèques (4 Q)
 - Plan, état de sections, matrice des propriétaires ; hypothèques : transcriptions de mutations.
+- AD59 seulement : `archives_registres(service="AD59", commune=<bureau des hypothèques>, annee,
+  type_acte="HYP")` liste les registres d'ordre en ligne de la sous-série 4 Q (indicateurs, tables alphabétiques,
+  répertoires des formalités ; an VII à 1955 d'après le service). Ordre de lecture : indicateur, table
+  (numéro de case), répertoire (volume et numéro des actes) ; les registres de transcription et d'inscription
+  restent en salle de lecture. Le nom cherché n'est jamais envoyé : il se compare à la plage alphabétique du
+  titre de chaque volume. Ailleurs : inventaire de la sous-série 4 Q du service.
 
 ## En ligne
 - Archives départementales (état civil, BMS, matricules, recensements numérisés).

@@ -24,3 +24,11 @@ AD59 (tables des successions et absences, fiches décès) et six pages de résul
 27 novembre 2026 (tables : Steenvoorde 1791-1803, année 1800, Lille page 2 sur 4, négatif ; fiches décès :
 Lille Centre 1969, négatif), réduits au formulaire ou aux balises lues. Titres, cotes et ARK de volumes réels,
 sans aucune vue ni contenu : ni script, ni cookie, ni personne.
+
+`ad59-hypotheques-*.html` (#378) : les trois formulaires de la sous-série 4 Q des AD59 (indicateur, tables
+alphabétiques du répertoire, répertoires des formalités hypothécaires) et neuf pages de résultats publiques
+relevés le 27 novembre 2026 (indicateur : Cambrai, Valenciennes, Lille pages 1 et 2 sur 2, négatif obtenu avec
+une valeur de bureau inexistante ; tables : Cambrai page 1 sur 18, Lille pages 1 et 32 sur 32 ; répertoires :
+Avesnes page 1 sur 29), réduits au formulaire ou aux balises lues. Titres, cotes et ARK de volumes réels ; les
+plages alphabétiques des titres (« ABADEAU - CRETE ») sont des intitulés de volumes, pas des personnes. Sans
+aucune vue ni contenu : ni script, ni cookie, ni personne.

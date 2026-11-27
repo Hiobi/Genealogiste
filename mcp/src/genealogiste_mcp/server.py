@@ -1098,6 +1098,14 @@ def archives_registres(service: str, commune: str, annee: int, type_acte: str = 
     du décès ; un intervalle est filtré localement). Les fiches décès ne sont pas librement communicables : le
     service affirme un délai de 50 ans, non vérifié par le plugin ; avertissement_communicabilite et
     fiches_deces.communicabilite le rappellent, un résultat de moins de 50 ans est écarté.
+    AD59 seulement : HYP (hypothèques, sous-série 4 Q : commune = bureau des hypothèques, obligatoire, pris dans
+    le vocabulaire du formulaire ; inconnu ou ambigu : erreur qui liste les valeurs). HYP interroge trois
+    formulaires, une page chacun ; chaque résultat porte categorie (indicateur, tables, repertoires), contexte,
+    bureau_titre, periode_titre et plage_alphabetique (texte, debut, fin lus dans le titre) ; HYPI, HYPT ou HYPR
+    n'interrogent qu'une catégorie. Méthode : indicateur, puis table alphabétique (numéro de case), puis
+    répertoire. Aucune date dans ces formulaires : annee n'est pas envoyée et n'écarte que les volumes dont le
+    titre porte une autre période. Le nom cherché n'est jamais transmis : comparer son initiale à debut et fin,
+    localement. hypotheques donne méthode, relevé, état de chaque formulaire et règle de communicabilité.
     type_acte : N (naissance), M (mariage), D (décès), NMD ou vide (tous), TD (tables décennales : tables dont
     la période affichée recoupe l'année ou l'intervalle demandé). annee_fin (facultatif, >= annee) : intervalle
     [annee, annee_fin], ex. 1790-1802 ou une décennie ; registres dont la période le recoupe. Une seule page de

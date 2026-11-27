@@ -1,6 +1,7 @@
 """Recherche de registres sur le HTML serveur Mnesys Expo : AD59 qualifié (relevés des 16, 18 et 27 novembre 2026 ;
 registres matricules : tables et fiches des états signalétiques, #376 ; enregistrement : tables des successions
-et absences et fiches décès, #377) et services déclarant
+et absences et fiches décès, #377 ; hypothèques, sous-série 4 Q : indicateurs, tables et répertoires, #378) et
+services déclarant
 ``recherche_registres`` dans le référentiel (formulaire lu en ligne, sources/mnesys.py, #128).
 
 Une page par appel, sans exploration de JavaScript, de notice, de métadonnées ni d'image.
@@ -57,6 +58,33 @@ NON_VERIFIE_FD = ("Régime non vérifié par le plugin : le délai de 50 ans est
                   "communicabilité du code du Patrimoine », sans article cité) ; ni l'article applicable, ni le point "
                   "de départ du délai, ni la nature exacte du fonds n'ont été vérifiés dans un texte ou auprès du "
                   "service.")
+# Hypothèques (sous-série 4 Q, relevé du 27 novembre 2026, #378) : trois formulaires dont le seul champ est le bureau
+# des hypothèques (aucune date). Ordre de lecture d'après la présentation du service : indicateur, table, répertoire.
+FORMULAIRES_HYP = {"indicateur": "02ec9ec7-856b-47f7-a59f-f9716d6823a3",
+                   "tables": "50d53c90-a6c8-46f9-886c-e75fa91a60cb",
+                   "repertoires": "330c559b-0684-4649-b7e8-7d1123a83433"}
+# type_acte -> catégories interrogées : HYP les trois (une page chacune), HYPI, HYPT ou HYPR une seule
+TYPES_HYP = {"HYP": tuple(FORMULAIRES_HYP), "HYPI": ("indicateur",), "HYPT": ("tables",), "HYPR": ("repertoires",)}
+RELEVE_HYP = "2026-11-27"
+PAGE_HYP = HOST + "/page/tables-et-repertoires-des-hypotheques"
+PERIODE_HYP = ("archives des conservations des hypothèques de l'an VII (1799) à 1955 ; Valenciennes : registres de "
+               "1800-1940 détruits pendant la Seconde Guerre mondiale ; après 1955 : services de la publicité foncière")
+METHODE_HYP = ("D'après la présentation du service : 1. indicateur (noms de famille des propriétaires par ordre "
+               "alphabétique, sans prénoms) pour s'orienter dans la table ; 2. table alphabétique (noms classés par "
+               "ordre alphabétique et organisés phonétiquement, avec prénoms) pour relever le numéro de case du "
+               "propriétaire ; 3. répertoire des formalités (classé par numéro de case, un compte par propriétaire) "
+               "pour relever volume et numéro des actes ; les registres de transcription et d'inscription se "
+               "consultent ensuite en salle de lecture. La recherche se fait par nom de propriétaire, pas par "
+               "adresse du bien.")
+LECTURE_HYP = ("Titre « bureau (série ou période) : cote (plage alphabétique) » : bureau_titre, periode_titre et "
+               "plage_alphabetique en sont tirés, sans rien lire des vues. La plage n'est qu'indicative (classement "
+               "phonétique, plages qui se chevauchent, séries parallèles d'un même bureau) : comparer localement "
+               "l'initiale ou le début du nom cherché à debut et fin (capitales sans accents), sans jamais "
+               "transmettre ce nom ; les répertoires n'ont pas de plage (classement par numéro de case).")
+NON_VERIFIE_HYP = ("La page du service relevée ne dit rien d'un délai de communicabilité pour ces registres d'ordre ; "
+                   "la règle rendue est celle du type « hypotheques » de communicabilite, indicative et non vérifiée "
+                   "auprès du service. Un compte de propriétaire peut citer des personnes encore vivantes (contenu "
+                   "non lu).")
 MAX_HTML = 2_000_000
 MAX_PROFONDEUR = 128
 TYPES = {"N": "Naissances", "M": "Mariages", "D": "Décès"}
@@ -343,6 +371,155 @@ def _enregistrement_ad59(http, type_acte: str, bureau: str, periode: list[int],
     return {**requete, "page": page}, {"commune_service": valeur, "fiches_deces": etat}, filtre_local
 
 
+def _cle_nom(texte: str) -> str:
+    """Forme de comparaison d'un nom ou d'un début de nom : capitales sans accents, lettres seules."""
+    return re.sub(r"[^A-Z]", "", strip_accents(texte or "").upper())
+
+
+# séparateur des deux bornes d'une plage : tiret(s) accompagné(s) d'au moins une espace (« A - B », « A- -B »),
+# pour ne pas couper un nom à trait d'union
+_SEPARATEUR_PLAGE = re.compile(r"(?:\s*-)+\s+(?:-\s*)*|\s+(?:-\s*)+")
+
+
+def titre_hypotheques(titre: str) -> dict:
+    """Lecture d'un titre de volume de la sous-série 4 Q des AD59 (#378), tel qu'affiché :
+    « Lille 2 (1901-1955) : 4Q 84 / 045 (De Fay - Degarnier) ». Rend bureau_titre (libellé avant « : »),
+    periode_titre ([début ou None, fin] si le libellé porte « avant AAAA » ou « AAAA-AAAA », sinon None) et
+    plage_alphabetique ({texte, debut, fin} ; debut et fin en capitales sans accents, None si la parenthèse n'est
+    pas une plage ; None s'il n'y a pas de parenthèse). Fonction pure : rien n'est déduit au-delà du titre."""
+    out = {"bureau_titre": None, "periode_titre": None, "plage_alphabetique": None}
+    bureau, sep, reste = (titre or "").partition(" : ")
+    if not sep or not bureau.strip():
+        return out
+    out["bureau_titre"] = bureau = " ".join(bureau.split())
+    if m := re.search(r"\(\s*avant\s+(\d{4})\s*\)", bureau, re.I):
+        out["periode_titre"] = [None, int(m[1]) - 1]
+    elif (m := re.search(r"\(\s*(\d{4})\s*[-–]\s*(\d{4})\s*\)", bureau)) and int(m[1]) <= int(m[2]):
+        out["periode_titre"] = [int(m[1]), int(m[2])]
+    if m := re.fullmatch(r"[^()]*\((.*)\)\s*", reste):
+        texte = " ".join(m[1].split())
+        bornes = [_cle_nom(b) for b in _SEPARATEUR_PLAGE.split(texte)]
+        plage = len(bornes) == 2 and all(bornes)
+        out["plage_alphabetique"] = {"texte": texte, "debut": bornes[0] if plage else None,
+                                     "fin": bornes[1] if plage else None}
+    return out
+
+
+def plage_couvre(plage: dict | None, prefixe: str) -> bool | None:
+    """Une plage alphabétique lue dans un titre peut-elle contenir un nom commençant par ``prefixe`` (initiale ou
+    début de nom) ? Comparaison locale, capitales sans accents, bornes comprises et tronquées à la longueur du
+    préfixe. None si la plage est absente ou illisible, ou le préfixe sans lettre. Indicatif : le service dit les
+    tables « organisées phonétiquement », un nom peut donc se trouver dans un volume voisin."""
+    cible = _cle_nom(prefixe)
+    if not cible or not plage or not plage.get("debut") or not plage.get("fin"):
+        return None
+    return plage["debut"][:len(cible)] <= cible <= plage["fin"][:len(cible)]
+
+
+def volumes_couvrant(resultats: list[dict], prefixe: str) -> list[dict]:
+    """Volumes d'une réponse HYP dont la plage alphabétique couvre l'initiale ou le début de nom donné (#378).
+    Le préfixe n'est comparé que localement : il n'est ni envoyé au service, ni journalisé. Les volumes sans
+    plage lisible (répertoires, « (unique) Sociétés ») ne sont pas rendus : ils ne sont ni couverts ni exclus."""
+    return [r for r in resultats if plage_couvre(r.get("plage_alphabetique"), prefixe)]
+
+
+def _hypotheques_ad59(http, type_acte: str, bureau: str, periode: list[int], page: int,
+                      aujourdhui: date) -> tuple[list[dict], int, int | None, bool, dict]:
+    """Hypothèques des AD59, sous-série 4 Q (#378) : indicateurs, tables alphabétiques et répertoires des
+    formalités, un formulaire chacun, dont le seul champ est le bureau des hypothèques (obligatoire).
+
+    Règle : HYP interroge les trois catégories, une page chacune ; HYPI, HYPT ou HYPR une seule (pour feuilleter
+    sans requête inutile). Aucune date n'existe dans ces formulaires ni dans les résultats : la période demandée
+    n'est pas envoyée ; seuls les volumes dont le titre porte une période (« avant 1900 », « 1901-1955 ») sont
+    filtrés localement. Les résultats portent ``categorie``, ``contexte`` et la lecture de leur titre."""
+    from ..fr_sources import communicability  # import tardif : fr_sources ne dépend pas des sources réseau
+    etats: dict[str, dict] = {}
+    requetes: dict[str, dict] = {}
+    for categorie in TYPES_HYP[type_acte]:  # formulaires et bureau contrôlés avant toute recherche
+        uuid = FORMULAIRES_HYP[categorie]
+        f = _formulaire(http, HOST, uuid)
+        if not f["commune"]:
+            raise mnesys.FormulaireError(f"Formulaire des hypothèques AD59 ({categorie}) non reconnu (bureau "
+                                         "absent) : consulter la recherche manuellement.")
+        etat = etats[categorie] = {"formulaire": uuid, "interroge": False, "bureau": None, "autres_bureaux": [],
+                                   "total": None, "page_suivante": None, "bureaux": f["communes"]}
+        exactes = [o for o in f["communes"] if mnesys.cle(o) == mnesys.cle(bureau)]
+        try:
+            valeur = exactes[0] if len(exactes) == 1 else mnesys.choisir_commune(f["communes"], bureau)
+        except ValueError as exc:
+            etat["message"] = str(exc).replace("Commune «", "Bureau des hypothèques «", 1).replace(
+                "comme commune.", "comme commune (c'est le bureau des hypothèques, pas la commune du bien).")
+            continue
+        nom = mnesys.cle(valeur.split(" (")[0])
+        etat["bureau"] = valeur
+        # autres valeurs du vocabulaire pour le même nom : à interroger à part (aucune au relevé)
+        etat["autres_bureaux"] = [o for o in f["communes"] if o != valeur and mnesys.cle(o.split(" (")[0]) == nom]
+        # tri du formulaire : par cote, soit l'ordre des volumes (et des plages alphabétiques)
+        requetes[categorie] = {"formUuid": uuid, "sort": "referencecode_asc", "mode": "list", "facet_media": "image",
+                               f["commune"] + "[]": valeur, "page": page}
+    if not requetes:
+        connus = sorted({b for e in etats.values() for b in e["bureaux"]})
+        raise ValueError(f"{next(iter(etats.values()))['message']} Bureaux des hypothèques proposés par le "
+                         f"formulaire : {', '.join(connus)}. Un libellé de titre (« Lille 2 (1901-1955) », « Lille "
+                         "(avant 1900) ») n'est pas une valeur de bureau : interroger le bureau et lire bureau_titre.")
+    resultats: list[dict] = []
+    total, suivante, cached, lues, refus, hors = 0, None, True, 0, None, 0
+    for categorie, requete in requetes.items():
+        etat = etats[categorie]
+        html, cache = http.get(URL, params=requete, parse="text", ttl=DAY, source="archives")
+        etat["interroge"] = True
+        cached = cached and cache
+        try:
+            lus, etat["total"], etat["page_suivante"] = _lire(html, page, contexte=True)
+        except FormatRegistresError as exc:
+            if page == 1:
+                raise
+            # Page absente d'une catégorie (redirection vers la première observée sur d'autres formulaires, #221 et
+            # #377 ; non observée ici) : rien n'est conclu pour elle, les autres restent lisibles.
+            refus = exc
+            etat["message"] = f"Aucune page {page} lue pour cette catégorie : {exc}"
+            continue
+        lues += 1
+        if not lus:
+            etat["message"] = ("Aucun résultat pour ce bureau ; cela ne prouve ni l'absence du registre ni celle "
+                               "d'une formalité.")
+        total += etat["total"]
+        if etat["page_suivante"]:
+            suivante = etat["page_suivante"]
+        for r in lus:
+            r.update(categorie=categorie, **titre_hypotheques(r["titre"]))
+            p = r["periode_titre"]
+            r["couvre_periode"] = None if p is None else p[1] >= periode[0] and (p[0] is None or p[0] <= periode[1])
+            if r["couvre_periode"] is False:
+                hors += 1
+                continue
+            if p:  # règle du type « hypotheques » appliquée à la dernière année du titre
+                r["communicable_a_partir_de"] = communicability(
+                    "hypotheques", date_document=str(p[1]), today=aujourdhui).get("communicable_a_partir_de")
+            resultats.append(r)
+    if refus and not lues:
+        raise refus
+    regle = communicability("hypotheques", today=aujourdhui)
+    non_echus = [r for r in resultats if (r.get("communicable_a_partir_de") or 0) > aujourdhui.year]
+    bureaux = {e["bureau"] for e in etats.values() if e["bureau"]}
+    extra = {"commune_service": next(iter(bureaux)) if len(bureaux) == 1 else None,
+             "registres_hors_periode": hors,
+             "hypotheques": {"releve_le": RELEVE_HYP, "reference": PAGE_HYP, "periode_annoncee": PERIODE_HYP,
+                             "methode": METHODE_HYP, "lecture": LECTURE_HYP,
+                             "bureaux_titres": sorted({r["bureau_titre"] for r in resultats if r["bureau_titre"]}),
+                             "communicabilite": {"type_document": "hypotheques", "regle": regle["regle"],
+                                                 "delai_annees": regle["delai_annees"], "source": PAGE_HYP,
+                                                 "releve_le": RELEVE_HYP, "non_verifie": NON_VERIFIE_HYP,
+                                                 "volumes_non_communicables": len(non_echus)},
+                             **etats}}
+    if non_echus:
+        extra["avertissement_communicabilite"] = (
+            f"{len(non_echus)} volume(s) dont la période affichée dépasse la période communicable selon la règle "
+            "« hypotheques » de communicabilite (communicable_a_partir_de) : ne pas les tenir pour librement "
+            "communicables ; vérifier auprès du service avant toute consultation ou diffusion.")
+    return resultats, total, suivante, cached, extra
+
+
 def _communicabilite_fd(resultats: list[dict], periode: list[int], aujourdhui: date) -> tuple[list[dict], dict, str]:
     """Fiches décès (#377) : délai affirmé par le service, jamais « librement communicable ». Rend les résultats
     dont le délai est échu (ou dont la date est inconnue, signalée), le constat et l'avertissement."""
@@ -433,8 +610,9 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
     les tables décennales, REC pour les recensements de population des AD59 (#375), tous deux filtrés localement
     sur la période ; RM pour les registres matricules (annee = classe, commune = bureau de recrutement facultatif ;
     AD59 : tables et fiches, #376) ; SUCC pour les tables des successions et absences et, pour AD59 seulement, FD
-    pour les fiches décès de l'enregistrement (commune = bureau de l'enregistrement, #377). Aucun nom de personne
-    envoyé."""
+    pour les fiches décès de l'enregistrement (commune = bureau de l'enregistrement, #377) ; AD59 seulement : HYP
+    pour les hypothèques, sous-série 4 Q (commune = bureau des hypothèques ; indicateurs, tables et répertoires ;
+    HYPI, HYPT, HYPR pour une seule catégorie, #378). Aucun nom de personne envoyé."""
     params = {"service": service, "commune": commune, "annee": annee, "type_acte": type_acte, "page": page,
               "annee_fin": annee_fin}
     svc = None
@@ -461,25 +639,32 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
             raise ValueError("annee_fin : 0 (année seule) ou fin d'intervalle, de annee à 9999.")
         if type(page) is not int or page < 1:
             raise ValueError("page : entier à partir de 1.")
-        if svc and type_acte in ("REC", "FD"):
-            quoi = "REC (recensements de population)" if type_acte == "REC" else "FD (fiches décès de l'enregistrement)"
+        if svc and type_acte in ("REC", "FD", *TYPES_HYP):
+            quoi = {"REC": "REC (recensements de population)", "FD": "FD (fiches décès de l'enregistrement)"}.get(
+                type_acte, f"{type_acte} (hypothèques, sous-série 4 Q)")
             raise ValueError(f"type_acte {quoi} : disponible pour AD59 seulement ; le "
                              f"formulaire dédié de {service} n'est pas relevé : chercher dans l'inventaire du "
                              "service (archives_service, lien).")
         if type_acte not in {"", "NMD", "TD", *TYPES} | (set(mnesys.TYPES_FONDS) if svc
-                                                         else {"REC", "RM", *FORMULAIRES_ENREGISTREMENT}):
+                                                         else {"REC", "RM", *FORMULAIRES_ENREGISTREMENT, *TYPES_HYP}):
             raise ValueError("type_acte : N, M, D, NMD, TD (tables décennales) ou vide ; REC (recensements de "
                              "population) pour AD59 ; RM (registres matricules) pour AD59 et les services Mnesys "
                              "qui le déclarent ; SUCC (tables des successions et absences) pour AD59 et les "
-                             "services Mnesys qui le déclarent ; FD (fiches décès de l'enregistrement) pour AD59.")
+                             "services Mnesys qui le déclarent ; FD (fiches décès de l'enregistrement) pour AD59 ; HYP "
+                             "(hypothèques, sous-série 4 Q : indicateurs, tables et répertoires ; HYPI, HYPT ou HYPR "
+                             "pour une seule catégorie) pour AD59.")
         periode = [annee, annee_fin or annee]
         # Copie du wrapper seulement : cache, client, politique et verrou de débit restent partagés.
         # La limite locale n'altère pas les reprises des autres sources ou appels simultanés.
         http = copy(ctx.http)
         http.max_retries = 1
         matricules_ad59 = svc is None and type_acte == "RM"
+        hypotheques_ad59 = svc is None and type_acte in TYPES_HYP
         if matricules_ad59:
             resultats, total, suivante, cached, extra = _matricules_ad59(http, commune, periode, page)
+        elif hypotheques_ad59:
+            resultats, total, suivante, cached, extra = _hypotheques_ad59(http, type_acte, commune, periode, page,
+                                                                          date.today())
         elif svc:
             requete, extra["commune_service"], filtre_local = _requete_mnesys(http, svc, commune, periode,
                                                                               type_acte, page)
@@ -504,7 +689,7 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
                 requete["facet_typology"] = TYPES[type_acte]
             host, naan, url = HOST, "33518", URL
             filtre_local = type_acte in ("TD", "REC")
-        if not matricules_ad59:
+        if not matricules_ad59 and not hypotheques_ad59:
             html, cached = http.get(url, params=requete, parse="text", ttl=DAY, source="archives")
             resultats, total, suivante = _lire(html, page, host, naan, contexte)
     except (SourceError, ValueError) as exc:
@@ -524,7 +709,15 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
                    service=service, page=page, page_suivante=suivante, fin=suivante is None, periode=periode,
                    avertissement="Un registre candidat ne prouve pas la présence d'un acte : consulter ses vues.",
                    **extra)
-    if not resultats and extra.get(hors):
+    if not resultats and hypotheques_ad59:
+        out["recherche_negative"] = (
+            (f"Aucun volume de cette page ne couvre {periode[0]}-{periode[1]} d'après la période portée par son titre "
+             f"({extra[hors]} hors période) ; voir page_suivante s'il y en a une." if extra.get(hors)
+             else "Aucun volume des hypothèques renvoyé pour ce bureau et cette page.")
+            + " Cela ne prouve ni l'absence du registre ni celle d'une formalité. Le service annonce : "
+            f"{PERIODE_HYP} (relevé du {RELEVE_HYP}). Vérifier le bureau des hypothèques (celui de l'arrondissement "
+            "du bien) et l'état de chaque catégorie (hypotheques).")
+    elif not resultats and extra.get(hors):
         quoi = {"TD": "Aucune table décennale", "REC": "Aucun recensement en ligne",
                 "FD": "Aucun volume de fiches décès"}.get(type_acte, "Aucun registre")
         if enregistrement:
@@ -565,7 +758,7 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
             constat = None  # référentiel absent ou illisible : la recherche en ligne reste rendue telle quelle
         if constat:
             out["couverture_recensements"] = constat
-    elif svc is None and type_acte not in ("TD", "RM", *FORMULAIRES_ENREGISTREMENT):
+    elif svc is None and type_acte not in ("TD", "RM", *FORMULAIRES_ENREGISTREMENT, *TYPES_HYP):
         # Classeur 3 E (#374) : ajout seulement, quand la recherche est vide ou qu'un volume n'est pas en ligne.
         try:
             constat = couverture_3e.pour_recherche(commune, periode, type_acte, resultats)

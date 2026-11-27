@@ -20,7 +20,8 @@ Les cases de filtre du formulaire GET portent `name=facet_typology` et les valeu
 `Mariages`, `Décès` : ce sont les filtres utilisés pour `N`, `M`, `D`. `NMD` et le type vide conservent la
 recherche sans filtre de typologie. `TD` (tables décennales) et `annee_fin` (intervalle) sont décrits
 ci-dessous ; `REC` (recensements de population, #375), `RM` (registres matricules, #376), `SUCC` et `FD`
-(tables des successions et fiches décès de l'enregistrement, #377) plus bas.
+(tables des successions et fiches décès de l'enregistrement, #377), `HYP` (hypothèques, sous-série 4 Q, #378)
+plus bas.
 Aucun nom ni identifiant de personne n'est envoyé ; `personne` sert uniquement à la garde de l'outil
 et au journal local.
 
@@ -414,10 +415,188 @@ référentiel local, la cote vient de la réponse d'`archives_registres`.
 
 Tests : `tests/test_successions_ad59.py`, sans réseau.
 
+## Hypothèques : `type_acte="HYP"` — #378
+
+Relevé public du 27 novembre 2026 (robots.txt relu : `/private/`, `/oai-pmh`, `/user/` ; aucune protection
+rencontrée ; une requête par observation, sans image, sans notice, sans nom de personne ; quinze requêtes en
+tout : robots.txt, la page, trois formulaires, dix pages de résultats). La page
+[`/page/tables-et-repertoires-des-hypotheques`](https://archivesdepartementales.lenord.fr/page/tables-et-repertoires-des-hypotheques)
+mène à trois formulaires de la sous-série 4 Q, lus avec `mnesys.lire_formulaire` :
+
+| | Indicateur | Tables alphabétiques du répertoire des formalités hypothécaires | Répertoires des formalités hypothécaires |
+|---|---|---|---|
+| Formulaire | `02ec9ec7-856b-47f7-a59f-f9716d6823a3` | `50d53c90-a6c8-46f9-886c-e75fa91a60cb` | `330c559b-0684-4649-b7e8-7d1123a83433` |
+| Bureau | `0-controlledAccessGeographicName[]` (« Bureau ») | idem | idem |
+| Vocabulaire | `Avesnes`, `Cambrai`, `Douai`, `Dunkerque`, `Hazebrouck`, `Lille`, `Valenciennes` | les sept mêmes | les sept mêmes |
+| Date | aucun champ | aucun champ | aucun champ |
+| Tri par défaut du formulaire | `referencecode_asc` | `referencecode_asc` | `referencecode_asc` |
+| Résultats sans critère | 64 (relevé de l'issue #378, non revu) | 1 652 (idem) | 3 693 (idem) |
+
+Le seul champ est le **bureau des hypothèques** ; les sept valeurs sont celles des sept conservations que cite
+la page. Le vocabulaire ne distingue pas les subdivisions d'un bureau : « Lille (avant 1900) », « Lille (1) »,
+« Lille (2) », « Lille 2 (1901-1955) » ou « Cambrai (serie secondaire) » n'existent que dans les titres des
+volumes. Observations, une requête chacune, tri `referencecode_asc` :
+
+- [indicateur, Cambrai](https://archivesdepartementales.lenord.fr/search/results?formUuid=02ec9ec7-856b-47f7-a59f-f9716d6823a3&sort=referencecode_asc&mode=list&facet_media=image&0-controlledAccessGeographicName%5B%5D=Cambrai) :
+  5 résultats, `Cambrai : 4Q 63 / 001 (ABADEAU - CRETE)` (cote `4Q 63 / 001`, `ark:/33518/jv3qf19tskbh`,
+  202 médias) à `Cambrai : 4Q 63 / 005 (SABY - ZYGMONT)` ; contexte « Tableau indicateur (cote 4Q) ». Aucun
+  champ `Date` dans les résultats : `bornes` reste `null`.
+- Indicateur, Lille : 23 résultats sur 2 pages de 20 ; six volumes `Lille (avant 1900) : 4Q 79 / 001` à `006`
+  sans plage, `Lille (1) : 4Q 80 / 001 ((unique) Sociétés)` et `4Q 80 / 002 (PIRET - ZYLBERBERG)`, puis
+  `Lille (2) : 4Q 83 / 001 (AAN - BERTAUT)` à `4Q 83 / 015 (VETREZ - ZYWIOL)`. `page=2` : 3 résultats,
+  `value="2"`, `max="2"`.
+- Indicateur, Valenciennes : 5 résultats, `4Q 86 / 003 (GUERIN - MENET)`, `004 (MENEZ - TESSE)`,
+  `005 (TESSIER - ZYDOREK)`, puis `006 (ABADI - FOY)` et `007 (FOYER - LARDENOIS)` : deux suites alphabétiques
+  sous le même libellé de bureau, la seconde incomplète en ligne. Rien dans les titres ne les date.
+- [tables, Cambrai](https://archivesdepartementales.lenord.fr/search/results?formUuid=50d53c90-a6c8-46f9-886c-e75fa91a60cb&sort=referencecode_asc&mode=list&facet_media=image&0-controlledAccessGeographicName%5B%5D=Cambrai) :
+  345 résultats sur 18 pages ; `Cambrai (serie secondaire) : 4Q 64 / 002 (Ai - Bailleux)`
+  (`ark:/33518/7rqw24jctvkd`, 198 médias)… ; contexte « Tables alphabétiques du répertoire (cote 4Q) ». Titres
+  saisis à la main : `(Baillez- -Basquin)`, `(briatte - Bricout)` ; plages non strictement croissantes :
+  `(Baurin - Benit)` puis `(Benicourt - Besnard)`, `(Blutte - Boniface)` puis `(Boniface - Boudin)`.
+- Tables, Lille : 626 résultats sur 32 pages ; page 1 : `Lille (avant 1900) : 4Q 78 / 001 (Aa - Alluin)`… ;
+  `page=32` : 6 résultats, `Lille 2 (1901-1955) : 4Q 84 / 197 (Vissault - Vrau)` à
+  `4Q 84 / 202 (Zuglian - Zywiol)`.
+- [répertoires, Avesnes](https://archivesdepartementales.lenord.fr/search/results?formUuid=330c559b-0684-4649-b7e8-7d1123a83433&sort=referencecode_asc&mode=list&facet_media=image&0-controlledAccessGeographicName%5B%5D=Avesnes) :
+  570 résultats sur 29 pages ; `Avesnes : 4Q 62 / 001` (`ark:/33518/0tm75kcjfnsv`, 61 médias) à `4Q 62 / 020`
+  en page 1, `021` à `040` en page 2 ; une centaine de médias par volume ; aucune plage ; contexte « Répertoires
+  des formalités hypothécaires (cote 4Q) ».
+- Négatif : obtenu sur l'indicateur avec une valeur de bureau inexistante (`Somain`), même page
+  `body#display-no-results`. Aucun bureau réel observé n'est vide.
+
+**Ce que dit le service** (page relue le 27 novembre 2026, résumée). La conservation des hypothèques
+enregistrait l'inscription hypothécaire (gage d'un emprunt sur un immeuble) et la transcription des actes, le
+plus souvent notariés, de mutation d'un immeuble (achat, vente, donation). Les AD59 conservent les archives des
+bureaux de l'an VII (1799) à 1955 ; après 1955, elles sont dans les services de la publicité foncière. Sept
+conservations avant 1955, une par arrondissement ; pour Valenciennes, les registres de 1800-1940 ont été détruits
+pendant la Seconde Guerre mondiale. La recherche se fait **uniquement par nom de propriétaire** (par adresse du
+bien : seulement après 1956, hors des AD ; sinon passer d'abord par le cadastre, en salle de lecture). Deux
+familles de registres : registres d'ordre (les trois catégories en ligne) et registres de formalités (en salle
+de lecture). Les images en ligne servent à préparer la venue en salle ; qui connaît déjà le volume et le numéro
+de la transcription (portés par l'acte notarié) va directement en salle.
+
+**Méthode : indicateur → table alphabétique → répertoire**, d'après cette page :
+
+1. le **registre indicateur** de la table alphabétique donne les noms de famille des propriétaires par ordre
+   alphabétique, sans prénoms : il oriente vers la table ;
+2. la **table alphabétique** donne les noms classés par ordre alphabétique « et organisés phonétiquement »,
+   avec prénoms et parfois date de naissance, conjoint, profession (non pris en compte dans le classement) : on
+   y relève le numéro de case du propriétaire ;
+3. le **répertoire des formalités** est classé par numéro de case, une case étant le compte d'un propriétaire :
+   on y relève les numéros de volume et d'acte ;
+4. les registres de transcription et d'inscription se consultent en salle de lecture.
+
+Ce que renvoie exactement l'indicateur (un numéro de volume de table, de page ?) n'est pas dit par la page et
+n'a pas été lu sur les vues.
+
+**Contrat retenu.** La signature d'`archives_registres` ne change pas ; aucun outil MCP n'est ajouté ; les clés
+existantes gardent leur sens.
+
+- **Code** : `HYP`, dans la lignée de `RM`, `SUCC`, `FD`, `REC` (abréviation du fonds, sans numéro de série).
+- **Catégorie, règle déterministe** : `HYP` interroge les trois formulaires, une page chacun, et rend les trois
+  catégories distinguées (comme `RM`) : c'est la vue d'ensemble d'un bureau. `HYPI`, `HYPT`, `HYPR`
+  n'interrogent que l'indicateur, les tables ou les répertoires. Ces trois variantes existent parce que les
+  listes n'ont pas la même longueur (Lille : 2 pages d'indicateur, 32 de tables ; Avesnes : 29 de répertoires) :
+  feuilleter les tables de Lille avec `HYP` enverrait à chaque page deux requêtes sans objet. Elles ne changent pas la signature ; ce
+  sont des valeurs de `type_acte`.
+- **Bureau** : `commune` = bureau des hypothèques, **obligatoire**, mis en capitales sans accents puis pris dans
+  le vocabulaire lu en ligne (valeur exacte malgré la casse, sinon `mnesys.choisir_commune`). Bureau inconnu
+  (« Somain », « Lille 2 », « Lille (avant 1900) ») : erreur avant toute recherche, qui liste les valeurs et
+  rappelle qu'un libellé de titre n'est pas un bureau. Bureau ambigu : erreur qui liste les candidates (cas
+  absent du vocabulaire relevé). `autres_bureaux` (par catégorie) signale les autres valeurs de même nom, comme
+  pour `SUCC` ; il est vide avec le vocabulaire relevé. Les subdivisions réelles se lisent dans
+  `hypotheques.bureaux_titres` (libellés distincts de la page) et `bureau_titre` de chaque résultat.
+- **Période** : aucun champ de date, ni dans les formulaires ni dans les résultats. `annee` et `annee_fin` ne
+  sont pas envoyées. Elles n'écartent que les volumes dont le titre porte une période, dans les deux formes
+  relevées : « (avant 1900) » → `periode_titre: [null, 1899]`, « (1901-1955) » → `[1901, 1955]`. Ces volumes
+  reçoivent `couvre_periode` `true` ou sont écartés et comptés (`registres_hors_periode`) ; les autres gardent
+  `couvre_periode: null` et sont toujours rendus. « (1) », « (2) » et « serie secondaire » ne sont pas
+  interprétés. `bornes` reste `null` (champ `Date` absent) : rien n'est déduit du titre dans cette clé.
+- **Résultats** : indicateur, puis tables, puis répertoires ; chaque résultat garde `titre`, `cote`, `ark`,
+  `url`, `bornes`, `nb_vues` et reçoit `categorie`, `contexte`, `bureau_titre`, `periode_titre`,
+  `plage_alphabetique`, `couvre_periode` et, si le titre porte une période, `communicable_a_partir_de`. `total`
+  additionne les totaux lus ; `page_suivante` vaut `page + 1` dès qu'une catégorie a une page suivante.
+- **`hypotheques`** (ajout) : `releve_le`, `reference`, `periode_annoncee`, `methode`, `lecture`,
+  `bureaux_titres`, `communicabilite`, et pour chaque catégorie interrogée `formulaire`, `interroge`, `bureau`,
+  `autres_bureaux`, `total`, `page_suivante`, `bureaux` et, s'il y a lieu, `message`. `commune_service` rend la
+  valeur de bureau envoyée.
+- **Page > 1** avec `HYP` : les trois formulaires reçoivent `page=N` ; une catégorie qui ne rend pas cette page
+  est marquée « Aucune page N lue pour cette catégorie », sans rien conclure ; si aucune ne la rend, l'appel
+  est une erreur.
+- **Négatif** : `recherche_negative` seulement quand aucun résultat n'est rendu ; il distingue « aucun volume
+  renvoyé » de « volumes de la page tous hors période d'après leur titre » et rappelle ce que le service annonce.
+- Mêmes garde-fous que `RM` et `SUCC` : hôte et NAAN `33518` contrôlés sur chaque lien de notice, une page par
+  formulaire et par appel, une seule tentative par recherche. Ni `classeur_3e`, ni `couverture_recensements`,
+  ni `matricules`, ni `successions` ne sont joints. Pour un autre service, `HYP` (et ses variantes) est refusé
+  avant toute requête.
+
+**Plage alphabétique.** Le titre d'un volume d'indicateur ou de table porte entre parenthèses la plage des noms
+qu'il contient. `registres.titre_hypotheques(titre)` la lit : `plage_alphabetique` = `{texte, debut, fin}`,
+`debut` et `fin` en capitales sans accents, lettres seules (« De Fay - Degarnier » → `DEFAY`, `DEGARNIER`). Le
+séparateur est un tiret accompagné d'au moins une espace (« A - B », « Baillez- -Basquin »), pour ne pas couper
+un nom à trait d'union. Une parenthèse qui n'est pas une plage (« (unique) Sociétés ») est rendue en `texte`,
+avec `debut` et `fin` à `null` ; pas de parenthèse : `plage_alphabetique: null`.
+
+`registres.plage_couvre(plage, prefixe)` dit si un nom commençant par `prefixe` (une initiale ou un début de
+nom) peut se trouver dans la plage : bornes comprises, comparées sur la longueur du préfixe
+(`debut[:n] <= prefixe <= fin[:n]`). `registres.volumes_couvrant(resultats, prefixe)` rend les volumes d'une
+réponse qui le couvrent. Ce sont des **fonctions pures, sans paramètre public** : `archives_registres` n'a
+aucune entrée pour recevoir une initiale, et il n'en a pas été créé. `personne` désigne la cible locale (garde
+des vivants, journal) et n'a pas été détourné ; `commune` est le bureau. L'appelant compare donc lui-même
+l'initiale à `debut` et `fin` de chaque résultat, selon la règle ci-dessus ; **le nom cherché n'est jamais
+envoyé au service, ni passé à un outil réseau, ni journalisé**. Écart assumé par rapport à une aide intégrée à
+la réponse : elle demanderait un paramètre public nouveau.
+
+La plage n'est qu'indicative, pour trois raisons relevées : le service dit les tables « organisées
+phonétiquement » ; les plages se chevauchent ou se suivent sans ordre strict (Cambrai) ; un même bureau a
+plusieurs séries parallèles (Valenciennes, Lille avant 1900 / 1 / 2). Chaque volume est jugé seul et tous les
+volumes couvrants sont rendus. Une page ne dit rien des suivantes : une liste vide pour une initiale sur la
+page 1 des tables ne conclut pas.
+
+**Communicabilité.** Le type `hypotheques` du catalogue (#129) porte la règle : délai nul à compter de l'acte,
+« Publicité foncière : en principe communicable ; vérifier les délais propres au service. » Elle est inchangée
+et `communicabilite` n'est pas modifié. La page du service ne parle d'aucun délai pour ces registres d'ordre :
+la règle reste indicative et **n'a pas été vérifiée** auprès du service ni dans un texte. La réponse la porte
+dans `hypotheques.communicabilite` (`type_document`, `regle`, `delai_annees`, `source`, `releve_le`,
+`non_verifie`, `volumes_non_communicables`). Un volume dont le titre porte une période reçoit
+`communicable_a_partir_de`, calculé par `communicabilite("hypotheques")` sur sa dernière année ; si ce délai
+n'est pas échu, le volume reste rendu et la réponse porte `avertissement_communicabilite`. Avec la règle
+actuelle et des archives closes en 1955, cet avertissement ne se déclenche pas : il suit la règle si elle
+change. Les volumes sans période dans le titre (la plupart) ne peuvent pas être jugés. Non établi : le régime
+réel de ces registres, qui nomment des propriétaires et, pour les plus récents, peut-être des personnes encore
+vivantes (contenu non lu).
+
+**Orientation.** Pour un fait dans le Nord dont les pistes comprennent un acte notarié (contrat de mariage et
+dot, filiation, bien ou vente), `prochaine_source` et `cotes_a_consulter` joignent `hypotheques_ad59` à cette
+piste : `service`, `releve_le`, `serie` (libellé général de la sous-série 4 Q), appel `HYP` à lancer, `methode`,
+`note`. Rien avant l'an VII ; après 1955, la note renvoie à la publicité foncière et aucun appel n'est proposé.
+L'année n'est reprise que si la date du fait peut être celle de l'acte (pas pour une naissance ou une
+filiation). Ni cote ni bureau n'y figurent : le bureau n'est pas déduit de la commune, la cote vient de la
+réponse d'`archives_registres`.
+
+**Non vérifié.**
+
+- Le contenu des indicateurs, des tables et des répertoires (aucune vue ouverte) : la méthode est celle que
+  décrit la page, non éprouvée sur un cas. `archives_naviguer`, `archives_planche` et `archive_image` sur ces
+  ARK : non testés.
+- Le sens de « (1) », « (2) », « serie secondaire », le rapport entre « Lille (2) » (indicateur) et
+  « Lille 2 (1901-1955) » (tables), et les périodes des volumes dont le titre n'en porte pas.
+- Le ressort de chaque bureau : le plugin ne rattache aucune commune à un bureau des hypothèques.
+- Une page au-delà de la dernière pour ces trois formulaires : la redirection vers `page=1` n'a été observée
+  que sur d'autres formulaires (#221, #377). Le test correspondant simule ce comportement.
+- Les bureaux de Douai, Dunkerque et Hazebrouck (aucune requête) ; les tables et répertoires de Valenciennes ;
+  les totaux sans critère (64, 1 652 et 3 693, relevé de l'issue).
+- Les titres des pages non relevées : d'autres formes de période ou de séparateur peuvent exister ; elles
+  seraient rendues sans période ni plage, jamais devinées.
+- La stabilité des identifiants de formulaire et du vocabulaire (suivi : #380).
+- La recette réelle (`test_registres_live.py`) n'a pas de cas `HYP` ; le relevé a été fait à la main, hors outil.
+
+Tests : `tests/test_hypotheques_ad59.py`, sans réseau.
+
 ## HTTP, protection et journal
 
 Un appel effectue au plus une tentative GET de recherche, ou utilise son cache (`RM` : une par formulaire, soit
-deux au plus, précédées de la lecture des formulaires, en cache une semaine). Il n'enchaîne pas les
+deux au plus ; `HYP` : trois au plus, une seule pour `HYPI`, `HYPT` ou `HYPR` ; toujours précédées de la lecture
+des formulaires, en cache une semaine). Il n'enchaîne pas les
 pages, les registres ou les métadonnées ; la politique commune continue de revalider les redirections.
 Une copie du wrapper HTTP partage le client, le cache, la politique et l'état de limitation de débit,
 avec une limite locale d'une tentative. Elle ne modifie pas les reprises des autres sources. Chaque
@@ -447,6 +626,9 @@ aux balises lues.
 Les huit fichiers `ad59-successions-*.html` et `ad59-fiches-deces-*.html` (#377) sont les deux formulaires de
 l'enregistrement et six pages de résultats relevés le 27 novembre 2026 (tables : intervalle, année seule,
 page 2 sur 4, négatif ; fiches décès : positif, négatif), réduits de la même façon.
+Les douze fichiers `ad59-hypotheques-*.html` (#378) sont les trois formulaires de la sous-série 4 Q et neuf
+pages de résultats relevés le 27 novembre 2026 (indicateur : Cambrai, Valenciennes, Lille pages 1 et 2, négatif ;
+tables : Cambrai, Lille pages 1 et 32 ; répertoires : Avesnes), réduits de la même façon.
 `ad59-tables-decennales.html` (trois tables décennales) et `ad59-recherche-intervalle-page2.html` (page 2 sur
 2 d'un intervalle, 25 résultats) en dérivent avec les titres, cotes et compteurs relevés le 18 novembre. Aucun export familial,
 HTML complet de production, cookie ou script tiers n'est livré comme fixture.

@@ -341,6 +341,24 @@ que le plugin n'a pas vérifié ; la réponse porte `avertissement_communicabili
 `prochaine_source` joint `successions_ad59` à la piste des successions pour le Nord. Détail et limites :
 [enregistrement](recherche-registres-ad59.md#enregistrement--type_actesucc-et-type_actefd--377).
 
+Depuis #378, `type_acte="HYP"`, propre à AD59, interroge les trois formulaires de la sous-série 4 Q (conservation
+des hypothèques, de l'an VII à 1955 d'après le service) : indicateurs, tables alphabétiques du répertoire et
+répertoires des formalités hypothécaires. `commune` = bureau des hypothèques, obligatoire, pris dans le
+vocabulaire lu en ligne (Avesnes, Cambrai, Douai, Dunkerque, Hazebrouck, Lille, Valenciennes au relevé du
+27 novembre 2026) ; un bureau inconnu est une erreur qui liste les valeurs. `HYP` interroge les trois
+formulaires, une page chacun ; `HYPI`, `HYPT` et `HYPR` n'en interrogent qu'un, pour feuilleter sans requête
+inutile. Chaque résultat porte `categorie` (`indicateur`, `tables`, `repertoires`), `contexte` et la lecture de
+son titre : `bureau_titre` (« Lille (avant 1900) », « Lille 2 (1901-1955) »), `periode_titre` et
+`plage_alphabetique` (`texte`, `debut`, `fin`). Ces formulaires n'ont aucune date : `annee` n'est pas envoyée et
+n'écarte que les volumes dont le titre porte une autre période. La méthode du service est rendue dans
+`hypotheques.methode` : indicateur, puis table alphabétique (numéro de case du propriétaire), puis répertoire
+(volume et numéro des actes), les registres de formalités se consultant en salle de lecture. **Le nom cherché
+n'est jamais envoyé** : il se compare localement à `debut` et `fin` (`registres.plage_couvre`,
+`registres.volumes_couvrant`). `archives_registres(service="AD59", commune="Cambrai", annee=1850,
+type_acte="HYPI")` → cinq volumes `4Q 63 / 001` à `4Q 63 / 005`. `prochaine_source` joint `hypotheques_ad59`
+aux pistes notariales du Nord. Détail et limites :
+[hypothèques](recherche-registres-ad59.md#hypothèques--type_actehyp--378).
+
 ## Sondage guidé d'un registre — #156
 
 `archives_sonder(source, date_cible, type_acte, lecture, conclusion, enquete)` remplace le tâtonnement
@@ -395,7 +413,7 @@ continuent d'utiliser les clés canoniques.
 | paroissiaux | paroissial | préciser période et statut du fonds |
 | enregistrement | — | préciser table ou déclaration |
 | cadastre | — | plans et matrices |
-| hypotheques | — | ajouté au catalogue, règle historique conservée |
+| hypotheques | — | ajouté au catalogue, règle historique conservée ; recherche de volumes pour AD59 (`HYP`, #378) |
 | judiciaire | justice | ajouté au catalogue, clé publique historique conservée |
 | insinuation | insinuations | ajouté au catalogue, régime à préciser |
 
