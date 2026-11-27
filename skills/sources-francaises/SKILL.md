@@ -32,6 +32,13 @@ bureau, à lire d'abord pour le numéro matricule) et `categorie: fiches` (volum
 classes 1867 à 1923 en ligne, bureau dans `contexte`), avec la cote 1 R réelle ; sans bureau, tous les bureaux
 de la classe. Un intervalle (`annee_fin`) ne rend que les tables. Vérifier `communicabilite("matricule")` ;
 une absence dans une table ne prouve rien (autre bureau, autre classe, engagé volontaire).
+Successions du Nord : `archives_registres(service="AD59", commune=<bureau de l'enregistrement>, annee, annee_fin,
+type_acte="SUCC")` pour les tables des successions et absences (3 Q, au plus 1791-1968), puis
+`type_acte="FD"` pour les fiches décès qui les prolongent (1969 à 1975). La clé est le bureau, pas la commune :
+il n'est pas déduit du lieu, une erreur liste les valeurs du formulaire (`cotes_a_consulter` rappelle l'appel :
+`successions_ad59`). Fiches décès : jamais « librement communicables » ; le service affirme un délai de 50 ans,
+non vérifié par le plugin : relayer `avertissement_communicabilite`, ne rien publier sur des héritiers vivants.
+Une absence dans une table ne prouve pas l'absence de décès (autre bureau, succession non déclarée).
 Ensuite `archives_naviguer` parcourt les vues, `archive_image` les lit et `piece_archiver` conserve l'original.
 Un résultat vide ne démontre pas que l'acte n'existe pas ; un blocage conserve une tâche manuelle au journal.
 Défi anti-robot (`bloque: "anti-robot"`, ex. Anubis aux AD de la Lozère, redirection JS des AD Arkotheque
@@ -79,7 +86,8 @@ service ne s'applique pas à ce fonds : passer par le lien de consultation, un l
 
 - **Remonter une génération** : acte de mariage (filiation des deux époux, âges, domiciles) → naissance de
   chaque époux → mariage des parents. Avant 1792 : mariage paroissial, puis baptêmes.
-- **Décès introuvable** : tables décennales des communes voisines, table des successions (3 Q), recensements
+- **Décès introuvable** : tables décennales des communes voisines, table des successions (3 Q ; Nord :
+  `archives_registres` `SUCC` par bureau, puis `FD` de 1969 à 1975), recensements
   (dernière présence), matchID (≥ 1970), transcriptions de décès (militaires, hôpitaux).
 - **Filiation fragile** : contrat de mariage, inventaire après décès, déclaration de succession, tutelles.
 - **Commune disparue ou fusionnée** : `geo_historique` (COG INSEE depuis 1943) ; avant : dictionnaire

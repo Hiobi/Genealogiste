@@ -102,6 +102,12 @@ def tableau(services: list | tuple, recettes: dict, documents: tuple = ()) -> st
                    f"tables alphabétiques et fiches des états signalétiques ({registres.PERIODE_FICHES_RM} d'après le formulaire), par classe et bureau de recrutement. "
                    "Aucun référentiel local des cotes : la cote vient de la réponse ; un résultat vide ne prouve pas l'absence du registre. "
                    "Navigation et lecture des vues de ces registres non testées. Voir `docs/recherche-registres-ad59.md`.", ""])
+    lignes.extend(["## AD59 : tables des successions et fiches décès", "",
+                   f"Hors des niveaux ci-dessus : `archives_registres` interroge pour les AD59 le formulaire des tables des successions et absences (`type_acte=\"SUCC\"`, série 3 Q, {registres.PERIODE_SUCC} d'après le service) "
+                   f"et celui des fiches décès de l'enregistrement (`type_acte=\"FD\"`, versements W, {registres.PERIODE_FD}), par bureau de l'enregistrement (relevé du {registres.RELEVE_ENREGISTREMENT}). "
+                   "Aucun référentiel local des cotes : la cote vient de la réponse ; un résultat vide ne prouve ni l'absence d'un décès ni celle d'une succession. "
+                   f"Fiches décès : le service affirme un délai de {registres.DELAI_FD} ans, non vérifié par le plugin ; elles ne sont jamais présentées comme librement communicables. "
+                   "Navigation et lecture des vues de ces fonds non testées. Voir `docs/recherche-registres-ad59.md`.", ""])
     if documents:
         lignes.extend(["## Niveaux par type de document", "",
                        "Chaque cellule reprend le niveau de `archives_service(document=...)`. Une recette dont le fonds n'est pas renseigné ne qualifie aucune de ces colonnes. Les niveaux 0–4 sont des capacités implémentées, toujours à éprouver sur le fonds demandé.", "",

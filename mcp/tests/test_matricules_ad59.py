@@ -267,7 +267,7 @@ def test_rm_recherche_en_panne_une_seule_tentative(app, fixtures):
     ({"type_acte": "RMX"}, "RM (registres matricules) pour AD59"),
     ({"type_acte": "RECX"}, "REC (recensements de population) pour AD59"),
     ({"type_acte": "REC", "commune": ""}, "commune : nom obligatoire (facultatif pour RM)"),
-    ({"type_acte": "SUCC"}, "SUCC (tables des successions) pour les services Mnesys"),
+    ({"type_acte": "SUCCX"}, "SUCC (tables des successions et absences) pour AD59"),  # SUCC admis depuis #377
     ({"type_acte": "RM", "annee": 0}, "annee"),
     ({"type_acte": "RM", "annee": "1890"}, "annee"),
     ({"type_acte": "RM", "annee_fin": 1880}, "annee_fin"),

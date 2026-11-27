@@ -1,5 +1,6 @@
 """Recherche de registres sur le HTML serveur Mnesys Expo : AD59 qualifié (relevés des 16, 18 et 27 novembre 2026 ;
-registres matricules : tables et fiches des états signalétiques, #376) et services déclarant
+registres matricules : tables et fiches des états signalétiques, #376 ; enregistrement : tables des successions
+et absences et fiches décès, #377) et services déclarant
 ``recherche_registres`` dans le référentiel (formulaire lu en ligne, sources/mnesys.py, #128).
 
 Une page par appel, sans exploration de JavaScript, de notice, de métadonnées ni d'image.
@@ -11,6 +12,7 @@ from __future__ import annotations
 import re
 from copy import copy
 from dataclasses import dataclass, field
+from datetime import date
 from html.parser import HTMLParser
 from urllib.parse import urljoin, urlsplit
 
@@ -34,6 +36,27 @@ PERIODE_FICHES_RM = "classes 1867 à 1923, Valenciennes-Douai à partir de 1908"
 LECTURE_RM = ("tables : une table alphabétique par classe et par bureau de recrutement ; fiches : volumes des états "
               "signalétiques et des services de la classe, par bureau (contexte) et parfois par tranche de numéros "
               "matricules (titre). D'après les intitulés des résultats : le contenu des vues n'est pas lu.")
+# Enregistrement (relevé du 27 novembre 2026, #377) : tables des successions et absences (3 Q, type SUCC) et
+# fiches décès (versements W, type FD), un formulaire chacun, dont la clé est le bureau de l'enregistrement.
+FORMULAIRES_ENREGISTREMENT = {"SUCC": "6eaeac65-9e1b-43ea-bc9f-902abd458466",
+                              "FD": "4e904e28-8a75-4be1-b9f6-b4138afe4956"}
+RELEVE_ENREGISTREMENT = "2026-11-27"
+PAGE_ENREGISTREMENT = HOST + "/page/tables-des-successions-et-absences-fiches-deces"
+# Ce que la présentation du service annonce (page et formulaires relevés) : cela borne ce qui est en ligne.
+PERIODE_SUCC = "au maximum 1791-1968, l'année de fin variant selon les bureaux"
+PERIODE_FD = "1969 à 1975"
+DELAI_FD = 50  # années, d'après la présentation du service ; type « vie_privee » de communicabilite
+LECTURE_SUCC = ("Tables alphabétiques tenues par bureau de l'enregistrement. D'après la présentation du service : "
+                "selon les époques, profession, domicile et âge du défunt, date du décès, situation de famille, date "
+                "de la déclaration de succession s'il y en a une ; le ressort d'un bureau dépasse la commune. Le "
+                "contenu des vues n'est pas lu.")
+LECTURE_FD = ("Fiches décès de l'enregistrement, suite des tables des successions d'après la présentation du service : "
+              "classées par année de décès puis par ordre alphabétique (tranche de lettres dans le titre), elles "
+              "renvoient au numéro de la déclaration de succession. Le contenu des vues n'est pas lu.")
+NON_VERIFIE_FD = ("Régime non vérifié par le plugin : le délai de 50 ans est celui qu'affirme le service (« délais de "
+                  "communicabilité du code du Patrimoine », sans article cité) ; ni l'article applicable, ni le point "
+                  "de départ du délai, ni la nature exacte du fonds n'ont été vérifiés dans un texte ou auprès du "
+                  "service.")
 MAX_HTML = 2_000_000
 MAX_PROFONDEUR = 128
 TYPES = {"N": "Naissances", "M": "Mariages", "D": "Décès"}
@@ -275,6 +298,79 @@ def _matricules_ad59(http, bureau: str, periode: list[int], page: int) -> tuple[
     return resultats, total, suivante, cached, {"matricules": {"releve_le": RELEVE_RM, "lecture": LECTURE_RM, **etats}}
 
 
+def _enregistrement_ad59(http, type_acte: str, bureau: str, periode: list[int],
+                         page: int) -> tuple[dict, dict, bool]:
+    """Tables des successions et absences (SUCC, 3 Q) ou fiches décès (FD, W) des AD59 (#377) : (requête, ajouts
+    à la réponse, filtre local).
+
+    Le formulaire est lu en ligne ; le bureau de l'enregistrement, obligatoire comme pour SUCC ailleurs, est pris
+    dans son vocabulaire. SUCC : la période va dans les champs de début et de fin, même pour une seule année
+    (comme pour les autres services). FD : le formulaire n'a qu'une année précise ; un intervalle n'envoie que
+    le bureau et la période est filtrée localement sur les bornes affichées."""
+    uuid = FORMULAIRES_ENREGISTREMENT[type_acte]
+    quoi = "tables des successions" if type_acte == "SUCC" else "fiches décès"
+    f = _formulaire(http, HOST, uuid)
+    if not f["commune"] or not (f["debut"] and f["fin"] if type_acte == "SUCC" else f["date"]):
+        raise mnesys.FormulaireError(f"Formulaire des {quoi} AD59 non reconnu (bureau ou date absents) : "
+                                     "consulter la recherche manuellement.")
+    exactes = [o for o in f["communes"] if mnesys.cle(o) == mnesys.cle(bureau)]  # « LILLE (CENTRE) » saisi tel quel
+    try:
+        valeur = exactes[0] if len(exactes) == 1 else mnesys.choisir_commune(f["communes"], bureau)
+    except ValueError as exc:
+        message = str(exc).replace("Commune «", "Bureau de l'enregistrement «", 1).replace(
+            "comme commune.", "comme commune (c'est le bureau, pas la commune du décès).")
+        if "absente" in message:
+            message += f" Bureaux proposés par le formulaire : {', '.join(f['communes'])}."
+        raise ValueError(message) from exc
+    nom = mnesys.cle(valeur.split(" (")[0])
+    etat = {"releve_le": RELEVE_ENREGISTREMENT, "formulaire": uuid, "bureau": valeur,
+            # autres valeurs du vocabulaire pour le même nom (« LILLE (1er bureau) »...) : à interroger à part
+            "autres_bureaux": [o for o in f["communes"] if o != valeur and mnesys.cle(o.split(" (")[0]) == nom],
+            "reference": PAGE_ENREGISTREMENT}
+    # tri : chronologique pour les tables ; par cote pour les fiches (défaut du formulaire, ordre des lettres)
+    requete = {"formUuid": uuid, "sort": "date_asc" if type_acte == "SUCC" else "referencecode_asc", "mode": "list",
+               "facet_media": "image", f["commune"] + "[]": valeur}
+    filtre_local = False
+    if type_acte == "SUCC":
+        requete[f["debut"]], requete[f["fin"]] = str(periode[0]), str(periode[1])
+        etat.update(periode_annoncee=PERIODE_SUCC, lecture=LECTURE_SUCC)
+        return {**requete, "page": page}, {"commune_service": valeur, "successions": etat}, filtre_local
+    if periode[0] == periode[1]:
+        requete[f["date"]] = str(periode[0])
+    else:
+        filtre_local = True
+    etat.update(periode_annoncee=PERIODE_FD, lecture=LECTURE_FD)
+    return {**requete, "page": page}, {"commune_service": valeur, "fiches_deces": etat}, filtre_local
+
+
+def _communicabilite_fd(resultats: list[dict], periode: list[int], aujourdhui: date) -> tuple[list[dict], dict, str]:
+    """Fiches décès (#377) : délai affirmé par le service, jamais « librement communicable ». Rend les résultats
+    dont le délai est échu (ou dont la date est inconnue, signalée), le constat et l'avertissement."""
+    from ..fr_sources import communicability  # import tardif : fr_sources ne dépend pas des sources réseau
+    gardes, ecartes = [], 0
+    for r in resultats:
+        r["communicable_a_partir_de"] = r["bornes"][1] + DELAI_FD + 1 if r["bornes"] else None
+        if r["communicable_a_partir_de"] and aujourdhui.year < r["communicable_a_partir_de"]:
+            ecartes += 1
+        else:
+            gardes.append(r)
+    regle = communicability("vie_privee", date_document=str(periode[1]), today=aujourdhui)
+    constat = {"type_document": "vie_privee", "delai_annees": regle["delai_annees"],
+               "periode_demandee_communicable_a_partir_de": regle["communicable_a_partir_de"],
+               "periode_demandee_communicable": regle["communicable"],
+               "source": PAGE_ENREGISTREMENT, "releve_le": RELEVE_ENREGISTREMENT,
+               "selon_le_service": ("Le service dit ne mettre en ligne que les fiches décès de plus de 50 ans, pour "
+                                    f"respecter les délais du code du patrimoine ; en ligne : {PERIODE_FD} au relevé."),
+               "non_verifie": NON_VERIFIE_FD, "fiches_ecartees": ecartes}
+    avertissement = (
+        "Fiches décès : ne pas les tenir pour librement communicables. Le service affirme un délai de 50 ans et ne "
+        f"publie que {PERIODE_FD} (relevé du {RELEVE_ENREGISTREMENT}) ; ce régime n'a pas été vérifié par le plugin. "
+        "Une fiche peut nommer des héritiers encore vivants (contenu non lu) : ne rien publier ni transmettre sur "
+        "eux ; en cas de doute, interroger le service." + (
+            f" {ecartes} résultat(s) de moins de 50 ans écarté(s) de la réponse." if ecartes else ""))
+    return gardes, constat, avertissement
+
+
 def _requete_mnesys(http, svc: dict, commune: str, periode: list[int], type_acte: str,
                     page: int) -> tuple[dict, str | None, bool]:
     """Requête GET d'un service Mnesys d'après son formulaire public (lu en ligne, mis en cache une semaine).
@@ -336,12 +432,15 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
     """Registres candidats d'une commune pour une année ou un intervalle [annee, annee_fin] ; type_acte=TD pour
     les tables décennales, REC pour les recensements de population des AD59 (#375), tous deux filtrés localement
     sur la période ; RM pour les registres matricules (annee = classe, commune = bureau de recrutement facultatif ;
-    AD59 : tables et fiches, #376). Aucun nom de personne envoyé."""
+    AD59 : tables et fiches, #376) ; SUCC pour les tables des successions et absences et, pour AD59 seulement, FD
+    pour les fiches décès de l'enregistrement (commune = bureau de l'enregistrement, #377). Aucun nom de personne
+    envoyé."""
     params = {"service": service, "commune": commune, "annee": annee, "type_acte": type_acte, "page": page,
               "annee_fin": annee_fin}
     svc = None
     extra = {}
     filtre_local = False
+    contexte = False
     try:
         service = (service or "").strip().upper()
         type_acte = (type_acte or "").strip().upper()
@@ -362,15 +461,17 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
             raise ValueError("annee_fin : 0 (année seule) ou fin d'intervalle, de annee à 9999.")
         if type(page) is not int or page < 1:
             raise ValueError("page : entier à partir de 1.")
-        if svc and type_acte == "REC":
-            raise ValueError(f"type_acte REC (recensements de population) : disponible pour AD59 seulement ; le "
+        if svc and type_acte in ("REC", "FD"):
+            quoi = "REC (recensements de population)" if type_acte == "REC" else "FD (fiches décès de l'enregistrement)"
+            raise ValueError(f"type_acte {quoi} : disponible pour AD59 seulement ; le "
                              f"formulaire dédié de {service} n'est pas relevé : chercher dans l'inventaire du "
                              "service (archives_service, lien).")
-        if type_acte not in {"", "NMD", "TD", *TYPES} | (set(mnesys.TYPES_FONDS) if svc else {"REC", "RM"}):
+        if type_acte not in {"", "NMD", "TD", *TYPES} | (set(mnesys.TYPES_FONDS) if svc
+                                                         else {"REC", "RM", *FORMULAIRES_ENREGISTREMENT}):
             raise ValueError("type_acte : N, M, D, NMD, TD (tables décennales) ou vide ; REC (recensements de "
                              "population) pour AD59 ; RM (registres matricules) pour AD59 et les services Mnesys "
-                             "qui le déclarent ; SUCC (tables des successions) pour les services Mnesys qui le "
-                             "déclarent.")
+                             "qui le déclarent ; SUCC (tables des successions et absences) pour AD59 et les "
+                             "services Mnesys qui le déclarent ; FD (fiches décès de l'enregistrement) pour AD59.")
         periode = [annee, annee_fin or annee]
         # Copie du wrapper seulement : cache, client, politique et verrou de débit restent partagés.
         # La limite locale n'altère pas les reprises des autres sources ou appels simultanés.
@@ -384,6 +485,9 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
                                                                               type_acte, page)
             host, naan = svc["site"].rstrip("/"), svc.get("ark_naan", "")
             url = host + "/search/results"
+        elif type_acte in FORMULAIRES_ENREGISTREMENT:
+            requete, extra, filtre_local = _enregistrement_ad59(http, type_acte, commune, periode, page)
+            host, naan, url, contexte = HOST, "33518", URL, True
         else:
             base = {"sort": "date_asc", "mode": "list", "facet_media": "image",
                     "0-controlledAccessGeographicName[]": commune}
@@ -402,7 +506,7 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
             filtre_local = type_acte in ("TD", "REC")
         if not matricules_ad59:
             html, cached = http.get(url, params=requete, parse="text", ttl=DAY, source="archives")
-            resultats, total, suivante = _lire(html, page, host, naan)
+            resultats, total, suivante = _lire(html, page, host, naan, contexte)
     except (SourceError, ValueError) as exc:
         return error_envelope(ctx, "archives", "registres", params, exc, personne=personne or None)
     hors = "tables_hors_periode" if type_acte == "TD" else "registres_hors_periode"
@@ -412,13 +516,21 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
         couvrantes = [r for r in resultats if r["couvre_periode"] is not False]
         extra[hors] = len(resultats) - len(couvrantes)
         resultats = couvrantes
+    enregistrement = svc is None and type_acte in FORMULAIRES_ENREGISTREMENT
+    if enregistrement and type_acte == "FD":
+        resultats, extra["fiches_deces"]["communicabilite"], extra["avertissement_communicabilite"] = (
+            _communicabilite_fd(resultats, periode, date.today()))
     out = envelope(ctx, "archives", "registres", params, resultats, total, cached, personne=personne or None,
                    service=service, page=page, page_suivante=suivante, fin=suivante is None, periode=periode,
                    avertissement="Un registre candidat ne prouve pas la présence d'un acte : consulter ses vues.",
                    **extra)
     if not resultats and extra.get(hors):
-        quoi = {"TD": "Aucune table décennale", "REC": "Aucun recensement en ligne"}.get(type_acte, "Aucun registre")
-        if type_acte == "REC":
+        quoi = {"TD": "Aucune table décennale", "REC": "Aucun recensement en ligne",
+                "FD": "Aucun volume de fiches décès"}.get(type_acte, "Aucun registre")
+        if enregistrement:
+            suite = (f"Cela ne prouve ni l'absence d'un décès ni celle d'une succession ; le service annonce "
+                     f"{PERIODE_FD} en ligne.")
+        elif type_acte == "REC":
             suite = ("Cela ne prouve pas que le recensement n'existe pas ni l'absence de la personne : voir "
                      "couverture_recensements.")
         else:
@@ -432,6 +544,15 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
             "Aucune table ni aucun registre matricule renvoyé pour cette classe et cette page ; cela ne prouve ni "
             "l'absence du registre ni celle de la personne. Vérifier la classe (année de naissance + 20), le "
             "bureau de recrutement (facultatif) et l'état de chaque formulaire (matricules).")
+    elif not resultats and enregistrement:
+        annonce = PERIODE_SUCC if type_acte == "SUCC" else PERIODE_FD
+        rien = ("Aucune table des successions et absences renvoyée" if type_acte == "SUCC"
+                else "Aucun volume de fiches décès renvoyé")
+        out["recherche_negative"] = (
+            f"{rien} pour ce bureau, cette période et cette page ; cela ne prouve ni l'absence d'un décès ni celle "
+            f"d'une succession. Le service annonce en ligne : {annonce} (relevé du {RELEVE_ENREGISTREMENT}). "
+            "Vérifier le bureau (celui de l'enregistrement, dont le ressort dépasse la commune ; voir "
+            "autres_bureaux)" + (" et élargir la période (annee_fin)." if type_acte == "SUCC" else "."))
     elif not resultats:
         out["recherche_negative"] = ("Aucun registre renvoyé pour cette recherche et cette page ; cela ne prouve pas "
                                       "l'absence générale de fonds numérisés. Vérifier les variantes et le service.")
@@ -444,7 +565,7 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
             constat = None  # référentiel absent ou illisible : la recherche en ligne reste rendue telle quelle
         if constat:
             out["couverture_recensements"] = constat
-    elif svc is None and type_acte not in ("TD", "RM"):
+    elif svc is None and type_acte not in ("TD", "RM", *FORMULAIRES_ENREGISTREMENT):
         # Classeur 3 E (#374) : ajout seulement, quand la recherche est vide ou qu'un volume n'est pas en ligne.
         try:
             constat = couverture_3e.pour_recherche(commune, periode, type_acte, resultats)

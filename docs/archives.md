@@ -289,7 +289,8 @@ formulaire qui ne le type pas (AD25 : classe des matricules en texte libre).
   dédiés, hors de ce référentiel (#376, ci-dessous).
 - **Tables des successions et absences** (`type_acte="SUCC"`, série 3 Q, #112) : `commune` = bureau de
   l'enregistrement (« Nevers », « Bureau de Delle » : le préfixe « Bureau de » est facultatif), `annee` et
-  `annee_fin` = période ; AD25, AD27, AD37 (bureau = canton), AD58, AD69, AD90, AD91.
+  `annee_fin` = période ; AD25, AD27, AD37 (bureau = canton), AD58, AD69, AD90, AD91. AD59 : formulaire dédié,
+  hors de ce référentiel, et fiches décès `FD` (#377, ci-dessous).
 - Relevé et recette : [relevé du 18 novembre 2026](releves-archives-2026-11-18.md).
 
 ## Localisation des registres AD59 — #121
@@ -325,6 +326,20 @@ formulaires, une page chacun : les tables alphabétiques et les fiches des état
 volumes `1R 2244` à `1R 2248`. Aucun référentiel local des cotes 1 R : `cotes_a_consulter` donne la classe et
 l'appel à lancer (`matricules_ad59`), pas de cote. Détail et limites :
 [registres matricules](recherche-registres-ad59.md#registres-matricules--type_acterm--376).
+
+Depuis #377, `type_acte="SUCC"` vaut aussi pour AD59 (tables des successions et absences, série 3 Q, au plus
+1791-1968 d'après le service) et `type_acte="FD"`, propre à AD59, interroge les fiches décès de l'enregistrement
+(versements W, 1969 à 1975 en ligne), qui en sont la suite. Dans les deux cas `commune` = bureau de
+l'enregistrement, obligatoire, pris dans le vocabulaire lu en ligne : un bureau inconnu ou ambigu est une
+erreur qui liste les valeurs, et `autres_bureaux` signale les bureaux de même nom (`LILLE (1er bureau)`…).
+`archives_registres(service="AD59", commune="Steenvoorde", annee=1791, annee_fin=1803, type_acte="SUCC")` →
+`3Q - 516 / 1` et `3Q - 516 / 2` ; `archives_registres(service="AD59", commune="Lille (Centre)", annee=1969,
+type_acte="FD")` → six volumes `2571 W 01` à `2571 W 06`. **Les fiches décès ne sont pas présentées comme
+librement communicables** : le service affirme un délai de 50 ans (type `vie_privee` de `communicabilite`),
+que le plugin n'a pas vérifié ; la réponse porte `avertissement_communicabilite` et
+`fiches_deces.communicabilite`, et écarte tout résultat de moins de 50 ans. Aucun référentiel local des cotes ;
+`prochaine_source` joint `successions_ad59` à la piste des successions pour le Nord. Détail et limites :
+[enregistrement](recherche-registres-ad59.md#enregistrement--type_actesucc-et-type_actefd--377).
 
 ## Sondage guidé d'un registre — #156
 
