@@ -56,6 +56,9 @@
 
 ## Cadastre (3 P) et hypothèques (4 Q)
 - Plan, état de sections, matrice des propriétaires ; hypothèques : transcriptions de mutations.
+- AD59 seulement : `archives_registres(service="AD59", commune, annee, annee_fin, type_acte="CAD")` liste les
+  lots de plans en ligne du cadastre du Consulat (cotes P 30) et du cadastre napoléonien (cotes P 31), par
+  commune ; plans seulement, non nominatifs. Matrices et états de sections : non couverts par cette recherche.
 - AD59 seulement : `archives_registres(service="AD59", commune=<bureau des hypothèques>, annee,
   type_acte="HYP")` liste les registres d'ordre en ligne de la sous-série 4 Q (indicateurs, tables alphabétiques,
   répertoires des formalités ; an VII à 1955 d'après le service). Ordre de lecture : indicateur, table

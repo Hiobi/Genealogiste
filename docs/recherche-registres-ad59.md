@@ -20,8 +20,8 @@ Les cases de filtre du formulaire GET portent `name=facet_typology` et les valeu
 `Mariages`, `Décès` : ce sont les filtres utilisés pour `N`, `M`, `D`. `NMD` et le type vide conservent la
 recherche sans filtre de typologie. `TD` (tables décennales) et `annee_fin` (intervalle) sont décrits
 ci-dessous ; `REC` (recensements de population, #375), `RM` (registres matricules, #376), `SUCC` et `FD`
-(tables des successions et fiches décès de l'enregistrement, #377), `HYP` (hypothèques, sous-série 4 Q, #378)
-plus bas.
+(tables des successions et fiches décès de l'enregistrement, #377), `HYP` (hypothèques, sous-série 4 Q, #378),
+`CAD` (plans du cadastre, #379) plus bas.
 Aucun nom ni identifiant de personne n'est envoyé ; `personne` sert uniquement à la garde de l'outil
 et au journal local.
 
@@ -592,10 +592,161 @@ réponse d'`archives_registres`.
 
 Tests : `tests/test_hypotheques_ad59.py`, sans réseau.
 
+## Plans du cadastre : `type_acte="CAD"` — #379
+
+Relevé public du 27 novembre 2026 (robots.txt : `/private/`, `/oai-pmh`, `/user/`, d'après le relevé de l'issue,
+non relu ici ; aucune protection rencontrée ; une requête par observation, sans image, sans notice, sans nom de
+personne ; douze requêtes en tout : la page, deux formulaires, neuf pages de résultats ; puis une navigation de
+métadonnées sur un seul ARK, voir « Planche-contact »). La page
+[`/page/plans-du-cadastre-du-consulat-et-napoleonien`](https://archivesdepartementales.lenord.fr/page/plans-du-cadastre-du-consulat-et-napoleonien)
+mène à deux formulaires, lus avec `mnesys.lire_formulaire` :
+
+| | Cadastre consulaire | Cadastre napoléonien |
+|---|---|---|
+| Formulaire | `fff966ed-72a2-47ea-8564-ab533e334daa` | `b57520fe-2768-4335-b138-119f274f0a73` |
+| Commune | `0-controlledAccessGeographicName[]` (« Commune ») | idem |
+| Vocabulaire | 395 valeurs | 650 valeurs |
+| Date | aucun champ | aucun champ |
+| Tri par défaut du formulaire | `relevance` | `relevance` |
+| Cotes des résultats | `P 30 / <numéro>` | `P 31 / <numéro>`, parfois `_1`, `_2` |
+| Contexte des résultats | « Les plans du cadastre du Consulat » | « P31 - Cadastre napoléonien » |
+| Résultats sans critère | 395 (relevé de l'issue #379, non revu) | 909 (idem) |
+
+**Ce que dit le service** (page relue le 27 novembre 2026) : la rubrique permet de visualiser les plans du
+cadastre dit « du Consulat » et du cadastre dit « napoléonien » ; les premiers concernent le début du XIXe siècle,
+les seconds « une plus large période débordant jusqu'au début du XXe siècle pour certaines communes ». La
+présentation du formulaire napoléonien liste des ajouts d'octobre 2025 (par exemple « RAMILLIES (1903) »). La
+page ne dit rien des matrices cadastrales ni des états de sections.
+
+**Ce qu'est un résultat.** Un lot de plans d'une commune, pas une planche isolée ni une parcelle :
+
+- [napoléonien, Estaires](https://archivesdepartementales.lenord.fr/search/results?formUuid=b57520fe-2768-4335-b138-119f274f0a73&sort=referencecode_asc&mode=list&facet_media=image&0-controlledAccessGeographicName%5B%5D=ESTAIRES) :
+  3 résultats, `ESTAIRES - 1889` (cote `P 31 / 035`, 15 médias), `ESTAIRES - 1808` (`P 31 / 035_1`,
+  `ark:/33518/4pd9bs0q2cl1`, 2 médias), `ESTAIRES - 1816` (`P 31 / 035_2`, 37 médias) : trois levées, une par
+  résultat ; le champ `Date` porte l'année du titre.
+- Napoléonien, Marly : 2 résultats sous la **même cote** `P 31 / 602`, `MARLY - 1896` (11 médias) et
+  `MARLY - 1826` (5 médias) : la cote ne suffit pas à désigner un lot, l'ARK oui.
+- Napoléonien, Lille : 9 résultats, tous `LILLE - 1881` suivis d'une plage de feuilles : `(TA-B12)`,
+  `(C1-C31)`, … `(J1-K17)`, cotes `P 31 / 243` à `P 31 / 249`, trois lots sous `P 31 / 246` ; 6 à 42 médias.
+  Le champ `Date` y est inexploitable (« B12) », « C31) »… : la fin du titre) : `bornes` reste `null`.
+- Napoléonien, Fives : 1 résultat, `FIVES - 1825` (`P 31 / 212_2`, 2 médias).
+- [consulaire, Marly](https://archivesdepartementales.lenord.fr/search/results?formUuid=fff966ed-72a2-47ea-8564-ab533e334daa&sort=referencecode_asc&mode=list&facet_media=image&0-controlledAccessGeographicName%5B%5D=MARLY) :
+  1 résultat, `MARLY / 222` (cote `P 30 / 222`, `ark:/33518/hl2s6p8q4ntv`, 4 médias) ; aucun champ `Date`.
+- Consulaire, Saint-Remy-Mal-Bati : 1 résultat, `SAINT-REMY-MAL-BATI / 324` (`P 30 / 324`, 2 médias).
+- Négatif : obtenu sur chaque formulaire avec une valeur inexistante (`ZZZ`), page `body#display-no-results`.
+- `page=2` sur la liste de Lille (une page) : redirection 302 vers `page=1`, comme sur les autres formulaires.
+
+Aucune liste relevée ne dépasse une page de 20 résultats. Le sens de « TA » (tableau d'assemblage ?) et des
+lettres de section n'est pas dit par le service : les plages de feuilles sont rendues dans le titre, sans
+interprétation.
+
+**Deux vocabulaires.** Les deux formulaires n'ont pas les mêmes communes ni les mêmes formes : 363 valeurs
+communes aux deux, 287 propres au napoléonien, 32 au consulaire. Anciens noms et communes réunies y figurent
+tels quels : `FIVES`, `ROSENDAEL`, `ANNAPPES`, `ASCQ`, `WALLERS-TRELON` (napoléonien) ; `SAINT-REMY-MAL-BATI`,
+`CONDE = NORD LIBRE`, `VIEUX NORD LIBRE = VIEUX-CONDE`, `WARNETON-BAS`, `WARNETON-SUD` (consulaire, quand le
+napoléonien a `SAINT-REMY-DU-NORD`, `CONDE-SUR-L ESCAUT`, `VIEUX-CONDE`, `WARNETON`). Certaines valeurs sont des
+subdivisions : `MARCHIENNES Campagne`, `MARCHIENNES Ville`, `MARCHIENNES Ville + Campagne`,
+`BOURBOURG (CAMPAGNE)`, `BOURBOURG (VILLE)`, `SAINGHIN-EN-WEPPES 1`, `SAINGHIN-EN-WEPPES 2`.
+
+**Contrat retenu.** La signature d'`archives_registres` ne change pas ; aucun outil MCP n'est ajouté ; les clés
+existantes gardent leur sens.
+
+- **Code** : `CAD`, dans la lignée de `REC`, `RM`, `SUCC`, `FD`, `HYP` (abréviation du fonds, sans numéro de
+  série). Pas de variante à une seule catégorie sur le modèle de `HYPI` : aucune liste relevée ne se feuillette.
+- **Catégorie** : `CAD` lit les deux formulaires et interroge, une page chacun, ceux dont le vocabulaire connaît
+  la commune ; les résultats portent `categorie` (`consulaire`, puis `napoleonien` : ordre des cotes) et
+  `contexte`.
+- **Commune** : obligatoire, mise en capitales sans accents puis prise dans le vocabulaire de chaque formulaire
+  (valeur exacte malgré la casse, sinon `mnesys.choisir_commune` : article inversé, apostrophes). Connue d'un
+  seul formulaire : seul celui-là est interrogé, l'autre porte `interroge: false` et un `message`. Ambiguë dans
+  un formulaire (« Bourbourg » au consulaire) : ce formulaire n'est pas interrogé et son message liste les
+  valeurs ; la valeur exacte (« Bourbourg (ville) ») lève l'ambiguïté. Inconnue des deux (« Marchiennes »,
+  « Villeneuve-d'Ascq ») : erreur avant toute recherche, avec les valeurs proches de chaque formulaire, les noms
+  liés et la piste `geo_historique` / `lieu_historique`.
+- **Période** : aucun champ de date ; `annee` et `annee_fin` ne sont pas envoyées. Elles n'écartent que les
+  plans dont le service affiche une date (`bornes`, champ `Date`) qui ne recoupe pas la période : ces plans sont
+  comptés (`registres_hors_periode`) et leurs dates rendues (`cadastre.dates_hors_periode`). Un plan sans date
+  affichée (tout le consulaire, Lille) garde `couvre_periode: null` et est toujours rendu. `annee_titre` reprend
+  l'année du titre (« - 1808 »), pour information seulement : elle ne filtre jamais. **Limite assumée** : un
+  plan décrit le territoire pour les décennies qui suivent sa levée ; une année précise écarte donc un plan
+  antérieur encore utile. Préférer un intervalle large (`annee=1800, annee_fin=1910`) ; le négatif le rappelle.
+- **Résultats** : chaque résultat garde `titre`, `cote`, `ark`, `url`, `bornes`, `nb_vues` et reçoit
+  `categorie`, `contexte`, `annee_titre`, `couvre_periode` et, de 2 à 9 vues, `planche_contact`.
+- **`cadastre`** (ajout) : `releve_le`, `reference`, `periode_annoncee`, `lecture`, `non_couvert`, `piste_lieu`,
+  `communicabilite`, `dates_hors_periode` s'il y a lieu, et pour chaque formulaire `formulaire`, `interroge`,
+  `commune`, `total`, `page_suivante`, `nb_communes` et, s'il y a lieu, `message` et `noms_lies`. Le vocabulaire
+  entier (650 valeurs) n'est pas rendu. `commune_service` rend la valeur envoyée quand elle est la même partout.
+- **Négatif** : `recherche_negative` seulement quand aucun résultat n'est rendu ; il distingue « aucun plan
+  renvoyé » de « plans de la page tous écartés par leur date » (dates citées, relance proposée).
+- **Page > 1** : chaque formulaire interrogé reçoit `page=N` ; la redirection vers la première page est refusée
+  (« Page retournée incohérente ») ; si aucun formulaire ne rend la page, l'appel est une erreur.
+- Mêmes garde-fous que `HYP` : hôte et NAAN `33518` contrôlés sur chaque lien de notice, une page par formulaire
+  et par appel, une seule tentative par recherche. Ni `classeur_3e`, ni `couverture_recensements` ne sont joints.
+  Pour un autre service, `CAD` est refusé avant toute requête.
+
+**Communes réunies, noms anciens.** `geo_historique` (COG INSEE depuis 1943) et `lieu_historique` sont des outils
+réseau : `archives_registres` ne les appelle pas. La liaison intégrée est locale : la nouvelle fonction pure
+`couverture_3e.noms_lies(commune, valeurs)` lit les libellés à parenthèse du classeur 3 E (#374, référentiel
+local) : « LILLE (FIVES) », « SAINT-REMY-DU-NORD (ANC. MAL BATI) », « WARNETON (-BAS) », « WALLERS-EN-FAGNE
+(ANC. TRELON) ». Demande = nom du libellé : elle rend les valeurs du vocabulaire qui portent le nom entre
+parenthèses, seul ou précédé du début du nom (`lien` « ancien nom ou lieu rattaché ») ; demande = ce nom entre
+parenthèses : elle rend la valeur du nom du libellé (`lien` « nom actuel »). Chaque piste cite son libellé
+(`d_apres`). Exemples éprouvés sur les vocabulaires relevés :
+
+- « Fives » → napoléonien interrogé sous `FIVES` (plan de 1825), `noms_lies` : `LILLE` (nom actuel) ; « Lille » →
+  `noms_lies` : `FIVES` ;
+- « Saint-Remy-du-Nord » → napoléonien interrogé ; consulaire non interrogé, message « essayer sous l'ancien
+  nom ou lieu rattaché SAINT-REMY-MAL-BATI » ; « Saint-Remy-Mal-Bâti » → l'inverse, « essayer sous le nom actuel
+  SAINT-REMY-DU-NORD » ;
+- « Wallers-en-Fagne » (inconnue des deux) → erreur qui propose `TRELON` et `WALLERS-TRELON`.
+
+Limites : une parenthèse du classeur peut désigner une paroisse ou un hameau (« LILLE (ST ETIENNE) »,
+« MORBECQUE (LA MOTTE AU BOIS) ») : c'est une piste, jamais une preuve de fusion ni de changement de nom. Le
+classeur ne connaît qu'une poignée de ces liens : `ROSENDAEL`, `ANNAPPES` ou `CONDE = NORD LIBRE` ne sont liés à
+rien, et une commune nouvelle (« Villeneuve-d'Ascq ») ne renvoie pas à ses anciennes communes. Pour ces cas, la
+piste est documentée, pas automatisée : `geo_historique(nom=…)` pour les fusions depuis 1943, puis relancer
+`CAD` sous le nom d'alors (`cadastre.piste_lieu` et le message d'erreur le disent).
+
+**Planche-contact.** Un lot de 2 à 9 vues reçoit `planche_contact`, l'appel
+`archives_planche(source=<ark>, de=1, a=<nb_vues>)` à lancer pour voir tout le lot en une image. Éprouvé le
+27 novembre 2026 : `archives_naviguer("ark:/33518/4pd9bs0q2cl1", page=1, pas=1)` (Estaires 1808), hors tests,
+répond par la visionneuse `/visualizer/api` déjà qualifiée : titre « ESTAIRES - 1808 », cote `P 31 / 035_1`,
+commune, période, 2 vues, ARK de vue et URL d'image de la première vue. **Aucune image n'a été téléchargée** :
+`archives_planche` et `archive_image` n'ont pas été lancés sur un plan. Leur lisibilité à 1 600 px (plans de
+grand format) n'est donc pas établie ; `planche_contact` est une proposition, pas un résultat éprouvé.
+
+**Communicabilité.** Le type `cadastre` du catalogue (#129) porte la règle : délai nul, « Cadastre : communicable
+immédiatement. » Elle est inchangée et `communicabilite` n'est pas modifié. La page du service ne parle d'aucun
+délai : la règle reste indicative et n'a pas été vérifiée auprès du service. La réponse la porte dans
+`cadastre.communicabilite`. Les plans ne sont pas nominatifs. Le libellé de série du catalogue (« sous-série
+3 P », cadre de classement général) n'est pas celui des cotes relevées aux AD59 (`P 30`, `P 31`) : il n'a pas
+été modifié, la cote vient toujours de la réponse.
+
+**Orientation.** Pour un fait dans le Nord, `prochaine_source` et `cotes_a_consulter` joignent `cadastre_ad59` à
+la piste des recensements pour un domicile (`RESI`, `OCCU`, `CENS`) et à la piste « Actes notariés » pour un
+bien, à côté de `hypotheques_ad59` : `service`, `releve_le`, `serie` (libellé général du catalogue), appel `CAD`
+à lancer avec la commune du lieu, `note`. Aucune cote n'y figure.
+
+**Non couvert, non vérifié.**
+
+- Les matrices cadastrales et les états de sections (propriétaires) : absents des deux formulaires ; leur mise en
+  ligne et leur cote n'ont pas été relevées. Rien n'est affirmé à leur sujet (`cadastre.non_couvert`).
+- Le contenu des plans (aucune vue ouverte), la planche-contact et le téléchargement d'un plan.
+- Le géoportail « La carte du Nord en documents » cité par l'issue chapeau : non exploré.
+- Les communes non interrogées : d'autres formes de titre ou de date peuvent exister ; un titre sans
+  « - AAAA » donne `annee_titre: null`, une date illisible `bornes: null`, jamais une valeur devinée.
+- Les totaux sans critère (395 et 909, relevé de l'issue) ; une liste de plus d'une page (aucune observée : la
+  page 2 réelle n'a pas de fixture, seule la redirection au-delà de la dernière page est simulée d'après le
+  relevé).
+- La stabilité des identifiants de formulaire et des vocabulaires (suivi : #380).
+- La recette réelle (`test_registres_live.py`) n'a pas de cas `CAD` ; le relevé a été fait à la main, hors outil.
+
+Tests : `tests/test_cadastre_ad59.py`, sans réseau.
+
 ## HTTP, protection et journal
 
 Un appel effectue au plus une tentative GET de recherche, ou utilise son cache (`RM` : une par formulaire, soit
-deux au plus ; `HYP` : trois au plus, une seule pour `HYPI`, `HYPT` ou `HYPR` ; toujours précédées de la lecture
+deux au plus ; `HYP` : trois au plus, une seule pour `HYPI`, `HYPT` ou `HYPR` ; `CAD` : deux au plus ; toujours précédées de la lecture
 des formulaires, en cache une semaine). Il n'enchaîne pas les
 pages, les registres ou les métadonnées ; la politique commune continue de revalider les redirections.
 Une copie du wrapper HTTP partage le client, le cache, la politique et l'état de limitation de débit,
@@ -629,6 +780,9 @@ page 2 sur 4, négatif ; fiches décès : positif, négatif), réduits de la mê
 Les douze fichiers `ad59-hypotheques-*.html` (#378) sont les trois formulaires de la sous-série 4 Q et neuf
 pages de résultats relevés le 27 novembre 2026 (indicateur : Cambrai, Valenciennes, Lille pages 1 et 2, négatif ;
 tables : Cambrai, Lille pages 1 et 32 ; répertoires : Avesnes), réduits de la même façon.
+Les dix fichiers `ad59-cadastre-*.html` (#379) sont les deux formulaires des plans du cadastre et huit pages de
+résultats relevés le 27 novembre 2026 (napoléonien : Estaires, Marly, Lille, Fives, négatif ; consulaire : Marly,
+Saint-Remy-Mal-Bati, négatif), réduits de la même façon.
 `ad59-tables-decennales.html` (trois tables décennales) et `ad59-recherche-intervalle-page2.html` (page 2 sur
 2 d'un intervalle, 25 résultats) en dérivent avec les titres, cotes et compteurs relevés le 18 novembre. Aucun export familial,
 HTML complet de production, cookie ou script tiers n'est livré comme fixture.

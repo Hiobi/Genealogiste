@@ -49,6 +49,15 @@ cherché** : comparer soi-même son initiale ou son début (capitales sans accen
 et `.fin` de chaque volume, bornes comprises ; retenir tous les volumes qui le couvrent (classement
 phonétique, plages qui se chevauchent, séries parallèles : `bureau_titre`), puis lire les vues. La recherche se
 fait par nom de propriétaire, jamais par adresse (`cotes_a_consulter` rappelle l'appel : `hypotheques_ad59`).
+Plans du cadastre du Nord (situer un lieu-dit, une section, une parcelle ; plans seulement, non nominatifs) :
+`archives_registres(service="AD59", commune, annee, annee_fin, type_acte="CAD")` rend les lots de plans du
+cadastre du Consulat (`consulaire`, cotes P 30, sans date) et du cadastre napoléonien (`napoleonien`, cotes
+P 31, du début du XIXe au début du XXe siècle selon les communes). Donner un intervalle large : `annee` écarte
+les plans datés hors période, alors qu'un plan vaut pour les décennies qui suivent. La commune est celle du
+plan : une commune réunie ou renommée se cherche sous son nom d'alors (`cadastre.noms_lies`, sinon
+`geo_historique`). Matrices et états de sections (propriétaires) : non couverts, voir l'inventaire du service ;
+`planche_contact` propose l'appel `archives_planche` pour un lot de 2 à 9 vues (`cotes_a_consulter` rappelle
+l'appel : `cadastre_ad59`).
 Ensuite `archives_naviguer` parcourt les vues, `archive_image` les lit et `piece_archiver` conserve l'original.
 Un résultat vide ne démontre pas que l'acte n'existe pas ; un blocage conserve une tâche manuelle au journal.
 Défi anti-robot (`bloque: "anti-robot"`, ex. Anubis aux AD de la Lozère, redirection JS des AD Arkotheque

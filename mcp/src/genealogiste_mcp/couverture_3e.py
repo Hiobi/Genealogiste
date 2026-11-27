@@ -154,6 +154,43 @@ def _index() -> dict[str, tuple[str, ...]]:
     return {k: tuple(v) for k, v in index.items()}
 
 
+def _mots(texte: str) -> list[str]:
+    mots = re.sub(r"[^A-Z0-9]+", " ", strip_accents(texte or "").upper()).split()
+    return [{"ST": "SAINT", "STE": "SAINTE"}.get(m, m) for m in mots]
+
+
+def noms_lies(commune: str, valeurs: list[str]) -> list[dict]:
+    """Valeurs d'un vocabulaire (formulaire du service) liées à une commune par un libellé à parenthèse du
+    classeur : « LILLE (FIVES) », « SAINT-REMY-DU-NORD (ANC. MAL BATI) », « WARNETON (-BAS) » (#379).
+
+    Demande = nom du libellé (Lille) : valeurs portant le nom entre parenthèses, seul ou précédé du début du nom
+    (FIVES ; SAINT-REMY-MAL-BATI), ``lien`` « ancien nom ou lieu rattaché ». Demande = ce nom entre parenthèses
+    (Fives, Saint-Remy-Mal-Bâti) : valeur du nom du libellé, ``lien`` « nom actuel ». Fonction pure, lecture
+    locale ; une parenthèse du classeur peut aussi désigner une paroisse ou un hameau : c'est une piste, rendue
+    avec le libellé qui la fonde (``d_apres``), jamais une preuve de fusion ni de changement de nom."""
+    demande = _mots(commune)
+    out: list[dict] = []
+    for libelle in referentiel()["communes"]:
+        m = re.fullmatch(r"(.*?)\s*\((?:ANC\.)?(.*)\)\s*", libelle)
+        base, qualif = (_mots(m[1]), _mots(m[2])) if m else ([], [])
+        if not demande or not base or not qualif or " ".join(qualif) in _ARTICLES:
+            continue
+
+        def porte(mots: list[str], base=base, qualif=qualif) -> bool:
+            n = len(mots) - len(qualif)
+            return n >= 0 and mots[n:] == qualif and mots[:n] == base[:n]
+
+        if demande == base:
+            lien, voulus = "ancien nom ou lieu rattaché", [v for v in valeurs if porte(_mots(v))]
+        elif porte(demande):
+            lien, voulus = "nom actuel", [v for v in valeurs if _mots(v) == base]
+        else:
+            continue
+        out.extend({"valeur": v, "lien": lien, "d_apres": libelle} for v in voulus
+                   if _mots(v) != demande and v not in [o["valeur"] for o in out])
+    return out
+
+
 def actes(types: str) -> frozenset[str]:
     """Lettres d'actes d'une cellule « types » (N, M, D, B, S), hors parenthèses, tables et publications."""
     nu = re.sub(r"[(\[].*?(?:[)\]]|$)", " ", strip_accents(types or "").upper())

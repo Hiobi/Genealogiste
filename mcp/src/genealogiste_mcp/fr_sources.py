@@ -88,6 +88,7 @@ def next_source_hint(fact: str, when: str = "", where: Any = "") -> list[dict]:
         _matricules_nord(fact, when, lieu_texte(where), out)
         _successions_nord(fact, when, lieu_texte(where), out)
         _hypotheques_nord(fact, when, lieu_texte(where), out)
+        _cadastre_nord(fact, lieu_texte(where), out)
     court = pays_resume(pays)
     return [{**d, "pays": dict(court)} for d in out]
 
@@ -241,6 +242,37 @@ def _hypotheques_nord(fact: str, when: str, lieu: str, sources: list[dict]) -> N
                        if y and y > HYPOTHEQUES_AD59[1] else ""))
     for d in pistes:
         d["hypotheques_ad59"] = dict(aide)
+
+
+def _cadastre_nord(fact: str, lieu: str, sources: list[dict]) -> None:
+    """Nord : plans du cadastre des AD59 (#379) pour situer un lieu-dit ou une parcelle ; ajout seulement. Joint
+    à la piste des recensements pour un domicile (RESI, OCCU, CENS), sinon à la piste « Actes notariés » (bien).
+    Aucune cote n'est proposée : elle vient de la réponse du service."""
+    if fact in ("RESI", "OCCU", "CENS"):
+        pistes = [d for d in sources if d["cote_typique"] == SERIES["recensements"]]
+    else:
+        pistes = [d for d in sources if d["source"] == "Actes notariés"]
+    if not pistes or not lieu:
+        return
+    from .normalize.places import normalize_place
+    place = normalize_place(lieu)
+    if place.get("departement_code") != "59":
+        return
+    commune = place.get("commune") or "<commune>"
+    aide = {"service": "AD59", "releve_le": "2026-11-27", "serie": SERIES["cadastre"],
+            "recherche": (f'archives_registres(service="AD59", commune="{commune}", annee=<année>, '
+                          'annee_fin=<année>, type_acte="CAD")'),
+            "note": ("Plans du cadastre dit du Consulat et du cadastre dit napoléonien (plans seulement, non "
+                     "nominatifs) : situer un lieu-dit, une section ou une parcelle cités par un acte ou un "
+                     "recensement. D'après le service : début du XIXe siècle pour les premiers, jusqu'au début du "
+                     "XXe siècle pour certaines communes pour les seconds. Un plan vaut pour les décennies qui "
+                     "suivent sa levée : préférer un intervalle large (annee, annee_fin), un plan dont la date "
+                     "affichée ne le recoupe pas étant écarté et compté. Aucune cote n'est proposée ici (pas de "
+                     "référentiel local) : elle vient de la réponse. La commune est celle du plan : une commune "
+                     "réunie ou renommée se cherche sous son nom d'alors (noms_lies ; geo_historique). Matrices et "
+                     "états de sections (propriétaires) : non couverts, à chercher dans l'inventaire du service.")}
+    for d in pistes:
+        d["cadastre_ad59"] = dict(aide)
 
 
 def _hors_france(fact: str, sources: list[dict], pays: dict) -> list[dict]:
