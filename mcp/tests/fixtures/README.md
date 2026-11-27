@@ -4,3 +4,6 @@ Les fichiers GEDCOM et les réponses API de ce dossier servent uniquement aux te
 identifiants de démonstration et exemples de sources publiques. Ils ne constituent ni une généalogie
 personnelle ni des preuves historiques. Ne remplacez jamais ces fichiers par un export familial réel.
 Les personnes contemporaines fictives permettent de tester le masquage des vivants.
+
+`ad59-classeur-3e-extrait.pdf` fait exception : cinq pages non modifiées du « classeur 3 E » public des AD59
+(relevé du 27 novembre 2026, #374), état de registres sans aucune personne.

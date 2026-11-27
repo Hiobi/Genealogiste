@@ -1092,7 +1092,10 @@ def archives_registres(service: str, commune: str, annee: int, type_acte: str = 
     la période affichée recoupe l'année ou l'intervalle demandé). annee_fin (facultatif, >= annee) : intervalle
     [annee, annee_fin], ex. 1790-1802 ou une décennie ; registres dont la période le recoupe. Une seule page de
     résultats par appel ; page_suivante permet de poursuivre explicitement. Cote, ARK et période proviennent du
-    résultat officiel ; une recherche vide ne prouve pas l'absence de l'acte. personne désigne seulement
+    résultat officiel ; une recherche vide ne prouve pas l'absence de l'acte. AD59 : quand la recherche est vide
+    ou qu'un volume n'est pas en ligne, classeur_3e donne les volumes du classeur 3 E (référentiel local daté) qui
+    recoupent la période : cote, types, bornes et message (« pas en ligne avant AAAA ; consultation en salle de
+    lecture », ou « inconnu du classeur », qui ne veut pas dire inexistant). personne désigne seulement
     la cible locale, pour la garde des vivants et le journal ; cet identifiant n'est pas envoyé au service."""
     if refus := _garde(personne=personne, texte=commune):
         return refus

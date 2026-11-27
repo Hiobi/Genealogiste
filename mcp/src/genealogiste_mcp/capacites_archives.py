@@ -1,6 +1,7 @@
 """Couverture technique constatée, distincte de la disponibilité déclarée des fonds (#145)."""
 from __future__ import annotations
 
+from . import couverture_3e
 from .acces_archives import ecarte_adaptateur_service
 
 CAPACITES = ("resolution_ark", "navigation", "telechargement", "recherche", "archivage")
@@ -76,6 +77,15 @@ def tableau(services: list | tuple, recettes: dict, documents: tuple = ()) -> st
         lignes.append("| " + " | ".join(str(v).replace("|", "\\|").replace("\n", " ") for v in cellules) + " |")
     lignes.extend(["", f"Total : {len(services)} services ; {comptes} recettes de référence qualifiées (niveau 5).", "",
                    "Les URL et pages de référence sont dans `archives_fr.json` ; les verdicts et détails d'échec dans `recettes_archives.json`. `archives_service` expose les mêmes informations sous `couverture_technique`, avec les capacités et mesures séparées.", ""])
+    try:
+        classeur = couverture_3e.referentiel()
+        lignes.extend(["## AD59 : classeur 3 E", "",
+                       f"Hors des niveaux ci-dessus : le classeur 3 E des AD59 (`ad59_3e.json`, relevé du {classeur['releve_le']}, "
+                       f"{classeur['volumes']} volumes, {len(classeur['communes'])} libellés de commune) donne la cote et l'année de mise en ligne "
+                       "prévue des registres d'état civil. `archives_registres` le joint (`classeur_3e`) quand la recherche est vide ou qu'un "
+                       "volume n'est pas en ligne ; un volume inconnu du classeur n'est pas inexistant. Voir `docs/recherche-registres-ad59.md`.", ""])
+    except (OSError, ValueError, KeyError):
+        pass
     if documents:
         lignes.extend(["## Niveaux par type de document", "",
                        "Chaque cellule reprend le niveau de `archives_service(document=...)`. Une recette dont le fonds n'est pas renseigné ne qualifie aucune de ces colonnes. Les niveaux 0–4 sont des capacités implémentées, toujours à éprouver sur le fonds demandé.", "",

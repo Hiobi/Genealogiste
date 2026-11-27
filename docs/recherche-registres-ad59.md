@@ -94,6 +94,85 @@ Reste à vérifier sur le service réel : une commune ayant plus de 20 tables (d
 décennales, non observée : les TD couvrent au plus 1792-1942) ; d'éventuelles tables à bornes non
 numériques ; l'effet de paramètres de date ajoutés au formulaire TD (non envoyés, donc non qualifiés).
 
+## Classeur 3 E : cote et mise en ligne prévue — #374
+
+Les AD59 publient un état récapitulatif de leurs registres d'état civil, le « classeur 3 E » :
+[`/document/classeur-3e-janvier-2026`](https://archivesdepartementales.lenord.fr/document/classeur-3e-janvier-2026)
+(PDF de 195 pages, une ligne par volume). Colonnes lues : commune, cote, types d'actes, date de début / date de
+fin, « Mis en ligne » ou « > AAAA » (année de mise en ligne prévue). Le référentiel
+`referentiels/ad59_3e.json` en est la copie structurée : relevé du **27 novembre 2026**, empreinte SHA-256 du
+PDF `1d54c2a9…5c5791`, 17 681 lignes, 17 679 volumes (2 doublons exacts écartés), 694 libellés de commune,
+aucune ligne rejetée. 14 421 lignes sont « Mis en ligne », 3 260 portent une année prévue (2027 à 2051). Le
+document ne contient aucune personne.
+
+Malgré son nom, le classeur ne contient pas que des cotes `3 E <numéro>` : on y lit aussi `3 E <COMMUNE> <n>`,
+`AC … GG …`, `E DEPOT …`, `EC SUP …`, `6 Mi …`, `J …`, et des types `BMS`, `B`, `S`, `PM`, `TD` à côté de `N`,
+`M`, `D`, `NMD`. Cote et types sont gardés tels qu'écrits. Les bornes sont réduites à l'année (`debut`, `fin`) ;
+quand la cellule porte un mois, un jour ou une valeur illisible, son texte est conservé dans `dates`. Sept lignes
+ont une borne qui n'est pas devinée (`null`) : fin illisible ou antérieure au début (`1882 / 182`,
+`1919 / 1914`) et trois volumes de Roubaix dont les dates ressemblent à des numéros de série de tableur
+(`17167 / 17295`).
+
+**Usage.** Pour AD59 seulement, et hors tables décennales, `archives_registres` ajoute `classeur_3e` à sa réponse
+quand la recherche en ligne est vide ou quand un volume du classeur recoupe la période sans être en ligne.
+Les clés d'avant #374 sont inchangées. `classeur_3e` donne `source`, `releve_le`, `communes` (libellés du
+classeur retenus), `statut` (`connu` ou `inconnu_du_classeur`), `message`, `limite` et `volumes` : `commune`,
+`cote`, `types`, `debut`, `fin`, `en_ligne`, `mise_en_ligne_prevue`, `recoupe_periode` (`null` si une borne est
+illisible) et un `message` par volume :
+
+- « pas en ligne avant AAAA ; consultation en salle de lecture » ;
+- « en ligne selon le classeur mais absent de la recherche » (recherche vide : vérifier variantes et type) ;
+- « en ligne selon le classeur et présent dans la recherche » ou « cote non reconnue parmi les résultats de
+  cette page » quand la recherche a des résultats (comparaison des cotes, une page seulement).
+
+Un volume hors couverture est « inconnu du classeur », jamais « inexistant ». Cas de référence : naissances de
+Somain en 1926, cote `3 E 6298` (N 1926-1930), « > 2031 ». `prochaine_source` et `cotes_a_consulter` joignent
+les mêmes cotes (`classeur_3e`) à la piste de l'acte pour BIRT, MARR et DEAT quand le lieu est dans le Nord
+(département reconnu dans le libellé), que l'année est connue et que le classeur a un volume ; la liste des
+pistes et leurs `cote_typique` ne changent pas.
+
+La commune est comparée sans accents ni casse, traits d'union, apostrophes et espaces ignorés, `ST`/`STE`
+développés ; « BASSEE (LA) » répond à « La Bassée », « LILLE (FIVES) » ou « BAILLEUL - LA CRECHE » répondent
+aussi à la commune. Les types `N`, `M`, `D` retiennent aussi `B` et `S` (N : N ou B ; D : D ou S) ; un volume
+sans lettre d'acte reconnue (`PM`, `T`) n'apparaît que sans filtre de type.
+
+**Limites, non vérifié.**
+
+- Le classeur est lu tel quel : ni sa complétude ni son exactitude ne sont contrôlées. Les fautes de saisie
+  visibles sont conservées, pas corrigées.
+- « > AAAA » est compris comme « pas en ligne avant AAAA » d'après l'en-tête « Mise en ligne en : ». Sur 3 253 des
+  3 257 volumes concernés à fin connue, AAAA vaut l'année de fin + 101 ; cette règle n'est ni publiée ni utilisée.
+- « consultation en salle de lecture » suppose que le volume est communicable : le vérifier avec
+  `communicabilite`. Les conditions d'accès en salle n'ont pas été relevées.
+- Deux observations du 27 novembre 2026 sur la recherche publique (une requête chacune, sans image, sans
+  personne) : Somain, naissances, 1926 → page négative ; 1925 → un registre de cote `3 E 6297`, identique à
+  celle du classeur. La correspondance des cotes n'a pas été contrôlée au-delà de ce cas ; les volumes anciens
+  sont souvent en ligne sous une cote de microfilm (`5 Mi …`), d'où le message « cote non reconnue ».
+- L'extraction repose sur le tableau du PDF (pdfplumber, `extract_tables`) : une autre mise en page du
+  prochain classeur fera échouer le script plutôt que produire un référentiel faux.
+
+**Renouvellement.** Le nom du document est millésimé (`classeur-3e-janvier-2026`) : un nouveau classeur aura une
+autre URL, que rien ne signale au plugin. Le référentiel dérive donc avec le temps : un volume « > 2027 » peut
+être en ligne après le relevé, et `releve_le` est rendu avec chaque constat pour en juger. Pour le renouveler :
+
+```bash
+# 1. télécharger (étape explicite : robots.txt contrôlé, une seule requête, fichier neuf)
+uv --directory mcp run python -I ../scripts/generer_couverture_3e_ad59.py /tmp/classeur/3e.pdf \
+    --telecharger --source https://archivesdepartementales.lenord.fr/document/classeur-3e-<millésime>
+# ou, PDF déjà présent (aucun réseau) :
+uv --directory mcp run python -I ../scripts/generer_couverture_3e_ad59.py /tmp/classeur/3e.pdf --releve AAAA-MM-JJ
+```
+
+puis mettre à jour `couverture_3e.SOURCE`, les chiffres ci-dessus, la fixture et les tests si des volumes cités
+ont changé, et régénérer `docs/couverture-archives.md`. Le PDF est une donnée non fiable : il est lu, jamais
+exécuté (`python -I`, dossier dédié). Le script refuse le référentiel si plus de 0,5 % des lignes sont
+inexploitables (colonnes, cote ou statut non reconnus) ou plus de 1 % ont une borne illisible ; `--check`
+compare le PDF au référentiel livré sans l'écrire. L'option `--telecharger` n'a pas été exécutée sur le service
+réel : le PDF du relevé a été téléchargé à part, puis lu par le script.
+
+Tests : `tests/test_couverture_3e.py`, sans réseau. `tests/fixtures/ad59-classeur-3e-extrait.pdf` reprend sans
+modification les pages 1, 4, 11, 74 et 166 du PDF public (454 lignes).
+
 ## HTTP, protection et journal
 
 Un appel effectue au plus une tentative GET de recherche, ou utilise son cache. Il n'enchaîne pas les

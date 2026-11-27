@@ -9,6 +9,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Any
 
+from . import couverture_3e
 from .normalize.dates import parse_date
 from .normalize.pays import pays_du_lieu, pays_resume
 from .types_documents import RULES, SERIES, normaliser
@@ -80,8 +81,29 @@ def next_source_hint(fact: str, when: str = "", where: Any = "") -> list[dict]:
             if d["cote_typique"] in _COTES_AD:
                 d["cote_typique"] = f"{d['cote_typique']} — {SI_FRANCE}"
                 d["condition"] = SI_FRANCE
+    if pays["france"] is True and not migration:
+        _cotes_3e(fact, when, lieu_texte(where), out)
     court = pays_resume(pays)
     return [{**d, "pays": dict(court)} for d in out]
+
+
+def _cotes_3e(fact: str, when: str, lieu: str, sources: list[dict]) -> None:
+    """Nord : cotes 3 E connues du classeur des AD59 (#374), jointes à la piste de l'acte ; ajout seulement."""
+    document = {"BIRT": "naissance", "MARR": "mariage", "DEAT": "deces"}.get(fact)
+    if not document or not lieu:
+        return
+    from .normalize.places import normalize_place
+    place = normalize_place(lieu)
+    if place.get("departement_code") != "59":
+        return
+    try:
+        volumes = couverture_3e.pour_fait(document, _year(when), place.get("commune") or "")
+    except (OSError, ValueError, KeyError):
+        return
+    for d in sources:
+        if volumes and d["cote_typique"] == SERIES["etat_civil"] and d["source"].startswith("Acte de "):
+            d["classeur_3e"] = volumes
+            return
 
 
 def _hors_france(fact: str, sources: list[dict], pays: dict) -> list[dict]:
