@@ -108,6 +108,12 @@ def tableau(services: list | tuple, recettes: dict, documents: tuple = ()) -> st
                    "Aucun référentiel local des cotes : la cote vient de la réponse ; un résultat vide ne prouve ni l'absence d'un décès ni celle d'une succession. "
                    f"Fiches décès : le service affirme un délai de {registres.DELAI_FD} ans, non vérifié par le plugin ; elles ne sont jamais présentées comme librement communicables. "
                    "Navigation et lecture des vues de ces fonds non testées. Voir `docs/recherche-registres-ad59.md`.", ""])
+    lignes.extend(["## AD59 : hypothèques", "",
+                   f"Hors des niveaux ci-dessus : `archives_registres(type_acte=\"HYP\")` interroge pour les AD59 les trois formulaires de la sous-série 4 Q (relevé du {registres.RELEVE_HYP}) : "
+                   "indicateurs, tables alphabétiques et répertoires des formalités hypothécaires, par bureau des hypothèques (`HYPI`, `HYPT`, `HYPR` pour une seule catégorie). "
+                   f"D'après le service : {registres.PERIODE_HYP}. Aucune date dans ces formulaires ; bureau, période et plage alphabétique sont lus dans le titre des volumes, "
+                   "et le nom cherché n'est jamais envoyé. Aucun référentiel local des cotes : la cote vient de la réponse ; un résultat vide ne prouve ni l'absence du registre ni celle d'une formalité. "
+                   "Navigation et lecture des vues de ces fonds non testées. Voir `docs/recherche-registres-ad59.md`.", ""])
     if documents:
         lignes.extend(["## Niveaux par type de document", "",
                        "Chaque cellule reprend le niveau de `archives_service(document=...)`. Une recette dont le fonds n'est pas renseigné ne qualifie aucune de ces colonnes. Les niveaux 0–4 sont des capacités implémentées, toujours à éprouver sur le fonds demandé.", "",

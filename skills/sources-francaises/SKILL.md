@@ -39,6 +39,16 @@ il n'est pas déduit du lieu, une erreur liste les valeurs du formulaire (`cotes
 `successions_ad59`). Fiches décès : jamais « librement communicables » ; le service affirme un délai de 50 ans,
 non vérifié par le plugin : relayer `avertissement_communicabilite`, ne rien publier sur des héritiers vivants.
 Une absence dans une table ne prouve pas l'absence de décès (autre bureau, succession non déclarée).
+Hypothèques du Nord (4 Q, an VII à 1955 ; bien, vente, dot ou apport immobilier, notaire inconnu) :
+`archives_registres(service="AD59", commune=<bureau des hypothèques>, annee, type_acte="HYP")` rend trois
+catégories à lire dans l'ordre : `indicateur` (noms de famille, pour s'orienter), `tables` (table alphabétique :
+numéro de case du propriétaire), `repertoires` (par numéro de case : volume et numéro des actes, à consulter
+ensuite en salle de lecture) ; `HYPI`, `HYPT`, `HYPR` pour feuilleter une seule catégorie (`page`). Le bureau
+est celui de l'arrondissement, pas la commune ; aucune date n'est envoyée. **Ne jamais transmettre le nom
+cherché** : comparer soi-même son initiale ou son début (capitales sans accents) à `plage_alphabetique.debut`
+et `.fin` de chaque volume, bornes comprises ; retenir tous les volumes qui le couvrent (classement
+phonétique, plages qui se chevauchent, séries parallèles : `bureau_titre`), puis lire les vues. La recherche se
+fait par nom de propriétaire, jamais par adresse (`cotes_a_consulter` rappelle l'appel : `hypotheques_ad59`).
 Ensuite `archives_naviguer` parcourt les vues, `archive_image` les lit et `piece_archiver` conserve l'original.
 Un résultat vide ne démontre pas que l'acte n'existe pas ; un blocage conserve une tâche manuelle au journal.
 Défi anti-robot (`bloque: "anti-robot"`, ex. Anubis aux AD de la Lozère, redirection JS des AD Arkotheque

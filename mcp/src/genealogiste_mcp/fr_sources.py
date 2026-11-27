@@ -87,6 +87,7 @@ def next_source_hint(fact: str, when: str = "", where: Any = "") -> list[dict]:
         _cotes_recensements(fact, when, lieu_texte(where), out)
         _matricules_nord(fact, when, lieu_texte(where), out)
         _successions_nord(fact, when, lieu_texte(where), out)
+        _hypotheques_nord(fact, when, lieu_texte(where), out)
     court = pays_resume(pays)
     return [{**d, "pays": dict(court)} for d in out]
 
@@ -200,6 +201,46 @@ def _successions_nord(fact: str, when: str, lieu: str, sources: list[dict]) -> N
                        if y and y > FICHES_DECES_AD59[1] else ""))
     for d in pistes:
         d["successions_ad59"] = {k: dict(v) if isinstance(v, dict) else v for k, v in aide.items()}
+
+
+# Hypothèques des AD59 (#378) : ce que la présentation du service annonce au relevé du 27 novembre 2026.
+HYPOTHEQUES_AD59 = (1799, 1955)
+
+
+def _hypotheques_nord(fact: str, when: str, lieu: str, sources: list[dict]) -> None:
+    """Nord : les pistes notariales (contrat de mariage et dot, vente, bien) reçoivent la recherche des hypothèques
+    des AD59, sous-série 4 Q (#378) ; ajout seulement. Ni cote ni bureau ne sont proposés : la cote vient de la
+    réponse du service, le bureau des hypothèques n'est pas déduit de la commune."""
+    pistes = [d for d in sources if d["cote_typique"] == SERIES["notaires"]]
+    if not pistes or not lieu:
+        return
+    # la date d'une naissance ou d'une filiation n'est pas celle de l'acte notarié : aucune année calculée
+    y = None if fact in ("BIRT", "CHR", "BAPM", "FILIATION") else _year(when)
+    if y and y < HYPOTHEQUES_AD59[0]:
+        return
+    from .normalize.places import normalize_place
+    if normalize_place(lieu).get("departement_code") != "59":
+        return
+    aide: dict = {"service": "AD59", "releve_le": "2026-11-27", "serie": SERIES["hypotheques"]}
+    if y is None or y <= HYPOTHEQUES_AD59[1]:
+        annee = y or "<année de l'acte>"
+        aide["recherche"] = ('archives_registres(service="AD59", commune="<bureau des hypothèques>", '
+                             f'annee={annee}, type_acte="HYP")')
+    aide["methode"] = ("indicateur, puis table alphabétique du bureau (numéro de case du propriétaire), puis "
+                       "répertoire des formalités (volume et numéro des actes) ; les registres de transcription et "
+                       "d'inscription se consultent ensuite en salle de lecture")
+    aide["note"] = (f"D'après le service : archives des conservations des hypothèques de {HYPOTHEQUES_AD59[0]} "
+                    f"(an VII) à {HYPOTHEQUES_AD59[1]}, recherche par nom de propriétaire seulement ; piste pour un "
+                    "bien, une vente ou un mariage avec dot ou apport immobilier, quand le notaire est inconnu. La "
+                    "clé est le bureau des hypothèques (arrondissement), pas la commune : il n'est pas déduit du "
+                    "lieu ; un bureau inconnu rend la liste des valeurs du formulaire. Aucune cote n'est proposée "
+                    "ici (pas de référentiel local) : elle vient de la réponse. Le nom cherché n'est jamais envoyé : "
+                    "il sert à choisir, localement, le volume dont la plage alphabétique le couvre. Vérifier "
+                    "communicabilite(\"hypotheques\")."
+                    + (" Acte postérieur à 1955 : services de la publicité foncière, aucune recherche proposée."
+                       if y and y > HYPOTHEQUES_AD59[1] else ""))
+    for d in pistes:
+        d["hypotheques_ad59"] = dict(aide)
 
 
 def _hors_france(fact: str, sources: list[dict], pays: dict) -> list[dict]:
