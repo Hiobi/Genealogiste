@@ -299,6 +299,12 @@ Une seule page par appel, avec cache ; les pages suivantes sont demandées expli
 décennales (`type_acte="TD"`) et les intervalles d'années (`annee_fin`) sont pris en charge depuis #221. Le serveur
 ne cherche pas la vue contenant l'acte : poursuivre avec `archives_naviguer`, puis `archives_sonder`.
 
+Depuis #374, la réponse AD59 porte en plus `classeur_3e` quand la recherche est vide ou qu'un volume n'est pas en
+ligne : cote, types, bornes et année de mise en ligne prévue tirés du « classeur 3 E » publié par le service
+(`referentiels/ad59_3e.json`, relevé du 27 novembre 2026, généré par `scripts/generer_couverture_3e_ad59.py`).
+« Pas en ligne avant AAAA » et « inconnu du classeur » ne veulent jamais dire « inexistant ». Source, limites et
+renouvellement : [classeur 3 E](recherche-registres-ad59.md#classeur-3-e--cote-et-mise-en-ligne-prévue--374).
+
 ## Sondage guidé d'un registre — #156
 
 `archives_sonder(source, date_cible, type_acte, lecture, conclusion, enquete)` remplace le tâtonnement

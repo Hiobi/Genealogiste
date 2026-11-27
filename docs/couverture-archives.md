@@ -127,6 +127,10 @@ Total : 110 services ; 12 recettes de référence qualifiées (niveau 5).
 
 Les URL et pages de référence sont dans `archives_fr.json` ; les verdicts et détails d'échec dans `recettes_archives.json`. `archives_service` expose les mêmes informations sous `couverture_technique`, avec les capacités et mesures séparées.
 
+## AD59 : classeur 3 E
+
+Hors des niveaux ci-dessus : le classeur 3 E des AD59 (`ad59_3e.json`, relevé du 2026-11-27, 17679 volumes, 694 libellés de commune) donne la cote et l'année de mise en ligne prévue des registres d'état civil. `archives_registres` le joint (`classeur_3e`) quand la recherche est vide ou qu'un volume n'est pas en ligne ; un volume inconnu du classeur n'est pas inexistant. Voir `docs/recherche-registres-ad59.md`.
+
 ## Niveaux par type de document
 
 Chaque cellule reprend le niveau de `archives_service(document=...)`. Une recette dont le fonds n'est pas renseigné ne qualifie aucune de ces colonnes. Les niveaux 0–4 sont des capacités implémentées, toujours à éprouver sur le fonds demandé.

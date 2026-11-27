@@ -16,6 +16,9 @@ Pour AD59 et les services Mnesys du référentiel (AD14, AD19, AD25, AD27, AD37,
 localise les registres depuis le résultat officiel. Une page par appel ; poursuivre explicitement avec
 `page_suivante`. `NMD` ou le type vide ne filtre pas le type ; `type_acte="TD"` donne les tables décennales
 couvrant l'année ; `annee_fin` (≥ `annee`) recherche un intervalle (ex. 1790-1802 ou une décennie).
+AD59 : quand la recherche est vide ou qu'un volume n'est pas en ligne, `classeur_3e` donne la cote 3 E et le
+statut du classeur du service (« pas en ligne avant AAAA ; consultation en salle de lecture ») ; « inconnu du
+classeur » ne veut pas dire que le registre n'existe pas. `prochaine_source` cite ces cotes pour un acte du Nord.
 Ensuite `archives_naviguer` parcourt les vues, `archive_image` les lit et `piece_archiver` conserve l'original.
 Un résultat vide ne démontre pas que l'acte n'existe pas ; un blocage conserve une tâche manuelle au journal.
 Défi anti-robot (`bloque: "anti-robot"`, ex. Anubis aux AD de la Lozère, redirection JS des AD Arkotheque

@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from html.parser import HTMLParser
 from urllib.parse import urljoin, urlsplit
 
-from .. import archives, ark
+from .. import archives, ark, couverture_3e
 from ..normalize.names import strip_accents
 from . import mnesys
 from .base import DAY, SourceContext, SourceError, envelope, error_envelope
@@ -320,4 +320,12 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
     elif not resultats:
         out["recherche_negative"] = ("Aucun registre renvoyé pour cette recherche et cette page ; cela ne prouve pas "
                                       "l'absence générale de fonds numérisés. Vérifier les variantes et le service.")
+    if svc is None and type_acte != "TD":
+        # Classeur 3 E (#374) : ajout seulement, quand la recherche est vide ou qu'un volume n'est pas en ligne.
+        try:
+            constat = couverture_3e.pour_recherche(commune, periode, type_acte, resultats)
+        except (OSError, ValueError, KeyError):
+            constat = None  # référentiel absent ou illisible : la recherche en ligne reste rendue telle quelle
+        if constat:
+            out["classeur_3e"] = constat
     return out
