@@ -83,20 +83,24 @@ def test_cad_deux_cadastres_commune_cote_et_ark_reels(app, fixtures):
     assert _requetes(route) == {c: {"formUuid": u, **BASE, LIEU: "MARLY", "page": "1"}
                                 for u, c in FORMULAIRES.items()}
     assert "1800" not in "".join(str(c.request.url) for c in respx.calls)  # aucune date envoyée
+    # tri par date (#391) : le lot sans date d'abord, puis 1826 avant 1896 (le service les rend dans l'autre ordre)
     assert res["resultats"] == [
         {"titre": "MARLY / 222", "cote": "P 30 / 222", "ark": "ark:/33518/hl2s6p8q4ntv",
          "url": f"{HOTE}/ark:/33518/hl2s6p8q4ntv", "bornes": None, "nb_vues": 4,
          "contexte": "Les plans du cadastre du Consulat", "categorie": "consulaire", "annee_titre": None,
-         "couvre_periode": None, "planche_contact": 'archives_planche(source="ark:/33518/hl2s6p8q4ntv", de=1, a=4)'},
-        # deux levées sous la même cote : deux lots, deux ARK ; 11 vues : pas de planche proposée
-        {"titre": "MARLY - 1896", "cote": "P 31 / 602", "ark": "ark:/33518/4rxhtvclgbsp",
-         "url": f"{HOTE}/ark:/33518/4rxhtvclgbsp", "bornes": [1896, 1896], "nb_vues": 11,
-         "contexte": "P31 - Cadastre napoléonien", "categorie": "napoleonien", "annee_titre": 1896,
-         "couvre_periode": True},
+         "couvre_periode": None, "position_periode": None,
+         "planche_contact": 'archives_planche(source="ark:/33518/hl2s6p8q4ntv", de=1, a=4)'},
+        # deux levées sous la même cote : deux lots, deux ARK
         {"titre": "MARLY - 1826", "cote": "P 31 / 602", "ark": "ark:/33518/3rmlnv49tfpg",
          "url": f"{HOTE}/ark:/33518/3rmlnv49tfpg", "bornes": [1826, 1826], "nb_vues": 5,
          "contexte": "P31 - Cadastre napoléonien", "categorie": "napoleonien", "annee_titre": 1826,
-         "couvre_periode": True, "planche_contact": 'archives_planche(source="ark:/33518/3rmlnv49tfpg", de=1, a=5)'}]
+         "couvre_periode": True, "position_periode": "contemporain",
+         "planche_contact": 'archives_planche(source="ark:/33518/3rmlnv49tfpg", de=1, a=5)'},
+        # 11 vues : pas de planche proposée
+        {"titre": "MARLY - 1896", "cote": "P 31 / 602", "ark": "ark:/33518/4rxhtvclgbsp",
+         "url": f"{HOTE}/ark:/33518/4rxhtvclgbsp", "bornes": [1896, 1896], "nb_vues": 11,
+         "contexte": "P31 - Cadastre napoléonien", "categorie": "napoleonien", "annee_titre": 1896,
+         "couvre_periode": True, "position_periode": "contemporain"}]
     assert res["total"] == 3 and res["nb_renvoyes"] == 3 and res["page_suivante"] is None and res["fin"] is True
     assert res["commune_service"] == "MARLY" and res["registres_hors_periode"] == 0
     c = res["cadastre"]
@@ -117,27 +121,46 @@ def test_cad_deux_cadastres_commune_cote_et_ark_reels(app, fixtures):
 
 
 @respx.mock
-def test_annee_n_ecarte_que_les_plans_dates_qui_ne_recoupent_pas(app, fixtures):
+def test_annee_n_ecarte_aucun_plan_et_situe_chaque_lot(app, fixtures):
+    # #391 : un plan vaut pour les décennies qui suivent sa levée ; la date situe un lot, elle ne l'écarte plus
     _formulaires(fixtures)
-    _resultats(fixtures, napoleonien="estaires")  # commune absente du cadastre du Consulat
+    route = _resultats(fixtures, napoleonien="estaires")  # commune absente du cadastre du Consulat
     res = server.archives_registres("AD59", "Estaires", 1808, "CAD", annee_fin=1820)
-    # trois lots (cotes P 31 / 035, 035_1, 035_2) : celui de 1889 est écarté et compté, pas oublié
+    # trois lots (cotes P 31 / 035, 035_1, 035_2), triés par date et non par cote ; celui de 1889 reste rendu
     assert [(r["cote"], r["annee_titre"], r["bornes"], r["nb_vues"]) for r in res["resultats"]] == [
-        ("P 31 / 035_1", 1808, [1808, 1808], 2), ("P 31 / 035_2", 1816, [1816, 1816], 37)]
-    assert res["total"] == 3 and res["registres_hors_periode"] == 1
+        ("P 31 / 035_1", 1808, [1808, 1808], 2), ("P 31 / 035_2", 1816, [1816, 1816], 37),
+        ("P 31 / 035", 1889, [1889, 1889], 15)]
+    assert [(r["couvre_periode"], r["position_periode"]) for r in res["resultats"]] == [
+        (True, "contemporain"), (True, "contemporain"), (False, "posterieur")]
+    assert res["total"] == 3 and res["nb_renvoyes"] == 3 and res["registres_hors_periode"] == 0
+    # indication conservée, sans effet sur resultats
     assert res["cadastre"]["dates_hors_periode"] == [1889] and "recherche_negative" not in res
     assert "planche_contact" in res["resultats"][0] and "planche_contact" not in res["resultats"][1]
     cons = res["cadastre"]["consulaire"]
     assert cons["interroge"] is False and cons["commune"] is None and cons["total"] is None
     assert "ESTAIRES » absente du vocabulaire de ce formulaire" in cons["message"]
-    # aucun plan ne recoupe 1850 : négatif non concluant, qui dit les dates écartées et comment relancer
+    # aucun plan ne recoupe 1850 : les trois lots sont rendus, les plans antérieurs (à consulter) d'abord
     res = server.archives_registres("AD59", "Estaires", 1850, "CAD")
-    assert res["resultats"] == [] and res["registres_hors_periode"] == 3
-    assert res["cadastre"]["dates_hors_periode"] == [1808, 1816, 1889]
-    assert "3 écarté(s), datés 1808, 1816, 1889" in res["recherche_negative"]
-    assert "annee_fin" in res["recherche_negative"] and "ne prouve pas qu'aucun plan n'existe" in res[
-        "recherche_negative"]
-    assert app.journal.entries()[-1]["statut"] == "negatif"
+    assert [(r["cote"], r["annee_titre"], r["couvre_periode"], r["position_periode"]) for r in res["resultats"]] == [
+        ("P 31 / 035_1", 1808, False, "anterieur"), ("P 31 / 035_2", 1816, False, "anterieur"),
+        ("P 31 / 035", 1889, False, "posterieur")]
+    assert res["total"] == 3 and res["nb_renvoyes"] == 3 and res["registres_hors_periode"] == 0
+    assert res["cadastre"]["dates_hors_periode"] == [1808, 1816, 1889] and "recherche_negative" not in res
+    assert app.journal.entries()[-1]["statut"] == "positif"
+    assert "position_periode" in res["cadastre"]["lecture"] and "écarté sur sa date" in res["cadastre"]["lecture"]
+    # la période n'est pas envoyée : la seconde demande (autre année) est servie par le cache, sans requête
+    assert route.call_count == 1 and all(set(c.request.url.params) == {"formUuid", *BASE, LIEU, "page"}
+                                         for c in route.calls)
+
+
+def test_position_periode_bornes_incluses():
+    assert registres._position(None, [1850, 1850]) is None
+    assert [registres._position(a, [1820, 1830]) for a in (1819, 1820, 1830, 1831)] == [
+        "anterieur", "contemporain", "contemporain", "posterieur"]
+    # bornes sur plusieurs années : contemporain dès qu'elles recoupent la période
+    assert registres._position([1800, 1820], [1820, 1830]) == "contemporain"
+    assert registres._position([1800, 1819], [1820, 1830]) == "anterieur"
+    assert registres._position([1831, 1840], [1820, 1830]) == "posterieur"
 
 
 @respx.mock
@@ -148,6 +171,10 @@ def test_date_du_titre_seulement_informative(app, fixtures):
     res = server.archives_registres("AD59", "Lille", 1820, "CAD")
     assert len(res["resultats"]) == 9 and res["registres_hors_periode"] == 0
     assert {(r["annee_titre"], r["bornes"], r["couvre_periode"]) for r in res["resultats"]} == {(1881, None, None)}
+    # #391 : à défaut de date du service, l'année du titre situe le lot ; même année partout : ordre des cotes gardé
+    assert {r["position_periode"] for r in res["resultats"]} == {"posterieur"}
+    assert "dates_hors_periode" not in res["cadastre"] and "recherche_negative" not in res
+    assert [r["cote"] for r in res["resultats"]] == sorted(r["cote"] for r in res["resultats"])
     assert res["resultats"][0]["titre"] == "LILLE - 1881 (TA-B12)" and res["resultats"][0]["cote"] == "P 31 / 243"
     # une cote partagée par plusieurs lots (P 31 / 246 : trois ARK)
     assert [r["nb_vues"] for r in res["resultats"] if r["cote"] == "P 31 / 246"] == [42, 6, 22]
@@ -370,7 +397,7 @@ def test_types_voisins_inchanges(app, fixtures):
              registres.FORMULAIRE_REC: "ad59-recensements-positive.html"}
     route = respx.get(URL).mock(side_effect=lambda request: httpx.Response(
         200, text=(fixtures / pages[request.url.params["formUuid"]]).read_text()))
-    nouvelles = {"cadastre", "annee_titre", "planche_contact", "noms_lies"}
+    nouvelles = {"cadastre", "annee_titre", "planche_contact", "noms_lies", "position_periode"}
     succ = server.archives_registres("AD59", "Steenvoorde", 1791, "SUCC", annee_fin=1803)
     assert [r["cote"] for r in succ["resultats"]] == ["3Q - 516 / 1", "3Q - 516 / 2"]
     assert route.calls[-1].request.url.params["sort"] == "date_asc" and "successions" in succ

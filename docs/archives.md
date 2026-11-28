@@ -366,9 +366,10 @@ vocabulaire de chaque formulaire, lu en ligne ; les deux vocabulaires diffèrent
 subdivisions) : seul le formulaire qui connaît la commune est interrogé, une commune inconnue des deux est une
 erreur qui liste les valeurs proches. Chaque résultat est un lot de plans (non nominatifs) et porte `categorie`
 (`consulaire`, `napoleonien`), `contexte`, `annee_titre` et, de 2 à 9 vues, `planche_contact` (appel
-`archives_planche` proposé, non éprouvé sur un plan). Aucune date n'est envoyée : `annee` n'écarte que les plans
-dont la date affichée ne recoupe pas la période ; un plan valant pour les décennies qui suivent sa levée,
-préférer un intervalle large. `cadastre.noms_lies` propose, d'après le classeur 3 E local et sans réseau, le nom
+`archives_planche` proposé, non éprouvé sur un plan). Aucune date n'est envoyée et, depuis #391, aucun plan n'est
+écarté sur sa date (un plan vaut pour les décennies qui suivent sa levée) : les lots de la commune sont triés
+par date et `position_periode` situe chacun (`anterieur`, `contemporain`, `posterieur` à la période demandée,
+`null` sans date). `cadastre.noms_lies` propose, d'après le classeur 3 E local et sans réseau, le nom
 actuel ou l'ancien nom sous lequel relancer (Fives et Lille, Saint-Remy-du-Nord et Saint-Remy-Mal-Bati) ; pour
 les autres communes réunies, `geo_historique` puis une relance sous le nom d'alors. Matrices cadastrales et
 états de sections : non couverts. `archives_registres(service="AD59", commune="Estaires", annee=1800,

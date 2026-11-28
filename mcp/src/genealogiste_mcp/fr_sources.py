@@ -266,8 +266,9 @@ def _cadastre_nord(fact: str, lieu: str, sources: list[dict]) -> None:
                      "nominatifs) : situer un lieu-dit, une section ou une parcelle cités par un acte ou un "
                      "recensement. D'après le service : début du XIXe siècle pour les premiers, jusqu'au début du "
                      "XXe siècle pour certaines communes pour les seconds. Un plan vaut pour les décennies qui "
-                     "suivent sa levée : préférer un intervalle large (annee, annee_fin), un plan dont la date "
-                     "affichée ne le recoupe pas étant écarté et compté. Aucune cote n'est proposée ici (pas de "
+                     "suivent sa levée : aucun n'est écarté sur sa date, tous les lots de la commune sont rendus, "
+                     "triés par date et situés par position_periode (anterieur, contemporain, posterieur à la "
+                     "période demandée) ; lire d'abord le dernier plan antérieur au fait. Aucune cote n'est proposée ici (pas de "
                      "référentiel local) : elle vient de la réponse. La commune est celle du plan : une commune "
                      "réunie ou renommée se cherche sous son nom d'alors (noms_lies ; geo_historique). Matrices et "
                      "états de sections (propriétaires) : non couverts, à chercher dans l'inventaire du service.")}

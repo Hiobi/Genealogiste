@@ -663,21 +663,30 @@ existantes gardent leur sens.
   valeurs ; la valeur exacte (« Bourbourg (ville) ») lève l'ambiguïté. Inconnue des deux (« Marchiennes »,
   « Villeneuve-d'Ascq ») : erreur avant toute recherche, avec les valeurs proches de chaque formulaire, les noms
   liés et la piste `geo_historique` / `lieu_historique`.
-- **Période** : aucun champ de date ; `annee` et `annee_fin` ne sont pas envoyées. Elles n'écartent que les
-  plans dont le service affiche une date (`bornes`, champ `Date`) qui ne recoupe pas la période : ces plans sont
-  comptés (`registres_hors_periode`) et leurs dates rendues (`cadastre.dates_hors_periode`). Un plan sans date
-  affichée (tout le consulaire, Lille) garde `couvre_periode: null` et est toujours rendu. `annee_titre` reprend
-  l'année du titre (« - 1808 »), pour information seulement : elle ne filtre jamais. **Limite assumée** : un
-  plan décrit le territoire pour les décennies qui suivent sa levée ; une année précise écarte donc un plan
-  antérieur encore utile. Préférer un intervalle large (`annee=1800, annee_fin=1910`) ; le négatif le rappelle.
+- **Période** : aucun champ de date ; `annee` et `annee_fin` ne sont pas envoyées et, depuis #391, **n'écartent
+  aucun plan**. Un plan décrit le territoire pour les décennies qui suivent sa levée : le filtre d'origine
+  (#379), qui écartait les plans dont la date affichée ne recoupait pas la période, faisait perdre à Estaires
+  ses trois lots (1808, 1816, 1889) pour `annee=1850`, alors que ce sont les plans à consulter. Tous les lots
+  de la page sont rendus, **triés par date** (`bornes`, champ `Date` du service ; à défaut `annee_titre` ; les
+  lots sans aucune date, tout le consulaire, viennent d'abord ; à date égale, l'ordre des catégories et des
+  cotes est conservé). Le tri porte sur la page lue de chaque formulaire, pas sur l'ensemble des pages.
+  `position_periode` (ajout #391) situe chaque lot par rapport à `[annee, annee_fin]` : `anterieur` (levé avant
+  la période : état des lieux déjà dressé, à lire en premier), `contemporain` (date dans la période),
+  `posterieur`, `null` sans date. Il se calcule sur `bornes`, à défaut sur `annee_titre` (Lille, dont le champ
+  `Date` est inexploitable, « B12) » : `bornes` et `couvre_periode` restent `null`, `annee_titre` vaut 1881).
+  C'est une information, jamais un filtre. `couvre_periode` garde son sens (`true`, `false`, `null` d'après
+  `bornes`) mais un lot `false` reste rendu ; `registres_hors_periode` vaut toujours `0` pour `CAD` (rien
+  n'est écarté) ; `cadastre.dates_hors_periode`, s'il y a lieu, liste pour mémoire les dates affichées des
+  lots rendus qui ne recoupent pas la période, sans effet sur `resultats`.
 - **Résultats** : chaque résultat garde `titre`, `cote`, `ark`, `url`, `bornes`, `nb_vues` et reçoit
-  `categorie`, `contexte`, `annee_titre`, `couvre_periode` et, de 2 à 9 vues, `planche_contact`.
+  `categorie`, `contexte`, `annee_titre`, `couvre_periode`, `position_periode` et, de 2 à 9 vues,
+  `planche_contact`.
 - **`cadastre`** (ajout) : `releve_le`, `reference`, `periode_annoncee`, `lecture`, `non_couvert`, `piste_lieu`,
   `communicabilite`, `dates_hors_periode` s'il y a lieu, et pour chaque formulaire `formulaire`, `interroge`,
   `commune`, `total`, `page_suivante`, `nb_communes` et, s'il y a lieu, `message` et `noms_lies`. Le vocabulaire
   entier (650 valeurs) n'est pas rendu. `commune_service` rend la valeur envoyée quand elle est la même partout.
-- **Négatif** : `recherche_negative` seulement quand aucun résultat n'est rendu ; il distingue « aucun plan
-  renvoyé » de « plans de la page tous écartés par leur date » (dates citées, relance proposée).
+- **Négatif** : `recherche_negative` seulement quand aucun résultat n'est rendu, c'est-à-dire quand le service
+  ne renvoie aucun plan pour la commune et la page ; depuis #391, la date n'en produit plus.
 - **Page > 1** : chaque formulaire interrogé reçoit `page=N` ; la redirection vers la première page est refusée
   (« Page retournée incohérente ») ; si aucun formulaire ne rend la page, l'appel est une erreur.
 - Mêmes garde-fous que `HYP` : hôte et NAAN `33518` contrôlés sur chaque lien de notice, une page par formulaire
