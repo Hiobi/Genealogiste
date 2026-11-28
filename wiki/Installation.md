@@ -52,7 +52,7 @@ claude
 ```
 
 L’environnement doit atteindre le processus Claude qui démarre le serveur. Une application lancée depuis
-un menu peut ne pas reprendre les exports de votre terminal. Ne choisissez pas le checkout du plugin
+un menu peut ne pas reprendre les exports de votre terminal (voir [Claude Desktop](Claude-Desktop.md#3-variables-denvironnement)). Ne choisissez pas le checkout du plugin
 comme dossier de données : le serveur refuse cette configuration.
 
 ## 4. Vérifier le premier lancement
@@ -67,6 +67,7 @@ Passer ensuite au [tutoriel fictif](Demarrage.md).
 
 ## Autres parcours
 
+- [Claude Desktop](Claude-Desktop.md) : onglet Code de l’application (le chat n’est pas pris en charge).
 - [Codex local](../docs/adaptation-codex.md) pour le paquet de skills et les approbations natives MCP.
 
 - [Configuration](Configuration.md) pour les options et les sources nécessitant un identifiant.
