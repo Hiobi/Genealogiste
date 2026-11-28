@@ -56,6 +56,8 @@ et `.fin` de chaque volume, bornes comprises ; retenir tous les volumes qui le c
 phonétique, plages qui se chevauchent, séries parallèles : `bureau_titre`), puis lire les vues. La recherche se
 fait par nom de propriétaire, jamais par adresse (`cotes_a_consulter` rappelle l'appel : `hypotheques_ad59`).
 Plans du cadastre du Nord (situer un lieu-dit, une section, une parcelle ; plans seulement, non nominatifs) :
+Hors du Nord, `type_acte="CAD"` vaut aussi pour AD14, AD19, AD25, AD39, AD55, AD58, AD69, AD90 et AD91 (plans seulement ; matrices et états
+de section listés dans `cadastre.autres_documents`, non interrogés).
 `archives_registres(service="AD59", commune, annee, annee_fin, type_acte="CAD")` rend les lots de plans du
 cadastre du Consulat (`consulaire`, cotes P 30, sans date) et du cadastre napoléonien (`napoleonien`, cotes
 P 31, du début du XIXe au début du XXe siècle selon les communes). Aucun plan n'est écarté sur sa date (un plan
