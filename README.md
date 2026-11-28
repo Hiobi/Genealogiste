@@ -131,6 +131,7 @@ dossier existant, base depuis zéro, arbre GEDCOM ou Gramps Web. Obsidian n’es
 
 [Wiki : tous les guides](https://github.com/Hiobi/Genealogiste/wiki) · [Signaler un problème](https://github.com/Hiobi/Genealogiste/issues) · [Proposer une amélioration](https://github.com/Hiobi/Genealogiste/issues/new) · [Signaler une vulnérabilité en privé](https://github.com/Hiobi/Genealogiste/security/advisories/new)
 
+Dans l’application **Claude Desktop**, utiliser l’onglet Code (le chat n’est pas pris en charge) : [guide Claude Desktop](https://github.com/Hiobi/Genealogiste/wiki/Claude-Desktop).
 Pour **Codex CLI**, suivre le [guide d’installation et d’approbation](https://github.com/Hiobi/Genealogiste/wiki/Codex) :
 le paquet fournit les skills ; un profil séparé active le MCP avec confirmation native de chaque outil.
 Le mode fichier fonctionne sans Gramps Web ni Obsidian. L’ancien exporteur FamilySearch est désactivé ;
