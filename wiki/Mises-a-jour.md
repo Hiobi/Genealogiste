@@ -119,5 +119,14 @@ Le détail est dans chaque note de version.
   (onglet Code pris en charge, chat non). Aucun nouvel outil MCP, signatures et clés existantes inchangées
   (champs ajoutés) ; reconnecter le serveur MCP. Pas encore éprouvé : veille de dérive des nouveaux formulaires ;
   Claude Desktop sans recette.
+- [0.33.0](https://github.com/Hiobi/Genealogiste/releases/tag/v0.33.0) : **cadastre hors du Nord**.
+  `archives_registres(type_acte="CAD")` vaut aussi pour AD14, AD19, AD25, AD39, AD55, AD58, AD69, AD90 et AD91
+  (formulaires relevés le 28 novembre 2026) : plans seulement, aucun plan écarté sur sa date, lots triés et
+  situés par `position_periode` ; matrices et états de section signalés (`cadastre.autres_documents`), non
+  interrogés (#392). Clé de référentiel `champs_lieu` (champ de lieu déclaré par formulaire). Le **COG** par
+  défaut passe au millésime 2026 : `geo_historique` et `lieu_historique` voient les mouvements de communes de
+  2024 et 2025 (#350). Dépendances : setup-uv 10.4.0, httpx2 2.16.2, ruff 0.17.6. Aucun nouvel outil MCP,
+  signatures et clés existantes inchangées (champs ajoutés) ; reconnecter le serveur MCP. Pas encore éprouvé :
+  cadastre d'AD27 (plans sans média image) ; veille de dérive des nouveaux formulaires.
 
 Pour la version publiée actuellement, se référer à la page Releases et au numéro du pied de page du wiki.
