@@ -1114,6 +1114,10 @@ def archives_registres(service: str, commune: str, annee: int, type_acte: str = 
     vaut pour les décennies qui suivent sa levée) : les lots sont triés par date et position_periode situe
     chacun (anterieur, contemporain, posterieur à la période demandée ; null sans date). cadastre donne relevé, lecture, état de chaque formulaire, noms_lies (nom actuel, ancien nom ou
     lieu rattaché d'après le classeur 3 E local) et ce qui n'est pas couvert (matrices, états de sections).
+    CAD vaut aussi pour les services Mnesys qui déclarent un formulaire de cadastre (AD14, AD19, AD25, AD39, AD55, AD58, AD69, AD90 et AD91) :
+    commune seule, aucune date envoyée ni plan écarté sur sa date, options de plans du formulaire envoyées
+    (cadastre.typologie_envoyee), matrices et états de section signalés sans être interrogés
+    (cadastre.autres_documents), même tri et même position_periode.
     type_acte : N (naissance), M (mariage), D (décès), NMD ou vide (tous), TD (tables décennales : tables dont
     la période affichée recoupe l'année ou l'intervalle demandé). annee_fin (facultatif, >= annee) : intervalle
     [annee, annee_fin], ex. 1790-1802 ou une décennie ; registres dont la période le recoupe. Une seule page de
