@@ -1,6 +1,6 @@
 {
   "service": "COG-INSEE",
-  "objet": "COG INSEE (sources/geo.py, hors référentiel de contexte) pour lieu_historique (#287) : communes depuis 1943 (millésime configuré, 2024)",
+  "objet": "COG INSEE (sources/geo.py, hors référentiel de contexte) pour lieu_historique (#287) : communes depuis 1943, extrait réel du millésime 2024 (le millésime configuré par défaut est 2026 depuis #350 ; le robots.txt de l'INSEE exclut les *.csv : pas de réenregistrement automatique)",
   "commune_temoin": "Billy-Montigny (code INSEE 62133, obtenu par geo_commune du plugin)",
   "reponses": [
     {

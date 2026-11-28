@@ -99,8 +99,10 @@ class Config:
     cles_contexte: dict[str, str] = field(default_factory=dict, repr=False)
     crossref_mailto: str = field(default="", repr=False)  # vide par défaut : donnée personnelle
     sosa_racine: str = ""  # personne n° 1 de la numérotation Sosa des notes
-    cog_mvt_url: str = "https://www.insee.fr/fr/statistiques/fichier/7766585/v_mvt_commune_2024.csv"
-    cog_communes_url: str = "https://www.insee.fr/fr/statistiques/fichier/7766585/v_commune_depuis_1943.csv"
+    # millésime 2026 du COG (publié le 2026-02-24, référencé par data.gouv.fr ; #350) : mettre à jour à chaque
+    # nouveau millésime, les deux fichiers ensemble (même dossier INSEE)
+    cog_mvt_url: str = "https://www.insee.fr/fr/statistiques/fichier/8740222/v_mvt_commune_2026.csv"
+    cog_communes_url: str = "https://www.insee.fr/fr/statistiques/fichier/8740222/v_commune_depuis_1943.csv"
     http_timeout: float = 30.0  # GENEALOGISTE_HTTP_TIMEOUT : délai d'un essai (secondes)
     http_tentatives: int = 5  # GENEALOGISTE_HTTP_TENTATIVES : essais au plus pour une requête idempotente
     http_duree_max: float = 60.0  # GENEALOGISTE_HTTP_DUREE_MAX : plafond d'un appel, attentes comprises
