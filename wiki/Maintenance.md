@@ -52,5 +52,38 @@ changement de guide, régénérer et republier le wiki depuis le `main` fusionn�
 propre historique Git. Sa publication est une étape explicite de la livraison, pas un effet automatique
 d’une modification dans l’éditeur du README.
 
+## Veille et renouvellement des référentiels AD59
+
+Les pages sur l’AD59 décrivent des relevés datés (27 novembre 2026) : les douze formulaires de recherche, le
+classeur 3 E (`referentiels/ad59_3e.json`) et l’état de collection des recensements
+(`referentiels/ad59_recensements.json`). Le service ajoute des fonds et des années en continu ; sans suivi,
+ces référentiels vieillissent et les pages avec eux.
+
+```bash
+make veille-ad59   # étape réseau explicite : 15 requêtes au plus, espacées
+```
+
+- La veille se lance à la main, hors de `make test` ; aucun outil MCP ne la déclenche. Elle **signale** et ne
+  corrige ni ne télécharge rien. Code de sortie : 0 si rien n’est à signaler, 1 dès qu’il y a un signalement
+  (un échec réseau en est un, jamais une erreur bloquante).
+- Trois volets : dérive des formulaires par rapport à leur contrat, fils d’ajouts du forum du service, lien du
+  classeur 3 E millésimé (un nouveau classeur est signalé, jamais téléchargé).
+- Le forum est lu **en lecture seule** : titre, date et lien des fils, sans compte ni connexion ; le corps des
+  messages n’est ni lu ni conservé. Un titre de fil est une piste à vérifier sur le site du service.
+- Sans réseau, un référentiel relevé depuis plus de **365 jours** est « à renouveler » : `diagnostic` le
+  reprend (contrôle `referentiels_ad59`, état `attention`). Ce seuil est un choix du plugin, pas une
+  périodicité annoncée par le service.
+
+Renouveler le classeur 3 E et l’état de collection des recensements reste une étape manuelle, à prévoir
+chaque année ou dès qu’un nouveau classeur est signalé : `scripts/generer_couverture_3e_ad59.py` et
+`scripts/generer_couverture_recensements_ad59.py` lisent le PDF publié et écrivent le référentiel avec son
+relevé daté (`releve_le`) et l’empreinte SHA-256 du document ; `--check` compare sans écrire. Mettre ensuite à
+jour la source déclarée, les chiffres cités, fixtures et tests si des volumes ont changé, régénérer
+`docs/couverture-archives.md` (`scripts/generer_couverture_archives.py`), puis republier le wiki.
+
+Détail, états rendus et limites : [veille des AD59](../docs/veille-ad59.md). Procédures de renouvellement :
+[classeur 3 E](../docs/recherche-registres-ad59.md#classeur-3-e--cote-et-mise-en-ligne-prévue--374) et
+[recensements](../docs/recensements.md#renouvellement-du-référentiel).
+
 Sources : [gestion des pages de wiki GitHub](https://docs.github.com/en/communities/documenting-your-project-with-wikis/adding-or-editing-wiki-pages),
 [guide de contribution](../CONTRIBUTING.md).

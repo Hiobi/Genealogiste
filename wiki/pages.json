@@ -102,6 +102,12 @@
     "groupe": "Utiliser le plugin"
   },
   {
+    "slug": "Recensements-AD59",
+    "source": "docs/recensements.md",
+    "titre": "Recensements (AD59)",
+    "groupe": "Utiliser le plugin"
+  },
+  {
     "slug": "Sites-tiers",
     "source": "docs/sites-tiers.md",
     "titre": "Sites tiers de généalogie",
@@ -219,6 +225,12 @@
     "slug": "Migration-MCP-2",
     "source": "docs/migration-mcp-2.md",
     "titre": "Migration MCP 2",
+    "groupe": "Entretenir et contribuer"
+  },
+  {
+    "slug": "Veille-AD59",
+    "source": "docs/veille-ad59.md",
+    "titre": "Veille des AD59",
     "groupe": "Entretenir et contribuer"
   },
   {
