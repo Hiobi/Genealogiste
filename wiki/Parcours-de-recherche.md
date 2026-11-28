@@ -43,6 +43,10 @@ La commande `/genealogiste:transcris` apporte une aide, à relire face à l’im
 Pour trouver l’acte lui-même, `/genealogiste:acte` cherche le registre par commune et année (AD59 et quatorze
 services Mnesys ; ailleurs, la cote ou l’ARK est à relever sur le site du service), repère la vue, aide à la
 transcrire et archive la pièce ([services d’archives](Services-archives.md)).
+Dans le Nord, `archives_registres` localise aussi d’autres fonds de l’AD59 utiles autour de l’acte : recensements
+(composition du foyer à une date), registres matricules (par classe et bureau de recrutement) et tables des
+successions (par bureau de l’enregistrement). Il en donne la cote et l’ARK, pas la lecture :
+[fonds et limites](Services-archives.md#autres-fonds-numérisés-des-ad59).
 
 ## 4. Comparer les candidats
 

@@ -42,8 +42,11 @@ Un site qui répond n’est pas un inventaire intégralement vérifié. Les cote
 à confronter à l’inventaire du service.
 
 Pour l’AD59 et quatorze services Mnesys, `archives_registres` retrouve un registre à partir d’une commune et
-d’une année, sans connaître sa cote ni son ARK ; certains services couvrent aussi les registres matricules
-(`RM`, par classe) et les tables des successions (`SUCC`, par bureau). `archives_planche` montre plusieurs vues
+d’une année, sans connaître sa cote ni son ARK ; certains services, dont l’AD59, couvrent aussi les registres
+matricules (`RM`, par classe) et les tables des successions (`SUCC`, par bureau). Pour l’AD59 s’y ajoutent les
+recensements (`REC`), les fiches décès (`FD`), les hypothèques (`HYP`) et les plans du cadastre (`CAD`), ainsi
+que la cote et la mise en ligne prévue d’un registre d’état civil absent en ligne (classeur 3 E) :
+[fonds et limites](Services-archives.md#autres-fonds-numérisés-des-ad59). `archives_planche` montre plusieurs vues
 sur une seule image et `archives_sonder` indique la vue à lire pour atteindre une date.
 
 Le [catalogue des services d’archives](Services-archives.md) précise les API, les fonctions de
