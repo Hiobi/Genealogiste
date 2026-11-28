@@ -113,6 +113,16 @@ TYPES = {"N": "Naissances", "M": "Mariages", "D": "Décès"}
 _VIDES = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
 
 
+def formulaires_ad59() -> dict[str, str]:
+    """Formulaires de recherche AD59 connus du plugin, clé stable -> UUID. Source unique : les constantes ci-dessus ;
+    la veille des formulaires (sources/veille_ad59.py, #380) et son référentiel n'en recopient aucun."""
+    return {"etat_civil": FORMULAIRE, "tables_decennales": FORMULAIRE_TD, "recensements": FORMULAIRE_REC,
+            **{f"matricules_{c}": u for c, u in FORMULAIRES_RM.items()},
+            "successions": FORMULAIRES_ENREGISTREMENT["SUCC"], "fiches_deces": FORMULAIRES_ENREGISTREMENT["FD"],
+            **{f"hypotheques_{c}": u for c, u in FORMULAIRES_HYP.items()},
+            **{f"cadastre_{c}": u for c, u in FORMULAIRES_CAD.items()}}
+
+
 class FormatRegistresError(ValueError):
     """Le document ne permet pas de conclure à une recherche positive ou négative."""
 

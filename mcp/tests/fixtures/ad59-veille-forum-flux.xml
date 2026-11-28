@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="fr">
+	<link rel="self" type="application/atom+xml" href="https://forum-archivesdepartementales.lenord.fr/app.php/feed/forum/138" />
+
+	<title>Le forum</title>
+	<subtitle>officiel des Archives départementales du Nord</subtitle>
+	<link href="https://forum-archivesdepartementales.lenord.fr/index.php" />
+	<updated>2026-07-02T15:14:44+01:00</updated>
+
+	<author><name><![CDATA[Le forum]]></name></author>
+	<id>https://forum-archivesdepartementales.lenord.fr/app.php/feed/forum/138</id>
+
+		<entry>
+		<author><name><![CDATA[auteur]]></name></author>
+		<updated>2026-07-02T15:14:44+01:00</updated>
+
+		<published>2026-07-02T15:14:44+01:00</published>
+		<id>https://forum-archivesdepartementales.lenord.fr/viewtopic.php?p=38597#p38597</id>
+		<link href="https://forum-archivesdepartementales.lenord.fr/viewtopic.php?p=38597#p38597"/>
+		<title type="html"><![CDATA[ANNÉES MANQUANTES AJOUTÉES • Ajouts juillet 2026]]></title>
+
+					<category term="ANNÉES MANQUANTES AJOUTÉES" scheme="https://forum-archivesdepartementales.lenord.fr/viewforum.php?f=138" label="ANNÉES MANQUANTES AJOUTÉES"/>
+		
+		<content type="html" xml:base="https://forum-archivesdepartementales.lenord.fr/viewtopic.php?p=38597#p38597"><![CDATA[
+Corps du message retiré de la fixture : le plugin ne le lit pas.<br>
+]]></content>
+	</entry>
+		<entry>
+		<author><name><![CDATA[auteur]]></name></author>
+		<updated>2026-03-03T15:03:51+01:00</updated>
+
+		<published>2026-03-03T15:03:51+01:00</published>
+		<id>https://forum-archivesdepartementales.lenord.fr/viewtopic.php?p=38155#p38155</id>
+		<link href="https://forum-archivesdepartementales.lenord.fr/viewtopic.php?p=38155#p38155"/>
+		<title type="html"><![CDATA[ANNÉES MANQUANTES AJOUTÉES • Dunkerque, mariages cantonaux]]></title>
+
+					<category term="ANNÉES MANQUANTES AJOUTÉES" scheme="https://forum-archivesdepartementales.lenord.fr/viewforum.php?f=138" label="ANNÉES MANQUANTES AJOUTÉES"/>
+		
+		<content type="html" xml:base="https://forum-archivesdepartementales.lenord.fr/viewtopic.php?p=38155#p38155"><![CDATA[
+Corps du message retiré de la fixture : le plugin ne le lit pas.<br>
+]]></content>
+	</entry>
+		<entry>
+		<author><name><![CDATA[auteur]]></name></author>
+		<updated>2026-01-07T15:49:19+01:00</updated>
+
+		<published>2026-01-07T15:49:19+01:00</published>
+		<id>https://forum-archivesdepartementales.lenord.fr/viewtopic.php?p=37897#p37897</id>
+		<link href="https://forum-archivesdepartementales.lenord.fr/viewtopic.php?p=37897#p37897"/>
+		<title type="html"><![CDATA[ANNÉES MANQUANTES AJOUTÉES • Re: Ajouts Janvier 2026]]></title>
+
+					<category term="ANNÉES MANQUANTES AJOUTÉES" scheme="https://forum-archivesdepartementales.lenord.fr/viewforum.php?f=138" label="ANNÉES MANQUANTES AJOUTÉES"/>
+		
+		<content type="html" xml:base="https://forum-archivesdepartementales.lenord.fr/viewtopic.php?p=37897#p37897"><![CDATA[
+Corps du message retiré de la fixture : le plugin ne le lit pas.<br>
+]]></content>
+	</entry>
+		<entry>
+		<author><name><![CDATA[auteur]]></name></author>
+		<updated>2026-01-06T09:06:01+01:00</updated>
+
+		<published>2026-01-06T09:06:01+01:00</published>
+		<id>https://forum-archivesdepartementales.lenord.fr/viewtopic.php?p=37884#p37884</id>
+		<link href="https://forum-archivesdepartementales.lenord.fr/viewtopic.php?p=37884#p37884"/>
+		<title type="html"><![CDATA[ANNÉES MANQUANTES AJOUTÉES • Ajouts Janvier 2026]]></title>
+
+					<category term="ANNÉES MANQUANTES AJOUTÉES" scheme="https://forum-archivesdepartementales.lenord.fr/viewforum.php?f=138" label="ANNÉES MANQUANTES AJOUTÉES"/>
+		
+		<content type="html" xml:base="https://forum-archivesdepartementales.lenord.fr/viewtopic.php?p=37884#p37884"><![CDATA[
+Corps du message retiré de la fixture : le plugin ne le lit pas.<br>
+]]></content>
+	</entry>
+</feed>

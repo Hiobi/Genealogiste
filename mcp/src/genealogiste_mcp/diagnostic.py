@@ -200,6 +200,7 @@ def controles_locaux(a, probleme: dict | None, config) -> list[dict]:
                     if recentes else "", dernieres_erreurs=recentes))
     if probleme is None:
         out.append(_controle_services_contexte(config))
+    out.append(_controle_referentiels_ad59())
     if a is not None:
         out.append(_controle_debit(a))
         out.append(_controle_politique(a))
@@ -215,6 +216,22 @@ def controles_locaux(a, probleme: dict | None, config) -> list[dict]:
                         "Les propositions expirées ne sont plus applicables : elles seront purgées au prochain "
                         "arbre_info ; reformuler celles à garder (arbre_proposer)." if expirees else ""))
     return out
+
+
+def _controle_referentiels_ad59(aujourdhui=None) -> dict:
+    """Ancienneté des référentiels AD59 embarqués (#380 : classeur 3 E, état de collection des recensements).
+    Sans réseau ; la veille en ligne (formulaires, forum, classeur millésimé) est une étape explicite."""
+    from .sources import veille_ad59
+
+    refs = veille_ad59.anciennete(aujourdhui)
+    anciens = [r for r in refs if r["a_renouveler"]]
+    detail = " ; ".join(f"{r['referentiel']} relevé le {r['releve_le']}"
+                        + (f" ({r['age_jours']} j)" if r["age_jours"] is not None else " (date illisible)")
+                        for r in refs) + f" ; seuil {veille_ad59.SEUIL_JOURS} j"
+    remede = ("Référentiel(s) AD59 relevé(s) depuis plus d'un an : mises en ligne et cotes peuvent avoir changé. "
+              "Lancer la veille (make veille-ad59) puis renouveler : " + " ".join(r["remede"] for r in anciens)
+              if anciens else "")
+    return _ctl("referentiels_ad59", "attention" if anciens else "ok", detail, remede, referentiels=refs)
 
 
 def _controle_services_contexte(config) -> dict:

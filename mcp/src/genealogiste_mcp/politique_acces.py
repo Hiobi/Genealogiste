@@ -105,6 +105,10 @@ SERVICES: dict[str, Entree] = {
                             "par seconde et par IP : sources contradictoires, la plus stricte est retenue."),
     "www.insee.fr": Entree("INSEE (fichiers du COG)"),
     "n2t.net": Entree("N2T (registre des NAAN ARK)"),
+    # Veille des ajouts (#380, sources/veille_ad59.py) : robots.txt puis un flux ou une page par passage. Le forum
+    # ne publie ni robots.txt (HTTP 404 au 2026-11-27) ni limite : valeurs prudentes du plugin, sans référence.
+    "forum-archivesdepartementales.lenord.fr": Entree(
+        "Forum des AD59 (veille des ajouts)", intervalle=10.0, plafond_jour=20, categorie="archives"),
 }
 
 
