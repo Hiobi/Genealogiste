@@ -18,6 +18,12 @@
     "groupe": "Commencer"
   },
   {
+    "slug": "Claude-Desktop",
+    "source": "wiki/Claude-Desktop.md",
+    "titre": "Claude Desktop",
+    "groupe": "Commencer"
+  },
+  {
     "slug": "Demarrage",
     "source": "wiki/Demarrage.md",
     "titre": "Premiers pas",

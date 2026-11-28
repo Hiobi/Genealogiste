@@ -36,5 +36,6 @@ la lecture des actes ni le jugement généalogique.
 [Sécurité technique](../docs/securite.md) · [Exploitation](../docs/production.md) ·
 [Intégration continue](../docs/integration-continue.md) · [Maintenir cette documentation](Maintenance.md)
 
-Les exemples de ces guides sont fictifs. Le plugin est livré pour Claude Code ; pour Codex CLI en local,
+Les exemples de ces guides sont fictifs. Le plugin est livré pour Claude Code, y compris l’onglet Code de
+[Claude Desktop](Claude-Desktop.md) ; pour Codex CLI en local,
 suivre le [guide Codex](../docs/adaptation-codex.md).
