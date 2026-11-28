@@ -55,7 +55,7 @@ def test_referentiel_declare_les_recensements_releves():
     assert declares == set(SERVICES)
     for code in SERVICES:
         rr = archives.by_code(code)["recherche_registres"]
-        assert rr["releves"] == {"recensements": RELEVE}
+        assert rr["releves"]["recensements"] == RELEVE
         assert rr["releve_le"] == "2026-11-18"  # date du formulaire d'état civil inchangée
     # AD972 : aucune page de recensements sur le portail (relevé du 28 novembre 2026) ; AD73 : pas de recherche
     # de registres (autre portail, hors de cette étape)
@@ -67,7 +67,7 @@ def test_referentiel_declare_les_recensements_releves():
 def test_referentiel_refuse_une_date_de_releve_sans_formulaire(monkeypatch):
     reels = archives.services()
     svc = archives.by_code("AD14")
-    faux = {**svc, "recherche_registres": {**svc["recherche_registres"], "releves": {"cadastre": RELEVE}}}
+    faux = {**svc, "recherche_registres": {**svc["recherche_registres"], "releves": {"hypotheques": RELEVE}}}
     monkeypatch.setattr(archives, "services", lambda: tuple(faux if s["code"] == "AD14" else s for s in reels))
     assert any("AD14 : recherche_registres.releves" in e for e in archives.validate())
 

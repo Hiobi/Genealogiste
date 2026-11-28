@@ -97,7 +97,10 @@ nombre de vues), une page par appel : le plugin localise ces documents, il ne le
   suivent sa levée. Matrices cadastrales et états de
   sections ne sont pas couverts.
 
-`FD`, `HYP` et `CAD` sont propres à l'AD59 : pour un autre service, l'outil refuse la demande. `REC` vaut
+`FD` et `HYP` sont propres à l'AD59 : pour un autre service, l'outil refuse la demande. `CAD` vaut aussi
+pour neuf services Mnesys (AD14, AD19, AD25, AD39, AD55, AD58, AD69, AD90 et AD91) : « Cherche les plans du cadastre de Dole (Jura). » Mêmes règles
+(aucun plan écarté sur sa date) ; les matrices et états de section que propose le formulaire sont signalés,
+non interrogés ([détail](../docs/archives.md#cadastre-des-autres-services-mnesys-392)). `REC` vaut
 aussi pour treize services Mnesys (AD14, AD19, AD25, AD27, AD37, AD39, AD51, AD55, AD58, AD69, AD80, AD90,
 AD91) : « Cherche le recensement de 1906 de Clamecy (Nièvre). » L'état de la collection (en ligne ou salle de
 lecture) n'existe que pour l'AD59 ([détail](../docs/recensements.md#autres-services-mnesys-392)).

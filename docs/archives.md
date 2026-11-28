@@ -379,6 +379,37 @@ annee_fin=1900, type_acte="CAD")` → trois lots `P 31 / 035`, `035_1`, `035_2`.
 `cadastre_ad59` aux pistes de domicile et de bien du Nord. Détail et limites :
 [plans du cadastre](recherche-registres-ad59.md#plans-du-cadastre--type_actecad--379).
 
+### Cadastre des autres services Mnesys (#392)
+
+Depuis #392, `type_acte="CAD"` vaut aussi pour AD14, AD19, AD25, AD39, AD55, AD58, AD69, AD90 et AD91, dont le formulaire dédié aux plans
+du cadastre a été relevé le **28 novembre 2026** (`robots.txt` contrôlé, formulaire puis une recherche par
+service, aucune image ; déclaration `recherche_registres.formulaires.cadastre`, date `releves.cadastre`). Règles
+communes avec AD59 : commune obligatoire prise dans le vocabulaire du formulaire lu en ligne, aucune date
+envoyée, aucun plan écarté sur sa date, lots de la page triés par date et situés par `position_periode`. Quand
+le formulaire a une typologie (AD14, AD19, AD39, AD69, AD90), seules ses options de plans sont envoyées (plan
+cadastral, de finage, parcellaire, par masses de culture, du livre foncier, de remembrement, tableau
+d'assemblage : `cadastre.typologie_envoyee`) ; matrices, états de section et autres documents du formulaire sont
+listés dans `cadastre.autres_documents`, non interrogés. AD69 range la commune en « collectivité » après un titre
+(type de cadastre) : le champ est déclaré au référentiel (`recherche_registres.champs_lieu`).
+
+| Service | Commune du relevé | Plans (page 1 / total) | Exemple |
+|---|---|---|---|
+| AD14 | Bayeux | 20 / 36 | sections de 1812 (`3P/1923`), cadastre rénové de 1970 |
+| AD19 | Tulle | 20 / 28 | tableau d'assemblage de 1824 (`7P/272/TA`) |
+| AD25 | Pontarlier | 1 / 1 | `3P463`, 1826, 23 vues |
+| AD39 | Dole | 16 / 16 | sections de 1813 (`3Pplan2187`…) |
+| AD55 | Verdun | 20 / 31 | sections de 1831-1832 (`139 FI 259`) |
+| AD58 | Clamecy | 20 / 20 | plan par masses de cultures (sans date), sections de 1833 |
+| AD69 | Tarare | 20 / 65 | sections de 1819 (`3P2001`…) |
+| AD90 | Delle | 2 / 2 | plan d'intendance (`1 C 69`, sans date), cadastre de 1823 (`3 P 55`) |
+| AD91 | Étampes | 20 / 45 | sections de 1824 (`3P/4309`…) |
+
+Non ouverts : **AD27** (formulaire « Plans cadastraux » relevé, mais ses 44 plans de Bernay ne sont pas marqués
+comme images : le filtre d'images en ligne du plugin n'en rend aucun ; type de média à étudier) ; les autres
+services Mnesys n'exposent pas de formulaire de cadastre sur leur page des fonds. Matricules d'**AD14** : le
+formulaire indexe chaque fiche individuelle par le nom du soldat ; sans nom envoyé, la recherche ne ferait que
+feuilleter des centaines de fiches : non ouvert, en attente d'une décision.
+
 Depuis #380, ces relevés AD59 sont suivis : `make veille-ad59` (étape réseau explicite du mainteneur, hors
 `make test`, aucun outil MCP) signale la dérive des douze formulaires de recherche, les fils du forum des ajouts
 du service et un classeur 3 E d'un autre millésime ; `diagnostic` (contrôle `referentiels_ad59`) signale, sans
@@ -438,7 +469,7 @@ continuent d'utiliser les clés canoniques.
 | notaire | notaires | minutes et répertoires |
 | paroissiaux | paroissial | préciser période et statut du fonds |
 | enregistrement | — | préciser table ou déclaration |
-| cadastre | — | plans et matrices ; recherche des plans pour AD59 (`CAD`, #379), matrices non couvertes |
+| cadastre | — | plans et matrices ; recherche des plans pour AD59 (`CAD`, #379) et neuf services Mnesys (#392), matrices non couvertes |
 | hypotheques | — | ajouté au catalogue, règle historique conservée ; recherche de volumes pour AD59 (`HYP`, #378) |
 | judiciaire | justice | ajouté au catalogue, clé publique historique conservée |
 | insinuation | insinuations | ajouté au catalogue, régime à préciser |

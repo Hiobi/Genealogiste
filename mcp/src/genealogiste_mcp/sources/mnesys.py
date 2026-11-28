@@ -15,7 +15,7 @@ import re
 from ..normalize.names import strip_accents
 
 # type_acte -> clé du formulaire dédié (REC : recensements de population, relevés du 28 novembre 2026, #392)
-TYPES_FONDS = {"RM": "matricules", "SUCC": "successions", "REC": "recensements"}
+TYPES_FONDS = {"RM": "matricules", "SUCC": "successions", "REC": "recensements", "CAD": "cadastre"}
 
 ARTICLES = ("LE", "LA", "LES", "L")
 # qualificatifs d'une commune ancienne ou absorbée : à départager seulement si aucune autre forme
@@ -148,7 +148,25 @@ def _correspond(option: str, type_acte: str) -> bool:
         return "matricule" in bas and not re.search(r"repertoire|liste|table", bas)
     if type_acte == "SUCC":
         return "succession" in bas and "table" in bas
+    if type_acte == "CAD":  # plans (cadastral, de finage, parcellaire…) et tableau d'assemblage ; ni matrice ni état
+        return bas.startswith("plan") or "tableau d'assemblage" in bas
     return typologie(option) == type_acte
+
+
+def lieu_declare(formulaire: dict, noeuds, nom: str) -> None:
+    """Remplace le champ de lieu deviné par celui que déclare le référentiel (``champs_lieu``) : bureau des
+    matricules en titre quand le formulaire propose aussi un lieu de naissance (AD14), commune en collectivité
+    quand un titre la précède (AD69, cadastre)."""
+    options = next((n.attrs.get("data-options") for n in noeuds
+                    if (n.attrs.get("data-name") or n.attrs.get("name")) == nom and "data-options" in n.attrs), None)
+    try:
+        options = json.loads(options) if options else None
+    except ValueError as exc:
+        raise FormulaireError(f"Options du champ {nom} illisibles.") from exc
+    if not isinstance(options, list) or not options or not all(isinstance(o, str) for o in options):
+        raise FormulaireError(f"Champ de lieu déclaré « {nom} » absent du formulaire ou sans liste : formulaire "
+                              "modifié, relevé à refaire.")
+    formulaire["commune"], formulaire["communes"] = nom, options
 
 
 def options_typologie(formulaire: dict, type_acte: str) -> tuple[str | None, list[str]]:

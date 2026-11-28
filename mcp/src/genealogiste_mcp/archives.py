@@ -153,15 +153,21 @@ def validate() -> list[str]:
             rr = s["recherche_registres"]
             formulaires = rr.get("formulaires") if isinstance(rr, dict) else None
             uuid = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
-            types_form = {"etat_civil", "tables_decennales", "matricules", "successions", "recensements"}
+            types_form = {"etat_civil", "tables_decennales", "matricules", "successions", "recensements",
+                          "cadastre"}
             if (not isinstance(formulaires, dict) or not formulaires or set(formulaires) - types_form
                     or not all(isinstance(v, str) and uuid.fullmatch(v) for v in formulaires.values())):
                 errs.append(f"{c} : recherche_registres.formulaires = {{etat_civil?, tables_decennales?, matricules?, "
-                            "successions?, recensements?}} en UUID, au moins un")
+                            "successions?, recensements?, cadastre?}} en UUID, au moins un")
             releves = rr.get("releves", {}) if isinstance(rr, dict) else {}  # date de relevé propre à un formulaire
             if (not isinstance(releves, dict) or not isinstance(formulaires, dict) or set(releves) - set(formulaires)
                     or not all(isinstance(v, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", v) for v in releves.values())):
                 errs.append(f"{c} : recherche_registres.releves = {{formulaire déclaré: date ISO}}")
+            champs_lieu = rr.get("champs_lieu", {}) if isinstance(rr, dict) else {}  # lieu déclaré par formulaire
+            if (not isinstance(champs_lieu, dict) or not isinstance(formulaires, dict)
+                    or set(champs_lieu) - set(formulaires)
+                    or not all(isinstance(v, str) and re.fullmatch(r"(\d+-)?[A-Za-z]+", v) for v in champs_lieu.values())):
+                errs.append(f"{c} : recherche_registres.champs_lieu = {{formulaire déclaré: nom de champ}}")
             champs_annee = rr.get("champs_annee", {}) if isinstance(rr, dict) else {}
             if (not isinstance(champs_annee, dict) or not isinstance(formulaires, dict)
                     or set(champs_annee) - set(formulaires)

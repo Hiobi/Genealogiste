@@ -335,10 +335,11 @@ def test_formulaire_change_ou_recherche_en_panne(app, fixtures):
 
 @respx.mock
 def test_cad_refuse_pour_un_autre_service_sans_requete(app):
-    for service in ("AD58", "AD25"):
+    # #392 : CAD ouvert aux services Mnesys qui déclarent un formulaire de cadastre (AD58, AD25 compris) ; un
+    # service Mnesys sans ce formulaire reste refusé, sans requête
+    for service in ("AD27", "AD80"):
         res = server.archives_registres(service, "Nevers", 1820, "CAD")
-        assert "CAD (plans du cadastre) : disponible pour AD59 seulement" in res["erreur"]
-        assert "n'est pas relevé" in res["erreur"]
+        assert "Aucun formulaire « cadastre » relevé pour " + service in res["erreur"]
     res = server.archives_registres("AD99", "Nevers", 1820, "CAD")  # service sans recherche de registres
     assert "non disponible pour AD99" in res["erreur"]
     assert len(respx.calls) == 0 and len(app.journal.entries(statut="erreur")) == 3
@@ -424,7 +425,7 @@ def test_autre_service_mnesys_inchange(app, monkeypatch):
     reel = archives.by_code
     monkeypatch.setattr(archives, "by_code", lambda c: svc if (c or "").upper() == "AD99" else reel(c))
     res = registres.rechercher(app.sctx, "AD99", "Ville-Fictive", 1820, "CAD")
-    assert "disponible pour AD59 seulement" in res["erreur"] and len(respx.calls) == 0
+    assert "Aucun formulaire « cadastre » relevé pour AD99" in res["erreur"] and len(respx.calls) == 0
 
 
 def test_documentation_de_l_outil():
