@@ -112,6 +112,12 @@ PISTE_LIEU_CAD = ("Commune réunie à une autre ou renommée : les plans sont cl
                   "changements de nom depuis 1943, lieu_historique(lieu, date) la commune à une date.")
 # Recensements des autres services Mnesys (#392, relevés du 28 novembre 2026, docs/recensements.md) : un
 # formulaire dédié par service, déclaré au référentiel (recherche_registres.formulaires.recensements).
+LECTURE_CAD_MNESYS = ("Un résultat est un plan ou un lot de plans de la commune (titre, cote et date tels qu'affichés "
+                      "par le service). Aucun plan n'est écarté sur sa date : un plan décrit le territoire pour les "
+                      "décennies qui suivent sa levée ; les lots sont triés par date et position_periode situe "
+                      "chacun (anterieur, contemporain, posterieur ; null sans date). typologie_envoyee : options "
+                      "de plans retenues ; autres_documents : matrices et états de section (propriétaires) que le "
+                      "formulaire propose aussi, non interrogés. Le contenu des vues n'est pas lu.")
 LECTURE_REC_MNESYS = ("Un résultat est un volume ou un cahier de recensement de la commune (titre, cote et date "
                       "tels qu'affichés par le service : listes nominatives, parfois états récapitulatifs ou "
                       "dénombrements) ; le millésime vient de la date affichée (bornes), jamais du titre. Le contenu "
@@ -724,17 +730,24 @@ def _requete_mnesys(http, svc: dict, commune: str, periode: list[int], type_acte
     # champ d'année déclaré au référentiel quand le formulaire ne le type pas (AD25 : classe en texte libre « 0-title »)
     if annee := svc["recherche_registres"].get("champs_annee", {}).get(cle_form):
         f["date"], f["debut"], f["fin"] = annee, None, None
+    # champ de lieu déclaré au référentiel quand le premier lieu du formulaire n'est pas le bon (#392 : AD14,
+    # matricules, bureau en titre et non lieu de naissance ; AD69, cadastre, commune en collectivité)
+    if lieu := svc["recherche_registres"].get("champs_lieu", {}).get(cle_form):
+        mnesys.lieu_declare(f, noeuds, lieu)
+    if type_acte == "CAD":  # aucune date envoyée, aucun plan écarté sur sa date (#391, #392)
+        f["date"] = f["debut"] = f["fin"] = None
     requete = {"formUuid": uuid, "sort": "date_asc", "mode": "list", "facet_media": "image"}
     valeur = None
     if commune and f["commune"]:
         valeur = mnesys.choisir_commune(f["communes"], commune)
         requete[f["commune"] + "[]"] = valeur
-    elif type_acte != "RM":  # matricules : le bureau de recrutement est facultatif
+    elif type_acte != "RM" or not f["commune"] and commune:  # matricules : le bureau est facultatif
         raise mnesys.FormulaireError("Formulaire sans liste de lieux : recherche par commune ou bureau impossible.")
     # Formulaire sans date, ou formulaire de tables dédié sans période (AD59) : commune seule, période filtrée
     # localement sur les bornes affichées (filtre_local). Un formulaire de tables dédié doté d'une période (AD25,
     # relevé du 18 novembre 2026) la reçoit ; la typologie reste propre au formulaire d'état civil.
-    filtre_local = bool(dedie) and not (f["debut"] and f["fin"]) or not (f["date"] or f["debut"] and f["fin"])
+    filtre_local = (bool(dedie) and not (f["debut"] and f["fin"]) or not (f["date"] or f["debut"] and f["fin"])) \
+        and type_acte != "CAD"
     if type_acte == "REC" and not (f["debut"] and f["fin"]):
         # Recensements, formulaire sans période (AD25, AD90, AD91 : millésime seul ; relevés du 28 novembre
         # 2026) : un intervalle n'envoie que la commune et se filtre localement, comme pour AD59 ; un millésime
@@ -751,7 +764,7 @@ def _requete_mnesys(http, svc: dict, commune: str, periode: list[int], type_acte
         # L'intervalle d'abord, même pour une année : la date exacte ne trouve pas toujours un volume pluriannuel
         # (AD91, tables des successions 1859-1865 absentes pour « 1-date=1860 », relevé du 18 novembre 2026).
         # Matricules : la classe est une année exacte.
-        if filtre_local:
+        if filtre_local or type_acte == "CAD":
             pass
         elif periode[0] == periode[1] and f["date"] and (type_acte == "RM" or not (f["debut"] and f["fin"])):
             requete[f["date"]] = str(periode[0])
@@ -806,9 +819,9 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
             raise ValueError("annee_fin : 0 (année seule) ou fin d'intervalle, de annee à 9999.")
         if type(page) is not int or page < 1:
             raise ValueError("page : entier à partir de 1.")
-        if svc and type_acte in ("FD", "CAD", *TYPES_HYP):
-            quoi = {"FD": "FD (fiches décès de l'enregistrement)",
-                    "CAD": "CAD (plans du cadastre)"}.get(type_acte, f"{type_acte} (hypothèques, sous-série 4 Q)")
+        if svc and type_acte in ("FD", *TYPES_HYP):
+            quoi = {"FD": "FD (fiches décès de l'enregistrement)"}.get(type_acte,
+                                                                     f"{type_acte} (hypothèques, sous-série 4 Q)")
             raise ValueError(f"type_acte {quoi} : disponible pour AD59 seulement ; le "
                              f"formulaire dédié de {service} n'est pas relevé : chercher dans l'inventaire du "
                              "service (archives_service, lien).")
@@ -821,7 +834,7 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
                              "services Mnesys qui le déclarent ; FD (fiches décès de l'enregistrement) pour AD59 ; HYP "
                              "(hypothèques, sous-série 4 Q : indicateurs, tables et répertoires ; HYPI, HYPT ou HYPR "
                              "pour une seule catégorie) pour AD59 ; CAD (plans du cadastre du Consulat et "
-                             "napoléonien) pour AD59.")
+                             "napoléonien) pour AD59, plans du cadastre pour les services Mnesys qui le déclarent.")
         periode = [annee, annee_fin or annee]
         # Copie du wrapper seulement : cache, client, politique et verrou de débit restent partagés.
         # La limite locale n'altère pas les reprises des autres sources ou appels simultanés.
@@ -848,6 +861,18 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
                     "millesimes_formulaire": annees or None, "periode_envoyee": not filtre_local,
                     "lecture": LECTURE_REC_MNESYS}
                 contexte = True  # « Contexte : … » du résultat : fonds ou commune selon le service
+            elif type_acte == "CAD":
+                rr = svc["recherche_registres"]
+                f_cad = _formulaire(http, svc["site"].rstrip("/"), rr["formulaires"]["cadastre"])  # en cache
+                champ, plans = mnesys.options_typologie(f_cad, "CAD")
+                extra["cadastre"] = {
+                    "formulaire": rr["formulaires"]["cadastre"],
+                    "releve_le": rr.get("releves", {}).get("cadastre", rr["releve_le"]),
+                    "typologie_envoyee": plans or None,
+                    "autres_documents": sorted({o for opts in f_cad["typologies"].values() for o in opts}
+                                               - set(plans)) or None,
+                    "lecture": LECTURE_CAD_MNESYS}
+                contexte = True
             host, naan = svc["site"].rstrip("/"), svc.get("ark_naan", "")
             url = host + "/search/results"
         elif type_acte in FORMULAIRES_ENREGISTREMENT:
@@ -885,6 +910,11 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
                 {b[0] if b[0] == b[1] else f"{b[0]}-{b[1]}" for r in resultats
                  if r["couvre_periode"] is False for b in [r["bornes"]]}, key=str)
         resultats = couvrantes
+    if svc and type_acte == "CAD":  # #391 : la date situe un plan, elle ne l'écarte jamais
+        for r in resultats:
+            r["couvre_periode"] = _couvre(r["bornes"], periode)
+            r["position_periode"] = _position(r["bornes"], periode)
+        resultats.sort(key=lambda r: r["bornes"] or [0, 0])
     enregistrement = svc is None and type_acte in FORMULAIRES_ENREGISTREMENT
     if enregistrement and type_acte == "FD":
         resultats, extra["fiches_deces"]["communicabilite"], extra["avertissement_communicabilite"] = (
