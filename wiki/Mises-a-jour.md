@@ -98,5 +98,17 @@ Le détail est dans chaque note de version.
   `citation.qualite` limitée à un entier de 0 à 3, une valeur illisible déjà présente dans `arbre.ged` ou
   Gramps Web n’empêche plus le chargement de l’arbre et apparaît dans `arbre_coherence`
   (`qualite_invalide`) (#371).
+- [0.31.0](https://github.com/Hiobi/Genealogiste/releases/tag/v0.31.0) : **fonds numérisés des AD59**.
+  `archives_registres(service="AD59")` accepte `REC` (recensements), `RM` (matricules, tables et fiches),
+  `SUCC` (successions et absences), `FD` (fiches décès), `HYP` (hypothèques, aussi `HYPI`, `HYPT`, `HYPR`)
+  et `CAD` (cadastre consulaire et napoléonien) (#375 à #379). Le **classeur 3 E** indique, pour un registre
+  d’état civil du XXe siècle absent en ligne, sa cote et l’année de mise en ligne prévue (#374) ; la couverture
+  des recensements distingue ce qui est en ligne de ce qui n’est consultable qu’en salle de lecture (#375).
+  `make veille-ad59` contrôle la dérive des formulaires AD59, lit les fils d’ajouts du forum et signale un
+  nouveau classeur 3 E ; `diagnostic` signale un référentiel AD59 de plus d’un an (#380). Nouvel hôte dans la
+  politique d’accès : le forum des AD59 (10 s, 20 requêtes par jour). Aucun nouvel outil MCP, signatures et
+  clés existantes inchangées (champs ajoutés dans les réponses) ; reconnecter le serveur MCP. Pas encore
+  éprouvé : images et planches-contacts sur ces fonds ; fiches décès, délai de communicabilité fondé sur la
+  seule page du service.
 
 Pour la version publiée actuellement, se référer à la page Releases et au numéro du pied de page du wiki.
