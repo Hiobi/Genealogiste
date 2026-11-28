@@ -18,6 +18,12 @@
     "groupe": "Commencer"
   },
   {
+    "slug": "Claude-Desktop",
+    "source": "wiki/Claude-Desktop.md",
+    "titre": "Claude Desktop",
+    "groupe": "Commencer"
+  },
+  {
     "slug": "Demarrage",
     "source": "wiki/Demarrage.md",
     "titre": "Premiers pas",
@@ -99,6 +105,18 @@
     "slug": "Couvertures-des-archives",
     "source": "docs/couvertures-archives.md",
     "titre": "Couvertures des archives",
+    "groupe": "Utiliser le plugin"
+  },
+  {
+    "slug": "Couverture-technique-archives",
+    "source": "docs/couverture-archives.md",
+    "titre": "Couverture technique des archives",
+    "groupe": "Utiliser le plugin"
+  },
+  {
+    "slug": "Recensements-AD59",
+    "source": "docs/recensements.md",
+    "titre": "Recensements (AD59)",
     "groupe": "Utiliser le plugin"
   },
   {
@@ -222,15 +240,15 @@
     "groupe": "Entretenir et contribuer"
   },
   {
+    "slug": "Veille-AD59",
+    "source": "docs/veille-ad59.md",
+    "titre": "Veille des AD59",
+    "groupe": "Entretenir et contribuer"
+  },
+  {
     "slug": "Maintenance",
     "source": "wiki/Maintenance.md",
     "titre": "Maintenir le wiki",
     "groupe": "Entretenir et contribuer"
-  },
-  {
-    "slug": "Couverture-technique-archives",
-    "source": "docs/couverture-archives.md",
-    "titre": "Couverture technique des archives",
-    "groupe": "Utiliser le plugin"
   }
 ]

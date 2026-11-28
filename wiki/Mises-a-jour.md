@@ -92,5 +92,32 @@ Le détail est dans chaque note de version.
   `contexte_local`. **Changement** : `contexte_verifier` (listes v3) refuse un billet dont le récit nomme un
   événement de sa liste sans source individuelle, et n’émet qu’un avertissement quand la phrase porte une
   source individuelle ; nouvelle variable `GENEALOGISTE_REFERENTIELS_DIR` (dossier de la base Cassini).
+- [0.30.1](https://github.com/Hiobi/Genealogiste/releases/tag/v0.30.1) : correctifs. `arbre_appliquer`,
+  `pieces_appliquer`, `marqueurs_migrer_appliquer`, `gramps_bascule_appliquer` et `cassini_installer`
+  refusent un jeton émis par un autre outil avec un message qui nomme le bon outil, sans le consommer (#364) ;
+  `citation.qualite` limitée à un entier de 0 à 3, une valeur illisible déjà présente dans `arbre.ged` ou
+  Gramps Web n’empêche plus le chargement de l’arbre et apparaît dans `arbre_coherence`
+  (`qualite_invalide`) (#371).
+- [0.31.0](https://github.com/Hiobi/Genealogiste/releases/tag/v0.31.0) : **fonds numérisés des AD59**.
+  `archives_registres(service="AD59")` accepte `REC` (recensements), `RM` (matricules, tables et fiches),
+  `SUCC` (successions et absences), `FD` (fiches décès), `HYP` (hypothèques, aussi `HYPI`, `HYPT`, `HYPR`)
+  et `CAD` (cadastre consulaire et napoléonien) (#375 à #379). Le **classeur 3 E** indique, pour un registre
+  d’état civil du XXe siècle absent en ligne, sa cote et l’année de mise en ligne prévue (#374) ; la couverture
+  des recensements distingue ce qui est en ligne de ce qui n’est consultable qu’en salle de lecture (#375).
+  `make veille-ad59` contrôle la dérive des formulaires AD59, lit les fils d’ajouts du forum et signale un
+  nouveau classeur 3 E ; `diagnostic` signale un référentiel AD59 de plus d’un an (#380). Nouvel hôte dans la
+  politique d’accès : le forum des AD59 (10 s, 20 requêtes par jour). Aucun nouvel outil MCP, signatures et
+  clés existantes inchangées (champs ajoutés dans les réponses) ; reconnecter le serveur MCP. Pas encore
+  éprouvé : images et planches-contacts sur ces fonds ; fiches décès, délai de communicabilité fondé sur la
+  seule page du service.
+- [0.32.0](https://github.com/Hiobi/Genealogiste/releases/tag/v0.32.0) : **recensements hors du Nord**.
+  `archives_registres(type_acte="REC")` vaut aussi pour AD14, AD19, AD25, AD27, AD37, AD39, AD51, AD55, AD58,
+  AD69, AD80, AD90 et AD91 (formulaires relevés le 28 novembre 2026 ; localisation seule, sans état de la
+  collection) ; AD972 reste refusé (pas de formulaire), AD73 n’est pas interrogé (son `robots.txt` interdit la
+  recherche) (#392). Cadastre AD59 : plus aucun plan écarté sur sa date, lots triés et situés par
+  `position_periode` (antérieur, contemporain, postérieur) (#391). Nouvelle page [Claude Desktop](Claude-Desktop.md)
+  (onglet Code pris en charge, chat non). Aucun nouvel outil MCP, signatures et clés existantes inchangées
+  (champs ajoutés) ; reconnecter le serveur MCP. Pas encore éprouvé : veille de dérive des nouveaux formulaires ;
+  Claude Desktop sans recette.
 
 Pour la version publiée actuellement, se référer à la page Releases et au numéro du pied de page du wiki.

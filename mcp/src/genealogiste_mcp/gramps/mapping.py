@@ -744,9 +744,17 @@ class _Reader:
             (texte if tcanon(n.get("type")) == "Transcript" else note).append(self.note_text(n))
         conf = c.get("confidence", 2)
         quay = _attr_value(c, "QUAY")
-        qualite = int(quay) if quay.isdigit() else (None if conf == 2 else min(int(conf), 3))
+        source = self.xid("Source", c.get("source_handle")) or (c.get("source_handle") or "")
+        if quay.isdigit():
+            qualite = int(quay)
+        elif isinstance(conf, int) and not isinstance(conf, bool):
+            qualite = None if conf == 2 else max(0, min(conf, 3))
+        else:  # confiance illisible (#371) : la base reste lisible, la qualité est signalée puis à corriger
+            qualite = None
+            self.t.anomalies.append(f"citation {c.get('gramps_id') or h} (source {source}) : confiance Gramps "
+                                    f"{conf!r} invalide, qualité ignorée (corriger : supprimer_citation puis ajouter_citation)")
         return Citation(
-            source=self.xid("Source", c.get("source_handle")) or (c.get("source_handle") or ""),
+            source=source,
             page=c.get("page") or "", texte="\n\n".join(texte), qualite=qualite,
             type_source=_REV_TYPES.get(_attr_value(c, "Type de source"), "indeterminee"),
             information=_REV_INFOS.get(_attr_value(c, "Information"), "indeterminee"),

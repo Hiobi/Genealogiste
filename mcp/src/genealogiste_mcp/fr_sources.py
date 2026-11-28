@@ -9,6 +9,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Any
 
+from . import couverture_3e, couverture_recensements
 from .normalize.dates import parse_date
 from .normalize.pays import pays_du_lieu, pays_resume
 from .types_documents import RULES, SERIES, normaliser
@@ -80,8 +81,199 @@ def next_source_hint(fact: str, when: str = "", where: Any = "") -> list[dict]:
             if d["cote_typique"] in _COTES_AD:
                 d["cote_typique"] = f"{d['cote_typique']} — {SI_FRANCE}"
                 d["condition"] = SI_FRANCE
+    if pays["france"] is True and not migration:
+        _cotes_3e(fact, when, lieu_texte(where), out)
+    if pays["france"] is True:
+        _cotes_recensements(fact, when, lieu_texte(where), out)
+        _matricules_nord(fact, when, lieu_texte(where), out)
+        _successions_nord(fact, when, lieu_texte(where), out)
+        _hypotheques_nord(fact, when, lieu_texte(where), out)
+        _cadastre_nord(fact, lieu_texte(where), out)
     court = pays_resume(pays)
     return [{**d, "pays": dict(court)} for d in out]
+
+
+def _cotes_3e(fact: str, when: str, lieu: str, sources: list[dict]) -> None:
+    """Nord : cotes 3 E connues du classeur des AD59 (#374), jointes à la piste de l'acte ; ajout seulement."""
+    document = {"BIRT": "naissance", "MARR": "mariage", "DEAT": "deces"}.get(fact)
+    if not document or not lieu:
+        return
+    from .normalize.places import normalize_place
+    place = normalize_place(lieu)
+    if place.get("departement_code") != "59":
+        return
+    try:
+        volumes = couverture_3e.pour_fait(document, _year(when), place.get("commune") or "")
+    except (OSError, ValueError, KeyError):
+        return
+    for d in sources:
+        if volumes and d["cote_typique"] == SERIES["etat_civil"] and d["source"].startswith("Acte de "):
+            d["classeur_3e"] = volumes
+            return
+
+
+def _cotes_recensements(fact: str, when: str, lieu: str, sources: list[dict]) -> None:
+    """Nord : cotes de recensement connues de l'état de la collection des AD59 (#375), jointes aux pistes
+    « listes nominatives » ; ajout seulement. Millésime de l'année et recensements connus les plus proches, avant
+    et après (après seulement pour une naissance ou une filiation)."""
+    pistes = [d for d in sources if d["cote_typique"] == SERIES["recensements"]]
+    if not pistes or not lieu:
+        return
+    from .normalize.places import normalize_place
+    place = normalize_place(lieu)
+    if place.get("departement_code") != "59":
+        return
+    try:
+        volumes = couverture_recensements.pour_fait(_year(when), place.get("commune") or "",
+                                                    avant=fact not in ("BIRT", "CHR", "BAPM", "FILIATION"))
+    except (OSError, ValueError, KeyError):
+        return
+    for d in pistes:
+        if volumes:
+            d["couverture_recensements"] = volumes
+
+
+def classe_recrutement(annee_naissance: int) -> int:
+    """Classe de recrutement d'un registre matricule : année de naissance + 20 (règle déjà affirmée par le dépôt).
+    Règle générale seulement : engagés volontaires, ajournés ou classes appelées par anticipation ne sont pas
+    traités ; en cas de doute, chercher aussi les classes voisines."""
+    if type(annee_naissance) is not int or not 1 <= annee_naissance <= 9979:
+        raise ValueError("annee_naissance : année précise (entier de 1 à 9979).")
+    return annee_naissance + 20
+
+
+def _matricules_nord(fact: str, when: str, lieu: str, sources: list[dict]) -> None:
+    """Nord : la piste « registre matricule » reçoit la recherche des AD59 (#376) et, pour une naissance datée,
+    la classe ; ajout seulement. Aucune cote 1 R n'est donnée ici : elle vient de la réponse du service."""
+    pistes = [d for d in sources if d["cote_typique"] == SERIES["matricules"]]
+    if not pistes or not lieu:
+        return
+    from .normalize.places import normalize_place
+    if normalize_place(lieu).get("departement_code") != "59":
+        return
+    y = _year(when) if fact in ("BIRT", "CHR", "BAPM", "FILIATION") else None  # seule date qui soit une naissance
+    aide: dict = {"service": "AD59"}
+    if y and 1 <= y <= 9979:
+        aide["classe"] = classe_recrutement(y)
+    aide["recherche"] = (f'archives_registres(service="AD59", commune="", annee={aide.get("classe", "<classe>")}, '
+                         'type_acte="RM")')
+    aide["note"] = ("Classe = année de naissance + 20. La réponse distingue les tables alphabétiques et les volumes "
+                    "des états signalétiques, avec leur cote 1 R réelle : aucune cote n'est proposée ici (pas de "
+                    "référentiel local). Le bureau de recrutement (commune, facultatif) n'est pas déduit du lieu : "
+                    "sans bureau, la réponse liste ceux de la classe. Vérifier communicabilite(\"matricule\").")
+    for d in pistes:
+        d["matricules_ad59"] = dict(aide)
+
+
+# Enregistrement des AD59 (#377) : ce que la présentation du service annonce en ligne au relevé du 27 novembre 2026.
+SUCCESSIONS_AD59 = (1791, 1968)
+FICHES_DECES_AD59 = (1969, 1975)
+AVERT_FICHES_DECES = ("Fiches décès : ne pas les tenir pour librement communicables. Le service affirme un délai de "
+                      "50 ans (seules les fiches de plus de 50 ans sont en ligne) ; ce régime n'a pas été vérifié "
+                      "par le plugin : voir communicabilite(\"vie_privee\") et interroger le service en cas de doute.")
+
+
+def _successions_nord(fact: str, when: str, lieu: str, sources: list[dict]) -> None:
+    """Nord : la piste « table des successions et absences » reçoit la recherche des AD59 (#377) ; ajout
+    seulement. Aucune cote 3 Q ou W n'est donnée ici : elle vient de la réponse du service. Le bureau de
+    l'enregistrement n'est pas déduit de la commune."""
+    pistes = [d for d in sources if d["cote_typique"] == SERIES["enregistrement"]]
+    if not pistes or not lieu:
+        return
+    from .normalize.places import normalize_place
+    if normalize_place(lieu).get("departement_code") != "59":
+        return
+    y = _year(when) if fact in ("DEAT", "BURI") else None  # seule date qui soit celle du décès
+    annee = y if y else "<année du décès>"
+    aide: dict = {"service": "AD59", "releve_le": "2026-11-27"}
+    appel = 'archives_registres(service="AD59", commune="<bureau de l\'enregistrement>", annee={}, type_acte="{}")'
+    if y is None or y <= SUCCESSIONS_AD59[1]:
+        aide["recherche"] = appel.format(annee, "SUCC")
+    if y is None or FICHES_DECES_AD59[0] <= y <= FICHES_DECES_AD59[1]:
+        aide["fiches_deces"] = {"recherche": appel.format(annee, "FD"), "avertissement": AVERT_FICHES_DECES}
+    aide["note"] = (f"D'après le service : tables des successions et absences en ligne pour {SUCCESSIONS_AD59[0]}-"
+                    f"{SUCCESSIONS_AD59[1]} au plus (fin variable selon les bureaux), fiches décès pour "
+                    f"{FICHES_DECES_AD59[0]}-{FICHES_DECES_AD59[1]}. La clé est le bureau de l'enregistrement, pas la "
+                    "commune : il n'est pas déduit du lieu ; un bureau inconnu ou ambigu rend la liste des valeurs "
+                    "du formulaire. Élargir avec annee_fin si le décès est mal daté. Aucune cote n'est proposée ici "
+                    "(pas de référentiel local) : elle vient de la réponse. Une absence dans une table ne prouve "
+                    "pas l'absence de décès (autre bureau, décès non déclaré)."
+                    + (" Décès postérieur à ce que le service annonce en ligne : aucune recherche proposée."
+                       if y and y > FICHES_DECES_AD59[1] else ""))
+    for d in pistes:
+        d["successions_ad59"] = {k: dict(v) if isinstance(v, dict) else v for k, v in aide.items()}
+
+
+# Hypothèques des AD59 (#378) : ce que la présentation du service annonce au relevé du 27 novembre 2026.
+HYPOTHEQUES_AD59 = (1799, 1955)
+
+
+def _hypotheques_nord(fact: str, when: str, lieu: str, sources: list[dict]) -> None:
+    """Nord : les pistes notariales (contrat de mariage et dot, vente, bien) reçoivent la recherche des hypothèques
+    des AD59, sous-série 4 Q (#378) ; ajout seulement. Ni cote ni bureau ne sont proposés : la cote vient de la
+    réponse du service, le bureau des hypothèques n'est pas déduit de la commune."""
+    pistes = [d for d in sources if d["cote_typique"] == SERIES["notaires"]]
+    if not pistes or not lieu:
+        return
+    # la date d'une naissance ou d'une filiation n'est pas celle de l'acte notarié : aucune année calculée
+    y = None if fact in ("BIRT", "CHR", "BAPM", "FILIATION") else _year(when)
+    if y and y < HYPOTHEQUES_AD59[0]:
+        return
+    from .normalize.places import normalize_place
+    if normalize_place(lieu).get("departement_code") != "59":
+        return
+    aide: dict = {"service": "AD59", "releve_le": "2026-11-27", "serie": SERIES["hypotheques"]}
+    if y is None or y <= HYPOTHEQUES_AD59[1]:
+        annee = y or "<année de l'acte>"
+        aide["recherche"] = ('archives_registres(service="AD59", commune="<bureau des hypothèques>", '
+                             f'annee={annee}, type_acte="HYP")')
+    aide["methode"] = ("indicateur, puis table alphabétique du bureau (numéro de case du propriétaire), puis "
+                       "répertoire des formalités (volume et numéro des actes) ; les registres de transcription et "
+                       "d'inscription se consultent ensuite en salle de lecture")
+    aide["note"] = (f"D'après le service : archives des conservations des hypothèques de {HYPOTHEQUES_AD59[0]} "
+                    f"(an VII) à {HYPOTHEQUES_AD59[1]}, recherche par nom de propriétaire seulement ; piste pour un "
+                    "bien, une vente ou un mariage avec dot ou apport immobilier, quand le notaire est inconnu. La "
+                    "clé est le bureau des hypothèques (arrondissement), pas la commune : il n'est pas déduit du "
+                    "lieu ; un bureau inconnu rend la liste des valeurs du formulaire. Aucune cote n'est proposée "
+                    "ici (pas de référentiel local) : elle vient de la réponse. Le nom cherché n'est jamais envoyé : "
+                    "il sert à choisir, localement, le volume dont la plage alphabétique le couvre. Vérifier "
+                    "communicabilite(\"hypotheques\")."
+                    + (" Acte postérieur à 1955 : services de la publicité foncière, aucune recherche proposée."
+                       if y and y > HYPOTHEQUES_AD59[1] else ""))
+    for d in pistes:
+        d["hypotheques_ad59"] = dict(aide)
+
+
+def _cadastre_nord(fact: str, lieu: str, sources: list[dict]) -> None:
+    """Nord : plans du cadastre des AD59 (#379) pour situer un lieu-dit ou une parcelle ; ajout seulement. Joint
+    à la piste des recensements pour un domicile (RESI, OCCU, CENS), sinon à la piste « Actes notariés » (bien).
+    Aucune cote n'est proposée : elle vient de la réponse du service."""
+    if fact in ("RESI", "OCCU", "CENS"):
+        pistes = [d for d in sources if d["cote_typique"] == SERIES["recensements"]]
+    else:
+        pistes = [d for d in sources if d["source"] == "Actes notariés"]
+    if not pistes or not lieu:
+        return
+    from .normalize.places import normalize_place
+    place = normalize_place(lieu)
+    if place.get("departement_code") != "59":
+        return
+    commune = place.get("commune") or "<commune>"
+    aide = {"service": "AD59", "releve_le": "2026-11-27", "serie": SERIES["cadastre"],
+            "recherche": (f'archives_registres(service="AD59", commune="{commune}", annee=<année>, '
+                          'annee_fin=<année>, type_acte="CAD")'),
+            "note": ("Plans du cadastre dit du Consulat et du cadastre dit napoléonien (plans seulement, non "
+                     "nominatifs) : situer un lieu-dit, une section ou une parcelle cités par un acte ou un "
+                     "recensement. D'après le service : début du XIXe siècle pour les premiers, jusqu'au début du "
+                     "XXe siècle pour certaines communes pour les seconds. Un plan vaut pour les décennies qui "
+                     "suivent sa levée : aucun n'est écarté sur sa date, tous les lots de la commune sont rendus, "
+                     "triés par date et situés par position_periode (anterieur, contemporain, posterieur à la "
+                     "période demandée) ; lire d'abord le dernier plan antérieur au fait. Aucune cote n'est proposée ici (pas de "
+                     "référentiel local) : elle vient de la réponse. La commune est celle du plan : une commune "
+                     "réunie ou renommée se cherche sous son nom d'alors (noms_lies ; geo_historique). Matrices et "
+                     "états de sections (propriétaires) : non couverts, à chercher dans l'inventaire du service.")}
+    for d in pistes:
+        d["cadastre_ad59"] = dict(aide)
 
 
 def _hors_france(fact: str, sources: list[dict], pays: dict) -> list[dict]:

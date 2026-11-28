@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="fr"><head></head>
+<body id="display-results">
+ <div id="old-browsers" class="disclaimer">
+ <div class="text">
+ Ce portail est conçu pour être utilisé sur les navigateurs Chrome, Firefox, Safari et Edge. Pour une expérience optimale, nous vous invitons à utiliser l&#039;un de ces navigateurs.
+ </div>
+ <div class="buttons">
+ <button type="button" class="btn btn-primary" id="old-browsers-accept">J&#039;ai compris</button>
+ </div>
+</div>
+ <main role="main" id="page-top">
+ <div class="btn-return">
+ <a href="https://archives.meuse.fr/search/form/126b4831-bb54-4bf5-af0e-ba0f672e0bf8?0-controlledAccessGeographicName%5B0%5D=Verdun" data-toggle="tooltip" data-original-title="Retour au formulaire : Recensements de population">
+ <i class="fa fa-chevron-left"></i>
+ Retour au formulaire
+ <span id="search-form-title">: Recensements de population</span>
+ </a>
+</div>
+ <section class="facets no-print ">
+ <aside>
+ <h2 class="filter"><i class="fas fa-filter" aria-hidden="true"></i>Filtrer les résultats<span><i class="fa fa-times" aria-hidden="true"></i></span></h2>
+ <form id="form-facets" method="GET">
+ <input type="hidden" name="formUuid" value="126b4831-bb54-4bf5-af0e-ba0f672e0bf8" />
+ <input type="hidden" name="sort" value="date_asc" />
+ <input type="hidden" name="mode" value="list" />
+ <input type="hidden" name="0-controlledAccessGeographicName[]" value="Verdun" />
+ <input type="hidden" name="page" value="1" />
+ <input type="hidden" name="mapBounds" value="" />
+ <div class="facet">
+ <div class="title">Multimédias</div>
+ <fieldset>
+ <legend class="sr-only">Filtre les résultats par : Multimédias</legend>
+ <ul>
+ <li class="row ">
+ <div class="col-sm-10 term custom-control custom-checkbox">
+ <input
+ type="checkbox"
+ class="custom-control-input"
+ name="facet_media"
+ id="facet_media.1"
+ value="image"
+ checked />
+ <label class="custom-control-label" for="facet_media.1" title="Images">Images</label>
+ </div>
+ <div class="col-sm-2 count">5</div>
+ </li>
+ </ul>
+ </fieldset>
+ </div>
+ <div class="facet">
+ <div class="title">Lieux</div>
+ <fieldset>
+ <legend class="sr-only">Filtre les résultats par : Lieux</legend>
+ <ul>
+ <li class="row ">
+ <div class="col-sm-10 term custom-control custom-checkbox">
+ <input
+ type="checkbox"
+ class="custom-control-input"
+ name="facet_geographicName"
+ id="facet_geographicName.1"
+ value="Verdun"
+ />
+ <label class="custom-control-label" for="facet_geographicName.1" title="Verdun">Verdun</label>
+ </div>
+ <div class="col-sm-2 count">5</div>
+ </li>
+ </ul>
+ </fieldset>
+ </div>
+ <div class="facet">
+ <div class="title">Nom de l&#039;inventaire</div>
+ <fieldset>
+ <legend class="sr-only">Filtre les résultats par : Nom de l&#039;inventaire</legend>
+ <ul>
+ <li class="row ">
+ <div class="col-sm-10 term custom-control custom-checkbox">
+ <input
+ type="checkbox"
+ class="custom-control-input"
+ name="facet_titleProper"
+ id="facet_titleProper.1"
+ value="Recensements de population : listes nominatives"
+ />
+ <label class="custom-control-label" for="facet_titleProper.1" title="Recensements de population : listes nominatives">Recensements de population : listes nominatives</label>
+ </div>
+ <div class="col-sm-2 count">5</div>
+ </li>
+ </ul>
+ </fieldset>
+ </div>
+ <div class="facet">
+ <div class="title">Sujets</div>
+ <fieldset>
+ <legend class="sr-only">Filtre les résultats par : Sujets</legend>
+ <div class="empty">
+ Aucune valeur disponible
+ </div>
+ </fieldset>
+ </div>
+ <div class="facet">
+ <div class="title">Période</div>
+ <fieldset>
+ <legend class="sr-only">Filtre les résultats par : Période</legend>
+ <ul>
+ <li class="row">
+ <div class="col-sm-10 term custom-control custom-checkbox">
+ <input
+ type="checkbox"
+ class="custom-control-input century"
+ name="facet_century"
+ id="facet_century.1"
+ value="1901"
+ />
+ <label class="custom-control-label" for="facet_century.1" title="1901-2000">1901-2000</label>
+ </div>
+ <div class="col-sm-2 count">2</div>
+ </li>
+ <li>
+ <ul>
+ <li class="row">
+ <div class="col-sm-10 term custom-control custom-checkbox">
+ <input
+ type="checkbox"
+ class="custom-control-input decade"
+ name="facet_decade"
+ id="facet_decade.1"
+ value="1931"
+ />
+ <label class="custom-control-label" for="facet_decade.1" title="1931-1940">1931-1940</label>
+ </div>
+ <div class="col-sm-2 count">1</div>
+ </li>
+ <li class="row">
+ <div class="col-sm-10 term custom-control custom-checkbox">
+ <input
+ type="checkbox"
+ class="custom-control-input decade"
+ name="facet_decade"
+ id="facet_decade.2"
+ value="1941"
+ />
+ <label class="custom-control-label" for="facet_decade.2" title="1941-1950">1941-1950</label>
+ </div>
+ <div class="col-sm-2 count">1</div>
+ </li>
+ </ul>
+ </li>
+ </ul>
+ </fieldset>
+ </div>
+ </form>
+</aside>
+ </section>
+ <section class="navigation clearfix row">
+ <div class="view-mode col-sm pl-0 pr-0">
+ <ul class="clearfix">
+ <li class="select select-viewmode clearfix">
+ <p class="placeholder" title="Affichage">
+ <i class="placeholder-icon fas fa-th-list" aria-hidden="true"></i>
+ <span class="sr-only">Affichage</span>
+ </p>
+ <ul>
+ <li class="selected">
+ <a href="https://archives.meuse.fr/search/results?formUuid=126b4831-bb54-4bf5-af0e-ba0f672e0bf8&amp;sort=date_asc&amp;mode=list&amp;facet_media=image&amp;0-controlledAccessGeographicName%5B0%5D=Verdun&amp;page=1" title="Affichage liste">
+ <i class="fas fa-th-list" aria-hidden="true"></i>
+ <span class="sr-only">Affichage liste</span>
+ </a>
+ </li>
+ <li class="">
+ <a href="https://archives.meuse.fr/search/results?formUuid=126b4831-bb54-4bf5-af0e-ba0f672e0bf8&amp;sort=date_asc&amp;mode=table&amp;facet_media=image&amp;0-controlledAccessGeographicName%5B0%5D=Verdun&amp;page=1" title="Affichage tableau">
+ <i class="fas fa-table" aria-hidden="true"></i>
+ <span class="sr-only">Affichage tableau</span>
+ </a>
+ </li>
+ <li class="">
+ <a href="https://archives.meuse.fr/search/results?formUuid=126b4831-bb54-4bf5-af0e-ba0f672e0bf8&amp;sort=date_asc&amp;mode=mosaic&amp;facet_media=image&amp;0-controlledAccessGeographicName%5B0%5D=Verdun&amp;page=1" title="Affichage mosaïque">
+ <i class="fas fa-th" aria-hidden="true"></i>
+ <span class="sr-only">Affichage mosaïque</span>
+ </a>
+ </li>
+ <li class="">
+ <a href="https://archives.meuse.fr/search/results?formUuid=126b4831-bb54-4bf5-af0e-ba0f672e0bf8&amp;mode=chrono&amp;facet_media=image&amp;0-controlledAccessGeographicName%5B0%5D=Verdun" title="Affichage frise chronologique">
+ <i class="nf nf-timeline" aria-hidden="true"></i>
+ <span class="sr-only">Affichage frise chronologique</span>
+ </a>
+ </li>
+ </ul>
+ </li>
+</ul>
+ </div>
+ <div class="sort col-sm pl-0 pr-0">
+ <ul class="clearfix">
+ <li class="select select-sort clearfix">
+ <p class="placeholder" title="Trier par date (0-9)">
+ Date (0-9)
+ </p>
+ <ul>
+ <li class="">
+ <a href="https://archives.meuse.fr/search/results?formUuid=126b4831-bb54-4bf5-af0e-ba0f672e0bf8&amp;mode=list&amp;facet_media=image&amp;0-controlledAccessGeographicName%5B0%5D=Verdun&amp;page=1&amp;sort=referencecode_asc" title="Trier par cote (A-Z)">Cote (A-Z)</a>
+ </li>
+ <li class="">
+ <a href="https://archives.meuse.fr/search/results?formUuid=126b4831-bb54-4bf5-af0e-ba0f672e0bf8&amp;mode=list&amp;facet_media=image&amp;0-controlledAccessGeographicName%5B0%5D=Verdun&amp;page=1&amp;sort=referencecode_dsc" title="Trier par cote (Z-A)">Cote (Z-A)</a>
+ </li>
+ <li class="selected">
+ <a href="https://archives.meuse.fr/search/results?formUuid=126b4831-bb54-4bf5-af0e-ba0f672e0bf8&amp;mode=list&amp;facet_media=image&amp;0-controlledAccessGeographicName%5B0%5D=Verdun&amp;page=1&amp;sort=date_asc" title="Trier par date (0-9)">Date (0-9)</a>
+ </li>
+ <li class="">
+ <a href="https://archives.meuse.fr/search/results?formUuid=126b4831-bb54-4bf5-af0e-ba0f672e0bf8&amp;mode=list&amp;facet_media=image&amp;0-controlledAccessGeographicName%5B0%5D=Verdun&amp;page=1&amp;sort=date_dsc" title="Trier par date (9-0)">Date (9-0)</a>
+ </li>
+ <li class="">
+ <a href="https://archives.meuse.fr/search/results?formUuid=126b4831-bb54-4bf5-af0e-ba0f672e0bf8&amp;mode=list&amp;facet_media=image&amp;0-controlledAccessGeographicName%5B0%5D=Verdun&amp;page=1&amp;sort=relevance" title="Trier par pertinence">Pertinence</a>
+ </li>
+ </ul>
+ </li>
+</ul>
+ </div>
+ <div class="pagination-row col-sm">
+ <ul id="pagination" class="pagination-sm pagination" aria-current="page">
+ <li id="page-content" class="page-content">
+ <label for="current-page">Page</label>
+ <input id="current-page" name="page" form="form-facets"
+ type="number" value="1" min="1" max="1"/>
+ sur 1</li>
+ </ul>
+ </div>
+ <div class="result-page col-sm">
+ <span class="result">
+ 5 résultats
+ </span>
+<ul class="clearfix">
+ <li class="select select-results-per-page clearfix">
+ <p class="placeholder" title="20 résultats par page">
+ 20 <span class="label">résultats par page</span>
+ </p>
+ <ul>
+ <li class="selected">
+ <a href="https://archives.meuse.fr/search/results?formUuid=126b4831-bb54-4bf5-af0e-ba0f672e0bf8&amp;sort=date_asc&amp;mode=list&amp;facet_media=image&amp;0-controlledAccessGeographicName%5B0%5D=Verdun"><span>20 résultats par page</span></a>
+ </li>
+ <li class="">
+ <a href="https://archives.meuse.fr/search/results?formUuid=126b4831-bb54-4bf5-af0e-ba0f672e0bf8&amp;sort=date_asc&amp;mode=list&amp;facet_media=image&amp;0-controlledAccessGeographicName%5B0%5D=Verdun&amp;resultsPerPage=40"><span>40 résultats par page</span></a>
+ </li>
+ <li class="">
+ <a href="https://archives.meuse.fr/search/results?formUuid=126b4831-bb54-4bf5-af0e-ba0f672e0bf8&amp;sort=date_asc&amp;mode=list&amp;facet_media=image&amp;0-controlledAccessGeographicName%5B0%5D=Verdun&amp;resultsPerPage=80"><span>80 résultats par page</span></a>
+ </li>
+ </ul>
+ </li>
+</ul>
+ </div>
+ <div class="result-actionbar">
+<div
+ id="actionbar"
+ data-bookmark-url="/user/api/v1/bookmark/advancedSearchResult"
+ data-bookmark-data="{&quot;formUuid&quot;:&quot;126b4831-bb54-4bf5-af0e-ba0f672e0bf8&quot;,&quot;sort&quot;:&quot;date_asc&quot;,&quot;mode&quot;:&quot;list&quot;,&quot;facet_media&quot;:&quot;image&quot;,&quot;0-controlledAccessGeographicName&quot;:{&quot;0&quot;:&quot;Verdun&quot;},&quot;page&quot;:&quot;1&quot;}"
+ data-bookmark-list-url="https://archives.meuse.fr/user/bookmarks"
+ data-logged-in=""
+ data-bookmarked=""
+ data-social="1" data-print="1"
+ data-site-name="Archives de la Meuse"
+ data-page-title="Recensements de population - Recherche"
+ data-share-mail-body="Bonjour,
+Je vous recommande cette page :
+https%3A%2F%2Farchives.meuse.fr%2Fsearch%2Fresults%3FformUuid%3D126b4831-bb54-4bf5-af0e-ba0f672e0bf8%26sort%3Ddate_asc%26mode%3Dlist%26facet_media%3Dimage%260-controlledAccessGeographicName%255B0%255D%3DVerdun%26page%3D1
+Bonne consultation !
+"
+ ></div>
+ </div>
+ </section>
+<aside class="alert-container row">
+</aside>
+ <div class="container">
+ <h1 hidden="true">Résultats de la recherche</h1>
+<section id="list-container" class="active">
+ <ol> <li class="element-list">
+<div class="img-element">
+ <span><span class="sr-only">Résultat n°</span>1</span> 
+ <div class="img image-thumbnail">
+ <a href="/ark:/52669/tn6kvdf9prws/c21366f8-ebea-4dfe-be37-36b037d74f61" class="bloc-list-picture d-block" title="Visualiser le media" rel="noopener noreferrer" target="_blank">
+ <img class="list-picture img-fluid" src="/images/c21366f8-ebea-4dfe-be37-36b037d74f61_search_result_thumbnail.jpg" alt="Verdun">
+ </a>
+ <p class="info-list-picture">
+ 271 medias
+ </p>
+ </div>
+</div>
+<section class="content">
+ <div class="intitup">
+ <a
+ href="https://archives.meuse.fr/ark:/52669/tn6kvdf9prws"
+ title="Voir la notice complète : Verdun"
+ >
+ <h2>
+ <span>Verdun</span>
+ </h2>
+ </a>
+ <div class="date-cote content-part clearfix">
+ <div class="content-sub-part">
+ <h3>Date</h3>
+ <p><span>1936</span></p>
+ </div>
+ <div class="content-sub-part">
+ <h3>Cote</h3>
+ <p class="referenceCodes">6 M 62 (Cote)</p>
+ </div>
+ </div>
+<ul class="context content-part clearfix">
+ <li>
+ <div class="context-content">Contexte : Recensements de population : listes nominatives</div>
+ </li>
+ <li>
+ Verdun </li>
+ <li> Verdun
+ </li>
+</ul>
+ </div>
+ </section>
+ <div class="record-actions">
+ </div>
+ </li>
+ <li class="element-list">
+<div class="img-element">
+ <span><span class="sr-only">Résultat n°</span>2</span> 
+ <div class="img image-thumbnail">
+ <a href="/ark:/52669/95f3rp6xb4g7/acdc854e-483d-4488-be60-8b4ddf6d5b28" class="bloc-list-picture d-block" title="Visualiser le media" rel="noopener noreferrer" target="_blank">
+ <img class="list-picture img-fluid" src="/images/acdc854e-483d-4488-be60-8b4ddf6d5b28_search_result_thumbnail.jpg" alt="Verdun">
+ </a>
+ <p class="info-list-picture">
+ 293 medias
+ </p>
+ </div>
+</div>
+<section class="content">
+ <div class="intitup">
+ <a
+ href="https://archives.meuse.fr/ark:/52669/95f3rp6xb4g7"
+ title="Voir la notice complète : Verdun"
+ >
+ <h2>
+ <span>Verdun</span>
+ </h2>
+ </a>
+ <div class="date-cote content-part clearfix">
+ <div class="content-sub-part">
+ <h3>Date</h3>
+ <p><span>1946</span></p>
+ </div>
+ <div class="content-sub-part">
+ <h3>Cote</h3>
+ <p class="referenceCodes">2023 W 18 (Cote)</p>
+ </div>
+ </div>
+<ul class="context content-part clearfix">
+ <li>
+ <div class="context-content">Contexte : Recensements de population : listes nominatives</div>
+ </li>
+ <li>
+ Verdun </li>
+ <li> Verdun
+ </li>
+</ul>
+ </div>
+ </section>
+ <div class="record-actions">
+ </div>
+ </li>
+ <li class="element-list">
+<div class="img-element">
+ <span><span class="sr-only">Résultat n°</span>3</span> 
+ <div class="img image-thumbnail">
+ <a href="/ark:/52669/kc92l0hq48ng/d463e7c7-10b0-41d2-bdf9-9ead041faa50" class="bloc-list-picture d-block" title="Visualiser le media" rel="noopener noreferrer" target="_blank">
+ <img class="list-picture img-fluid" src="/images/d463e7c7-10b0-41d2-bdf9-9ead041faa50_search_result_thumbnail.jpg" alt="Verdun">
+ </a>
+ <p class="info-list-picture">
+ 236 medias
+ </p>
+ </div>
+</div>
+<section class="content">
+ <div class="intitup">
+ <a
+ href="https://archives.meuse.fr/ark:/52669/kc92l0hq48ng"
+ title="Voir la notice complète : Verdun"
+ >
+ <h2>
+ <span>Verdun</span>
+ </h2>
+ </a>
+ <div class="date-cote content-part clearfix">
+ <div class="content-sub-part">
+ <h3>Date</h3>
+ <p><span>1926</span></p>
+ </div>
+ <div class="content-sub-part">
+ <h3>Cote</h3>
+ <p class="referenceCodes">6 M 61 (Cote)</p>
+ </div>
+ </div>
+<ul class="context content-part clearfix">
+ <li>
+ <div class="context-content">Contexte : Recensements de population : listes nominatives</div>
+ </li>
+ <li>
+ Verdun </li>
+ <li> Verdun
+ </li>
+</ul>
+ </div>
+ </section>
+ <div class="record-actions">
+ </div>
+ </li>
+ <li class="element-list">
+<div class="img-element">
+ <span><span class="sr-only">Résultat n°</span>4</span> 
+ <div class="img image-thumbnail">
+ <a href="/ark:/52669/k5jpgtxqvmdc/912f8d2a-5902-4842-9448-289f5e6f2a00" class="bloc-list-picture d-block" title="Visualiser le media" rel="noopener noreferrer" target="_blank">
+ <img class="list-picture img-fluid" src="/images/912f8d2a-5902-4842-9448-289f5e6f2a00_search_result_thumbnail.jpg" alt="Verdun">
+ </a>
+ <p class="info-list-picture">
+ 251 medias
+ </p>
+ </div>
+</div>
+<section class="content">
+ <div class="intitup">
+ <a
+ href="https://archives.meuse.fr/ark:/52669/k5jpgtxqvmdc"
+ title="Voir la notice complète : Verdun"
+ >
+ <h2>
+ <span>Verdun</span>
+ </h2>
+ </a>
+ <div class="date-cote content-part clearfix">
+ <div class="content-sub-part">
+ <h3>Date</h3>
+ <p><span>1931</span></p>
+ </div>
+ <div class="content-sub-part">
+ <h3>Cote</h3>
+ <p class="referenceCodes">6 M 61 (Cote)</p>
+ </div>
+ </div>
+<ul class="context content-part clearfix">
+ <li>
+ <div class="context-content">Contexte : Recensements de population : listes nominatives</div>
+ </li>
+ <li>
+ Verdun </li>
+ <li> Verdun
+ </li>
+</ul>
+ </div>
+ </section>
+ <div class="record-actions">
+ </div>
+ </li>
+ <li class="element-list">
+<div class="img-element">
+ <span><span class="sr-only">Résultat n°</span>5</span> 
+ <div class="img image-thumbnail">
+ <a href="/ark:/52669/ptr7g13dfs2h/5cb984cf-b016-426a-89a7-78717a99c4c3" class="bloc-list-picture d-block" title="Visualiser le media" rel="noopener noreferrer" target="_blank">
+ <img class="list-picture img-fluid" src="/images/5cb984cf-b016-426a-89a7-78717a99c4c3_search_result_thumbnail.jpg" alt="Verdun">
+ </a>
+ <p class="info-list-picture">
+ 8 medias
+ </p>
+ </div>
+</div>
+<section class="content">
+ <div class="intitup">
+ <a
+ href="https://archives.meuse.fr/ark:/52669/ptr7g13dfs2h"
+ title="Voir la notice complète : Verdun"
+ >
+ <h2>
+ <span>Verdun</span>
+ </h2>
+ </a>
+ <div class="date-cote content-part clearfix">
+ <div class="content-sub-part">
+ <h3>Date</h3>
+ <p><span>1836</span></p>
+ </div>
+ <div class="content-sub-part">
+ <h3>Cote</h3>
+ <p class="referenceCodes">6 M 7 (Cote)</p>
+ </div>
+ </div>
+<ul class="context content-part clearfix">
+ <li>
+ <div class="context-content">Contexte : Recensements de population : listes nominatives</div>
+ </li>
+ <li>
+ Verdun </li>
+ <li> Verdun
+ </li>
+</ul>
+ </div>
+ </section>
+ <div class="record-actions">
+ </div>
+ </li>
+ </ol>
+ </section>
+ </div>
+ </main>
+ <a href="#page-top" id="scrollup" class="no-print" title="Revenir en haut de la page">
+ <i class="fa fa-angle-up" aria-hidden="true"></i>
+ <span class="sr-only">Revenir en haut de la page</span>
+ </a>
+ <div id="rgpd-infos"
+ class="disclaimer"
+ >
+ <div class="text">
+ <p>
+ Ce site utilise des <span lang="en">cookies</span> techniques nécessaires à son bon fonctionnement. Ils ne contiennent aucune donnée personnelle et sont exemptés de consentements (Article 82 de la loi Informatique et Libertés).
+ </p>
+ <p>
+ Vous pouvez consulter les conditions générales d’utilisation sur le lien ci-dessous.
+ </p>
+ </div>
+ <div class="buttons">
+ <a href="/page/conditions-generales-d-utilisation" rel="noopener noreferrer" target="_blank" class="btn btn-secondary" title="En savoir plus sur les conditions générales d&#039;utilisation">
+ En savoir plus
+ </a>
+ <button type="button" class="btn btn-primary" id="rgpd-infos-understand">J&#039;ai compris</button>
+ </div>
+</div>
+ </body>
+</html>

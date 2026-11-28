@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fr"><head></head><body>
+<form id="form-search-advanced-search" method="get" action="/search/results">
+ <input type="hidden" value="0400d188-e8a7-4e0e-931f-9023104d59a0" name="formUuid"/>
+ <input type="hidden" value="referencecode_asc" name="sort"/>
+ <input type="hidden" value="list" name="mode"/>
+ <input type="hidden" value="image" name="facet_media"/>
+ <div class="form-group">
+ <div class="row">
+ <div class="col-12">
+ <div
+ class="enhanced-select multiselect"
+ data-input-id="0-controlledAccessGeographicName"
+ data-name="0-controlledAccessGeographicName"
+ data-options="[&quot;Abergement (L&#x27;), commune&quot;, &quot;Abergement-la-Ronce, commune&quot;, &quot;Abergement-le-Grand, commune&quot;, &quot;Abergement-le-Petit, commune&quot;, &quot;Dole, commune&quot;]"
+ data-selected-options="null"
+ ></div>
+ </div>
+ </div>
+ </div>
+ <div class="form-group">
+ <div class="row">
+ <div class="col-12">
+ <div
+ class="enhanced-select multiselect"
+ data-input-id="1-controlledAccessPhysicalCharacteristic"
+ data-name="1-controlledAccessPhysicalCharacteristic"
+ data-options="[&quot;bordereau de maison&quot;,&quot;bulletin individuel&quot;,&quot;feuille de m\u00e9nage&quot;,&quot;liste civique&quot;,&quot;liste nominative&quot;,&quot;r\u00e9sultats g\u00e9n\u00e9raux&quot;,&quot;tableau nominatif&quot;]"
+ data-selected-options="null"
+ ></div>
+ </div>
+ </div>
+ </div>
+ <div class="form-group">
+ <div class="row">
+ <div class="col-12">
+ <div
+ class="enhanced-select multiselect"
+ data-input-id="2-controlledAccessSubject"
+ data-name="2-controlledAccessSubject"
+ data-options="[&quot;ETRANGER&quot;,&quot;MARIN&quot;,&quot;MILITAIRE&quot;,&quot;PERE DE FAMILLE&quot;]"
+ data-selected-options="null"
+ ></div>
+ </div>
+ </div>
+ </div>
+ <div class="form-group">
+ <div class="row">
+ <div class="col-12">
+ <div class="form-row period">
+ <div class="col">
+ <input
+ placeholder="Année de début"
+ onfocus="this.placeholder = ''"
+ onblur="this.placeholder = 'Année de début'"
+ type="number"
+ class="form-control"
+ id="3-date_begin"
+ name="3-date_begin"
+ data-validate-required="#3-date_end"
+ min="1" max="2026"
+ value=""/>
+ </div>
+ <div class="col">
+ <input
+ placeholder="Année de fin"
+ onfocus="this.placeholder = ''"
+ onblur="this.placeholder = 'Année de fin'"
+ type="number"
+ class="form-control"
+ id="3-date_end"
+ name="3-date_end"
+ data-validate-gte="#3-date_begin"
+ data-validate-required="#3-date_begin"
+ min="1" max="2026"
+ value=""/>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ <div class="form-group">
+ <div class="row">
+ <div class="col-12">
+ <input type="number" id="4-date" class="form-control" name="4-date" min="1" max="2026"
+ value=""/>
+ </div>
+ </div>
+ </div>
+ <div class="row form-group">
+ <div class="col-12 d-flex justify-content-center">
+ <div class=" d-flex flex-wrap justify-content-center">
+ <a class="btn btn-secondary" href="/search/form/0400d188-e8a7-4e0e-931f-9023104d59a0">
+ Vider les champs
+ </a>
+ <button class="btn btn-primary" type="submit">Rechercher</button>
+ </div>
+ </div>
+ </div>
+ </form>
+</body></html>

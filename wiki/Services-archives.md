@@ -17,21 +17,27 @@ Avec une commune et une année précises, demander par exemple :
 
 L'outil `archives_registres(service="AD59", commune="Saint-Vaast-en-Cambrésis", annee=1860,
 type_acte="N")` renvoie les références lues dans la page officielle : titre, cote, ARK, période et,
-si affiché, nombre de vues. La même recherche fonctionne pour neuf autres services, dont le moteur Mnesys
-est lu directement : Calvados (AD14), Corrèze (AD19), Eure (AD27), Marne (AD51), Meuse (AD55), Nièvre (AD58), Rhône (AD69),
-Territoire de Belfort (AD90) et Martinique (AD972). Le nom de commune est pris dans la liste du service
+si affiché, nombre de vues. La même recherche fonctionne pour quatorze autres services, dont le moteur Mnesys
+est lu directement : Calvados (AD14), Corrèze (AD19), Doubs (AD25, tables décennales, matricules et successions seulement),
+Eure (AD27), Indre-et-Loire (AD37), Jura (AD39), Marne (AD51), Meuse (AD55), Nièvre (AD58), Rhône (AD69), Somme (AD80),
+Territoire de Belfort (AD90), Essonne (AD91) et Martinique (AD972). Le nom de commune est pris dans la liste du service
 (`commune_service` dans la réponse) ; en cas d'homonymie, l'outil liste les valeurs possibles.
 Le filtre par type dépend du formulaire du service (absent pour la Nièvre : rechercher sans type).
 
-Pour ces services Mnesys, deux autres fonds se cherchent de la même façon :
+Pour ces services Mnesys, comme pour l'AD59 ([plus bas](#autres-fonds-numérisés-des-ad59)), deux autres fonds
+se cherchent de la même façon :
 
 > Cherche le registre matricule de la classe 1880 à Tulle (Corrèze).
 > Cherche les tables des successions du bureau de Nevers entre 1876 et 1882.
 
 - **Registres matricules** (`type_acte="RM"`) : l'année est la **classe** (naissance + 20) ; la commune est le
-  bureau de recrutement, facultatif. Corrèze, Eure, Meuse, Nièvre, Rhône, Territoire de Belfort, Martinique.
+  bureau de recrutement, facultatif. Corrèze, Doubs, Eure, Jura, Meuse, Nièvre, Rhône, Territoire de Belfort, Martinique ;
+  Nord (AD59) avec ses deux formulaires dédiés.
 - **Tables des successions** (`type_acte="SUCC"`, série 3 Q) : la commune est le **bureau de l'enregistrement**
-  dont dépendait le défunt, l'année ou l'intervalle la période du décès. Eure, Nièvre, Rhône, Territoire de Belfort. Pour une personne de l'arbre, ajouter son identifiant local dans `personne` :
+  dont dépendait le défunt, l'année ou l'intervalle la période du décès. Doubs, Eure, Indre-et-Loire, Nièvre, Rhône, Territoire de Belfort, Essonne ;
+  Nord (AD59) avec son formulaire dédié.
+
+Pour une personne de l'arbre, ajouter son identifiant local dans `personne` :
 la garde des vivants est appliquée avant toute requête ; cet identifiant n'est pas transmis aux archives.
 
 Types pris en charge : `N` (naissances), `M` (mariages), `D` (décès). `NMD` ou vide recherche sans filtre
@@ -50,6 +56,83 @@ navigateur, fournir une capture ou l'image téléchargée) et met l'hôte en pau
 `GENEALOGISTE_COUPE_CIRCUIT`) ; s'il persiste après la pause, le service est exclu quelques jours
 (`GENEALOGISTE_EXCLUSION_ANTIROBOT`). `cache_purger("coupe_circuit")` autorise un nouvel essai explicite. Le [contrat et le relevé technique](../docs/recherche-registres-ad59.md)
 précisent les limites observées.
+
+### Autres fonds numérisés des AD59
+
+Depuis les relevés du **27 novembre 2026**, `archives_registres(service="AD59", …)` interroge aussi les
+formulaires dédiés de six autres fonds du service. La réponse reste une liste de volumes (titre, cote, ARK,
+nombre de vues), une page par appel : le plugin localise ces documents, il ne les lit pas et n'y cherche aucun nom.
+
+- **Recensements de population** (`type_acte="REC"`) : la commune et le millésime. « Cherche le recensement de
+  Somain pour 1906 aux archives du Nord. » Une liste nominative est classée par rue ou hameau, pas par nom :
+  le foyer se repère ensuite vue par vue. Détail : [recensements](../docs/recensements.md).
+- **Registres matricules** (`type_acte="RM"`) : deux formulaires, les tables alphabétiques et les fiches
+  (volumes d'états signalétiques et des services). « Cherche le registre matricule de la classe 1890 au bureau
+  d'Avesnes (Nord). » La commune est le **bureau de recrutement** (Avesnes, Cambrai, Dunkerque, Lille,
+  Valenciennes, Valenciennes-Douai), facultatif ; l'année est la **classe** (naissance + 20). Une classe précise
+  interroge les deux formulaires et rend les deux catégories, distinguées ; un intervalle n'interroge que les
+  tables. Le formulaire annonce les fiches en ligne pour les classes 1867 à 1923.
+- **Tables des successions et absences** (`type_acte="SUCC"`, série 3 Q) : « Cherche les tables des successions
+  du bureau de Steenvoorde entre 1791 et 1803 (Nord). » Le **bureau de l'enregistrement** est obligatoire et pris
+  dans la liste du service : un bureau inconnu ou ambigu renvoie la liste des valeurs. Période en ligne : au plus
+  1791-1968 d'après le service.
+- **Fiches décès** (`type_acte="FD"`, AD59 seulement) : la suite des tables, pour les décès de 1969 à 1975.
+  « Cherche les fiches décès du bureau de Lille (Centre) pour 1969 (Nord). » Bureau obligatoire, selon un autre
+  découpage que celui des tables. **Ne pas tenir ces fiches pour librement communicables** : le délai de 50 ans
+  est affirmé par le service et n'a pas été vérifié par le plugin ; la réponse porte
+  `avertissement_communicabilite` et écarte tout résultat de moins de 50 ans.
+- **Hypothèques** (`type_acte="HYP"`, sous-série 4 Q, de l'an VII à 1955 d'après le service) : « Montre les
+  indicateurs des hypothèques du bureau de Cambrai (Nord). » Le **bureau des hypothèques** est obligatoire
+  (Avesnes, Cambrai, Douai, Dunkerque, Hazebrouck, Lille, Valenciennes). `HYP` donne la vue d'ensemble des trois
+  catégories ; `HYPI` (indicateur), `HYPT` (tables alphabétiques) et `HYPR` (répertoires) n'en interrogent
+  qu'une, pour feuilleter. Méthode décrite par le service : indicateur → table alphabétique (numéro de case du
+  propriétaire) → répertoire des formalités (volume et acte), puis registres de formalités en salle de lecture.
+  Ces formulaires n'ont pas de date. **Le nom cherché n'est jamais envoyé au service** : comparer soi-même son
+  initiale à la plage de chaque volume (`plage_alphabetique`), qui reste indicative.
+- **Plans du cadastre** (`type_acte="CAD"`) : cadastre dit du Consulat (cotes `P 30`) et cadastre napoléonien
+  (cotes `P 31`). « Cherche les plans du cadastre d'Estaires entre 1800 et 1900 (Nord). » La commune est
+  obligatoire, parfois sous son nom d'alors (`FIVES`) ; chaque résultat est un lot de plans. Aucun plan
+  n'est écarté sur sa date : tous les lots de la commune sont rendus, triés par date et marqués antérieur,
+  contemporain ou postérieur à la période demandée (`position_periode`), un plan valant pour les décennies qui
+  suivent sa levée. Matrices cadastrales et états de
+  sections ne sont pas couverts.
+
+`FD` et `HYP` sont propres à l'AD59 : pour un autre service, l'outil refuse la demande. `CAD` vaut aussi
+pour neuf services Mnesys (AD14, AD19, AD25, AD39, AD55, AD58, AD69, AD90 et AD91) : « Cherche les plans du cadastre de Dole (Jura). » Mêmes règles
+(aucun plan écarté sur sa date) ; les matrices et états de section que propose le formulaire sont signalés,
+non interrogés ([détail](../docs/archives.md#cadastre-des-autres-services-mnesys-392)). `REC` vaut
+aussi pour treize services Mnesys (AD14, AD19, AD25, AD27, AD37, AD39, AD51, AD55, AD58, AD69, AD80, AD90,
+AD91) : « Cherche le recensement de 1906 de Clamecy (Nièvre). » L'état de la collection (en ligne ou salle de
+lecture) n'existe que pour l'AD59 ([détail](../docs/recensements.md#autres-services-mnesys-392)).
+Le plugin ne rattache aucune commune à un bureau (recrutement, enregistrement, hypothèques) : le relever sur
+le site du service ou dans la liste renvoyée par l'erreur.
+
+Limites : ces fonds ont été relevés à la main le 27 novembre 2026 et sont testés sans réseau ; la recette
+réelle n'en couvre aucun. Aucune image n'a été téléchargée : `archive_image` et `archives_planche` ne sont **pas
+éprouvés** sur ces fonds, et `archives_naviguer` ne l'a été que sur un recensement et un lot de plans
+(métadonnées seulement). Détail par fonds : [contrat et relevé technique](../docs/recherche-registres-ad59.md).
+
+### Registre absent en ligne : classeur 3 E et état des recensements
+
+Une recherche vide ne dit pas que le registre n'existe pas. Deux copies datées de documents publiés par le
+service (`releve_le`, relevés du 27 novembre 2026) complètent alors la réponse, sans requête supplémentaire :
+
+- **Classeur 3 E** (état civil, hors tables décennales) : quand la recherche est vide ou qu'un volume de la
+  période n'est pas en ligne, le champ `classeur_3e` donne sa cote, ses types d'actes, ses bornes et un message,
+  par exemple « pas en ligne avant AAAA ; consultation en salle de lecture ». Cas de référence : naissances de
+  Somain en 1926, cote `3 E 6298`, pas en ligne avant 2031. **Absent en ligne ne veut pas dire inexistant** :
+  un volume hors du classeur est « inconnu du classeur », jamais « inexistant ».
+- **Couverture des recensements** (`type_acte="REC"`) : le champ `couverture_recensements` donne la cote et le
+  mode d'accès (en ligne ou salle de lecture) d'après l'état de la collection du service. Un millésime absent
+  de ce relevé est inconnu du référentiel, jamais inexistant ; le message liste les millésimes connus de la
+  commune. La recherche par nom passe par Socface (base de noms de FranceArchives), **en consultation
+  manuelle** : la réponse donne le lien et la consigne, le plugin n'y envoie aucun nom. Un index nominatif sert
+  à trouver la vue, pas à prouver.
+
+« Salle de lecture » ne veut pas dire « librement consultable » : vérifier le délai avec `communicabilite`
+(75 ans pour une liste nominative de recensement). Ces documents sont lus tels quels, sans contrôle de leur
+complétude, et vieillissent : un volume annoncé pour plus tard peut avoir été mis en ligne depuis le relevé.
+Leur renouvellement est décrit dans [Maintenir le wiki](Maintenance.md#veille-et-renouvellement-des-référentiels-ad59).
 
 ## Choisir le lien à fournir
 

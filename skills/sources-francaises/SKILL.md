@@ -16,6 +16,58 @@ Pour AD59 et les services Mnesys du référentiel (AD14, AD19, AD25, AD27, AD37,
 localise les registres depuis le résultat officiel. Une page par appel ; poursuivre explicitement avec
 `page_suivante`. `NMD` ou le type vide ne filtre pas le type ; `type_acte="TD"` donne les tables décennales
 couvrant l'année ; `annee_fin` (≥ `annee`) recherche un intervalle (ex. 1790-1802 ou une décennie).
+AD59 : quand la recherche est vide ou qu'un volume n'est pas en ligne, `classeur_3e` donne la cote 3 E et le
+statut du classeur du service (« pas en ligne avant AAAA ; consultation en salle de lecture ») ; « inconnu du
+classeur » ne veut pas dire que le registre n'existe pas. `prochaine_source` cite ces cotes pour un acte du Nord.
+Ces référentiels AD59 sont datés (`releve_le`) et le service met en ligne en continu : un « pas en ligne » ancien
+se revérifie par une recherche. `diagnostic` (contrôle `referentiels_ad59`) signale un relevé de plus d'un an ;
+les entrées de journal de source `veille_ad59` (fils du forum des ajouts, dérive d'un formulaire) sont des
+annonces à vérifier sur le site, jamais une source ni un fait (docs/veille-ad59.md).
+Recensements du Nord : `archives_registres(service="AD59", commune=…, annee=…, type_acte="REC")` localise la
+liste nominative (cote, ARK) ; `couverture_recensements` dit si le millésime est en ligne ou seulement en salle
+de lecture (communicable après 75 ans) et liste les millésimes connus ; « inconnu du référentiel » ne veut pas
+dire inexistant. `cotes_a_consulter` cite ces cotes. Recherche par nom : base Socface de FranceArchives, à
+consulter soi-même dans un navigateur (jamais automatisée). L'âge déclaré est une information secondaire ;
+une absence dans une liste ne prouve ni décès ni départ (docs/recensements.md). Hors du Nord, `type_acte="REC"`
+vaut aussi pour AD14, AD19, AD25, AD27, AD37, AD39, AD51, AD55, AD58, AD69, AD80, AD90 et AD91 (localisation
+seule, sans état de la collection ; un négatif n'exclut pas un volume en salle de lecture).
+Matricules du Nord : `archives_registres(service="AD59", commune=<bureau de recrutement ou "">, annee=<classe>,
+type_acte="RM")` ; classe = année de naissance + 20 (`cotes_a_consulter` la calcule pour une naissance dans le
+Nord : `matricules_ad59`). La réponse distingue `categorie: tables` (table alphabétique de la classe et du
+bureau, à lire d'abord pour le numéro matricule) et `categorie: fiches` (volumes des états signalétiques,
+classes 1867 à 1923 en ligne, bureau dans `contexte`), avec la cote 1 R réelle ; sans bureau, tous les bureaux
+de la classe. Un intervalle (`annee_fin`) ne rend que les tables. Vérifier `communicabilite("matricule")` ;
+une absence dans une table ne prouve rien (autre bureau, autre classe, engagé volontaire).
+Successions du Nord : `archives_registres(service="AD59", commune=<bureau de l'enregistrement>, annee, annee_fin,
+type_acte="SUCC")` pour les tables des successions et absences (3 Q, au plus 1791-1968), puis
+`type_acte="FD"` pour les fiches décès qui les prolongent (1969 à 1975). La clé est le bureau, pas la commune :
+il n'est pas déduit du lieu, une erreur liste les valeurs du formulaire (`cotes_a_consulter` rappelle l'appel :
+`successions_ad59`). Fiches décès : jamais « librement communicables » ; le service affirme un délai de 50 ans,
+non vérifié par le plugin : relayer `avertissement_communicabilite`, ne rien publier sur des héritiers vivants.
+Une absence dans une table ne prouve pas l'absence de décès (autre bureau, succession non déclarée).
+Hypothèques du Nord (4 Q, an VII à 1955 ; bien, vente, dot ou apport immobilier, notaire inconnu) :
+`archives_registres(service="AD59", commune=<bureau des hypothèques>, annee, type_acte="HYP")` rend trois
+catégories à lire dans l'ordre : `indicateur` (noms de famille, pour s'orienter), `tables` (table alphabétique :
+numéro de case du propriétaire), `repertoires` (par numéro de case : volume et numéro des actes, à consulter
+ensuite en salle de lecture) ; `HYPI`, `HYPT`, `HYPR` pour feuilleter une seule catégorie (`page`). Le bureau
+est celui de l'arrondissement, pas la commune ; aucune date n'est envoyée. **Ne jamais transmettre le nom
+cherché** : comparer soi-même son initiale ou son début (capitales sans accents) à `plage_alphabetique.debut`
+et `.fin` de chaque volume, bornes comprises ; retenir tous les volumes qui le couvrent (classement
+phonétique, plages qui se chevauchent, séries parallèles : `bureau_titre`), puis lire les vues. La recherche se
+fait par nom de propriétaire, jamais par adresse (`cotes_a_consulter` rappelle l'appel : `hypotheques_ad59`).
+Plans du cadastre du Nord (situer un lieu-dit, une section, une parcelle ; plans seulement, non nominatifs) :
+Hors du Nord, `type_acte="CAD"` vaut aussi pour AD14, AD19, AD25, AD39, AD55, AD58, AD69, AD90 et AD91 (plans seulement ; matrices et états
+de section listés dans `cadastre.autres_documents`, non interrogés).
+`archives_registres(service="AD59", commune, annee, annee_fin, type_acte="CAD")` rend les lots de plans du
+cadastre du Consulat (`consulaire`, cotes P 30, sans date) et du cadastre napoléonien (`napoleonien`, cotes
+P 31, du début du XIXe au début du XXe siècle selon les communes). Aucun plan n'est écarté sur sa date (un plan
+vaut pour les décennies qui suivent sa levée) : les lots sont triés par date et `position_periode` situe chacun
+(`anterieur`, `contemporain`, `posterieur` à la période demandée) ; lire d'abord le dernier plan antérieur au
+fait. La commune est celle du
+plan : une commune réunie ou renommée se cherche sous son nom d'alors (`cadastre.noms_lies`, sinon
+`geo_historique`). Matrices et états de sections (propriétaires) : non couverts, voir l'inventaire du service ;
+`planche_contact` propose l'appel `archives_planche` pour un lot de 2 à 9 vues (`cotes_a_consulter` rappelle
+l'appel : `cadastre_ad59`).
 Ensuite `archives_naviguer` parcourt les vues, `archive_image` les lit et `piece_archiver` conserve l'original.
 Un résultat vide ne démontre pas que l'acte n'existe pas ; un blocage conserve une tâche manuelle au journal.
 Défi anti-robot (`bloque: "anti-robot"`, ex. Anubis aux AD de la Lozère, redirection JS des AD Arkotheque
@@ -63,7 +115,8 @@ service ne s'applique pas à ce fonds : passer par le lien de consultation, un l
 
 - **Remonter une génération** : acte de mariage (filiation des deux époux, âges, domiciles) → naissance de
   chaque époux → mariage des parents. Avant 1792 : mariage paroissial, puis baptêmes.
-- **Décès introuvable** : tables décennales des communes voisines, table des successions (3 Q), recensements
+- **Décès introuvable** : tables décennales des communes voisines, table des successions (3 Q ; Nord :
+  `archives_registres` `SUCC` par bureau, puis `FD` de 1969 à 1975), recensements
   (dernière présence), matchID (≥ 1970), transcriptions de décès (militaires, hôpitaux).
 - **Filiation fragile** : contrat de mariage, inventaire après décès, déclaration de succession, tutelles.
 - **Commune disparue ou fusionnée** : `geo_historique` (COG INSEE depuis 1943) ; avant : dictionnaire

@@ -127,6 +127,34 @@ Total : 110 services ; 12 recettes de référence qualifiées (niveau 5).
 
 Les URL et pages de référence sont dans `archives_fr.json` ; les verdicts et détails d'échec dans `recettes_archives.json`. `archives_service` expose les mêmes informations sous `couverture_technique`, avec les capacités et mesures séparées.
 
+## AD59 : classeur 3 E
+
+Hors des niveaux ci-dessus : le classeur 3 E des AD59 (`ad59_3e.json`, relevé du 2026-11-27, 17679 volumes, 694 libellés de commune) donne la cote et l'année de mise en ligne prévue des registres d'état civil. `archives_registres` le joint (`classeur_3e`) quand la recherche est vide ou qu'un volume n'est pas en ligne ; un volume inconnu du classeur n'est pas inexistant. Voir `docs/recherche-registres-ad59.md`.
+
+## AD59 : recensements de population
+
+Hors des niveaux ci-dessus : l'état de la collection des recensements des AD59 (`ad59_recensements.json`, relevé du 2026-11-27, 4039 volumes, 765 libellés de commune, 2852 en ligne, 1187 en salle de lecture) donne la cote et le mode d'accès de chaque millésime. `archives_registres(type_acte="REC")` le joint (`couverture_recensements`) quand la recherche est vide ou qu'un recensement n'est qu'en salle de lecture ; un millésime inconnu du référentiel n'est pas inexistant. Voir `docs/recensements.md`.
+
+## AD59 : registres matricules
+
+Hors des niveaux ci-dessus : `archives_registres(type_acte="RM")` interroge pour les AD59 les deux formulaires de la série 1 R (relevé du 2026-11-27) : tables alphabétiques et fiches des états signalétiques (classes 1867 à 1923, Valenciennes-Douai à partir de 1908 d'après le formulaire), par classe et bureau de recrutement. Aucun référentiel local des cotes : la cote vient de la réponse ; un résultat vide ne prouve pas l'absence du registre. Navigation et lecture des vues de ces registres non testées. Voir `docs/recherche-registres-ad59.md`.
+
+## AD59 : tables des successions et fiches décès
+
+Hors des niveaux ci-dessus : `archives_registres` interroge pour les AD59 le formulaire des tables des successions et absences (`type_acte="SUCC"`, série 3 Q, au maximum 1791-1968, l'année de fin variant selon les bureaux d'après le service) et celui des fiches décès de l'enregistrement (`type_acte="FD"`, versements W, 1969 à 1975), par bureau de l'enregistrement (relevé du 2026-11-27). Aucun référentiel local des cotes : la cote vient de la réponse ; un résultat vide ne prouve ni l'absence d'un décès ni celle d'une succession. Fiches décès : le service affirme un délai de 50 ans, non vérifié par le plugin ; elles ne sont jamais présentées comme librement communicables. Navigation et lecture des vues de ces fonds non testées. Voir `docs/recherche-registres-ad59.md`.
+
+## AD59 : hypothèques
+
+Hors des niveaux ci-dessus : `archives_registres(type_acte="HYP")` interroge pour les AD59 les trois formulaires de la sous-série 4 Q (relevé du 2026-11-27) : indicateurs, tables alphabétiques et répertoires des formalités hypothécaires, par bureau des hypothèques (`HYPI`, `HYPT`, `HYPR` pour une seule catégorie). D'après le service : archives des conservations des hypothèques de l'an VII (1799) à 1955 ; Valenciennes : registres de 1800-1940 détruits pendant la Seconde Guerre mondiale ; après 1955 : services de la publicité foncière. Aucune date dans ces formulaires ; bureau, période et plage alphabétique sont lus dans le titre des volumes, et le nom cherché n'est jamais envoyé. Aucun référentiel local des cotes : la cote vient de la réponse ; un résultat vide ne prouve ni l'absence du registre ni celle d'une formalité. Navigation et lecture des vues de ces fonds non testées. Voir `docs/recherche-registres-ad59.md`.
+
+## AD59 : plans du cadastre
+
+Hors des niveaux ci-dessus : `archives_registres(type_acte="CAD")` interroge pour les AD59 les deux formulaires des plans du cadastre (relevé du 2026-11-27) : cadastre dit du Consulat (cotes P 30) et cadastre dit napoléonien (cotes P 31), par commune, chaque formulaire ayant son vocabulaire. D'après le service : plans du cadastre dit du Consulat : début du XIXe siècle ; plans du cadastre dit napoléonien : une plus large période, jusqu'au début du XXe siècle pour certaines communes. Aucune date dans ces formulaires ; seuls les plans dont la date affichée ne recoupe pas la période demandée sont écartés. Plans seulement, non nominatifs : matrices cadastrales et états de sections ne sont pas couverts. Aucun référentiel local des cotes : la cote vient de la réponse ; un résultat vide ne prouve pas qu'aucun plan n'existe. Navigation éprouvée sur un seul lot (métadonnées, aucune image) ; planche-contact et lecture des plans non testées. Voir `docs/recherche-registres-ad59.md`.
+
+## AD59 : veille des mises en ligne
+
+Hors des niveaux ci-dessus : `make veille-ad59` (étape réseau explicite, aucun outil MCP) relit les 12 formulaires de recherche AD59 connus du plugin et signale leur dérive par rapport au contrat relevé le 2026-11-27 (`ad59_formulaires.json`), consigne au journal les fils du forum des ajouts du service (titre, date, lien : annonces à vérifier) et signale un classeur 3 E d'un autre millésime, sans le télécharger. `diagnostic` (contrôle `referentiels_ad59`) signale, sans réseau, un référentiel embarqué relevé depuis plus de 365 jours. Un formulaire conforme ne prouve pas que ses résultats sont inchangés. Voir `docs/veille-ad59.md`.
+
 ## Niveaux par type de document
 
 Chaque cellule reprend le niveau de `archives_service(document=...)`. Une recette dont le fonds n'est pas renseigné ne qualifie aucune de ces colonnes. Les niveaux 0–4 sont des capacités implémentées, toujours à éprouver sur le fonds demandé.

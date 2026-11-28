@@ -285,10 +285,12 @@ formulaire qui ne le type pas (AD25 : classe des matricules en texte libre).
 - Type d'acte non proposé par le formulaire : erreur explicite, relancer sans type.
 - **Registres matricules** (`type_acte="RM"`, #112) : `annee` = classe (naissance + 20), `commune` = bureau de
   recrutement si le formulaire le propose (facultatif) ; AD19, AD25, AD27, AD39, AD55, AD58, AD69, AD90, AD972. Le formulaire
-  d'AD14 renvoie des fiches individuelles (index nominatif) et n'est pas déclaré.
+  d'AD14 renvoie des fiches individuelles (index nominatif) et n'est pas déclaré. AD59 : deux formulaires
+  dédiés, hors de ce référentiel (#376, ci-dessous).
 - **Tables des successions et absences** (`type_acte="SUCC"`, série 3 Q, #112) : `commune` = bureau de
   l'enregistrement (« Nevers », « Bureau de Delle » : le préfixe « Bureau de » est facultatif), `annee` et
-  `annee_fin` = période ; AD25, AD27, AD37 (bureau = canton), AD58, AD69, AD90, AD91.
+  `annee_fin` = période ; AD25, AD27, AD37 (bureau = canton), AD58, AD69, AD90, AD91. AD59 : formulaire dédié,
+  hors de ce référentiel, et fiches décès `FD` (#377, ci-dessous).
 - Relevé et recette : [relevé du 18 novembre 2026](releves-archives-2026-11-18.md).
 
 ## Localisation des registres AD59 — #121
@@ -298,6 +300,121 @@ interroge la recherche publique pour obtenir la cote et l'ARK du registre, sans 
 Une seule page par appel, avec cache ; les pages suivantes sont demandées explicitement. Les tables
 décennales (`type_acte="TD"`) et les intervalles d'années (`annee_fin`) sont pris en charge depuis #221. Le serveur
 ne cherche pas la vue contenant l'acte : poursuivre avec `archives_naviguer`, puis `archives_sonder`.
+
+Depuis #374, la réponse AD59 porte en plus `classeur_3e` quand la recherche est vide ou qu'un volume n'est pas en
+ligne : cote, types, bornes et année de mise en ligne prévue tirés du « classeur 3 E » publié par le service
+(`referentiels/ad59_3e.json`, relevé du 27 novembre 2026, généré par `scripts/generer_couverture_3e_ad59.py`).
+« Pas en ligne avant AAAA » et « inconnu du classeur » ne veulent jamais dire « inexistant ». Source, limites et
+renouvellement : [classeur 3 E](recherche-registres-ad59.md#classeur-3-e--cote-et-mise-en-ligne-prévue--374).
+
+Depuis #375, `type_acte="REC"` interroge le formulaire des recensements de population : commune
+seule, période filtrée localement, mêmes sorties (`archives_registres(service="AD59", commune="Somain",
+annee=1906, type_acte="REC")` → `M 474 / 572`). `couverture_recensements` joint, quand la recherche est vide ou
+qu'un recensement n'est qu'en salle de lecture, la cote et le mode d'accès tirés de l'état de la collection du
+service (`referentiels/ad59_recensements.json`, relevé du 27 novembre 2026, généré par
+`scripts/generer_couverture_recensements_ad59.py`) ; un millésime inconnu du référentiel n'est pas inexistant.
+Depuis #392, `REC` vaut aussi pour AD14, AD19, AD25, AD27, AD37, AD39, AD51, AD55, AD58, AD69, AD80, AD90 et
+AD91 (formulaire relevé le 28 novembre 2026, période envoyée ou filtrée localement selon ses champs, sans état
+de la collection) ; refusé pour AD972 (pas de formulaire) et les autres services ([détail](recensements.md#autres-services-mnesys-392)). Détail, Socface et
+limites : [recensements](recensements.md).
+
+Depuis #376, `type_acte="RM"` vaut aussi pour AD59 (série 1 R) : `annee` = classe (année de naissance + 20),
+`commune` = bureau de recrutement, facultatif, pris dans le vocabulaire lu en ligne (Avesnes, Cambrai, Dunkerque,
+Lille, Valenciennes, Valenciennes-Douai au relevé du 27 novembre 2026). Une classe précise interroge deux
+formulaires, une page chacun : les tables alphabétiques et les fiches des états signalétiques (classes 1867 à
+1923 en ligne d'après le formulaire). Chaque résultat porte `categorie` (`tables`, `fiches`) et `contexte` ;
+`matricules` donne l'état de chaque formulaire. Un intervalle (`annee_fin`) n'interroge que les tables.
+`archives_registres(service="AD59", commune="Avesnes", annee=1890, type_acte="RM")` → table `1R 02249` et cinq
+volumes `1R 2244` à `1R 2248`. Aucun référentiel local des cotes 1 R : `cotes_a_consulter` donne la classe et
+l'appel à lancer (`matricules_ad59`), pas de cote. Détail et limites :
+[registres matricules](recherche-registres-ad59.md#registres-matricules--type_acterm--376).
+
+Depuis #377, `type_acte="SUCC"` vaut aussi pour AD59 (tables des successions et absences, série 3 Q, au plus
+1791-1968 d'après le service) et `type_acte="FD"`, propre à AD59, interroge les fiches décès de l'enregistrement
+(versements W, 1969 à 1975 en ligne), qui en sont la suite. Dans les deux cas `commune` = bureau de
+l'enregistrement, obligatoire, pris dans le vocabulaire lu en ligne : un bureau inconnu ou ambigu est une
+erreur qui liste les valeurs, et `autres_bureaux` signale les bureaux de même nom (`LILLE (1er bureau)`…).
+`archives_registres(service="AD59", commune="Steenvoorde", annee=1791, annee_fin=1803, type_acte="SUCC")` →
+`3Q - 516 / 1` et `3Q - 516 / 2` ; `archives_registres(service="AD59", commune="Lille (Centre)", annee=1969,
+type_acte="FD")` → six volumes `2571 W 01` à `2571 W 06`. **Les fiches décès ne sont pas présentées comme
+librement communicables** : le service affirme un délai de 50 ans (type `vie_privee` de `communicabilite`),
+que le plugin n'a pas vérifié ; la réponse porte `avertissement_communicabilite` et
+`fiches_deces.communicabilite`, et écarte tout résultat de moins de 50 ans. Aucun référentiel local des cotes ;
+`prochaine_source` joint `successions_ad59` à la piste des successions pour le Nord. Détail et limites :
+[enregistrement](recherche-registres-ad59.md#enregistrement--type_actesucc-et-type_actefd--377).
+
+Depuis #378, `type_acte="HYP"`, propre à AD59, interroge les trois formulaires de la sous-série 4 Q (conservation
+des hypothèques, de l'an VII à 1955 d'après le service) : indicateurs, tables alphabétiques du répertoire et
+répertoires des formalités hypothécaires. `commune` = bureau des hypothèques, obligatoire, pris dans le
+vocabulaire lu en ligne (Avesnes, Cambrai, Douai, Dunkerque, Hazebrouck, Lille, Valenciennes au relevé du
+27 novembre 2026) ; un bureau inconnu est une erreur qui liste les valeurs. `HYP` interroge les trois
+formulaires, une page chacun ; `HYPI`, `HYPT` et `HYPR` n'en interrogent qu'un, pour feuilleter sans requête
+inutile. Chaque résultat porte `categorie` (`indicateur`, `tables`, `repertoires`), `contexte` et la lecture de
+son titre : `bureau_titre` (« Lille (avant 1900) », « Lille 2 (1901-1955) »), `periode_titre` et
+`plage_alphabetique` (`texte`, `debut`, `fin`). Ces formulaires n'ont aucune date : `annee` n'est pas envoyée et
+n'écarte que les volumes dont le titre porte une autre période. La méthode du service est rendue dans
+`hypotheques.methode` : indicateur, puis table alphabétique (numéro de case du propriétaire), puis répertoire
+(volume et numéro des actes), les registres de formalités se consultant en salle de lecture. **Le nom cherché
+n'est jamais envoyé** : il se compare localement à `debut` et `fin` (`registres.plage_couvre`,
+`registres.volumes_couvrant`). `archives_registres(service="AD59", commune="Cambrai", annee=1850,
+type_acte="HYPI")` → cinq volumes `4Q 63 / 001` à `4Q 63 / 005`. `prochaine_source` joint `hypotheques_ad59`
+aux pistes notariales du Nord. Détail et limites :
+[hypothèques](recherche-registres-ad59.md#hypothèques--type_actehyp--378).
+
+Depuis #379, `type_acte="CAD"`, propre à AD59, interroge les deux formulaires des plans du cadastre : cadastre
+dit du Consulat (cotes `P 30`, début du XIXe siècle d'après le service) et cadastre dit napoléonien (cotes
+`P 31`, jusqu'au début du XXe siècle pour certaines communes). `commune` est obligatoire et prise dans le
+vocabulaire de chaque formulaire, lu en ligne ; les deux vocabulaires diffèrent (anciens noms, communes réunies,
+subdivisions) : seul le formulaire qui connaît la commune est interrogé, une commune inconnue des deux est une
+erreur qui liste les valeurs proches. Chaque résultat est un lot de plans (non nominatifs) et porte `categorie`
+(`consulaire`, `napoleonien`), `contexte`, `annee_titre` et, de 2 à 9 vues, `planche_contact` (appel
+`archives_planche` proposé, non éprouvé sur un plan). Aucune date n'est envoyée et, depuis #391, aucun plan n'est
+écarté sur sa date (un plan vaut pour les décennies qui suivent sa levée) : les lots de la commune sont triés
+par date et `position_periode` situe chacun (`anterieur`, `contemporain`, `posterieur` à la période demandée,
+`null` sans date). `cadastre.noms_lies` propose, d'après le classeur 3 E local et sans réseau, le nom
+actuel ou l'ancien nom sous lequel relancer (Fives et Lille, Saint-Remy-du-Nord et Saint-Remy-Mal-Bati) ; pour
+les autres communes réunies, `geo_historique` puis une relance sous le nom d'alors. Matrices cadastrales et
+états de sections : non couverts. `archives_registres(service="AD59", commune="Estaires", annee=1800,
+annee_fin=1900, type_acte="CAD")` → trois lots `P 31 / 035`, `035_1`, `035_2`. `prochaine_source` joint
+`cadastre_ad59` aux pistes de domicile et de bien du Nord. Détail et limites :
+[plans du cadastre](recherche-registres-ad59.md#plans-du-cadastre--type_actecad--379).
+
+### Cadastre des autres services Mnesys (#392)
+
+Depuis #392, `type_acte="CAD"` vaut aussi pour AD14, AD19, AD25, AD39, AD55, AD58, AD69, AD90 et AD91, dont le formulaire dédié aux plans
+du cadastre a été relevé le **28 novembre 2026** (`robots.txt` contrôlé, formulaire puis une recherche par
+service, aucune image ; déclaration `recherche_registres.formulaires.cadastre`, date `releves.cadastre`). Règles
+communes avec AD59 : commune obligatoire prise dans le vocabulaire du formulaire lu en ligne, aucune date
+envoyée, aucun plan écarté sur sa date, lots de la page triés par date et situés par `position_periode`. Quand
+le formulaire a une typologie (AD14, AD19, AD39, AD69, AD90), seules ses options de plans sont envoyées (plan
+cadastral, de finage, parcellaire, par masses de culture, du livre foncier, de remembrement, tableau
+d'assemblage : `cadastre.typologie_envoyee`) ; matrices, états de section et autres documents du formulaire sont
+listés dans `cadastre.autres_documents`, non interrogés. AD69 range la commune en « collectivité » après un titre
+(type de cadastre) : le champ est déclaré au référentiel (`recherche_registres.champs_lieu`).
+
+| Service | Commune du relevé | Plans (page 1 / total) | Exemple |
+|---|---|---|---|
+| AD14 | Bayeux | 20 / 36 | sections de 1812 (`3P/1923`), cadastre rénové de 1970 |
+| AD19 | Tulle | 20 / 28 | tableau d'assemblage de 1824 (`7P/272/TA`) |
+| AD25 | Pontarlier | 1 / 1 | `3P463`, 1826, 23 vues |
+| AD39 | Dole | 16 / 16 | sections de 1813 (`3Pplan2187`…) |
+| AD55 | Verdun | 20 / 31 | sections de 1831-1832 (`139 FI 259`) |
+| AD58 | Clamecy | 20 / 20 | plan par masses de cultures (sans date), sections de 1833 |
+| AD69 | Tarare | 20 / 65 | sections de 1819 (`3P2001`…) |
+| AD90 | Delle | 2 / 2 | plan d'intendance (`1 C 69`, sans date), cadastre de 1823 (`3 P 55`) |
+| AD91 | Étampes | 20 / 45 | sections de 1824 (`3P/4309`…) |
+
+Non ouverts : **AD27** (formulaire « Plans cadastraux » relevé, mais ses 44 plans de Bernay ne sont pas marqués
+comme images : le filtre d'images en ligne du plugin n'en rend aucun ; type de média à étudier) ; les autres
+services Mnesys n'exposent pas de formulaire de cadastre sur leur page des fonds. Matricules d'**AD14** : le
+formulaire indexe chaque fiche individuelle par le nom du soldat ; sans nom envoyé, la recherche ne ferait que
+feuilleter des centaines de fiches : non ouvert, en attente d'une décision.
+
+Depuis #380, ces relevés AD59 sont suivis : `make veille-ad59` (étape réseau explicite du mainteneur, hors
+`make test`, aucun outil MCP) signale la dérive des douze formulaires de recherche, les fils du forum des ajouts
+du service et un classeur 3 E d'un autre millésime ; `diagnostic` (contrôle `referentiels_ad59`) signale, sans
+réseau, un référentiel embarqué relevé depuis plus d'un an. Rien n'est téléchargé ni corrigé automatiquement :
+[veille des AD59](veille-ad59.md).
 
 ## Sondage guidé d'un registre — #156
 
@@ -352,8 +469,8 @@ continuent d'utiliser les clés canoniques.
 | notaire | notaires | minutes et répertoires |
 | paroissiaux | paroissial | préciser période et statut du fonds |
 | enregistrement | — | préciser table ou déclaration |
-| cadastre | — | plans et matrices |
-| hypotheques | — | ajouté au catalogue, règle historique conservée |
+| cadastre | — | plans et matrices ; recherche des plans pour AD59 (`CAD`, #379) et neuf services Mnesys (#392), matrices non couvertes |
+| hypotheques | — | ajouté au catalogue, règle historique conservée ; recherche de volumes pour AD59 (`HYP`, #378) |
 | judiciaire | justice | ajouté au catalogue, clé publique historique conservée |
 | insinuation | insinuations | ajouté au catalogue, régime à préciser |
 

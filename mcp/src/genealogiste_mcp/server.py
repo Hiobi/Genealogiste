@@ -1084,15 +1084,55 @@ def archives_registres(service: str, commune: str, annee: int, type_acte: str = 
     AD80, AD90, AD91, AD972 ; AD25 : TD, RM et SUCC seulement ; archives_service ou sources_catalogue pour la
     liste à jour) : leur formulaire public est lu et la commune est prise dans son vocabulaire (commune_service ;
     valeur exacte acceptée en cas d'ambiguïté).
-    Services Mnesys seulement : RM (registres matricules : annee = classe, soit l'année de naissance + 20 ;
-    commune = bureau de recrutement, facultatif ; AD19, AD25, AD27, AD39, AD55, AD58, AD69, AD90, AD972) et SUCC
-    (tables des successions et absences, série 3 Q : commune = bureau de l'enregistrement ; AD25, AD27,
-    AD37 (canton), AD58, AD69, AD90, AD91).
+    RM (registres matricules : annee = classe, soit l'année de naissance + 20 ; commune = bureau de recrutement,
+    facultatif ; AD19, AD25, AD27, AD39, AD55, AD58, AD59, AD69, AD90, AD972). AD59 (série 1 R) : une classe
+    précise interroge deux formulaires, une page chacun ; chaque résultat porte categorie (tables : table
+    alphabétique de la classe et du bureau ; fiches : volumes des états signalétiques, en ligne pour les classes
+    1867 à 1923) et contexte (bureau des fiches) ; matricules donne l'état de chaque formulaire (interroge, bureau,
+    total, page_suivante, bureaux proposés, message). Un intervalle (annee_fin) n'interroge que les tables.
+    SUCC (tables des successions et absences, série 3 Q : commune = bureau de l'enregistrement, obligatoire ;
+    AD25, AD27, AD37 (canton), AD58, AD59, AD69, AD90, AD91). AD59 : bureau pris dans le vocabulaire du formulaire
+    (inconnu ou ambigu : erreur qui liste les valeurs ; autres_bureaux signale « LILLE (1er bureau) »...),
+    période envoyée telle quelle, successions donne le relevé et la lecture. AD59 seulement : FD (fiches décès
+    de l'enregistrement, versements W, 1969 à 1975 en ligne, suite des tables : commune = bureau, annee = année
+    du décès ; un intervalle est filtré localement). Les fiches décès ne sont pas librement communicables : le
+    service affirme un délai de 50 ans, non vérifié par le plugin ; avertissement_communicabilite et
+    fiches_deces.communicabilite le rappellent, un résultat de moins de 50 ans est écarté.
+    AD59 seulement : HYP (hypothèques, sous-série 4 Q : commune = bureau des hypothèques, obligatoire, pris dans
+    le vocabulaire du formulaire ; inconnu ou ambigu : erreur qui liste les valeurs). HYP interroge trois
+    formulaires, une page chacun ; chaque résultat porte categorie (indicateur, tables, repertoires), contexte,
+    bureau_titre, periode_titre et plage_alphabetique (texte, debut, fin lus dans le titre) ; HYPI, HYPT ou HYPR
+    n'interrogent qu'une catégorie. Méthode : indicateur, puis table alphabétique (numéro de case), puis
+    répertoire. Aucune date dans ces formulaires : annee n'est pas envoyée et n'écarte que les volumes dont le
+    titre porte une autre période. Le nom cherché n'est jamais transmis : comparer son initiale à debut et fin,
+    localement. hypotheques donne méthode, relevé, état de chaque formulaire et règle de communicabilité.
+    AD59 seulement : CAD (plans du cadastre, non nominatifs : commune seule, obligatoire). CAD lit deux
+    formulaires, cadastre du Consulat (cotes P 30) et cadastre napoléonien (P 31), et interroge ceux dont le
+    vocabulaire connaît la commune, une page chacun ; inconnue des deux : erreur avec les valeurs proches. Chaque
+    résultat porte categorie (consulaire, napoleonien), contexte, annee_titre et, de 2 à 9 vues, planche_contact
+    (appel archives_planche). Aucune date dans ces formulaires et aucun plan écarté sur sa date (un plan
+    vaut pour les décennies qui suivent sa levée) : les lots sont triés par date et position_periode situe
+    chacun (anterieur, contemporain, posterieur à la période demandée ; null sans date). cadastre donne relevé, lecture, état de chaque formulaire, noms_lies (nom actuel, ancien nom ou
+    lieu rattaché d'après le classeur 3 E local) et ce qui n'est pas couvert (matrices, états de sections).
+    CAD vaut aussi pour les services Mnesys qui déclarent un formulaire de cadastre (AD14, AD19, AD25, AD39, AD55, AD58, AD69, AD90 et AD91) :
+    commune seule, aucune date envoyée ni plan écarté sur sa date, options de plans du formulaire envoyées
+    (cadastre.typologie_envoyee), matrices et états de section signalés sans être interrogés
+    (cadastre.autres_documents), même tri et même position_periode.
     type_acte : N (naissance), M (mariage), D (décès), NMD ou vide (tous), TD (tables décennales : tables dont
     la période affichée recoupe l'année ou l'intervalle demandé). annee_fin (facultatif, >= annee) : intervalle
     [annee, annee_fin], ex. 1790-1802 ou une décennie ; registres dont la période le recoupe. Une seule page de
     résultats par appel ; page_suivante permet de poursuivre explicitement. Cote, ARK et période proviennent du
-    résultat officiel ; une recherche vide ne prouve pas l'absence de l'acte. personne désigne seulement
+    résultat officiel ; une recherche vide ne prouve pas l'absence de l'acte. AD59 : quand la recherche est vide
+    ou qu'un volume n'est pas en ligne, classeur_3e donne les volumes du classeur 3 E (référentiel local daté) qui
+    recoupent la période : cote, types, bornes et message (« pas en ligne avant AAAA ; consultation en salle de
+    lecture », ou « inconnu du classeur », qui ne veut pas dire inexistant). REC (recensements de population) :
+    AD59 (commune seule, période filtrée localement ; mêmes sorties) et les services Mnesys qui déclarent un
+    formulaire de recensements (AD14, AD19, AD25, AD27, AD37, AD39, AD51, AD55, AD58, AD69, AD80, AD90, AD91 ;
+    période envoyée quand le formulaire en a une, sinon filtrée localement ; recensements donne formulaire,
+    relevé, millésimes proposés et millésimes écartés) ; refusé ailleurs. AD59 : couverture_recensements donne,
+    quand la recherche est vide ou qu'un recensement n'est qu'en salle de lecture, cote, millésime et mode d'accès
+    d'après l'état de la collection du service (référentiel local daté ; « inconnu du référentiel » ne veut pas
+    dire inexistant). personne désigne seulement
     la cible locale, pour la garde des vivants et le journal ; cet identifiant n'est pas envoyé au service."""
     if refus := _garde(personne=personne, texte=commune):
         return refus

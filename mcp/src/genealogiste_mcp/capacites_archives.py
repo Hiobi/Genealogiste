@@ -1,7 +1,9 @@
 """Couverture technique constatée, distincte de la disponibilité déclarée des fonds (#145)."""
 from __future__ import annotations
 
+from . import couverture_3e, couverture_recensements
 from .acces_archives import ecarte_adaptateur_service
+from .sources import registres, veille_ad59
 
 CAPACITES = ("resolution_ark", "navigation", "telechargement", "recherche", "archivage")
 
@@ -76,6 +78,54 @@ def tableau(services: list | tuple, recettes: dict, documents: tuple = ()) -> st
         lignes.append("| " + " | ".join(str(v).replace("|", "\\|").replace("\n", " ") for v in cellules) + " |")
     lignes.extend(["", f"Total : {len(services)} services ; {comptes} recettes de référence qualifiées (niveau 5).", "",
                    "Les URL et pages de référence sont dans `archives_fr.json` ; les verdicts et détails d'échec dans `recettes_archives.json`. `archives_service` expose les mêmes informations sous `couverture_technique`, avec les capacités et mesures séparées.", ""])
+    try:
+        classeur = couverture_3e.referentiel()
+        lignes.extend(["## AD59 : classeur 3 E", "",
+                       f"Hors des niveaux ci-dessus : le classeur 3 E des AD59 (`ad59_3e.json`, relevé du {classeur['releve_le']}, "
+                       f"{classeur['volumes']} volumes, {len(classeur['communes'])} libellés de commune) donne la cote et l'année de mise en ligne "
+                       "prévue des registres d'état civil. `archives_registres` le joint (`classeur_3e`) quand la recherche est vide ou qu'un "
+                       "volume n'est pas en ligne ; un volume inconnu du classeur n'est pas inexistant. Voir `docs/recherche-registres-ad59.md`.", ""])
+    except (OSError, ValueError, KeyError):
+        pass
+    try:
+        etat = couverture_recensements.referentiel()
+        lignes.extend(["## AD59 : recensements de population", "",
+                       f"Hors des niveaux ci-dessus : l'état de la collection des recensements des AD59 (`ad59_recensements.json`, relevé du {etat['releve_le']}, "
+                       f"{etat['volumes']} volumes, {len(etat['communes'])} libellés de commune, {etat['en_ligne']} en ligne, {etat['salle_de_lecture']} en salle de lecture) "
+                       "donne la cote et le mode d'accès de chaque millésime. `archives_registres(type_acte=\"REC\")` le joint (`couverture_recensements`) quand la "
+                       "recherche est vide ou qu'un recensement n'est qu'en salle de lecture ; un millésime inconnu du référentiel n'est pas inexistant. "
+                       "Voir `docs/recensements.md`.", ""])
+    except (OSError, ValueError, KeyError):
+        pass
+    lignes.extend(["## AD59 : registres matricules", "",
+                   f"Hors des niveaux ci-dessus : `archives_registres(type_acte=\"RM\")` interroge pour les AD59 les deux formulaires de la série 1 R (relevé du {registres.RELEVE_RM}) : "
+                   f"tables alphabétiques et fiches des états signalétiques ({registres.PERIODE_FICHES_RM} d'après le formulaire), par classe et bureau de recrutement. "
+                   "Aucun référentiel local des cotes : la cote vient de la réponse ; un résultat vide ne prouve pas l'absence du registre. "
+                   "Navigation et lecture des vues de ces registres non testées. Voir `docs/recherche-registres-ad59.md`.", ""])
+    lignes.extend(["## AD59 : tables des successions et fiches décès", "",
+                   f"Hors des niveaux ci-dessus : `archives_registres` interroge pour les AD59 le formulaire des tables des successions et absences (`type_acte=\"SUCC\"`, série 3 Q, {registres.PERIODE_SUCC} d'après le service) "
+                   f"et celui des fiches décès de l'enregistrement (`type_acte=\"FD\"`, versements W, {registres.PERIODE_FD}), par bureau de l'enregistrement (relevé du {registres.RELEVE_ENREGISTREMENT}). "
+                   "Aucun référentiel local des cotes : la cote vient de la réponse ; un résultat vide ne prouve ni l'absence d'un décès ni celle d'une succession. "
+                   f"Fiches décès : le service affirme un délai de {registres.DELAI_FD} ans, non vérifié par le plugin ; elles ne sont jamais présentées comme librement communicables. "
+                   "Navigation et lecture des vues de ces fonds non testées. Voir `docs/recherche-registres-ad59.md`.", ""])
+    lignes.extend(["## AD59 : hypothèques", "",
+                   f"Hors des niveaux ci-dessus : `archives_registres(type_acte=\"HYP\")` interroge pour les AD59 les trois formulaires de la sous-série 4 Q (relevé du {registres.RELEVE_HYP}) : "
+                   "indicateurs, tables alphabétiques et répertoires des formalités hypothécaires, par bureau des hypothèques (`HYPI`, `HYPT`, `HYPR` pour une seule catégorie). "
+                   f"D'après le service : {registres.PERIODE_HYP}. Aucune date dans ces formulaires ; bureau, période et plage alphabétique sont lus dans le titre des volumes, "
+                   "et le nom cherché n'est jamais envoyé. Aucun référentiel local des cotes : la cote vient de la réponse ; un résultat vide ne prouve ni l'absence du registre ni celle d'une formalité. "
+                   "Navigation et lecture des vues de ces fonds non testées. Voir `docs/recherche-registres-ad59.md`.", ""])
+    lignes.extend(["## AD59 : plans du cadastre", "",
+                   f"Hors des niveaux ci-dessus : `archives_registres(type_acte=\"CAD\")` interroge pour les AD59 les deux formulaires des plans du cadastre (relevé du {registres.RELEVE_CAD}) : "
+                   "cadastre dit du Consulat (cotes P 30) et cadastre dit napoléonien (cotes P 31), par commune, chaque formulaire ayant son vocabulaire. "
+                   f"D'après le service : {registres.PERIODE_CAD}. Aucune date dans ces formulaires ; seuls les plans dont la date affichée ne recoupe pas la période demandée sont écartés. "
+                   "Plans seulement, non nominatifs : matrices cadastrales et états de sections ne sont pas couverts. Aucun référentiel local des cotes : la cote vient de la réponse ; un résultat vide ne prouve pas qu'aucun plan n'existe. "
+                   "Navigation éprouvée sur un seul lot (métadonnées, aucune image) ; planche-contact et lecture des plans non testées. Voir `docs/recherche-registres-ad59.md`.", ""])
+    lignes.extend(["## AD59 : veille des mises en ligne", "",
+                   f"Hors des niveaux ci-dessus : `make veille-ad59` (étape réseau explicite, aucun outil MCP) relit les {len(registres.formulaires_ad59())} formulaires de recherche AD59 connus du plugin "
+                   f"et signale leur dérive par rapport au contrat relevé le {veille_ad59.contrat()['releve_le']} (`ad59_formulaires.json`), consigne au journal les fils du forum des ajouts du service "
+                   "(titre, date, lien : annonces à vérifier) et signale un classeur 3 E d'un autre millésime, sans le télécharger. "
+                   f"`diagnostic` (contrôle `referentiels_ad59`) signale, sans réseau, un référentiel embarqué relevé depuis plus de {veille_ad59.SEUIL_JOURS} jours. "
+                   "Un formulaire conforme ne prouve pas que ses résultats sont inchangés. Voir `docs/veille-ad59.md`.", ""])
     if documents:
         lignes.extend(["## Niveaux par type de document", "",
                        "Chaque cellule reprend le niveau de `archives_service(document=...)`. Une recette dont le fonds n'est pas renseigné ne qualifie aucune de ces colonnes. Les niveaux 0–4 sont des capacités implémentées, toujours à éprouver sur le fonds demandé.", "",
