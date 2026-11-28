@@ -110,6 +110,12 @@ NON_VERIFIE_CAD = ("La page du service relevée ne dit rien d'un délai de commu
 PISTE_LIEU_CAD = ("Commune réunie à une autre ou renommée : les plans sont classés sous le nom porté par le "
                   "formulaire, qui diffère d'un cadastre à l'autre ; geo_historique(nom) donne les fusions et "
                   "changements de nom depuis 1943, lieu_historique(lieu, date) la commune à une date.")
+# Recensements des autres services Mnesys (#392, relevés du 28 novembre 2026, docs/recensements.md) : un
+# formulaire dédié par service, déclaré au référentiel (recherche_registres.formulaires.recensements).
+LECTURE_REC_MNESYS = ("Un résultat est un volume ou un cahier de recensement de la commune (titre, cote et date "
+                      "tels qu'affichés par le service : listes nominatives, parfois états récapitulatifs ou "
+                      "dénombrements) ; le millésime vient de la date affichée (bornes), jamais du titre. Le contenu "
+                      "des vues n'est pas lu : aucune recherche par nom.")
 MAX_HTML = 2_000_000
 MAX_PROFONDEUR = 128
 TYPES = {"N": "Naissances", "M": "Mariages", "D": "Décès"}
@@ -199,8 +205,9 @@ def _registre(bloc: _Noeud, host: str = HOST, naan: str = "33518", contexte: boo
         raise FormatRegistresError("Lien de notice incohérent ou hors du service : registre refusé.")
     cotes = bloc.trouver("p", classe="referenceCodes")
     cote = _unique(cotes, "cote").texte() if cotes or naan == "33518" else None  # cote facultative hors AD59
-    if cote:  # libellé collé à chaque valeur : « 5MI_D271 (Cote(s)) » (AD80), « 3Q23 (Cote), 6NUM3/001/007 (Cote) » (AD37)
-        cote = re.sub(r"\s*\(Cote(?:s|\(s\))?\)(?=\s*(?:,|$))", "", cote) or None
+    if cote:  # libellé collé à chaque valeur : « 5MI_D271 (Cote(s)) » (AD80), « 3Q23 (Cote), 6NUM3/001/007 (Cote) » (AD37),
+        # « 6M158 (Cote/Cotes extrêmes) » (AD27, recensements, relevé du 28 novembre 2026)
+        cote = re.sub(r"\s*\(Cote(?:s|\(s\)|/Cotes extrêmes)?\)(?=\s*(?:,|$))", "", cote) or None
     bornes = None
     for partie in bloc.trouver(classe="content-sub-part"):
         if [h.texte() for h in partie.trouver("h3")] == ["Date"]:
@@ -289,14 +296,19 @@ def services_registres() -> list[str]:
     return ["AD59", *sorted(s["code"] for s in archives.services() if s.get("recherche_registres"))]
 
 
-def _formulaire(http, host: str, uuid: str) -> dict:
-    """Champs d'un formulaire public Mnesys, lu en ligne (une requête, en cache une semaine)."""
+def _noeuds_formulaire(http, host: str, uuid: str) -> list[_Noeud]:
+    """Arbre d'un formulaire public Mnesys, lu en ligne (une requête, en cache une semaine)."""
     form, _ = http.get(f"{host}/search/form/{uuid}", parse="text", ttl=7 * DAY, source="archives")
     if len(form) > MAX_HTML:
         raise FormatRegistresError("Formulaire de recherche trop volumineux : consultation manuelle nécessaire.")
     parser = _HTML()
     parser.feed(form)
-    return mnesys.lire_formulaire(parser.racine.trouver())
+    return parser.racine.trouver()
+
+
+def _formulaire(http, host: str, uuid: str) -> dict:
+    """Champs d'un formulaire public Mnesys, lu en ligne (une requête, en cache une semaine)."""
+    return mnesys.lire_formulaire(_noeuds_formulaire(http, host, uuid))
 
 
 def _matricules_ad59(http, bureau: str, periode: list[int], page: int) -> tuple[list[dict], int, int | None, bool, dict]:
@@ -689,10 +701,12 @@ def _communicabilite_fd(resultats: list[dict], periode: list[int], aujourdhui: d
 
 
 def _requete_mnesys(http, svc: dict, commune: str, periode: list[int], type_acte: str,
-                    page: int) -> tuple[dict, str | None, bool]:
-    """Requête GET d'un service Mnesys d'après son formulaire public (lu en ligne, mis en cache une semaine).
+                    page: int) -> tuple[dict, str | None, bool, list[str]]:
+    """Requête GET d'un service Mnesys d'après son formulaire public (lu en ligne, mis en cache une semaine) :
+    (requête, valeur de commune du service, filtre local, années proposées en liste par le formulaire).
     RM : registres matricules (annee = classe, commune = bureau de recrutement facultatif) ; SUCC : tables des
-    successions (commune = bureau de l'enregistrement) ; sinon formulaire d'état civil."""
+    successions (commune = bureau de l'enregistrement) ; REC : recensements de population (commune seule ;
+    #392) ; sinon formulaire d'état civil."""
     cfg = svc["recherche_registres"]["formulaires"]
     host = svc["site"].rstrip("/")
     dedie = type_acte == "TD" and cfg.get("tables_decennales")
@@ -704,7 +718,9 @@ def _requete_mnesys(http, svc: dict, commune: str, periode: list[int], type_acte
                          "du service (archives_service, lien)" + (f" ; types disponibles : {autres}." if autres
                                                                      else "."))
     uuid = cfg[cle_form]
-    f = _formulaire(http, host, uuid)
+    noeuds = _noeuds_formulaire(http, host, uuid)
+    f = mnesys.lire_formulaire(noeuds)
+    annees = mnesys.annees_proposees(noeuds) if type_acte == "REC" else []
     # champ d'année déclaré au référentiel quand le formulaire ne le type pas (AD25 : classe en texte libre « 0-title »)
     if annee := svc["recherche_registres"].get("champs_annee", {}).get(cle_form):
         f["date"], f["debut"], f["fin"] = annee, None, None
@@ -719,6 +735,16 @@ def _requete_mnesys(http, svc: dict, commune: str, periode: list[int], type_acte
     # localement sur les bornes affichées (filtre_local). Un formulaire de tables dédié doté d'une période (AD25,
     # relevé du 18 novembre 2026) la reçoit ; la typologie reste propre au formulaire d'état civil.
     filtre_local = bool(dedie) and not (f["debut"] and f["fin"]) or not (f["date"] or f["debut"] and f["fin"])
+    if type_acte == "REC" and not (f["debut"] and f["fin"]):
+        # Recensements, formulaire sans période (AD25, AD90, AD91 : millésime seul ; relevés du 28 novembre
+        # 2026) : un intervalle n'envoie que la commune et se filtre localement, comme pour AD59 ; un millésime
+        # que la liste du formulaire ne propose pas n'est pas envoyé (aucune requête, aucun négatif déduit).
+        if periode[0] != periode[1]:
+            filtre_local = True
+        elif annees and str(periode[0]) not in annees:
+            raise ValueError(f"Millésime {periode[0]} absent de la liste du formulaire des recensements de "
+                             f"{svc['code']} ; millésimes proposés : {', '.join(annees)}. Relancer avec l'un "
+                             "d'eux, ou avec un intervalle (annee_fin) pour lister les recensements de la commune.")
     if dedie and not filtre_local:
         requete[f["debut"]], requete[f["fin"]] = str(periode[0]), str(periode[1])
     if not dedie:
@@ -741,7 +767,7 @@ def _requete_mnesys(http, svc: dict, commune: str, periode: list[int], type_acte
                 raise ValueError(f"Le formulaire du service ne propose pas de filtre pour le type {type_acte} : "
                                  "relancer sans type_acte (NMD) et lire les titres des registres.")
     requete["page"] = page
-    return requete, valeur, filtre_local
+    return requete, valeur, filtre_local, annees
 
 
 def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_acte: str = "", page: int = 1,
@@ -780,8 +806,8 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
             raise ValueError("annee_fin : 0 (année seule) ou fin d'intervalle, de annee à 9999.")
         if type(page) is not int or page < 1:
             raise ValueError("page : entier à partir de 1.")
-        if svc and type_acte in ("REC", "FD", "CAD", *TYPES_HYP):
-            quoi = {"REC": "REC (recensements de population)", "FD": "FD (fiches décès de l'enregistrement)",
+        if svc and type_acte in ("FD", "CAD", *TYPES_HYP):
+            quoi = {"FD": "FD (fiches décès de l'enregistrement)",
                     "CAD": "CAD (plans du cadastre)"}.get(type_acte, f"{type_acte} (hypothèques, sous-série 4 Q)")
             raise ValueError(f"type_acte {quoi} : disponible pour AD59 seulement ; le "
                              f"formulaire dédié de {service} n'est pas relevé : chercher dans l'inventaire du "
@@ -790,7 +816,7 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
                                                          else {"REC", "RM", "CAD", *FORMULAIRES_ENREGISTREMENT,
                                                                *TYPES_HYP}):
             raise ValueError("type_acte : N, M, D, NMD, TD (tables décennales) ou vide ; REC (recensements de "
-                             "population) pour AD59 ; RM (registres matricules) pour AD59 et les services Mnesys "
+                             "population) pour AD59 et les services Mnesys qui le déclarent ; RM (registres matricules) pour AD59 et les services Mnesys "
                              "qui le déclarent ; SUCC (tables des successions et absences) pour AD59 et les "
                              "services Mnesys qui le déclarent ; FD (fiches décès de l'enregistrement) pour AD59 ; HYP "
                              "(hypothèques, sous-série 4 Q : indicateurs, tables et répertoires ; HYPI, HYPT ou HYPR "
@@ -812,8 +838,16 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
             resultats, total, suivante, cached, extra = _hypotheques_ad59(http, type_acte, commune, periode, page,
                                                                           date.today())
         elif svc:
-            requete, extra["commune_service"], filtre_local = _requete_mnesys(http, svc, commune, periode,
-                                                                              type_acte, page)
+            requete, extra["commune_service"], filtre_local, annees = _requete_mnesys(http, svc, commune, periode,
+                                                                                      type_acte, page)
+            if type_acte == "REC":
+                rr = svc["recherche_registres"]
+                extra["recensements"] = {
+                    "formulaire": rr["formulaires"]["recensements"],
+                    "releve_le": rr.get("releves", {}).get("recensements", rr["releve_le"]),
+                    "millesimes_formulaire": annees or None, "periode_envoyee": not filtre_local,
+                    "lecture": LECTURE_REC_MNESYS}
+                contexte = True  # « Contexte : … » du résultat : fonds ou commune selon le service
             host, naan = svc["site"].rstrip("/"), svc.get("ark_naan", "")
             url = host + "/search/results"
         elif type_acte in FORMULAIRES_ENREGISTREMENT:
@@ -846,6 +880,10 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
             r["couvre_periode"] = _couvre(r["bornes"], periode)
         couvrantes = [r for r in resultats if r["couvre_periode"] is not False]
         extra[hors] = len(resultats) - len(couvrantes)
+        if svc and type_acte == "REC":  # millésimes en ligne écartés par la période : de quoi relancer
+            extra["recensements"]["millesimes_hors_periode"] = sorted(
+                {b[0] if b[0] == b[1] else f"{b[0]}-{b[1]}" for r in resultats
+                 if r["couvre_periode"] is False for b in [r["bornes"]]}, key=str)
         resultats = couvrantes
     enregistrement = svc is None and type_acte in FORMULAIRES_ENREGISTREMENT
     if enregistrement and type_acte == "FD":
@@ -876,8 +914,10 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
             suite = (f"Cela ne prouve ni l'absence d'un décès ni celle d'une succession ; le service annonce "
                      f"{PERIODE_FD} en ligne.")
         elif type_acte == "REC":
-            suite = ("Cela ne prouve pas que le recensement n'existe pas ni l'absence de la personne : voir "
-                     "couverture_recensements.")
+            suite = ("Cela ne prouve pas que le recensement n'existe pas ni l'absence de la personne" + (
+                " ; millésimes en ligne écartés sur cette page : "
+                f"{', '.join(map(str, extra['recensements']['millesimes_hors_periode']))} (relancer avec l'un "
+                "d'eux ou un intervalle plus large)." if svc else " : voir couverture_recensements."))
         else:
             suite = "Cela ne prouve pas l'absence de l'acte" + (
                 " : consulter les registres de la période (archives_registres sans TD)." if type_acte == "TD" else ".")
@@ -898,6 +938,14 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
             f"d'une succession. Le service annonce en ligne : {annonce} (relevé du {RELEVE_ENREGISTREMENT}). "
             "Vérifier le bureau (celui de l'enregistrement, dont le ressort dépasse la commune ; voir "
             "autres_bureaux)" + (" et élargir la période (annee_fin)." if type_acte == "SUCC" else "."))
+    elif not resultats and svc and type_acte == "REC":
+        liste = extra["recensements"]["millesimes_formulaire"]
+        out["recherche_negative"] = (
+            "Aucun recensement en ligne renvoyé pour cette commune, cette période et cette page ; cela ne prouve ni "
+            "que le recensement n'existe pas (il peut n'être consultable qu'en salle de lecture, ou classé sous une "
+            "autre commune) ni l'absence de la personne." + (
+                f" Millésimes proposés par le formulaire : {', '.join(liste)}." if liste else "")
+            + " Relancer avec un intervalle (annee_fin) pour voir les recensements voisins.")
     elif not resultats:
         out["recherche_negative"] = ("Aucun registre renvoyé pour cette recherche et cette page ; cela ne prouve pas "
                                       "l'absence générale de fonds numérisés. Vérifier les variantes et le service.")

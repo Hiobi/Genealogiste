@@ -97,7 +97,10 @@ nombre de vues), une page par appel : le plugin localise ces documents, il ne le
   suivent sa levée. Matrices cadastrales et états de
   sections ne sont pas couverts.
 
-`REC`, `FD`, `HYP` et `CAD` sont propres à l'AD59 : pour un autre service, l'outil refuse la demande.
+`FD`, `HYP` et `CAD` sont propres à l'AD59 : pour un autre service, l'outil refuse la demande. `REC` vaut
+aussi pour treize services Mnesys (AD14, AD19, AD25, AD27, AD37, AD39, AD51, AD55, AD58, AD69, AD80, AD90,
+AD91) : « Cherche le recensement de 1906 de Clamecy (Nièvre). » L'état de la collection (en ligne ou salle de
+lecture) n'existe que pour l'AD59 ([détail](../docs/recensements.md#autres-services-mnesys-392)).
 Le plugin ne rattache aucune commune à un bureau (recrutement, enregistrement, hypothèques) : le relever sur
 le site du service ou dans la liste renvoyée par l'erreur.
 

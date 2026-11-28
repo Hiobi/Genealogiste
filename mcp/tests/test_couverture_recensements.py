@@ -348,11 +348,14 @@ def test_rec_referentiel_illisible_ne_casse_pas_la_recherche(app, fixtures, monk
 @respx.mock(assert_all_called=False)
 def test_rec_refuse_pour_un_autre_service(app, respx_mock):
     route = respx_mock.route().respond(200, text="aucune requête attendue")
-    res = server.archives_registres("AD58", "Nevers", 1906, "REC")
-    assert "REC (recensements de population) : disponible pour AD59 seulement" in res["erreur"]
-    assert "AD58" in res["erreur"] and not route.called
+    # #392 : REC ouvert aux services Mnesys qui déclarent un formulaire de recensements (AD58 compris) ; un
+    # service sans ce formulaire (AD972, relevé du 28 novembre 2026) reste refusé, sans requête
+    res = server.archives_registres("AD972", "Fort-de-France", 1906, "REC")
+    assert "Aucun formulaire « recensements »" in res["erreur"]
+    assert "AD972" in res["erreur"] and not route.called
     inconnu = server.archives_registres("AD59", "Somain", 1906, "XYZ")
-    assert "REC (recensements de population) pour AD59" in inconnu["erreur"] and not route.called
+    assert "REC (recensements de population) pour AD59 et les services Mnesys qui le déclarent" in inconnu[
+        "erreur"] and not route.called
     assert "REC" in server.archives_registres.__doc__ and "couverture_recensements" in server.archives_registres.__doc__
 
 
