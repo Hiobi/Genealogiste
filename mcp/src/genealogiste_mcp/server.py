@@ -1121,8 +1121,11 @@ def archives_registres(service: str, commune: str, annee: int, type_acte: str = 
     résultat officiel ; une recherche vide ne prouve pas l'absence de l'acte. AD59 : quand la recherche est vide
     ou qu'un volume n'est pas en ligne, classeur_3e donne les volumes du classeur 3 E (référentiel local daté) qui
     recoupent la période : cote, types, bornes et message (« pas en ligne avant AAAA ; consultation en salle de
-    lecture », ou « inconnu du classeur », qui ne veut pas dire inexistant). AD59 seulement : REC (recensements
-    de population : commune seule, période filtrée localement ; mêmes sorties) ; couverture_recensements donne,
+    lecture », ou « inconnu du classeur », qui ne veut pas dire inexistant). REC (recensements de population) :
+    AD59 (commune seule, période filtrée localement ; mêmes sorties) et les services Mnesys qui déclarent un
+    formulaire de recensements (AD14, AD19, AD25, AD27, AD37, AD39, AD51, AD55, AD58, AD69, AD80, AD90, AD91 ;
+    période envoyée quand le formulaire en a une, sinon filtrée localement ; recensements donne formulaire,
+    relevé, millésimes proposés et millésimes écartés) ; refusé ailleurs. AD59 : couverture_recensements donne,
     quand la recherche est vide ou qu'un recensement n'est qu'en salle de lecture, cote, millésime et mode d'accès
     d'après l'état de la collection du service (référentiel local daté ; « inconnu du référentiel » ne veut pas
     dire inexistant). personne désigne seulement

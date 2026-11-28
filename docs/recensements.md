@@ -1,11 +1,14 @@
-# Recensements de population — AD59 (#375)
+# Recensements de population — AD59 (#375) et autres services Mnesys (#392)
 
 Les listes nominatives de recensement donnent, pour une commune et un millésime, la composition des foyers :
 noms, âges ou années de naissance déclarés, professions, liens au chef de ménage, nationalité selon les années.
 Le plugin sait localiser le recensement d'une commune du Nord, dire s'il est en ligne ou seulement en salle de
 lecture, et citer sa cote. Il ne lit pas les listes (ni OCR ni HTR) et ne cherche aucun nom.
 
-Seul le service **AD59** est couvert. Tout ce qui suit vient de relevés publics du **27 novembre 2026**
+Le service **AD59** est couvert en entier (formulaire, état de la collection, cotes). Treize autres services
+Mnesys exposent un formulaire de recensements localisé par `type_acte="REC"`, sans état de la collection : voir
+[Autres services Mnesys](#autres-services-mnesys-392). Ce qui suit, jusqu'à cette section, vient de relevés
+publics AD59 du **27 novembre 2026**
 (`robots.txt` : seuls `/private/`, `/oai-pmh`, `/user/` sont exclus ; une requête par observation, sans image,
 agent générique, aucun nom de personne).
 
@@ -46,8 +49,61 @@ millésime vient du champ « Date ». Observations : Somain → 4 résultats, un
 la page négative habituelle (`body#display-no-results`, identique octet pour octet, une fois réduite, à celle de
 l'état civil) ; Buysscheure, `page=2` → 6 résultats sur 26, 20 par page, `max="2"`.
 
-`REC` est réservé à AD59. Pour un autre service Mnesys, l'outil refuse avec un message explicite : le
-formulaire dédié de ce service n'a pas été relevé (extension prévue une fois relevé, hors de #375).
+Depuis #392, `REC` est ouvert aux services Mnesys dont le formulaire de recensements a été relevé (section
+suivante). Pour un autre service, l'outil refuse avec un message explicite.
+
+## Autres services Mnesys (#392)
+
+Relevé du **28 novembre 2026**, service par service, sans généralisation : `robots.txt` lu sur chaque hôte
+(`/private/`, `/oai-pmh`, `/user/` exclus partout ; `archives.eure.fr` n'en publie pas : 404), page d'accès aux
+documents numérisés puis formulaire dédié, une requête par observation espacée par hôte, aucune image, agent
+générique, aucun nom de personne (89 requêtes en tout). Chaque formulaire est déclaré au référentiel
+(`recherche_registres.formulaires.recensements`, date `recherche_registres.releves.recensements`) et lu en
+ligne à chaque recherche, comme l'état civil : commune choisie dans son vocabulaire, champs de date d'après
+leur type.
+
+| Service | Formulaire consulté depuis | Champs de date | Commune du relevé | 1906 |
+|---|---|---|---|---|
+| AD14 | `/page/genealogie` | période (`period_begin`, `period_end`) | Bayeux | 1 volume, sans cote affichée |
+| AD19 | page d'accueil | millésimes en liste + période | Tulle | 2 (`EDEP/272/222`, 1891-1926) |
+| AD25 | `/page/formulaires-de-recherche` | millésime seul (saisie) | Pontarlier | 1, sans cote affichée |
+| AD27 | `/page/etat-civil-et-autres-documents-en-ligne` | période | Bernay | 5 (`6M158`, une par division) |
+| AD37 | `/page/des-personnes-et-des-familles` | millésimes en liste + période | Chinon | 1 (`6NUM5/072/015`) |
+| AD39 | `/page/acces-aux-documents-numerises` | période | Dole | 1 (`6M515`) |
+| AD51 | `/page/archives-numerisees` | millésimes en liste + période | Épernay | 1 (`122 M 316`) |
+| AD55 | `/page/archives-en-ligne` | aucun (commune seule) | Verdun | 0 : en ligne 1836, 1926, 1931, 1936, 1946 |
+| AD58 | `/page/archives-en-ligne` | période | Clamecy | 1 (`6 M 079/2`) |
+| AD69 | `/page/archives-consultables-en-ligne` | période | Tarare | 81 cahiers (par rue), 20 par page |
+| AD80 | `/page/population-individus` | période | Péronne | 3 (`6M715`, par paroisse) |
+| AD90 | `/page/acceder-aux-fonds-numerises` | millésime en liste fermée, sans période | Delle | 1 (`6 M 156/15`) ; 20 de 1836 à 1943 |
+| AD91 | `/page/par-thematique` | millésime seul (saisie) | Étampes | 1 (`6M/126`) ; 20 de 1836 à 1936 |
+
+Règles de requête :
+
+- **Période dans le formulaire** : l'année ou l'intervalle est envoyé ; le service filtre (`periode_envoyee`
+  vrai). Un millésime absent de la liste d'AD19, AD37 ou AD51 est quand même envoyé en période : un volume
+  peut couvrir plusieurs recensements (Tulle : 1891-1926).
+- **Millésime seul** (AD25, AD90, AD91) : une année est envoyée telle quelle ; un intervalle n'envoie que la
+  commune et les volumes sont filtrés localement sur leur date (`couvre_periode`, `registres_hors_periode`,
+  `recensements.millesimes_hors_periode`). AD90 propose une liste fermée : une année absente (1916) est refusée
+  avant toute requête, avec les millésimes proposés.
+- **Aucun champ de date** (AD55) : commune seule, filtre local ; un millésime absent est un négatif qui cite
+  les millésimes en ligne de la page.
+- Le millésime vient du champ « Date » du résultat, jamais du titre (titres hétérogènes : « 1906 », « BERNAY
+  1E DIVISION 1906 », nom de rue à Tarare, paroisse à Péronne). La ligne « Contexte » est rendue (`contexte`).
+- Libellé collé à la cote retiré (« 6M158 (Cote/Cotes extrêmes) », AD27).
+
+Services non ouverts :
+
+- **AD972** : la page des archives numérisées ne propose aucun formulaire de recensements (relevé du
+  28 novembre 2026) ; `REC` est refusé avec un message clair, sans requête.
+- **AD73** : son portail de recherche (`recherche-archives.savoie.fr`, moteur distinct) interdit les
+  recherches dans son `robots.txt` (`Disallow: /?*action=search`) ; aucune requête de recherche n'a été faite.
+  Consultation manuelle sur le site du service.
+
+Ce que ces services n'ont pas : ni état de la collection (`couverture_recensements` est propre à AD59), ni
+cotes de salle de lecture. Un négatif ne prouve ni que le recensement n'existe pas (il peut n'être consultable
+qu'en salle de lecture, ou classé sous une autre commune), ni l'absence de la personne.
 
 ## État de la collection : `couverture_recensements`
 
@@ -148,6 +204,10 @@ n'est communicable qu'à partir de 2030 selon cette règle. Les conditions d'acc
   demander le libellé exact du service (essayer la forme du site). Une commune de plus de 20 recensements en
   ligne a une deuxième page (26 au plus pour un libellé du relevé).
 - Seules les pages citées ont été observées ; aucune facette, aucune notice, aucune image.
+- Autres services Mnesys (#392) : une commune et un millésime observés par service ; vocabulaire des communes
+  lu en ligne, non relevé en entier ; une seule page de résultats par appel. La veille de dérive
+  (`make veille-ad59`) ne couvre pas encore ces formulaires : un formulaire modifié se manifeste par une erreur
+  de lecture ou un champ introuvable.
 
 ## Renouvellement du référentiel
 
@@ -188,3 +248,9 @@ le PDF du relevé a été téléchargé à part, puis lu par le script.
 modification les pages 1, 20, 33, 54 et 64 du PDF public (310 lignes) ; `ad59-recensements-positive.html`
 (Somain) et `ad59-recensements-page2.html` (Buysscheure, page 2 sur 2) sont les pages relevées, réduites aux
 balises lues (ni script, ni cookie, ni formulaire) ; le négatif réutilise `ad59-recherche-negative.html`.
+
+`tests/test_recensements_mnesys.py`, sans réseau : pour chaque service ouvert, `fixtures/<code>-recensements-
+formulaire.html` (champs du formulaire réel, vocabulaire des communes ramené à quelques valeurs dont celle du
+relevé) et les pages de résultats réelles (`-positive`, `-negative`, `-intervalle`) sans en-tête, scripts ni
+pied de page. Au relevé, chaque réduction a été contrôlée : même requête construite, mêmes résultats lus que sur
+la page complète.

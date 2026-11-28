@@ -28,7 +28,9 @@ liste nominative (cote, ARK) ; `couverture_recensements` dit si le millésime es
 de lecture (communicable après 75 ans) et liste les millésimes connus ; « inconnu du référentiel » ne veut pas
 dire inexistant. `cotes_a_consulter` cite ces cotes. Recherche par nom : base Socface de FranceArchives, à
 consulter soi-même dans un navigateur (jamais automatisée). L'âge déclaré est une information secondaire ;
-une absence dans une liste ne prouve ni décès ni départ (docs/recensements.md).
+une absence dans une liste ne prouve ni décès ni départ (docs/recensements.md). Hors du Nord, `type_acte="REC"`
+vaut aussi pour AD14, AD19, AD25, AD27, AD37, AD39, AD51, AD55, AD58, AD69, AD80, AD90 et AD91 (localisation
+seule, sans état de la collection ; un négatif n'exclut pas un volume en salle de lecture).
 Matricules du Nord : `archives_registres(service="AD59", commune=<bureau de recrutement ou "">, annee=<classe>,
 type_acte="RM")` ; classe = année de naissance + 20 (`cotes_a_consulter` la calcule pour une naissance dans le
 Nord : `matricules_ad59`). La réponse distingue `categorie: tables` (table alphabétique de la classe et du

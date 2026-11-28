@@ -187,7 +187,7 @@ tables décennales. Pour
 (1931), `M474 7 / 25 SOMAIN` (1946). La ligne « Contexte : Recensement de 1906 » n'est pas lue. Commune
 inexistante : même page négative. Buysscheure, `page=2` : 6 résultats sur 26, `max="2"`, 20 par page.
 
-Contrat retenu : `type_acte="REC"` (AD59 seulement) envoie la commune et la page au formulaire des
+Contrat retenu : `type_acte="REC"` (AD59 ; autres services Mnesys depuis #392, voir [recensements](recensements.md#autres-services-mnesys-392)) envoie la commune et la page au formulaire des
 recensements ; la période est filtrée localement comme pour `TD` (`couvre_periode`, `registres_hors_periode`) ;
 titre, cote, ARK, bornes et nombre de vues sont rendus comme pour un registre. Quand la recherche est vide ou
 qu'un recensement n'est qu'en salle de lecture, `couverture_recensements` joint la cote et le mode d'accès tirés

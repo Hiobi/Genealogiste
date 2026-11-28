@@ -14,7 +14,8 @@ import re
 
 from ..normalize.names import strip_accents
 
-TYPES_FONDS = {"RM": "matricules", "SUCC": "successions"}  # type_acte -> clé du formulaire dédié
+# type_acte -> clé du formulaire dédié (REC : recensements de population, relevés du 28 novembre 2026, #392)
+TYPES_FONDS = {"RM": "matricules", "SUCC": "successions", "REC": "recensements"}
 
 ARTICLES = ("LE", "LA", "LES", "L")
 # qualificatifs d'une commune ancienne ou absorbée : à départager seulement si aucune autre forme
@@ -115,6 +116,21 @@ def lire_formulaire(noeuds) -> dict:
             out["commune"], out["communes"] = lieux[sans]
             break
     return out
+
+
+def annees_proposees(noeuds) -> list[str]:
+    """Années que le formulaire propose en liste pour son champ de date exacte (millésimes des recensements :
+    AD19, AD37, AD51, AD90) ; liste vide si l'année est une saisie libre ou si le formulaire n'a pas de date."""
+    for n in noeuds:
+        nom = n.attrs.get("data-name") or n.attrs.get("name") or ""
+        if _champ(nom) == "date" and "data-options" in n.attrs:
+            try:
+                options = json.loads(n.attrs["data-options"])
+            except ValueError as exc:
+                raise FormulaireError(f"Options du champ {nom} illisibles.") from exc
+            if isinstance(options, list) and options and all(isinstance(o, str) for o in options):
+                return options
+    return []
 
 
 def typologie(option: str) -> str | None:
