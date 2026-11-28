@@ -159,3 +159,12 @@ def test_exceptions_nommees_motivees_et_encore_necessaires():
         assert code in liste, f"{code} n'a plus d'analyseur : retirer l'exception"
         assert len(motif) > 80, "motif circonstancié attendu"
         assert not _reponse_2xx_enregistree(code), f"{code} a maintenant une réponse 2xx : retirer l'exception"
+
+
+def test_millesime_cog_par_defaut_courant():
+    """#350 : le COG configuré par défaut est le millésime 2026 ; les deux fichiers viennent du même dossier INSEE.
+    Les réponses enregistrées (COG-INSEE) restent l'extrait réel du millésime 2024 : le robots.txt de l'INSEE
+    exclut les *.csv, elles ne sont pas retéléchargées pour les tests."""
+    cfg = Config(data_dir=Path("d"), cache_path=Path("c"))
+    assert cfg.cog_mvt_url.endswith("/v_mvt_commune_2026.csv")
+    assert cfg.cog_mvt_url.rsplit("/", 1)[0] == cfg.cog_communes_url.rsplit("/", 1)[0]
