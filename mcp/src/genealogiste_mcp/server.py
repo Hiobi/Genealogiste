@@ -1110,9 +1110,9 @@ def archives_registres(service: str, commune: str, annee: int, type_acte: str = 
     formulaires, cadastre du Consulat (cotes P 30) et cadastre napoléonien (P 31), et interroge ceux dont le
     vocabulaire connaît la commune, une page chacun ; inconnue des deux : erreur avec les valeurs proches. Chaque
     résultat porte categorie (consulaire, napoleonien), contexte, annee_titre et, de 2 à 9 vues, planche_contact
-    (appel archives_planche). Aucune date dans ces formulaires : annee n'écarte que les plans dont la date
-    affichée ne recoupe pas la période (préférer un intervalle large : un plan vaut pour les décennies qui
-    suivent). cadastre donne relevé, lecture, état de chaque formulaire, noms_lies (nom actuel, ancien nom ou
+    (appel archives_planche). Aucune date dans ces formulaires et aucun plan écarté sur sa date (un plan
+    vaut pour les décennies qui suivent sa levée) : les lots sont triés par date et position_periode situe
+    chacun (anterieur, contemporain, posterieur à la période demandée ; null sans date). cadastre donne relevé, lecture, état de chaque formulaire, noms_lies (nom actuel, ancien nom ou
     lieu rattaché d'après le classeur 3 E local) et ce qui n'est pas couvert (matrices, états de sections).
     type_acte : N (naissance), M (mariage), D (décès), NMD ou vide (tous), TD (tables décennales : tables dont
     la période affichée recoupe l'année ou l'intervalle demandé). annee_fin (facultatif, >= annee) : intervalle

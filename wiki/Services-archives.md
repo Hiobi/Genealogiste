@@ -91,8 +91,10 @@ nombre de vues), une page par appel : le plugin localise ces documents, il ne le
   initiale à la plage de chaque volume (`plage_alphabetique`), qui reste indicative.
 - **Plans du cadastre** (`type_acte="CAD"`) : cadastre dit du Consulat (cotes `P 30`) et cadastre napoléonien
   (cotes `P 31`). « Cherche les plans du cadastre d'Estaires entre 1800 et 1900 (Nord). » La commune est
-  obligatoire, parfois sous son nom d'alors (`FIVES`) ; chaque résultat est un lot de plans. Préférer un
-  intervalle large : une année précise écarte un plan antérieur encore utile. Matrices cadastrales et états de
+  obligatoire, parfois sous son nom d'alors (`FIVES`) ; chaque résultat est un lot de plans. Aucun plan
+  n'est écarté sur sa date : tous les lots de la commune sont rendus, triés par date et marqués antérieur,
+  contemporain ou postérieur à la période demandée (`position_periode`), un plan valant pour les décennies qui
+  suivent sa levée. Matrices cadastrales et états de
   sections ne sont pas couverts.
 
 `REC`, `FD`, `HYP` et `CAD` sont propres à l'AD59 : pour un autre service, l'outil refuse la demande.

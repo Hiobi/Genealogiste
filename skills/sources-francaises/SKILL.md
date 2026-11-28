@@ -56,8 +56,10 @@ fait par nom de propriétaire, jamais par adresse (`cotes_a_consulter` rappelle 
 Plans du cadastre du Nord (situer un lieu-dit, une section, une parcelle ; plans seulement, non nominatifs) :
 `archives_registres(service="AD59", commune, annee, annee_fin, type_acte="CAD")` rend les lots de plans du
 cadastre du Consulat (`consulaire`, cotes P 30, sans date) et du cadastre napoléonien (`napoleonien`, cotes
-P 31, du début du XIXe au début du XXe siècle selon les communes). Donner un intervalle large : `annee` écarte
-les plans datés hors période, alors qu'un plan vaut pour les décennies qui suivent. La commune est celle du
+P 31, du début du XIXe au début du XXe siècle selon les communes). Aucun plan n'est écarté sur sa date (un plan
+vaut pour les décennies qui suivent sa levée) : les lots sont triés par date et `position_periode` situe chacun
+(`anterieur`, `contemporain`, `posterieur` à la période demandée) ; lire d'abord le dernier plan antérieur au
+fait. La commune est celle du
 plan : une commune réunie ou renommée se cherche sous son nom d'alors (`cadastre.noms_lies`, sinon
 `geo_historique`). Matrices et états de sections (propriétaires) : non couverts, voir l'inventaire du service ;
 `planche_contact` propose l'appel `archives_planche` pour un lot de 2 à 9 vues (`cotes_a_consulter` rappelle

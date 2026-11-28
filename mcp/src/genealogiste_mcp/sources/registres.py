@@ -96,9 +96,12 @@ PERIODE_CAD = ("plans du cadastre dit du Consulat : début du XIXe siècle ; pla
 LECTURE_CAD = ("Un résultat est un lot de plans d'une commune (plans, non nominatifs) : « COMMUNE / numéro » pour le "
                "cadastre du Consulat, sans date ; « COMMUNE - année » pour le cadastre napoléonien, parfois suivi "
                "d'une plage de feuilles (« (TA-B12) »). Une commune peut avoir plusieurs lots (levées successives, "
-               "suffixes de cote _1, _2, cote partagée). annee_titre reprend l'année du titre, pour information : "
-               "seule la date affichée par le service (bornes) écarte un plan. Un plan décrit le territoire pour "
-               "les décennies qui suivent sa levée. planche_contact : appel proposé pour les lots de 2 à 9 vues. "
+               "suffixes de cote _1, _2, cote partagée). annee_titre reprend l'année du titre, pour information. "
+               "Aucun plan n'est écarté sur sa date : un plan décrit le territoire pour les décennies qui suivent "
+               "sa levée. Les lots sont triés par date (sans date d'abord) et position_periode situe chacun par "
+               "rapport à la période demandée : anterieur (plan déjà levé, à consulter en premier pour un état "
+               "des lieux), contemporain, posterieur, null sans date ; d'après bornes, à défaut annee_titre. "
+               "planche_contact : appel proposé pour les lots de 2 à 9 vues. "
                "Le contenu des vues n'est pas lu.")
 NON_COUVERT_CAD = ("Matrices cadastrales et états de sections (propriétaires) : absents de ces deux formulaires ; "
                    "leur mise en ligne et leur cote n'ont pas été relevées : consulter l'inventaire du service.")
@@ -270,6 +273,15 @@ def _lire(html: str, page: int, host: str = HOST, naan: str = "33518",
 def _couvre(bornes: list[int] | None, periode: list[int]) -> bool | None:
     """Recouvrement des bornes affichées et de la période demandée ; None si les bornes sont inconnues."""
     return None if bornes is None else bornes[0] <= periode[1] and periode[0] <= bornes[1]
+
+
+def _position(date_plan: list[int] | int | None, periode: list[int]) -> str | None:
+    """Situation d'un plan (bornes ou année) par rapport à la période demandée ; None sans date. Information,
+    jamais un filtre."""
+    if date_plan is None:
+        return None
+    debut, fin = date_plan if isinstance(date_plan, list) else (date_plan, date_plan)
+    return "anterieur" if fin < periode[0] else "posterieur" if debut > periode[1] else "contemporain"
 
 
 def services_registres() -> list[str]:
@@ -558,9 +570,10 @@ def _cadastre_ad59(http, commune: str, periode: list[int], page: int,
     formulaire chacun, dont le seul champ est la commune (obligatoire), avec un vocabulaire propre.
 
     Règle : les deux formulaires sont lus, puis interrogés (une page chacun) quand leur vocabulaire connaît la
-    commune ; une commune inconnue des deux est une erreur avant toute recherche. Aucune date n'est envoyée : la
-    période n'écarte que les plans dont le service affiche une date qui ne la recoupe pas. Les résultats portent
-    ``categorie``, ``contexte`` et ``annee_titre`` ; les noms liés viennent du classeur 3 E local (aucun réseau)."""
+    commune ; une commune inconnue des deux est une erreur avant toute recherche. Aucune date n'est envoyée et la
+    période n'écarte aucun plan (#391 : un plan vaut pour les décennies qui suivent sa levée) : les lots de la
+    page sont triés par date et situés par ``position_periode``. Les résultats portent ``categorie``,
+    ``contexte`` et ``annee_titre`` ; les noms liés viennent du classeur 3 E local (aucun réseau)."""
     from ..fr_sources import communicability  # import tardif : fr_sources ne dépend pas des sources réseau
     etats: dict[str, dict] = {}
     requetes: dict[str, dict] = {}
@@ -621,14 +634,17 @@ def _cadastre_ad59(http, commune: str, periode: list[int], page: int,
             m = re.fullmatch(r".*\s-\s(\d{4})(?:\s*\(.*\))?\s*", r["titre"])
             r.update(categorie=categorie, annee_titre=int(m[1]) if m else None,
                      couvre_periode=_couvre(r["bornes"], periode))
-            if r["couvre_periode"] is False:
+            r["position_periode"] = _position(r["bornes"] or r["annee_titre"], periode)
+            if r["couvre_periode"] is False:  # indication seulement (#391) : le plan reste rendu
                 hors.append(r["bornes"])
-                continue
             if r["nb_vues"] and 2 <= r["nb_vues"] <= 9:
                 r["planche_contact"] = f'archives_planche(source="{r["ark"]}", de=1, a={r["nb_vues"]})'
             resultats.append(r)
     if refus and not lues:
         raise refus
+    # tri par date de levée (bornes, à défaut année du titre) ; sans date d'abord (cadastre du Consulat, le plus
+    # ancien) ; tri stable : à date égale, l'ordre des catégories et des cotes est conservé
+    resultats.sort(key=lambda r: (r["bornes"] or [r["annee_titre"] or 0] * 2))
     regle = communicability("cadastre", today=aujourdhui)
     communes = {e["commune"] for e in etats.values() if e["commune"]}
     cadastre = {"releve_le": RELEVE_CAD, "reference": PAGE_CAD, "periode_annoncee": PERIODE_CAD,
@@ -637,11 +653,11 @@ def _cadastre_ad59(http, commune: str, periode: list[int], page: int,
                                     "delai_annees": regle["delai_annees"], "source": PAGE_CAD,
                                     "releve_le": RELEVE_CAD, "non_verifie": NON_VERIFIE_CAD},
                 **etats}
-    if hors:  # dates affichées des plans écartés : de quoi relancer sur la bonne période
+    if hors:  # dates affichées des plans rendus qui ne recoupent pas la période : indication, sans effet
         cadastre["dates_hors_periode"] = sorted({b[0] if b[0] == b[1] else f"{b[0]}-{b[1]}" for b in hors}, key=str)
     return resultats, total, suivante, cached, {
         "commune_service": next(iter(communes)) if len(communes) == 1 else None,
-        "registres_hors_periode": len(hors), "cadastre": cadastre}
+        "registres_hors_periode": 0, "cadastre": cadastre}  # aucun plan écarté sur sa date (#391)
 
 
 def _communicabilite_fd(resultats: list[dict], periode: list[int], aujourdhui: date) -> tuple[list[dict], dict, str]:
@@ -848,13 +864,9 @@ def rechercher(ctx: SourceContext, service: str, commune: str, annee: int, type_
             f"{PERIODE_HYP} (relevé du {RELEVE_HYP}). Vérifier le bureau des hypothèques (celui de l'arrondissement "
             "du bien) et l'état de chaque catégorie (hypotheques).")
     elif not resultats and cadastre_ad59:
-        dates = extra["cadastre"].get("dates_hors_periode")
-        out["recherche_negative"] = (
-            (f"Aucun plan de cette page ne recoupe {periode[0]}-{periode[1]} d'après la date affichée par le service "
-             f"({extra[hors]} écarté(s), datés {', '.join(map(str, dates))}) : un plan décrit le territoire pour les "
-             "décennies qui suivent sa levée, relancer avec une de ces années ou un intervalle (annee_fin)." if dates
-             else "Aucun plan du cadastre renvoyé pour cette commune et cette page.")
-            + " Cela ne prouve pas qu'aucun plan n'existe. Le service annonce : "
+        out["recherche_negative"] = (  # aucun plan n'est écarté sur sa date (#391) : rien n'a été renvoyé
+            "Aucun plan du cadastre renvoyé pour cette commune et cette page."
+            " Cela ne prouve pas qu'aucun plan n'existe. Le service annonce : "
             f"{PERIODE_CAD} (relevé du {RELEVE_CAD}). Vérifier l'état de chaque formulaire (cadastre) et le nom de "
             "la commune à l'époque du plan (noms_lies, piste_lieu).")
     elif not resultats and extra.get(hors):
