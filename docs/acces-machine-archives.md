@@ -72,11 +72,18 @@ sourcées** (intervalles matchID et API Géo), 19 restent historiques ou par dé
 FamilySearch et Geneanet restent hors automatisation (authentification, pas de contournement), comme indiqué
 dans le [référentiel](archives.md).
 
+## Décisions
+
+- **INSEE, fichiers du COG** (décision du mainteneur, 2026-11-28, #350) : le `robots.txt` de www.insee.fr
+  contient `Disallow: *.csv` (vérifié le 2026-11-28), mais les mentions légales admettent l'extraction
+  automatique qui ne porte pas atteinte au site, et data.gouv.fr ne fait que renvoyer vers insee.fr (aucune
+  copie ailleurs). Le plugin **garde** le téléchargement des deux fichiers du millésime configuré : à la
+  demande, mis en cache, sans répétition. Les réponses enregistrées des tests ne sont pas retéléchargées
+  automatiquement. Une installation peut pointer `GENEALOGISTE_COG_MVT_URL` et `GENEALOGISTE_COG_COMMUNES_URL`
+  vers ses propres copies.
+
 ## Points à arbitrer
 
-- **INSEE** : `robots.txt` exclut les `*.csv` alors que le plugin télécharge deux fichiers COG ; les
-  mentions légales admettent l'extraction automatique qui ne gêne pas le site. Téléchargement ponctuel et
-  mis en cache : à confirmer, ou passer par la page data.gouv.fr du COG.
 - **Wikidata** : `Disallow: /sparql` vise les robots d'indexation ; le manuel du service documente l'usage
   programmatique et ses limites. Le plugin respecte la politique User-Agent.
 - **matchID** : sans jeton, nombre d'appels limité (« une centaine » ou 20 selon la source) ; le plafond
