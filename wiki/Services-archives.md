@@ -17,9 +17,10 @@ Avec une commune et une année précises, demander par exemple :
 
 L'outil `archives_registres(service="AD59", commune="Saint-Vaast-en-Cambrésis", annee=1860,
 type_acte="N")` renvoie les références lues dans la page officielle : titre, cote, ARK, période et,
-si affiché, nombre de vues. La même recherche fonctionne pour neuf autres services, dont le moteur Mnesys
-est lu directement : Calvados (AD14), Corrèze (AD19), Eure (AD27), Marne (AD51), Meuse (AD55), Nièvre (AD58), Rhône (AD69),
-Territoire de Belfort (AD90) et Martinique (AD972). Le nom de commune est pris dans la liste du service
+si affiché, nombre de vues. La même recherche fonctionne pour quatorze autres services, dont le moteur Mnesys
+est lu directement : Calvados (AD14), Corrèze (AD19), Doubs (AD25, tables décennales, matricules et successions seulement),
+Eure (AD27), Indre-et-Loire (AD37), Jura (AD39), Marne (AD51), Meuse (AD55), Nièvre (AD58), Rhône (AD69), Somme (AD80),
+Territoire de Belfort (AD90), Essonne (AD91) et Martinique (AD972). Le nom de commune est pris dans la liste du service
 (`commune_service` dans la réponse) ; en cas d'homonymie, l'outil liste les valeurs possibles.
 Le filtre par type dépend du formulaire du service (absent pour la Nièvre : rechercher sans type).
 
@@ -30,11 +31,13 @@ se cherchent de la même façon :
 > Cherche les tables des successions du bureau de Nevers entre 1876 et 1882.
 
 - **Registres matricules** (`type_acte="RM"`) : l'année est la **classe** (naissance + 20) ; la commune est le
-  bureau de recrutement, facultatif. Corrèze, Eure, Meuse, Nièvre, Rhône, Territoire de Belfort, Martinique ;
+  bureau de recrutement, facultatif. Corrèze, Doubs, Eure, Jura, Meuse, Nièvre, Rhône, Territoire de Belfort, Martinique ;
   Nord (AD59) avec ses deux formulaires dédiés.
 - **Tables des successions** (`type_acte="SUCC"`, série 3 Q) : la commune est le **bureau de l'enregistrement**
-  dont dépendait le défunt, l'année ou l'intervalle la période du décès. Eure, Nièvre, Rhône, Territoire de Belfort ;
-  Nord (AD59) avec son formulaire dédié. Pour une personne de l'arbre, ajouter son identifiant local dans `personne` :
+  dont dépendait le défunt, l'année ou l'intervalle la période du décès. Doubs, Eure, Indre-et-Loire, Nièvre, Rhône, Territoire de Belfort, Essonne ;
+  Nord (AD59) avec son formulaire dédié.
+
+Pour une personne de l'arbre, ajouter son identifiant local dans `personne` :
 la garde des vivants est appliquée avant toute requête ; cet identifiant n'est pas transmis aux archives.
 
 Types pris en charge : `N` (naissances), `M` (mariages), `D` (décès). `NMD` ou vide recherche sans filtre
