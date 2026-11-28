@@ -102,6 +102,12 @@
     "groupe": "Utiliser le plugin"
   },
   {
+    "slug": "Couverture-technique-archives",
+    "source": "docs/couverture-archives.md",
+    "titre": "Couverture technique des archives",
+    "groupe": "Utiliser le plugin"
+  },
+  {
     "slug": "Recensements-AD59",
     "source": "docs/recensements.md",
     "titre": "Recensements (AD59)",
@@ -238,11 +244,5 @@
     "source": "wiki/Maintenance.md",
     "titre": "Maintenir le wiki",
     "groupe": "Entretenir et contribuer"
-  },
-  {
-    "slug": "Couverture-technique-archives",
-    "source": "docs/couverture-archives.md",
-    "titre": "Couverture technique des archives",
-    "groupe": "Utiliser le plugin"
   }
 ]
